@@ -181,7 +181,7 @@ void md_parallel_nary(int C, int D, const long dim[D], unsigned long flags, cons
 	omp_set_num_threads(outer_threads);	
 #endif
 
-	#pragma omp parallel for
+#pragma omp parallel for
 	for (long i = 0; i < total_iterations; i++) {
 
 #ifdef _OPENMP
@@ -253,7 +253,7 @@ void md_parallel_loop(int D, const long dim[static D], unsigned long flags, md_l
 
 	long iter = md_calc_size(D, pdims);
 
-	#pragma omp parallel for
+#pragma omp parallel for
 	for (long i = 0; i < iter; i++) {
 
 		// Recover place in parallel iteration space
@@ -2185,7 +2185,7 @@ void* md_compress(int D, const long dims[D], const float* src)
 	}
 #endif 
 
-	#pragma omp parallel for
+#pragma omp parallel for
 	for (long i = 0; i < N / 32 + 1; i++) {
 
 		uint32_t result = 0;
@@ -2216,7 +2216,7 @@ void md_decompress(int D, const long dims[D], float* dst, const void* _src)
 	}
 #endif 
 
-	#pragma omp parallel for
+#pragma omp parallel for
 	for (long i = 0; i < N / 32 + ((0 == N % 32) ? 0 : 1); i++) {
 
 		for (long j = 0; j < 32; j++) {

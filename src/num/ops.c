@@ -628,7 +628,7 @@ void operator_generic_apply_parallel_unchecked(int D, const struct operator_s* o
 		int max_threads = omp_get_max_threads();
 		omp_set_num_threads(num_threads);
 
-		#pragma omp parallel
+#pragma 	omp parallel
 		{
 			for (int i = omp_get_thread_num(); i < D; i += omp_get_num_threads())
 				operator_generic_apply_unchecked(op[i], N, args[i]);

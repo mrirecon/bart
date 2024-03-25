@@ -110,7 +110,7 @@ static void zfftmod_3d_4(const long dims[3], complex float* dst, const complex f
 		scale_1 *= -1;
 
 
-	#pragma omp parallel for collapse(3)
+#pragma omp parallel for collapse(3)
 	for (long z = 0; z < dims[2]; z++)
 		for (long y = 0; y < dims[1]; y++)
 			for (long x = 0; x < dims[0]; x++) {
@@ -142,7 +142,7 @@ static void zfftmod_3d(const long dims[3], complex float* dst, const complex flo
 			return;
 		}
 
-	#pragma omp parallel for collapse(3)
+#pragma omp parallel for collapse(3)
 	for (long z = 0; z < dims[2]; z++)
 		for (long y = 0; y < dims[1]; y++)
 			for (long x = 0; x < dims[0]; x++) {
@@ -247,7 +247,7 @@ static void fftmod2_r(int N, const long dims[N], unsigned long flags, const long
 	long tdims[N];
 	md_select_dims(N, ~MD_BIT(i), tdims, dims);
 
-	#pragma omp parallel for
+#pragma omp parallel for
 	for (int j = 0; j < dims[i]; j++) {
 
 		fftmod2_r(N, tdims, MD_CLEAR(flags, i),
@@ -429,9 +429,8 @@ static fftwf_plan fft_fftwf_plan(int D, const long dimensions[D], unsigned long 
 
 	char* wisdom = fftw_wisdom_name(D, backwards, flags, dimensions);
 
-	#pragma omp critical (bart_fftwf_plan)
+#pragma omp critical (bart_fftwf_plan)
 	{
-
 		if (NULL != wisdom)
 			fftwf_import_wisdom_from_filename(wisdom);
 
@@ -467,6 +466,7 @@ static fftwf_plan fft_fftwf_plan(int D, const long dimensions[D], unsigned long 
 			xfree(wisdom);
 		}
 	}
+
 	return fftwf;
 }
 
@@ -514,7 +514,8 @@ static void fft_apply(const operator_data_t* _plan, unsigned int N, void* args[N
 #ifdef  USE_CUDA
 	if (cuda_ondevice(src)) {
 #ifdef	LAZY_CUDA
-		#pragma omp critical(cufft_create_plan_in_threads)
+
+#pragma 	omp critical(cufft_create_plan_in_threads)
 		if (NULL == plan->cuplan)
 			((struct fft_plan_s*)plan)->cuplan = fft_cuda_plan(plan->D, plan->dims, plan->flags, plan->ostrs, plan->istrs, plan->backwards);
 #endif

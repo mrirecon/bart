@@ -36,7 +36,7 @@ double uniform_rand(void)
 {
 	double ret;
 
-	#pragma omp critical
+#pragma omp critical
 	ret = rand_r(&num_rand_seed) / (double)RAND_MAX;
 
 	return ret;

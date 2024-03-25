@@ -308,7 +308,7 @@ void* mem_device_malloc(long size, void* (*device_alloc)(size_t))
 {
 	int stream = cuda_get_stream_id();
 
-	#pragma omp atomic
+#pragma omp atomic
 	used_memory[stream] += size;
 
 	struct mem_s* nptr = find_free(size, stream);

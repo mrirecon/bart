@@ -167,7 +167,7 @@ static void bloch_fun(const nlop_data_t* _data, complex float* dst, const comple
 
 	// debug_sim(&(data->moba_data.sim));
 
-	#pragma omp parallel for collapse(3)
+#pragma omp parallel for collapse(3)
 	for (int x = start[0]; x < end[0]; x++) {	
 		for (int y = start[1]; y < end[1]; y++) {
 			for (int z = start[2]; z < end[2]; z++) {

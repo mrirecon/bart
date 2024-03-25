@@ -57,7 +57,7 @@ int main_saxpy(int argc, char* argv[argc])
 
 	complex float* out = create_cfl(out_file, N, dims2);
 
-	#pragma omp parallel for
+#pragma omp parallel for
 	for (long i = 0; i < md_calc_size(N, dims1); i++)
 		out[i] = scale * data1[i] + data2[i];
 

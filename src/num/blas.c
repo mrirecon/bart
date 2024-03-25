@@ -211,15 +211,15 @@ static void blas_cpu_set_lock(void)
 {
 	if (!cpulock_init) {
 	
-		#pragma omp critical(cpulock_init)
+#pragma 	omp critical(cpulock_init)
 		{
 			if (!cpulock_init) {
 
-				#ifdef USE_OPENBLAS
+#ifdef USE_OPENBLAS
 				//set num threads to ne if openblas is built with pthreads
 				if (1 == openblas_get_parallel())
 					openblas_set_num_threads(1);
-				#endif
+#endif
 
 				omp_init_nest_lock(&cpulock);
 				cpulock_init = true;

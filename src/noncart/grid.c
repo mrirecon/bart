@@ -40,7 +40,7 @@ static double kb_beta = -1.;
 
 static void kb_init(double beta)
 {
-	#pragma	omp critical
+#pragma	omp critical
 	if (-1 == kb_beta) {
 
 		bessel_kb_beta = bessel_i0(beta);
@@ -517,9 +517,9 @@ void grid_point(unsigned int ch, int N, const long dims[VLA(N)], const long strs
 		for (unsigned int c = 0; c < ch; c++) {
 
 			// we are allowed to update real and imaginary part independently which works atomically
-			#pragma omp atomic
+#pragma 		omp atomic
 			__real(dst[ind + c * strs[3] / CFL_SIZE]) += __real(val[c]) * d;
-			#pragma omp atomic
+#pragma 		omp atomic
 			__imag(dst[ind + c * strs[3] / CFL_SIZE]) += __imag(val[c]) * d;
 		}
 	};
@@ -631,7 +631,7 @@ void apply_rolloff_correction2(float os, float width, float beta, int N, const l
 	}
 #endif
 
-	#pragma omp parallel for collapse(3)
+#pragma omp parallel for collapse(3)
 	for (int z = 0; z < dims[2]; z++) {
 		for (int y = 0; y < dims[1]; y++) {
 			for (int x = 0; x < dims[0]; x++) {

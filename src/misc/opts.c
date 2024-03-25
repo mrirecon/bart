@@ -690,7 +690,7 @@ static bool opt_file(void* ptr, char /*c*/, const char* optarg, bool out, bool i
 {
 	*(const char**)ptr = strdup(optarg);
 
-	#pragma omp critical (bart_options_str_list)
+#pragma omp critical (bart_options_str_list)
 	list_append(str_list, *(char**)ptr);
 
 	if (out)

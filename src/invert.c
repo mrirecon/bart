@@ -47,7 +47,7 @@ int main_invert(int argc, char* argv[argc])
 	complex float* idata = load_cfl(in_file, DIMS, dims);
 	complex float* odata = create_cfl(out_file, DIMS, dims);
 		
-	#pragma omp parallel for
+#pragma omp parallel for
 	for (long i = 0; i < md_calc_size(DIMS, dims); i++)
 		odata[i] = idata[i] == 0 ? 0. : 1. / idata[i];
 

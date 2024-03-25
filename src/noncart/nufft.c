@@ -202,7 +202,7 @@ static void apply_linphases_3D(int N, const long img_dims[N], const float shifts
 	
 	long tot = md_calc_size(N - 3, img_dims + 3);
 
-	#pragma omp parallel for collapse(3)
+#pragma omp parallel for collapse(3)
 	for (long z = 0; z < img_dims[2]; z++) {
 		for (long y = 0; y < img_dims[1]; y++) {
 			for (long x = 0; x < img_dims[0]; x++) {

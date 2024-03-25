@@ -619,7 +619,7 @@ void overlapandsave2NEB(int N, unsigned int flags, const long blk[N], const long
 
 	md_clear(N, dims1B, src1C, sizeof(complex float));	// must be done here
 
-	#pragma omp parallel for collapse(3)
+#pragma omp parallel for collapse(3)
 	for (int k = 0; k < nodims[N + 2]; k++) {
 	for (int j = 0; j < nodims[N + 1]; j++) {
 	for (int i = 0; i < nodims[N + 0]; i++) {
@@ -635,7 +635,7 @@ void overlapandsave2NEB(int N, unsigned int flags, const long blk[N], const long
 		md_zmul2(N, nodims, ostr, tmpX, ostr, tmpX, mstr, ((const void*)msk) + off2);
 		convH(N, flags, CONV_VALID, CONV_SYMMETRIC, tdims, tmp, nodims, tmpX, ndims2, src2);
 
-		#pragma omp critical
+#pragma 	omp critical
 		md_zadd2(N, tdims, str1, ((void*)src1C) + off1, str1, ((void*)src1C) + off1, str2,  tmp);
 
 		md_free(tmpX);
@@ -784,7 +784,7 @@ void overlapandsave2HB(int N, unsigned int flags, const long blk[N], const long 
 
 	md_clear(N, dims1B, src1C, CFL_SIZE);	// must be done here
 
-	#pragma omp parallel for collapse(3)
+#pragma omp parallel for collapse(3)
 	for (int k = 0; k < nodims[N + 2]; k++) {
 	for (int j = 0; j < nodims[N + 1]; j++) {
 	for (int i = 0; i < nodims[N + 0]; i++) {
@@ -799,7 +799,7 @@ void overlapandsave2HB(int N, unsigned int flags, const long blk[N], const long 
 		    md_zmul2(N, nodims, ostr, tmpX, ostr, ((const void*)src1) + off3, mstr, ((const void*)msk) + off2);
 		    convH(N, flags, CONV_VALID, CONV_SYMMETRIC, tdims, tmp, nodims, tmpX, ndims2, src2);
 
-		    #pragma omp critical
+#pragma 		omp critical
 		    md_zadd2(N, tdims, str1, ((void*)src1C) + off1, str1, ((void*)src1C) + off1, str2,  tmp);
 
 		    md_free(tmpX);

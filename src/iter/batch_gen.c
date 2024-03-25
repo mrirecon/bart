@@ -33,7 +33,7 @@ static void rand_draw_data(unsigned int* rand_seed, long N, long perm[N], long /
 {
 	for (int i = 0; i < N; i++) {
 
-		#pragma omp critical
+#pragma 	omp critical
 		perm[i] = rand_r(rand_seed) % N;
 	}
 }
@@ -47,7 +47,7 @@ static void rand_perm_data(unsigned int* rand_seed, long N, long perm[N], long /
 
 	for (int i = 0; i < N; i++) {
 
-		#pragma omp critical
+#pragma 	omp critical
 		perm[i] = rand_r(rand_seed) % (N - i);
 
 		for (int j = 0; j < N; j++)

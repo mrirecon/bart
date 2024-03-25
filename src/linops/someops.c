@@ -72,7 +72,7 @@ static void cdiag_normal(const linop_data_t* _data, complex float* dst, const co
 {
 	const auto data = CAST_DOWN(cdiag_s, _data);
 
-	#pragma omp critical (linop_cdiag_normal)
+#pragma omp critical (linop_cdiag_normal)
 	if (NULL == data->normal) {
 
 		const complex float* diag = multiplace_read(data->diag, src);

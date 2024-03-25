@@ -282,7 +282,7 @@ static void kern_adjoint(const linop_data_t* _data, complex float* dst, const co
 	long flag_dims[1] = { n };
 	complex float* flags = md_calloc(1, flag_dims, CFL_SIZE);
 
-	#pragma omp parallel for
+#pragma omp parallel for
 	for (int k = 0; k < n; k ++) {
 #ifdef _OPENMP
 		int tid = omp_get_thread_num();
