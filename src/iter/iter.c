@@ -95,6 +95,7 @@ const struct iter_fista_conf iter_fista_defaults = {
 	.p = 1.,
 	.q = 1.,
 	.r = 4.,
+	.last = false,
 };
 
 

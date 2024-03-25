@@ -204,6 +204,7 @@ void ist(int maxiter, float epsilon, float tau, long N,
  * @param maxiter maximum number of iterations
  * @param epsilon stop criterion
  * @param tau (step size) weighting on the residual term, A^H (b - Ax)
+ * @param last final application of threshold function
  * @param cf parameters for ravine step
  * @param N size of input, x
  * @param vops vector ops definition
@@ -213,6 +214,7 @@ void ist(int maxiter, float epsilon, float tau, long N,
  * @param b observations
  */
 void fista(int maxiter, float epsilon, float tau,
+	bool last,
 	struct ravine_conf cf,
 	long N,
 	const struct vec_iter_s* vops,
@@ -262,6 +264,12 @@ void fista(int maxiter, float epsilon, float tau,
 			break;
 
 		vops->axpy(N, x, itrdata.tau, r);
+	}
+
+	if (last) {
+
+		iter_monitor(monitor, vops, x);
+		iter_op_p_call(thresh, itrdata.scale * itrdata.tau, x, x);
 	}
 
 	debug_printf(DP_DEBUG3, "\n");

@@ -255,12 +255,11 @@ int main_pics(int argc, char* argv[argc])
 	const char* basis_file = NULL;
 
 	struct admm_conf admm = { false, false, false, iter_admm_defaults.rho, iter_admm_defaults.maxitercg, false };
+	struct fista_conf fista = { { -1., -1., -1. }, false };
 
 	enum algo_t algo = ALGO_DEFAULT;
 
 	bool hogwild = false;
-
-	float fista_parms[3] = { -1., -1., -1. };
 
 	bool gpu_gridding = false;
 
@@ -323,7 +322,8 @@ int main_pics(int argc, char* argv[argc])
 		OPTL_INFILE(0, "psf_import", &psf_ifile, "file", "Import PSF from file"),
 		OPTL_STRING(0, "wavelet", &wtype_str, "name", "wavelet type (haar,dau2,cdf44)"),
 		OPTL_ULONG(0, "mpi", &mpi_flags, "flags", "distribute over this dimensions with use of MPI"),
-		OPTL_FLVEC3(0, "fista_pqr", &fista_parms, "p:q:r", "parameters for FISTA acceleration"),
+		OPTL_FLVEC3(0, "fista_pqr", &fista.params, "p:q:r", "parameters for FISTA acceleration"),
+		OPTL_SET(0, "fista_last", &fista.last, "end iteration with call to proximal op"),
 	};
 
 
@@ -805,7 +805,7 @@ int main_pics(int argc, char* argv[argc])
 
 	// initialize algorithm
 
-	struct iter it = italgo_config(algo, nr_penalties, ropts.regs, maxiter, step, hogwild, admm, scaling, NULL != image_truth, fista_parms);
+	struct iter it = italgo_config(algo, nr_penalties, ropts.regs, maxiter, step, hogwild, admm, fista, scaling, NULL != image_truth);
 
 	if (eigen && (ALGO_PRIDU == algo))
 		CAST_DOWN(iter_chambolle_pock_conf, it.iconf)->maxeigen_iter = 30;

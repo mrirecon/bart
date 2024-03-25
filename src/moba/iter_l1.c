@@ -234,6 +234,7 @@ static void inverse_fista(iter_op_data* _data, float alpha, float* dst, const fl
 	};
 
 	fista(maxiter, data->conf->c2->cgtol * alpha * eps, step,
+		false,
 		ravine_classical,
 		data->size_x,
 		select_vecops(src),

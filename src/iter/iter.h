@@ -79,6 +79,7 @@ struct iter_fista_conf {
 	float p;
 	float q;
 	float r;
+	_Bool last;
 };
 
 

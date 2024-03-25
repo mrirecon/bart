@@ -69,7 +69,7 @@ enum algo_t italgo_choose(int nr_penalties, const struct reg_s regs[nr_penalties
 
 struct iter italgo_config(enum algo_t algo, int nr_penalties, const struct reg_s* regs,
 		int maxiter, float step, bool hogwild, const struct admm_conf admm,
-		float scaling, bool warm_start, float fista_params[3])
+		const struct fista_conf fista, float scaling, bool warm_start)
 {
 	italgo_fun2_t italgo = NULL;
 	iter_conf* iconf = NULL;
@@ -184,12 +184,13 @@ struct iter italgo_config(enum algo_t algo, int nr_penalties, const struct reg_s
 		fsconf->maxiter = maxiter;
 		fsconf->step = step;
 		fsconf->hogwild = hogwild;
+		fsconf->last = fista.last;
 
-		if (-1. != fista_params[0]) {
+		if (-1. != fista.params[0]) {
 
-			fsconf->p = fista_params[0];
-			fsconf->q = fista_params[1];
-			fsconf->r = fista_params[2];
+			fsconf->p = fista.params[0];
+			fsconf->q = fista.params[1];
+			fsconf->r = fista.params[2];
 
 			debug_printf(DP_INFO, "FISTA: p=%f q=%f r=%f\n",
 					fsconf->p, fsconf->q, fsconf->r);

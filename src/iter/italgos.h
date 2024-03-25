@@ -182,6 +182,7 @@ extern struct ravine_conf ravine_classical;
 extern struct ravine_conf ravine_mod;
 
 void fista(int maxiter, float epsilon, float tau,
+	_Bool last,
 	struct ravine_conf,
 	long N,
 	const struct vec_iter_s* vops,

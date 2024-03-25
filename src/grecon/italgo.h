@@ -11,6 +11,12 @@ struct admm_conf {
 	bool fast;
 };
 
+struct fista_conf {
+
+	float params[3];
+	bool last;
+};
+
 
 struct iter {
 
@@ -25,7 +31,7 @@ extern enum algo_t italgo_choose(int nr_penalties, const struct reg_s regs[nr_pe
 
 extern struct iter italgo_config(enum algo_t algo, int nr_penalties, const struct reg_s* regs,
 		int maxiter, float step, bool hogwild, const struct admm_conf admm,
-		float scaling, bool warm_start, float fista_params[3]);
+		const struct fista_conf fista, float scaling, bool warm_start);
 
 extern void italgo_config_free(struct iter it);
 
