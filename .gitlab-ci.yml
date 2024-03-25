@@ -31,7 +31,7 @@ Build_NoDEBUG:
   artifacts:
     paths:
       - bart
-      - ./lib/
+      - "./lib/*.a"
       - ./commands/
     expire_in: 45 minutes
 
@@ -42,8 +42,10 @@ Build:
   artifacts:
     paths:
       - bart
-      - ./lib/
+      - "./lib/*.a"
       - ./commands/
+      - "./src/*.o"
+      - ./src/misc/version.inc
     expire_in: 45 minutes
 
 Build_riscv:
@@ -56,8 +58,10 @@ Build_riscv:
   artifacts:
     paths:
       - bart
-      - ./lib/
+      - "./lib/*.a"
       - ./commands/
+      - "./src/*.o"
+      - ./src/misc/version.inc
     expire_in: 180 minutes
 
 
@@ -68,8 +72,10 @@ Build_Clang:
   artifacts:
     paths:
       - bart
-      - ./lib/
+      - "./lib/*.a"
       - ./commands/
+      - "./src/*.o"
+      - ./src/misc/version.inc
     expire_in: 45 minutes
 
 Build_Clang_GPU:
@@ -79,8 +85,10 @@ Build_Clang_GPU:
   artifacts:
     paths:
       - bart
-      - ./lib/
+      - "./lib/*.a"
       - ./commands/
+      - "./src/*.o"
+      - ./src/misc/version.inc
     expire_in: 45 minutes
 
 Build_Static:
@@ -120,8 +128,10 @@ Build_UBSan:
   artifacts:
     paths:
       - bart
-      - ./lib/
+      - "./lib/*.a"
       - ./commands/
+      - "./src/*.o"
+      - ./src/misc/version.inc
     expire_in: 45 minutes
 
 
@@ -132,8 +142,10 @@ Build_GPU:
   artifacts:
     paths:
       - bart
-      - ./lib/
+      - "./lib/*.a"
       - ./commands/
+      - "./src/*.o"
+      - ./src/misc/version.inc
     expire_in: 45 minutes
 
 Build_MPI_GPU:
@@ -143,8 +155,10 @@ Build_MPI_GPU:
   artifacts:
     paths:
       - bart
-      - ./lib/
+      - "./lib/*.a"
       - ./commands/
+      - "./src/*.o"
+      - ./src/misc/version.inc
     expire_in: 45 minutes
 
 Build_MPI:
@@ -154,8 +168,10 @@ Build_MPI:
   artifacts:
     paths:
       - bart
-      - ./lib/
+      - "./lib/*.a"
       - ./commands/
+      - "./src/*.o"
+      - ./src/misc/version.inc
     expire_in: 45 minutes
 
 Build_LTO:
@@ -165,7 +181,9 @@ Build_LTO:
   artifacts:
     paths:
       - bart
-      - ./lib/
+      - "./lib/*.a"
+      - "./src/*.o"
+      - ./src/misc/version.inc
     expire_in: 45 minutes
 
 
@@ -176,7 +194,7 @@ Build_Analyzer:
   artifacts:
     paths:
       - bart
-      - ./lib/
+      - "./lib/*.a"
       - ./commands/
     expire_in: 45 minutes
   allow_failure: true
@@ -193,8 +211,10 @@ Build_Tensorflow:
   artifacts:
     paths:
       - bart
-      - ./lib/
+      - "./lib/*.a"
       - ./commands/
+      - "./src/*.o"
+      - ./src/misc/version.inc
     expire_in: 45 minutes
 
 
