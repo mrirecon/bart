@@ -14,5 +14,4 @@ for cmd in ${XTARGETS} ; do
   printf "\n\n--%s--\n\n" $cmd ;
   ${BART_EXE} $cmd -h ;
 done >> ${TEST_FILE_COMMANDS}
-${BINDIR}/update-if-changed.sh ${TEST_FILE_COMMANDS} ${OUTPUT}
-rm -rf ${TEST_FILE_COMMANDS}
+${BINDIR}/update_if_changed.sh ${TEST_FILE_COMMANDS} ${OUTPUT}

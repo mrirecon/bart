@@ -669,8 +669,7 @@ $(eval $(foreach t,$(ALIBS),$(eval $(call alib,$(t)))))
 
 
 # additional rules for lib misc
-$(eval $(shell $(root)/rules/update-version.sh))
-
+$(shell $(root)/rules/update_version.sh)
 $(srcdir)/misc/version.o: $(srcdir)/misc/version.inc
 
 
