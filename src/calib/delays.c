@@ -404,8 +404,11 @@ void ring(const struct ring_conf* conf, float S[3], int N, const float angles[N]
 	long idx[Nint][2];
 	float dist[Nint][2];
 
-	for (int i = 0; i < Nint; i++) // analyzer false positive
+	for (int i = 0; i < Nint; i++) { // analyzer false positive
+
 		idx[i][0] = idx[i][1] = 0;
+		dist[i][0] = dist[i][1] = 0;
+	}
 
 	calc_intersections(Nint, N, conf->no_intersec_sp, dist, idx, angles, kc_dims, kc);
 
