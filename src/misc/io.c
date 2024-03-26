@@ -101,16 +101,19 @@ static void io_register(const char* name, bool output, bool input, bool open)
 		if (0 == strcmp(name, iop->name)) {
 
 			new = false;
+
 			if (iop->open) {
 
 				if (output || iop->output)
 					debug_printf(DP_WARN, "Overwriting file: %s\n", name);
+
 			} else {
 
 				if (open) {
 
 					if (output && !iop->output)
 						error("%s: Input opened for writing!\n", name);
+
 					if (input &&  !iop->input)
 						error("%s: Output opened for reading!\n", name);
 				}
@@ -364,57 +367,59 @@ int read_cfl_header(int fd, char** file, int n, long dimensions[n])
 
 		char keyword[32];
 
-		if (1 == sscanf(header + pos, "# %31s\n%n", keyword, &delta)) {
+		if (1 != sscanf(header + pos, "# %31s\n%n", keyword, &delta))
+			return -1;
+
+		pos += delta;
+
+		if (0 == strcmp(keyword, "Dimensions")) {
+
+			if (ok)
+				return -1;
+
+			for (int i = 0; i < n; i++)
+				dimensions[i] = 1;
+
+			long val;
+			int i = 0;
+
+			while (1 == sscanf(header + pos, "%ld%n", &val, &delta)) {
+
+				pos += delta;
+
+				if (i < n)
+					dimensions[i] = val;
+				else if (1 != val)
+					return -1;
+
+				i++;
+			}
+
+			if (0 != sscanf(header + pos, "\n%n", &delta))
+				return -1;
 
 			pos += delta;
 
-			if (0 == strcmp(keyword, "Dimensions")) {
+			ok = true;
 
-				for (int i = 0; i < n; i++)
-					dimensions[i] = 1;
+		} else if (0 == strcmp(keyword, "Data")) {
 
-				long val;
-				int i = 0;
+			char filename[256];
 
-				while (1 == sscanf(header + pos, "%ld%n", &val, &delta)) {
+			if (1 != sscanf(header + pos, "%255s\n%n", filename, &delta))
+				return -1;
 
-					pos += delta;
+			pos += delta;
 
-					if (i < n)
-						dimensions[i] = val;
-					else
-					if (1 != val)
-						return -1;
+			*file = strdup(filename);
+		}
 
-					i++;
-				}
+		// skip lines not starting with '#'
 
-				if (0 != sscanf(header + pos, "\n%n", &delta))
-					return -1;
+		while ('#' != header[pos]) {
 
-				pos += delta;
-
-				if (ok)
-					return -1;
-
-				ok = true;
-			}
-
-			if (0 == strcmp(keyword, "Data")) {
-
-				char filename[256];
-
-				if (1 != sscanf(header + pos, "%255s\n%n", filename, &delta))
-					return -1;
-
-				*file = strdup(filename);
-
-				pos += delta;
-			}
-
-		} else {
-
-			// skip this line
+			if ('\0' == header[pos])
+				goto out;
 
 			if (0 != sscanf(header + pos, "%*[^\n]\n%n", &delta))
 				return -1;
@@ -441,7 +446,6 @@ out:
  */
 int write_multi_cfl_header(int fd, const char* filename, long num_ele, int D, int n[D], const long* dimensions[D])
 {
-
 	xdprintf(fd, "# Dimensions\n%ld \n", num_ele);
 
 	xdprintf(fd, "# SizesDimensions\n");
@@ -547,104 +551,103 @@ int read_multi_cfl_header(int fd, char** file, int D_max, int n_max, int n[D_max
 
 		char keyword[32];
 
+		if (1 != sscanf(header + pos, "# %31s\n%n", keyword, &delta))
+			return -1;
 
 
-		if (1 == sscanf(header + pos, "# %31s\n%n", keyword, &delta)) {
+		pos += delta;
+
+		if (0 == strcmp(keyword, "Dimensions")) {
+
+			if (1 != sscanf(header + pos, "%ld\n%n", &num_ele, &delta))
+				return -1;
+
+		} else if (0 == strcmp(keyword, "SizesDimensions")) {
+
+			for (int i = 0; i < D_max; i++)
+				n[i] = 0;
+
+			long val;
+
+			while (1 == sscanf(header + pos, "%ld%n", &val, &delta)) {
+
+				pos += delta;
+
+				if (D < D_max)
+					n[D] = val;
+				else
+					return -1;
+
+				D++;
+			}
+
+			if (0 != sscanf(header + pos, "\n%n", &delta))
+				return -1;
 
 			pos += delta;
 
-			if (0 == strcmp(keyword, "Dimensions")) {
+			if (multi_cfl)
+				return -1;
 
-				if (1 != sscanf(header + pos, "%ld \n%n", &num_ele, &delta))
-					return -1;
+			multi_cfl = true;
+
+		} else if (0 == strcmp(keyword, "MultiDimensions")) {
+
+			if (ok)
+				return -1;
+
+			for (int i = 0; i < D; i++)
+				for (int j = 0; j < n_max; j++)
+					dimensions[i][j] = 1;
+
+			long val;
+			int i = 0;
+			int j = 0;
+			long size_tensor = 1;
+
+			while (1 == sscanf(header + pos, "%ld%n", &val, &delta)) {
 
 				pos += delta;
-			}
 
-			if (0 == strcmp(keyword, "SizesDimensions")) {
+				if (j == n[i]) {
 
-				for (int i = 0; i < D_max; i++)
-					n[i] = 0;
+					num_ele_dims += size_tensor;
 
-				long val;
-
-				while (1 == sscanf(header + pos, "%ld%n", &val, &delta)) {
-
-					pos += delta;
-
-					if (D < D_max)
-						n[D] = val;
-					else
-						return -1;
-
-					D++;
+					size_tensor = 1;
+					j = 0;
+					i++;
 				}
 
-				if (0 != sscanf(header + pos, "\n%n", &delta))
-					return -1;
-
-				pos += delta;
-
-				if (multi_cfl)
-					return -1;
-
-				multi_cfl = true;
+				dimensions[i][j] = val;
+				j++;
+				size_tensor *= val;
 			}
 
-			if (0 == strcmp(keyword, "MultiDimensions")) {
+			if (0 != sscanf(header + pos, "\n%n", &delta))
+				return -1;
 
-				for (int i = 0; i < D; i++)
-					for (int j = 0; j < n_max; j++)
-						dimensions[i][j] = 1;
+			pos += delta;
 
-				long val;
-				int i = 0;
-				int j = 0;
-				long size_tensor = 1;
+			ok = true;
 
-				while (1 == sscanf(header + pos, "%ld%n", &val, &delta)) {
+		} else if (0 == strcmp(keyword, "Data")) {
 
-					pos += delta;
+			char filename[256];
 
-					if (j == n[i]) {
+			if (1 != sscanf(header + pos, "%255s\n%n", filename, &delta))
+				return -1;
 
-						num_ele_dims += size_tensor;
+			pos += delta;
 
-						size_tensor = 1;
-						j = 0;
-						i++;
-					}
+			*file = strdup(filename);
+		}
 
-					dimensions[i][j] = val;
-					j++;
-					size_tensor *= val;
-				}
+		// skip lines not starting with '#'
 
-				if (0 != sscanf(header + pos, "\n%n", &delta))
-					return -1;
-				pos += delta;
+		while ('#' != header[pos]) {
 
-				if (ok)
-					return -1;
-
-				ok = true;
-			}
-
-			if (0 == strcmp(keyword, "Data")) {
-
-				char filename[256];
-
-				if (1 != sscanf(header + pos, "%255s\n%n", filename, &delta))
-					return -1;
-
-				*file = strdup(filename);
-
-				pos += delta;
-			}
-
-		} else {
-
-			// skip this line
+			if ('\0' == header[pos])
+				goto out;
 
 			if (0 != sscanf(header + pos, "%*[^\n]\n%n", &delta))
 				return -1;
