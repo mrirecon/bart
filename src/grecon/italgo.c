@@ -80,7 +80,7 @@ struct iter italgo_config(enum algo_t algo, int nr_penalties, const struct reg_s
 
 		assert(0);
 
-	case ALGO_CG:
+	case ALGO_CG: {
 
 		debug_printf(DP_INFO, "conjugate gradients\n");
 
@@ -99,10 +99,11 @@ struct iter italgo_config(enum algo_t algo, int nr_penalties, const struct reg_s
 
 		italgo = iter2_call_iter;
 		iconf = CAST_UP(PTR_PASS(iter2_data));
+	}
 
 		break;
 
-	case ALGO_IST:
+	case ALGO_IST: {
 
 		debug_printf(DP_INFO, "IST\n");
 
@@ -124,8 +125,9 @@ struct iter italgo_config(enum algo_t algo, int nr_penalties, const struct reg_s
 		iconf = CAST_UP(PTR_PASS(iter2_ist_data));
 
 		break;
+	}
 
-	case ALGO_ADMM:
+	case ALGO_ADMM: {
 
 		debug_printf(DP_INFO, "ADMM\n");
 
@@ -147,13 +149,13 @@ struct iter italgo_config(enum algo_t algo, int nr_penalties, const struct reg_s
 		iconf = CAST_UP(PTR_PASS(mmconf));
 
 		break;
+	}
 
-	case ALGO_PRIDU:
+	case ALGO_PRIDU: {
 
 		debug_printf(DP_INFO, "Primal Dual\n");
 
 		//assert(2 == nr_penalties);
-
 		PTR_ALLOC(struct iter_chambolle_pock_conf, pdconf);
 		*pdconf = iter_chambolle_pock_defaults;
 
@@ -172,8 +174,9 @@ struct iter italgo_config(enum algo_t algo, int nr_penalties, const struct reg_s
 		iconf = CAST_UP(PTR_PASS(pdconf));
 
 		break;
+	}
 
-	case ALGO_FISTA:
+	case ALGO_FISTA: {
 
 		debug_printf(DP_INFO, "FISTA\n");
 
@@ -206,8 +209,9 @@ struct iter italgo_config(enum algo_t algo, int nr_penalties, const struct reg_s
 		iconf = CAST_UP(PTR_PASS(iter2_fista_data));
 
 		break;
+	}
 
-	case ALGO_NIHT:
+	case ALGO_NIHT: {
 
 		debug_printf(DP_INFO, "NIHT\n");
 
@@ -221,6 +225,7 @@ struct iter italgo_config(enum algo_t algo, int nr_penalties, const struct reg_s
 		iconf = CAST_UP(PTR_PASS(ihconf));
 
 		break;
+	}
 
 	default:
 		assert(0);
