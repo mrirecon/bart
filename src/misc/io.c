@@ -349,22 +349,6 @@ int read_cfl_header(int fd, char** file, int n, long dimensions[n])
 
 	while (true) {
 
-		// skip lines not starting with '#'
-
-		while ('#' != header[pos]) {
-
-			if ('\0' == header[pos])
-				goto out;
-
-			if (0 != sscanf(header + pos, "%*[^\n]\n%n", &delta))
-				return -1;
-
-			if (0 == delta)
-				goto out;
-
-			pos += delta;
-		}
-
 		char keyword[32];
 
 		if (1 != sscanf(header + pos, "# %31s\n%n", keyword, &delta))
@@ -532,22 +516,6 @@ int read_multi_cfl_header(int fd, char** file, int D_max, int n_max, int n[D_max
 	long num_ele_dims = 0;
 
 	while (true) {
-
-		// skip lines not starting with '#'
-
-		while ('#' != header[pos]) {
-
-			if ('\0' == header[pos])
-				goto out;
-
-			if (0 != sscanf(header + pos, "%*[^\n]\n%n", &delta))
-				return -1;
-
-			if (0 == delta)
-				goto out;
-
-			pos += delta;
-		}
 
 		char keyword[32];
 
