@@ -39,7 +39,7 @@
 
 
 
-static void xdprintf(int fd, const char* fmt, ...)
+static int xdprintf(int fd, const char* fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
@@ -48,6 +48,8 @@ static void xdprintf(int fd, const char* fmt, ...)
 
 	if (ret < 0)
 		error("Error writing.\n");
+
+	return ret;
 }
 
 
@@ -219,7 +221,7 @@ void io_unlink_if_opened(const char* name)
 
 	while (NULL != iop) {
 
-		if ( (0 == strcmp(name, iop->name)) && iop->open ) {
+		if ((0 == strcmp(name, iop->name)) && iop->open) {
 
 			enum file_types_e type = file_type(name);
 
@@ -281,43 +283,113 @@ void io_unlink_if_opened(const char* name)
 
 int write_cfl_header(int fd, const char* filename, int n, const long dimensions[n])
 {
-	xdprintf(fd, "# Dimensions\n");
+	int written = 0;
+
+	written += xdprintf(fd, "# Dimensions\n");
 
 	for (int i = 0; i < n; i++)
-		xdprintf(fd, "%ld ", dimensions[i]);
+		written += xdprintf(fd, "%ld ", dimensions[i]);
 
-	xdprintf(fd, "\n");
+	written += xdprintf(fd, "\n");
 
 	if (NULL != filename) {
 
-		xdprintf(fd, "# Data\n");
-		xdprintf(fd, "%s\n", filename);
+		written += xdprintf(fd, "# Data\n");
+		written += xdprintf(fd, "%s\n", filename);
 	}
 
 	if (NULL != command_line) {
 
-		xdprintf(fd, "# Command\n");
-		xdprintf(fd, "%s\n", command_line);
+		written += xdprintf(fd, "# Command\n");
+		written += xdprintf(fd, "%s\n", command_line);
 	}
 
 	if (NULL != iofiles) {
 
 		struct iofile_s* in = iofiles;
 
-		xdprintf(fd, "# Files\n");
+		written += xdprintf(fd, "# Files\n");
 
 		while (in) {
 
-			xdprintf(fd, " %s%s%s", in->input ? "<" : "", in->output ? ">" : "", in->name);
+			written += xdprintf(fd, " %s%s%s", in->input ? "<" : "", in->output ? ">" : "", in->name);
 			in = in->prev;
 		}
 
-		xdprintf(fd, "\n");
+		written += xdprintf(fd, "\n");
 	}
 
-	xdprintf(fd, "# Creator\nBART %s\n", bart_version);
+	written += xdprintf(fd, "# Creator\nBART %s\n", bart_version);
+
+	return written;
+}
+
+
+int write_stream_header(int fd, const char* dataname, int D, const long dims[D])
+{
+	int written = write_cfl_header(fd, dataname, D, dims);
+
+	int MM = IO_MIN_HDR_SIZE;
+
+	int padding = 0;
+
+	if (written + 9 + 4 < MM)
+		padding = MM - (written + 9 + 4);
+
+	int l = xdprintf(fd, "# Header\n%ld\n", written + 9 + 4 + padding);
+
+	// This works for a header size of 100 to 999
+	assert(l == 9 + 4);
+
+	char pad[padding];
+	memset(pad, 0, (size_t)padding);
+	write(fd, pad, padding);
 
 	return 0;
+}
+
+
+static int parse_cfl_header0(long N, const char header[N + 1], int *header_len)
+{
+	int pos = 0;
+	int delta = 0;
+	bool ok = false;
+
+	while (pos < N) {
+
+		char keyword[32];
+
+		if (1 != sscanf(header + pos, "# %31s\n%n", keyword, &delta))
+			return -1;
+
+		pos += delta;
+
+		if (0 == strcmp(keyword, "Header")) {
+
+			if (1 != sscanf(header + pos, "%d\n%n", header_len, &delta))
+				return -1;
+
+			pos += delta;
+		}
+
+		// skip lines not starting with '#'
+
+		while ('#' != header[pos]) {
+
+			if ('\0' == header[pos])
+				goto out;
+
+			if (0 != sscanf(header + pos, "%*[^\n]\n%n", &delta))
+				return -1;
+
+			if (0 == delta)
+				goto out;
+
+			pos += delta;
+		}
+	}
+out:
+	return ok ? 0 : -1;
 }
 
 
@@ -328,22 +400,32 @@ int read_cfl_header2(int N, char header[N + 1], int fd, char **file, int n, long
 
 	int r = 0;
 
-	while (r < N) {
+	int header_len = 0;
+	int M = IO_MIN_HDR_SIZE;
+
+	while (r < M) {
 
 		int rd;
 
-		if (0 > (rd = read(fd, header + r, (size_t)(N - r))))
+		if (0 > (rd = read(fd, header + r, (size_t)(M - r))))
 			return -1;
 
 		if (0 == rd)
 			break;
 
+		if (-1 != parse_cfl_header0(N, header, &header_len))
+			M = header_len;
+
+		// expand to maximum size
+		if ((0 == header_len) && (r == M))
+			M = N;
+
 		r += rd;
 	}
 
-	int hdr_bytes = r;
+	assert(r <= M);
 
-	if (0 > parse_cfl_header(hdr_bytes, header, file, n, dimensions))
+	if (0 > parse_cfl_header(r, header, file, n, dimensions))
 		return -1;
 
 	return r;
@@ -356,6 +438,7 @@ int read_cfl_header(int fd, char** file, int n, long dimensions[n])
 
 	return read_cfl_header2(IO_MAX_HDR_SIZE, header, fd, file, n, dimensions);
 }
+
 
 
 int parse_cfl_header(long N, const char header[N + 1], char **file, int n, long dimensions[n])
