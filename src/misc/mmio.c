@@ -1092,7 +1092,6 @@ static int load_multi_cfl_internal(const char* name, int N_max, int D_max, int D
 		error("multi cfl does not not support .mem\n");
 #endif
 
-
 	char name_bdy[1024];
 	if (1024 <= snprintf(name_bdy, 1024, "%s.cfl", name))
 		error("Loading cfl file %s\n", name);
@@ -1108,22 +1107,35 @@ static int load_multi_cfl_internal(const char* name, int N_max, int D_max, int D
 	if (-1 == read_multi_cfl_header(ofd, &filename, N_max, D_max, D, dimensions))
 		error("Loading cfl file %s\n", name);
 
-	long num_ele = 0;
-	for (int i = 0; i < N_max; i++)
-		num_ele += 0 < D[i] ? md_calc_size(D[i], dimensions[i]) : 0;
-
 	if (-1 == close(ofd))
 		io_error("Loading cfl file %s\n", name);
 
-	args[0] = (priv ? private_cfl : shared_cfl)(1, &num_ele, name_bdy);
-
-	for (int i = 1; i < N_max; i++)
-		args[i] = (0 < D[i]) ? args[i - 1] + md_calc_size(D[i - 1], dimensions[i - 1]) : NULL;
-
+	long num_ele = 0;
 	int N = 0;
-	for (int i = 0; i < N_max; i++)
+	long off[N_max];
+
+	for (int i = 0; i < N_max; i++) {
+
+		off[i] = num_ele;
+
+		if (0 == D[i])
+			continue;
+
+		N++;
+
+		num_ele += md_calc_size(D[i], dimensions[i]);
+	}
+
+	long dims[1] = { num_ele };
+	args[0] = (priv ? private_cfl : shared_cfl)(1, dims, name_bdy);
+
+	for (int i = 1; i < N_max; i++) {
+
+		args[i] = NULL;
+
 		if (0 < D[i])
-			N++;
+			args[i] = args[0] + off[i];
+	}
 
 	free(filename);
 
