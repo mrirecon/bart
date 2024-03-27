@@ -54,3 +54,55 @@ void bart_lock_destroy(bart_lock_t* lock)
 	xfree(lock);
 }
 
+
+struct bart_cond {
+
+	unsigned long counter;
+};
+
+bart_cond_t* bart_cond_create(void)
+{
+	bart_cond_t* cond = xmalloc(sizeof *cond);
+
+	cond->counter = 0;
+	return cond;
+}
+
+void bart_cond_wait(bart_cond_t* cond, bart_lock_t* lock)
+{
+	unsigned long counter;
+
+#pragma omp atomic read
+	counter = cond->counter;
+
+#ifdef _OPENMP
+	bart_unlock(lock);
+
+	unsigned long cnt2 = counter;
+
+	while (cnt2 == counter) {
+
+#pragma 	omp atomic read
+		cnt2 = cond->counter;
+
+#pragma 	omp taskyield
+	}
+
+	bart_lock(lock);
+#endif
+}
+
+void bart_cond_notify_all(bart_cond_t* cond)
+{
+#pragma omp atomic
+	cond->counter++;
+}
+
+void bart_cond_destroy(bart_cond_t* cond)
+{
+	xfree(cond);
+}
+
+
+
+
