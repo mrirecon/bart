@@ -93,6 +93,7 @@ static float nlop_test_derivative_priv(const struct nlop_s* op, const complex fl
 	md_copy_dims(N_cod, dims_cod, nlop_codomain(op)->dims);
 
 	complex float* x1 = md_alloc(N_dom, dims_dom, CFL_SIZE);
+
 	if (NULL != in)
 		md_copy(N_dom, dims_dom, x1, in, CFL_SIZE);
 
@@ -111,12 +112,13 @@ static float nlop_test_derivative_priv(const struct nlop_s* op, const complex fl
 
 	int failed_rounds = 0;
 	const int rounds = 20; // Repeat this test, so that it is less likely to only pass for specific random values
+
 	for (int r = 0; r < rounds; r++) {
 
 		if (NULL == in)
 			md_gaussian_rand(N_dom, dims_dom, x1);
-		md_gaussian_rand(N_dom, dims_dom, h);
 
+		md_gaussian_rand(N_dom, dims_dom, h);
 
 		nlop_apply(op, N_cod, dims_cod, y1, N_dom, dims_dom, x1);
 		nlop_derivative(op, N_cod, dims_cod, d1, N_dom, dims_dom, h);
@@ -125,7 +127,6 @@ static float nlop_test_derivative_priv(const struct nlop_s* op, const complex fl
 		float vall = 0.;
 		val0 = 1.; // do not devide by zero if val0 is never changed
 		val = 0.;
-
 
 		for (int i = 0; i < 10; i++) {
 
@@ -142,13 +143,14 @@ static float nlop_test_derivative_priv(const struct nlop_s* op, const complex fl
 			md_zsub(N_cod, dims_cod, d2, d2, d3);
 
 			val = md_znorm(N_cod, dims_cod, d2);
+
 			if (!safe_isfinite(val)) {
 
 				debug_printf(DP_ERROR, "nlop_test_derivative_priv: %3d, %3d: norm is infinite! Aborting test...\n", r, i);
 				max_ratio = NAN;
+
 				goto failout;
 			}
-
 
 			debug_printf(DP_DEBUG2, "\t%3d, %3d: %f/%f=%f\n", r, i, val, scale, val / scale);
 
@@ -163,6 +165,7 @@ static float nlop_test_derivative_priv(const struct nlop_s* op, const complex fl
 
 		float ratio = val / val0;
 		debug_printf(DP_DEBUG2, "%3d: %f/%f=%f\n", r, val, val0, ratio);
+
 		if (ratio > 0.99) {
 
 			debug_printf(DP_ERROR, "nlop_test_derivative_priv: %3d: ratio too large! ratio: %e\n", r, ratio);
@@ -185,10 +188,9 @@ failout:
 	md_free(d2);
 	md_free(d3);
 
-
-
 	return max_ratio;
 }
+
 
 static bool der_success(int reduce_target, float val_target, int reduce, float val)
 {
