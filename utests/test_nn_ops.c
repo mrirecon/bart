@@ -559,28 +559,32 @@ static bool test_bias_der(void)
 
 UT_REGISTER_TEST(test_bias_der);
 
-static bool test_relu_der(void)
+
+static bool test_sigmoid_der(void)
 {
 	unsigned int N = 4;
-	long dims[] = { 30, 78, 3, 25};
+	long dims[] = { 3, 8, 3, 5 };
 
 	const struct linop_s* id = linop_identity_create(N, dims);
 	const struct nlop_s* network = nlop_from_linop(id);
 	linop_free(id);
 
-	network = append_activation(network, 0, ACT_RELU);
+	network = append_activation(network, 0, ACT_SIGMOID);
 
 	float err_adj = nlop_test_adj_derivatives(network, true);
 	float err_der = nlop_test_derivatives(network);
 
 	nlop_free(network);
 
-	debug_printf(DP_DEBUG1, "relu errors der, adj: %.8f, %.8f\n", err_der, err_adj);
-	_Bool test = (err_adj < 1.E-6) && (err_der < 1.E1);
+	debug_printf(DP_DEBUG1, "sigmoid errors der, adj: %.8f, %.8f\n", err_der, err_adj);
+
+	bool test = (err_adj < 1.E-6) && (err_der < 1.E1);
+
 	UT_RETURN_ASSERT(test);
 }
 
-UT_REGISTER_TEST(test_relu_der);
+UT_REGISTER_TEST(test_sigmoid_der);
+
 
 static bool test_nlop_rbf(void)
 {
