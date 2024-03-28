@@ -11,6 +11,9 @@ enum file_types_e {
 	FILE_TYPE_CFL, FILE_TYPE_RA, FILE_TYPE_COO, FILE_TYPE_SHM, FILE_TYPE_PIPE, FILE_TYPE_MEM,
 };
 
+extern int xread(int fd, int n, char buf[n]);
+extern int xwrite(int fd, int n, const char buf[n]);
+
 extern enum file_types_e file_type(const char* name);
 
 extern int write_ra(int fd, int n, const long dimensions[__VLA(n)]);

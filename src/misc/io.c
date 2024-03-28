@@ -53,6 +53,41 @@ static int xdprintf(int fd, const char* fmt, ...)
 }
 
 
+int xwrite(int fd, int N, const char buf[N])
+{
+	int w = 0;
+
+	while (w < N) {
+
+		int ww = write(fd, buf + w, (size_t)(N - w));
+
+		if (0 >= ww)
+			return -1;
+
+		w += ww;
+	}
+
+	return w;
+}
+
+int xread(int fd, int N, char buf[N])
+{
+	int r = 0;
+
+	while (r < N) {
+
+		int rr = read(fd, buf + r, (size_t)(N - r));
+
+		if (0 >= rr)
+			return -1;
+
+		r += rr;
+	}
+
+	return r;
+}
+
+
 
 enum file_types_e file_type(const char* name)
 {
@@ -343,7 +378,7 @@ int write_stream_header(int fd, const char* dataname, int D, const long dims[D])
 
 	char pad[padding];
 	memset(pad, 0, (size_t)padding);
-	write(fd, pad, padding);
+	xwrite(fd, padding, pad);
 
 	return 0;
 }
@@ -769,7 +804,7 @@ int read_coo(int fd, int n, long dimensions[n])
 {
 	char header[4096];
 
-	if (4096 != read(fd, header, 4096))
+	if (4096 != xread(fd, 4096, header))
 		return -1;
 
 	int pos = 0;
@@ -849,7 +884,7 @@ int read_ra(int fd, int n, long dimensions[n])
 {
 	struct ra_hdr_s header;
 
-	if (sizeof(header) != read(fd, &header, sizeof(header)))
+	if (sizeof(header) != xread(fd, sizeof(header), (void*)&header))
 		return -1;
 
 	err_assert(RA_MAGIC_NUMBER == header.magic);
@@ -860,7 +895,7 @@ int read_ra(int fd, int n, long dimensions[n])
 
 	uint64_t dims[header.ndims];
 
-	if ((int)sizeof(dims) != read(fd, &dims, sizeof(dims)))
+	if ((int)sizeof(dims) != xread(fd, sizeof(dims), (void*)&dims))
 		return -1;
 
 	md_singleton_dims(n, dimensions);
