@@ -404,7 +404,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 			prox_ops[nr] = prox_wavelet_thresh_create(DIMS, img_dims, wflags, regs[nr].jflags, wtype, minsize, regs[nr].lambda, randshift);
 			break;
 		
-		case NIHTWAV:
+		case NIHTWAV: {
 
 			debug_printf(DP_INFO, "NIHT with wavelets regularization: k = %d%% of total elements in each wavelet transform\n", regs[nr].k);
 
@@ -441,9 +441,10 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 			debug_printf(DP_DEBUG3, "]\n");
 			
 			prox_ops[nr] = prox_niht_thresh_create(N, wav_dims, K, regs[nr].jflags);
-			break;
 
-		case NIHTIM:
+		}	break;
+
+		case NIHTIM: {
 
 			debug_printf(DP_INFO, "NIHT regularization in the image domain: k = %d%% of total elements in image vector\n", regs[nr].k);
 
@@ -452,14 +453,14 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 			md_select_dims(N, regs[nr].xflags, thresh_dims, img_dims);
 
-			K = (md_calc_size(N, thresh_dims) / 100) * regs[nr].k;
+			int K = (md_calc_size(N, thresh_dims) / 100) * regs[nr].k;
 
 			debug_printf(DP_INFO, "k = %d%%, actual K = %d\n", regs[nr].k, K);
 
 			trafos[nr] = linop_identity_create(DIMS, img_dims);
 			prox_ops[nr] = prox_niht_thresh_create(N, img_dims, K, regs[nr].jflags);
 
-			break;
+		}	break;
 
 		case TV:
 
@@ -471,7 +472,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 					regs[nr].lambda, regs[nr].jflags | MD_BIT(DIMS));
 			break;
 
-		case TGV:
+		case TGV: {
 
 			debug_printf(DP_INFO, "TGV regularization: %f\n", regs[nr].lambda);
 
@@ -485,13 +486,13 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 			nr_penalties++;
 
-			break;
+		}	break;
 
-		case ICTV:
+		case ICTV: {
 
 			debug_printf(DP_INFO, "ICTV regularization: %f\n", regs[nr].lambda);
 
-			reg2 = ictv_reg(regs[nr].xflags & FFT_FLAGS, regs[nr].xflags & ~FFT_FLAGS, regs[nr].jflags | MD_BIT(DIMS), regs[nr].lambda, DIMS, ext_dims, &ext_shift);
+			struct reg2 reg2 = ictv_reg(regs[nr].xflags & FFT_FLAGS, regs[nr].xflags & ~FFT_FLAGS, regs[nr].jflags | MD_BIT(DIMS), regs[nr].lambda, DIMS, ext_dims, &ext_shift);
 
 			trafos[nr] = reg2.linop[0];
 			prox_ops[nr] = reg2.prox[0];
@@ -501,9 +502,9 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 			nr_penalties++;
 
-			break;
+		}	break;
 
-		case LAPLACE:
+		case LAPLACE: {
 
 			debug_printf(DP_INFO, "L1-Laplace regularization: %f\n", regs[nr].lambda);
 
@@ -526,9 +527,9 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 			prox_ops[nr] = prox_thresh_create(DIMS,
 						linop_codomain(trafos[nr])->dims,
 						regs[nr].lambda, regs[nr].jflags);
-			break;
+		}	break;
 
-		case LLR:
+		case LLR: {
 
 			debug_printf(DP_INFO, "lowrank regularization: %f\n", regs[nr].lambda);
 
@@ -557,7 +558,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 				debug_printf(DP_WARN, "Lowrank regularization is not GPU accelerated.\n");
 			}
 
-			break;
+		}	break;
 
 		case MLR:
 #if 0

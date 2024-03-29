@@ -289,17 +289,18 @@ int main_mobafit(int argc, char* argv[argc])
 
 	switch (seq) {
 
-        case IR: ;
+		long dims[DIMS];
+
+        case IR: {
 
 		assert(md_check_equal_dims(DIMS, y_patch_dims, y_patch_sig_dims, ~0));
-		long dims[DIMS];
 		md_copy_dims(DIMS, dims, y_patch_dims);
 		dims[COEFF_DIM] = enc_dims[COEFF_DIM];
 
 		nlop = (struct nlop_s*) nlop_ir_create(DIMS, dims, enc);
-		break;
+	 }	break;
 
-	case IR_LL: ;
+	case IR_LL: {
 
 		long map_dims[DIMS];
 		md_select_dims(DIMS, ~(COEFF_FLAG | TE_FLAG), map_dims, x_patch_dims);
@@ -327,17 +328,17 @@ int main_mobafit(int argc, char* argv[argc])
 			nlop = nlop_chain_FF(nlop_from_linop_F(tmp), nlop);
 		}
 
-		break;
+	}	break;
 
-	case MGRE: ;
+	case MGRE: {
 
 		float scale_fB0[2] = { 0., 1. };
 		assert(md_check_equal_dims(DIMS, y_patch_dims, y_patch_sig_dims, ~0));
 		nlop = nlop_meco_create(DIMS, y_patch_dims, x_patch_dims, enc, mgre_model, false, FAT_SPEC_1, scale_fB0, bart_use_gpu);
-		break;
+	}	break;
 
 	case TSE:
-	case DIFF: ;
+	case DIFF:
 
 		assert(md_check_equal_dims(DIMS, y_patch_dims, y_patch_sig_dims, ~0));
 		md_copy_dims(DIMS, dims, y_patch_dims);

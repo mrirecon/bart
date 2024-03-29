@@ -326,7 +326,7 @@ endif
 else
 # only add if not clang, as it doesn't understand this:
 ifeq ($(GCCVERSION14), 1)
-    CFLAGS += -Wuseless-cast -Wno-c2x-extensions
+    CFLAGS += -Wuseless-cast -Wno-c2x-extensions -Wjump-misses-init
 else
 ifeq ($(GCCVERSION11), 1)
     CFLAGS += -Wno-vla-parameter -Wno-nonnull -Wno-maybe-uninitialized

@@ -1253,11 +1253,12 @@ list_t graph_get_linop_sum(graph_t graph, node_cmp_t linop_identify, node_is_t n
 
 			break;
 
-		case MULTI_SUM_NODES_ONLY:
+		case MULTI_SUM_NODES_ONLY: {
 
 			list_free(nodes_linops);
 
 			bool multi_sum = false;
+
 			for (int j = 0; j < list_count(nodes_sum); j++)
 				multi_sum = multi_sum || (3 < nodes_get(nodes_sum, j)->N_vertices);
 
@@ -1267,7 +1268,7 @@ list_t graph_get_linop_sum(graph_t graph, node_cmp_t linop_identify, node_is_t n
 				list_append(result, nodes_sum);
 
 			break;
-
+		}
 
 		case SUM_NODES_AND_TWO_IDENTICAL_LINOPS:
 		case SUM_OPS_AND_OPS:

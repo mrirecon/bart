@@ -507,7 +507,8 @@ int main_sqpics(int argc, char* argv[argc])
 
 		switch (regs[nr].xform) {
 
-		case L1WAV:
+		case L1WAV: {
+
 			debug_printf(DP_INFO, "l1-wavelet regularization: %f\n", regs[nr].lambda);
 
 			long minsize[DIMS] = { [0 ... DIMS - 1] = 1 };
@@ -528,7 +529,7 @@ int main_sqpics(int argc, char* argv[argc])
 
 			trafos[nr] = linop_identity_create(DIMS, img_dims);
 			thresh_ops[nr] = prox_wavelet_thresh_create(DIMS, img_dims, wflags, regs[nr].jflags, WAVELET_DAU2, minsize, regs[nr].lambda, randshift);
-			break;
+		}	break;
 
 		case TV:
 			debug_printf(DP_INFO, "TV regularization: %f\n", regs[nr].lambda);
@@ -539,7 +540,7 @@ int main_sqpics(int argc, char* argv[argc])
 					regs[nr].lambda, regs[nr].jflags | MD_BIT(DIMS));
 			break;
 
-		case LLR:
+		case LLR: {
 			debug_printf(DP_INFO, "lowrank regularization: %f\n", regs[nr].lambda);
 
 			// add locally lowrank penalty
@@ -548,7 +549,7 @@ int main_sqpics(int argc, char* argv[argc])
 			assert(1 == levels);
 			img_dims[LEVEL_DIM] = levels;
 
-			for(int l = 0; l < levels; l++)
+			for (int l = 0; l < levels; l++)
 #if 0
 				blkdims[l][MAPS_DIM] = img_dims[MAPS_DIM];
 #else
@@ -559,9 +560,10 @@ int main_sqpics(int argc, char* argv[argc])
 
 			trafos[nr] = linop_identity_create(DIMS, img_dims);
 			thresh_ops[nr] = lrthresh_create(img_dims, randshift, regs[nr].xflags, (const long (*)[DIMS])blkdims, regs[nr].lambda, false, remove_mean, false);
-			break;
+		}	break;
 
-		case MLR:
+		case MLR: {
+
 			debug_printf(DP_INFO, "multi-scale lowrank regularization: %f\n", regs[nr].lambda);
 
                         levels = multilr_blkdims(blkdims, regs[nr].jflags, img_dims, 8, 1);
@@ -582,7 +584,7 @@ int main_sqpics(int argc, char* argv[argc])
 			linop_free(decom_op);
 			linop_free(tmp_op);
 
-			break;
+		}	break;
 
 		case IMAGL1:
 			debug_printf(DP_INFO, "l1 regularization of imaginary part: %f\n", regs[nr].lambda);

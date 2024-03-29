@@ -139,11 +139,16 @@ int main_roistat(int argc, char* argv[argc])
 	md_clear(DIMS, odims, pat, CFL_SIZE);
 	md_zaxpy2(DIMS, mdims, ostrs, pat, 1., rstrs, roi);
 
+	complex float* avg;
+	complex float* var;
+	complex float* tmp;
+
+	long pos[DIMS] = { 0 };
+
 	if (COUNT == stat)
 		goto out1;
 
-
-	complex float* avg = (avg_name ? create_cfl : anon_cfl)(avg_name, DIMS, odims);
+	avg = (avg_name ? create_cfl : anon_cfl)(avg_name, DIMS, odims);
 
 	md_clear(DIMS, odims, avg, CFL_SIZE);
 	md_zfmac2(DIMS, mdims, ostrs, avg, rstrs, roi, istrs, in);
@@ -160,7 +165,7 @@ int main_roistat(int argc, char* argv[argc])
 		md_zsub2(DIMS, odims, ostrs, pat, ostrs, pat, sstrs, (complex float[1]){ 1. });
 
 
-	complex float* var = (var_name ? create_cfl : anon_cfl)(var_name, DIMS, odims);
+	var = (var_name ? create_cfl : anon_cfl)(var_name, DIMS, odims);
 
 
 	long ridims[DIMS];
@@ -169,7 +174,7 @@ int main_roistat(int argc, char* argv[argc])
 	long ristrs[DIMS];
 	md_calc_strides(DIMS, ristrs, ridims, CFL_SIZE);
 
-	complex float* tmp = md_calloc(DIMS, ridims, CFL_SIZE);
+	tmp = md_calloc(DIMS, ridims, CFL_SIZE);
 
 	{
 		md_zsub2(DIMS, mdims, ristrs, tmp, istrs, in, ostrs, avg);
@@ -196,7 +201,6 @@ int main_roistat(int argc, char* argv[argc])
 
 	assert(ALL == stat);
 
-	long pos[DIMS] = { 0 };
 
 
 	do {

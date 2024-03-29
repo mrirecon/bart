@@ -94,18 +94,21 @@ static char* file_name(const char* toolbox, const long kernel_dims[3], const lon
 static int load_noise_sv(const char* toolbox, const long kernel_dims[3], const long calreg_dims[4], long L, float* E)
 {
 	int ok = 0;
+	char* name;
+	FILE* fp;
+	int c;
 
 	if (NULL == toolbox)
 		goto out0;
 
-	char* name = file_name(toolbox, kernel_dims, calreg_dims);
+	name = file_name(toolbox, kernel_dims, calreg_dims);
 
-	FILE* fp = fopen(name, "rb");
+	fp = fopen(name, "rb");
 
 	if (!fp)
 		goto out1;
 
-	int c = fread(E, sizeof(float), L, fp);
+	c = fread(E, sizeof(float), L, fp);
 
 	if (c != L)
 		goto out2;

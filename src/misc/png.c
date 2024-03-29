@@ -25,6 +25,7 @@ static int png_write_anyrgb(const char* name, int w, int h, int nbytes, bool rgb
 	png_infop infop = NULL;
 	png_bytep* volatile row_ptrs = NULL;
 	volatile int ret = -1;	// default: return failure
+	int row_size = 0;
 
 	if (NULL == (fp = fopen(name, "wb")))
 		return -1;
@@ -56,7 +57,7 @@ static int png_write_anyrgb(const char* name, int w, int h, int nbytes, bool rgb
 	png_write_info(structp, infop);
 
 	row_ptrs = xmalloc(sizeof(png_bytep) * h);
-	int row_size = png_get_rowbytes(structp, infop);
+	row_size = png_get_rowbytes(structp, infop);
 
 	for (int i = 0; i < h; i++)
 		row_ptrs[i] = (png_bytep)(buf + row_size * i);

@@ -137,7 +137,7 @@ static complex float ksens(int c, int s, double mpos[3], void* data, krn_t fun)
 
 				break;
 
-			case HEAD_2D_8CH: ;
+			case HEAD_2D_8CH: {
 
 				double mpos2[3] = {
 					mpos[0] + (double)(i - sh) / 4.,
@@ -147,7 +147,7 @@ static complex float ksens(int c, int s, double mpos[3], void* data, krn_t fun)
 
 				val += sens_coeff[c][i][j] * fun(data, s, mpos2);
 
-				break;
+			}	break;
 
 			case DEFAULT:
 			default:

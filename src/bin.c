@@ -221,7 +221,10 @@ int main_bin(int argc, char* argv[argc])
 		error("No bin type specified!\n");
 	}
 
-
+	long bins_dims[DIMS];
+	float* bins = NULL;
+	complex float* binned = NULL;
+	int binsize_max = 0;
 
 	switch (bin_type) {
 
@@ -231,13 +234,12 @@ int main_bin(int argc, char* argv[argc])
 			error("Check dimensions of labels array!\n");
 
 		// Array to store bin-index for samples
-		long bins_dims[DIMS];
 		md_copy_dims(DIMS, bins_dims, labels_dims);
 		bins_dims[TIME2_DIM] = 2; // Respiration and Cardiac motion
 
-		float* bins = md_alloc(DIMS, bins_dims, FL_SIZE);
+		bins = md_alloc(DIMS, bins_dims, FL_SIZE);
 
-		int binsize_max = bin_quadrature(bins_dims, bins, labels_dims, labels, conf);
+		binsize_max = bin_quadrature(bins_dims, bins, labels_dims, labels, conf);
 
 		long binned_dims[DIMS];
 		md_copy_dims(DIMS, binned_dims, src_dims);
@@ -245,7 +247,7 @@ int main_bin(int argc, char* argv[argc])
 		binned_dims[TIME2_DIM] = conf.n_resp;
 		binned_dims[PHS2_DIM] = binsize_max;
 
-		complex float* binned = create_cfl(dst_file, DIMS, binned_dims);
+		binned = create_cfl(dst_file, DIMS, binned_dims);
 		md_clear(DIMS, binned_dims, binned, CFL_SIZE);
 
 		asgn_bins(bins_dims, bins, binned_dims, binned, src_dims, src, conf.n_card, conf.n_resp);

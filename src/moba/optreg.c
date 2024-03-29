@@ -324,7 +324,7 @@ static void opt_reg_meco_configure(unsigned int N, const long dims[N], struct op
 
 		switch (regs[nr].xform) {
 
-		case L1WAV:
+		case L1WAV: {
 
 			debug_printf(DP_INFO, "  > l1-wavelet regularization with parameters %d:%d:%.3f\n", regs[nr].xflags, regs[nr].jflags, regs[nr].lambda);
 
@@ -336,7 +336,7 @@ static void opt_reg_meco_configure(unsigned int N, const long dims[N], struct op
 
 			trafos[nr] = linop_identity_create(1, MD_DIMS(x_size));
 
-			break;
+		} break;
 
 		case L2IMG:
 
@@ -347,21 +347,21 @@ static void opt_reg_meco_configure(unsigned int N, const long dims[N], struct op
 
 			break;
 
-		case POS:
+		case POS: {
 
 			debug_printf(DP_INFO, "  > non-negative constraint with lambda %f\n", regs[nr].lambda);
 
-			prox_maps = moba_nonneg_prox_create(N, maps_dims, COEFF_DIM, nonneg_flag, regs[nr].lambda);
+			auto prox_maps = moba_nonneg_prox_create(N, maps_dims, COEFF_DIM, nonneg_flag, regs[nr].lambda);
 
-			prox_sens = moba_sens_prox_create(N, sens_dims);
+			auto prox_sens = moba_sens_prox_create(N, sens_dims);
 
 			prox_ops[nr] = stack_flatten_prox(prox_maps, prox_sens);
 
 			trafos[nr] = linop_identity_create(1, MD_DIMS(x_size));
 
-			break;
+		}	break;
 
-		case TV: // temporal dimension
+		case TV: { // temporal dimension
 
 			debug_printf(DP_INFO, "  > TV regularization with parameters %d:%d:%.3f\n", regs[nr].xflags, regs[nr].jflags, regs[nr].lambda);
 
@@ -376,7 +376,7 @@ static void opt_reg_meco_configure(unsigned int N, const long dims[N], struct op
 					linop_codomain(trafos[nr])->dims,
 					regs[nr].lambda, regs[nr].jflags | MD_BIT(N));
 
-			break;
+		} 	break;
 
 		default:
 
@@ -453,7 +453,7 @@ static void opt_reg_IRLL_configure(unsigned int N, const long dims[N], struct op
 
 		switch (regs[nr].xform) {
 
-		case L1WAV:
+		case L1WAV: {
 
 			debug_printf(DP_INFO, "l1-wavelet regularization: %f\n", regs[nr].lambda);
 
@@ -464,8 +464,9 @@ static void opt_reg_IRLL_configure(unsigned int N, const long dims[N], struct op
 			prox_ops[nr] = operator_p_stack_FF(0, 0, operator_p_flatten_F(l1Wav_prox), operator_p_flatten_F(zero_prox));
 
 			break;
+		}
 
-		case TV:
+		case TV: {
 
 			debug_printf(DP_INFO, "TV regularization: %f\n", regs[nr].lambda);
 
@@ -494,8 +495,9 @@ static void opt_reg_IRLL_configure(unsigned int N, const long dims[N], struct op
 					regs[nr].lambda, regs[nr].jflags | MD_BIT(DIMS));
 
 			break;
+		}
 
-		case POS:
+		case POS: {
 
 			debug_printf(DP_INFO, "non-negative constraint: %f\n", regs[nr].lambda);
 
@@ -509,8 +511,9 @@ static void opt_reg_IRLL_configure(unsigned int N, const long dims[N], struct op
 							operator_p_flatten_F(prox_zero_create(DIMS, coil_dims)));
 
 			break;
+		}
 
-		case L2IMG:
+		case L2IMG: {
 
 			debug_printf(DP_INFO, "l2 regularization: %f\n", regs[nr].lambda);
 
@@ -519,6 +522,7 @@ static void opt_reg_IRLL_configure(unsigned int N, const long dims[N], struct op
 							operator_p_flatten_F(prox_l2norm_create(DIMS, coil_dims, regs[nr].lambda)));
 
 			break;
+		}
 
 		default:
 

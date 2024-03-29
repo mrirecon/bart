@@ -148,6 +148,14 @@ static struct fft_cuda_plan_s* fft_cuda_plan0(int D, const long dimensions[D], u
 
 	int lis = dims[0].is;
 	int los = dims[0].os;
+	int idist;
+	int odist;
+	int cubs = 1;
+	int bi;
+	int bo;
+
+	int istride = dims[0].is;
+	int ostride = dims[0].os;
 
 	if (k > 3)
 		goto errout;
@@ -173,17 +181,14 @@ static struct fft_cuda_plan_s* fft_cuda_plan0(int D, const long dimensions[D], u
 		batchostr[i] = hmdims[i].os;
 	}
 
-	int istride = dims[0].is;
-	int ostride = dims[0].os;
-	int idist = lis;
-	int odist = los;
-	int cubs = 1;
+	idist = lis;
+	odist = los;
 
 
 	// check that batch dimensions can be collapsed to one
 
-	int bi = md_calc_blockdim(l, batchdims, batchistr, hmdims[0].is);
-	int bo = md_calc_blockdim(l, batchdims, batchostr, hmdims[0].os);
+	bi = md_calc_blockdim(l, batchdims, batchistr, hmdims[0].is);
+	bo = md_calc_blockdim(l, batchdims, batchostr, hmdims[0].os);
 
 	if (bi != bo)
 		goto errout;

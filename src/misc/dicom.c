@@ -184,6 +184,14 @@ int dicom_write(const char* name, int cols, int rows, long inum, const unsigned 
 	struct stat st;
 	int ret = -1;
 
+	uint16_t last_group = 0;
+	uint16_t last_element = 0;
+
+	size_t size = 128 + 4;
+	size_t off = 128 + 4;
+
+	int ilen = 0;
+
 	// allocate before any goto calls
 	int entries = EOFF_END;
 
@@ -202,7 +210,6 @@ int dicom_write(const char* name, int cols, int rows, long inum, const unsigned 
 	if (-1 == fstat(fd, &st))
 		goto cleanup;
 
-	size_t size = 128 + 4;
 
 
 	dicom_elements[ITAG_IMAGE_ROWS].data = &(uint16_t){ rows };
@@ -211,7 +218,7 @@ int dicom_write(const char* name, int cols, int rows, long inum, const unsigned 
 	assert(inum >= 0L);
 
 	char inst_num[13]; // max number of bytes for InstanceNumber tag
-	int ilen = snprintf(inst_num, 13, "%04ld", inum);
+	ilen = snprintf(inst_num, 13, "%04ld", inum);
 
 	assert(ilen < 13);
 
@@ -243,10 +250,7 @@ int dicom_write(const char* name, int cols, int rows, long inum, const unsigned 
 	memset(addr, 0, 128);
 	memcpy(addr + 128, "DICM", 4);
 
-	size_t off = 128 + 4;
 	
-	uint16_t last_group = 0;
-	uint16_t last_element = 0;
 
 	// make sure tags are in ascending order
 	for (int i = 0; i < entries; i++) {

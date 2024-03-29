@@ -218,7 +218,7 @@ static void meco_calc_weights(const nlop_data_t* _data, const int N, const long 
 
 		break;
 
-	case MECO_SOBOLEV:
+	case MECO_SOBOLEV: {
 
 		debug_printf(DP_DEBUG2, " sobolev weight on fB0\n");
 
@@ -232,6 +232,7 @@ static void meco_calc_weights(const nlop_data_t* _data, const int N, const long 
 		data->weight_fB0_type = MECO_SOBOLEV;
 
 		break;
+	}
 
 	default:
 

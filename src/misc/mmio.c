@@ -765,6 +765,7 @@ static complex float* load_cfl_internal(const char* name, int D, long dimensions
 	enum file_types_e type = file_type(name);
 
 	complex float* addr = NULL;
+	char* filename = NULL;
 
 	if (mpi_is_main_proc() || mpi_shared_files) {
 
@@ -784,7 +785,6 @@ static complex float* load_cfl_internal(const char* name, int D, long dimensions
 			once_r = true;
 
 			// read header from stdin
-			char* filename = NULL;
 
 			if (-1 == read_cfl_header(0, &filename, D, dimensions))
 				error("Reading input\n");

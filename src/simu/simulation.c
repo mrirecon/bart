@@ -483,7 +483,7 @@ void rf_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[
                 rot_pulse(data, N, P, xp);
                 break;
 
-        case SIM_ODE: ;
+        case SIM_ODE: {
 
 		float gb_eff[3];
 		void *gb_eff_p = gb_eff;	// clang workaround
@@ -546,7 +546,8 @@ void rf_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[
 
 		// Choose P-1 because ODE interface treats signal separate and P only describes the number of parameters
 		ode_direct_sa(h, tol, N, P - 1, xp, data->pulse.rf_start, data->pulse.rf_end, call_fun, call_pdy2, call_pdp2);
-                break;
+
+	}	break;
 
         case SIM_STM:
 
@@ -595,7 +596,7 @@ void relaxation2(struct sim_data* data, float h, float tol, int N, int P, float 
                 hard_relaxation(data, N, P, xp, st, end, r2spoil);
                 break;
 
-        case SIM_ODE: ;
+        case SIM_ODE: {
 
 		float gb_eff[3];
 		void *gb_eff_p = gb_eff;	// clang workaround
@@ -667,7 +668,7 @@ void relaxation2(struct sim_data* data, float h, float tol, int N, int P, float 
 		// Choose P-1 because ODE interface treats signal separate and P only describes the number of parameters
 		ode_direct_sa(h, tol, N, P - 1, xp, st, end, call_fun, call_pdy2, call_pdp2);
 
-                break;
+	}	break;
 
         case SIM_STM:
 
@@ -792,6 +793,8 @@ static void run_sim(struct sim_data* data, int pools,
                         float h, float tol, int N, int P, float xp[P][N],
                         float xstm[P * N + 1], float mte[P * N + 1][P * N + 1], float mtr[P * N + 1][P * N + 1])
 {
+	float r2spoil = 0.;
+
         switch (data->seq.type) {
 
         case SIM_ROT:
@@ -818,7 +821,6 @@ static void run_sim(struct sim_data* data, int pools,
 		collect_signal(data, P, pools, mxy, sa_r1, sa_r2, sa_b1, sa_m0, sa_k, sa_Om, xp);
 
                 // Smooth spoiling for FLASH sequences
-		float r2spoil = 0.;
 
                 if (   (SEQ_FLASH == data->seq.seq_type)
                     || (SEQ_IRFLASH == data->seq.seq_type)) {
@@ -845,7 +847,7 @@ static void run_sim(struct sim_data* data, int pools,
                         relaxation2(data, h, tol, N, P, xp, data->seq.te, data->seq.tr, NULL, r2spoil);
                 }
 
-                break;
+		break;
 
         case SIM_STM:
 
