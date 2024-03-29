@@ -275,7 +275,7 @@ void grid2(const struct grid_conf_s* conf, int D, const long trj_dims[D], const 
 		max_dims[2] = 1;
 	}
 
-	for (int i = 4; i < (int)D; i++) {
+	for (int i = 4; i < D; i++) {
 
 		if (MD_IS_SET(mpi_flags, i))
 			continue;

@@ -38,8 +38,8 @@ int main_estvar(int argc, char* argv[argc])
 		ARG_INFILE(true, &ksp_file, "kspace"),
 	};
 
-	long calsize_dims[3]  = { 24, 24, 24};
-	long kernel_dims[3]   = {  6,  6,  6};
+	long calsize_dims[3]  = { 24, 24, 24 };
+	long kernel_dims[3]   = {  6,  6,  6 };
 
 	const struct opt_s opts[] = {
 
