@@ -218,7 +218,7 @@ struct clip_s {
 
 static DEF_TYPEID(clip_s);
 
-static void clip_apply(const operator_data_t* _data, unsigned int N, void* args[N])
+static void clip_apply(const operator_data_t* _data, int N, void* args[N])
 {
 	struct clip_s* d = CAST_DOWN(clip_s, _data);
 	assert(2 == N);

@@ -471,7 +471,7 @@ static fftwf_plan fft_fftwf_plan(int D, const long dimensions[D], unsigned long 
 }
 
 
-static void fft_apply(const operator_data_t* _plan, unsigned int N, void* args[N])
+static void fft_apply(const operator_data_t* _plan, int N, void* args[N])
 {
 	complex float* dst = args[0];
 	const complex float* src = args[1];

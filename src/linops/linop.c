@@ -65,7 +65,7 @@ static void shared_del(const operator_data_t* _data)
 	xfree(data);
 }
 
-static void shared_apply(const operator_data_t* _data, unsigned int N, void* args[N])
+static void shared_apply(const operator_data_t* _data, int N, void* args[N])
 {
 	auto data = CAST_DOWN(shared_data_s, _data);
 
@@ -206,17 +206,17 @@ struct linop_s* linop_with_graph_create2(unsigned int ON, const long odims[ON], 
 	assert((NULL != adjoint));
 
 	lo->forward = operator_generic_create2(	2, (bool[2]){ true, false },
-						(unsigned int[2]){ ON, IN }, (const long* [2]){ odims, idims }, (const long* [2]){ ostrs, istrs },
+						(int[2]){ ON, IN }, (const long* [2]){ odims, idims }, (const long* [2]){ ostrs, istrs },
 						CAST_UP(shared_data[0]), shared_apply, shared_del, operator_linop_get_graph);
 
 	lo->adjoint = operator_generic_create2(	2, (bool[2]){ true, false },
-						(unsigned int[2]){ IN, ON }, (const long* [2]){ idims, odims }, (const long* [2]){ istrs, ostrs },
+						(int[2]){ IN, ON }, (const long* [2]){ idims, odims }, (const long* [2]){ istrs, ostrs },
 						CAST_UP(shared_data[1]), shared_apply, shared_del, operator_linop_get_graph);
 
 	if (NULL != normal) {
 
 		lo->normal = operator_generic_create2(	2, (bool[2]){ true, false },
-							(unsigned int[2]){ IN, IN }, (const long* [2]){ idims, idims }, (const long* [2]){ istrs, istrs },
+							(int[2]){ IN, IN }, (const long* [2]){ idims, idims }, (const long* [2]){ istrs, istrs },
 							CAST_UP(shared_data[2]), shared_apply, shared_del, operator_linop_get_graph);
 
 	} else {

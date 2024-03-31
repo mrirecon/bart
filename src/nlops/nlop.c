@@ -167,7 +167,7 @@ static void sptr_linop_del(const struct shared_ptr_s* sptr)
 	data->del(data->data);
 }
 
-static void op_fun(const operator_data_t* _data, unsigned int N, void* args[N])
+static void op_fun(const operator_data_t* _data, int N, void* args[N])
 {
 	auto data = CAST_DOWN(nlop_op_data_s, _data);
 
@@ -291,7 +291,7 @@ struct nlop_s* nlop_generic_managed_create2(	int OO, int ON, const long odims[OO
 
 //	n->op = operator_create2(ON, odims, ostrs, IN, idims, istrs, CAST_UP(PTR_PASS(d)), op_fun, op_del);
 
-	unsigned int D[OO + II];
+	int D[OO + II];
 	for (int i = 0; i < OO + II; i++)
 		D[i] = (i < OO) ? ON : IN;
 

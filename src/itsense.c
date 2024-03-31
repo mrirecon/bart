@@ -83,7 +83,7 @@ static void sense_adjoint(const struct sense_data* data, complex float* imgs, co
 }
 
 
-static void sense_normal(const operator_data_t* _data, unsigned int N, void* args[N])
+static void sense_normal(const operator_data_t* _data, int N, void* args[N])
 {
 	const struct sense_data* data = CAST_DOWN(sense_data, _data);
 

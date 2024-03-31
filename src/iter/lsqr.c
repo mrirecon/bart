@@ -48,7 +48,7 @@ struct lsqr_data {
 static DEF_TYPEID(lsqr_data);
 
 
-static void normaleq_l2_apply(const operator_data_t* _data, unsigned int N, void* args[static N])
+static void normaleq_l2_apply(const operator_data_t* _data, int N, void* args[static N])
 {
 	const auto data = CAST_DOWN(lsqr_data, _data);
 

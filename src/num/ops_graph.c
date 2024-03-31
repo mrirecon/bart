@@ -628,12 +628,12 @@ struct operator_graph_s {
 
 DEF_TYPEID(operator_graph_s);
 
-static void graph_apply(const operator_data_t* _data, unsigned int _N, void* _args[_N])
+static void graph_apply(const operator_data_t* _data, int _N, void* _args[_N])
 {
 	auto d = CAST_DOWN(operator_graph_s, _data);
 	int N = list_count(d->graph->nodes);
 
-	assert(list_count(d->graph->ext_nodes) == (int)_N);
+	assert(list_count(d->graph->ext_nodes) == _N);
 
 
 	void** arg_lists[N];
@@ -722,7 +722,7 @@ const struct operator_s* operator_graph_createF(graph_t graph)
 	int N = list_count(graph->ext_nodes);
 
 	bool ioflags[N];
-	unsigned int D[N];
+	int D[N];
 	const long* dims[N];
 	const long* strs[N];
 

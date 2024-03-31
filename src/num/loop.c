@@ -22,7 +22,7 @@
 
 // typedef complex float (*sample_fun_t)(const long pos[]);
 
-void md_zsample(unsigned int N, const long dims[N], complex float* out, sample_fun_t fun)
+void md_zsample(int N, const long dims[N], complex float* out, sample_fun_t fun)
 {
 	long strs[N];
 	md_calc_strides(N, strs, dims, 1);	// we use size = 1 here
@@ -38,7 +38,7 @@ void md_zsample(unsigned int N, const long dims[N], complex float* out, sample_f
 }
 
 
-void md_parallel_zsample(unsigned int N, const long dims[N], complex float* out, sample_fun_t fun)
+void md_parallel_zsample(int N, const long dims[N], complex float* out, sample_fun_t fun)
 {
 	long strs[N];
 	md_calc_strides(N, strs, dims, 1);	// we use size = 1 here
@@ -56,7 +56,7 @@ void md_parallel_zsample(unsigned int N, const long dims[N], complex float* out,
 
 
 
-void md_zmap(unsigned int N, const long dims[N], complex float* out, const complex float* in, map_fun_t fun)
+void md_zmap(int N, const long dims[N], complex float* out, const complex float* in, map_fun_t fun)
 {
 	long strs[N];
 	md_calc_strides(N, strs, dims, 1); // we use size = 1 here 
@@ -77,7 +77,7 @@ void md_zmap(unsigned int N, const long dims[N], complex float* out, const compl
 
 
 
-void md_zgradient(unsigned int N, const long dims[N], complex float* out, const complex float grad[N])
+void md_zgradient(int N, const long dims[N], complex float* out, const complex float grad[N])
 {
 #if 1
 	long strs[N];
@@ -92,14 +92,14 @@ void md_zgradient(unsigned int N, const long dims[N], complex float* out, const 
 		long offset = md_calc_offset(N - 1, strsp + 1, pos);
 		complex float val = 0;
 		
-		for (int i = 0; i < (int)N - 1; i++)
+		for (int i = 0; i < N - 1; i++)
 			val += pos[i] * gradp[i + 1];
 
 		for (long i = 0; i < dimsp[0]; i++)
 			out[offset + i] = val + gradp[0] * i;
 	};
 
-	md_parallel_loop(N - 1, dims + 1, ~0, gradient_kernel);
+	md_parallel_loop(N - 1, dims + 1, ~0UL, gradient_kernel);
 
 #else	
 

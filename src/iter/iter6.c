@@ -151,7 +151,7 @@ static void iter6_nlop(iter_op_data* _o, int N, float* args[N], unsigned long de
 {
 	const auto data = CAST_DOWN(iter6_nlop_s, _o);
 
-	assert((unsigned int)N == operator_nr_args(data->nlop->op));
+	assert(N == operator_nr_args(data->nlop->op));
 
 	nlop_generic_apply_select_derivative_unchecked(data->nlop, N, (void*)args, der_out, der_in);
 }
