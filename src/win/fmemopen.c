@@ -13,7 +13,7 @@
 
 FILE *fmemopen(void *buf, size_t len, const char *type)
 {
-	(void)bug;
+	(void)buf;
 	(void)len;
 	(void)type;
 
