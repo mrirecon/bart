@@ -87,6 +87,26 @@ int xread(int fd, int N, char buf[N])
 	return r;
 }
 
+static int xread0(int fd, int N, char buf[N])
+{
+	int r = 0;
+
+	while (r < N) {
+
+		int rr = read(fd, buf + r, (size_t)(N - r));
+
+		if (0 > rr)
+			error("io read error\n");
+
+		if (0 == rr)
+			break;
+
+		r += rr;
+	}
+
+	return r;
+}
+
 
 
 enum file_types_e file_type(const char* name)
@@ -362,7 +382,18 @@ int write_cfl_header(int fd, const char* filename, int n, const long dimensions[
 
 int write_stream_header(int fd, const char* dataname, int D, const long dims[D])
 {
-	int written = write_cfl_header(fd, dataname, D, dims);
+	// determine header length first by writing it to /dev/null
+#ifdef _WIN32
+	char* null_file = "nul";
+#else
+	char* null_file = "/dev/null";
+#endif
+	int null_fd = open(null_file, O_WRONLY);
+
+	int written = write_cfl_header(null_fd, dataname, D, dims);
+
+	close(null_fd);
+
 
 	int MM = IO_MIN_HDR_SIZE;
 
@@ -376,55 +407,42 @@ int write_stream_header(int fd, const char* dataname, int D, const long dims[D])
 	// This works for a header size of 100 to 999
 	assert(l == 9 + 4);
 
+	write_cfl_header(fd, dataname, D, dims);
+
+	// avoid vla with 0 length
+	if (0 == padding)
+		return 0;
+
 	char pad[padding];
-	memset(pad, 0, (size_t)padding);
+	memset(pad, '.', (size_t)padding);
+	pad[padding - 1] = '\n';
 	xwrite(fd, padding, pad);
 
 	return 0;
 }
 
 
-static int parse_cfl_header0(long N, const char header[N + 1], int *header_len)
+static int parse_cfl_header_len(long N, const char header[N + 1])
 {
 	int pos = 0;
 	int delta = 0;
-	bool ok = false;
+	int header_len = 0;
 
-	while (pos < N) {
+	char keyword[32] = { };
 
-		char keyword[32];
+	// first line is not a keyword
+	if (1 != sscanf(header + pos, "# %31s\n%n", keyword, &delta))
+		return 0;
 
-		if (1 != sscanf(header + pos, "# %31s\n%n", keyword, &delta))
-			return -1;
+	pos += delta;
 
-		pos += delta;
+	if (0 == strcmp(keyword, "Header")) {
 
-		if (0 == strcmp(keyword, "Header")) {
-
-			if (1 != sscanf(header + pos, "%d\n%n", header_len, &delta))
-				return -1;
-
-			pos += delta;
-		}
-
-		// skip lines not starting with '#'
-
-		while ('#' != header[pos]) {
-
-			if ('\0' == header[pos])
-				goto out;
-
-			if (0 != sscanf(header + pos, "%*[^\n]\n%n", &delta))
-				return -1;
-
-			if (0 == delta)
-				goto out;
-
-			pos += delta;
-		}
+		if (1 != sscanf(header + pos, "%d\n%n", &header_len, &delta))
+			error("Malformatted # Header\n");
 	}
-out:
-	return ok ? 0 : -1;
+
+	return header_len;
 }
 
 
@@ -434,29 +452,23 @@ int read_cfl_header2(int N, char header[N + 1], int fd, char **file, int n, long
 	memset(header, 0, (size_t)(N + 1));
 
 	int r = 0;
-
 	int header_len = 0;
 	int M = IO_MIN_HDR_SIZE;
 
-	while (r < M) {
+	r = xread0(fd, M, header);
 
-		int rd;
+	header_len = parse_cfl_header_len(N, header);
 
-		if (0 > (rd = read(fd, header + r, (size_t)(M - r))))
-			return -1;
+	if (header_len > N)
+		error("Header too large");
 
-		if (0 == rd)
-			break;
+	if (header_len > 0)
+		M = header_len;
+	else
+		M = N;
 
-		if (-1 != parse_cfl_header0(N, header, &header_len))
-			M = header_len;
-
-		// expand to maximum size
-		if ((0 == header_len) && (r == M))
-			M = N;
-
-		r += rd;
-	}
+	if (r < M)
+		r += xread0(fd, M - r, header + r);
 
 	assert(r <= M);
 
