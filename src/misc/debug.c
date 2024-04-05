@@ -129,7 +129,7 @@ void debug_vprintf(int level, const char* fmt, va_list ap)
 			errno = 0;
 			long r = strtol(str, NULL, 10);
 
-			if ((errno == 0) && (0 < r) && (r < 10))
+			if ((errno == 0) && (0 <= r) && (r < 10))
 				debug_level = r;
 
 			errno = 0;
