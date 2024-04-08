@@ -318,12 +318,12 @@ static void recon(const struct moba_conf* conf, struct moba_conf_s* data,
 
 		assert(0);
 
-        case MDB_T1_PHY:
-        case MDB_BLOCH:
+	case MDB_T1_PHY:
+	case MDB_BLOCH:
 	case MDB_IR_MGRE:
-
-                nl = moba_create(dims, mask, TI, TE_IR_MGRE, b1, b0, conf->scale_fB0, pattern, &mconf, data, usegpu);
-                break;
+		
+		nl = moba_create(dims, mask, TI, TE_IR_MGRE, b1, b0, conf->scale_fB0, pattern, &mconf, data);
+		break;
 	}
 
 	long map_dims[DIMS];
