@@ -12,11 +12,11 @@
 #include "misc/types.h"
 #include "misc/misc.h"
 #include "misc/mri.h"
-#include "misc/debug.h"
 
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/filter.h"
+#include "num/multiplace.h"
 
 #include "linops/linop.h"
 #include "linops/someops.h"
@@ -61,16 +61,12 @@ struct T1_phy_s {
 	complex float* tmp_dR1;
 	complex float* tmp_dalpha;
 
-	complex float* TI;
-
-	complex float* weights;
+	struct multiplace_array_s* TI;
 
 	const struct linop_s* linop_alpha;
 
 	float scaling_alpha;
 	float r1p_nom;
-
-	int counter;
 };
 
 DEF_TYPEID(T1_phy_s);
@@ -111,17 +107,20 @@ static void T1_fun(const nlop_data_t* _data, complex float* dst, const complex f
 {
 	struct T1_phy_s* data = CAST_DOWN(T1_phy_s, _data);
 
-#if 0
-	if (DP_DEBUG2 <= debug_level) {
+	if (NULL == data->R1) {
 
-		char name[255] = { '\0' };
-
-		sprintf(name, "current_map_%02d", data->counter);
-		dump_cfl(name, data->N, data->in_dims, src);
-
-		data->counter++;
+		data->R1 = md_alloc_sameplace(data->N, data->map_dims, CFL_SIZE, dst);
+		data->M0 = md_alloc_sameplace(data->N, data->map_dims, CFL_SIZE, dst);
+		data->alpha = md_alloc_sameplace(data->N, data->map_dims, CFL_SIZE, dst);
+		data->tmp_map = md_alloc_sameplace(data->N, data->map_dims, CFL_SIZE, dst);
+        	data->tmp_map1 = md_alloc_sameplace(data->N, data->map_dims, CFL_SIZE, dst);
+		data->tmp_ones = md_alloc_sameplace(data->N, data->map_dims, CFL_SIZE, dst);
+		data->tmp_R1s = md_alloc_sameplace(data->N, data->map_dims, CFL_SIZE, dst);
+		data->tmp_exp = md_alloc_sameplace(data->N, data->out_dims, CFL_SIZE, dst);
+		data->tmp_dM0 = md_alloc_sameplace(data->N, data->out_dims, CFL_SIZE, dst);
+		data->tmp_dR1 = md_alloc_sameplace(data->N, data->out_dims, CFL_SIZE, dst);
+		data->tmp_dalpha = md_alloc_sameplace(data->N, data->out_dims, CFL_SIZE, dst);
 	}
-#endif
 
 	long pos[data->N];
 
@@ -154,7 +153,7 @@ static void T1_fun(const nlop_data_t* _data, complex float* dst, const complex f
 
 	// exp(-t.* (R1 + alpha * scaling_alpha)):
         md_zsmul(data->N, data->map_dims, data->tmp_map, data->tmp_R1s, -1.0);
-        md_zmul2(data->N, data->out_dims, data->out_strs, data->tmp_exp, data->map_strs, data->tmp_map, data->TI_strs, data->TI);
+        md_zmul2(data->N, data->out_dims, data->out_strs, data->tmp_exp, data->map_strs, data->tmp_map, data->TI_strs, multiplace_read(data->TI, dst));
 
 	md_zexp(data->N, data->out_dims, data->tmp_exp, data->tmp_exp);
 
@@ -172,7 +171,7 @@ static void T1_fun(const nlop_data_t* _data, complex float* dst, const complex f
 
 	// Calculating derivatives
 	// t * exp(-t*R1s) * (1 + R1/R1s)
-	md_zmul2(data->N, data->out_dims, data->out_strs, data->tmp_dalpha, data->out_strs, data->tmp_dalpha, data->TI_strs, data->TI);
+	md_zmul2(data->N, data->out_dims, data->out_strs, data->tmp_dalpha, data->out_strs, data->tmp_dalpha, data->TI_strs, multiplace_read(data->TI, dst));
 
 	// R1 / R1s.^2
         md_zmul(data->N, data->map_dims, data->tmp_map, data->tmp_R1s, data->tmp_R1s);
@@ -280,7 +279,7 @@ static void T1_del(const nlop_data_t* _data)
 	md_free(data->M0);
 	md_free(data->alpha);
 
-	md_free(data->TI);
+	multiplace_free(data->TI);
 
 	md_free(data->tmp_map);
         md_free(data->tmp_R1s);
@@ -291,7 +290,6 @@ static void T1_del(const nlop_data_t* _data)
 	md_free(data->tmp_dM0);
 	md_free(data->tmp_dR1);
 	md_free(data->tmp_dalpha);
-	md_free(data->weights);
 
 	xfree(data->map_dims);
 	xfree(data->TI_dims);
@@ -309,15 +307,8 @@ static void T1_del(const nlop_data_t* _data)
 }
 
 
-struct nlop_s* nlop_T1_phy_create(int N, const long map_dims[N], const long out_dims[N], const long in_dims[N], const long TI_dims[N], const complex float* TI,  const struct moba_conf_s* config, bool use_gpu)
+struct nlop_s* nlop_T1_phy_create(int N, const long map_dims[N], const long out_dims[N], const long in_dims[N], const long TI_dims[N], const complex float* TI,  const struct moba_conf_s* config)
 {
-#ifdef USE_CUDA
-	md_alloc_fun_t my_alloc = use_gpu ? md_alloc_gpu : md_alloc;
-#else
-	assert(!use_gpu);
-	md_alloc_fun_t my_alloc = md_alloc;
-#endif
-
 	PTR_ALLOC(struct T1_phy_s, data);
 	SET_TYPEID(T1_phy_s, data);
 
@@ -355,40 +346,37 @@ struct nlop_s* nlop_T1_phy_create(int N, const long map_dims[N], const long out_
 	data->TI_strs = *PTR_PASS(ntistr);
 
 	data->N = N;
-	data->R1 = my_alloc(N, map_dims, CFL_SIZE);
-	data->M0 = my_alloc(N, map_dims, CFL_SIZE);
-	data->alpha = my_alloc(N, map_dims, CFL_SIZE);
-	data->tmp_map = my_alloc(N, map_dims, CFL_SIZE);
-        data->tmp_map1 = my_alloc(N, map_dims, CFL_SIZE);
-	data->tmp_ones = my_alloc(N, map_dims, CFL_SIZE);
-	data->tmp_R1s = my_alloc(N, map_dims, CFL_SIZE);
-	data->tmp_exp = my_alloc(N, out_dims, CFL_SIZE);
-	data->tmp_dM0 = my_alloc(N, out_dims, CFL_SIZE);
-	data->tmp_dR1 = my_alloc(N, out_dims, CFL_SIZE);
-	data->tmp_dalpha = my_alloc(N, out_dims, CFL_SIZE);
-	data->TI = my_alloc(N, TI_dims, CFL_SIZE);
-	md_copy(N, TI_dims, data->TI, TI, CFL_SIZE);
+	data->R1 = NULL;
+	data->M0 = NULL;
+	data->alpha = NULL;
+	data->tmp_map = NULL;
+        data->tmp_map1 = NULL;
+	data->tmp_ones = NULL;
+	data->tmp_R1s = NULL;
+	data->tmp_exp = NULL;
+	data->tmp_dM0 = NULL;
+	data->tmp_dR1 = NULL;
+	data->tmp_dalpha = NULL;
+	data->TI = multiplace_move(N, TI_dims, CFL_SIZE, TI);
 
 
 	// weight on alpha
 	long w_dims[N];
 	md_select_dims(N, FFT_FLAGS, w_dims, map_dims);
 
-	data->weights = md_alloc(N, w_dims, CFL_SIZE);
+	complex float* weights = md_alloc(N, w_dims, CFL_SIZE);
 
-	noir_calc_weights(config->other.b1_sobolev_a, config->other.b1_sobolev_b, w_dims, data->weights);
+	noir_calc_weights(config->other.b1_sobolev_a, config->other.b1_sobolev_b, w_dims, weights);
 
-	const struct linop_s* linop_wghts = linop_cdiag_create(N, map_dims, FFT_FLAGS, data->weights);
+	const struct linop_s* linop_wghts = linop_cdiag_create(N, map_dims, FFT_FLAGS, weights);
 	const struct linop_s* linop_ifftc = linop_ifftc_create(N, map_dims, FFT_FLAGS);
 
-	data->linop_alpha = linop_chain(linop_wghts, linop_ifftc);
+	data->linop_alpha = linop_chain_FF(linop_wghts, linop_ifftc);
 
-	linop_free(linop_wghts);
-	linop_free(linop_ifftc);
+	md_free(weights);
 
 	data->scaling_alpha = config->other.scale[2];
 	data->r1p_nom = read_relax(config->sim.seq.tr, DEG2RAD(CAST_UP(&config->sim.pulse.sinc)->flipangle));
 
-	data->counter = 0;
 	return nlop_create(N, out_dims, N, in_dims, CAST_UP(PTR_PASS(data)), T1_fun, T1_der, T1_adj, NULL, NULL, T1_del);
 }

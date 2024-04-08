@@ -217,7 +217,7 @@ static bool test_nlop_T1phyfun(void)
 	data.sim.other = simdata_other_defaults;
         data.other = moba_other_defaults;
 
-	struct nlop_s* T1_phy = nlop_T1_phy_create(N, map_dims, out_dims, in_dims, TI_dims, TI, &data, false);
+	struct nlop_s* T1_phy = nlop_T1_phy_create(N, map_dims, out_dims, in_dims, TI_dims, TI, &data);
 
 	nlop_apply(T1_phy, N, out_dims, dst, N, in_dims, src);
 

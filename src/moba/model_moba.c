@@ -64,13 +64,13 @@ struct mobamod moba_create(const long dims[DIMS], const complex float* mask, con
 	case MDB_T2:
 	case MDB_MGRE:
 
-                // FIXME: Integrate other models here
+		// FIXME: Integrate other models here
 		assert(0);
 		break;
 
-        case MDB_T1_PHY:
+	case MDB_T1_PHY:
 
-		model = nlop_T1_phy_create(DIMS, map_dims, out_dims, in_dims, TI_dims, TI, data, use_gpu);
+		model = nlop_T1_phy_create(DIMS, map_dims, out_dims, in_dims, TI_dims, TI, data);
 		break;
 
 	case MDB_IR_MGRE:
