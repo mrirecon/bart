@@ -61,10 +61,6 @@ struct blochfun_s {
 
 	const struct moba_conf_s* moba_data;
 
-	bool use_gpu;
-
-	int counter;
-
 	const struct linop_s* linop_alpha;
 };
 
@@ -436,7 +432,7 @@ static void bloch_del(const nlop_data_t* _data)
 
 
 struct nlop_s* nlop_bloch_create(int N, const long der_dims[N], const long map_dims[N], const long out_dims[N], const long in_dims[N],
-			const complex float* b1, const complex float* b0, const struct moba_conf_s* config, bool use_gpu)
+			const complex float* b1, const complex float* b0, const struct moba_conf_s* config)
 {
 	PTR_ALLOC(struct blochfun_s, data);
 	SET_TYPEID(blochfun_s, data);
@@ -482,10 +478,6 @@ struct nlop_s* nlop_bloch_create(int N, const long der_dims[N], const long map_d
 
 	data->b1 = b1;
 	data->b0 = b0;
-
-	data->use_gpu = use_gpu;
-
-	data->counter = 0;
 
 	// Smoothness penalty for alpha map: Sobolev norm
 

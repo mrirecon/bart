@@ -91,7 +91,7 @@ struct mobamod moba_create(const long dims[DIMS], const complex float* mask, con
 		if (SEQ_IRFLASH == data->sim.seq.seq_type)
 			data->other.scale[2] = 0.;
 
-		model = nlop_bloch_create(DIMS, der_dims, map_dims, out_dims, in_dims, b1, b0, data, use_gpu);
+		model = nlop_bloch_create(DIMS, der_dims, map_dims, out_dims, in_dims, b1, b0, data);
 		break;
 	}
 
