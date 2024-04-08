@@ -275,7 +275,7 @@ static void recon(const struct moba_conf* conf, struct moba_conf_s* data,
 		const complex float* TE_IR_MGRE,
 		const complex float* b1,
 		const complex float* b0,
-		const long data_dims[DIMS], const complex float* kspace_data, bool usegpu)
+		const long data_dims[DIMS], const complex float* kspace_data)
 {
 	unsigned int fft_flags = FFT_FLAGS;
 
@@ -483,7 +483,7 @@ void moba_recon(const struct moba_conf* conf, struct moba_conf_s* data, const lo
         case MDB_BLOCH:
 	case MDB_IR_MGRE:
 
-		recon(conf, data, dims, imgs_dims, img, coil_dims, sens, pattern, mask, TI, TE, b1, b0, data_dims, kspace_data, conf->use_gpu);
+		recon(conf, data, dims, imgs_dims, img, coil_dims, sens, pattern, mask, TI, TE, b1, b0, data_dims, kspace_data);
 		break;
 
 	case MDB_MGRE:
