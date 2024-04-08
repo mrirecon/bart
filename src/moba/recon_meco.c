@@ -13,12 +13,10 @@
 #include <assert.h>
 #include <stdio.h>
 
-#include "num/gpuops.h"
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/fft.h"
 #include "num/iovec.h"
-#include "num/ops.h"
 #include "num/ops_p.h"
 #include "num/rand.h"
 
@@ -29,9 +27,6 @@
 #include "iter/lsqr.h"
 #include "iter/prox.h"
 #include "iter/thresh.h"
-#include "iter/vec.h"
-
-#include "linops/someops.h"
 
 #include "misc/misc.h"
 #include "misc/types.h"
@@ -150,12 +145,6 @@ void meco_recon(const struct moba_conf* moba_conf,
 		const long P_dims[DIMS], const complex float* Pin,
 		const long Y_dims[DIMS], const complex float* Y)
 {
-	bool use_gpu = false;
-
-#ifdef USE_CUDA
-	use_gpu = cuda_ondevice(Y);
-#endif
-
 	// setup pointer
 
 	long frame_pos[DIMS] = { 0 };
@@ -302,7 +291,7 @@ void meco_recon(const struct moba_conf* moba_conf,
 		mconf.b = moba_conf->sobolev_b;
 		mconf.cnstcoil_flags = TE_FLAG;
 
-		struct meco_s nl = meco_create(Y_1s_dims, meco_1s_dims, maps_1s_dims, mask, TE, P_ptr, sel_model, real_pd, fat_spec, scale_fB0, use_gpu, &mconf);
+		struct meco_s nl = meco_create(Y_1s_dims, meco_1s_dims, maps_1s_dims, mask, TE, P_ptr, sel_model, real_pd, fat_spec, scale_fB0, &mconf);
 
 
 		struct iter3_irgnm_conf irgnm_conf = iter3_irgnm_defaults;

@@ -334,7 +334,7 @@ int main_mobafit(int argc, char* argv[argc])
 
 		float scale_fB0[2] = { 0., 1. };
 		assert(md_check_equal_dims(DIMS, y_patch_dims, y_patch_sig_dims, ~0));
-		nlop = nlop_meco_create(DIMS, y_patch_dims, x_patch_dims, enc, mgre_model, false, FAT_SPEC_1, scale_fB0, bart_use_gpu);
+		nlop = nlop_meco_create(DIMS, y_patch_dims, x_patch_dims, enc, mgre_model, false, FAT_SPEC_1, scale_fB0);
 	}	break;
 
 	case TSE:
