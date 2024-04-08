@@ -658,15 +658,9 @@ int main_moba(int argc, char* argv[argc])
 
 		md_copy(DIMS, grid_dims, kspace_gpu, k_grid_data, CFL_SIZE);
 
-		complex float* TI_gpu = md_alloc_gpu(DIMS, TI_dims, CFL_SIZE);
-
-		md_copy(DIMS, TI_dims, TI_gpu, TI, CFL_SIZE);
-
-		moba_recon(&conf, &data, dims, img, sens, pattern, mask, TI_gpu, TE_IR_MGRE, b1, b0, kspace_gpu, init);
+		moba_recon(&conf, &data, dims, img, sens, pattern, mask, TI, TE_IR_MGRE, b1, b0, kspace_gpu, init);
 
 		md_free(kspace_gpu);
-		md_free(TI_gpu);
-
 	} else
 #endif
 	moba_recon(&conf, &data, dims, img, sens, pattern, mask, TI, TE_IR_MGRE, b1, b0, k_grid_data, init);
