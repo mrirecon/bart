@@ -310,7 +310,7 @@ static void recon(const struct moba_conf* conf, struct moba_conf_s* data,
 		nl = exp_create(dims, mask, TI, pattern, &mconf);
 #else
 		(void)exp_create;
-		nl = T2_create(dims, mask, TI, pattern, &mconf, usegpu);
+		nl = T2_create(dims, mask, TI, pattern, &mconf);
 #endif
 		break;
 

@@ -29,7 +29,7 @@
 
 
 
-struct mobamod T2_create(const long dims[DIMS], const complex float* mask, const complex float* TI, const complex float* psf, const struct noir_model_conf_s* conf, _Bool use_gpu)
+struct mobamod T2_create(const long dims[DIMS], const complex float* mask, const complex float* TI, const complex float* psf, const struct noir_model_conf_s* conf)
 {
 	long data_dims[DIMS];
 	md_select_dims(DIMS, ~COEFF_FLAG, data_dims, dims);
@@ -48,7 +48,7 @@ struct mobamod T2_create(const long dims[DIMS], const complex float* mask, const
 	md_select_dims(DIMS, TE_FLAG, TI_dims, dims);
 
 	// chain T2 model
-	struct nlop_s* T2 = nlop_T2_create(DIMS, map_dims, out_dims, in_dims, TI_dims, TI, use_gpu);
+	struct nlop_s* T2 = nlop_T2_create(DIMS, map_dims, out_dims, in_dims, TI_dims, TI);
 
 
 	const struct nlop_s* b = nlinv.nlop;
