@@ -53,8 +53,6 @@ struct moba_conf moba_defaults = {
 	.fat_spec = FAT_SPEC_1,
 	.scale_fB0 = { 222., 1. },
 	.out_origin_maps = false,
-
-	.use_gpu = false,
 };
 
 

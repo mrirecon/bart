@@ -72,7 +72,6 @@ struct moba_conf {
 	float scale_fB0[2]; // { spatial smoothness, scaling }
 	bool out_origin_maps;
 
-	bool use_gpu;
 	int num_gpu;
 };
 

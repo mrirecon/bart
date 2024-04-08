@@ -257,16 +257,15 @@ int main_moba(int argc, char* argv[argc])
 	if (0 != conf.num_gpu)
 		error("Multi-GPU only supported by MPI!\n");
 
-	conf.use_gpu = bart_use_gpu;
 	num_init_gpu_support();
 	
-        data.model = conf.mode;
+	data.model = conf.mode;
 
-        if (MDB_T1_PHY == conf.mode)
-                debug_printf(DP_INFO, "The TR for MDB_T1_PHY is %f s!\n", data.sim.seq.tr);
+	if (MDB_T1_PHY == conf.mode)
+		debug_printf(DP_INFO, "The TR for MDB_T1_PHY is %f s!\n", data.sim.seq.tr);
 
-        // debug_sim(&(data.sim));
-        // debug_other(&(data.other));
+	// debug_sim(&(data.sim));
+	// debug_other(&(data.other));
 	if (use_compat_to_version("v0.6.00"))
 		conf.scaling_M0 = 2.;
 
@@ -653,7 +652,7 @@ int main_moba(int argc, char* argv[argc])
 	}
 
 #ifdef  USE_CUDA
-	if (conf.use_gpu) {
+	if (bart_use_gpu) {
 
 		complex float* kspace_gpu = md_alloc_gpu(DIMS, grid_dims, CFL_SIZE);
 
