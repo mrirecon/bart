@@ -164,7 +164,8 @@ const struct nlop_s* nlop_stats_create(int N, const long dims[N], unsigned long 
 
 
 	return nlop_generic_create(2, N, nl_odims, 1, N, nl_idims, CAST_UP(PTR_PASS(data)),
-		stats_fun, (nlop_der_fun_t[1][2]){ { stats_der_mean, stats_der_var } }, (nlop_der_fun_t[1][2]){ { stats_adj_mean, stats_adj_var } }, NULL, NULL, stats_del);
+		stats_fun, (nlop_der_fun_t[1][2]){ { stats_der_mean, stats_der_var } },
+		(nlop_der_fun_t[1][2]){ { stats_adj_mean, stats_adj_var } }, NULL, NULL, stats_del);
 }
 
 struct normalize_s {

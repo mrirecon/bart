@@ -38,7 +38,7 @@ struct checkpoint_s {
 
 	long loop_size;
 
-	unsigned int* DI;
+	int* DI;
 	const long** idims;
 	complex float** inputs;
 	long* in_offsets;
@@ -46,7 +46,7 @@ struct checkpoint_s {
 	complex float** der_in;
 	complex float** adj_out;
 
-	unsigned int* DO;
+	int* DO;
 	const long** odims;
 	long* out_offsets;
 
@@ -229,7 +229,7 @@ static void checkpoint_eval_der(struct checkpoint_s* d, int i, const complex flo
 } 
 
 
-static void checkpoint_der(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void checkpoint_der(const nlop_data_t* _data, int o, int i, complex float* dst, const complex float* src)
 {
 	const auto d = CAST_DOWN(checkpoint_s, _data);
 
@@ -328,7 +328,7 @@ static void checkpoint_eval_adj(struct checkpoint_s* d, int o, const complex flo
 } 
 
 
-static void checkpoint_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void checkpoint_adj(const nlop_data_t* _data, int o, int i, complex float* dst, const complex float* src)
 {
 	const auto d = CAST_DOWN(checkpoint_s, _data);
 
@@ -417,9 +417,9 @@ static const struct nlop_s* nlop_checkpoint_loop_create(const struct nlop_s* nlo
 	int max_DI = 0;
 	int max_DO = 0;
 
-	PTR_ALLOC(unsigned int[OO], DO);
+	PTR_ALLOC(int[OO], DO);
 	PTR_ALLOC(const long*[OO], odims);
-	PTR_ALLOC(unsigned int[II], DI);
+	PTR_ALLOC(int[II], DI);
 	PTR_ALLOC(const long*[II], idims);
 
 	for (int i = 0; i < OO; i++) {

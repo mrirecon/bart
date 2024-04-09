@@ -17,7 +17,6 @@
 #include "num/ops.h"
 #include "num/multind.h"
 #include "num/flpmath.h"
-
 #ifdef USE_CUDA
 #include "num/gpuops.h"
 #endif
@@ -34,6 +33,7 @@
 
 #include "activation.h"
 
+
 static const struct nlop_s* append_activation_bias_internal(const struct nlop_s* network, int o, enum ACTIVATION activation, unsigned long bflags, bool bias);
 
 
@@ -48,6 +48,7 @@ const struct nlop_s* append_activation(const struct nlop_s* network, int o, enum
 {
 	return append_activation_bias_internal(network, o, activation, 0, false);
 }
+
 
 /**
  * Append activation and bias to nlop, free input and return nlop with appended activation
@@ -171,28 +172,28 @@ static void bias_op_apply(const nlop_data_t* _data, int N, complex float* args[N
 	md_zadd2(d->N, d->dims, MD_STRIDES(d->N, d->dims, CFL_SIZE), args[0], MD_STRIDES(d->N, d->dims, CFL_SIZE), args[1], MD_STRIDES(d->N, d->bdims, CFL_SIZE), args[2]);
 }
 
-static void bias_op_deriv1(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void bias_op_deriv1(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	const struct bias_op_s* d = CAST_DOWN(bias_op_s, _data);
 
 	md_copy2(d->N, d->dims, MD_STRIDES(d->N, d->dims, CFL_SIZE), dst, MD_STRIDES(d->N, d->dims, CFL_SIZE), src, CFL_SIZE);
 }
 
-static void bias_op_deriv2(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void bias_op_deriv2(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	const struct bias_op_s* d = CAST_DOWN(bias_op_s, _data);
 
 	md_copy2(d->N, d->dims, MD_STRIDES(d->N, d->dims, CFL_SIZE), dst, MD_STRIDES(d->N, d->bdims, CFL_SIZE), src, CFL_SIZE);
 }
 
-static void bias_op_adj1(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void bias_op_adj1(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	const struct bias_op_s* d = CAST_DOWN(bias_op_s, _data);
 
 	md_copy2(d->N, d->dims, MD_STRIDES(d->N, d->dims, CFL_SIZE), dst, MD_STRIDES(d->N, d->dims, CFL_SIZE), src, CFL_SIZE);
 }
 
-static void bias_op_adj2(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void bias_op_adj2(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	const struct bias_op_s* d = CAST_DOWN(bias_op_s, _data);
 
@@ -211,14 +212,14 @@ static void bias_op_free(const nlop_data_t* _data)
 }
 
 
-const struct nlop_s* nlop_bias_create(unsigned int N, const long dims[N], const long bdims[N])
+const struct nlop_s* nlop_bias_create(int N, const long dims[N], const long bdims[N])
 {
 	PTR_ALLOC(struct bias_op_s, data);
 	SET_TYPEID(bias_op_s, data);
 
 	data->N = N;
 
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		assert((1 == bdims[i]) || (dims[i] == bdims[i]));
 
 	PTR_ALLOC(long[N], tdims);
@@ -245,10 +246,9 @@ const struct nlop_s* nlop_bias_create(unsigned int N, const long dims[N], const 
 	md_copy_strides(N, nl_istrs[0], MD_STRIDES(N, nl_idims[0], CFL_SIZE));
 	md_copy_strides(N, nl_istrs[1], MD_STRIDES(N, nl_idims[1], CFL_SIZE));
 
-
-
 	return nlop_generic_create2(1, N, nl_odims, nl_ostrs, 2, N, nl_idims, nl_istrs, CAST_UP(PTR_PASS(data)),
-				    bias_op_apply, (nlop_der_fun_t[2][1]){ { bias_op_deriv1}, {bias_op_deriv2} }, (nlop_der_fun_t[2][1]){ {bias_op_adj1}, {bias_op_adj2} }, NULL, NULL, bias_op_free);
+				    bias_op_apply, (nlop_der_fun_t[2][1]){ { bias_op_deriv1 }, { bias_op_deriv2 } },
+				    (nlop_der_fun_t[2][1]){ { bias_op_adj1 }, { bias_op_adj2 } }, NULL, NULL, bias_op_free);
 }
 
 
@@ -325,7 +325,7 @@ static void relu_free(const nlop_data_t* _data)
 	xfree(_data);
 }
 
-static void relu_deradj(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* _dst, const complex float* _src)
+static void relu_deradj(const nlop_data_t* _data, int o, int i, complex float* _dst, const complex float* _src)
 {
 	struct relu_s* d = CAST_DOWN(relu_s, _data);
 
@@ -356,7 +356,7 @@ static void relu_deradj(const nlop_data_t* _data, unsigned int o, unsigned int i
  * Create leaky RELU nlop with slope control parameter a
  * f(x) = {x, if x >= 0; ax, if x < 0}
  */
-const struct nlop_s* nlop_leaky_relu_create(unsigned int N, const long dims[N], float slope_parameter)
+const struct nlop_s* nlop_leaky_relu_create(int N, const long dims[N], float slope_parameter)
 {
 	PTR_ALLOC(struct relu_s, data);
 	SET_TYPEID(relu_s, data);
@@ -374,7 +374,7 @@ const struct nlop_s* nlop_leaky_relu_create(unsigned int N, const long dims[N], 
 	return nlop_create(N, dims, N, dims,  CAST_UP(PTR_PASS(data)), relu_apply, relu_deradj, relu_deradj, NULL, NULL, relu_free);
 }
 
-const struct nlop_s* nlop_relu_create(unsigned int N, const long dims[N])
+const struct nlop_s* nlop_relu_create(int N, const long dims[N])
 {
 	long strs[N];
 	md_calc_strides(N, strs, dims, CFL_SIZE);
@@ -423,14 +423,18 @@ static void softmax_apply(const nlop_data_t* _data, complex float* dst, const co
 	md_free(max);
 
 	complex float* tmp_exp = md_alloc_sameplace(d->dom->N, d->dom->dims, CFL_SIZE, src);
+
 	md_zexp(d->N, d->dom->dims, tmp_exp, tmp_real);
+
 	md_free(tmp_real);
 
 	complex float* scale = md_alloc_sameplace(d->N, d->batchdom->dims, CFL_SIZE, src);
+
 	md_zsum(d->N, d->dom->dims, ~d->batch_flag, scale, tmp_exp);
 #if 1
 	md_copy2(d->N, d->dom->dims, d->dom->strs, tmp_gpu, d->batchdom->strs, scale, CFL_SIZE);
 	md_zdiv(d->N, d->dom->dims, d->tmp, tmp_exp, tmp_gpu);
+
 	md_free(tmp_gpu);
 #else
 	md_zdiv2(d->N, d->dom->dims, d->dom->strs, d->tmp, d->dom->strs, tmp_exp, d->batchdom->strs, scale);
@@ -441,17 +445,20 @@ static void softmax_apply(const nlop_data_t* _data, complex float* dst, const co
 	md_copy(d->N, d->dom->dims, dst, d->tmp, CFL_SIZE);
 }
 
-static void softmax_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void softmax_der(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	//applying a_i -> a_j = sum_i D_jS_ia_i = sum_i S_i(\delta_ij - S_j)a_i
 	const struct softmax_s* d = CAST_DOWN(softmax_s, _data);
 	assert(NULL != d->tmp);
 
+
 	complex float* tmp_real = md_alloc_sameplace(d->N, d->dom->dims, CFL_SIZE, src);
+
 	md_zreal(d->N, d->dom->dims, tmp_real, src);
 
 	//sum_i \delta_ji S_i a_i
 	md_ztenmul(d->N, d->dom->dims, dst, d->dom->dims, d->tmp, d->dom->dims, tmp_real);
+
 	md_free(tmp_real);
 
 	//\sum_i S_ia_i
@@ -462,8 +469,10 @@ static void softmax_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned i
 	complex float* tmp2 = md_alloc_sameplace(d->N, d->dom->dims, CFL_SIZE, src);
 #if 1
 	complex float* tmp_gpu = md_alloc_sameplace(d->N, d->dom->dims, d->dom->size, dst);
+
 	md_copy2(d->N, d->dom->dims, d->dom->strs, tmp_gpu, d->batchdom->strs, tmp1, CFL_SIZE);
 	md_ztenmul(d->N, d->dom->dims, tmp2, d->dom->dims, d->tmp, d->dom->dims, tmp_gpu);
+
 	md_free(tmp_gpu);
 #else
 	md_ztenmul(d->N, d->dom->dims, tmp2, d->dom->dims, d->tmp, d->batchdom->dims, tmp1);
@@ -487,7 +496,7 @@ static void softmax_free(const nlop_data_t* _data)
 	xfree(d);
 }
 
-const struct nlop_s* nlop_softmax_create(unsigned int N, const long dims[N], unsigned long batch_flag)
+const struct nlop_s* nlop_softmax_create(int N, const long dims[N], unsigned long batch_flag)
 {
 	PTR_ALLOC(struct softmax_s, data);
 	SET_TYPEID(softmax_s, data);
@@ -506,6 +515,7 @@ const struct nlop_s* nlop_softmax_create(unsigned int N, const long dims[N], uns
 
 
 struct sigmoid_s {
+
 	INTERFACE(nlop_data_t);
 };
 
@@ -538,7 +548,7 @@ static void sigmoid_free(const nlop_data_t* _data)
 	xfree(_data);
 }
 
-const struct nlop_s* nlop_sigmoid_create(unsigned int N, const long dims[N])
+const struct nlop_s* nlop_sigmoid_create(int N, const long dims[N])
 {
 	PTR_ALLOC(struct sigmoid_s, data);
 	SET_TYPEID(sigmoid_s, data);
@@ -555,13 +565,15 @@ const struct nlop_s* nlop_sigmoid_create(unsigned int N, const long dims[N])
  * f(z) = 0.5(1+cos(arg(z)))z = (|z|+z)^2/(4|z|)
  * PHD thesis Patrick Virtue : https://www2.eecs.berkeley.edu/Pubs/TechRpts/2019/EECS-2019-126.pdf
  */
-const struct nlop_s* nlop_cardioid_create(unsigned int N, const long dims[N])
+const struct nlop_s* nlop_cardioid_create(int N, const long dims[N])
 {
 	auto result = nlop_zabs_create(N, dims);
+
 	result = nlop_chain2_FF(result, 0, nlop_zaxpbz_create(N, dims, 1., 1.), 0);
 	result = nlop_dup_F(result, 0, 1);
 	
 	auto square = nlop_tenmul_create(N, dims, dims, dims);
+
 	square = nlop_dup_F(square, 0, 1);
 
 	result = nlop_chain2_FF(result, 0, square, 0);
@@ -579,7 +591,7 @@ const struct nlop_s* nlop_cardioid_create(unsigned int N, const long dims[N])
  * f(z) = z / (c + |z| / r)
  * PHD thesis Patrick Virtue : https://www2.eecs.berkeley.edu/Pubs/TechRpts/2019/EECS-2019-126.pdf
  */
-const struct nlop_s* nlop_siglog_create(unsigned int N, const long dims[N], float c, float r)
+const struct nlop_s* nlop_siglog_create(int N, const long dims[N], float c, float r)
 {
 	auto result = nlop_zdiv_reg_create(N, dims, c);
 
@@ -589,14 +601,16 @@ const struct nlop_s* nlop_siglog_create(unsigned int N, const long dims[N], floa
 	return nlop_zrprecomp_jacobian_F(result);
 }
 
+
 /**
  * Create iGaussian nlop 
  * f(z) = (1 - exp(-|z|^2/(2s^2)))*z/|z|
  * PHD thesis Patrick Virtue : https://www2.eecs.berkeley.edu/Pubs/TechRpts/2019/EECS-2019-126.pdf
  */
-const struct nlop_s* nlop_igaussian_create(unsigned int N, const long dims[N], float sigma)
+const struct nlop_s* nlop_igaussian_create(int N, const long dims[N], float sigma)
 {
 	auto result = nlop_tenmul_create(N, dims, dims, dims);
+
 	result = nlop_chain2_FF(nlop_from_linop_F(linop_zconj_create(N, dims)), 0, result, 0);
 	result = nlop_dup_F(result, 0, 1);
 	result = nlop_chain_FF(result, nlop_from_linop_F(linop_scale_create(N, dims, 1. / (2 * sigma * sigma))));
@@ -608,3 +622,4 @@ const struct nlop_s* nlop_igaussian_create(unsigned int N, const long dims[N], f
 
 	return nlop_zrprecomp_jacobian_F(result);
 }
+

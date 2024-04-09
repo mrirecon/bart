@@ -137,8 +137,8 @@ struct nlop_linop_data_s {
 
 	struct shared_ptr_s sptr;
 
-	unsigned int o;
-	unsigned int i;
+	int o;
+	int i;
 
 	nlop_der_fun_t deriv;
 	nlop_der_fun_t adjoint;
@@ -256,12 +256,12 @@ static void lop_del(const linop_data_t* _data)
 	xfree(data);
 }
 
-static void der_not_implemented(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* /*dst*/, const complex float* /*src*/)
+static void der_not_implemented(const nlop_data_t* _data, int o, int i, complex float* /*dst*/, const complex float* /*src*/)
 {
 	error("Derivative o=%d, i=%d of %s is not implemented!\n", o, i, _data->TYPEID->name);
 }
 
-static void adj_not_implemented(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* /*dst*/, const complex float* /*src*/)
+static void adj_not_implemented(const nlop_data_t* _data, int o, int i, complex float* /*dst*/, const complex float* /*src*/)
 {
 	error("Adjoint derivative o=%d, i=%d of %s is not implemented!\n", o, i, _data->TYPEID->name);
 }
@@ -385,8 +385,8 @@ struct nlop_s* nlop_generic_create(int OO, int ON, const long odims[OO][ON], int
 
 
 
-struct nlop_s* nlop_create2(unsigned int ON, const long odims[ON], const long ostrs[ON],
-				unsigned int IN, const long idims[IN], const long istrs[IN], nlop_data_t* data,
+struct nlop_s* nlop_create2(int ON, const long odims[ON], const long ostrs[ON],
+				int IN, const long idims[IN], const long istrs[IN], nlop_data_t* data,
 				nlop_fun_t forward, nlop_der_fun_t deriv, nlop_der_fun_t adjoint, nlop_der_fun_t normal, nlop_p_fun_t norm_inv, nlop_del_fun_t del)
 {
 	struct nlop_s* op = nlop_generic_create2(1, ON, (const long(*)[])&odims[0], (const long(*)[])&ostrs[0], 1, IN, (const long(*)[])&idims[0], (const long(*)[])&istrs[0], data, NULL,
@@ -399,7 +399,7 @@ struct nlop_s* nlop_create2(unsigned int ON, const long odims[ON], const long os
 	return op;
 }
 
-struct nlop_s* nlop_create(unsigned int ON, const long odims[ON], unsigned int IN, const long idims[IN], nlop_data_t* data,
+struct nlop_s* nlop_create(int ON, const long odims[ON], int IN, const long idims[IN], nlop_data_t* data,
 				nlop_fun_t forward, nlop_der_fun_t deriv, nlop_der_fun_t adjoint, nlop_der_fun_t normal, nlop_p_fun_t norm_inv, nlop_del_fun_t del)
 {
 	return nlop_create2(	ON, odims, MD_STRIDES(ON, odims, CFL_SIZE),
@@ -713,12 +713,12 @@ const struct linop_s* nlop_get_derivative(const struct nlop_s* op, int o, int i)
 
 const struct iovec_s* nlop_generic_domain(const struct nlop_s* op, int i)
 {
-	return operator_arg_in_domain(op->op, (unsigned int)i);
+	return operator_arg_in_domain(op->op, i);
 }
 
 const struct iovec_s* nlop_generic_codomain(const struct nlop_s* op, int o)
 {
-	return operator_arg_out_codomain(op->op, (unsigned int)o);
+	return operator_arg_out_codomain(op->op, o);
 }
 
 
@@ -787,7 +787,7 @@ static void flatten_graph_fun(const nlop_data_t* _data, complex float* dst, cons
 	nlop_generic_apply_unchecked(data->op, OO + II, args);
 }
 
-static void flatten_graph_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void flatten_graph_der(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	auto data = CAST_DOWN(flatten_graph_s, _data);
 
@@ -805,7 +805,7 @@ static void flatten_graph_der(const nlop_data_t* _data, unsigned int /*o*/, unsi
 	operator_generic_apply_unchecked(data->der, OO + II, args);
 }
 
-static void flatten_graph_adj(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void flatten_graph_adj(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	auto data = CAST_DOWN(flatten_graph_s, _data);
 
@@ -823,7 +823,7 @@ static void flatten_graph_adj(const nlop_data_t* _data, unsigned int /*o*/, unsi
 	operator_generic_apply_unchecked(data->adj, OO + II, args);
 }
 
-static void flatten_graph_nrm(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void flatten_graph_nrm(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	auto data = CAST_DOWN(flatten_graph_s, _data);
 
@@ -1001,7 +1001,7 @@ static void flatten_fun(const nlop_data_t* _data, complex float* dst, const comp
 	nlop_generic_apply_unchecked(data->op, OO + II, args);
 }
 
-static void flatten_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void flatten_der(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	auto data = CAST_DOWN(flatten_s, _data);
 
@@ -1041,7 +1041,7 @@ static void flatten_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned i
 	}
 }
 
-static void flatten_adj(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void flatten_adj(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	auto data = CAST_DOWN(flatten_s, _data);
 

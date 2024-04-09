@@ -730,7 +730,7 @@ static void noir_adjoint_nufft_fun(const nlop_data_t* _data, int N, complex floa
 	linop_adjoint_unchecked(data->model->lop_fft, dst, src);
 }
 
-static void noir_adjoint_fft_der(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void noir_adjoint_fft_der(const nlop_data_t* _data, int o, int i, complex float* dst, const complex float* src)
 {
 	assert(0 == o);
 	assert(0 == i);
@@ -738,7 +738,7 @@ static void noir_adjoint_fft_der(const nlop_data_t* _data, unsigned int o, unsig
 	linop_adjoint_unchecked(data->model->lop_fft, dst, src);
 }
 
-static void noir_adjoint_fft_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void noir_adjoint_fft_adj(const nlop_data_t* _data, int o, int i, complex float* dst, const complex float* src)
 {
 	assert(0 == o);
 	assert(0 == i);

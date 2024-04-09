@@ -13,8 +13,8 @@ typedef void (*nlop_clear_der_fun_t)(const struct nlop_data_s* _data);
 typedef struct nlop_data_s { TYPEID* TYPEID; nlop_clear_der_fun_t clear_der; const struct nlop_der_s* data_der; } nlop_data_t;
 
 typedef void (*nlop_fun_t)(const nlop_data_t* _data, complex float* dst, const complex float* src);
-typedef void (*nlop_p_fun_t)(const nlop_data_t* _data, unsigned int o, unsigned int i, float lambda, complex float* dst, const complex float* src);
-typedef void (*nlop_der_fun_t)(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src);
+typedef void (*nlop_p_fun_t)(const nlop_data_t* _data, int o, int i, float lambda, complex float* dst, const complex float* src);
+typedef void (*nlop_der_fun_t)(const nlop_data_t* _data, int o, int i, complex float* dst, const complex float* src);
 
 typedef void (*nlop_del_fun_t)(const nlop_data_t* _data);
 
@@ -47,11 +47,11 @@ extern struct nlop_s* nlop_generic_create2(	int OO, int NO, const long odims[OO]
 
 
 
-extern struct nlop_s* nlop_create(	unsigned int ON, const long odims[__VLA(ON)], unsigned int IN, const long idims[__VLA(IN)], nlop_data_t* data,
+extern struct nlop_s* nlop_create(	int ON, const long odims[__VLA(ON)], int IN, const long idims[__VLA(IN)], nlop_data_t* data,
 					nlop_fun_t forward, nlop_der_fun_t deriv, nlop_der_fun_t adjoint, nlop_der_fun_t normal, nlop_p_fun_t norm_inv, nlop_del_fun_t);
 
-extern struct nlop_s* nlop_create2(	unsigned int ON, const long odims[__VLA(ON)], const long ostr[__VLA(ON)],
-					unsigned int IN, const long idims[__VLA(IN)], const long istrs[__VLA(IN)], nlop_data_t* data,
+extern struct nlop_s* nlop_create2(	int ON, const long odims[__VLA(ON)], const long ostr[__VLA(ON)],
+					int IN, const long idims[__VLA(IN)], const long istrs[__VLA(IN)], nlop_data_t* data,
 					nlop_fun_t forward, nlop_der_fun_t deriv, nlop_der_fun_t adjoint, nlop_der_fun_t normal, nlop_p_fun_t norm_inv, nlop_del_fun_t);
 
 
