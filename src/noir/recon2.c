@@ -24,13 +24,12 @@
 
 #include "iter/iter3.h"
 #include "iter/iter4.h"
-#include "iter/thresh.h"
 #include "iter/italgos.h"
 
-#include "misc/misc.h"
 #include "misc/types.h"
 #include "misc/mri.h"
 #include "misc/debug.h"
+#include "misc/stream.h"
 
 #include "noir/model2.h"
 
@@ -310,7 +309,17 @@ void noir2_recon_noncart(
 	long pos_trj[N];
 	long pos_wgh[N];
 
+	stream_t strm_ksp = stream_lookup(kspace);
+	stream_t strm_img = stream_lookup(img);
+	stream_t strm_trj = stream_lookup(traj);
+
+	if (NULL != strm_ksp)
+		assert(loop_flags == stream_get_flags(strm_ksp));
+
 	do {
+		if (NULL != strm_ksp)
+			stream_sync(strm_ksp, N, pos);
+
 		md_slice(N, loop_flags, pos, img_dims, l_img, img, CFL_SIZE);
 		md_slice(N, loop_flags, pos, kco_dims, l_ksens, ksens, CFL_SIZE);
 		md_slice(N, loop_flags, pos, ksp_dims, l_kspace, kspace, CFL_SIZE);
@@ -351,6 +360,9 @@ void noir2_recon_noncart(
 				md_slice(N, loop_flags, pos, kco_dims, l_sens_ref, sens_ref, CFL_SIZE);
 		}
 
+		if (NULL != strm_trj)
+			stream_sync(strm_trj, N, pos_trj);
+
 		md_slice(N, loop_flags, pos_trj, trj_dims, l_trj, traj, CFL_SIZE);
 
 		if (NULL != weights)
@@ -365,6 +377,9 @@ void noir2_recon_noncart(
 	
 		md_copy_block(N, pos, kco_dims, ksens, lkco_dims, l_ksens, CFL_SIZE);
 		md_copy_block(N, pos, img_dims, img, limg_dims, l_img, CFL_SIZE);
+
+		if (NULL != strm_img)
+			stream_sync(strm_img, N, pos);
 	
 	} while (md_next(N, ksp_dims, loop_flags, pos));
 

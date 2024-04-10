@@ -28,6 +28,7 @@
 #include <complex.h>
 #include <math.h>
 
+#include "misc/stream.h"
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/fft.h"
@@ -87,6 +88,8 @@ int main_nlinv(int argc, char* argv[argc])
 	bool nufft_lowmem = false;
 	bool psf_based_reco = false;
 
+	bool real_time_stream = false;
+
 	long my_img_dims[3] = { 0, 0, 0 };
 	long my_sens_dims[3] = { 0, 0, 0 };
 	long my_ksens_dims[3] = { 0, 0, 0 };
@@ -138,10 +141,14 @@ int main_nlinv(int argc, char* argv[argc])
 	conf.gpu = bart_use_gpu;
 
 
-	bool pprocess = (0 == my_sens_dims[0]);
-
 	long ksp_dims[DIMS];
-	complex float* kspace = load_cfl(ksp_file, DIMS, ksp_dims);
+	complex float* kspace = load_async_cfl(ksp_file, DIMS, ksp_dims);
+
+	if (NULL != stream_lookup(kspace))
+		real_time_stream = true;
+
+	bool pprocess = (!real_time_stream && (0 == my_sens_dims[0]));
+	conf.realtime |= real_time_stream;
 
 	const complex float* basis = NULL;
 	long bas_dims[DIMS];
@@ -164,6 +171,9 @@ int main_nlinv(int argc, char* argv[argc])
 
 	} else {
 
+		if (real_time_stream)
+			error("Streaming requires pattern!\n");
+
 		md_select_dims(DIMS, ~COIL_FLAG, pat_dims, ksp_dims);
 		pattern = anon_cfl("", DIMS, pat_dims);
 		estimate_pattern(DIMS, ksp_dims, COIL_FLAG, pattern, kspace);
@@ -179,6 +189,9 @@ int main_nlinv(int argc, char* argv[argc])
 
 		if (use_compat_to_version("v0.9.00") && (!conf.noncart || (NULL != trajectory))) {
 
+			if (real_time_stream)
+				error("Streaming incompatible with old SMS-NLINV!\n");
+
 			fftmod(DIMS, ksp_dims, SLICE_FLAG, kspace, kspace);
 			fftmod(DIMS, pat_dims, SLICE_FLAG, pattern, pattern);
 		}
@@ -187,6 +200,9 @@ int main_nlinv(int argc, char* argv[argc])
 	}
 
 	if (psf_based_reco && (NULL != trajectory)) {
+
+		if (real_time_stream)
+			error("Streaming incompatible with psf-based-reco!\n");
 
 		assert(NULL == psf_file);
 		assert(NULL == basis_file);
@@ -302,11 +318,14 @@ int main_nlinv(int argc, char* argv[argc])
 
 		conf.noncart = true;
 
-		traj = load_cfl(trajectory, DIMS, trj_dims);
+		traj = (real_time_stream ? load_async_cfl : load_cfl)(trajectory, DIMS, trj_dims);
 
 		md_copy_dims(3, dims, my_img_dims);
 
 		if (0 == md_calc_size(3, dims)) {
+
+			if (real_time_stream)
+				error("Streaming does not support estimation of image dims!\n");
 
 			estimate_im_dims(DIMS, FFT_FLAGS, dims, trj_dims, traj);
 			debug_printf(DP_INFO, "Est. image size: %ld %ld %ld\n", dims[0], dims[1], dims[2]);
@@ -369,7 +388,10 @@ int main_nlinv(int argc, char* argv[argc])
 
 	complex float* img = NULL;
 
-	img = (!pprocess ? create_cfl : anon_cfl)(img_file, DIMS, img_dims);
+	if (real_time_stream)
+		img = create_async_cfl(img_file, TIME_FLAG, DIMS, img_dims);
+	else
+		img = ((!pprocess) ? create_cfl : anon_cfl)(img_file, DIMS, img_dims);
 	
 	long msk_dims[DIMS];
 	md_select_dims(DIMS, FFT_FLAGS, msk_dims, img_dims);
