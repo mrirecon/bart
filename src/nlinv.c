@@ -141,6 +141,9 @@ int main_nlinv(int argc, char* argv[argc])
 	num_init_gpu_support();
 	conf.gpu = bart_use_gpu;
 
+
+	bool pprocess = (0 == my_sens_dims[0]);
+
 	long ksp_dims[DIMS];
 	complex float* kspace = load_cfl(ksp_file, DIMS, ksp_dims);
 
@@ -344,15 +347,20 @@ int main_nlinv(int argc, char* argv[argc])
 
 
 
-	complex float* img = md_alloc(DIMS, img_dims, CFL_SIZE);
+	complex float* img = NULL;
 
+	img = (!pprocess ? create_cfl : anon_cfl)(img_file, DIMS, img_dims);
+	
 	long msk_dims[DIMS];
 	md_select_dims(DIMS, FFT_FLAGS, msk_dims, img_dims);
 
 	complex float* mask = NULL;
 
 	complex float* ksens = md_alloc(DIMS, sens_dims, CFL_SIZE);
-	complex float* sens = ((NULL != sens_file) ? create_cfl : anon_cfl)(sens_file, DIMS, sens_dims);
+	complex float* sens = NULL;
+	
+	if (pprocess || sens_file)
+		sens = ((NULL != sens_file) ? create_cfl : anon_cfl)(sens_file, DIMS, sens_dims);
 
 	// initialization
 	if (NULL != init_file) {
@@ -426,36 +434,40 @@ int main_nlinv(int argc, char* argv[argc])
 
 	unmap_cfl(DIMS, ksp_dims, kspace);
 
-	long img_output_dims[DIMS];
-	md_copy_dims(DIMS, img_output_dims, img_dims);
+	if (pprocess) {
 
-	if ((conf.noncart) && (NULL == traj)) {
+		long img_output_dims[DIMS];
+		md_copy_dims(DIMS, img_output_dims, img_dims);
 
-		for (int i = 0; i < 3; i++)
-			if (1 != img_output_dims[i])
-				img_output_dims[i] /= 2;
+		if ((conf.noncart) && (NULL == traj)) {
+
+			for (int i = 0; i < 3; i++)
+				if (1 != img_output_dims[i])
+					img_output_dims[i] /= 2;
+		}
+
+		if (combine && (0 == my_sens_dims[0]))
+			img_output_dims[MAPS_DIM] = 1;
+
+		complex float* img_output = create_cfl(img_file, DIMS, img_output_dims);
+
+		if (0 == my_sens_dims[0]) {
+
+			md_clear(DIMS, img_output_dims, img_output, CFL_SIZE);
+			postprocess2(normalize,
+				     sens_dims, sens,
+				     img_dims, img,
+				     img_output_dims, img_output);
+		} else {
+
+			md_resize_center(DIMS, img_output_dims, img_output, img_dims, img, CFL_SIZE);
+		}
+
+		unmap_cfl(DIMS, img_output_dims, img_output);
 	}
-
-	if (combine && (0 == my_sens_dims[0]))
-		img_output_dims[MAPS_DIM] = 1;
-
-	complex float* img_output = create_cfl(img_file, DIMS, img_output_dims);
-
-	if (0 == my_sens_dims[0]) {
-
-		md_clear(DIMS, img_output_dims, img_output, CFL_SIZE);
-		postprocess2(normalize,
-			     sens_dims, sens,
-			     img_dims, img,
-			     img_output_dims, img_output);
-	} else {
-
-		md_resize_center(DIMS, img_output_dims, img_output, img_dims, img, CFL_SIZE);
-	}
-
 
 	md_free(mask);
-	md_free(img);
+	unmap_cfl(DIMS, img_dims, img);
 
 	if (NULL != basis)
 		unmap_cfl(DIMS, bas_dims, basis);
@@ -465,9 +477,11 @@ int main_nlinv(int argc, char* argv[argc])
 
 
 	md_free(ksens);
-	unmap_cfl(DIMS, sens_dims, sens);
+
+	if (NULL != sens)
+		unmap_cfl(DIMS, sens_dims, sens);
+
 	unmap_cfl(DIMS, pat_dims, pattern);
-	unmap_cfl(DIMS, img_output_dims, img_output);
 
 	double recosecs = timestamp() - start_time;
 
