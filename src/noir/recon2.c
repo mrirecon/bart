@@ -289,7 +289,7 @@ void noir2_recon_noncart(
 
 	complex float* l_img = 		my_alloc(N, limg_dims, CFL_SIZE);
 	complex float* l_img_ref = 	(!conf->realtime && (NULL == img_ref)) ? NULL : my_alloc(N, limg_dims, CFL_SIZE);
-	complex float* l_sens = 	my_alloc(N, lcol_dims, CFL_SIZE);
+	complex float* l_sens = 	(NULL == sens) ? NULL : my_alloc(N, lcol_dims, CFL_SIZE);
 	complex float* l_ksens = 	my_alloc(N, lkco_dims, CFL_SIZE);
 	complex float* l_sens_ref = 	(!conf->realtime && (NULL == sens_ref)) ? NULL : my_alloc(N, lkco_dims, CFL_SIZE);
 	complex float* l_kspace = 	my_alloc(N, lksp_dims, CFL_SIZE);
@@ -352,7 +352,9 @@ void noir2_recon_noncart(
 		
 		noir2_recon(conf, &noir_ops, N, limg_dims, l_img, l_img_ref, lcol_dims, l_sens, lkco_dims, l_ksens, l_sens_ref, lksp_dims, l_kspace);
 
-		md_copy_block(N, pos, col_dims, sens, lcol_dims, l_sens, CFL_SIZE);
+		if (NULL != sens)
+			md_copy_block(N, pos, col_dims, sens, lcol_dims, l_sens, CFL_SIZE);
+	
 		md_copy_block(N, pos, kco_dims, ksens, lkco_dims, l_ksens, CFL_SIZE);
 		md_copy_block(N, pos, img_dims, img, limg_dims, l_img, CFL_SIZE);
 	
