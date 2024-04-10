@@ -129,7 +129,7 @@ int main_nlinv(int argc, char* argv[argc])
 		OPTL_VEC3('x', "dims", &my_img_dims, "x:y:z", "Explicitly specify image dimensions"),
 		OPTL_VEC3(0, "sens-dims", &my_sens_dims, "x:y:z", "Explicitly specify sens dimensions"),
 		OPTL_VEC3(0, "ksens-dims", &my_ksens_dims, "x:y:z", "(Explicitly specify kspace-sens dimensions)"),
-		OPTL_FLOAT(0, "sens-os", &(conf.oversampling_coils), "val", "(over-sampling factor for sensitivities)"),
+		OPTL_FLOAT(0, "sens-os", &(oversampling_coils), "val", "(over-sampling factor for sensitivities)"),
 		OPTL_SET(0, "ret-sens-os", &(conf.ret_os_coils), "(return sensitivities on oversampled grid)"),
 		OPTL_INT(0, "cgiter", &conf.cgiter, "iter", "(iterations for linearized problem)"),
 		OPTL_FLOAT(0, "cgtol", &conf.cgtol, "tol", "(tolerance for linearized problem)"),
@@ -293,6 +293,10 @@ int main_nlinv(int argc, char* argv[argc])
 
 		if (-1 == oversampling_coils)
 			oversampling_coils = 2.;
+	} else {
+
+		if (-1 == oversampling_coils)
+			oversampling_coils = 1.;
 	}
 
 	// for ENLIVE maps
@@ -325,8 +329,7 @@ int main_nlinv(int argc, char* argv[argc])
 	for (int i = 0; i < 3; i++)
 		sens_dims[i] = my_sens_dims[i] ?: sens_dims[i];
 
-	if (-1 != oversampling_coils)
-		conf.oversampling_coils = oversampling_coils;
+	conf.oversampling_coils = oversampling_coils;
 
 	if (conf.ret_os_coils)
 		for (int i = 0; i < 3; i++)
