@@ -105,7 +105,7 @@ static void tenmul_fun(const nlop_data_t* _data, int N, complex float* args[N])
 	md_ztenmul2(data->N, data->dims, data->ostr, dst, data->istr1, src1, data->istr2, src2);
 }
 
-static void tenmul_der2(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void tenmul_der2(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	const auto data = CAST_DOWN(tenmul_s, _data);
 	complex float* x1 = data->der1;
@@ -116,7 +116,7 @@ static void tenmul_der2(const nlop_data_t* _data, unsigned int /*o*/, unsigned i
 	md_ztenmul2(data->N, data->dims, data->ostr, dst, data->istr2, src, MD_STRIDES(data->N, data->dims1, CFL_SIZE), x1);
 }
 
-static void tenmul_adj2(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void tenmul_adj2(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	const auto data = CAST_DOWN(tenmul_s, _data);
 	complex float* x1 = data->der1;
@@ -128,7 +128,7 @@ static void tenmul_adj2(const nlop_data_t* _data, unsigned int /*o*/, unsigned i
 	md_ztenmulc2(data->N, data->dims, data->istr2, dst, data->ostr, src, MD_STRIDES(data->N, data->dims1, CFL_SIZE), x1);
 }
 
-static void tenmul_der1(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void tenmul_der1(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	const auto data = CAST_DOWN(tenmul_s, _data);
 	complex float* x2 = data->der2;
@@ -139,7 +139,7 @@ static void tenmul_der1(const nlop_data_t* _data, unsigned int /*o*/, unsigned i
 	md_ztenmul2(data->N, data->dims, data->ostr, dst, data->istr1, src, MD_STRIDES(data->N, data->dims2, CFL_SIZE), x2);
 }
 
-static void tenmul_adj1(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void tenmul_adj1(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	const auto data = CAST_DOWN(tenmul_s, _data);
 	complex float* x2 = data->der2;

@@ -460,7 +460,7 @@ static void sense_model_set_data_fun(const nlop_data_t* _data, int Narg, complex
 	}
 }
 
-static void sense_model_set_data_der(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void sense_model_set_data_der(const nlop_data_t* _data, int o, int i, complex float* dst, const complex float* src)
 {
 	assert(0 == i);
 	assert(0 == o);

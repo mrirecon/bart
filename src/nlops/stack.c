@@ -64,7 +64,7 @@ static void stack_fun(const nlop_data_t* _data, int N, complex float* args[N])
 
 }
 
-static void stack_der(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void stack_der(const nlop_data_t* _data, int o, int i, complex float* dst, const complex float* src)
 {
 	const auto data = CAST_DOWN(stack_s, _data);
 	int II = data->II;
@@ -80,7 +80,7 @@ static void stack_der(const nlop_data_t* _data, unsigned int o, unsigned int i, 
 	md_copy2(data->N, (*idims)[i], data->ostrs, &(MD_ACCESS(data->N, data->ostrs, (*pos)[i], dst)), (*istrs)[i], src, CFL_SIZE);
 }
 
-static void stack_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void stack_adj(const nlop_data_t* _data, int o, int i, complex float* dst, const complex float* src)
 {
 	const auto data = CAST_DOWN(stack_s, _data);
 	int II = data->II;
@@ -339,7 +339,7 @@ static void stack_container_fun(const nlop_data_t* _data, int N, complex float* 
 	}
 }
 
-static void stack_container_der(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* _dst, const complex float* _src)
+static void stack_container_der(const nlop_data_t* _data, int o, int i, complex float* _dst, const complex float* _src)
 {
 	const auto d = CAST_DOWN(stack_container_s, _data);
 
@@ -377,7 +377,7 @@ static void stack_container_der(const nlop_data_t* _data, unsigned int o, unsign
 	}
 }
 
-static void stack_container_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* _dst, const complex float* _src)
+static void stack_container_adj(const nlop_data_t* _data, int o, int i, complex float* _dst, const complex float* _src)
 {
 	const auto d = CAST_DOWN(stack_container_s, _data);
 
@@ -455,7 +455,7 @@ static void stack_container_adj(const nlop_data_t* _data, unsigned int o, unsign
 	}
 }
 
-static void stack_container_nrm(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* _dst, const complex float* _src)
+static void stack_container_nrm(const nlop_data_t* _data, int o, int i, complex float* _dst, const complex float* _src)
 {
 	const auto d = CAST_DOWN(stack_container_s, _data);
 
@@ -585,8 +585,8 @@ static const struct nlop_s* nlop_stack_container_internal_create(int N, const st
 	int max_DI = 0;
 	int max_DO = 0;
 
-	unsigned int DI[II];
-	unsigned int DO[OO];
+	int DI[II];
+	int DO[OO];
 
 	for (int i = 0; i < OO; i++) {
 

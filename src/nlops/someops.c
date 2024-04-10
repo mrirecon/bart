@@ -107,7 +107,7 @@ cleanup:
 		md_free(src2);
 }
 
-static void scale_apply(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void scale_apply(const nlop_data_t* _data, int o, int i, complex float* dst, const complex float* src)
 {
 	assert(0 == o);
 	const auto data = CAST_DOWN(zaxpbz_s, _data);
@@ -116,7 +116,7 @@ static void scale_apply(const nlop_data_t* _data, unsigned int o, unsigned int i
 	md_zsmul2(data->N, data->dims, data->ostrs, dst, (i == 0) ? data->istrs1 : data->istrs2, src, scale);
 }
 
-static void scale_adjoint(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void scale_adjoint(const nlop_data_t* _data, int o, int i, complex float* dst, const complex float* src)
 {
 	assert(0 == o);
 	const auto data = CAST_DOWN(zaxpbz_s, _data);
@@ -227,7 +227,7 @@ static void dump_fun(const nlop_data_t* _data, complex float* dst, const complex
 	}
 }
 
-static void dump_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void dump_der(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	const auto data = CAST_DOWN(dump_s, _data);
 
@@ -242,7 +242,7 @@ static void dump_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned int 
 	}
 }
 
-static void dump_adj(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void dump_adj(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	const auto data = CAST_DOWN(dump_s, _data);
 
@@ -405,7 +405,7 @@ static void zmax_fun(const nlop_data_t* _data, complex float* dst, const complex
 	md_zgreatequal2(data->N, data->dims, data->strides, data->max_index, data->strides, src, data->outstrides, dst);
 }
 
-static void zmax_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void zmax_der(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	const auto data = CAST_DOWN(zmax_s, _data);
 
@@ -413,7 +413,7 @@ static void zmax_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned int 
 	md_zreal(data->N, data->outdims, dst, dst);
 }
 
-static void zmax_adj(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void zmax_adj(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	const auto data = CAST_DOWN(zmax_s, _data);
 

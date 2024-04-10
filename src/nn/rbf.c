@@ -179,7 +179,7 @@ static void rbf_fun(const nlop_data_t* _data, int N_args, complex float* args[N_
 	md_free(real_dst);
 }
 
-static void rbf_der2(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void rbf_der2(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	//dst_ik = sum_j src_ij * exp[-(z_ik-mu_j)^2/(s*sigma^2)]
 
@@ -241,7 +241,7 @@ static void rbf_der2(const nlop_data_t* _data, unsigned int /*o*/, unsigned int 
 	md_free(real_src);
 }
 
-static void rbf_adj2(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void rbf_adj2(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	//dst_ij = sum_k src_ik * exp[-(z_ik-mu_j)^2/(s*sigma^2)]
 
@@ -298,7 +298,7 @@ static void rbf_adj2(const nlop_data_t* _data, unsigned int /*o*/, unsigned int 
 
 }
 
-static void rbf_deradj1(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void rbf_deradj1(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	const auto data = CAST_DOWN(rbf_s, _data);
 	float* der_dz = data->dz;

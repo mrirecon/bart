@@ -71,7 +71,7 @@ static void stats_fun(const nlop_data_t* _data, int N, complex float* args[N])
 	md_zreal(data->codom->N, data->codom->dims, var, var);
 }
 
-static void stats_der_mean(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void stats_der_mean(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	const auto data = CAST_DOWN(stats_s, _data);
 
@@ -79,7 +79,7 @@ static void stats_der_mean(const nlop_data_t* _data, unsigned int /*o*/, unsigne
 	md_zsmul(data->dom->N, data->codom->dims, dst, dst, 1. / data->n);
 }
 
-static void stats_adj_mean(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void stats_adj_mean(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	const auto data = CAST_DOWN(stats_s, _data);
 
@@ -91,7 +91,7 @@ static void stats_adj_mean(const nlop_data_t* _data, unsigned int /*o*/, unsigne
 	md_free(tmp);
 }
 
-static void stats_der_var(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void stats_der_var(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	const auto data = CAST_DOWN(stats_s, _data);
 
@@ -100,7 +100,7 @@ static void stats_der_var(const nlop_data_t* _data, unsigned int /*o*/, unsigned
 	md_zreal(data->codom->N, data->codom->dims, dst, dst);
 }
 
-static void stats_adj_var(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void stats_adj_var(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	const auto data = CAST_DOWN(stats_s, _data);
 
@@ -235,21 +235,21 @@ static void normalize_fun(const nlop_data_t* _data, int N, complex float* args[N
 		normalize_clear_der_var(data);
 }
 
-static void normalize_deradj_src(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void normalize_deradj_src(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	const auto data = CAST_DOWN(normalize_s, _data);
 
 	md_zmul2(data->dom->N, data->dom->dims, data->dom->strs, dst, data->dom->strs, src, data->statdom->strs, data->scale);
 }
 
-static void normalize_der_mean(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void normalize_der_mean(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	const auto data = CAST_DOWN(normalize_s, _data);
 	md_zmul2(data->dom->N, data->dom->dims, data->dom->strs, dst, data->statdom->strs, src, data->statdom->strs, data->scale);
 	md_zsmul(data->dom->N, data->dom->dims, dst, dst, -1.);
 }
 
-static void normalize_adj_mean(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void normalize_adj_mean(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	const auto data = CAST_DOWN(normalize_s, _data);
 
@@ -260,7 +260,7 @@ static void normalize_adj_mean(const nlop_data_t* _data, unsigned int /*o*/, uns
 	md_zsmul(data->statdom->N, data->statdom->dims, dst, dst, -1.);
 }
 
-static void normalize_der_var(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void normalize_der_var(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	const auto data = CAST_DOWN(normalize_s, _data);
 
@@ -280,7 +280,7 @@ static void normalize_der_var(const nlop_data_t* _data, unsigned int /*o*/, unsi
 	md_free(tmp);
 }
 
-static void normalize_adj_var(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void normalize_adj_var(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	const auto data = CAST_DOWN(normalize_s, _data);
 
@@ -424,7 +424,7 @@ static void bn_fun(const nlop_data_t* _data, int D, complex float* args[D])
 	assert(4 == D);
 
 
-	unsigned int N = data->dom->N;
+	int N = data->dom->N;
 
 	long nstat_dims[N]; //dims that not stay
 	long nstat_strs[N];
@@ -479,14 +479,14 @@ static void bn_fun(const nlop_data_t* _data, int D, complex float* args[D])
 }
 
 
-static void bn_deradj_in(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void bn_deradj_in(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	const auto data = CAST_DOWN(bn_s, _data);
 
 	complex float* der_out = data->der_out;
 	complex float* der_scale = data->der_scale;
 
-	unsigned int N = data->dom->N;
+	int N = data->dom->N;
 
 	long nstat_dims[N]; //dims that not stay
 	long nstat_strs[N];

@@ -64,7 +64,7 @@ struct meco_s {
 	complex float* weights;
 
 	const struct linop_s* linop_fB0;
-	unsigned int weight_fB0_type;
+	int weight_fB0_type;
 };
 
 DEF_TYPEID(meco_s);
@@ -265,10 +265,11 @@ void meco_back_fB0(const struct linop_s* op, complex float* dst, const complex f
 	linop_adjoint_unchecked(op, dst, src);
 }
 
-unsigned int meco_get_weight_fB0_type(struct nlop_s* op)
+int meco_get_weight_fB0_type(struct nlop_s* op)
 {
 	const nlop_data_t* _data = nlop_get_data(op);
 	struct meco_s* data = CAST_DOWN(meco_s, _data);
+
 	return data->weight_fB0_type;
 }
 
@@ -798,7 +799,7 @@ static void meco_fun_phasediff(const nlop_data_t* _data, complex float* dst, con
 }
 
 
-static void meco_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void meco_der(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	struct meco_s* data = CAST_DOWN(meco_s, _data);
 
@@ -830,7 +831,7 @@ static void meco_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned int 
 	md_free(tmp_exp);
 }
 
-static void meco_adj(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void meco_adj(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	struct meco_s* data = CAST_DOWN(meco_s, _data);
 

@@ -47,7 +47,7 @@ struct convcorr_geom_s {
 	const long* istrs1;
 	const long* istrs2;
 
-	unsigned int flags;
+	unsigned long flags;
 
 	complex float* der1;
 	complex float* der2;
@@ -124,7 +124,7 @@ static void convcorr_geom_fun(const nlop_data_t* _data, int N, complex float* ar
 }
 
 
-static void convcorr_geom_der2(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void convcorr_geom_der2(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	const auto data = CAST_DOWN(convcorr_geom_s, _data);
 	complex float* x1 = data->der1;
@@ -136,7 +136,7 @@ static void convcorr_geom_der2(const nlop_data_t* _data, unsigned int /*o*/, uns
 	md_zfmacc2(2 * data->N, data->mdims, data->ostrs, dst, data->istrs2, src + data->shift, data->istrs1, x1);
 }
 
-static void convcorr_geom_adj2(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void convcorr_geom_adj2(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	const auto data = CAST_DOWN(convcorr_geom_s, _data);
 	complex float* x1 = data->der1;
@@ -148,7 +148,7 @@ static void convcorr_geom_adj2(const nlop_data_t* _data, unsigned int /*o*/, uns
 	md_zfmac2(2 * data->N, data->mdims, data->istrs2, dst + data->shift, data->ostrs, src, data->istrs1, x1);
 }
 
-static void convcorr_geom_der1(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void convcorr_geom_der1(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	const auto data = CAST_DOWN(convcorr_geom_s, _data);
 	complex float* x2 = data->der2;
@@ -160,7 +160,7 @@ static void convcorr_geom_der1(const nlop_data_t* _data, unsigned int /*o*/, uns
 	md_zfmacc2(2 * data->N, data->mdims, data->ostrs, dst, data->istrs1, src, data->istrs2, x2 + data->shift);
 }
 
-static void convcorr_geom_adj1(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void convcorr_geom_adj1(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	const auto data = CAST_DOWN(convcorr_geom_s, _data);
 	complex float* x2 = data->der2;
@@ -192,7 +192,7 @@ static void convcorr_geom_del(const nlop_data_t* _data)
 	xfree(data);
 }
 
-static struct nlop_s* nlop_convcorr_geom_valid_create(long N, unsigned int flags, const long odims[N], const long idims[N], const long kdims[N],
+static struct nlop_s* nlop_convcorr_geom_valid_create(long N, unsigned long flags, const long odims[N], const long idims[N], const long kdims[N],
 							bool conv, const long strides[N], const long dilations[N], bool transp)
 {
 	for (int i = 0; i < N; i++) {
@@ -263,7 +263,7 @@ static struct nlop_s* nlop_convcorr_geom_valid_create(long N, unsigned int flags
 }
 
 
-struct nlop_s* nlop_convcorr_geom_create(long N, unsigned int flags, const long odims[N], const long idims[N], const long kdims[N],
+struct nlop_s* nlop_convcorr_geom_create(int N, unsigned long flags, const long odims[N], const long idims[N], const long kdims[N],
 					enum PADDING conv_pad, bool conv, const long strides[N], const long dilations[N], char transpc)
 {
 	long ones[N];

@@ -101,7 +101,7 @@ static void T2_fun(const nlop_data_t* _data, complex float* dst, const complex f
 	md_free(tmp_exp);
 }
 
-static void T2_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void T2_der(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	struct T2_s* data = CAST_DOWN(T2_s, _data);
 
@@ -129,7 +129,7 @@ static void T2_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*
 	md_free(tmp_map);
 }
 
-static void T2_adj(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void T2_adj(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	struct T2_s* data = CAST_DOWN(T2_s, _data);
 

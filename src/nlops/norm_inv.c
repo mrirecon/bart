@@ -199,7 +199,7 @@ static void norm_inv_fun(const nlop_data_t* _data, int Narg, complex float* args
 }
 
 
-static void norm_inv_der_src(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void norm_inv_der_src(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	const auto d = CAST_DOWN(norm_inv_s, _data);
 
@@ -218,7 +218,7 @@ static void norm_inv_der_src(const nlop_data_t* _data, unsigned int /*o*/, unsig
 }
 
 
-static void norm_inv_adj_src(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void norm_inv_adj_src(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	const auto d = CAST_DOWN(norm_inv_s, _data);
 
@@ -228,7 +228,7 @@ static void norm_inv_adj_src(const nlop_data_t* _data, unsigned int /*o*/, unsig
 }
 
 
-static void norm_inv_der_par(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void norm_inv_der_par(const nlop_data_t* _data, int o, int i, complex float* dst, const complex float* src)
 {
 	assert(0 == o);
 	assert(0 < i);
@@ -264,7 +264,7 @@ static void norm_inv_der_par(const nlop_data_t* _data, unsigned int o, unsigned 
 }
 
 
-static void norm_inv_adj_par(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void norm_inv_adj_par(const nlop_data_t* _data, int o, int i, complex float* dst, const complex float* src)
 {
 	assert(0 == o);
 	assert(0 < i);

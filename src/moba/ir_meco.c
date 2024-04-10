@@ -360,9 +360,8 @@ static void ir_meco_fun(const nlop_data_t* _data, complex float* dst, const comp
 	md_free(tmp_exp2);
 }
 
-static void ir_meco_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void ir_meco_der(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
-
 	struct ir_meco_s* data = CAST_DOWN(ir_meco_s, _data);
 	long pos[data->N];
 
@@ -415,9 +414,8 @@ static void ir_meco_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned i
 	md_zfmac2(data->N, data->out_dims, data->out_strs, dst, data->map_strs, data->tmp_map, data->out_strs, data->dfB0);
 }
 
-static void ir_meco_adj(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void ir_meco_adj(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
-
 	struct ir_meco_s* data = CAST_DOWN(ir_meco_s, _data);
 
 	long pos[data->N];
@@ -586,9 +584,8 @@ static void ir_meco_w_fun(const nlop_data_t* _data, complex float* dst, const co
 }
 
 
-static void ir_meco_w_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void ir_meco_w_der(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
-
 	struct ir_meco_s* data = CAST_DOWN(ir_meco_s, _data);
 	long pos[data->N];
 
@@ -625,7 +622,7 @@ static void ir_meco_w_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned
 	md_zfmac2(data->N, data->out_dims, data->out_strs, dst, data->map_strs, data->tmp_map, data->out_strs, data->dfB0);
 }
 
-static void ir_meco_w_adj(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void ir_meco_w_adj(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	struct ir_meco_s* data = CAST_DOWN(ir_meco_s, _data);
 
@@ -743,7 +740,7 @@ static void meco_fun(const nlop_data_t* _data, complex float* dst, const complex
 }
 
 
-static void meco_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void meco_der(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	struct ir_meco_s* data = CAST_DOWN(ir_meco_s, _data);
 
@@ -776,7 +773,7 @@ static void meco_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned int 
 	md_zfmac2(data->N, data->out_dims, data->out_strs, dst, data->map_strs, data->tmp_map, data->out_strs, data->dfB0);
 }
 
-static void meco_adj(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void meco_adj(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	struct ir_meco_s* data = CAST_DOWN(ir_meco_s, _data);
 
@@ -868,7 +865,7 @@ static void meco_fun2(const nlop_data_t* _data, complex float* dst, const comple
 }
 
 
-static void meco_der2(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void meco_der2(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	struct ir_meco_s* data = CAST_DOWN(ir_meco_s, _data);
 	long pos[data->N];
@@ -894,7 +891,7 @@ static void meco_der2(const nlop_data_t* _data, unsigned int /*o*/, unsigned int
 	md_zfmac2(data->N, data->out_dims, data->out_strs, dst, data->map_strs, data->tmp_map, data->out_strs, data->dfB0);
 }
 
-static void meco_adj2(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void meco_adj2(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	struct ir_meco_s* data = CAST_DOWN(ir_meco_s, _data);
 

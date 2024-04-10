@@ -892,7 +892,7 @@ static void noir_nufft_fun(const nlop_data_t* _data, int N, complex float* args[
 	linop_forward_unchecked(data->nufft, dst, src);
 }
 
-static void noir_nufft_der(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void noir_nufft_der(const nlop_data_t* _data, int o, int i, complex float* dst, const complex float* src)
 {
 	assert(0 == o);
 	assert(0 == i);
@@ -900,7 +900,7 @@ static void noir_nufft_der(const nlop_data_t* _data, unsigned int o, unsigned in
 	linop_forward_unchecked(data->nufft, dst, src);
 }
 
-static void noir_nufft_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void noir_nufft_adj(const nlop_data_t* _data, int o, int i, complex float* dst, const complex float* src)
 {
 	assert(0 == o);
 	assert(0 == i);
@@ -1153,7 +1153,7 @@ static void noir_nlop_debug_fun(const nlop_data_t* _data, complex float* dst, co
 	nlop_generic_apply_unchecked(data->frw, 1, (void*[1]) { (void*)src });
 }
 
-static void noir_nlop_debug_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void noir_nlop_debug_der(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	const auto data = CAST_DOWN(noir_nlop_debug_s, _data);
 
@@ -1162,7 +1162,7 @@ static void noir_nlop_debug_der(const nlop_data_t* _data, unsigned int /*o*/, un
 	nlop_generic_apply_unchecked(data->der, 1, (void*[1]) { (void*)src });
 }
 
-static void noir_nlop_debug_adj(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void noir_nlop_debug_adj(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	const auto data = CAST_DOWN(noir_nlop_debug_s, _data);
 

@@ -293,7 +293,7 @@ const struct nlop_s* nlop_rand_split_fixed_create(int N, const long dims[N], uns
 
 
 
-const struct nlop_s* nlop_dropout_create(int N, const long dims[N], float p, unsigned int shared_dims_flag)
+const struct nlop_s* nlop_dropout_create(int N, const long dims[N], float p, unsigned long shared_dims_flag)
 {
 	long dims2[N];
 	md_select_dims(N, ~shared_dims_flag, dims2, dims);
@@ -455,7 +455,7 @@ static void norm_max_abs_fun(const nlop_data_t* _data, int D, complex float* arg
 
 }
 
-static void norm_max_abs_deradj(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void norm_max_abs_deradj(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	const auto data = CAST_DOWN(norm_max_abs_s, _data);
 
@@ -550,7 +550,7 @@ static void norm_znorm_fun(const nlop_data_t* _data, int D, complex float* args[
 	md_zmul2(N, dims, MD_STRIDES(N, dims, CFL_SIZE), dst, MD_STRIDES(N, dims, CFL_SIZE), src, MD_STRIDES(N, sdims, CFL_SIZE), data->inv_scale);
 }
 
-static void norm_znorm_deradj(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void norm_znorm_deradj(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	const auto data = CAST_DOWN(norm_znorm_s, _data);
 

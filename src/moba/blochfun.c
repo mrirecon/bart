@@ -332,7 +332,7 @@ static void bloch_fun(const nlop_data_t* _data, complex float* dst, const comple
 }
 
 
-static void bloch_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void bloch_der(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	debug_printf(DP_DEBUG3, "Start Derivative\n");
 
@@ -372,7 +372,7 @@ static void bloch_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned int
 	md_free(tmp_map);
 }
 
-static void bloch_adj(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void bloch_adj(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	debug_printf(DP_DEBUG3, "Start Derivative\n");
 

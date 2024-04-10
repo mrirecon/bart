@@ -173,7 +173,7 @@ static void zrblock_diag_fun(const nlop_data_t* _data, int Nargs, complex float*
 		data->zrblock_diag_fun(data->data, N, OO, odims, dst, II, idims, src, ddims, (*der), (*derc));
 }
 
-static void zblock_diag_der(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void zblock_diag_der(const nlop_data_t* _data, int o, int i, complex float* dst, const complex float* src)
 {
 	auto data = CAST_DOWN(block_diag_s, _data);
 
@@ -200,7 +200,7 @@ static void zblock_diag_der(const nlop_data_t* _data, unsigned int o, unsigned i
 			);
 }
 
-static void zblock_diag_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void zblock_diag_adj(const nlop_data_t* _data, int o, int i, complex float* dst, const complex float* src)
 {
 	auto data = CAST_DOWN(block_diag_s, _data);
 
@@ -476,7 +476,7 @@ static void rblock_diag_fun(const nlop_data_t* _data, int Nargs, complex float* 
 	data->rblock_diag_fun(data->data, N, OO, odims, dst, II, idims, src, ddims, (*der));
 }
 
-static void rblock_diag_der(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void rblock_diag_der(const nlop_data_t* _data, int o, int i, complex float* dst, const complex float* src)
 {
 	auto data = CAST_DOWN(block_diag_s, _data);
 	int OO = data->OO;
@@ -490,7 +490,7 @@ static void rblock_diag_der(const nlop_data_t* _data, unsigned int o, unsigned i
 	md_tenmul(data->N, data->iov_out[o]->dims, (float*)dst, data->iov_in[i]->dims, (float*)src, ddims, der);
 }
 
-static void rblock_diag_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void rblock_diag_adj(const nlop_data_t* _data, int o, int i, complex float* dst, const complex float* src)
 {
 	auto data = CAST_DOWN(block_diag_s, _data);
 

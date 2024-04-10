@@ -70,7 +70,7 @@ static void znorm_fun(const nlop_data_t* _data, complex float* dst, const comple
 	md_smul(d->N, d->ridims, d->tmp, (const float*)src, 2. / d->scale);
 }
 
-static void znorm_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void znorm_der(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	const auto d = CAST_DOWN(znorm_s, _data);
 	assert(NULL != d->tmp);
@@ -83,7 +83,7 @@ static void znorm_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned int
 	md_free(tmp);
 }
 
-static void znorm_adj(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void znorm_adj(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	const auto d = CAST_DOWN(znorm_s, _data);
 	assert(NULL != d->tmp);
@@ -239,7 +239,7 @@ static void zasum_fun(const nlop_data_t* _data, complex float* dst, const comple
 }
 
 
-static void zasum_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void zasum_der(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	auto data = CAST_DOWN(zasum_s, _data);
 	assert(NULL != data->der);
@@ -248,7 +248,7 @@ static void zasum_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned int
 	md_tenmul(data->N, MD_SINGLETON_DIMS(data->N), (float*)dst, data->rdims, (float*)src, data->rdims, data->der);
 }
 
-static void zasum_adj(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void zasum_adj(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	auto data = CAST_DOWN(zasum_s, _data);
 	assert(NULL != data->der);
@@ -583,7 +583,7 @@ static void cce_fun(const nlop_data_t* _data, int D, complex float* args[D])
 }
 
 
-static void cce_der1(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void cce_der1(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	const struct cce_s* data = CAST_DOWN(cce_s, _data);
 
@@ -597,7 +597,7 @@ static void cce_der1(const nlop_data_t* _data, unsigned int /*o*/, unsigned int 
 	md_zsmul(1, odims, dst, dst, -1. / data->scaling);
 }
 
-static void cce_der2(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void cce_der2(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	const struct cce_s* data = CAST_DOWN(cce_s, _data);
 
@@ -611,7 +611,7 @@ static void cce_der2(const nlop_data_t* _data, unsigned int /*o*/, unsigned int 
 	md_zsmul(1, odims, dst, dst, -1. / data->scaling);
 }
 
-static void cce_adj1(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void cce_adj1(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	const struct cce_s* data = CAST_DOWN(cce_s, _data);
 
@@ -629,7 +629,7 @@ static void cce_adj1(const nlop_data_t* _data, unsigned int /*o*/, unsigned int 
 	md_free(tmp);
 }
 
-static void cce_adj2(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* dst, const complex float* src)
+static void cce_adj2(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
 {
 	const struct cce_s* data = CAST_DOWN(cce_s, _data);
 
@@ -1052,7 +1052,7 @@ static void dice_fun(const nlop_data_t* _data, int D, complex float* args[D])
 	md_free(tmp);
 }
 
-static void dice_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned int i, complex float* dst, const complex float* src)
+static void dice_der(const nlop_data_t* _data, int /*o*/, int i, complex float* dst, const complex float* src)
 {
 	const struct dice_s* d = CAST_DOWN(dice_s, _data);
 
@@ -1072,7 +1072,7 @@ static void dice_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned int 
 	md_zsmul(d->cod->N, d->cod->dims, dst, dst, -2.);
 }
 
-static void dice_adj(const nlop_data_t* _data, unsigned int /*o*/, unsigned int i, complex float* dst, const complex float* src)
+static void dice_adj(const nlop_data_t* _data, int /*o*/, int i, complex float* dst, const complex float* src)
 {
 	const struct dice_s* d = CAST_DOWN(dice_s, _data);
 	int N = d->N;
