@@ -165,7 +165,7 @@ else
 endif
 #OPT += -ffp-contract=off
 CPPFLAGS ?= -Wall -Wextra
-CFLAGS ?= $(OPT) -Wmissing-prototypes
+CFLAGS ?= $(OPT) -Wmissing-prototypes -Wincompatible-pointer-types
 CXXFLAGS ?= $(OPT)
 
 ifeq ($(BUILDTYPE), MacOSX)
