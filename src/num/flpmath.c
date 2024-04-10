@@ -1215,7 +1215,9 @@ void md_ztenmul2(int D, const long max_dims[D], const long out_strs[D], complex 
 	if (simple_matmul(D, max_dims, out_strs, out, in2_strs, in2, in1_strs, in1))
 		return;
 
-	if (D == md_calc_blockdim(D, max_dims, out_strs, CFL_SIZE)) {
+	const long (*nstr[3])[D?D:1] = { (const long (*)[D?D:1])out_strs, (const long (*)[D?D:1])in1_strs, (const long (*)[D?D:1])in2_strs};
+
+	if (0 == (md_nontriv_dims(D, max_dims) & (~parallelizable(3, 1, D, max_dims, nstr, (size_t[3]){ CFL_SIZE, CFL_SIZE, CFL_SIZE })))) {
 
 		md_zmul2(D, max_dims, out_strs, out, in1_strs, in1, in2_strs, in2);
 		return;
@@ -1228,7 +1230,9 @@ void md_ztenmul2(int D, const long max_dims[D], const long out_strs[D], complex 
 
 void md_ztenmulc2(int D, const long max_dims[D], const long out_strs[D], complex float* out, const long in1_strs[D], const complex float* in1, const long in2_strs[D], const complex float* in2)
 {
-	if (D == md_calc_blockdim(D, max_dims, out_strs, CFL_SIZE)) {
+	const long (*nstr[3])[D?D:1] = { (const long (*)[D?D:1])out_strs, (const long (*)[D?D:1])in1_strs, (const long (*)[D?D:1])in2_strs};
+
+	if (0 == (md_nontriv_dims(D, max_dims) & (~parallelizable(3, 1, D, max_dims, nstr, (size_t[3]){ CFL_SIZE, CFL_SIZE, CFL_SIZE })))) {
 
 		md_zmulc2(D, max_dims, out_strs, out, in1_strs, in1, in2_strs, in2);
 		return;

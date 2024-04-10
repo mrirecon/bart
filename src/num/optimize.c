@@ -454,7 +454,7 @@ static void compute_enclosures(int N, bool matrix[N][N], const long dims[N], con
  * compute set of parallelizable dimensions
  *
  */
-static unsigned long parallelizable(int D, unsigned int io, int N, const long dims[N], long (*strs[D])[N], size_t size[D])
+unsigned long parallelizable(int D, unsigned int io, int N, const long dims[N], const long (*strs[D])[N], size_t size[D])
 {
 	// we assume no input / output overlap
 	// (i.e. inputs which are also outputs have to be marked as output)
@@ -516,7 +516,7 @@ long num_chunk_size = 32 * 256;
  */
 unsigned long dims_parallel(int D, unsigned long io, int N, const long dims[N], long (*strs[D])[N], size_t size[D])
 {
-	unsigned long flags = parallelizable(D, io, N, dims, strs, size);
+	unsigned long flags = parallelizable(D, io, N, dims, (const long (**)[])strs, size);
 
 	int i = N;
 
