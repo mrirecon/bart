@@ -31,7 +31,9 @@ struct noir2_conf_s {
 
 	unsigned long loop_flags;
 	_Bool realtime;
-	float temp_damp;	
+	float temp_damp;
+
+	_Bool optimized;	
 };
 
 extern const struct noir2_conf_s noir2_defaults;

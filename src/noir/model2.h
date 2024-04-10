@@ -80,6 +80,18 @@ extern struct noir2_s noir2_noncart_create(int N,
 	const long col_dims[N],
 	const struct noir2_model_conf_s* conf);
 
+extern struct noir2_s noir2_noncart_optimized_create(int N,
+	const long trj_dims[N], const _Complex float* traj,
+	const long wgh_dims[N], const _Complex float* weights,
+	const long bas_dims[N], const _Complex float* basis,
+	const long msk_dims[N], const _Complex float* mask,
+	const long ksp_dims[N],
+	const long cim_dims[N],
+	const long img_dims[N],
+	const long kco_dims[N],
+	const long col_dims[N],
+	const struct noir2_model_conf_s* conf);
+
 extern struct noir2_s noir2_cart_create(int N,
 	const long pat_dims[N], const _Complex float* pattern,
 	const long bas_dims[N], const _Complex float* basis,

@@ -88,6 +88,8 @@ const struct noir2_conf_s noir2_defaults = {
 	.temp_damp = 0.9,
 
 	.ret_os_coils = false,
+
+	.optimized = false,
 };
 
 
@@ -105,9 +107,13 @@ void noir2_recon(const struct noir2_conf_s* conf, struct noir2_s* noir_ops,
 	long dat_dims[N];
 	md_copy_dims(N, dat_dims, linop_domain(noir_ops->lop_asym)->dims);
 
-	assert(md_check_equal_dims(N, img_dims, nlop_generic_domain(noir_ops->model, 0)->dims, ~0UL));
-	assert(md_check_equal_dims(N, kco_dims, nlop_generic_domain(noir_ops->model, 1)->dims, ~0UL));
-	assert(md_check_equal_dims(N, ksp_dims, linop_codomain(noir_ops->lop_asym)->dims, ~0UL));
+	if (1 < nlop_get_nr_in_args(noir_ops->model)) {
+
+		assert(md_check_equal_dims(N, img_dims, nlop_generic_domain(noir_ops->model, 0)->dims, ~0UL));
+		assert(md_check_equal_dims(N, kco_dims, nlop_generic_domain(noir_ops->model, 1)->dims, ~0UL));
+		assert(md_check_equal_dims(N, ksp_dims, linop_codomain(noir_ops->lop_asym)->dims, ~0UL));
+	
+	}
 
 	complex float* data = md_alloc_sameplace(N, dat_dims, CFL_SIZE, kspace);
 	linop_adjoint(noir_ops->lop_asym, N, dat_dims, data, N, ksp_dims, kspace);
@@ -278,7 +284,7 @@ void noir2_recon_noncart(
 	md_calc_strides(N, wgh_strs, wgh_dims, CFL_SIZE);
 	md_calc_strides(N, kco_strs, kco_dims, CFL_SIZE);
 
-	struct noir2_s noir_ops = noir2_noncart_create(N, ltrj_dims, NULL, lwgh_dims, weights, bas_dims, basis, msk_dims, mask, lksp_dims, lcim_dims, limg_dims, lkco_dims, lcol_dims, &mconf);
+	struct noir2_s noir_ops = (conf->optimized ? noir2_noncart_optimized_create :noir2_noncart_create)(N, ltrj_dims, NULL, lwgh_dims, weights, bas_dims, basis, msk_dims, mask, lksp_dims, lcim_dims, limg_dims, lkco_dims, lcol_dims, &mconf);
 
 #ifdef USE_CUDA
 	md_alloc_fun_t my_alloc = conf->gpu ? md_alloc_gpu : md_alloc;

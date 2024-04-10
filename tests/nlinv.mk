@@ -276,6 +276,30 @@ tests/test-nlinv-basis-noncart: nlinv traj phantom delta fmac ones repmat pics s
 	touch $@
 
 
+tests/test-nlinv-noncart-fast: traj scale phantom nufft resize nlinv fmac nrmse
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
+	$(TOOLDIR)/traj -r -x256 -y21 traj.ra				;\
+	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra				;\
+	$(TOOLDIR)/phantom -s8 -k -t traj2.ra ksp.ra			;\
+	$(TOOLDIR)/nlinv --sens-os=1.25 --fast -N -S -i8 -t traj2.ra ksp.ra r.ra  c.ra	;\
+	$(TOOLDIR)/nlinv --sens-os=1.25        -N -S -i8 -t traj2.ra ksp.ra r2.ra c2.ra	;\
+	$(TOOLDIR)/nrmse -t 0.005 r.ra r2.ra				;\
+	$(TOOLDIR)/nrmse -t 0.0005 c.ra c2.ra				;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-nlinv-noncart-fast-gpu: traj scale phantom nufft resize nlinv fmac nrmse
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
+	$(TOOLDIR)/traj -r -x256 -y21 traj.ra				;\
+	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra				;\
+	$(TOOLDIR)/phantom -s8 -k -t traj2.ra ksp.ra			;\
+	$(TOOLDIR)/nlinv --sens-os=1.25 --ksens-dims=32:32:1 -g --fast -N -S -i8 -t traj2.ra ksp.ra r.ra  c.ra	;\
+	$(TOOLDIR)/nlinv --sens-os=1.25 --ksens-dims=32:32:1 -g        -N -S -i8 -t traj2.ra ksp.ra r2.ra c2.ra	;\
+	$(TOOLDIR)/nrmse -t 0.001 r.ra r2.ra				;\
+	$(TOOLDIR)/nrmse -t 0.001 c.ra c2.ra				;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 
 TESTS += tests/test-nlinv tests/test-nlinv-sms tests/test-nlinv-sms-noncart
 TESTS += tests/test-nlinv-batch tests/test-nlinv-batch2
