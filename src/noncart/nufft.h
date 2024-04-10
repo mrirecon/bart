@@ -65,6 +65,17 @@ extern _Complex float* compute_psf(int N,
 				   _Bool periodic,
 				   _Bool lowmem);
 
+extern _Complex float* compute_psf_cached(int N,
+				   const long img2_dims[__VLA(N)],
+				   const long trj_dims[__VLA(N)],
+				   const complex float* traj,
+				   const long bas_dims[__VLA2(N)],
+				   const complex float* basis,
+				   const long wgh_dims[__VLA2(N)],
+				   const complex float* weights,
+				   _Bool periodic,
+				   _Bool lowmem,
+				   struct linop_s** lop_nufft);
 
 extern const struct operator_s* nufft_precond_create(const struct linop_s* nufft_op);
 

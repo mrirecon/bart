@@ -289,7 +289,7 @@ static struct nufft_conf_s compute_psf_nufft_conf(bool periodic, bool lowmem, bo
 }
 
 
-static complex float* compute_psf_internal(int N, const long img_dims[N], const long trj_dims[N], const complex float* traj,
+complex float* compute_psf_cached(int N, const long img_dims[N], const long trj_dims[N], const complex float* traj,
 				const long bas_dims[N], const complex float* basis,
 				const long wgh_dims[N], const complex float* weights,
 				bool periodic, bool lowmem,
@@ -355,7 +355,7 @@ complex float* compute_psf(int N, const long img_dims[N], const long trj_dims[N]
 				const long wgh_dims[N], const complex float* weights,
 				bool periodic, bool lowmem)
 {
-	return compute_psf_internal(N, img_dims, trj_dims, traj, bas_dims, basis, wgh_dims, weights, periodic, lowmem, NULL);
+	return compute_psf_cached(N, img_dims, trj_dims, traj, bas_dims, basis, wgh_dims, weights, periodic, lowmem, NULL);
 }
 
 // This function computes decompose(fftuc(nufft^H(1; 2*traj)) on the factor 2 oversampled grid
@@ -520,7 +520,7 @@ static complex float* compute_psf2(int N, const long psf_dims[N + 1], unsigned l
 
 	md_zsmul(ND, trj_dims, traj2, traj, 2.);
 
-	complex float* psft = compute_psf_internal(ND, img2_dims, trj_dims, traj2, bas_dims, basis, wgh_dims, weights, periodic, lowmem, lop_nufft);
+	complex float* psft = compute_psf_cached(ND, img2_dims, trj_dims, traj2, bas_dims, basis, wgh_dims, weights, periodic, lowmem, lop_nufft);
 
 	md_free(traj2);
 
