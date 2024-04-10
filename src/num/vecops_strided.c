@@ -683,21 +683,14 @@ static int check_unfold(int N, long ndims[N], long nostrs[N], long nistrs1[N], l
 	md_copy_strides(N, nistrs1, tistrs1);
 	md_copy_strides(N, nistrs2, tistrs2);
 
-	long tidims1[N];
-	long tidims2[N];
 
-	md_select_dims(N, md_nontriv_strides(N, nistrs1), tidims1, ndims);
-	md_select_dims(N, md_nontriv_strides(N, nistrs2), tidims2, ndims);
+	if (0 == tostrs[0])
+		return -1;
 
-	md_calc_strides(N, tostrs, ndims, size);
-	md_calc_strides(N, tistrs1, tidims1, size);
-	md_calc_strides(N, tistrs2, tidims2, size);
+	int i = 1;
 
-	int i = 0;
 	while ( i < N
-		&& (tostrs[i] == nostrs[i])
-		&& (tistrs1[i] == nistrs1[i])
-		&& (tistrs2[i] == nistrs2[i])
+		&& (nostrs[i] >= nostrs[i - 1] * ndims[i - 1])
 		&& (1 != ndims[i]))
 		i++;
 
@@ -707,7 +700,7 @@ static int check_unfold(int N, long ndims[N], long nostrs[N], long nistrs1[N], l
 	if ((1 == i) && ((long)size == nostrs[0]) && ((long)size == nistrs1[0]) && ((long)size == nistrs2[0]))
 		return -1; // simple vecop case
 	
-	return MIN(2, i);
+	return MIN(3, i);
 }
 
 /**
@@ -883,23 +876,15 @@ static int check_reduce_inner(int N, long ndims[N], long nostrs[N], long nistrs1
 }
 
 
-// computes the size of an array with strides ignoring dims with 0 strides
-// returns zero if block is not contiguous in memory
-static long get_block_size(int N, const long dims[N], const long strs[N], size_t size)
+// computes the size of an array with strides
+static long get_block_size(int N, const long dims[N], const long strs[N], size_t size0)
 {
-	long tdims[N];
-	long tstrs[N];
-	md_select_dims(N, md_nontriv_strides(N, strs), tdims, dims);
-	md_copy_strides(N, tstrs, strs);
+	long size = (long)size0;
 
-	long (*nstr[1])[N?:1] = { (long (*)[N?:1])tstrs };
+	for (int i = 0; i < N; i++)
+		size += (dims[i] - 1) * labs(strs[i]);
 
-	int NN = optimize_dims_gpu(1, N, tdims, nstr); // sorting of dims
-
-	if (NN != md_calc_blockdim(NN, tdims, tstrs, size))
-		return 0;
-
-	return md_calc_size(NN, tdims) * (long)size;
+	return size;
 }
 
 
@@ -938,8 +923,11 @@ static bool simple_z3op(int N_checks, struct simple_z3op_check strided_calls[N_c
 	on_gpu = (cuda_ondevice(out));
 #endif
 
-	if (conj && (0 == get_block_size(N, dims, istrs2, CFL_SIZE)))
-		return false; //the conjugated input is not a continuos memory block
+	long bdims[N];
+	md_select_dims(N, md_nontriv_strides(N, istrs2), bdims, dims);
+
+	if (conj && (N != md_calc_blockdim(N, bdims, istrs2, CFL_SIZE)))
+		return false; //the conjugated input is not a contiguos memory block
 
 	struct simple_z3op_check strided_call;
 
@@ -1310,7 +1298,7 @@ bool simple_zfmac(int N, const long dims[N], const long ostrs[N], complex float*
 		OPT_Z3OP(check_gemm,	blas_zfmac_cgemm, true, true, false, false, false),
 		OPT_Z3OP(check_gemv,	blas_zfmac_cgemv, true, true, false, false, false),
 		OPT_Z3OP(check_batched_select,	zfmac_gpu_batched_loop, true, false, false, false, true),
-		OPT_Z3OP(check_unfold, zfmac_gpu_unfold, true, false, false, false, true),
+		OPT_Z3OP(check_unfold, zfmac_gpu_unfold, true, false, true, false, true),
 		OPT_Z3OP(check_ger,	blas_zfmac_cgeru, true, true, false, false, false),
 		OPT_Z3OP(check_axpy,	blas_zfmac_caxpy, true, true, false, false, false),
 		OPT_Z3OP(check_dot,	blas_zfmac_cdotu, true, true, false, false, true),
@@ -1325,7 +1313,7 @@ bool simple_zfmacc(int N, const long dims[N], const long ostrs[N], complex float
 {
 	struct simple_z3op_check strided_calls_direct[] = {
 		OPT_Z3OP(check_batched_select,	zfmacc_gpu_batched_loop, true, false, false, false, true),
-		OPT_Z3OP(check_unfold,	zfmacc_gpu_unfold, true, false, false, false, true),
+		OPT_Z3OP(check_unfold,	zfmacc_gpu_unfold, true, false, true, false, true),
 	};
 
 	if (simple_z3op(ARRAY_SIZE(strided_calls_direct), strided_calls_direct,  "md_zfmacc",
@@ -1350,7 +1338,7 @@ bool simple_fmac(int N, const long dims[N], const long ostrs[N], float* out, con
 	struct simple_3op_check strided_calls[] = {
 		OPT_3OP(check_gemm,  blas_fmac_sgemm, true, true, false, false, false),
 		OPT_3OP(check_gemv,  blas_fmac_sgemv, true, true, false, false, false),
-		OPT_3OP(check_unfold, fmac_gpu_unfold, true, false, false, false, true),
+		OPT_3OP(check_unfold, fmac_gpu_unfold, true, false, true, false, true),
 		OPT_3OP(check_ger,   blas_fmac_sger,  true, true, false, false, false),
 		OPT_3OP(check_axpy,  blas_fmac_saxpy, true, true, false, false, false),
 		OPT_3OP(check_dot,   blas_fmac_sdot,  true, true, false, false, true),
@@ -1363,7 +1351,7 @@ bool simple_fmac(int N, const long dims[N], const long ostrs[N], float* out, con
 bool simple_zmul(int N, const long dims[N], const long ostrs[N], complex float* out, const long istrs1[N], const complex float* in1, const long istrs2[N], const complex float* in2)
 {
 	struct simple_z3op_check strided_calls[] = {
-		OPT_Z3OP(check_unfold, zmul_gpu_unfold, true, false, false, false, true),
+		OPT_Z3OP(check_unfold, zmul_gpu_unfold, true, false, true, false, true),
 		OPT_Z3OP(check_ger,   blas_zmul_cgeru, true, true, false, false, false),
 		OPT_Z3OP(check_dgmm,  blas_zmul_cdgmm, true, false, true, false, false),
 		OPT_Z3OP(check_axpy,  blas_zmul_cscal, true, true, true, false, false)
@@ -1376,7 +1364,7 @@ bool simple_zmul(int N, const long dims[N], const long ostrs[N], complex float* 
 bool simple_zmulc(int N, const long dims[N], const long ostrs[N], complex float* out, const long istrs1[N], const complex float* in1, const long istrs2[N], const complex float* in2)
 {
 	struct simple_z3op_check strided_calls_direct[] = {
-		OPT_Z3OP(check_unfold,	zmulc_gpu_unfold, true, false, false, false, true),
+		OPT_Z3OP(check_unfold,	zmulc_gpu_unfold, true, false, true, false, true),
 	};
 
 	if (simple_z3op(ARRAY_SIZE(strided_calls_direct), strided_calls_direct, "md_zmulc",
@@ -1396,7 +1384,7 @@ bool simple_zmulc(int N, const long dims[N], const long ostrs[N], complex float*
 bool simple_mul(int N, const long dims[N], const long ostrs[N], float* out, const long istrs1[N], const float* in1, const long istrs2[N], const float* in2)
 {
 	struct simple_3op_check strided_calls[] = {
-		OPT_3OP(check_unfold,	mul_gpu_unfold, true, false, false, false, true),
+		OPT_3OP(check_unfold,	mul_gpu_unfold, true, false, true, false, true),
 		OPT_3OP(check_ger,   blas_mul_sger, true, true, false, false, false),
 		OPT_3OP(check_dgmm,  blas_mul_sdgmm, true, false, true, false, false),
 		OPT_3OP(check_axpy,  blas_mul_sscal, true, true, true, false, false)
