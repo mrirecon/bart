@@ -130,6 +130,9 @@ enum file_types_e file_type(const char* name)
 
 		if (0 == strcmp(p, ".mem"))
 			return FILE_TYPE_MEM;
+
+		if (0 == strcmp(p, ".fifo"))
+			return FILE_TYPE_PIPE;
 	}
 
 	return FILE_TYPE_CFL;
