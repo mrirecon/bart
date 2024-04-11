@@ -50,17 +50,6 @@ static int ya_getopt_internal(int argc, char * const argv[], const char *optstri
 static int ya_getopt_shortopts(int argc, char * const argv[], const char *optstring, int long_only);
 static int ya_getopt_longopts(int argc, char * const argv[], char *arg, const char *optstring, const struct option *longopts, int *longindex, int *long_only_flag);
 
-void ya_getopt_reset()
-{
-    ya_optarg = NULL;
-    ya_optind = 1;
-    ya_opterr = 1;
-    ya_optopt = '?';
-    ya_optnext = NULL;
-    posixly_correct = -1;
-    handle_nonopt_argv = 0;
-}
-
 static void ya_getopt_error(const char *optstring, const char *format, ...)
 {
     if (ya_opterr && optstring[0] != ':') {
@@ -85,6 +74,11 @@ static void check_gnu_extension(const char *optstring)
     }
 }
 
+static int is_option(const char *arg)
+{
+    return arg[0] == '-' && arg[1] != '\0';
+}
+
 int ya_getopt(int argc, char * const argv[], const char *optstring)
 {
     return ya_getopt_internal(argc, argv, optstring, NULL, NULL, 0);
@@ -102,8 +96,7 @@ int ya_getopt_long_only(int argc, char * const argv[], const char *optstring, co
 
 static int ya_getopt_internal(int argc, char * const argv[], const char *optstring, const struct option *longopts, int *longindex, int long_only)
 {
-    int start = 0;
-    int end = 0;
+    static int start, end;
 
     if (ya_optopt == '?') {
         ya_optopt = 0;
@@ -151,9 +144,9 @@ static int ya_getopt_internal(int argc, char * const argv[], const char *optstri
     }
     if (ya_optnext == NULL) {
         const char *arg = argv[ya_optind];
-        if (*arg != '-') {
+        if (!is_option(arg)) {
             if (handle_nonopt_argv) {
-                ya_optarg = argv[optind++];
+                ya_optarg = argv[ya_optind++];
                 start = 0;
                 return 1;
             } else if (posixly_correct) {
@@ -164,7 +157,7 @@ static int ya_getopt_internal(int argc, char * const argv[], const char *optstri
 
                 start = ya_optind;
                 for (i = ya_optind + 1; i < argc; i++) {
-                    if (argv[i][0] == '-') {
+                    if (is_option(argv[i])) {
                         end = i;
                         break;
                     }
@@ -225,6 +218,7 @@ static int ya_getopt_shortopts(int argc, char * const argv[], const char *optstr
     if (os[1] == ':') {
         if (ya_optnext[1] == 0) {
             ya_optind++;
+            ya_optnext = NULL;
             if (os[2] == ':') {
                 /* optional argument */
                 ya_optarg = NULL;
