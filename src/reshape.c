@@ -16,6 +16,8 @@
 #include "misc/mmio.h"
 #include "misc/misc.h"
 #include "misc/opts.h"
+#include "misc/stream.h"
+#include "misc/debug.h"
 
 #define DIMS 16
 
@@ -42,7 +44,12 @@ int main_reshape(int argc, char* argv[argc])
 		ARG_OUTFILE(true, &out_file, "output"),
 	};
 
-	const struct opt_s opts[] = { };
+	unsigned long stream_flags = 0 ;
+
+	const struct opt_s opts[] = { 
+
+		OPT_ULONG('s', &stream_flags, "flags", "stream flagged dims"),
+	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
@@ -55,21 +62,110 @@ int main_reshape(int argc, char* argv[argc])
 	long in_dims[DIMS];
 	long out_dims[DIMS];
 
-	complex float* in_data = load_cfl(in_file, DIMS, in_dims);
+	complex float* in_data = (0 != stream_flags ? load_async_cfl : load_cfl)(in_file, DIMS, in_dims);
 
 	md_copy_dims(DIMS, out_dims, in_dims);
 	
 	int j = 0;
 
-	for (int i = 0; i < DIMS; i++)
-		if (MD_IS_SET(flags, i))
+	long otot = 1;
+	long itot = 1;
+
+	for (int i = 0; i < DIMS; i++) {
+
+		if (MD_IS_SET(flags, i)) {
+
+			otot *= dims[j];
+			itot *= in_dims[i];
 			out_dims[i] = dims[j++];
+		}
+	}
+
+	if (otot != itot) {
+
+		debug_print_dims(DP_INFO, DIMS, in_dims);
+		debug_print_dims(DP_INFO, DIMS, out_dims);
+		error("Reshaped dimensions are incompatible!\n");
+	}
 
 	assert(j == n);
 
-	complex float* out_data = create_cfl(out_file, DIMS, out_dims);
+	complex float* out_data = NULL;
+	
+	if (0 != stream_flags)
+		out_data = create_async_cfl(out_file, stream_flags, DIMS, out_dims);
+	else
+		out_data = create_cfl(out_file, DIMS, out_dims);
 
-	md_reshape(DIMS, flags, out_dims, out_data, in_dims, in_data, CFL_SIZE);
+	if (0 != stream_flags) {
+
+		stream_t strm_in = stream_lookup(in_data);
+		stream_t strm_out = stream_lookup(out_data);
+
+		unsigned long iflags = 0;
+		unsigned long oflags = 0;
+		
+		if (NULL != strm_in)
+			iflags = stream_get_flags(strm_in);
+
+		oflags = stream_get_flags(strm_out);
+
+		if (0 != ((~flags) & (iflags | oflags)))
+			error("All streamd dimensions must be reshaped!");
+
+		long slc_dims[DIMS];
+		md_select_dims(DIMS, ~flags, slc_dims, in_dims);
+
+		void* buf = md_alloc(DIMS, slc_dims, CFL_SIZE);
+
+		long ipos[DIMS] = { 0 };
+		long opos[DIMS] = { 0 };
+
+		do {
+			if (NULL != strm_in)
+				stream_sync(strm_in, DIMS, ipos);
+
+			do {
+
+				long index = md_ravel_index(DIMS, ipos, flags, in_dims);
+				md_unravel_index(DIMS, opos, flags, out_dims, index);
+
+				md_slice(DIMS, flags, ipos, in_dims, buf, in_data, CFL_SIZE);
+			
+				long zpos[DIMS] = { 0 };
+				md_move_block(DIMS, slc_dims, opos, out_dims, out_data, zpos, slc_dims, buf, CFL_SIZE);
+
+				bool cont = false;
+
+				for (int i = 0; i < DIMS; i++) {
+
+					if (!MD_IS_SET(flags, i))
+						continue;
+
+					if (!MD_IS_SET(oflags, i) && (1 + opos[i] != out_dims[i]))
+						cont = true;
+				}
+				
+				if (cont)
+					continue;
+
+
+				stream_sync(strm_out, DIMS, opos);
+			
+			} while (md_next(DIMS, in_dims, flags & (~iflags), ipos));
+
+			for (int i = 0; i < DIMS; i++)
+				if (MD_IS_SET(flags & (~iflags), i))
+					ipos[i] = 0;
+
+		} while (md_next(DIMS, in_dims, iflags, ipos));
+
+		md_free(buf);
+
+	} else {
+
+		md_reshape(DIMS, flags, out_dims, out_data, in_dims, in_data, CFL_SIZE);
+	}
 
 	unmap_cfl(DIMS, in_dims, in_data);
 	unmap_cfl(DIMS, out_dims, out_data);
