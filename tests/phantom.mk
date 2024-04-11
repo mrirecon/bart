@@ -122,7 +122,7 @@ tests/test-phantom-NIST: fft nrmse phantom
 tests/test-phantom-NIST-basis: nrmse phantom fmac
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
 	$(TOOLDIR)/phantom --NIST -k k0.ra							;\
-	$(TOOLDIR)/phantom --NIST -b 11 -k k1.ra						;\
+	$(TOOLDIR)/phantom --NIST -b -k k1.ra						;\
 	$(TOOLDIR)/fmac -s 64 k1.ra k2.ra							;\
 	$(TOOLDIR)/nrmse -t 0.000001 k0.ra k2.ra						;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
@@ -256,7 +256,7 @@ tests/test-phantom-SONAR: fft nrmse phantom
 tests/test-phantom-SONAR-basis: nrmse phantom fmac
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
 	$(TOOLDIR)/phantom --SONAR -k k0.ra							;\
-	$(TOOLDIR)/phantom --SONAR -b 11 -k k1.ra						;\
+	$(TOOLDIR)/phantom --SONAR -b -k k1.ra						;\
 	$(TOOLDIR)/fmac -s 64 k1.ra k2.ra							;\
 	$(TOOLDIR)/nrmse -t 0.000001 k0.ra k2.ra						;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
