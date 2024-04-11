@@ -53,6 +53,7 @@ int ya_getopt_long(int argc, char * const argv[], const char *optstring,
                    const struct option *longopts, int *longindex);
 int ya_getopt_long_only(int argc, char * const argv[], const char *optstring,
                         const struct option *longopts, int *longindex);
+void ya_getopt_reset(void);
 
 extern char *ya_optarg;
 extern int ya_optind, ya_opterr, ya_optopt;
@@ -61,6 +62,7 @@ extern int ya_optind, ya_opterr, ya_optopt;
 #define getopt ya_getopt
 #define getopt_long ya_getopt_long
 #define getopt_long_only ya_getopt_long_only
+#define getopt_reset ya_getopt_reset
 #define optarg ya_optarg
 #define optind ya_optind
 #define opterr ya_opterr

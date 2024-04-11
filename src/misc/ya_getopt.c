@@ -43,12 +43,29 @@ int ya_optopt = '?';
 static char *ya_optnext = NULL;
 static int posixly_correct = -1;
 static int handle_nonopt_argv = 0;
+static int reset_start_end = 0;
 
 static void ya_getopt_error(const char *optstring, const char *format, ...);
 static void check_gnu_extension(const char *optstring);
 static int ya_getopt_internal(int argc, char * const argv[], const char *optstring, const struct option *longopts, int *longindex, int long_only);
 static int ya_getopt_shortopts(int argc, char * const argv[], const char *optstring, int long_only);
 static int ya_getopt_longopts(int argc, char * const argv[], char *arg, const char *optstring, const struct option *longopts, int *longindex, int *long_only_flag);
+
+
+void ya_getopt_reset()
+{
+
+    ya_optarg = NULL;
+    ya_optind = 1;
+    ya_opterr = 1;
+    ya_optopt = '?';
+    ya_optnext = NULL;
+    posixly_correct = -1;
+    handle_nonopt_argv = 0;
+
+    reset_start_end = 1;
+}
+
 
 static void ya_getopt_error(const char *optstring, const char *format, ...)
 {
@@ -97,6 +114,13 @@ int ya_getopt_long_only(int argc, char * const argv[], const char *optstring, co
 static int ya_getopt_internal(int argc, char * const argv[], const char *optstring, const struct option *longopts, int *longindex, int long_only)
 {
     static int start, end;
+
+    if (reset_start_end) {
+
+        start = 0;
+        end = 0;
+        reset_start_end = 0;
+    }
 
     if (ya_optopt == '?') {
         ya_optopt = 0;
