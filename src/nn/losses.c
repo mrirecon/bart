@@ -43,7 +43,7 @@ struct znorm_s {
 
 	INTERFACE(nlop_data_t);
 
-	long N;
+	int N;
 	const long* ridims;
 	const long* rodims;
 
@@ -113,7 +113,8 @@ const struct nlop_s* nlop_znorm_create(int N, const long dims[N], unsigned long 
 
 	PTR_ALLOC(long[N + 1], rodims);
 	PTR_ALLOC(long[N + 1], ridims);
-	(*ridims[0] = 2);
+	(*ridims)[0] = 2;
+
 	md_copy_dims(N, *ridims + 1, dims);
 	md_singleton_dims(N + 1, *rodims);
 
@@ -192,6 +193,7 @@ const struct nlop_s* nlop_nrmse_create(int N, const long dims[N], unsigned long 
 	md_select_dims(N, batch_flags, bat_dims, dims);
 
 	auto result = nlop_zaxpbz_create(N, dims, 1., -1.);
+
 	result = nlop_chain2_FF(result, 0, nlop_zrss_create(N, dims, ~batch_flags), 0);
 	result = nlop_chain2_FF(nlop_tenmul_create(N, MD_SINGLETON_DIMS(N), bat_dims, bat_dims), 0, result, 0);
 	result = nlop_chain2_FF(nlop_zinv_create(N, bat_dims),0 , result, 0);
@@ -208,7 +210,7 @@ struct zasum_s {
 
 	INTERFACE(nlop_data_t);
 
-	long N;
+	int N;
 	const long* rdims;
 	float scaling;
 
@@ -271,7 +273,7 @@ const struct nlop_s* nlop_zasum_create(int N, const long dims[N], unsigned long 
 	SET_TYPEID(zasum_s, data);
 
 	PTR_ALLOC(long[N + 1], rdims);
-	(*rdims[0] = 2);
+	(*rdims)[0] = 2;
 	md_copy_dims(N, *rdims + 1, dims);
 
 	data->N = N + 1;
@@ -300,7 +302,7 @@ struct mpsnr_s {
 
 	INTERFACE(nlop_data_t);
 
-	long N;
+	int N;
 	const long* dims;
 	unsigned long mean_flag;
 };
@@ -405,6 +407,7 @@ static const struct nlop_s* get_square_op(int N, const long dims[N])
 const struct nlop_s* nlop_mssim_create(int N, const long dims[N], const long wdims[N], unsigned long flags)
 {
 	bool simple = (5 == N);
+
 	simple &= (flags == 7);
 	simple &= (1 == dims[3]);
 
@@ -541,7 +544,7 @@ struct cce_s {
 
 	INTERFACE(nlop_data_t);
 
-	unsigned long N;
+	int N;
 	float scaling;
 	complex float* tmp_log;
 	complex float* tmp_div;
@@ -554,6 +557,7 @@ static void cce_initialize(struct cce_s* data, const complex float* arg)
 {
 	if (NULL == data->tmp_log)
 		data->tmp_log = md_alloc_sameplace(data->dom->N, data->dom->dims, CFL_SIZE, arg);
+
 	if (NULL == data->tmp_div)
 		data->tmp_div = md_alloc_sameplace(data->dom->N, data->dom->dims, CFL_SIZE, arg);
 }
@@ -658,6 +662,7 @@ static void cce_del(const nlop_data_t* _data)
 	xfree(data);
 }
 
+
 /**
  * Categorical cross entropy
  *
@@ -675,7 +680,6 @@ static void cce_del(const nlop_data_t* _data)
  **/
 const struct nlop_s* nlop_cce_create(int N, const long dims[N], unsigned long batch_flag)
 {
-
 	PTR_ALLOC(struct cce_s, data);
 	SET_TYPEID(cce_s, data);
 
@@ -692,17 +696,21 @@ const struct nlop_s* nlop_cce_create(int N, const long dims[N], unsigned long ba
 
 	long nl_odims[1][1];
 	md_copy_dims(1, nl_odims[0], MD_SINGLETON_DIMS(1));
+
 	long nl_ostr[1][1];
 	md_copy_strides(1, nl_ostr[0], MD_SINGLETON_STRS(1));
 
 	long nl_idims[2][N];
 	md_copy_dims(N, nl_idims[0], dims);
 	md_copy_dims(N, nl_idims[1], dims);
+
 	long nl_istr[2][N];
 	md_copy_strides(N, nl_istr[0], MD_STRIDES(N, dims, CFL_SIZE));
 	md_copy_strides(N, nl_istr[1], MD_STRIDES(N, dims, CFL_SIZE));
 
-	auto result = nlop_generic_create2(1, 1, nl_odims, nl_ostr, 2, N, nl_idims, nl_istr, CAST_UP(PTR_PASS(data)), cce_fun, (nlop_der_fun_t[2][1]){ { cce_der1 }, { cce_der2 } }, (nlop_der_fun_t[2][1]){ { cce_adj1 }, { cce_adj2 } }, NULL, NULL, cce_del);
+	auto result = nlop_generic_create2(1, 1, nl_odims, nl_ostr, 2, N, nl_idims, nl_istr,
+			CAST_UP(PTR_PASS(data)), cce_fun, (nlop_der_fun_t[2][1]){ { cce_der1 }, { cce_der2 } },
+			(nlop_der_fun_t[2][1]){ { cce_adj1 }, { cce_adj2 } }, NULL, NULL, cce_del);
 
 	result = nlop_chain2_FF(nlop_from_linop_F(linop_zreal_create(N, dims)), 0, result, 0);
 	result = nlop_chain2_FF(nlop_from_linop_F(linop_zreal_create(N, dims)), 0, result, 0);
@@ -714,7 +722,7 @@ struct accuracy_s {
 
 	INTERFACE(nlop_data_t);
 
-	unsigned long N;
+	int N;
 	const struct iovec_s* dom;
 	int class_index;
 };
@@ -731,7 +739,8 @@ static void accuracy_fun(const nlop_data_t* _data, int D, complex float* args[D]
 	const complex float* src_true = args[2];
 
 #ifdef USE_CUDA
-	assert((cuda_ondevice(dst) == cuda_ondevice(src_pred)) && (cuda_ondevice(src_pred) == cuda_ondevice(src_true)));
+	assert(   (cuda_ondevice(dst) == cuda_ondevice(src_pred))
+	       && (cuda_ondevice(src_pred) == cuda_ondevice(src_true)));
 #endif
 
 	complex float dst_t = 0;
@@ -758,6 +767,7 @@ static void accuracy_del(const nlop_data_t* _data)
 	xfree(data);
 }
 
+
 /**
  * Accuracy
  *
@@ -767,7 +777,6 @@ static void accuracy_del(const nlop_data_t* _data)
  **/
 const struct nlop_s* nlop_accuracy_create(int N, const long dims[N], int class_index)
 {
-
 	PTR_ALLOC(struct accuracy_s, data);
 	SET_TYPEID(accuracy_s, data);
 
@@ -777,17 +786,21 @@ const struct nlop_s* nlop_accuracy_create(int N, const long dims[N], int class_i
 
 	long nl_odims[1][1];
 	md_copy_dims(1, nl_odims[0], MD_SINGLETON_DIMS(1));
+
 	long nl_ostr[1][1];
 	md_copy_strides(1, nl_ostr[0], MD_SINGLETON_STRS(1));
 
 	long nl_idims[2][N];
 	md_copy_dims(N, nl_idims[0], dims);
 	md_copy_dims(N, nl_idims[1], dims);
+
 	long nl_istr[2][N];
 	md_copy_strides(N, nl_istr[0], MD_STRIDES(N, dims, CFL_SIZE));
 	md_copy_strides(N, nl_istr[1], MD_STRIDES(N, dims, CFL_SIZE));
 
-	return nlop_generic_create2(1, 1, nl_odims, nl_ostr, 2, N, nl_idims, nl_istr, CAST_UP(PTR_PASS(data)), accuracy_fun, (nlop_der_fun_t[2][1]){ { NULL }, { NULL } }, (nlop_der_fun_t[2][1]){ { NULL }, { NULL } }, NULL, NULL, accuracy_del);
+	return nlop_generic_create2(1, 1, nl_odims, nl_ostr, 2, N, nl_idims, nl_istr, CAST_UP(PTR_PASS(data)),
+			accuracy_fun, (nlop_der_fun_t[2][1]){ { NULL }, { NULL } },
+			(nlop_der_fun_t[2][1]){ { NULL }, { NULL } }, NULL, NULL, accuracy_del);
 }
 
 
@@ -796,7 +809,7 @@ struct frequency_compensation_s {
 
 	INTERFACE(nlop_data_t);
 
-	unsigned long N;
+	int N;
 	unsigned long batch_flag;
 
 	const struct iovec_s* dom;
@@ -886,7 +899,7 @@ struct dice_s {
 
 	INTERFACE(nlop_data_t);
 
-	long N;
+	int N;
 
 	const struct iovec_s* weight_dom;
 	const struct iovec_s* dom;
@@ -915,16 +928,22 @@ static void dice_initialize(struct dice_s* d, const void* arg)
 {
 	if (NULL == d->weight)
 		d->weight = md_alloc_sameplace(d->dom->N, d->weight_dom->dims, d->dom->size, arg);
+
 	if (NULL == d->min_src1)
 		d->min_src1 = md_alloc_sameplace(d->dom->N, d->dom->dims, d->dom->size, arg);
+
 	if (NULL == d->min_src2)
 		d->min_src2 = md_alloc_sameplace(d->dom->N, d->dom->dims, d->dom->size, arg);
+
 	if (d->square_denominator && (NULL == d->src1_t2))
 		d->src1_t2 = md_alloc_sameplace(d->dom->N, d->dom->dims, d->dom->size, arg);
+
 	if (d->square_denominator && (NULL == d->src2_t2))
 		d->src2_t2 = md_alloc_sameplace(d->dom->N, d->dom->dims, d->dom->size, arg);
+
 	if (NULL == d->numerator_sum)
 		d->numerator_sum = md_alloc_sameplace(d->cod->N, d->cod->dims, d->cod->size, arg);
+
 	if (NULL == d->denominator_sum)
 		d->denominator_sum = md_alloc_sameplace(d->cod->N, d->cod->dims, d->cod->size, arg);
 }
@@ -978,7 +997,6 @@ static void dice_red_adj(const struct dice_s* d, complex float* dst, const compl
 
 	if (NULL != d->weight)
 		md_zmul2(d->N, d->dom->dims, d->dom->strs, dst, d->dom->strs, dst, d->weight_dom->strs, d->weight);
-
 }
 
 static void dice_fun(const nlop_data_t* _data, int D, complex float* args[D])
@@ -1004,6 +1022,7 @@ static void dice_fun(const nlop_data_t* _data, int D, complex float* args[D])
 	md_zlessequal(N, d->dom->dims, d->min_src2, src_true, src_pred);
 
 	complex float* tmp = md_alloc_sameplace(N, d->dom->dims, d->dom->size, dst);
+
 	md_zmul(N, d->dom->dims, tmp, d->min_src1, d->min_src2);
 	md_zsmul(N, d->dom->dims, tmp, tmp, 0.5);
 	md_zsub(N, d->dom->dims, d->min_src1, d->min_src1, tmp);
@@ -1078,6 +1097,7 @@ static void dice_adj(const nlop_data_t* _data, int /*o*/, int i, complex float* 
 	int N = d->N;
 
 	complex float* tmp_src = md_alloc_sameplace(d->cod->N, d->cod->dims, CFL_SIZE, dst);
+
 	md_zdiv(d->cod->N, d->cod->dims, tmp_src, src, d->denominator_sum);
 	md_zsmul(d->cod->N, d->cod->dims, tmp_src, tmp_src, -2);
 
@@ -1087,6 +1107,7 @@ static void dice_adj(const nlop_data_t* _data, int /*o*/, int i, complex float* 
 	md_zdiv(d->cod->N, d->cod->dims, tmp_src, tmp_src, d->denominator_sum);
 
 	complex float* tmp = md_alloc_sameplace(N, d->dom->dims, d->dom->size, dst);
+
 	dice_red_adj(d, tmp, tmp_src, (0 == i) ? d->src1_t2 : d->src2_t2);
 
 	md_zaxpy(N, d->dom->dims, dst, -1, tmp);
@@ -1113,6 +1134,7 @@ static void dice_del(const nlop_data_t* _data)
 
 	xfree(data);
 }
+
 
 /**
  * Generic Dice loss D
@@ -1171,17 +1193,20 @@ const struct nlop_s* nlop_dice_generic_create(int N, const long dims[N], unsigne
 
 	long nl_odims[1][N];
 	md_copy_dims(N, nl_odims[0], out_dims);
+
 	long nl_idims[2][N];
 	md_copy_dims(N, nl_idims[0], dims);
 	md_copy_dims(N, nl_idims[1], dims);
 
 
 	auto result = nlop_generic_create(1, N, nl_odims, 2, N, nl_idims, CAST_UP(PTR_PASS(data)), dice_fun, (nlop_der_fun_t[2][1]){ { dice_der }, { dice_der } }, (nlop_der_fun_t[2][1]){ { dice_adj }, { dice_adj } }, NULL, NULL, dice_del);
+
 	result = nlop_chain2_FF(nlop_from_linop_F(linop_zreal_create(N, dims)), 0, result, 0);
 	result = nlop_chain2_FF(nlop_from_linop_F(linop_zreal_create(N, dims)), 0, result, 0);
 
 	return result;
 }
+
 
 /**
  * Generic Dice loss D
@@ -1215,6 +1240,7 @@ const struct nlop_s* nlop_dice_create(int N, const long dims[N], unsigned long l
 	if (1 != md_calc_size(N, out_dims)) {
 
 		auto linop_avg = linop_avg_create(N, out_dims, ~0);
+
 		dice = nlop_chain2_FF(dice, 0, nlop_from_linop_F(linop_avg), 0);
 	}
 

@@ -36,7 +36,7 @@
  *
  * @returns nn_t with one input set to the constant input array
  */
-nn_t nn_set_input_const_F2(nn_t op, int i, const char* iname, int N, const long dims[N], const long strs[N], _Bool copy, const _Complex float* in)
+nn_t nn_set_input_const_F2(nn_t op, int i, const char* iname, int N, const long dims[N], const long strs[N], bool copy, const complex float* in)
 {
 	i = nn_get_in_arg_index(op, i, iname);
 	auto result = nn_from_nlop_F(nlop_set_input_const2(nn_get_nlop(op), i, N, dims, strs, copy, in));
@@ -71,7 +71,7 @@ nn_t nn_set_input_const_F2(nn_t op, int i, const char* iname, int N, const long 
  *
  * @returns nn_t with one input set to the constant input array
  */
-nn_t nn_set_input_const_F(nn_t op, int i, const char* iname, int N, const long dims[N], _Bool copy, const _Complex float* in)
+nn_t nn_set_input_const_F(nn_t op, int i, const char* iname, int N, const long dims[N], bool copy, const complex float* in)
 {
 	i = nn_get_in_arg_index(op, i, iname);
 	auto result = nn_from_nlop_F(nlop_set_input_const(nn_get_nlop(op), i, N, dims, copy, in));
@@ -156,7 +156,7 @@ nn_t nn_del_out_bn_F(nn_t op)
  *
  * @returns nn_t with one input set to the constant input array
  */
-nn_t nn_ignore_input_F(nn_t op, int i, const char* iname, int N, const long dims[N], _Bool copy, const _Complex float* in)
+nn_t nn_ignore_input_F(nn_t op, int i, const char* iname, int N, const long dims[N], bool copy, const complex float* in)
 {
 	i = nn_get_in_arg_index(op, i, iname);
 
