@@ -271,7 +271,7 @@ static void calc_intersections(int Nint, int N, int no_intersec_sp, float dist[N
 	// Print projection angles and corresponding offsets, for RING paper reproduction
 	char* str = getenv("RING_PAPER");
 
-	if ((NULL != str) && (1 == strcmp(str, "1"))) {
+	if ((NULL != str) && (0 == strcmp(str, "1"))) {
 
 		for (int i = 0; i < N; i++) {
 
