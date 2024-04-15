@@ -141,7 +141,7 @@ static void io_register(const char* name, bool output, bool input, bool open)
 
 			if (iop->open) {
 
-				if (output || iop->output)
+				if ((output || iop->output) && (0 != strcmp(name, "-")))
 					debug_printf(DP_WARN, "Overwriting file: %s\n", name);
 
 			} else {

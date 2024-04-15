@@ -283,7 +283,7 @@ int main_nufft(int argc, char* argv[argc])
 	if (NULL != pattern)
 		unmap_cfl(DIMS, pattern_dims, pattern);
 
-	debug_printf(DP_INFO, "Done.\n");
+	debug_printf(DP_DEBUG1, "Done.\n");
 
 	return 0;
 }

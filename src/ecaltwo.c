@@ -134,7 +134,7 @@ int main_ecaltwo(int argc, char* argv[argc])
 
 	fixphase(DIMS, out_dims, COIL_DIM, out_data, out_data);
 
-	debug_printf(DP_INFO, "Done.\n");
+	debug_printf(DP_DEBUG1, "Done.\n");
 
 	unmap_cfl(DIMS, in_dims, in_data);
 	unmap_cfl(DIMS, out_dims, out_data);

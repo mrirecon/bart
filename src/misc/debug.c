@@ -152,6 +152,23 @@ void debug_vprintf(int level, const char* fmt, va_list ap)
 
 		} else {
 
+			char* str = getenv("BART_DEBUG_STREAM");
+			const char* cmd = NULL;
+
+			if (NULL != str) {
+
+				errno = 0;
+				long r = strtol(str, NULL, 10);
+
+				if ((errno == 0) && (1 <= r)) {
+
+					ofp = stderr;
+					cmd = ptr_printf(" (%s)", command_line ?: "bart wrapper");
+				}
+
+				errno = 0;
+			}
+
 			if (level < DP_INFO) {
 
 				char rank[16] = { '\0' };
@@ -159,8 +176,11 @@ void debug_vprintf(int level, const char* fmt, va_list ap)
 				if (1 < mpi_get_num_procs())
 					sprintf(rank, " [Rank %d]", mpi_get_rank());
 
-				fprintf(ofp, "%s%s%s: ", (level < DP_INFO ? RED : ""), get_level_str(level), rank);
+				fprintf(ofp, "%s%s%s%s: ", (level < DP_INFO ? RED : ""), get_level_str(level), rank, cmd?:"");
 			}
+
+			if (NULL != cmd)
+				xfree(cmd);
 		}
 
 		vfprintf(ofp, fmt, ap);

@@ -159,8 +159,6 @@ int main_estdelay(int argc, char* argv[argc])
 	qf[1] -= dc_shift / scale;
 
 
-	bart_printf("%f:%f:%f\n", qf[0], qf[1], qf[2]);
-
 	if (NULL != qf_file) {
 
 		long qf_dims[DIMS];
@@ -173,6 +171,9 @@ int main_estdelay(int argc, char* argv[argc])
 			oqf[i] = qf[i];
 
 		unmap_cfl(DIMS, qf_dims, oqf);
+	} else  {
+
+		bart_printf("%f:%f:%f\n", qf[0], qf[1], qf[2]);
 	}
 
 	unmap_cfl(DIMS, full_dims, full_in);

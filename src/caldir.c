@@ -17,9 +17,9 @@
 #include "misc/misc.h"
 #include "misc/mri.h"
 #include "misc/opts.h"
+#include "misc/debug.h"
 
 #include "num/multind.h"
-#include "num/fft.h"
 
 #include "calib/direct.h"
 
@@ -64,11 +64,11 @@ int main_caldir(int argc, char* argv[argc])
 	long caldims[DIMS];
 	complex float* cal_data = extract_calib(caldims, calsize, dims, in_data, false);
 
-	printf("Calibration region %ldx%ldx%ld\n", caldims[0], caldims[1], caldims[2]);
+	debug_printf(DP_DEBUG1, "Calibration region %ldx%ldx%ld\n", caldims[0], caldims[1], caldims[2]);
 
 	direct_calib(dims, out_data, caldims, cal_data);
 
-	printf("Done.\n");
+	debug_printf(DP_DEBUG1, "Done.\n");
 
 	md_free(cal_data);
 

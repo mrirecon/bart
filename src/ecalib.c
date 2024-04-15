@@ -245,7 +245,7 @@ int main_ecalib(int argc, char* argv[argc])
 		for (int i = 0; i < K; i++)
 			printf("SVALS %d %f\n", i, svals[i]);
 
-	printf("Done.\n");
+	debug_printf(DP_DEBUG1, "Done.\n");
 
 	unmap_cfl(N, ksp_dims, in_data);
 
