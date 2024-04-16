@@ -34,10 +34,12 @@ static nn_t nn_get_default1(void)
 	enum { OO = 6, II = 5 };
 
 	const struct nlop_s* result_nlop = nlop_del_out_create(2, MD_DIMS(1, 1,));
+
 	for (int i = 1; i < II; i++)
 		result_nlop = nlop_combine_FF(result_nlop, nlop_del_out_create(2, MD_DIMS(1 + i, 1,)));
 
 	complex float tmp[OO] = { 0. };
+
 	for (int i = 0; i < OO; i++)
 		result_nlop = nlop_combine_FF(result_nlop, nlop_const_create(2, MD_DIMS(1 + i, 1,), true, tmp));
 

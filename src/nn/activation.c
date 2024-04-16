@@ -68,13 +68,14 @@ const struct nlop_s* append_activation_bias(const struct nlop_s* network, int o,
 
 static const struct nlop_s* append_activation_bias_internal(const struct nlop_s* network, int o, enum ACTIVATION activation, unsigned long bflags, bool bias)
 {
-	long NI = nlop_get_nr_in_args(network);
-	long NO = nlop_get_nr_out_args(network);
+	int NI = nlop_get_nr_in_args(network);
+	int NO = nlop_get_nr_out_args(network);
+
 	assert(o < NO);
 
 	const struct nlop_s* nlop_act;
 
-	long N = nlop_generic_codomain(network, o)->N;
+	int N = nlop_generic_codomain(network, o)->N;
 
 	long dims[N];
 	md_copy_dims(N, dims, nlop_generic_codomain(network, o)->dims);
@@ -82,7 +83,7 @@ static const struct nlop_s* append_activation_bias_internal(const struct nlop_s*
 	long bdims[N];
 	md_select_dims(N, bflags, bdims, dims);
 
-	switch (activation){
+	switch (activation) {
 
 	case ACT_LIN:
 
@@ -390,7 +391,7 @@ struct softmax_s {
 	complex float* tmp;
 	unsigned long batch_flag;
 
-	unsigned long N;
+	int N;
 
 	const struct iovec_s* dom;
 	const struct iovec_s* batchdom;
@@ -506,6 +507,7 @@ const struct nlop_s* nlop_softmax_create(int N, const long dims[N], unsigned lon
 
 	long batchdims[N];
 	md_select_dims(N, batch_flag, batchdims, dims);
+
 	data->dom = iovec_create(N, dims, CFL_SIZE);
 	data->batchdom = iovec_create(N, batchdims, CFL_SIZE);
 	data->batch_flag = batch_flag;

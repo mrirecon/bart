@@ -13,7 +13,7 @@ extern const struct nlop_s* nlop_leaky_relu_create(int N, const long dims[__VLA(
 extern const struct nlop_s* nlop_relu_create(int N, const long dims[__VLA(N)]);
 extern const struct nlop_s* nlop_relu_bias_create(int N, const long dims[__VLA(N)], const long bdims[__VLA(N)]);
 
-extern const struct nlop_s* nlop_softmax_create2(int N, const long dims[__VLA(N)], const long ostrs[__VLA(N)], const long istrs[__VLA(N)], unsigned int flag);
+extern const struct nlop_s* nlop_softmax_create2(int N, const long dims[__VLA(N)], const long ostrs[__VLA(N)], const long istrs[__VLA(N)], unsigned long flag);
 extern const struct nlop_s* nlop_softmax_create(int N, const long dims[__VLA(N)], unsigned long batch_flag);
 extern const struct nlop_s* nlop_softmax_bias_create(int N, const long dims[__VLA(N)], unsigned long batch_flag, const long bias_dims[__VLA(N)]);
 
