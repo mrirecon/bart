@@ -21,6 +21,7 @@
 #include "misc/misc.h"
 #include "misc/opts.h"
 #include "misc/io.h"
+#include "misc/stream.h"
 
 
 #ifndef DIMS
@@ -44,6 +45,7 @@ int main_join(int argc, char* argv[argc])
 	int dim = -1;
 	const char** in_files = NULL;
 	const char* out_file = NULL;
+	bool stream = false;
 
 	struct arg_s args[] = {
 
@@ -58,6 +60,7 @@ int main_join(int argc, char* argv[argc])
 	const struct opt_s opts[] = {
 
 		OPT_SET('a', &append, "append - only works for cfl files!"),
+		OPT_SET('s', &stream, "join along streamed dimension!"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -69,6 +72,9 @@ int main_join(int argc, char* argv[argc])
 	assert(dim < N);
 
 	if (append) {
+
+		if (stream)
+			error("Streaming and appending are incompatible!");
 
 		count += 1;
 
@@ -118,7 +124,17 @@ int main_join(int argc, char* argv[argc])
 
 		debug_printf(DP_DEBUG1, "loading %s\n", name);
 
-		in_data[i] = load_cfl(name, N, in_dims[i]);
+		if (stream) {
+
+			in_data[i] = load_async_cfl(name, N, in_dims[i]);
+			stream_t strm = stream_lookup(in_data[i]);
+
+			if ((NULL != strm) && (0 != (stream_get_flags(strm) & (~MD_BIT(dim)))))
+				error("Input %s is streamed along dims(flags: %lu) other than the one joined!\n", name, stream_get_flags(strm));
+		} else {
+
+			in_data[i] = load_cfl(name, N, in_dims[i]);
+		}
 
 		offsets[i] = sum;
 
@@ -145,28 +161,66 @@ int main_join(int argc, char* argv[argc])
 		io_close(out_file);
 	}
 
-	complex float* out_data = create_cfl(out_file, N, out_dims);
+	complex float* out_data = NULL;
+	
+	if (stream)
+		out_data = create_async_cfl(out_file, MD_BIT(dim), N, out_dims);
+	else
+		out_data = create_cfl(out_file, N, out_dims);
 
 	long ostr[N];
 	md_calc_strides(N, ostr, out_dims, CFL_SIZE);
 
+	if (! stream) {
+
 #pragma omp parallel for
-	for (int i = 0; i < count; i++) {
+		for (int i = 0; i < count; i++) {
 
-		if (!(append && (0 == i))) {
+			if (!(append && (0 == i))) {
 
-			long pos[N];
-			md_singleton_strides(N, pos);
-			pos[dim] = offsets[i];
+				long pos[N];
+				md_singleton_strides(N, pos);
+				pos[dim] = offsets[i];
 
-			long istr[N];
-			md_calc_strides(N, istr, in_dims[i], CFL_SIZE);
+				long istr[N];
+				md_calc_strides(N, istr, in_dims[i], CFL_SIZE);
 
-			md_copy_block(N, pos, out_dims, out_data, in_dims[i], in_data[i], CFL_SIZE);
+				md_copy_block(N, pos, out_dims, out_data, in_dims[i], in_data[i], CFL_SIZE);
+
+				unmap_cfl(N, in_dims[i], in_data[i]);
+
+				debug_printf(DP_DEBUG1, "done copying file %d\n", i);
+			}
+		}
+	} else {
+
+		long opos[N];
+		long ipos[N];
+		
+		md_singleton_strides(N, opos);
+		md_singleton_strides(N, ipos);
+
+		stream_t ostrm = stream_lookup(out_data);
+
+		for (int i = 0; i < count; i++) {
+
+			stream_t istrm = stream_lookup(in_data[i]);
+
+			for (ipos[dim] = 0; ipos[dim] < in_dims[i][dim]; ipos[dim]++) {
+
+				long slc_dims[DIMS];
+				md_select_dims(DIMS, ~MD_BIT(dim), slc_dims, out_dims);
+
+				if (NULL != istrm)
+					stream_sync(istrm, DIMS, ipos);
+
+				md_move_block(N, slc_dims, opos, out_dims, out_data, ipos, in_dims[i], in_data[i], CFL_SIZE);
+
+				stream_sync(ostrm, DIMS, opos);
+				opos[dim] ++;
+			}
 
 			unmap_cfl(N, in_dims[i], in_data[i]);
-
-			debug_printf(DP_DEBUG1, "done copying file %d\n", i);
 		}
 	}
 
