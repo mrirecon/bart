@@ -43,6 +43,7 @@ int main_traj(int argc, char* argv[argc])
 
 	int X = -1;
 	int Y = -1;
+	int Z = 1;
 	int D = -1;
 	int E = 1;
 	int mb = 1;
@@ -68,6 +69,7 @@ int main_traj(int argc, char* argv[argc])
 
 		OPT_INT('x', &X, "x", "readout samples"),
 		OPT_INT('y', &Y, "y", "phase encoding lines"),
+		OPT_INT('z', &Z, "z", "second phase encoding lines"),
 		OPT_INT('d', &D, "d", "full readout samples"),
 		OPT_INT('e', &E, "e", "number of echoes"),
 		OPT_INT('a', &conf.accel, "a", "acceleration"),
@@ -90,7 +92,7 @@ int main_traj(int argc, char* argv[argc])
 		OPT_SET('3', &conf.d3d, "3D"),
 		OPT_SET('c', &conf.asym_traj, "asymmetric trajectory [DC sampled]"),
 		OPT_SET('E', &conf.mems_traj, "multi-echo multi-spoke trajectory"),
-		OPT_VEC2('z', &z_usamp, "Ref:Acel", "Undersampling in z-direction."),
+		OPTL_VEC2(0, "z-us", &z_usamp, "Ref:Acel", "Undersampling in z-direction."),
 		OPT_INFILE('C', &custom_angle_file, "file", "custom_angle file [phi + i * psi]"),
 		OPT_INFILE('V', &gdelays_file, "file", "(custom_gdelays)"),
 		OPTL_INT(0, "raga-inc", &raga_inc, "d", "Increment of RAGA Sampling"),
@@ -155,13 +157,13 @@ int main_traj(int argc, char* argv[argc])
 
 
 	int tot_sp = Y * E * mb * turns;	// total number of lines/spokes
-	int N = X * tot_sp / conf.accel;
+	int N = X * tot_sp / conf.accel * Z;
 
 
 	long dims[DIMS] = { [0 ... DIMS - 1] = 1  };
 	dims[0] = 3;
 	dims[1] = X;
-	dims[2] = (conf.radial ? Y : (Y / conf.accel));
+	dims[2] = (conf.radial ? Y : (Y / conf.accel)) * Z;
 
 	dims[TE_DIM] = E;
 
@@ -207,9 +209,6 @@ int main_traj(int argc, char* argv[argc])
 
 			if (mb > 1)
 				error("Multiple partitions not sensible for 3D-Kooshball\n");
-		} else {
-
-			error("3D not implemented for Cartesian trajectory\n");
 		}
 	}
 
@@ -268,7 +267,8 @@ int main_traj(int argc, char* argv[argc])
 
 	do {
 		int i = pos[PHS1_DIM];
-		int j = pos[PHS2_DIM] * conf.accel;
+		int j = (pos[PHS2_DIM] % (Y / conf.accel)) * conf.accel;
+		int k = (pos[PHS2_DIM] / (Y / conf.accel));
 		int e = pos[TE_DIM];
 		int m = pos[SLICE_DIM];
 
@@ -383,11 +383,12 @@ int main_traj(int argc, char* argv[argc])
 
 			double x = (i - X / 2) / over;
 			double y = (j - Y / 2);
+			double z = (k - Z / 2);
 			double angle = -rot / 180. * M_PI;
 
 			samples[p * 3 + 0] = x * cos(angle) + -y * sin(angle);
 			samples[p * 3 + 1] = x * sin(angle) + y * cos(angle);
-			samples[p * 3 + 2] = 0;
+			samples[p * 3 + 2] = z;
 		}
 
 		p++;
