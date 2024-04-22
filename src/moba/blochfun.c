@@ -395,11 +395,21 @@ static void bloch_fun(const nlop_data_t* _data, complex float* dst, const comple
 					
 					case MODEL_BMC:
 
-						dr1_cpu[position] = (*scale2)[0] * (sa_r1_p[j][0][0] + sa_r1_p[j][0][1] * 1.i);
-						dm0_cpu[position] = (*scale2)[1] * (sa_m0_p[j][0][0] + sa_m0_p[j][0][1] * 1.i);
-						dr2_cpu[position] = (*scale2)[2]  * (sa_r2_p[j][0][0] + sa_r2_p[j][0][1] * 1.i);
-						db1_cpu[position] = (*scale2)[3]  * (sa_b1_p[j][0][0] + sa_b1_p[j][0][1] * 1.i);
-						sig_cpu[position] = (m_p[0][0][0] + m_p[j][0][1] * 1.i);
+						if (SEQ_CEST == sim_data.seq.seq_type) {
+	
+							dr1_cpu[position] = (*scale2)[0] * (sa_r1_p[j][0][2]);
+							dm0_cpu[position] = (*scale2)[1] * (sa_m0_p[j][0][2]);
+							dr2_cpu[position] = (*scale2)[2] * (sa_r2_p[j][0][2]);
+							db1_cpu[position] = (*scale2)[3] * (sa_b1_p[j][0][2]);
+							sig_cpu[position] = m_p[0][0][2];
+						} else {
+
+							dr1_cpu[position] = (*scale2)[0] * (sa_r1_p[j][0][0] + sa_r1_p[j][0][1] * 1.i);
+							dm0_cpu[position] = (*scale2)[1] * (sa_m0_p[j][0][0] + sa_m0_p[j][0][1] * 1.i);
+							dr2_cpu[position] = (*scale2)[2]  * (sa_r2_p[j][0][0] + sa_r2_p[j][0][1] * 1.i);
+							db1_cpu[position] = (*scale2)[3]  * (sa_b1_p[j][0][0] + sa_b1_p[j][0][1] * 1.i);
+							sig_cpu[position] = (m_p[0][0][0] + m_p[j][0][1] * 1.i);
+						}
 						break;
 					}
 
@@ -408,11 +418,21 @@ static void bloch_fun(const nlop_data_t* _data, complex float* dst, const comple
 						curr_pos_pools[ITER_DIM] = p;
 						position = md_calc_offset(data->N, pool_out_strs, curr_pos_pools) / CFL_SIZE;
 
- 						dr1_pools_cpu[position] = (*scale2)[4 + p] * (sa_r1_p[j][p + 1][0] + sa_r1_p[j][p + 1][1] * 1.i);
-						dr2_pools_cpu[position] = (*scale2)[4 + sim_data.voxel.P - 1 + p] * (sa_r2_p[j][p + 1][0] + sa_r2_p[j][p + 1][1] * 1.i);
-						dk_cpu[position] = (*scale2)[4 + 2 * (sim_data.voxel.P - 1) + p]  * (sa_k_p[j][p][0] + sa_k_p[j][p][1] * 1.i);
-						dm0_pools_cpu[position] = (*scale2)[4 + 3 * (sim_data.voxel.P - 1) + p] * (sa_m0_p[j][p + 1][0] + sa_m0_p[j][p + 1][1] * 1.i);
-						dom_cpu[position] = (*scale2)[4 + 4 * (sim_data.voxel.P - 1) + p] * (sa_om_p[j][p][0] + sa_om_p[j][p][1] * 1.i);
+						if (SEQ_CEST == sim_data.seq.seq_type) {
+
+							dr1_pools_cpu[position] = (*scale2)[4 + p] * sa_r1_p[j][p + 1][2];
+							dr2_pools_cpu[position] = (*scale2)[4 + sim_data.voxel.P - 1 + p] * sa_r2_p[j][p + 1][2];
+							dk_cpu[position] = (*scale2)[4 + 2 * (sim_data.voxel.P - 1) + p]  * sa_k_p[j][p][2];
+							dm0_pools_cpu[position] = (*scale2)[4 + 3 * (sim_data.voxel.P - 1) + p] * sa_m0_p[j][p + 1][2];
+							dom_cpu[position] = (*scale2)[4 + 4 * (sim_data.voxel.P - 1) + p] * sa_om_p[j][p][2];
+						} else {
+
+ 							dr1_pools_cpu[position] = (*scale2)[4 + p] * (sa_r1_p[j][p + 1][0] + sa_r1_p[j][p + 1][1] * 1.i);
+							dr2_pools_cpu[position] = (*scale2)[4 + sim_data.voxel.P - 1 + p] * (sa_r2_p[j][p + 1][0] + sa_r2_p[j][p + 1][1] * 1.i);
+							dk_cpu[position] = (*scale2)[4 + 2 * (sim_data.voxel.P - 1) + p]  * (sa_k_p[j][p][0] + sa_k_p[j][p][1] * 1.i);
+							dm0_pools_cpu[position] = (*scale2)[4 + 3 * (sim_data.voxel.P - 1) + p] * (sa_m0_p[j][p + 1][0] + sa_m0_p[j][p + 1][1] * 1.i);
+							dom_cpu[position] = (*scale2)[4 + 4 * (sim_data.voxel.P - 1) + p] * (sa_om_p[j][p][0] + sa_om_p[j][p][1] * 1.i);
+						}
 					}
 				}
 			}

@@ -224,6 +224,20 @@ int main_mobafit(int argc, char* argv[argc])
 		OPT_INT('P', &(sim.voxel.P), "int", "Number of pools"),
 	};
 
+	struct opt_s cest_opts[] = {
+
+		OPTL_FLOAT(0, "b1", &(sim.cest.b1_amp), "float", "B1 amplitude [mu T]"),
+		OPTL_FLOAT(0, "b0", &(sim.cest.b0), "float", "B0 [T]"),
+		OPTL_FLOAT(0, "gamma", &(sim.cest.gamma), "float", "Gyromagnetic ratio [Mhz/T]"),
+		OPTL_FLOAT(0, "max", &(sim.cest.off_start), "float", "Max offset [ppm]"),
+		OPTL_FLOAT(0, "min", &(sim.cest.off_stop), "float", "Min offset [ppm]"),
+		OPTL_INT(0, "n_p", &(sim.cest.n_pulses), "int", "Number of pulses"),
+		OPTL_FLOAT(0, "t_d", &(sim.cest.t_d), "float", "Interpulse delay [s]"),
+		OPTL_FLOAT(0, "t_pp", &(sim.cest.t_pp), "float", "Post-preparation delay [s]"),
+		OPTL_SET(0, "ref_scan", &(sim.cest.ref_scan), "Use reference scan"),
+		OPTL_FLOAT(0, "ref_scan_ppm", &(sim.cest.ref_scan_ppm), "float", "Offset for ref. scan [ppm]"),
+	};
+
 	const struct opt_s opts[] = {
 
 #if 0
@@ -256,6 +270,7 @@ int main_mobafit(int argc, char* argv[argc])
 		OPTL_SUBOPT(0, "sim", "...", "configure simulation parameters", ARRAY_SIZE(sim_opts), sim_opts),
 		OPTL_SUBOPT(0, "other", "...", "configure other simulation parameters", ARRAY_SIZE(other_opts), other_opts),
 		OPTL_SUBOPT(0, "pool", "...", "configure pool parameters for BMC simulation", ARRAY_SIZE(pool_opts), pool_opts),
+		OPTL_SUBOPT(0, "cest", "...", "configure parameters for CEST simulation", ARRAY_SIZE(cest_opts), cest_opts),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
