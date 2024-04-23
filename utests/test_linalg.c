@@ -43,6 +43,42 @@ static bool test_mat_pinv(void)
 
 UT_REGISTER_TEST(test_mat_pinv);
 
+static bool test_mat_svd(void)
+{
+	complex float A[3][4] = {
+		{+0.000000e+00,	+3.535534e-01,	+5.000000e-01,	+3.535534e-01},
+		{+23.000000e-01,+3.535534e-01,	-2.185570e-08,	-3.535534e-01},
+		{+0.000000e+00,	+0.000000e+00,	+0.000000e+00,	+0.000000e+00}
+	};
+
+	complex float C[3][4] = {
+		{+0.000000e+00,	+3.535534e-01,	+5.000000e-01,	+3.535534e-01},
+		{+23.000000e-01,+3.535534e-01,	-2.185570e-08,	-3.535534e-01},
+		{+0.000000e+00,	+0.000000e+00,	+0.000000e+00,	+0.000000e+00}
+	};
+
+	complex float U[3][3];
+	complex float VH[4][4];
+	float S[3];
+
+	mat_svd(3, 4, U, VH, S, A);
+
+	complex float B[3][4];
+
+	mat_svd_recov(3, 4, B, U, VH, S);
+
+	float err = 0.;
+
+	for (int i = 0; i < 3; i++)
+		for (int j = 0; j < 4; j++)
+			err += powf(cabsf(C[i][j] - B[i][j]), 2.);
+
+	return (err < 1.E-10);
+}
+
+
+UT_REGISTER_TEST(test_mat_svd);
+
 
 static bool test_thomas_algorithm(void)
 {

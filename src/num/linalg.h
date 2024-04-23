@@ -32,6 +32,8 @@ extern bool mat_inverse(int N, complex float dst[N][N], const complex float src[
 extern void mat_pinv(int A, int B, complex float out[B][A], const complex float in[A][B]);
 extern void mat_pinv_left(int A, int B, complex float out[B][A], const complex float in[A][B]);
 extern void mat_pinv_right(int A, int B, complex float out[B][A], const complex float in[A][B]);
+extern void mat_svd_recov(int A, int B, complex float out[A][B], complex float U[A][A], complex float VH[B][B], float S[(A > B) ? B : A]);
+extern void mat_svd(int A, int B, complex float U[A][A], complex float VH[B][B], float S[(A > B) ? B : A], complex float in[A][B]);
 extern void mat_schur_recov(int A, complex float out[A][A], complex float T[A][A], complex float Z[A][A]);
 extern void mat_schur(int A, complex float T[A][A], complex float Z[A][A], complex float in[A][A]);
 extern void mat_ceig_double(int A, complex double EV[A], complex double in[A][A]);

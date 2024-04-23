@@ -26,6 +26,8 @@
 
 #include "misc/misc.h"
 
+#include "misc/debug.h"
+
 #ifdef MAT_USE_LAPACK
 #include "num/blas.h"
 #include "num/lapack.h"
@@ -284,6 +286,28 @@ void mat_pinv_right(int A, int B, complex float out[B][A], const complex float i
 	mat_mul(B, A, A, out, adj, inv);
 }
 
+static void mat_vecmul_columnwise(int A, int B, complex float out[A][B], const complex float mat[A][B], const float in[A])
+{
+	for (int a = 0; a < A; a++)
+		for (int b = 0; b < B; b++)
+			out[a][b] = mat[a][b] * in[a];
+}
+
+void mat_svd_recov(int A, int B, complex float out[A][B], complex float U[A][A], complex float VH[B][B], float S[A])
+{
+	complex float VH2[B][B];
+
+	mat_vecmul_columnwise(((B > A) ? A : B), B, VH2, VH, S);
+
+	mat_mul(A, A, B, out, U, VH2);
+}
+
+// Wrapper for lapack including row-major definition of svd
+void mat_svd(int A, int B, complex float U[A][A], complex float VH[B][B], float S[A], complex float in[A][B])
+{
+	// Attention: Input will be destroyed by lapack call!
+	lapack_svd(B, A, VH, U, S, in);
+}
 
 void mat_schur_recov(int A, complex float out[A][A], complex float T[A][A], complex float Z[A][A])
 {
