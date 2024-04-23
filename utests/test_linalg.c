@@ -80,6 +80,101 @@ static bool test_mat_svd(void)
 UT_REGISTER_TEST(test_mat_svd);
 
 
+// Test complex valued matrices + right
+static bool test_mat_pinv2(void)
+{
+	complex float A[3][2] = {
+		{ 1.i, 4. },
+		{ 2.i, 5. },
+		{ 3.i, 6. },
+	};
+
+	const complex float C[2][3] = {
+		{ -0.00000 + 0.94444i, +0.00000 + 0.11111i, +0.00000 - 0.72222i },
+		{ +0.44444 + 0.00000i, +0.11111 + 0.00000i, +-0.22222 - 0.00000i },
+	};
+
+	complex float B[2][3];
+
+	mat_pinv_svd(3, 2, B, A);
+
+	float err = 0.;
+
+	for (int i = 0; i < 2; i++)
+		for (int j = 0; j < 3; j++)
+			err += powf(cabsf(C[i][j] - B[i][j]), 2.);
+
+	return (err < 1.E-10);
+}
+
+
+UT_REGISTER_TEST(test_mat_pinv2);
+
+// Test real valued matrices + left
+static bool test_mat_pinv3(void)
+{
+	complex float A[3][4] = {
+		{+0.000000e+00,	+3.535534e-01,	+5.000000e-01,	+3.535534e-01},
+		{+23.000000e-01,+3.535534e-01,	-2.185570e-08,	-3.535534e-01},
+		{+0.000000e+00,	+0.000000e+00,	+0.000000e+00,	+0.000000e+00}
+	};
+
+	const complex float C[4][3] = {
+		{9.07366543e-09,  4.15162454e-01,  0.},
+		{7.07106783e-01,  6.38183045e-02,  0.},
+		{9.99999973e-01, -1.97253619e-09,  0.},
+		{7.07106780e-01, -6.38183017e-02,  0.}
+	};
+
+	complex float B[4][3];
+
+	mat_pinv_svd(3, 4, B, A);
+
+	float err = 0.;
+
+	for (int i = 0; i < 4; i++)
+		for (int j = 0; j < 3; j++)
+			err += powf(cabsf(C[i][j] - B[i][j]), 2.);
+
+	return (err < 1.E-10);
+}
+
+UT_REGISTER_TEST(test_mat_pinv3);
+
+
+static bool test_mat_pinvT(void)
+{
+	complex float A[3][4] = {
+		{+0.000000e+00,	+3.535534e-01,	+5.000000e-01,	+3.535534e-01},
+		{+23.000000e-01,+3.535534e-01,	-2.185570e-08,	-3.535534e-01},
+		{+0.000000e+00,	+0.000000e+00,	+0.000000e+00,	+0.000000e+00}
+	};
+
+	complex float B[4][3];
+	complex float B2[3][4];
+	complex float B3[4][3];
+	complex float A2[4][3];
+
+	mat_transpose(3, 4, A2, A);// before svd otherwise input A is destroyed (lapack)
+
+	mat_pinv_svd(3, 4, B, A);
+
+	mat_pinv_svd(4, 3, B2, A2);
+	mat_transpose(3, 4, B3, B2);
+
+	float err = 0.;
+
+	for (int i = 0; i < 4; i++)
+		for (int j = 0; j < 3; j++)
+			err += powf(cabsf(B[i][j] - B3[i][j]), 2.);
+
+	return (err < 1.E-10);
+}
+
+
+UT_REGISTER_TEST(test_mat_pinvT);
+
+
 static bool test_thomas_algorithm(void)
 {
 	const complex float A[7][3] = {

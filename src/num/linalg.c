@@ -309,6 +309,63 @@ void mat_svd(int A, int B, complex float U[A][A], complex float VH[B][B], float 
 	lapack_svd(B, A, VH, U, S, in);
 }
 
+// pinv(in) = V S^{-1} U^T
+void mat_pinv_svd(int A, int B, complex float out[B][A], complex float in[A][B])
+{
+	// Take conj transpose for complex into account
+	mat_conj(A, B, in, in);
+
+	complex float VH[B][B];
+	complex float U[A][A];
+	float S[A];
+
+	//  U S V^H = in
+	mat_svd(A, B, U, VH, S, in);
+
+	// S^{-1}
+	float tol = 1e-6;
+
+	for (int i = 0; i < A; i++)
+		if (tol < S[i])
+			S[i] = 1./S[i];
+
+	// UT = U^T
+	complex float UT[A][A];
+	mat_transpose(A, A, UT, U);
+
+	// V = VH^T
+	complex float V[B][B];
+	mat_transpose(B, B, V, VH);
+
+	// U2 = S^{-1} UT -> consider S is diagonal matrix!
+	complex float U2[A][A];
+	mat_vecmul_columnwise(A, A, U2, UT, S);
+
+	// FIXME: Avoid cutting by moving to lapack_svd_econ?
+	if (A <= B) {
+
+		complex float V_cut[B][A];
+
+		for (int i = 0; i < B; i++)
+			for (int j = 0; j < A; j++)
+				V_cut[i][j] = V[i][j];
+
+		// pinv(in) = (V^H)^T U2
+		mat_mul(B, A, A, out, V_cut, U2);
+
+	} else {
+
+		complex float U_cut[B][A];
+
+		for (int i = 0; i < B; i++)
+			for (int j = 0; j < A; j++)
+				U_cut[i][j] = U2[i][j];
+
+		// pinv(in) = (V^H)^T U2
+		mat_mul(B, B, A, out, V, U_cut);
+	}
+}
+
 void mat_schur_recov(int A, complex float out[A][A], complex float T[A][A], complex float Z[A][A])
 {
 
