@@ -72,3 +72,40 @@ static bool test_thomas_algorithm(void)
 
 UT_REGISTER_TEST(test_thomas_algorithm);
 
+
+static bool test_mat_schur(void)
+{
+	enum { N = 2 };
+
+	complex float A[N][N] = {
+		{ 1, 1 },
+		{ -2, 3 }
+	};
+
+	complex float T[N][N];
+	complex float Z[N][N];
+
+	mat_schur(N, T, Z, A);
+
+	complex float B[N][N];
+	mat_schur_recov(N, B, T, Z);
+
+	float err = 0.;
+
+	for (int i = 0; i < N; i++)
+		for (int j = 0; j < N; j++)
+			err += powf(cabsf(B[i][j] - A[i][j]), 2.);
+
+	// debug_printf(DP_INFO, "\nB:\n");
+	// for (int i = 0; i < N; i++) {
+	// 	for (int j = 0; j < N; j++)
+	// 		debug_printf(DP_INFO, "%f+i*%f ", crealf(B[i][j]), cimagf(B[i][j]));
+	// 	debug_printf(DP_INFO, "\n");
+	// }
+	// debug_printf(DP_INFO, "err: %f\n", err);
+
+	return (err < 1.E-10);
+}
+
+
+UT_REGISTER_TEST(test_mat_schur);

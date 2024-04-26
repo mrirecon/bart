@@ -102,6 +102,11 @@ void lapack_trimat_inverse_lower(long N, complex float A[N][N])
 	lapack_trimat_inverse_UL(N, 'L', A);
 }
 
+void lapack_schur(long N, complex float W[N], complex float VS[N][N], complex float A[N][N])
+{
+	int sdim = 0;
 
-
+	// On output, A overwritten by Schur form T
+	LAPACKE(cgees, 'V', 'N', 0, N, &A[0][0], N, &sdim, &W[0], &VS[0][0], N);
+}
 

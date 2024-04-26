@@ -28,4 +28,6 @@ extern void lapack_cholesky_lower(long N, complex float A[N][N]);
 extern void lapack_trimat_inverse(long N, complex float A[N][N]);
 extern void lapack_trimat_inverse_lower(long N, complex float A[N][N]);
 
+extern void lapack_schur(long N, complex float W[N], complex float VS[N][N], complex float A[N][N]);
+
 

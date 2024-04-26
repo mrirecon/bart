@@ -281,6 +281,35 @@ void mat_pinv_right(int A, int B, complex float out[B][A], const complex float i
 }
 
 
+void mat_schur_recov(int A, complex float out[A][A], complex float T[A][A], complex float Z[A][A])
+{
+
+	complex float Z_adj[A][A];
+	mat_adjoint(A, A, Z_adj, Z);
+
+	complex float T2[A][A];
+	mat_mul(A, A, A, T2, Z, T);
+
+	mat_mul(A, A, A, out, T2, Z_adj);
+}
+
+
+void mat_schur(int A, complex float T[A][A], complex float Z[A][A], complex float in[A][A])
+{
+	// transpose -> lapack use column-major matrices while native C uses row-major
+	complex float EV[A];
+	complex float T2[A][A];
+	complex float Z2[A][A];
+
+	mat_transpose(A, A, T2, in);
+
+	lapack_schur(A, EV, Z2, T2);
+
+	mat_transpose(A, A, Z, Z2);
+	mat_transpose(A, A, T, T2);
+}
+
+
 void mat_kron(int A, int B, int C, int D,
 	      complex float out[A * C][B * D], const complex float in1[A][B], const complex float in2[C][D])
 {
