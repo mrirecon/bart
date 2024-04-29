@@ -9,3 +9,4 @@ extern double sinc(double x);
 extern float sincf(float x);
 extern double jinc(double x);
 
+extern double gamma_func(double x);

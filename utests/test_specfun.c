@@ -7,6 +7,7 @@
  */
 
 #include <complex.h>
+#include <math.h>
 
 #include "misc/debug.h"
 
@@ -64,4 +65,20 @@ static bool test_complex_log(void)
 }
 
 UT_REGISTER_TEST(test_complex_log);
+
+static bool test_gamma_func(void)
+{
+	double tests[][2] = {	{ 0.5, sqrt(M_PI)},
+				{ sqrt(3.), 0.91510229697308},
+				{ 3.5, 3.32335097044784}
+		};
+
+	for (unsigned int i = 0; i < ARRAY_SIZE(tests); i++)
+		if (fabs(gamma_func(tests[i][0]) - tests[i][1]) > 10E-12)
+			return 0;
+
+	return 1;
+}
+
+UT_REGISTER_TEST(test_gamma_func);
 

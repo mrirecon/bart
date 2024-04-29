@@ -8,6 +8,7 @@
  */
 
 #include <math.h>
+#include <assert.h>
 
 #include "misc/misc.h"
 
@@ -277,3 +278,88 @@ double Si(double x)
 
 	return (fabs(x) <= 4) ? Si_power(x) : ((x < 0) ? -1 : 1) * Si_large_x(fabs(x));
 }
+
+// Gamma Function
+double gamma_func(double x)
+{
+	if(x == (int)x) // FIXME: Some implementations set this case just very high: =1e300
+		assert(0. < x);
+
+	double out = 0.;
+	double eps = 1e-15;
+
+	// Positive integer gamma(n) = (n - 1)!
+	if (eps > fabs(x - (int)x)) {
+
+		if (0. < x) {
+
+			out = 1.;
+
+			int m = (int)(x - 1);
+
+			for  (int k = 2; k < m + 1; k++)
+				out *= k;
+		}
+	} else { // Solve Gamma(z) = \int_0^{\inf}t^{z-1}e^{-t}dt
+
+		double r = 1.;
+		double z = 0.;
+
+		// Extension beyond |x| > 1 using reflection property
+		if (fabs(x) > 1.0) {
+
+			z = fabs(x);
+
+			int m = (int)z;
+
+			for  (int k = 1; k < m + 1; k++)
+				r *= (z - k);
+
+			z -= m;
+		} else
+			z = x;
+
+		// Rounded Taylor series coefficients Gamma(x+1)^-1 from
+		// Luke, Yudell L. Mathematical Functions and Their Approximations,
+		// Elsevier Science & Technology, 1975.
+		// Chapter I, Table 1.1
+		const double a[25] = {
+			1.0,			0.5772156649015329e0,	-0.6558780715202538e0,
+			-0.420026350340952e-1,	0.1665386113822915e0,	-0.421977345555443e-1,
+			-0.96219715278770e-2,	0.72189432466630e-2,	-0.11651675918591e-2,
+			-0.2152416741149e-3,	0.1280502823882e-3,	-0.201348547807e-4,
+			-0.12504934821e-5,	0.11330272320e-5,	-0.2056338417e-6,
+			0.61160950e-8,		0.50020075e-8,		-0.11812746e-8,
+			0.1043427e-9,		0.77823e-11,		-0.36968e-11,
+			0.51e-12,		-0.206e-13,		-0.54e-14,
+			0.12e-14
+		};
+
+		// Evaluate Taylor series
+
+		double s = a[24];
+
+		for (int c = 23; c >= 0; c--)
+			s = s * z + a[c];
+
+		out = 1. / (s * z);
+
+		// Correct out following reflection property
+
+		if (fabs(x) > 1.0) {
+
+			out *= r;
+
+			if (0. > x)
+				out = -1. * M_PI / (x * out * sin(M_PI * x));
+		}
+	}
+
+	return out;
+}
+
+	}
+
+	return out;
+}
+
