@@ -1,6 +1,6 @@
 /* Copyright 2014. The Regents of the University of California.
  * Copyright 2020. Martin Uecker.
- * All rights reserved. Use of this source code is governed by 
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
@@ -13,6 +13,8 @@
 
 #include <complex.h>
 
+#include "misc/debug.h"
+#include "misc/misc.h"
 #include "num/multind.h"
 
 #include "misc/nested.h"
@@ -22,7 +24,7 @@
 
 // typedef complex float (*sample_fun_t)(const long pos[]);
 
-void md_zsample(int N, const long dims[N], complex float* out, sample_fun_t fun)
+void md_zsample(int N, const long dims[N], complex float* out, zsample_fun_t fun)
 {
 	long strs[N];
 	md_calc_strides(N, strs, dims, 1);	// we use size = 1 here
@@ -38,7 +40,38 @@ void md_zsample(int N, const long dims[N], complex float* out, sample_fun_t fun)
 }
 
 
-void md_parallel_zsample(int N, const long dims[N], complex float* out, sample_fun_t fun)
+void md_parallel_zsample(int N, const long dims[N], complex float* out, zsample_fun_t fun)
+{
+	long strs[N];
+	md_calc_strides(N, strs, dims, 1);	// we use size = 1 here
+
+	long* strsp = strs;	// because of clang
+
+	NESTED(void, sample_kernel, (const long pos[]))
+	{
+		out[md_calc_offset(N, strsp, pos)] = fun(pos);
+	};
+
+	md_parallel_loop(N, dims, ~0u, sample_kernel);
+}
+
+void md_sample(int N, const long dims[N], float* out, sample_fun_t fun)
+{
+	long strs[N];
+	md_calc_strides(N, strs, dims, 1);	// we use size = 1 here
+
+	long* strsp = strs;	// because of clang
+
+	NESTED(void, sample_kernel, (const long pos[]))
+	{
+		out[md_calc_offset(N, strsp, pos)] = fun(pos);
+	};
+
+	md_loop(N, dims, sample_kernel);
+}
+
+
+void md_parallel_sample(int N, const long dims[N], float* out, sample_fun_t fun)
 {
 	long strs[N];
 	md_calc_strides(N, strs, dims, 1);	// we use size = 1 here
@@ -59,7 +92,7 @@ void md_parallel_zsample(int N, const long dims[N], complex float* out, sample_f
 void md_zmap(int N, const long dims[N], complex float* out, const complex float* in, map_fun_t fun)
 {
 	long strs[N];
-	md_calc_strides(N, strs, dims, 1); // we use size = 1 here 
+	md_calc_strides(N, strs, dims, 1); // we use size = 1 here
 
 	long* strsp = strs; // because of clang
 
@@ -91,7 +124,7 @@ void md_zgradient(int N, const long dims[N], complex float* out, const complex f
 	{
 		long offset = md_calc_offset(N - 1, strsp + 1, pos);
 		complex float val = 0;
-		
+
 		for (int i = 0; i < N - 1; i++)
 			val += (float)pos[i] * gradp[i + 1];
 
@@ -101,7 +134,7 @@ void md_zgradient(int N, const long dims[N], complex float* out, const complex f
 
 	md_parallel_loop(N - 1, dims + 1, ~0UL, gradient_kernel);
 
-#else	
+#else
 
 	// clang
 	const complex float* grad2 = grad;
