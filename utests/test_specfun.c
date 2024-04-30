@@ -82,3 +82,33 @@ static bool test_gamma_func(void)
 
 UT_REGISTER_TEST(test_gamma_func);
 
+
+static bool test_hyp2f1(void)
+{
+	double tests[][5] = {
+		{ 1., 	-2., 3., 0., 1.},
+		{ 1.,	-2., 3., 1., 0.5},
+		{ 1.,	-1., 3., 1., 0.666666666666667},
+		{ 1.5,	2.5, 4.5, 1., 10.30835089459151},
+		{ 0., 2., 2., -1.0, 1.},
+		{ -1., 2., 3., -0.4, 1.26666666666667},
+		{ 0.5, 0.2, 1.5, 1., 1.1496439092239847},
+		{ 12.3, 8., 20.31, 1, 69280986.75273195},
+		{ -1., 2., 3., 0.2, 0.866666666666667},
+		{ 1., -2., 3., 0.2, 0.873333333333333},
+		{ -1., 2., 3., 0.4, 0.733333333333333} };
+
+	for (unsigned int i = 0; i < ARRAY_SIZE(tests); i++) {
+
+		double val = hyp2f1(tests[i][0], tests[i][1], tests[i][2], tests[i][3]);
+		// debug_printf(DP_INFO, "%1.15e,\t%1.15e\n", val, tests[i][4]);
+
+		if (fabs(val - tests[i][4]) > 10E-5)
+			return 0;
+	}
+
+	return 1;
+}
+
+UT_REGISTER_TEST(test_hyp2f1);
+

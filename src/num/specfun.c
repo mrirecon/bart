@@ -11,6 +11,7 @@
 #include <assert.h>
 
 #include "misc/misc.h"
+#include "misc/debug.h"
 
 #include "num/chebfun.h"
 
@@ -358,7 +359,83 @@ double gamma_func(double x)
 	return out;
 }
 
+
+// Real Valued Gauss Hypergeometric Function
+// Following:
+//	J.W. Pearson, S. Olver, and M.A. Porter
+//	Numerical methods for the computation of the confluent and Gauss hypergeometric functions
+//	Numer Algor 74, 821–866 (2017).
+//	https://doi.org/10.1007/s11075-016-0173-0
+static double hyp2f1_powerseries(double a, double b, double c, double x)
+{
+	int maxiter = 2000;
+
+	double eps = 1.0e-15;
+
+	double out = 1.;
+	double rj = 0.;
+	double sj = 1.;
+	double s_jm1 = 0.;
+
+	for (int j = 1; j < maxiter; j++) {
+
+		rj = (a + j - 1.) * (b + j - 1.) / (j * (c + j - 1.));
+
+		sj = sj * rj * x;
+
+		out += sj;
+
+		if (fabs(out - s_jm1) < (fabs(out) * eps))
+			break;
+
+		s_jm1 = out;
 	}
+
+	return out;
+}
+
+double hyp2f1(double a, double b, double c, double x)
+{
+	double eps = 1e-15;
+
+	double out = 0.;
+
+	// Test for special cases
+
+	// Limited number of special cases is tested here.
+	// See:
+	// https://github.com/scipy/scipy/blob/main/scipy/special/special/hyp2f1.h
+	// for detailed special case management
+	if ( (eps > x) && (eps > a) && (eps > b) )
+		out = 1.;
+
+	else if ( (eps > fabs(1. - x)) && (0. < (c - a - b)) )
+		out = gamma_func(c) * gamma_func(c - a - b) / (gamma_func(c - a) * gamma_func(c - b));
+
+	else if ( (eps > fabs(1. - x)) && (eps > fabs(c - a + b - 1.)) )
+		out = sqrt(M_PI) * pow(2., -a) * gamma_func(c) /
+			(gamma_func(1. + 0.5 * a - b) * gamma_func(0.5 + 0.5 * a));
+
+	else if (1. >= x) {
+
+		if (0. > x) {
+
+			out = hyp2f1_powerseries(a, c - b, c, x / (x - 1.));
+
+			out *= 1. / pow(1. - x, a);
+
+		} else if ( (a > c - a) && (b > c - b) ) {
+
+			double x00 = pow(1. - x, c - a - b);
+
+			out = hyp2f1_powerseries(c - a, c - b, c, x);
+			out *= x00;
+
+		} else
+			out = hyp2f1_powerseries(a, b, c, x);
+	}
+	else
+		error("Hyp2f1 function of this case is not implemented.");
 
 	return out;
 }
