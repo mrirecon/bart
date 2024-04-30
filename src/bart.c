@@ -317,14 +317,37 @@ int main_bart(int argc, char* argv[argc])
 
 		int final_ret = 0;
 
+
+		if (cfl_loop_omp()) {
+
+			// gomp does only use a thread pool for non-nested parallelism!
+			// Threads are spwaned dynamically with a performance penality for md_functions,
+			// if we have an outer parallel region even if it is inactive.
+
 #ifdef USE_CUDA
-		if (cfl_loop_omp())
 			cuda_set_stream_level();
 #endif
 
+#pragma omp parallel num_threads(cfl_loop_num_workers())
+			{
+				long start = cfl_loop_worker_id();
+				long total = cfl_loop_desc_total();
+				long workers = cfl_loop_num_workers();
 
-#pragma omp parallel num_threads(cfl_loop_num_workers()) if (cfl_loop_omp())
-		{
+				for (long i = start; ((i < total) && (0 == final_ret)); i += workers) {
+
+					int ret = batch_wrapper(dispatch_func, argc, argv, i);
+
+					if (0 != ret) {
+
+#pragma omp critical (main_end_condition)
+						final_ret = ret;
+						bart_exit(ret, "Tool exited with error");
+					}
+				}
+			}
+		} else {
+
 			long start = cfl_loop_worker_id();
 			long total = cfl_loop_desc_total();
 			long workers = cfl_loop_num_workers();
@@ -340,7 +363,6 @@ int main_bart(int argc, char* argv[argc])
 
 				if (0 != ret) {
 
-#pragma omp critical (main_end_condition)
 					final_ret = ret;
 					bart_exit(ret, "Tool exited with error");
 				}
