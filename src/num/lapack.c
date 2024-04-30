@@ -111,6 +111,24 @@ void lapack_trimat_solve(long N, long M, complex float A[N][N], complex float B[
 	LAPACKE(ctrtrs, (upper ? 'U' : 'L'), 'N', 'N', N, M, &A[0][0], N, &B[0][0], N);
 }
 
+
+void lapack_cinverse_UL(long N, complex float A[N][N])
+{
+	int ipiv[N];
+
+	LAPACKE(cgetrf, N, N, &A[0][0], N, ipiv);
+	LAPACKE(cgetri, N, &A[0][0], N, ipiv);
+}
+
+void lapack_sinverse_UL(long N, float A[N][N])
+{
+	int ipiv[N];
+
+	LAPACKE(sgetrf, N, N, &A[0][0], N, ipiv);
+	LAPACKE(sgetri, N, &A[0][0], N, ipiv);
+}
+
+
 void lapack_schur(long N, complex float W[N], complex float VS[N][N], complex float A[N][N])
 {
 	int sdim = 0;

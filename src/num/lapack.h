@@ -1,7 +1,7 @@
 /* Copyright 2013-2017. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
- */ 
+ */
 
 #include <complex.h>
 #include <stdbool.h>
@@ -34,4 +34,7 @@ extern void lapack_schur(long N, complex float W[N], complex float VS[N][N], com
 extern void lapack_schur_double(long N, complex double W[N], complex double VS[N][N], complex double A[N][N]);
 
 extern void lapack_sylvester(long N, long M, float* scale, complex float A[N][N], complex float B[M][M], complex float C[M][N]);
+
+extern void lapack_cinverse_UL(long N, complex float A[N][N]);
+extern void lapack_sinverse_UL(long N, float A[N][N]);
 
