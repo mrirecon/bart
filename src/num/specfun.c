@@ -440,3 +440,18 @@ double hyp2f1(double a, double b, double c, double x)
 	return out;
 }
 
+// Orthogonal Polynomials: Evaluation of associated Legendre function first order P_{\lambda}^{\mu}(x)
+static double assoc_legendre(double lambda, double mu, double x)
+{
+	// FIXME: iterative definition faster?
+
+	double scale = 1. / (gamma_func(1. - mu)) * pow((x + 1.) / (x - 1.), mu / 2.);
+
+	return scale * hyp2f1(-lambda, lambda + 1., 1. - mu, 0.5 * (1. - x));
+}
+
+double legendre(double lambda, double x)
+{
+	return assoc_legendre(lambda, 0., x);
+	// return hyp2f1(-lambda, lambda + 1, 1., 0.5 * (1 - x)); // Cheaper
+}

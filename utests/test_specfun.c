@@ -112,3 +112,37 @@ static bool test_hyp2f1(void)
 
 UT_REGISTER_TEST(test_hyp2f1);
 
+
+
+static bool test_legendre(void)
+{
+	double tests[][3] = {
+		{ 0., 	-1., 1.},
+		{ 0.,	0., 1.},
+		{ 0.,	1., 1.},
+		{ 1., 	-1., -1.},
+		{ 1.,	0., 0.},
+		{ 1.,	1., 1.},
+		{ 2., 	-1., 1.},
+		{ 2.,	0., -0.5},
+		{ 2.,	1., 1.},
+		{ 3., 	-1., -1.},
+		{ 3.,	0., 0.},
+		{ 3.,	1., 1.},
+		{ 4., 	-1., 1.},
+		{ 4.,	0., 0.375},
+		{ 4.,	1., 1.} };
+
+	for (unsigned int i = 0; i < ARRAY_SIZE(tests); i++) {
+
+		double val = legendre(tests[i][0], tests[i][1]);
+		// debug_printf(DP_INFO, "%1.15e,\t%1.15e\n", val, tests[i][2]);
+
+		if (fabs(val - tests[i][2]) > 10E-12)
+			return 0;
+	}
+
+	return 1;
+}
+
+UT_REGISTER_TEST(test_legendre);
