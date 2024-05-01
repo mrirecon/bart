@@ -34,6 +34,7 @@ extern void mat_pinv_left(int A, int B, complex float out[B][A], const complex f
 extern void mat_pinv_right(int A, int B, complex float out[B][A], const complex float in[A][B]);
 extern void mat_schur_recov(int A, complex float out[A][A], complex float T[A][A], complex float Z[A][A]);
 extern void mat_schur(int A, complex float T[A][A], complex float Z[A][A], complex float in[A][A]);
+extern void mat_ceig_double(int A, complex double EV[A], complex double in[A][A]);
 extern complex float mat_det(int N, const complex float mat[N][N]);
 extern void mat_vecmul(int A, int B, complex float out[A], const complex float mat[A][B], const complex float in[B]);
 extern void matf_vecmul(int A, int B, float out[A], const float mat[A][B], const float in[B]);

@@ -109,3 +109,35 @@ static bool test_mat_schur(void)
 
 
 UT_REGISTER_TEST(test_mat_schur);
+
+
+static bool test_mat_ceig(void)
+{
+	enum { N = 2 };
+
+	complex double A[N][N] = {
+		{ 0., -1. },
+		{ 1., 0. }
+	};
+
+	complex double EV[N];
+
+	mat_ceig_double(N, EV, A);
+
+	complex double ref[N] = {1.i, -1.i};
+
+	double err = 0.;
+
+	for (int i = 0; i < N; i++)
+		err += powf(cabs(ref[i] - EV[i]), 2.);
+
+	// debug_printf(DP_INFO, "\nEV:\n");
+	// for (int i = 0; i < N; i++)
+	// 	debug_printf(DP_INFO, "%f+i*%f\n", crealf(EV[i]), cimagf(EV[i]));
+	// debug_printf(DP_INFO, "err: %f\n", err);
+
+	return (err < 1.E-10);
+}
+
+
+UT_REGISTER_TEST(test_mat_ceig);

@@ -310,6 +310,20 @@ void mat_schur(int A, complex float T[A][A], complex float Z[A][A], complex floa
 }
 
 
+void mat_ceig_double(int A, complex double EV[A], complex double in[A][A])
+{
+	complex double tmp[A][A];
+
+	// transpose -> lapack use column-major matrices while native C uses row-major
+	for (int i = 0; i < A; i++)
+		for (int j = 0; j < A; j++)
+			tmp[i][j] = in[j][i];
+
+	complex double vec[A][A];
+	lapack_schur_double(A, EV, vec, tmp);
+}
+
+
 void mat_kron(int A, int B, int C, int D,
 	      complex float out[A * C][B * D], const complex float in1[A][B], const complex float in2[C][D])
 {
