@@ -141,3 +141,35 @@ static bool test_mat_ceig(void)
 
 
 UT_REGISTER_TEST(test_mat_ceig);
+
+
+static bool test_mat_eig(void)
+{
+	enum { N = 2 };
+
+	double A[N][N] = {
+		{ 0., 1. },
+		{ 1., 1. }
+	};
+
+	double EV[N];
+
+	mat_eig_double(N, EV, A);
+
+	double ref[N] = {-0.618033988749895, 1.618033988749895};
+
+	double err = 0.;
+
+	for (int i = 0; i < N; i++)
+		err += powf(fabs(ref[i] - EV[i]), 2.);
+
+	// debug_printf(DP_INFO, "\nEV:\n");
+	// for (int i = 0; i < N; i++)
+	// 	debug_printf(DP_INFO, "%1.15e\n", EV[i]);
+	// debug_printf(DP_INFO, "err: %f\n", err);
+
+	return (err < 1.E-10);
+}
+
+
+UT_REGISTER_TEST(test_mat_eig);
