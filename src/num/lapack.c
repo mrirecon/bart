@@ -9,6 +9,7 @@
  */
 
 #include <complex.h>
+#include <stdbool.h>
 
 #include "misc/misc.h"
 
@@ -100,6 +101,14 @@ void lapack_trimat_inverse(long N, complex float A[N][N])
 void lapack_trimat_inverse_lower(long N, complex float A[N][N])
 {
 	lapack_trimat_inverse_UL(N, 'L', A);
+}
+
+// Solve A x = B for x
+void lapack_trimat_solve(long N, long M, complex float A[N][N], complex float B[N][M], bool upper)
+{
+	// for non-unit ('N') triangular matrix A
+	// on output: B overwritten by solution matrix X
+	LAPACKE(ctrtrs, (upper ? 'U' : 'L'), 'N', 'N', N, M, &A[0][0], N, &B[0][0], N);
 }
 
 void lapack_schur(long N, complex float W[N], complex float VS[N][N], complex float A[N][N])

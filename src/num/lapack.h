@@ -4,6 +4,7 @@
  */ 
 
 #include <complex.h>
+#include <stdbool.h>
 
 #ifdef __cplusplus
 #error This file does not support C++
@@ -27,6 +28,7 @@ extern void lapack_cholesky_lower(long N, complex float A[N][N]);
 
 extern void lapack_trimat_inverse(long N, complex float A[N][N]);
 extern void lapack_trimat_inverse_lower(long N, complex float A[N][N]);
+extern void lapack_trimat_solve(long N, long M, complex float A[N][N], complex float B[N][M], bool upper);
 
 extern void lapack_schur(long N, complex float W[N], complex float VS[N][N], complex float A[N][N]);
 extern void lapack_schur_double(long N, complex double W[N], complex double VS[N][N], complex double A[N][N]);

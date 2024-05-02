@@ -447,6 +447,33 @@ void pack_tri_matrix(int N, complex float cov[N * (N + 1) / 2], const complex fl
 			cov[l++] = m[i][j];
 }
 
+// Solve M x = N for x with non-unit triangular matrix M
+void solve_tri_matrix(int A, int B, complex float M[A][A], complex float N[A][B], bool upper)
+{
+	// transpose -> lapack use column-major matrices while native C uses row-major
+	complex float M2[A][A];
+	complex float N2[B][A];
+
+	mat_transpose(A, A, M2, M);
+	mat_transpose(A, B, N2, N);
+
+	lapack_trimat_solve(A, B, M2, N2, upper);
+
+	mat_transpose(B, A, N, N2); // Output: N
+}
+
+void solve_tri_matrix_vec(int A, complex float M[A][A], complex float N[A], bool upper)
+{
+	complex float N2[A][1];
+	for (int i = 0; i < A; i++)
+		N2[i][0] = N[i];
+
+	solve_tri_matrix(A, 1, M, N2, upper);
+
+	for (int i = 0; i < A; i++)
+		N[i] = N2[i][0];
+}
+
 void unpack_tri_matrix(int N, complex float m[N][N], const complex float cov[N * (N + 1) / 2])
 {
 	int l = 0;

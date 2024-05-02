@@ -229,3 +229,52 @@ static bool test_mat_band_reorder(void)
 
 UT_REGISTER_TEST(test_mat_band_reorder);
 
+
+static bool test_trimat_solve(void)
+{
+	enum { N = 4 };
+
+	// Lower
+
+	complex float A[N][N] = {
+		{ 3. + 1i, 0., 0., 0. },
+		{ 2., 1., 0., 0. },
+		{ 1., 0., 1., 0. },
+		{ 1., 1., 1., 1. }
+	};
+
+	complex float B[N] = { 4., 2., 4., 2. };
+	complex float ref[N] = { 1.2 - 0.4i, -0.4 + 0.8i, 2.8 + 0.4i, -1.6 - 0.8i };
+
+	solve_tri_matrix_vec(N, A, B, false);
+
+	// Upper
+
+	complex float A2[N][N] = {
+		{ 3. + 1i, 3., 2., 1. },
+		{ 0., 1., 3., 1i },
+		{ 0., 0., 1., 1. },
+		{ 0., 0., 0., 1. }
+	};
+
+	complex float B2[N] = { 4., 2., 4., 2. };
+	complex float ref2[N] = { 3.6 + 0.8i, -4. - 2i, 2., 2. };
+
+	solve_tri_matrix_vec(N, A2, B2, true);
+
+	double err = 0.;
+	double err2 = 0.;
+
+	for (int i = 0; i < N; i++) {
+
+		err += powf(cabsf(ref[i] - B[i]), 2.);
+		err2 += powf(cabsf(ref2[i] - B2[i]), 2.);
+	}
+	// debug_printf(DP_INFO, "err: %f\n", err);
+	// debug_printf(DP_INFO, "err2: %f\n", err2);
+
+	return ( (err < 1.E-10) && (err2 < 1.E-10) );
+}
+
+
+UT_REGISTER_TEST(test_trimat_solve);

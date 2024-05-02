@@ -55,6 +55,8 @@ extern void gram_schmidt(int M, int N, float val[M], complex float vecs[M][N]);
 extern void gram_matrix2(int N, complex float cov[N * (N + 1) / 2], int L, const complex float data[N][L]);
 extern void pack_tri_matrix(int N, complex float cov[N * (N + 1) / 2], const complex float m[N][N]);
 extern void unpack_tri_matrix(int N, complex float m[N][N], const complex float cov[N * (N + 1) / 2]);
+extern void solve_tri_matrix(int A, int B, complex float M[A][A], complex float N[A][B], bool upper);
+extern void solve_tri_matrix_vec(int A, complex float M[A][A], complex float N[A], bool upper);
 extern void orthiter_noinit(int M, int N, int iter, float vals[M], complex float out[M][N], const complex float matrix[N][N]);
 extern void orthiter(int M, int N, int iter, float vals[M], complex float out[M][N], const complex float matrix[N][N]);
 extern void cholesky(int N, complex float A[N][N]);
