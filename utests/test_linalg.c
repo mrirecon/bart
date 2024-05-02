@@ -173,3 +173,59 @@ static bool test_mat_eig(void)
 
 
 UT_REGISTER_TEST(test_mat_eig);
+
+
+static bool test_mat_band_reorder(void)
+{
+	enum { N = 4 };
+
+	// Lower form
+
+	double A_low[3][N] = {
+		{ 1., 2., 3., 4. },
+		{ 5., 5., 5., 0. },
+		{ 2., 2., 0., 0.}
+	};
+
+	double A[N][N];
+	mat_band_reorder(N, 3, A, A_low, false);
+
+	// Upper form
+
+	double A_up[3][N] = {
+		{ 0., 0., 2., 2. },
+		{ 0., 5., 5., 5. },
+		{ 1., 2., 3., 4. }
+	};
+
+	double A2[N][N];
+	mat_band_reorder(N, 3, A2, A_up, true);
+
+	// Check
+
+	double A_ref[N][N] = {
+		{ 1., 5., 2., 0. },
+		{ 5., 2., 5., 2. },
+		{ 2., 5., 3., 5. },
+		{ 0., 2., 5., 4. }
+	};
+
+	double err = 0.;
+	double err2 = 0.;
+
+	for (int i = 0; i < N; i++)
+		for (int j = 0; j < N; j++) {
+
+			err += powf(fabs(A_ref[i][j] - A[i][j]), 2.);
+			err2 += powf(fabs(A_ref[i][j] - A2[i][j]), 2.);
+	}
+
+	// debug_printf(DP_INFO, "err: %f\n", err);
+	// debug_printf(DP_INFO, "err2: %f\n", err2);
+
+	return ( (err < 1.E-10) && (err2 < 1.E-10) );
+}
+
+
+UT_REGISTER_TEST(test_mat_band_reorder);
+

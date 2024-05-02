@@ -16,6 +16,7 @@
 #include <complex.h>
 #include <math.h>
 #include <assert.h>
+#include <stdbool.h>
 
 #if 1
 // #define MAT_USE_LAPACK
@@ -751,3 +752,22 @@ void thomas_algorithm(int N, complex float f[N], const complex float A[N][3], co
 		f[i] = e[i] - c[i] * f[i + 1];
 }
 
+// Recover real symmetric matrix from band representation
+void mat_band_reorder(int A, int B, double mat[A][A], double band[B][A], bool upper)
+{
+	int u = B - 1;
+
+	for (int i = 0; i < A; i++)
+		for (int j = 0; j < A; j++) {
+
+			// Restore upper or lower triangular matrix from band matrix
+			if (u < abs(i - j))
+				mat[i][j] = 0.;
+			else {
+				if (upper) // Enforce symmetry
+					mat[i][j] = (i <= j) ? band[u + i - j][j] : band[u + j - i][i];
+				else // lower
+					mat[i][j] = (i >= j) ? band[i - j][j] : band[j - i][i];
+			}
+		}
+}

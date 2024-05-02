@@ -66,4 +66,4 @@ extern void vec_axpy(long N, complex float x[N], complex float alpha, const comp
 extern void vec_sadd(long D, complex float alpha, complex float dst[D], const complex float src[D]);
 extern void thomas_algorithm(int N, complex float f[N], const complex float A[N][3], const complex float d[N]);
 
-
+extern void mat_band_reorder(int A, int B, double mat[A][A], double band[B][A], bool upper);
