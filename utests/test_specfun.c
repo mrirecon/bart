@@ -146,3 +146,41 @@ static bool test_legendre(void)
 }
 
 UT_REGISTER_TEST(test_legendre);
+
+
+static bool test_roots_weights_gauss_legendre(void)
+{
+	enum { N = 9 };
+
+	double mu0 = 2.;
+
+	double roots[N];
+	double weights[N];
+
+	roots_weights_gauss_legendre(N, mu0, roots, weights);
+
+	double w_ref[N] = {	0.081274388362, 0.180648160695, 0.260610696403,
+				0.31234707704, 0.330239355001, 0.31234707704,
+				0.260610696403, 0.180648160695, 0.081274388362
+			};
+
+	double r_ref[N] = {	-0.968160239508, -0.836031107327, -0.613371432701,
+				-0.324253423404, 0.000000000000, 0.324253423404,
+				0.613371432701, 0.836031107327, 0.968160239508
+			};
+
+	double err = 0.;
+	double err2 = 0.;
+
+	for (int i = 0; i < N; i++) {
+
+		err += powf(fabs(r_ref[i] - roots[i]), 2.);
+		err2 += powf(fabs(w_ref[i] - weights[i]), 2.);
+	}
+
+	// debug_printf(DP_INFO, "err: %1.15e,\t err2: %1.15e\n", err, err2);
+
+	return ( (err < 1.E-10) && (err2 < 1.E-10) );
+}
+
+UT_REGISTER_TEST(test_roots_weights_gauss_legendre);

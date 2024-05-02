@@ -9,11 +9,13 @@
 
 #include <math.h>
 #include <assert.h>
+#include <stdlib.h>
 
 #include "misc/misc.h"
 #include "misc/debug.h"
 
 #include "num/chebfun.h"
+#include "num/linalg.h"
 
 #include "specfun.h"
 
@@ -454,4 +456,102 @@ double legendre(double lambda, double x)
 {
 	return assoc_legendre(lambda, 0., x);
 	// return hyp2f1(-lambda, lambda + 1, 1., 0.5 * (1 - x)); // Cheaper
+}
+
+
+static int compare(const void* a, const void* b)
+{
+	if (*(double*)a > *(double*)b)
+		return 1;
+	else if (*(double*)a < *(double*)b)
+		return -1;
+	else
+		return 0;
+}
+
+// Compute weights and sample points for Gauss-Legendre quadrature
+void roots_weights_gauss_legendre(const int N, double mu0, double roots[N], double weights[N])
+{
+	double k[N];
+	for (int i = 0; i < N; i++)
+		k[i] = i;
+
+	double c_band[2][N];
+	for (int i = 0; i < 2; i++)
+		for (int j = 0; j < N; j++) {
+
+			if ( (0 == i) && (0 < j) )
+				c_band[i][j] = k[j] * sqrt(1. / (4. * k[j] * k[j] - 1.));
+			else
+				c_band[i][j] = 0.;
+		}
+
+	double c[N][N];
+	mat_band_reorder(N, 2, c, c_band, true);
+
+	// Find eigenvalues
+	double ev[N];
+	mat_eig_double(N, ev, c);
+
+	qsort(ev, N, sizeof(double), compare);
+
+	double y[N];
+	double dy[N];
+	double r[N];
+
+	double fm[N];
+	double log_fm[N];
+	double log_dy[N];
+
+	double max_log_fm = 0.;
+	double min_log_fm = 0.;
+	double max_log_dy = 0.;
+	double min_log_dy = 0.;
+
+	for (int i = 0; i < N; i++) {
+
+		// Newton method to improve roots
+		y[i] = legendre(N, ev[i]);
+		dy[i] = (-1. * N * ev[i] * legendre(N, ev[i]) + N * legendre(N - 1, ev[i])) / (1. - ev[i] * ev[i]);
+		r[i] = ev[i] - y[i] / dy[i];
+
+		// Prepare log-normalization to maintain precision
+		fm[i] = legendre(N-1, ev[i]);
+		log_fm[i] = log(fabs(fm[i]));
+		log_dy[i] = log(fabs(dy[i]));
+
+		// Find extrema
+		max_log_fm = (max_log_fm < log_fm[i]) ? log_fm[i] : max_log_fm;
+		min_log_fm = (min_log_fm > log_fm[i]) ? log_fm[i] : min_log_fm;
+
+		max_log_dy = (max_log_dy < log_dy[i]) ? log_dy[i] : max_log_dy;
+		min_log_dy = (min_log_dy > log_dy[i]) ? log_dy[i] : min_log_dy;
+	}
+
+	double w[N];
+
+	for (int i = 0; i < N; i++) {
+
+		// log-normalization
+		fm[i] /= exp((max_log_fm + min_log_fm) / 2.);
+		dy[i] /= exp((max_log_dy + min_log_dy) / 2.);
+
+		// Calculation of weights
+		w[i] = 1. / (fm[i] * dy[i]);
+	}
+
+	double sum = 0.;
+
+	for (int i = 0; i < N; i++) {
+
+		// Symmetrize roots and weights, Assumption: sorted EV!
+		roots[i] = (r[i] - r[N - 1 - i]) / 2.;
+		weights[i] = (w[i] + w[N - 1 - i]) / 2.;
+
+		sum += weights[i];
+	}
+
+	// Normalize with integral of the weight over the orthogonal (mu0)
+	for (int i = 0; i < N; i++)
+		weights[i] *= mu0 / sum;
 }
