@@ -5,6 +5,7 @@
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
+ * 2024      Nick Scholand
  * 2019-2020 Sebastian Rosenzweig
  * 2012-2020 Martin Uecker
  * 2013	     Dara Bahri
@@ -490,6 +491,124 @@ void solve_tri_matrix_sylvester(int A, int B, float* scale, complex float M[A][A
 	lapack_sylvester(A, B, scale, M2, N2, C2);
 
 	mat_transpose(B, A, C, C2); // Output: C
+}
+
+// Matrix square root of upper triangular matrix
+//	E. Deadman, N. J. Higham, R. Ralha,
+//	"Blocked Schur Algorithms for Computing the Matrix Square Root"
+//	Lecture Notes in Computer Science, 2013.
+void sqrtm_tri_matrix(int N, int blocksize, complex float out[N][N], const complex float in[N][N])
+{
+	complex float T_diag[N][N];
+
+	for (int i = 0; i < N; i++)
+		for (int j = 0; j < N; j++) {
+
+			T_diag[i][j] = (i == j) ? in[i][j] : 0.;
+
+			out[i][j] = csqrtf(T_diag[i][j]);
+		}
+
+	// Implemented standard block method for increased efficiency
+
+	// Number of blocks
+	int n_blocks = (1 > N / blocksize) ? 1 : N / blocksize;
+
+	// Sizes of blocks
+	int size_small = N / n_blocks;
+	int size_large = size_small + 1;
+	int n_large = N % n_blocks;
+	int n_small = n_blocks - n_large;
+	assert(N == n_large * size_large + n_small * size_small);
+
+	// Index ranges
+	int s = 0;
+	int pairs[n_small + n_large][2];
+
+	// 1. Small
+	for (int i = 0; i < n_small; i++) {
+
+		pairs[i][0] = s;
+		pairs[i][1] = s + size_small;
+		s += size_small;
+	}
+
+	// 2. large
+	for (int i = 0; i < n_large; i++) {
+
+		pairs[i + n_small][0] = s;
+		pairs[i + n_small][1] = s + size_large;
+		s += size_large;
+	}
+
+	// Within-Blocks interaction
+	for (int i = 0; i < (n_small + n_large); i++)
+		for (int j = pairs[i][0]; j < pairs[i][1]; j++)
+			for (int k = j - 1; k > (pairs[i][0] - 1); k--) {
+
+				complex float s = 0.;
+
+				if (1 < j - k)
+					for (int m = k + 1; m < j; m++)
+						s += out[k][m] * out[m][j];
+
+				complex float denom = out[k][k] + out[j][j];
+
+				complex float num = in[k][j] - s;
+
+				if (0 != denom)
+					out[k][j] = (in[k][j] - s) / denom;
+				else if ( (0 == denom) && (0 == num) ) // FIXME: eps
+					out[k][j] = 0.;
+				else
+					error("matrix square root error.");
+			}
+
+	// Between-Blocks interaction
+	for (int i = 0; i < n_blocks; i++) {
+
+		int i_ind_s = pairs[i][0];
+		int i_ind_e = pairs[i][1];
+		int i_size = i_ind_e - i_ind_s;
+
+		for (int j = i - 1; j > -1; j--) {
+
+			int j_ind_s = pairs[j][0];
+			int j_ind_e = pairs[j][1];
+			int j_size = j_ind_e - j_ind_s;
+
+			complex float S[j_size][i_size];
+			for (int ii = 0; ii < i_size; ii++)
+				for (int jj = 0; jj < j_size; jj++)
+					S[jj][ii] = in[jj + j_ind_s][ii + i_ind_s];
+
+			if (1 < i - j)
+				for (int ii = 0; ii < i_size; ii++)
+					for (int jj = 0; jj < j_size; jj++)
+						S[jj][ii] = S[jj][ii]
+							- out[jj+j_ind_s][ii+j_ind_e]
+							* out[jj+j_ind_e][ii+i_ind_s];
+
+			complex float Ujj[j_size][j_size];
+			for (int x = 0; x < j_size; x++)
+				for (int y = 0; y < j_size; y++)
+					Ujj[x][y] = out[x + j_ind_s][y + j_ind_s];
+
+			complex float Uii[i_size][i_size];
+			for (int x = 0; x < i_size; x++)
+				for (int y = 0; y < i_size; y++)
+					Uii[x][y] = out[x + i_ind_s][y + i_ind_s];
+
+			// Solve Sylvester equations for upper triangular matrix Ujj
+			float scale = 1.;
+
+			solve_tri_matrix_sylvester(j_size, i_size, &scale, Ujj, Uii, S);
+
+			for (int j = 0; j < j_size; j++)
+				for (int ii = 0; ii < i_size; ii++)
+					out[j + j_ind_s][ii + i_ind_s] = S[j][ii] * scale;
+		}
+	}
 }
 
 void unpack_tri_matrix(int N, complex float m[N][N], const complex float cov[N * (N + 1) / 2])

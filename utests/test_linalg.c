@@ -325,3 +325,48 @@ static bool test_trimat_solve_sylvester(void)
 
 
 UT_REGISTER_TEST(test_trimat_solve_sylvester);
+
+
+static bool test_trimat_sqrt(void)
+{
+	enum { N = 4 };
+
+	complex float A[N][N] = {
+		{ 3. + 1i, 3., 2., 1. },
+		{ 0., 1., 3., 1i },
+		{ 0., 0., 1., 1. },
+		{ 0., 0., 0., 1. }
+	};
+
+	complex float ref[N][N] = {
+		{ 1.7553173+0.28484878i,  1.07729003-0.11137184i, 0.14411829+0.04573188j, 0.43589711-0.26401321i },
+		{ 0., 1., 1.5, -0.375+0.5i },
+		{ 0., 0., 1., 0.5 },
+		{ 0., 0., 0., 1. }
+	};
+
+	// Single block -> only within-block interactions
+	complex float B[N][N];
+	sqrtm_tri_matrix(N, 32, B, A);
+
+	// Two Blocks -> tests between-block interactions
+	complex float B2[N][N];
+	sqrtm_tri_matrix(N, 2, B2, A);
+
+	float err = 0.;
+	float err2 = 0.;
+
+	for (int i = 0; i < N; i++)
+		for (int j = 0; j < N; j++) {
+
+			err += powf(cabsf(ref[i][j] - B[i][j]), 2.);
+			err2 += powf(cabsf(ref[i][j] - B2[i][j]), 2.);
+	}
+	// debug_printf(DP_INFO, "err: %f\n", err);
+	// debug_printf(DP_INFO, "err2: %f\n", err2);
+
+	return ( (err < 1.E-10) && (err2 < 1.E-10) );
+}
+
+
+UT_REGISTER_TEST(test_trimat_sqrt);
