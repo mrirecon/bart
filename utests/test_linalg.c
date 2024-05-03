@@ -278,3 +278,50 @@ static bool test_trimat_solve(void)
 
 
 UT_REGISTER_TEST(test_trimat_solve);
+
+
+static bool test_trimat_solve_sylvester(void)
+{
+	enum { N = 4 };
+	enum { M = 1 };
+
+	complex float A[N][N] = {
+		{ 3. + 1i, 3., 2., 1. },
+		{ 0., 1., 3., 1i },
+		{ 0., 0., 1., 1. },
+		{ 0., 0., 0., 1. }
+	};
+
+	complex float B[M][M] = { { 1 } };
+	complex float C[N][M] = { { 1. }, { 2. }, { 3. }, { 4. } };
+
+	complex float ref[N][M] = {	{ -0.47058824+0.86764706i },
+					{ 0.25      -1.i },
+					{ 0.5 },
+					{ 2. } };
+
+	float scale = 1.;
+
+	solve_tri_matrix_sylvester(N, M, &scale, A, B, C);
+
+	// debug_printf(DP_INFO, "\nC:\n");
+	// for (int i = 0; i < N; i++) {
+	// 	for (int j = 0; j < M; j++)
+	// 		debug_printf(DP_INFO, "%f+i*%f ", crealf(C[i][j]), cimagf(C[i][j]));
+	// 	debug_printf(DP_INFO, "\n");
+	// }
+	// debug_printf(DP_INFO, "scale: %f\n", scale);
+
+	double err = 0.;
+
+	for (int i = 0; i < N; i++)
+		for (int j = 0; j < M; j++)
+			err += powf(cabsf(ref[i][j] - C[i][j]), 2.);
+
+	// debug_printf(DP_INFO, "err: %f\n", err);
+
+	return (err < 1.E-10);
+}
+
+
+UT_REGISTER_TEST(test_trimat_solve_sylvester);

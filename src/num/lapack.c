@@ -127,3 +127,12 @@ void lapack_schur_double(long N, complex double W[N], complex double VS[N][N], c
 	LAPACKE(zgees, 'V', 'N', 0, N, &A[0][0], N, &sdim, &W[0], &VS[0][0], N);
 }
 
+// Solves the complex Sylvester matrix equation
+// op(A)*X + X*op(B) = scale*C
+void lapack_sylvester(long N, long M, float* scale, complex float A[N][N], complex float B[M][M], complex float C[N][M])
+{
+	// A -> triangluar
+	// On output: C overwritten by X
+	LAPACKE(ctrsyl, 'N', 'N', +1, N, M, &A[0][0], N, &B[0][0], M, &C[0][0], N, scale);
+}
+

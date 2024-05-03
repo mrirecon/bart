@@ -474,6 +474,24 @@ void solve_tri_matrix_vec(int A, complex float M[A][A], complex float N[A], bool
 		N[i] = N2[i][0];
 }
 
+// Wrapper to solves the complex Sylvester matrix equation
+// op(M)*X + X*op(N) = scale*C
+void solve_tri_matrix_sylvester(int A, int B, float* scale, complex float M[A][A], complex float N[B][B], complex float C[A][B])
+{
+	// transpose -> lapack use column-major matrices while native C uses row-major
+	complex float M2[A][A];
+	complex float N2[B][B];
+	complex float C2[B][A];
+
+	mat_transpose(A, A, M2, M);
+	mat_transpose(B, B, N2, N);
+	mat_transpose(A, B, C2, C);
+
+	lapack_sylvester(A, B, scale, M2, N2, C2);
+
+	mat_transpose(B, A, C, C2); // Output: C
+}
+
 void unpack_tri_matrix(int N, complex float m[N][N], const complex float cov[N * (N + 1) / 2])
 {
 	int l = 0;
