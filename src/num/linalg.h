@@ -61,6 +61,7 @@ extern void solve_tri_matrix_sylvester(int A, int B, float* scale, complex float
 extern void sqrtm_tri_matrix(int N, int blocksize, complex float out[N][N], const complex float in[N][N]);
 extern float mat_onenorm_power(int N, int order, complex float A[N][N]);
 extern void logm_tri_matrix(int N, complex float out[N][N], const complex float in[N][N]);
+extern void mat_logm(int N, complex float out[N][N], complex float in[N][N]);
 extern void orthiter_noinit(int M, int N, int iter, float vals[M], complex float out[M][N], const complex float matrix[N][N]);
 extern void orthiter(int M, int N, int iter, float vals[M], complex float out[M][N], const complex float matrix[N][N]);
 extern void cholesky(int N, complex float A[N][N]);

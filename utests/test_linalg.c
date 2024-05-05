@@ -470,3 +470,38 @@ static bool test_trimat_logm2(void)
 
 UT_REGISTER_TEST(test_trimat_logm2);
 
+
+static bool test_logm(void)
+{
+	enum { N = 4 };
+
+	complex float A[N][N] = {
+		{ 3.+1i, 3., 2., 1. },
+		{ 2.i, 1., 3., 1.i },
+		{ 1., 4.+4.i, 1., 1. },
+		{ 1.i, 0., 0., 1. }
+	};
+
+	complex float ref[N][N] = {
+		{ 1.07990257-0.02007447i, 0.95641065+0.09227379i, 0.32946696-0.14265677i, 0.53555843-0.13405487i },
+		{ -0.43929099+0.19432415i, 1.58969964-1.12246402i, 0.65622748+0.88426883i, -0.13780588-0.11543179i },
+		{ 0.81859337+0.58525132i, -0.76794456+1.58589704i, 1.17135624-1.18457638i, 0.28367556+0.54639508i },
+		{ -0.04033954+0.55224787i, 0.07444528-0.25834293i, -0.08394852-0.09113472i, -0.04200947-0.22026408i }
+	};
+
+	complex float B[N][N];
+	mat_logm(N, B, A);
+
+	float err = 0.;
+
+	for (int i = 0; i < N; i++)
+		for (int j = 0; j < N; j++)
+			err += powf(cabsf(ref[i][j] - B[i][j]), 2.);
+
+	// debug_printf(DP_INFO, "err: %f\n", err);
+
+	return (err < 1.E-10);
+}
+
+
+UT_REGISTER_TEST(test_logm);

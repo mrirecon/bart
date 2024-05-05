@@ -960,6 +960,22 @@ void logm_tri_matrix(int N, complex float out[N][N], const complex float in[N][N
 		out[i][i+1] = logm_superdiag(in[i][i], in[i+1][i+1], in[i][i+1]);
 }
 
+// Input matrix is destroyed by schur decomposition
+void mat_logm(int N, complex float out[N][N], complex float in[N][N])
+{
+	// Schur decomposition to transform input into upper triangular shape T
+	complex float T[N][N];
+	complex float Z[N][N];
+
+	mat_schur(N, T, Z, in);
+
+	// logm of upper triangular matrix
+	complex float U[N][N];
+	logm_tri_matrix(N, U, T);
+
+	// Transform back from triangular shape
+	mat_schur_recov(N, out, U, Z);
+}
 
 void unpack_tri_matrix(int N, complex float m[N][N], const complex float cov[N * (N + 1) / 2])
 {
