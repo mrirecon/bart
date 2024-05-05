@@ -31,6 +31,8 @@
 #include "num/lapack.h"
 #endif
 #include "num/rand.h"
+#include "num/lapack.h"
+#include "num/specfun.h"
 
 #include "linalg.h"
 
@@ -610,6 +612,354 @@ void sqrtm_tri_matrix(int N, int blocksize, complex float out[N][N], const compl
 		}
 	}
 }
+
+static void matf_sqrt(int N, int M, complex float out[N][M], complex float in[N][M])
+{
+	for (int i = 0; i < N; i++)
+		for (int j = 0; j < M; j++)
+			out[i][j] = csqrtf(in[i][j]);
+}
+
+static float max_abs_diag(int N, complex float A[N][N])
+{
+	float max = 0.;
+
+	for (int i = 0; i < N; i++)
+		max = (max < cabsf(A[i][i] - 1.)) ? cabsf(A[i][i] - 1.) : max;
+
+	return max;
+}
+
+// Estimate 1-norm of (A - I)^order
+float mat_onenorm_power(int N, int order, complex float A[N][N])
+{
+	// A - I
+	complex float A2[N][N];
+	complex float A3[N][N];
+
+	for (int i = 0; i < N; i++)
+		for (int j = 0; j < N; j++) {
+
+			A2[i][j] = (i == j) ? A[i][j] - 1. : A[i][j];
+			A3[i][j] = A2[i][j];
+	}
+
+	// (A - I)^M
+	complex float A4[N][N];
+
+	for (int i = 1; i < order; i++) {
+
+		mat_mul(N, N, N, A4, A2, A3);
+		mat_copy(N, N, A3, A4);
+	}
+
+	// 1-norm
+	float norm = 0.;
+
+	for (int i = 0; i < N; i++) {
+
+		float abs_sum = 0;
+
+		for (int j = 0; j < N; j++)
+			abs_sum += cabsf(A3[j][i]);
+
+		norm = (norm < abs_sum) ? abs_sum : norm;
+	}
+	return norm;
+}
+
+// Avoid subtractive cancellation when calculating: out = z^{1/(2^N)}-1
+//	A. H. Al-Mohy,
+//	"A more accurate Briggs method for the logarithm",
+//	Numerical Algorithms, 2012.
+static complex float mat_briggs(int N, complex float z)
+{
+	assert(0 <= N);
+	assert((int) N == N);
+
+	if (0 == N)
+		return z - 1.;
+
+	else if (1 == N)
+		return csqrtf(z) - 1.;
+
+	else {
+		int N2 = N;
+
+		if (M_PI / 2. <= cargf(z)) {
+
+			z = csqrtf(z);
+			N2 = N - 1;
+		}
+
+		complex float z0 = z - 1.;
+
+		z = csqrtf(z);
+
+		complex float out = 1 + z;
+
+		for (int i = 1; i < N2; i++) {
+
+			z = csqrtf(z);
+			out *= (1. + z);
+		}
+
+		out = z0 / out;
+
+		return out;
+	}
+}
+
+// Superdiagonal of fractional matrix power
+// 	N. J. Higham and L. Lin,
+// 	"A Schur-Pade Algorithm for Fractional Powers of a Matrix."
+// 	SIAM Journal on Matrix Analysis and Applications, 2011.
+static complex float frac_power_superdiag(complex float l1, complex float l2, complex float t12, float p)
+{
+	if (l1 == l2)
+		return t12 * p * cpowf(l1, p - 1);
+
+	else if (cabsf(l2 - l1) > cabsf(l1 + l2) / 2.)
+		return t12 * (cpowf(l2, p) - cpowf(l1, p)) / (l2 - l1);
+
+	else {
+		complex float z = (l2 - l1) / (l2 + l1);
+
+		int unwinding_num = (int)(ceilf((cimagf(clogf(l2) - clogf(l1)) - M_PI) / (2. * M_PI)));
+
+		complex float tmp = 0.;
+
+		if (unwinding_num)
+			tmp = p * (catanhf(z) + M_PI * 1.i * unwinding_num);
+		else
+			tmp = p * catanhf(z);
+
+		return t12 * cexpf(p / 2. * (clogf(l2) + clogf(l1))) * 2. * csinhf(tmp) / (l2 - l1);
+	}
+}
+
+// Superdiagonal entry of matrix logarithm
+// 	N. J. Higham,
+// 	"Functions of Matrices: Theory and Computation",
+//	2011.
+static complex float logm_superdiag(complex float l1, complex float l2, complex float t12)
+{
+	if (l1 == l2)
+		return t12 / l1;
+
+	else if (cabsf(l2 - l1) > cabsf(l1 + l2) / 2.)
+		return t12 * (clogf(l2) - clogf(l1)) / (l2 - l1);
+
+	else {
+		complex float z = (l2 - l1) / (l2 + l1);
+
+		int unwinding_num = (int)(ceilf((cimagf(clogf(l2) - clogf(l1)) - M_PI) / (2. * M_PI)));
+
+		complex float out = 0.;
+
+		if (unwinding_num)
+			out = 2. * t12 * (catanhf(z) + M_PI * 1.i * unwinding_num) / (l2 - l1);
+		else
+			out =  2. * t12 * catanhf(z) / (l2 - l1);
+
+		return out;
+	}
+}
+
+// Matrix logarithm of upper triangular matrix
+//	A. H. Al-Mohy and N. J. Higham
+//	"Improved Inverse Scaling and Squaring Algorithms for the Matrix Logarithm"
+//	SIAM Journal on Scientific Computing, 2012.
+void logm_tri_matrix(int N, complex float out[N][N], const complex float in[N][N])
+{
+	// Table 2.1 in Al-Mohy and Higham, SIAM J. Sci. Comp., 2012.
+	float theta[16] = {	1.59e-5, 2.31e-3, 1.94e-2, 6.21e-2,
+				1.28e-1, 2.06e-1, 2.88e-1, 3.67e-1,
+				4.39e-1, 5.03e-1, 5.60e-1, 6.09e-1,
+				6.52e-1, 6.89e-1, 7.21e-1, 7.49e-1 };
+
+	complex float T[N][N];
+
+	for (int i = 0; i < N; i++) {
+
+		assert(0 != in[i][i]); // Otherwise find s will not terminate!
+
+		for (int j = 0; j < N; j++) {
+
+			T[i][j] = in[i][j];
+
+			out[i][j] = 0.;
+		}
+	}
+	// Find smallest s that fulfills a highest spectral radius of theta[6]
+
+	complex float T_diag[N][N];
+	for (int i = 0; i < N; i++)
+		for (int j = 0; j < N; j++)
+			T_diag[i][j] = (i == j) ? T[i][j] : 0.;
+
+	int s0 = 0;
+
+	while (theta[6] < max_abs_diag(N, T_diag))
+	{
+		matf_sqrt(N, N, T_diag, T_diag);
+		s0++;
+	}
+
+	// Matrix square root
+
+	complex float T_tmp[N][N];
+
+	for (int i = 0; i < s0; i++) {
+
+		sqrtm_tri_matrix(N, 32, T_tmp, T);
+		mat_copy(N, N, T, T_tmp);
+	}
+
+	// Implementation of algorithm 4.1 in Al-Mohy and Higham, SIAM J. Sci. Comp., 2012.
+
+	int s = s0;
+	int k = 0;
+	float d2 = powf(mat_onenorm_power(N, 2, T), 1. / 2.);
+	float d3 = powf(mat_onenorm_power(N, 3, T), 1. / 3.);
+	float a2 = (d3 > d2) ? d3 : d2;
+
+	int pade_approx_deg = -1;
+
+	if (theta[0] >= a2)
+		pade_approx_deg = 0;
+
+	else if (theta[1] >= a2)
+		pade_approx_deg = 1;
+
+	while (-1 == pade_approx_deg) {
+
+		if (s0 < s)
+			d3 = powf(mat_onenorm_power(N, 3, T), 1. / 3.);
+
+		float d4 = powf(mat_onenorm_power(N, 4, T), 1. / 4.);
+
+		float a3 = (d3 > d4) ? d3 : d4;
+
+		if (theta[6] >= a3) {
+
+			int j1 = 2000; // Random large initialization
+			for (int i = 2; i <= 6; i++)
+				j1 = ( (theta[i] >= a3) && (j1 > i) ) ? i : j1;
+
+			if (5 >= j1) {
+
+				pade_approx_deg = j1;
+				break;
+			}
+			else if ( (theta[4] >= a3 / 2.) && (2 > k) ) {
+
+				sqrtm_tri_matrix(N, 32, T_tmp, T);
+				mat_copy(N, N, T, T_tmp);
+
+				k++;
+				s++;
+				continue;
+			}
+		}
+
+		float d5 = powf(mat_onenorm_power(N, 5, T), 1. / 5.);
+
+		float a4 = (d4 > d5) ? d4 : d5;
+		float eta = (a3 < a4) ? a3 : a4;
+
+		if (theta[5] >= eta) {
+
+			pade_approx_deg = 5;
+			break;
+		}
+ 		else if (theta[6] >= eta) {
+
+			pade_approx_deg = 6;
+			break;
+		}
+		if (-1 != pade_approx_deg) // FIXME: required?!
+			break;
+
+		sqrtm_tri_matrix(N, 32, T_tmp, T);
+		mat_copy(N, N, T, T_tmp);
+
+		s++;
+	}
+
+	pade_approx_deg++; // zero indexing vs ones-indexing in paper
+
+	complex float R[N][N];
+	for (int i = 0; i < N; i++)
+		for (int j = 0; j < N; j++)
+			R[i][j] = T[i][j] - ((i == j) ? 1. : 0.);
+
+	for (int i = 0; i < N; i++)
+		R[i][i] = mat_briggs(s, in[i][i]);
+
+	// Replace diagonal and first super-diagonal
+	for (int i = 0; i < N-1; i++)
+		R[i][i+1] = frac_power_superdiag(in[i][i], in[i+1][i+1], in[i][i+1], pow(2, -s));
+
+
+	// U = 2^{s} * r_m(T - I) with partial fraction expansion
+
+	double roots[pade_approx_deg];
+	double weights[pade_approx_deg];
+
+	roots_weights_gauss_legendre(pade_approx_deg, 2., roots, weights);
+
+	// [-1, 1] -> [0, 1]
+	double r_shift[pade_approx_deg];
+	double w_shift[pade_approx_deg];
+
+	for (int i = 0; i < pade_approx_deg; i++) {
+
+		r_shift[i] = 0.5 + 0.5 * roots[i];
+		w_shift[i] = 0.5 * weights[i];
+	}
+
+	complex float id[N][N];
+	for (int i = 0; i < N; i++)
+		for (int j = 0; j < N; j++)
+			id[i][j] = (i == j) ? 1. : 0.;
+
+	for (int d = 0; d < pade_approx_deg; d++) {
+
+		float ir = (float)r_shift[d];
+		float iw = (float)w_shift[d];
+
+		complex float M1[N][N];
+		complex float M2[N][N];
+
+		for (int i = 0; i < N; i++)
+			for (int j = 0; j < N; j++) {
+
+				M1[i][j] = ((i == j) ? 1. : 0.) + ir * R[i][j];
+				M2[i][j] = iw * R[i][j];
+		}
+
+		solve_tri_matrix(N, N, M1, M2, true);
+
+		for (int i = 0; i < N; i++)
+			for (int j = 0; j < N; j++)
+				out[i][j] += M2[i][j];
+	}
+
+	// loop could be combined, but might be easier to understand like this
+	for (int i = 0; i < N; i++)
+		for (int j = 0; j < N; j++)
+			out[i][j] *= pow(2, s);
+
+	// Recompute diagonal (FIXME: Add skipping option if principle branch exists?)
+	for (int i = 0; i < N; i++)
+		out[i][i] = clogf(in[i][i]);
+
+	// Recompute superdiagonal
+	for (int i = 0; i < N-1; i++)
+		out[i][i+1] = logm_superdiag(in[i][i], in[i+1][i+1], in[i][i+1]);
+}
+
 
 void unpack_tri_matrix(int N, complex float m[N][N], const complex float cov[N * (N + 1) / 2])
 {

@@ -370,3 +370,103 @@ static bool test_trimat_sqrt(void)
 
 
 UT_REGISTER_TEST(test_trimat_sqrt);
+
+
+static bool test_onenorm_power(void)
+{
+	enum { N = 4 };
+
+	complex float A[N][N] = {
+		{ 3. + 1i, 3., 2., 1. },
+		{ 0., 1., 3., 1i },
+		{ 0., 0., 1., 1. },
+		{ 0., 0., 0., 1. }
+	};
+
+	float ref = 65.764732189829;
+	float err = fabsf(ref - mat_onenorm_power(N, 4, A));
+
+	// debug_printf(DP_INFO, "err: %f\n", err);
+
+	return (err < 1.E-10);
+}
+
+
+UT_REGISTER_TEST(test_onenorm_power);
+
+
+static bool test_trimat_logm(void)
+{
+	enum { N = 4 };
+
+	complex float A[N][N] = {
+		{ 3. + 1i, 3., 2., 1. },
+		{ 0., 1., 3., 1i },
+		{ 0., 0., 1., 1. },
+		{ 0., 0., 0., 1. }
+	};
+
+	complex float ref[N][N] = {
+		{ 1.15129255+0.32175055i,  1.57460139-0.30467486i, -0.84354899+0.28651276j, 1.08154031-0.9493378i },
+		{ 0., 0., 3., -1.5+1i },
+		{ 0., 0., 0., 1. },
+		{ 0., 0., 0., 0. }
+	};
+
+	complex float B[N][N];
+	logm_tri_matrix(N, B, A);
+
+	float err = 0.;
+
+	for (int i = 0; i < N; i++)
+		for (int j = 0; j < N; j++)
+			err += powf(cabsf(ref[i][j] - B[i][j]), 2.);
+
+	// debug_printf(DP_INFO, "err: %f\n", err);
+
+	return (err < 1.E-10);
+}
+
+
+UT_REGISTER_TEST(test_trimat_logm);
+
+
+static bool test_trimat_logm2(void)
+{
+	enum { N = 6 };
+
+	complex float A[N][N] = {
+		{ 3. + 1.i, 3., 2., 1., 4., 6. },
+		{ 0., 1., 3., 1.i, 2.i, 1. },
+		{ 0., 0., 1., 1., 3., 5. },
+		{ 0., 0., 0., 1., 6., 7.i },
+		{ 0., 0., 0., 0., 4.i, 1. },
+		{ 0., 0., 0., 0., 0., 1. }
+	};
+
+	complex float ref[N][N] = {
+		{ 1.15129255+0.32175055i, 1.57460139-0.30467486i, -0.84354899+0.28651276i, 1.08154031-0.9493378i, 0.98541423-0.22099226i, 1.47210491-6.27495164i },
+		{  0., 0., 3., -1.5+1.i, -0.48087229-0.115629i, -2.67539081+7.41406577i },
+		{ 0., 0., 0., 1., 0.52448693-0.10292112i,  4.94493109-3.61735451i },
+		{ 0., 0., 0., 0., 1.72831445-2.51152015i, -0.3396703 +8.15283896i },
+		{ 0., 0., 0., 0., 1.38629436+1.57079633i,  0.28805241-0.41858669i },
+		{ 0., 0., 0., 0., 0., 0. }
+	};
+
+	complex float B[N][N];
+	logm_tri_matrix(N, B, A);
+
+	float err = 0.;
+
+	for (int i = 0; i < N; i++)
+		for (int j = 0; j < N; j++)
+			err += powf(cabsf(ref[i][j] - B[i][j]), 2.);
+
+	// debug_printf(DP_INFO, "err: %f\n", err);
+
+	return (err < 1.E-10);
+}
+
+
+UT_REGISTER_TEST(test_trimat_logm2);
+
