@@ -706,7 +706,7 @@ static float max_abs_diag(int N, complex float A[N][N])
 	float max = 0.;
 
 	for (int i = 0; i < N; i++)
-		max = (max < cabsf(A[i][i] - 1.)) ? cabsf(A[i][i] - 1.) : max;
+		max = (max < cabsf(A[i][i] - 1.f)) ? cabsf(A[i][i] - 1.f) : max;
 
 	return max;
 }
