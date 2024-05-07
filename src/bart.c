@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
+#include <signal.h>
 
 #ifdef _WIN32
 #include "win/fmemopen.h"
@@ -142,6 +143,7 @@ static void parse_bart_opts(int* argcp, char*** argvp)
 	const char* ref_file = NULL;
 	bool use_mpi = false;
 	bool version = false;
+	bool attach = false;
 
 	struct arg_s args[] = { };
 
@@ -156,6 +158,7 @@ static void parse_bart_opts(int* argcp, char*** argvp)
 		OPTL_SET('M', "mpi", &use_mpi, "Initialize MPI"),
 		OPT_SET('S', &mpi_shared_files, "Maps files from each rank (requires shared files system)"),
 		OPTL_SET(0, "version", &version, "print version"),
+		OPT_SET('d', &attach, "(Wait for debugger)"),
 	};
 
 	int next_arg = options(argcp, *argvp, "", help_str, ARRAY_SIZE(opts), opts, ARRAY_SIZE(args), args, true);
@@ -165,6 +168,13 @@ static void parse_bart_opts(int* argcp, char*** argvp)
 
 	*argcp -= next_arg;
 	*argvp += next_arg;
+
+	if (attach) {
+
+		fprintf(stderr, "PID: %d", getpid());
+		raise(SIGSTOP);
+	}
+
 
 	if (0 != flags && 0 != pflags && flags != pflags)
 		error("Inconsistent use of -p and -l!\n");
