@@ -67,6 +67,30 @@ tests/test-ccapply-esp-backward: cc ccapply nrmse $(TESTS_OUT)/shepplogan_coil_k
 	touch $@
 
 
+tests/test-ccapply-rgc-forward: bart cc ccapply copy nrmse fft transpose traj phantom extract join repmat reshape bitmask
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/traj -r -o2 -D -c -x128 -y19 -t5 -- -					|\
+	$(TOOLDIR)/phantom -k -s8 -t - phantom_full.ra						;\
+	$(TOOLDIR)/extract 3 0 4 phantom_full.ra phantom_1.ra					;\
+	$(TOOLDIR)/extract 3 4 8 phantom_full.ra phantom_2.ra					;\
+	$(TOOLDIR)/repmat -- 4 2 phantom_1.ra -							|\
+	$(TOOLDIR)/reshape -- $$($(TOOLDIR)/bitmask 3 4) 8 1 - phantom_1.ra			;\
+	$(TOOLDIR)/repmat -- 4 2 phantom_2.ra -							|\
+	$(TOOLDIR)/reshape -- $$($(TOOLDIR)/bitmask 3 4) 8 1 - phantom_2.ra			;\
+	$(TOOLDIR)/join -- 11 phantom_1.ra phantom_2.ra -					|\
+	$(TOOLDIR)/reshape -- $$($(TOOLDIR)/bitmask 10 11) 10 1 - phantom.ra			;\
+	$(TOOLDIR)/copy --stream 1024 -- phantom.ra -						|\
+	$(ROOTDIR)/bart -R - cc -A -M -- - $(TESTS_OUT)/ccmat.ra				;\
+	$(TOOLDIR)/ccapply -p4 -A10 phantom.ra $(TESTS_OUT)/ccmat.ra $(TESTS_OUT)/ksp-cc.ra	;\
+	$(TOOLDIR)/transpose -- 10 0 phantom.ra -						|\
+	$(TOOLDIR)/fft -u -- 1  - -								|\
+	$(TOOLDIR)/cc -A -M -G -- - $(TESTS_OUT)/ccmat_G.ra					;\
+	$(TOOLDIR)/transpose -- 10 0 phantom.ra -						|\
+	$(TOOLDIR)/ccapply -p4 -t -G -- - $(TESTS_OUT)/ccmat_G.ra -				|\
+	$(TOOLDIR)/transpose -- 0 10 - $(TESTS_OUT)/ksp-cc_G.ra					;\
+	$(TOOLDIR)/nrmse -t 1e-4 $(TESTS_OUT)/ksp-cc_G.ra $(TESTS_OUT)/ksp-cc.ra		;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+
 
 
 
@@ -75,4 +99,5 @@ tests/test-ccapply-esp-backward: cc ccapply nrmse $(TESTS_OUT)/shepplogan_coil_k
 TESTS += tests/test-ccapply-forward tests/test-ccapply-backward
 TESTS += tests/test-ccapply-geom-forward tests/test-ccapply-geom-backward
 TESTS += tests/test-ccapply-esp-forward tests/test-ccapply-esp-backward
+TESTS += tests/test-ccapply-rgc-forward
 

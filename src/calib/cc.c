@@ -151,6 +151,13 @@ void align_ro(const long dims[DIMS], complex float* odata, const complex float* 
 #endif
 }
 
+void cc_align_mat(const long dims[DIMS], complex float* aligned, const complex float* in, const complex float* reference)
+{
+	align1(dims[MAPS_DIM], dims[COIL_DIM],
+			MD_CAST_ARRAY2(complex float, DIMS, dims, aligned, COIL_DIM, MAPS_DIM),
+			MD_CAST_ARRAY2(const complex float, DIMS, dims, reference, COIL_DIM, MAPS_DIM),
+			MD_CAST_ARRAY2(const complex float, DIMS, dims, in, COIL_DIM, MAPS_DIM));
+}
 
 void gcc(const long out_dims[DIMS], complex float* out_data, const long caldims[DIMS], const complex float* cal_data)
 {
