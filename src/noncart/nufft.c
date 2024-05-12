@@ -790,7 +790,7 @@ static void nufft_set_traj(struct nufft_data* data, int N,
 
 	if (NULL != traj) {
 
-		assert(md_check_equal_dims(N, trj_dims, data->trj_dims, ~0));
+		assert(md_check_equal_dims(N, trj_dims, data->trj_dims, ~0UL));
 
 		multiplace_free(data->traj);
 
@@ -1288,7 +1288,7 @@ static void toeplitz_mult(const struct nufft_data* data, complex float* dst, con
 
 	linop_forward(data->fft_op, ND, data->cml_dims, grid, ND, data->cml_dims, grid);
 
-	if (!md_check_equal_dims(data->N, data->cmT_dims, data->cml_dims, ~0)) {
+	if (!md_check_equal_dims(data->N, data->cmT_dims, data->cml_dims, ~0UL)) {
 
 		complex float* gridT = md_alloc_sameplace(ND, data->cml_dims, CFL_SIZE, dst);
 
@@ -1339,7 +1339,7 @@ static void toeplitz_mult_lowmem(const struct nufft_data* data, int i, complex f
 
 	linop_forward(data->cfft_op, data->N, data->cim_dims, grid, data->N, data->cim_dims, grid);
 
-	if (!md_check_equal_dims(data->N, data->cim_dims, data->ciT_dims, ~0)) {
+	if (!md_check_equal_dims(data->N, data->cim_dims, data->ciT_dims, ~0UL)) {
 
 		complex float* gridT = md_alloc_sameplace(data->N, data->ciT_dims, CFL_SIZE, dst);
 
@@ -1713,7 +1713,7 @@ void nufft_get_psf2(const struct linop_s* nufft, int N, const long psf_dims[N], 
 	auto data = CAST_DOWN(nufft_data, lop_data);
 
 	assert(N == data->N + 1);
-	md_check_equal_dims(N, psf_dims, data->psf_dims, ~0);
+	md_check_equal_dims(N, psf_dims, data->psf_dims, ~0UL);
 
 	md_copy2(N, psf_dims, psf_strs, psf, data->psf_strs, multiplace_read(data->psf, psf), CFL_SIZE);
 }

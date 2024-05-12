@@ -218,10 +218,10 @@ int main_pics(int argc, char* argv[argc])
 
 	float bpsense_eps = -1.;
 
-	unsigned int shift_mode = 0;
+	int shift_mode = 0;
 	bool randshift = true;
 	bool overlapping_blocks = false;
-	unsigned int maxiter = 30;
+	int maxiter = 30;
 	float step = -1.;
 
 	// Start time count
@@ -246,7 +246,7 @@ int main_pics(int argc, char* argv[argc])
         // Simultaneous Multi-Slice
         bool sms = false;
 
-	unsigned int llr_blk = 8;
+	int llr_blk = 8;
 	const char* wtype_str = "dau2";
 
 	const char* image_truth_file = NULL;
@@ -280,7 +280,7 @@ int main_pics(int argc, char* argv[argc])
 		{ 'R', NULL, true, OPT_SPECIAL, opt_reg, &ropts, "<T>:A:B:C", "generalized regularization options (-Rh for help)" },
 		OPT_SET('c', &conf.rvc, "real-value constraint"),
 		OPT_FLOAT('s', &step, "step", "iteration stepsize"),
-		OPT_UINT('i', &maxiter, "iter", "max. number of iterations"),
+		OPT_PINT('i', &maxiter, "iter", "max. number of iterations"),
 		OPT_INFILE('t', &traj_file, "file", "k-space trajectory"),
 		OPT_CLEAR('n', &randshift, "disable random wavelet cycle spinning"),
 		OPT_SET('N', &overlapping_blocks, "do fully overlapping LLR blocks"),
@@ -288,7 +288,7 @@ int main_pics(int argc, char* argv[argc])
 		OPTL_SET(0, "gpu-gridding", &gpu_gridding, "use GPU for gridding"),
 		OPT_INFILE('p', &pat_file, "file", "pattern or weights"),
 		OPTL_SET(0, "precond", &(conf.precond), "interprete weights as preconditioner"),
-		OPT_UINT('b', &llr_blk, "blk", "Lowrank block size"),
+		OPT_PINT('b', &llr_blk, "blk", "Lowrank block size"),
 		OPT_SET('e', &eigen, "Scale stepsize based on max. eigenvalue"),
 		OPT_SET('H', &hogwild, "(hogwild)"),
 		OPT_SET('D', &admm.dynamic_rho, "(ADMM dynamic step size)"),

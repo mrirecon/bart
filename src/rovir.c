@@ -54,7 +54,7 @@ int main_rovir(int argc, char* argv[argc])
 	complex float* pos = load_cfl(pos_file, DIMS, pos_dims);
 	complex float* neg = load_cfl(neg_file, DIMS, neg_dims);
 
-	assert(md_check_equal_dims(DIMS, pos_dims, neg_dims, ~0));
+	assert(md_check_equal_dims(DIMS, pos_dims, neg_dims, ~0UL));
 
 	long out_dims[DIMS];
 	md_select_dims(DIMS, COIL_FLAG, out_dims, pos_dims);

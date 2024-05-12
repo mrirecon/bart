@@ -44,12 +44,12 @@ int main_rmfreq(int argc, char* argv[argc])
 		ARG_OUTFILE(true, &kcor_file, "k_cor"),
 	};
 
-	unsigned int n_harmonics = 5;
+	int n_harmonics = 5;
 	const char* mod_file = NULL;
 
 	const struct opt_s opts[] = {
 
-		OPT_UINT('N', &n_harmonics, "#", "Number of harmonics [Default: 5]"),
+		OPT_PINT('N', &n_harmonics, "#", "Number of harmonics [Default: 5]"),
 		OPT_INFILE('M', &mod_file, "file", "Contrast modulation file"),
 	};
 

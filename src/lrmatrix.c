@@ -191,7 +191,7 @@ int main_lrmatrix(int argc, char* argv[argc])
 	const struct operator_p_s* lr_prox = lrthresh_create(odims, randshift, mflags, (const long (*)[])blkdims, 1., noise, remove_mean, false);
 
 	// put into iter2 format
-	unsigned int num_funs = 2;
+	int num_funs = 2;
 	const struct linop_s* eye_op = linop_identity_create(DIMS, odims);
 	const struct linop_s* ops[2] = { eye_op, eye_op };
 	const struct operator_p_s* prox_ops[2] = { sum_prox, lr_prox };

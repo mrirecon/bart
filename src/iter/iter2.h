@@ -51,7 +51,7 @@ struct iter_monitor_s;
 
 typedef void (italgo_fun2_f)(const iter_conf* conf,
 		const struct operator_s* normaleq_op,
-		unsigned int D,
+		int D,
 		const struct operator_p_s* prox_ops[__VLA2(D)],
 		const struct linop_s* ops[__VLA2(D)],
 		const float* biases[__VLA2(D)],

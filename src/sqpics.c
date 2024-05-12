@@ -114,7 +114,7 @@ struct opt_reg_s {
 	float lambda;
 	enum algo_t algo;
 	struct reg_s regs[NUM_REGS];
-	unsigned int r;
+	int r;
 };
 
 static bool opt_reg(void* ptr, char c, const char* optarg)
@@ -631,7 +631,7 @@ int main_sqpics(int argc, char* argv[argc])
 
 	nr_penalties++;
 
-	const float** biases = xmalloc(sizeof(float*) * nr_penalties);
+	const float** biases = xmalloc(sizeof(float*) * (unsigned long)nr_penalties);
 
 	for (int i = 0; i < nr_penalties - 1; i++)
 		biases[i] = NULL;

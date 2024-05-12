@@ -44,7 +44,7 @@ struct thresh_s {
 	INTERFACE(operator_data_t);
 
 	float lambda; //for soft thresholding
-        unsigned int k; // for hard thresholding
+        int k; // for hard thresholding
 
 	int D;
 
@@ -53,7 +53,7 @@ struct thresh_s {
 
 	const long* norm_dim;
 
-	unsigned int flags;
+	unsigned long flags;
 
 	const struct linop_s* unitary_op;
 };
@@ -142,7 +142,7 @@ static void thresh_del(const operator_data_t* _data)
  * @param lambda threshold parameter
  * @param flags bitmask for joint soft-thresholding
  */
-const struct operator_p_s* prox_thresh_create(unsigned int D, const long dim[D], const float lambda, const unsigned long flags)
+const struct operator_p_s* prox_thresh_create(int D, const long dim[D], const float lambda, const unsigned long flags)
 {
 	PTR_ALLOC(struct thresh_s, data);
 	SET_TYPEID(thresh_s, data);
@@ -178,7 +178,7 @@ const struct operator_p_s* prox_thresh_create(unsigned int D, const long dim[D],
  * @param unitary_op unitary linear operator
  * @param flags bitmask for joint soft-thresholding
  */
-extern const struct operator_p_s* prox_unithresh_create(unsigned int D, const struct linop_s* unitary_op, const float lambda, const unsigned long flags)
+extern const struct operator_p_s* prox_unithresh_create(int D, const struct linop_s* unitary_op, const float lambda, const unsigned long flags)
 {
 	PTR_ALLOC(struct thresh_s, data);
 	SET_TYPEID(thresh_s, data);
@@ -216,7 +216,7 @@ extern const struct operator_p_s* prox_unithresh_create(unsigned int D, const st
  * @param k threshold parameter (non-zero elements to keep)
  * @param flags bitmask for joint thresholding
  */
-const struct operator_p_s* prox_niht_thresh_create(unsigned int D, const long dim[D], const unsigned int k, const unsigned long flags)
+const struct operator_p_s* prox_niht_thresh_create(int D, const long dim[D], const int k, const unsigned long flags)
 {
 	PTR_ALLOC(struct thresh_s, data);
 	SET_TYPEID(thresh_s, data);

@@ -22,12 +22,12 @@
 // copy from num/ops.c
 struct operator_s {
 
-	unsigned int N;
+	int N;
 	const bool* io_flags;
 	const struct iovec_s** domain;
 
 	operator_data_t* data;
-	void (*apply)(const operator_data_t* data, unsigned int N, void* args[N]);
+	void (*apply)(const operator_data_t* data, int N, void* args[N]);
 	void (*del)(const operator_data_t* data);
 
 	const struct graph_s* (*get_graph)(const struct operator_s* op);
@@ -103,7 +103,7 @@ struct op_p_data_s {
 
 static DEF_TYPEID(op_p_data_s);
 
-static void op_p_apply(const operator_data_t* _data, unsigned int N, void* args[N])
+static void op_p_apply(const operator_data_t* _data, int N, void* args[N])
 {
 	const auto data = CAST_DOWN(op_p_data_s, _data);
 	assert(3 == N);	// FIXME: gpu
@@ -133,7 +133,7 @@ static void operator_del(const struct shared_obj_s* sptr)
 	if (NULL != x->del)
 		x->del(x->data);
 
-	for (unsigned int i = 0; i < x->N; i++)
+	for (int i = 0; i < x->N; i++)
 		iovec_free(x->domain[i]);
 
 	xfree(x->domain);
@@ -146,8 +146,8 @@ static void operator_del(const struct shared_obj_s* sptr)
 /**
  * Create an operator with one parameter (without strides)
  */
-const struct operator_p_s* operator_p_create2(unsigned int ON, const long out_dims[ON], const long out_strs[ON],
-		unsigned int IN, const long in_dims[IN], const long in_strs[IN],
+const struct operator_p_s* operator_p_create2(int ON, const long out_dims[ON], const long out_strs[ON],
+		int IN, const long in_dims[IN], const long in_strs[IN],
 		operator_data_t* data, operator_p_fun_t apply, operator_del_t del)
 {
 	PTR_ALLOC(struct operator_s, o);
@@ -194,8 +194,8 @@ const struct operator_p_s* operator_p_create2(unsigned int ON, const long out_di
  * @param apply function that applies the operation
  * @param del function that frees the data
  */
-const struct operator_p_s* operator_p_create(unsigned int ON, const long out_dims[ON],
-		unsigned int IN, const long in_dims[IN],
+const struct operator_p_s* operator_p_create(int ON, const long out_dims[ON],
+		int IN, const long in_dims[IN],
 		operator_data_t* data, operator_p_fun_t apply, operator_del_t del)
 {
 	return operator_p_create2(ON, out_dims, MD_STRIDES(ON, out_dims, CFL_SIZE),
@@ -273,7 +273,7 @@ const struct operator_p_s* operator_p_pst_chain_FF(const struct operator_p_s* _a
 	return result;
 }
 
-void operator_p_apply2(const struct operator_p_s* _op, float mu, unsigned int ON, const long odims[ON], const long ostrs[ON], complex float* dst, const long IN, const long idims[IN], const long istrs[IN], const complex float* src)
+void operator_p_apply2(const struct operator_p_s* _op, float mu, int ON, const long odims[ON], const long ostrs[ON], complex float* dst, const long IN, const long idims[IN], const long istrs[IN], const complex float* src)
 {
 	auto op = operator_p_upcast(_op);
 
@@ -285,7 +285,7 @@ void operator_p_apply2(const struct operator_p_s* _op, float mu, unsigned int ON
 }
 
 
-void operator_p_apply(const struct operator_p_s* op, float mu, unsigned int ON, const long odims[ON], complex float* dst, const long IN, const long idims[IN], const complex float* src)
+void operator_p_apply(const struct operator_p_s* op, float mu, int ON, const long odims[ON], complex float* dst, const long IN, const long idims[IN], const complex float* src)
 {
 	operator_p_apply2(op, mu,
 			ON, odims, MD_STRIDES(ON, odims, CFL_SIZE), dst,
@@ -362,24 +362,24 @@ const struct operator_p_s* operator_p_stack_FF(int A, int B, const struct operat
 	return result;
 }
 
-const struct operator_p_s* operator_p_reshape_in(const struct operator_p_s* op, unsigned int N, const long dims[N])
+const struct operator_p_s* operator_p_reshape_in(const struct operator_p_s* op, int N, const long dims[N])
 {
 	return operator_p_downcast(operator_reshape(operator_p_upcast(op), 2, N, dims));
 }
 
-const struct operator_p_s* operator_p_reshape_out(const struct operator_p_s* op, unsigned int N, const long dims[N])
+const struct operator_p_s* operator_p_reshape_out(const struct operator_p_s* op, int N, const long dims[N])
 {
 	return operator_p_downcast(operator_reshape(operator_p_upcast(op), 1, N, dims));
 }
 
-const struct operator_p_s* operator_p_reshape_in_F(const struct operator_p_s* op, unsigned int N, const long dims[N])
+const struct operator_p_s* operator_p_reshape_in_F(const struct operator_p_s* op, int N, const long dims[N])
 {
 	auto result = operator_p_reshape_in(op, N, dims);
 	operator_p_free(op);
 	return result;
 }
 
-const struct operator_p_s* operator_p_reshape_out_F(const struct operator_p_s* op, unsigned int N, const long dims[N])
+const struct operator_p_s* operator_p_reshape_out_F(const struct operator_p_s* op, int N, const long dims[N])
 {
 	auto result = operator_p_reshape_out(op, N, dims);
 	operator_p_free(op);

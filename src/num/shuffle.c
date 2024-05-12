@@ -16,14 +16,14 @@
 
 
 #if 0
-void md_shuffle2(unsigned int N, const long dims[N], const long factors[N],
+void md_shuffle2(int N, const long dims[N], const long factors[N],
 		const long ostrs[N], void* out, const long istrs[N], const void* in, size_t size)
 {
 	long dims2[2 * N];
 	long ostrs2[2 * N];
 	long istrs2[2 * N];
 
-	for (unsigned int i = 0; i < N; i++) {
+	for (int i = 0; i < N; i++) {
 
 		assert(0 == dims[i] % factors[i]);
 
@@ -42,7 +42,7 @@ void md_shuffle2(unsigned int N, const long dims[N], const long factors[N],
 	md_copy2(2 * N, dims2, ostrs2, out, istrs2, in, size);
 }
 
-void md_shuffle(unsigned int N, const long dims[N], const long factors[N],
+void md_shuffle(int N, const long dims[N], const long factors[N],
 		void* out, const void* in, size_t size)
 {
 	long strs[N];
@@ -53,12 +53,12 @@ void md_shuffle(unsigned int N, const long dims[N], const long factors[N],
 #endif
 
 
-static void decompose_dims(unsigned int N, long dims2[2 * N], long ostrs2[2 * N], long istrs2[2 * N],
+static void decompose_dims(int N, long dims2[2 * N], long ostrs2[2 * N], long istrs2[2 * N],
 		const long factors[N], const long odims[N + 1], const long ostrs[N + 1], const long idims[N], const long istrs[N])
 {
 	long prod = 1;
 
-	for (unsigned int i = 0; i < N; i++) {
+	for (int i = 0; i < N; i++) {
 
 		long f2 = idims[i] / factors[i];
 
@@ -80,7 +80,7 @@ static void decompose_dims(unsigned int N, long dims2[2 * N], long ostrs2[2 * N]
 	assert(odims[N] == prod);
 }
 
-void md_decompose2(unsigned int N, const long factors[N],
+void md_decompose2(int N, const long factors[N],
 		const long odims[N + 1], const long ostrs[N + 1], void* out,
 		const long idims[N], const long istrs[N], const void* in, size_t size)
 {
@@ -93,7 +93,7 @@ void md_decompose2(unsigned int N, const long factors[N],
 	md_copy2(2 * N, dims2, ostrs2, out, istrs2, in, size);
 }
 
-void md_decompose(unsigned int N, const long factors[N], const long odims[N + 1],
+void md_decompose(int N, const long factors[N], const long odims[N + 1],
 		void* out, const long idims[N], const void* in, size_t size)
 {
 #ifdef USE_CUDA
@@ -123,7 +123,7 @@ void md_decompose(unsigned int N, const long factors[N], const long odims[N + 1]
 
 		md_singleton_dims(2 * N, factors2);
 
-		for (unsigned int i = 0; i < N; i++) {
+		for (int i = 0; i < N; i++) {
 
 			if (1 < factors[i]) {
 
@@ -161,7 +161,7 @@ void md_decompose(unsigned int N, const long factors[N], const long odims[N + 1]
 	md_decompose2(N, factors, odims, ostrs, out, idims, istrs, in, size);
 }
 
-void md_recompose2(unsigned int N, const long factors[N],
+void md_recompose2(int N, const long factors[N],
 		const long odims[N], const long ostrs[N], void* out,
 		const long idims[N + 1], const long istrs[N + 1], const void* in, size_t size)
 {
@@ -174,10 +174,10 @@ void md_recompose2(unsigned int N, const long factors[N],
 	md_copy2(2 * N, dims2, ostrs2, out, istrs2, in, size);
 }
 
-void md_recompose(unsigned int N, const long factors[N], const long odims[N],
+void md_recompose(int N, const long factors[N], const long odims[N],
 		void* out, const long idims[N + 1], const void* in, size_t size)
 {
-	#ifdef USE_CUDA
+#ifdef USE_CUDA
 
 	int n_factors = bitcount(md_nontriv_dims(N, factors));
 

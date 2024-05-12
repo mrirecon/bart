@@ -168,7 +168,7 @@ int main_pocsense(int argc, char* argv[argc])
 	pconf.maxiter = (unsigned int)maxiter;
 
 	struct iter_admm_conf mmconf = iter_admm_defaults;
-	mmconf.maxiter = maxiter;
+	mmconf.maxiter = (unsigned int)maxiter;
 	mmconf.rho = admm_rho;
 
 	struct linop_s* eye = linop_identity_create(DIMS, ksp_dims);

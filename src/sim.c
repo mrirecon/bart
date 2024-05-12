@@ -76,7 +76,7 @@ static void perform_bloch_simulation(int N, struct sim_data* data, long mdims[N]
 
 				pos[MAPS_DIM] = 0;
 				pos[ITER_DIM] = p;
-				ind = md_calc_offset(N, mstrs, pos) / CFL_SIZE;
+				ind = md_calc_offset(N, mstrs, pos) / (long)CFL_SIZE;
 
 				// M = M_x + i M_y
 				mxy[ind] = (A == D) ? m[i][p][d] : (m[i][p][0] + 1.i * m[i][p][1]);
@@ -84,19 +84,19 @@ static void perform_bloch_simulation(int N, struct sim_data* data, long mdims[N]
 				if (NULL == deriv)
 					continue;
 
-				ind = md_calc_offset(N, dstrs, pos) / CFL_SIZE;
+				ind = md_calc_offset(N, dstrs, pos) / (long)CFL_SIZE;
 				deriv[ind] = (A == D) ? sa_r1[i][p][d] : (sa_r1[i][p][0] + 1.i * sa_r1[i][p][1]);
 
 				pos[MAPS_DIM] = 1;
-				ind = md_calc_offset(N, dstrs, pos) / CFL_SIZE;
+				ind = md_calc_offset(N, dstrs, pos) / (long)CFL_SIZE;
 				deriv[ind] = (A == D) ? sa_m0[i][p][d] : (sa_m0[i][p][0] + 1.i * sa_m0[i][p][1]);
 
 				pos[MAPS_DIM] = 2;
-				ind = md_calc_offset(N, dstrs, pos) / CFL_SIZE;
+				ind = md_calc_offset(N, dstrs, pos) / (long)CFL_SIZE;
 				deriv[ind] = (A == D) ? sa_r2[i][p][d] : (sa_r2[i][p][0] + 1.i * sa_r2[i][p][1]);
 
 				pos[MAPS_DIM] = 3;
-				ind = md_calc_offset(N, dstrs, pos) / CFL_SIZE;
+				ind = md_calc_offset(N, dstrs, pos) / (long)CFL_SIZE;
 
 				if (0 == p)
 					deriv[ind] = (A == D) ? sa_b1[i][0][d] : (sa_b1[i][0][0] + 1.i * sa_b1[i][0][1]);
@@ -104,11 +104,11 @@ static void perform_bloch_simulation(int N, struct sim_data* data, long mdims[N]
 				if (p < data->voxel.P - 1) {
 
 					pos[MAPS_DIM] = 4;
-					ind = md_calc_offset(N, dstrs, pos) / CFL_SIZE;
+					ind = md_calc_offset(N, dstrs, pos) / (long)CFL_SIZE;
 					deriv[ind] = (A == D) ? sa_k[i][p][d] : (sa_k[i][p][0] + 1.i * sa_k[i][p][1]);
 
 					pos[MAPS_DIM] = 5;
-					ind = md_calc_offset(N, dstrs, pos) / CFL_SIZE;
+					ind = md_calc_offset(N, dstrs, pos) / (long)CFL_SIZE;
 					deriv[ind] = (A == D) ? sa_Om[i][p][d] : (sa_Om[i][p][0] + 1.i * sa_Om[i][p][1]);
 				}
 			}

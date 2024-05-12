@@ -368,7 +368,7 @@ int main_wave(int argc, char* argv[argc])
 
 		isconf              = iter_ist_defaults;
 		isconf.step         = step;
-		isconf.maxiter      = maxiter;
+		isconf.maxiter      = (unsigned int)maxiter;
 		isconf.tol          = tol;
 		isconf.continuation = cont;
 		isconf.hogwild      = hgwld;

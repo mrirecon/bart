@@ -68,12 +68,12 @@ static const struct operator_p_s* create_wav_prox(const long img_dims[DIMS], uns
 }
 
 
-static const struct operator_p_s* ops_p_stack_higher_dims(unsigned int N, const long maps_dims[N], unsigned int coeff_dim, long higher_flag, const struct operator_p_s* src)
+static const struct operator_p_s* ops_p_stack_higher_dims(int N, const long maps_dims[N], unsigned int coeff_dim, long higher_flag, const struct operator_p_s* src)
 {
 	const struct operator_p_s* tmp = operator_p_ref(src);
 	const struct operator_p_s* dst = operator_p_ref(src);
 
-	for (long d = coeff_dim + 1; d < N; d++) {
+	for (int d = coeff_dim + 1; d < N; d++) {
 
 		if (MD_IS_SET(higher_flag, d)) {
 

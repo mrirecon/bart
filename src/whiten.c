@@ -179,7 +179,7 @@ int main_whiten(int argc, char* argv[argc])
 		// get scale factor by whitening the noise data and taking stdev
 		whiten(noise_dims, nwhite, mat_dims, optmat_out, ndata);
 
-		md_zstd(DIMS, noise_dims, ~0, nstdev, nwhite);
+		md_zstd(DIMS, noise_dims, ~0UL, nstdev, nwhite);
 
 		float stdev = md_zasum(DIMS, std_dims, nstdev);
 

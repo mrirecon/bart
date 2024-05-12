@@ -120,7 +120,7 @@ static void binary_thresh(int D, const long dims[D], float lambda, complex float
 		out[i] = (cabsf(in[i]) > lambda) ? 1. : 0.;
 }
 
-static void binary_thresh_max(unsigned int D, const long dims[D], float lambda, complex float* out, const complex float* in)
+static void binary_thresh_max(int D, const long dims[D], float lambda, complex float* out, const complex float* in)
 {
 	long size = md_calc_size(DIMS, dims);
 

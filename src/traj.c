@@ -245,7 +245,7 @@ int main_traj(int argc, char* argv[argc])
 		gdelays2 = load_cfl(gdelays_file, DIMS, gdims);
 
 		assert((3 == gdims[0] || (6 == gdims[0])));
-		assert(md_check_compat(DIMS - 1, ~0L, dims + 1, gdims + 1));
+		assert(md_check_compat(DIMS - 1, ~0UL, dims + 1, gdims + 1));
 
 		md_calc_strides(DIMS, gstrs, gdims, sizeof(complex float));
 	}
@@ -386,7 +386,7 @@ int main_traj(int argc, char* argv[argc])
 
 		p++;
 
-	} while (md_next(DIMS, dims, ~1L, pos));
+	} while (md_next(DIMS, dims, ~1UL, pos));
 
 	assert(p == N - 0);
 

@@ -128,7 +128,7 @@ static bool check_ops(long size,
 
 void iter2_conjgrad(const iter_conf* _conf,
 		const struct operator_s* normaleq_op,
-		unsigned int D,
+		int D,
 		const struct operator_p_s* prox_ops[D],
 		const struct linop_s* ops[D],
 		const float* biases[D],
@@ -171,7 +171,7 @@ cleanup:
 
 void iter2_ist(const iter_conf* _conf,
 		const struct operator_s* normaleq_op,
-		unsigned int D,
+		int D,
 		const struct operator_p_s* prox_ops[D],
 		const struct linop_s* ops[D],
 		const float* biases[D],
@@ -212,7 +212,7 @@ cleanup:
 
 void iter2_fista(const iter_conf* _conf,
 		const struct operator_s* normaleq_op,
-		unsigned int D,
+		int D,
 		const struct operator_p_s* prox_ops[D],
 		const struct linop_s* ops[D],
 		const float* biases[D],
@@ -312,7 +312,7 @@ static const struct operator_p_s* stack_flatten_prox_F(const struct operator_p_s
  */
 void iter2_chambolle_pock(const iter_conf* _conf,
 		const struct operator_s* normaleq_op,
-		unsigned int D,
+		int D,
 		const struct operator_p_s* prox_ops[D],
 		const struct linop_s* ops[D],
 		const float* biases[D],
@@ -341,7 +341,7 @@ void iter2_chambolle_pock(const iter_conf* _conf,
 	const struct operator_p_s* prox_F = (0 < D) ? operator_p_ref(prox_ops[0]) : prox_zero_create(1, MD_DIMS(size / 2));
 	const struct linop_s* lop_A = (0 < D) ? linop_clone(ops[0]) : linop_null_create(1, MD_DIMS(size / 2), 1, MD_DIMS(size / 2));
 
-	for (unsigned int i = 1; i < D; i++) {
+	for (int i = 1; i < D; i++) {
 
 		prox_F = stack_flatten_prox_F(prox_F, operator_p_ref(prox_ops[i]));
 		lop_A = stack_flatten_cod_linop_F(lop_A, linop_clone(ops[i]));
@@ -384,7 +384,7 @@ void iter2_chambolle_pock(const iter_conf* _conf,
 
 void iter2_admm(const iter_conf* _conf,
 		const struct operator_s* normaleq_op,
-		unsigned int D,
+		int D,
 		const struct operator_p_s* prox_ops[D],
 		const struct linop_s* ops[D],
 		const float* biases[D],
@@ -423,7 +423,7 @@ void iter2_admm(const iter_conf* _conf,
 	struct admm_op a_ops[D ?:1];
 	struct iter_op_p_s a_prox_ops[D ?:1];
 
-	for (unsigned int i = 0; i < D; i++) {
+	for (int i = 0; i < D; i++) {
 
 		a_ops[i].forward = OPERATOR2ITOP(ops[i]->forward),
 		a_ops[i].normal = OPERATOR2ITOP(ops[i]->normal);
@@ -440,7 +440,7 @@ void iter2_admm(const iter_conf* _conf,
 
 	long z_dims[D ?: 1];
 
-	for (unsigned int i = 0; i < D; i++)
+	for (int i = 0; i < D; i++)
 		z_dims[i] = 2 * md_calc_size(linop_codomain(ops[i])->N, linop_codomain(ops[i])->dims);
 
 	if (NULL != image_adj) {
@@ -460,7 +460,7 @@ cleanup:
 
 void iter2_pocs(const iter_conf* _conf,
 		const struct operator_s* normaleq_op,
-		unsigned int D,
+		int D,
 		const struct operator_p_s* prox_ops[D],
 		const struct linop_s* ops[D],
 		const float* biases[D],
@@ -479,7 +479,7 @@ void iter2_pocs(const iter_conf* _conf,
 
 	struct iter_op_p_s proj_ops[D];
 
-	for (unsigned int i = 0; i < D; i++)
+	for (int i = 0; i < D; i++)
 		proj_ops[i] = OPERATOR_P2ITOP(prox_ops[i]);
 
 	pocs(conf->maxiter, D, proj_ops, select_vecops(image), size, image, monitor);
@@ -488,7 +488,7 @@ void iter2_pocs(const iter_conf* _conf,
 
 void iter2_niht(const iter_conf* _conf,
 		const struct operator_s* normaleq_op,
-		unsigned int D,
+		int D,
 		const struct operator_p_s* prox_ops[D],
 		const struct linop_s* ops[D],
 		const float* /*biases*/[D],
@@ -532,7 +532,7 @@ cleanup:
   
 void iter2_call_iter(const iter_conf* _conf,
 		const struct operator_s* normaleq_op,
-		unsigned int D,
+		int D,
 		const struct operator_p_s* prox_ops[D],
 		const struct linop_s* ops[D],
 		const float* biases[D],

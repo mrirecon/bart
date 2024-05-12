@@ -83,7 +83,7 @@ static bool siemens_meas_setup(int fd, struct hdr_s* hdr)
 		struct entry_s entries[hdr->nscans];
 		xread(fd, &entries, sizeof(entries));
 
-		int n = hdr->nscans - 1;
+		int n = (int)hdr->nscans - 1;
 
 		debug_printf(DP_INFO, "VD/VE Header. MeasID: %d FileID: %d Scans: %d\n",
 				entries[n].measid, entries[n].fileid, hdr->nscans);
@@ -91,7 +91,7 @@ static bool siemens_meas_setup(int fd, struct hdr_s* hdr)
 		debug_printf(DP_INFO, "Patient: %.64s\nProtocol: %.64s\n", entries[n].patient, entries[n].protocol);
 
 
-		start = entries[n].offset;
+		start = (off_t)entries[n].offset;
 
 		// reread offset
 		xseek(fd, start);
@@ -315,12 +315,12 @@ struct mdh2 {	// second part of mdh
 };
 
 
-static enum adc_return skip_to_next(const char* hdr, int fd, size_t offset)
+static enum adc_return skip_to_next(const char* hdr, int fd, off_t offset)
 {
 	struct mdh1 mdh1;
 	memcpy(&mdh1, hdr, sizeof(mdh1));
 
-	size_t dma_length = mdh1.flags_dmalength & 0x01FFFFFFL;
+	ssize_t dma_length = mdh1.flags_dmalength & 0x01FFFFFFL;
 
 	if (dma_length < offset)
 		error("dma_length < offset.\n");
@@ -353,7 +353,7 @@ static enum adc_return siemens_bounds(bool vd, int fd, long min[DIMS], long max[
 		struct mdh2 mdh;
 		memcpy(&mdh, vd ? (scan_hdr + 40) : (chan_hdr + 20), sizeof(mdh));
 
-		size_t offset = sizeof(scan_hdr) + sizeof(chan_hdr);
+		ssize_t offset = sizeof(scan_hdr) + sizeof(chan_hdr);
 
 		if (0 == pos[COIL_DIM])
 			debug_print_flags(DP_DEBUG2, mdh.evalinfo);
@@ -429,7 +429,7 @@ static enum adc_return siemens_adc_read(bool vd, int fd, bool linectr, bool part
 		if (!is_image_adc(mdh.evalinfo)
 			|| (dims[READ_DIM] != mdh.samples)) {
 
-			size_t offset = sizeof(scan_hdr) + sizeof(chan_hdr);
+			ssize_t offset = sizeof(scan_hdr) + sizeof(chan_hdr);
 			return skip_to_next(vd ? scan_hdr : chan_hdr, fd, offset);
 		}
 
@@ -467,7 +467,7 @@ static enum adc_return siemens_adc_read(bool vd, int fd, bool linectr, bool part
 			return ADC_ERROR;
 		}
 
-		xread(fd, buf + pos[COIL_DIM] * dims[READ_DIM], dims[READ_DIM] * CFL_SIZE);
+		xread(fd, buf + pos[COIL_DIM] * dims[READ_DIM], (size_t)(dims[READ_DIM] * (long)CFL_SIZE));
 	}
 
 	pos[COIL_DIM] = 0;

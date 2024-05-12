@@ -42,7 +42,7 @@ extern const struct operator_p_s* sense_recon_create(const struct sense_conf* co
 		  const long pat_dims[DIMS],
 		  italgo_fun2_t italgo, iter_conf* iconf,
 		  const complex float* init,
-		  unsigned int num_funs,
+		  int num_funs,
 		  const struct operator_p_s* thresh_op[num_funs],
 		  const struct linop_s* thresh_funs[num_funs],
 		  const struct operator_s* precond_op,

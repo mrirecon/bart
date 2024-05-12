@@ -102,7 +102,7 @@ static void toimg_stack(const char* name, bool dicom, bool dim_names, bool singl
 	long sq_dims[DIMS] = { [0 ... DIMS - 1] = 1 };
 
 	int l = 0;
-	long im_flags = 0L;
+	unsigned long im_flags = 0UL;
 
 	for (int i = 0; i < DIMS; i++) {
 
@@ -152,7 +152,7 @@ static void toimg_stack(const char* name, bool dicom, bool dim_names, bool singl
 
 		if (!dim_names) {
 
-			name_i = xmalloc(len + 10);
+			name_i = xmalloc((size_t)(len + 10));
 
 			if (num_imgs == 1)
 				sprintf(name_i, "%s.%s", name, dicom ? "dcm" : "png");
@@ -162,7 +162,7 @@ static void toimg_stack(const char* name, bool dicom, bool dim_names, bool singl
 		} else {
 
 			long pos[DIMS] = { [0 ... DIMS - 1] = 0  };
-			md_unravel_index(DIMS, pos, ~0L, loop_dims, i);
+			md_unravel_index(DIMS, pos, ~0UL, loop_dims, i);
 
 			name_i = construct_filename(DIMS, loop_dims, pos, name, dicom ? "dcm" : "png");
 		}

@@ -163,8 +163,8 @@ struct linop_s* linop_from_ops(
 /**
  * Create a linear operator (with strides)
  */
-struct linop_s* linop_with_graph_create2(unsigned int ON, const long odims[ON], const long ostrs[ON],
-				unsigned int IN, const long idims[IN], const long istrs[IN],
+struct linop_s* linop_with_graph_create2(int ON, const long odims[ON], const long ostrs[ON],
+				int IN, const long idims[IN], const long istrs[IN],
 				linop_data_t* data, lop_fun_t forward, lop_fun_t adjoint, lop_fun_t normal,
 				lop_p_fun_t norm_inv, del_fun_t del,
 				lop_graph_t get_graph)
@@ -247,8 +247,8 @@ struct linop_s* linop_with_graph_create2(unsigned int ON, const long odims[ON], 
 /**
  * Create a linear operator (with strides)
  */
-struct linop_s* linop_create2(unsigned int ON, const long odims[ON], const long ostrs[ON],
-				unsigned int IN, const long idims[IN], const long istrs[IN],
+struct linop_s* linop_create2(int ON, const long odims[ON], const long ostrs[ON],
+				int IN, const long idims[IN], const long istrs[IN],
 				linop_data_t* data, lop_fun_t forward, lop_fun_t adjoint, lop_fun_t normal,
 				lop_p_fun_t norm_inv, del_fun_t del)
 {
@@ -271,7 +271,7 @@ struct linop_s* linop_create2(unsigned int ON, const long odims[ON], const long 
  * @param
  * @param
  */
-struct linop_s* linop_with_graph_create(unsigned int ON, const long odims[ON], unsigned int IN, const long idims[IN], linop_data_t* data,
+struct linop_s* linop_with_graph_create(int ON, const long odims[ON], int IN, const long idims[IN], linop_data_t* data,
 					lop_fun_t forward, lop_fun_t adjoint, lop_fun_t normal, lop_p_fun_t norm_inv, del_fun_t del,
 					lop_graph_t get_graph)
 {
@@ -296,7 +296,7 @@ struct linop_s* linop_with_graph_create(unsigned int ON, const long odims[ON], u
  * @param norm_inv function for applying the pseudo-inverse operation, (A^H A + mu I)^-1
  * @param del function for freeing the data
  */
-struct linop_s* linop_create(unsigned int ON, const long odims[ON], unsigned int IN, const long idims[IN], linop_data_t* data,
+struct linop_s* linop_create(int ON, const long odims[ON], int IN, const long idims[IN], linop_data_t* data,
 				lop_fun_t forward, lop_fun_t adjoint, lop_fun_t normal, lop_p_fun_t norm_inv, del_fun_t del)
 {
 	long ostrs[ON];
@@ -402,8 +402,8 @@ extern const struct linop_s* linop_get_normal(const struct linop_s* x)
  * @param sdims dimensions of the input (domain)
  * @param src input data
  */
-void linop_forward(const struct linop_s* op, unsigned int DN, const long ddims[DN], complex float* dst,
-			unsigned int SN, const long sdims[SN], const complex float* src)
+void linop_forward(const struct linop_s* op, int DN, const long ddims[DN], complex float* dst,
+			int SN, const long sdims[SN], const complex float* src)
 {
 	assert(op->forward);
 	operator_apply(op->forward, DN, ddims, dst, SN, sdims, src);
@@ -422,8 +422,8 @@ void linop_forward(const struct linop_s* op, unsigned int DN, const long ddims[D
  * @param sdims dimensions of the input (codomain)
  * @param src input data
  */
-void linop_adjoint(const struct linop_s* op, unsigned int DN, const long ddims[DN], complex float* dst,
-			unsigned int SN, const long sdims[SN], const complex float* src)
+void linop_adjoint(const struct linop_s* op, int DN, const long ddims[DN], complex float* dst,
+			int SN, const long sdims[SN], const complex float* src)
 {
 	assert(op->adjoint);
 	operator_apply(op->adjoint, DN, ddims, dst, SN, sdims, src);
@@ -444,8 +444,8 @@ void linop_adjoint(const struct linop_s* op, unsigned int DN, const long ddims[D
  * @param src input data
  */
 void linop_pseudo_inv(const struct linop_s* op, float lambda,
-			unsigned int DN, const long ddims[DN], complex float* dst,
-			unsigned int SN, const long sdims[SN], const complex float* src)
+			int DN, const long ddims[DN], complex float* dst,
+			int SN, const long sdims[SN], const complex float* src)
 {
 	complex float* adj = md_alloc_sameplace(DN, ddims, CFL_SIZE, dst);
 
@@ -468,7 +468,7 @@ void linop_pseudo_inv(const struct linop_s* op, float lambda,
  * @param dst output data
  * @param src input data
  */
-void linop_normal(const struct linop_s* op, unsigned int N, const long dims[N], complex float* dst, const complex float* src)
+void linop_normal(const struct linop_s* op, int N, const long dims[N], complex float* dst, const complex float* src)
 {
 	assert(op->normal);
 	operator_apply(op->normal, N, dims, dst, N, dims, src);
@@ -560,7 +560,7 @@ const struct iovec_s* linop_codomain(const struct linop_s* op)
 
 
 
-struct linop_s* linop_null_create2(unsigned int NO, const long odims[NO], const long ostrs[NO], unsigned int NI, const long idims[NI], const long istrs[NI])
+struct linop_s* linop_null_create2(int NO, const long odims[NO], const long ostrs[NO], int NI, const long idims[NI], const long istrs[NI])
 {
 	PTR_ALLOC(struct linop_s, c);
 
@@ -589,7 +589,7 @@ bool linop_is_null(const struct linop_s* lop)
 
 
 
-struct linop_s* linop_null_create(unsigned int NO, const long odims[NO], unsigned int NI, const long idims[NI])
+struct linop_s* linop_null_create(int NO, const long odims[NO], int NI, const long idims[NI])
 {
 	return linop_null_create2(NO, odims, MD_STRIDES(NO, odims, CFL_SIZE),
 					NI, idims, MD_STRIDES(NI, idims, CFL_SIZE));
@@ -933,7 +933,7 @@ struct linop_s* linop_copy_wrapper2(int DI, const long istrs[DI], int DO, const 
 	return PTR_PASS(op2);
 }
 
-struct linop_s* linop_copy_wrapper(unsigned int D, const long istrs[D], const long ostrs[D],  struct linop_s* op)
+struct linop_s* linop_copy_wrapper(int D, const long istrs[D], const long ostrs[D],  struct linop_s* op)
 {
 	return linop_copy_wrapper2(D, istrs, D, ostrs, op);
 }
@@ -1021,7 +1021,7 @@ struct linop_s* linop_plus_FF(const struct linop_s* a, const struct linop_s* b)
 }
 
 
-struct linop_s* linop_reshape_in(const struct linop_s* op, unsigned int NI, const long idims[NI])
+struct linop_s* linop_reshape_in(const struct linop_s* op, int NI, const long idims[NI])
 {
 	PTR_ALLOC(struct linop_s, c);
 
@@ -1045,7 +1045,7 @@ struct linop_s* linop_reshape_in(const struct linop_s* op, unsigned int NI, cons
 	return PTR_PASS(c);
 }
 
-struct linop_s* linop_reshape_out(const struct linop_s* op, unsigned int NO, const long odims[NO])
+struct linop_s* linop_reshape_out(const struct linop_s* op, int NO, const long odims[NO])
 {
 	PTR_ALLOC(struct linop_s, c);
 
@@ -1057,7 +1057,7 @@ struct linop_s* linop_reshape_out(const struct linop_s* op, unsigned int NO, con
 	return PTR_PASS(c);
 }
 
-struct linop_s* linop_reshape_in_F(const struct linop_s* op, unsigned int NI, const long idims[NI])
+struct linop_s* linop_reshape_in_F(const struct linop_s* op, int NI, const long idims[NI])
 {
 	auto result = linop_reshape_in(op, NI, idims);
 
@@ -1066,7 +1066,7 @@ struct linop_s* linop_reshape_in_F(const struct linop_s* op, unsigned int NI, co
 	return result;
 }
 
-struct linop_s* linop_reshape_out_F(const struct linop_s* op, unsigned int NO, const long odims[NO])
+struct linop_s* linop_reshape_out_F(const struct linop_s* op, int NO, const long odims[NO])
 {
 	auto result = linop_reshape_out(op, NO, odims);
 
@@ -1178,13 +1178,13 @@ struct linop_s* graph_optimize_linop(const struct linop_s* op)
 
 //FIXME: This is not optimal as it should be part of the operator framework only.
 //However, to optimize using Ax + Ay = A(x+y) the information of the linop framework is necessary.
-void operator_linops_apply_joined_unchecked(unsigned int N, const struct operator_s* op[N], complex float* dst[N], const complex float* src)
+void operator_linops_apply_joined_unchecked(int N, const struct operator_s* op[N], complex float* dst[N], const complex float* src)
 {
 	auto combi = operator_combi_create(N, op);
 
 	int perm[2 * N];
 
-	for (int i = 0; i < (int)N; i++) {
+	for (int i = 0; i < N; i++) {
 
 		perm[i] = 2 * i;
 		perm[i + N] = 2 * i + 1;
@@ -1194,7 +1194,7 @@ void operator_linops_apply_joined_unchecked(unsigned int N, const struct operato
 
 	operator_free(combi);
 
-	for (int i = 0; i < (int)N - 1; i++) {
+	for (int i = 0; i < N - 1; i++) {
 
 		auto tmp = operator_dup_create(dup, N, N + 1);
 

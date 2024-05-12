@@ -93,7 +93,7 @@ int main_tensorflow(int argc, char* argv[argc])
 			args[OO + i] = load_cfl(files[i], DIMS, dims[OO + i]);
 			auto dom = nlop_generic_domain(nlop, i);
 			assert(DIMS >= dom->N);
-			assert(md_check_equal_dims(dom->N, dom->dims, dims[OO + i], ~0));
+			assert(md_check_equal_dims(dom->N, dom->dims, dims[OO + i], ~0UL));
 		}
 
 		for (int i = 0; i < OO; i++) {

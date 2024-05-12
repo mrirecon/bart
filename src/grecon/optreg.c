@@ -299,7 +299,7 @@ void opt_precond_configure(struct opt_reg_s* ropts, const struct operator_p_s* p
 	ropts->sr++;
 }
 
-void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], unsigned int llr_blk, unsigned int shift_mode, const char* wtype_str, bool use_gpu)
+void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], int llr_blk, int shift_mode, const char* wtype_str, bool use_gpu)
 {
 	float lambda = ropts->lambda;
 	bool randshift = (1 == shift_mode);
@@ -378,7 +378,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 			regs[nr].lambda = lambda;
 
 		long minsize[DIMS] = { [0 ... DIMS - 1] = 1 };
-		unsigned int wflags = 0;
+		unsigned long wflags = 0;
 
 		long thresh_dims[N];
 		long img_strs[N];
@@ -413,7 +413,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 			md_calc_strides(N, img_strs, img_dims, CFL_SIZE);
 
-			unsigned int wxdim = 0;
+			int wxdim = 0;
 
 			for (int i = 0; i < DIMS; i++) {
 
@@ -430,9 +430,9 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 			long wav_dims[DIMS];
 			md_copy_dims(DIMS, wav_dims, linop_codomain(trafos[nr])->dims);
 
-			unsigned int K = (md_calc_size(wxdim, wav_dims) / 100) * regs[nr].k;
+			long K = (md_calc_size(wxdim, wav_dims) / 100) * regs[nr].k;
 
-			debug_printf(DP_DEBUG3, "\nK = %d elements will be thresholded per wavelet transform\n", K);
+			debug_printf(DP_DEBUG3, "\nK = %ld elements will be thresholded per wavelet transform\n", K);
 			debug_printf(DP_DEBUG3, "Total wavelet dimensions: \n[");
 
 			for (int i = 0; i < DIMS; i++)
