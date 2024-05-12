@@ -165,7 +165,7 @@ int main_pocsense(int argc, char* argv[argc])
 	iter_conf* iconf = NULL;
 
 	struct iter_pocs_conf pconf = iter_pocs_defaults;
-	pconf.maxiter = maxiter;
+	pconf.maxiter = (unsigned int)maxiter;
 
 	struct iter_admm_conf mmconf = iter_admm_defaults;
 	mmconf.maxiter = maxiter;

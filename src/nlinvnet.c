@@ -362,7 +362,7 @@ int main_nlinvnet(int argc, char* argv[argc])
 
 		long out_dims[DIMS];
 		complex float* ref = load_cfl(out_file, DIMS, out_dims);
-		assert(md_check_equal_dims(DIMS, nlinvnet.ksp_training ? ksp_dims : cim_dims, out_dims, ~0));
+		assert(md_check_equal_dims(DIMS, nlinvnet.ksp_training ? ksp_dims : cim_dims, out_dims, ~0UL));
 
 		auto train_data_list = named_data_list_create();
 		named_data_list_append(train_data_list, DIMS, out_dims, ref, "ref");

@@ -23,7 +23,7 @@ struct network_unet_s {
 
 	INTERFACE(network_t);
 
-	unsigned int N;
+	int N;
 	long kdims[DIMS];
 	long dilations[DIMS];
 
@@ -72,6 +72,6 @@ struct network_unet_s {
 extern struct network_unet_s network_unet_default_reco;
 extern struct network_unet_s network_unet_default_segm;
 
-extern nn_t network_unet_create(const struct network_s* config, unsigned int NO, const long odims[NO], unsigned int NI, const long idims[NI], enum NETWORK_STATUS status);
+extern nn_t network_unet_create(const struct network_s* config, int NO, const long odims[NO], int NI, const long idims[NI], enum NETWORK_STATUS status);
 extern _Bool unet_is_diagonal(const struct network_s* config);
 

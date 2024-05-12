@@ -247,7 +247,7 @@ static nn_t reconet_sort_args(nn_t reconet)
 	};
 
 	int N = nn_get_nr_named_in_args(reconet);
-	const char* sorted_names[N + ARRAY_SIZE(data_names) + 2];
+	const char* sorted_names[N + (int)ARRAY_SIZE(data_names) + 2];
 
 	nn_get_in_names_copy(N, sorted_names + ARRAY_SIZE(data_names) + 2, reconet);
 
@@ -257,10 +257,10 @@ static nn_t reconet_sort_args(nn_t reconet)
 	sorted_names[ARRAY_SIZE(data_names)] = "lambda_init";
 	sorted_names[ARRAY_SIZE(data_names) + 1] = "lambda";
 
-	reconet = nn_sort_inputs_by_list_F(reconet, N + ARRAY_SIZE(data_names) + 2, sorted_names);
+	reconet = nn_sort_inputs_by_list_F(reconet, N + (int)ARRAY_SIZE(data_names) + 2, sorted_names);
 
 	for (int i = 0; i < N; i++)
-		xfree(sorted_names[i + ARRAY_SIZE(data_names) + 2]);
+		xfree(sorted_names[i + (int)ARRAY_SIZE(data_names) + 2]);
 
 	for (int i = 0; i < (int)ARRAY_SIZE(data_names); i++)
 		if (nn_is_name_in_in_args(reconet, data_names[i]))
@@ -368,7 +368,7 @@ static nn_t data_consistency_tikhonov_create(const struct reconet_s* config, int
 {
 	struct iter_conjgrad_conf iter_conf = iter_conjgrad_defaults;
 	iter_conf.l2lambda = 0.;
-	iter_conf.maxiter = config->dc_max_iter;
+	iter_conf.maxiter = (unsigned int)config->dc_max_iter;
 
 	const struct nlop_s* nlop_dc = nlop_sense_dc_prox_create(Nb, models, &iter_conf, BATCH_FLAG); // in: input, adjoint, lambda; out: output
 
@@ -459,7 +459,7 @@ static nn_t nn_init_create(const struct reconet_s* config, int Nb, struct sense_
 
 	struct iter_conjgrad_conf iter_conf = iter_conjgrad_defaults;
 	iter_conf.l2lambda = 0.;
-	iter_conf.maxiter = config->init_max_iter;
+	iter_conf.maxiter = (unsigned int)config->init_max_iter;
 
 	auto nlop_result = nlop_sense_normal_inv_create(Nb, models, &iter_conf, BATCH_FLAG); //in: adjoint, lambda; out: (A^HA + l)^-1 adjoint
 	auto nn_result = nn_from_nlop_F(nlop_result);
@@ -493,7 +493,7 @@ static nn_t nn_init_create(const struct reconet_s* config, int Nb, struct sense_
  * INDEX_0:	idims:	(Ux, Uy, Uz, 1, Nb)
  * [batchnorm output]
  */
-static nn_t network_block_create(const struct reconet_s* config, unsigned int N, const long img_dims[N], enum NETWORK_STATUS status)
+static nn_t network_block_create(const struct reconet_s* config, int N, const long img_dims[N], enum NETWORK_STATUS status)
 {
 	long timg_dims[N];
 	md_copy_dims(N, timg_dims, img_dims);
@@ -743,7 +743,7 @@ static nn_t reconet_create(const struct reconet_s* config, int N, const long max
 			network = nn_mark_dup_F(network, "psf");
 		}
 
-		if (!md_check_equal_dims(N + 1, lam_dims, out_dims, ~0)) {
+		if (!md_check_equal_dims(N + 1, lam_dims, out_dims, ~0UL)) {
 
 			network = nn_chain2_swap_FF(nn_from_nlop_F(nlop_from_linop_F(linop_repmat_create(N + 1, out_dims, ~MD_BIT(N)))), 0, NULL, network, 0, "lambda");
 			network = nn_set_input_name_F(network, 0, "lambda");

@@ -32,7 +32,7 @@
 nn_t nn_append_convcorr_layer_generic(
 				nn_t network, int o, const char* oname, const char* ker_name,
 				unsigned long conv_flag, unsigned long channel_flag, unsigned long group_flag,
-				unsigned int N, long const kernel_dims[N], const long strides[N], const long dilations[N],
+				int N, long const kernel_dims[N], const long strides[N], const long dilations[N],
 				bool conv, enum PADDING conv_pad, const struct initializer_s* init)
 {
 	o = nn_get_out_arg_index(network, o, oname);
@@ -77,7 +77,7 @@ nn_t nn_append_convcorr_layer_generic(
 nn_t nn_append_transposed_convcorr_layer_generic(
 				nn_t network, int o, const char* oname, const char* ker_name,
 				unsigned long conv_flag, unsigned long channel_flag, unsigned long group_flag,
-				unsigned int N, long const kernel_dims[N], const long strides[N], const long dilations[N],
+				int N, long const kernel_dims[N], const long strides[N], const long dilations[N],
 				bool conv, enum PADDING conv_pad, bool adjoint, const struct initializer_s* init)
 {
 	o = nn_get_out_arg_index(network, o, oname);
@@ -109,7 +109,7 @@ nn_t nn_append_transposed_convcorr_layer_generic(
  * @param pool_size size of pooling
  * @param conv_pad must be PAD_VALID/PAD_SAME if image size is not a multiple of padding size, the image is shrinked/expanded to a multiple
  */
-nn_t nn_append_maxpool_layer_generic(nn_t network, int o, const char* oname, unsigned int N, const long pool_size[N], enum PADDING conv_pad)
+nn_t nn_append_maxpool_layer_generic(nn_t network, int o, const char* oname, int N, const long pool_size[N], enum PADDING conv_pad)
 {
 	o = nn_get_out_arg_index(network, o, oname);
 	auto result = nn_from_nlop_F(append_maxpool_layer_generic(nlop_clone(nn_get_nlop(network)), o, N, pool_size, conv_pad));

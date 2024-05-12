@@ -134,14 +134,14 @@ void nlinvnet_init(struct nlinvnet_s* nlinvnet, int N,
 	*(nlinvnet->iter_conf_net) = iter_conjgrad_defaults;
 	nlinvnet->iter_conf_net->INTERFACE.alpha = 0.;
 	nlinvnet->iter_conf_net->l2lambda = 0.;
-	nlinvnet->iter_conf_net->maxiter = nlinvnet->conf->cgiter;
+	nlinvnet->iter_conf_net->maxiter = (unsigned int)nlinvnet->conf->cgiter;
 	nlinvnet->iter_conf_net->tol = 0.;
 
 	nlinvnet->iter_conf = TYPE_ALLOC(struct iter_conjgrad_conf);
 	*(nlinvnet->iter_conf) = iter_conjgrad_defaults;
 	nlinvnet->iter_conf->INTERFACE.alpha = 0.;
 	nlinvnet->iter_conf->l2lambda = 0.;
-	nlinvnet->iter_conf->maxiter = nlinvnet->conf->cgiter;
+	nlinvnet->iter_conf->maxiter = (unsigned int)nlinvnet->conf->cgiter;
 	nlinvnet->iter_conf->tol = nlinvnet->cgtol;
 
 	if (NULL == get_loss_from_option())
@@ -185,7 +185,7 @@ static nn_t nlinvnet_sort_args_F(nn_t net)
 		};
 
 	int N = nn_get_nr_named_in_args(net);
-	const char* sorted_names[N + ARRAY_SIZE(data_names) + 3];
+	const char* sorted_names[N + (int)ARRAY_SIZE(data_names) + 3];
 
 	nn_get_in_names_copy(N, sorted_names + ARRAY_SIZE(data_names) + 3, net);
 	for (int i = 0; i < (int)ARRAY_SIZE(data_names); i++)
@@ -195,10 +195,10 @@ static nn_t nlinvnet_sort_args_F(nn_t net)
 	sorted_names[ARRAY_SIZE(data_names) + 1] = "lam_sens";
 	sorted_names[ARRAY_SIZE(data_names) + 2] = "alp";
 
-	net = nn_sort_inputs_by_list_F(net, N + ARRAY_SIZE(data_names) + 3, sorted_names);
+	net = nn_sort_inputs_by_list_F(net, N + (int)ARRAY_SIZE(data_names) + 3, sorted_names);
 
 	for (int i = 0; i < N; i++)
-		xfree(sorted_names[i + ARRAY_SIZE(data_names) + 3]);
+		xfree(sorted_names[i + (int)ARRAY_SIZE(data_names) + 3]);
 
 	for (int i = 0; i < (int)ARRAY_SIZE(data_names); i++)
 		if (nn_is_name_in_in_args(net, data_names[i]))

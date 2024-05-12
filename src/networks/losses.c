@@ -256,13 +256,12 @@ static nn_t nlop_loss_to_nn_F(const struct nlop_s* nlop, const char* name, float
 	return tmp_loss;
 }
 
-static nn_t loss_measure_create(const struct loss_config_s* config, unsigned int N, const long dims[N], bool combine, bool measure)
+static nn_t loss_measure_create(const struct loss_config_s* config, int N, const long dims[N], bool combine, bool measure)
 {
-
 	long ldims[N];
 	md_select_dims(N, ~config->rss_flags, ldims, dims);
 
-	bool rss = !md_check_equal_dims(N, dims, ldims, ~0);
+	bool rss = !md_check_equal_dims(N, dims, ldims, ~0UL);
 
 	nn_t result = NULL;
 
@@ -284,7 +283,7 @@ static nn_t loss_measure_create(const struct loss_config_s* config, unsigned int
 
 		auto nlop = nlop_mpsnr_create(N, ldims, ~config->image_flags);
 
-		if (!md_check_equal_dims(N, dims, ldims, ~0)) {
+		if (!md_check_equal_dims(N, dims, ldims, ~0UL)) {
 
 			nlop = nlop_chain2_FF(nlop_zrss_reg_create(N, dims, config->rss_flags, measure ? 0 : config->epsilon), 0, nlop, 0);
 			nlop = nlop_chain2_FF(nlop_zrss_reg_create(N, dims, config->rss_flags, measure ? 0 : config->epsilon), 0, nlop, 0);
@@ -312,7 +311,7 @@ static nn_t loss_measure_create(const struct loss_config_s* config, unsigned int
 		nlop = nlop_reshape_in_F(nlop, 0, N, ldims);
 		nlop = nlop_reshape_in_F(nlop, 1, N, ldims);
 
-		if (!md_check_equal_dims(N, dims, ldims, ~0)) {
+		if (!md_check_equal_dims(N, dims, ldims, ~0UL)) {
 
 			nlop = nlop_chain2_FF(nlop_zrss_reg_create(N, dims, config->rss_flags, measure ? 0 : config->epsilon), 0, nlop, 0);
 			nlop = nlop_chain2_FF(nlop_zrss_reg_create(N, dims, config->rss_flags, measure ? 0 : config->epsilon), 0, nlop, 0);
@@ -482,12 +481,12 @@ static nn_t loss_measure_create(const struct loss_config_s* config, unsigned int
 	return result;
 }
 
-nn_t train_loss_create(const struct loss_config_s* config, unsigned int N, const long dims[N])
+nn_t train_loss_create(const struct loss_config_s* config, int N, const long dims[N])
 {
 	return loss_measure_create(config, N, dims, true, false);
 }
 
-nn_t val_measure_create(const struct loss_config_s* config, unsigned int N, const long dims[N])
+nn_t val_measure_create(const struct loss_config_s* config, int N, const long dims[N])
 {
 	return loss_measure_create(config, N, dims, false, true);
 }

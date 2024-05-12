@@ -97,7 +97,6 @@ static void mobafit_bound(iter_op_data* _data, float* dst, const float* src)
 
 		if (MD_IS_SET(data->max_norm_flags, pos[COEFF_DIM])) {
 
-			md_zabs2(N, map_dims, MD_STRIDES(N, map_dims, CFL_SIZE), tmp_map, strs, map);
 			md_zdiv2(N, map_dims, strs, map, strs, map, MD_STRIDES(N, map_dims, CFL_SIZE), tmp_map);
 			md_zsmin2(N, map_dims, MD_STRIDES(N, map_dims, CFL_SIZE), tmp_map, MD_STRIDES(N, map_dims, CFL_SIZE), tmp_map, data->max[pos[COEFF_DIM]]);
 			md_zmul2(N, map_dims, strs, map, strs, map, MD_STRIDES(N, map_dims, CFL_SIZE), tmp_map);
@@ -144,9 +143,9 @@ int main_mobafit(int argc, char* argv[argc])
 
 	enum seq_type { /* BSSFP, FLASH, MOLLI, */ TSE, MGRE, DIFF, IR_LL, IR } seq = MGRE;
 
-	unsigned int mgre_model = MECO_WFR2S;
+	int mgre_model = MECO_WFR2S;
 
-	unsigned int iter = 5;
+	int iter = 5;
 
 	const char* basis_file = NULL;
 
@@ -164,9 +163,9 @@ int main_mobafit(int argc, char* argv[argc])
 		OPT_SELECT('L', enum seq_type, &seq, IR_LL, "Inversion Recovery Look-Locker"),
 		OPT_SELECT('G', enum seq_type, &seq, MGRE, "MGRE"),
 		OPT_SELECT('D', enum seq_type, &seq, DIFF, "diffusion"),
-		OPT_UINT('m', &mgre_model, "model", "Select the MGRE model from enum { WF = 0, WFR2S, WF2R2S, R2S, PHASEDIFF } [default: WFR2S]"),
+		OPT_PINT('m', &mgre_model, "model", "Select the MGRE model from enum { WF = 0, WFR2S, WF2R2S, R2S, PHASEDIFF } [default: WFR2S]"),
 		OPT_SET('a', &use_magn, "fit magnitude of signal model to data"),
-		OPT_UINT('i', &iter, "iter", "Number of IRGNM steps"),
+		OPT_PINT('i', &iter, "iter", "Number of IRGNM steps"),
 		OPT_SET('g', &bart_use_gpu, "use gpu"),
 		OPT_INFILE('B', &basis_file, "file", "temporal (or other) basis"),
 		OPTL_FLVECN(0, "init", _init, "Initial values of parameters in model-based reconstruction"),
@@ -293,7 +292,7 @@ int main_mobafit(int argc, char* argv[argc])
 
         case IR: {
 
-		assert(md_check_equal_dims(DIMS, y_patch_dims, y_patch_sig_dims, ~0));
+		assert(md_check_equal_dims(DIMS, y_patch_dims, y_patch_sig_dims, ~0UL));
 		md_copy_dims(DIMS, dims, y_patch_dims);
 		dims[COEFF_DIM] = enc_dims[COEFF_DIM];
 
@@ -309,7 +308,7 @@ int main_mobafit(int argc, char* argv[argc])
 		if (NULL != basis) {
 
 			long max_dims[DIMS];
-			md_max_dims(DIMS, ~0, max_dims, bas_dims, y_patch_sig_dims);
+			md_max_dims(DIMS, ~0UL, max_dims, bas_dims, y_patch_sig_dims);
 
 			unsigned long oflags = ~md_nontriv_dims(DIMS, y_patch_dims);
 			unsigned long iflags = ~md_nontriv_dims(DIMS, y_patch_sig_dims);
@@ -333,14 +332,14 @@ int main_mobafit(int argc, char* argv[argc])
 	case MGRE: {
 
 		float scale_fB0[2] = { 0., 1. };
-		assert(md_check_equal_dims(DIMS, y_patch_dims, y_patch_sig_dims, ~0));
+		assert(md_check_equal_dims(DIMS, y_patch_dims, y_patch_sig_dims, ~0UL));
 		nlop = nlop_meco_create(DIMS, y_patch_dims, x_patch_dims, enc, mgre_model, false, FAT_SPEC_1, scale_fB0);
 	}	break;
 
 	case TSE:
 	case DIFF:
 
-		assert(md_check_equal_dims(DIMS, y_patch_dims, y_patch_sig_dims, ~0));
+		assert(md_check_equal_dims(DIMS, y_patch_dims, y_patch_sig_dims, ~0UL));
 		md_copy_dims(DIMS, dims, y_patch_dims);
 		dims[COEFF_DIM] = enc_dims[COEFF_DIM];
 

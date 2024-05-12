@@ -44,7 +44,7 @@ struct network_tensorflow_s network_tensorflow_default = {
 
 
 
-nn_t network_tensorflow_create(const struct network_s* _config, unsigned int NO, const long odims[NO], unsigned int NI, const long idims[NI], enum NETWORK_STATUS /*status*/)
+nn_t network_tensorflow_create(const struct network_s* _config, int NO, const long odims[NO], int NI, const long idims[NI], enum NETWORK_STATUS /*status*/)
 {
 	auto config = CAST_DOWN(network_tensorflow_s, _config);
 

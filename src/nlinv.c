@@ -306,7 +306,7 @@ int main_nlinv(int argc, char* argv[argc])
 		if (conf.noncart)
 			assert(1 == md_calc_size(5, bas_dims));
 		else
-			md_check_compat(5, ~0, bas_dims, dims);
+			md_check_compat(5, ~0UL, bas_dims, dims);
 
 		dims[COEFF_DIM] = bas_dims[COEFF_DIM];
 		dims[TE_DIM] = 1;

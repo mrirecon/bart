@@ -52,7 +52,7 @@ struct wdata {
  * The ramp portion is given by 2*(alpha - 1) / (end - start) * (p - end) + alpha
  * alpha = 0 is a full ramp, alpha = 1 is a horizontal line
  */
-static float homodyne_filter(long N, float frac, float alpha, bool clear, long p)
+static float homodyne_filter(int N, float frac, float alpha, bool clear, long p)
 {
 	if (frac <= 0.5)
 		return 1.;
@@ -74,7 +74,7 @@ static float homodyne_filter(long N, float frac, float alpha, bool clear, long p
 
 
 static complex float* estimate_phase(struct wdata wdata, unsigned long flags,
-		unsigned int N, const long dims[N], const complex float* idata, bool center_fft)
+		int N, const long dims[N], const complex float* idata, bool center_fft)
 {
 
 	long cdims[N];
@@ -95,7 +95,7 @@ static complex float* estimate_phase(struct wdata wdata, unsigned long flags,
 	return phase;
 }
 
-static void homodyne(struct wdata wdata, unsigned long flags, unsigned int N, const long dims[N],
+static void homodyne(struct wdata wdata, unsigned long flags, int N, const long dims[N],
 		const long strs[N], complex float* data, const complex float* idata,
 		const long pstrs[N], const complex float* phase, bool center_fft)
 {
@@ -170,7 +170,7 @@ int main_homodyne(int argc, char* argv[argc])
 
 	NESTED(void, comp_weights, (const long pos[]))
 	{
-		wdata.weights[md_calc_offset(DIMS, wdata.wstrs, pos) / CFL_SIZE]
+		wdata.weights[md_calc_offset(DIMS, wdata.wstrs, pos) / (long)CFL_SIZE]
 			= homodyne_filter(wdata.wdims[pfdim], frac, alpha, clear, pos[pfdim]);
 	};
 

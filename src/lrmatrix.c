@@ -83,8 +83,8 @@ int main_lrmatrix(int argc, char* argv[argc])
 	float rho = 0.25;
 	int blkskip = 2;
 	bool randshift = true;
-	long mflags = 1;
-	long flags = ~0;
+	unsigned long mflags = 1;
+	unsigned long flags = ~0UL;
 	const char* sum_str = NULL;
 	bool noise = false;
         bool decom = false;
@@ -103,8 +103,8 @@ int main_lrmatrix(int argc, char* argv[argc])
 		OPT_SET('d', &decom, "perform decomposition instead, ie fully sampled"),
 		// FIXME: 'd' fell through to u in original version ??!?
 		OPT_INT('i', &maxiter, "iter", "maximum iterations."),
-		OPT_LONG('m', &mflags, "flags", "which dimensions are reshaped to matrix columns."),
-		OPT_LONG('f', &flags, "flags", "which dimensions to perform multi-scale partition."),
+		OPT_ULONG('m', &mflags, "flags", "which dimensions are reshaped to matrix columns."),
+		OPT_ULONG('f', &flags, "flags", "which dimensions to perform multi-scale partition."),
 		OPT_INT('j', &blkskip, "scale", "block size scaling from one scale to the next one."),
 		OPT_LONG('k', &initblk, "size", "smallest block size"),
 		OPT_SET('N', &noise, "add noise scale to account for Gaussian noise."),
@@ -168,7 +168,7 @@ int main_lrmatrix(int argc, char* argv[argc])
 
 	struct iter_admm_conf mmconf;
 	memcpy(&mmconf, &iter_admm_defaults, sizeof(struct iter_admm_conf));
-	mmconf.maxiter = maxiter;
+	mmconf.maxiter = (unsigned int)maxiter;
 	mmconf.rho = rho;
 	mmconf.hogwild = hogwild;
 	mmconf.fast = fast;
@@ -183,7 +183,7 @@ int main_lrmatrix(int argc, char* argv[argc])
 
         if (!decom) {
 
-                sampling_op = linop_cdiag_create(DIMS, idims, ~0, pattern);
+                sampling_op = linop_cdiag_create(DIMS, idims, ~0UL, pattern);
                 sum_op = linop_chain_FF(sum_op, sampling_op);
         }
 

@@ -12,7 +12,7 @@
 
 struct network_s;
 
-typedef nn_t (*network_create_t)(const struct network_s* config, unsigned int NO, const long odims[NO], unsigned int NI, const long idims[NI], enum NETWORK_STATUS status);
+typedef nn_t (*network_create_t)(const struct network_s* config, int NO, const long odims[NO], int NI, const long idims[NI], enum NETWORK_STATUS status);
 
 typedef struct network_s {
 
@@ -34,7 +34,7 @@ typedef struct network_s {
 
 } network_t;
 
-extern nn_t network_create(const struct network_s* config, unsigned int NO, const long odims[NO], unsigned int NI, const long idims[NI], enum NETWORK_STATUS status);
+extern nn_t network_create(const struct network_s* config, int NO, const long odims[NO], int NI, const long idims[NI], enum NETWORK_STATUS status);
 
 extern _Bool network_is_diagonal(const struct network_s* config);
 
@@ -43,7 +43,7 @@ struct network_resnet_s {
 
 	INTERFACE(network_t);
 
-	unsigned int N;
+	int N;
 
 	long kdims[DIMS];
 	long dilations[DIMS];

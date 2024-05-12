@@ -40,7 +40,7 @@
 #include  "networks/unet.h"
 #include  "cnn.h"
 
-nn_t network_create(const struct network_s* config, unsigned int _NO, const long _odims[_NO], unsigned int _NI, const long _idims[_NI], enum NETWORK_STATUS status)
+nn_t network_create(const struct network_s* config, int _NO, const long _odims[_NO], int _NI, const long _idims[_NI], enum NETWORK_STATUS status)
 {
 	int NO = _NO;
 	int NI = _NI;
@@ -140,9 +140,9 @@ nn_t network_create(const struct network_s* config, unsigned int _NO, const long
 	return result;
 }
 
-static nn_t network_resnet_create(const struct network_s* _config, unsigned int NO, const long odims[NO], unsigned int NI, const long idims[NI], enum NETWORK_STATUS status);
-static nn_t network_varnet_create(const struct network_s* _config, unsigned int NO, const long odims[NO], unsigned int NI, const long idims[NI], enum NETWORK_STATUS status);
-static nn_t network_mnist_create(const struct network_s* _config, unsigned int NO, const long odims[NO], unsigned int NI, const long idims[NI], enum NETWORK_STATUS status);
+static nn_t network_resnet_create(const struct network_s* _config, int NO, const long odims[NO], int NI, const long idims[NI], enum NETWORK_STATUS status);
+static nn_t network_varnet_create(const struct network_s* _config, int NO, const long odims[NO], int NI, const long idims[NI], enum NETWORK_STATUS status);
+static nn_t network_mnist_create(const struct network_s* _config, int NO, const long odims[NO], int NI, const long idims[NI], enum NETWORK_STATUS status);
 
 DEF_TYPEID(network_resnet_s);
 
@@ -201,7 +201,7 @@ struct network_resnet_s network_resnet_default = {
 };
 
 
-static void network_resnet_get_kdims(const struct network_resnet_s* config, unsigned int N, long kdims[N])
+static void network_resnet_get_kdims(const struct network_resnet_s* config, int N, long kdims[N])
 {
 	if (0 != md_calc_size(config->N, config->kdims)) {
 
@@ -215,7 +215,7 @@ static void network_resnet_get_kdims(const struct network_resnet_s* config, unsi
 	long tdims[3] = {config->Kx, config->Ky, config->Kz};
 	long* tdim = tdims;
 
-	for (unsigned int i = 0; i < N; i++) {
+	for (int i = 0; i < N; i++) {
 
 		kdims[i] = 1;
 
@@ -246,7 +246,7 @@ static void network_resnet_get_kdims(const struct network_resnet_s* config, unsi
  * INDEX_0:	odims
  * batchnorm
  */
-static nn_t network_resnet_create(const struct network_s* _config, unsigned int NO, const long odims[NO], unsigned int NI, const long idims[NI], enum NETWORK_STATUS status)
+static nn_t network_resnet_create(const struct network_s* _config, int NO, const long odims[NO], int NI, const long idims[NI], enum NETWORK_STATUS status)
 {
 	int Nw = ARRAY_SIZE(resnet_sorted_weight_names);
 
@@ -261,7 +261,7 @@ static nn_t network_resnet_create(const struct network_s* _config, unsigned int 
 	}
 
 	assert(NO == NI);
-	unsigned int N = NO;
+	int N = NO;
 
 	auto config = CAST_DOWN(network_resnet_s, _config);
 	assert(config->N == N);
@@ -277,7 +277,7 @@ static nn_t network_resnet_create(const struct network_s* _config, unsigned int 
 	unsigned long tchannel_flag = config->channel_flag;
 	unsigned long tgroup_flag = config->group_flag;
 
-	for (unsigned int i = 0; i < N; i++){
+	for (int i = 0; i < N; i++) {
 
 		if (MD_IS_SET(tgroup_flag, i) && (kdims[i] != idims[i])) {
 
@@ -332,7 +332,7 @@ static nn_t network_resnet_create(const struct network_s* _config, unsigned int 
 	long ldims[N];
 	md_copy_dims(N, ldims, kdims);
 
-	for(unsigned int i = 0; i < N; i++)
+	for(int i = 0; i < N; i++)
 		if (MD_IS_SET(config->channel_flag, i) || MD_IS_SET(config->group_flag, i))
 			ldims[i] = odims[i];
 
@@ -340,7 +340,7 @@ static nn_t network_resnet_create(const struct network_s* _config, unsigned int 
 	tchannel_flag = config->channel_flag;
 	tgroup_flag = config->group_flag;
 
-	for (unsigned int i = 0; i < N; i++){
+	for (int i = 0; i < N; i++) {
 
 		if (MD_IS_SET(tgroup_flag, i) && (ldims[i] != odims[i])) {
 
@@ -448,15 +448,15 @@ struct network_varnet_s network_varnet_default = {
 };
 
 
-static nn_t network_varnet_create(const struct network_s* _config, unsigned int NO, const long odims[NO], unsigned int NI, const long idims[NI], enum NETWORK_STATUS /*status*/)
+static nn_t network_varnet_create(const struct network_s* _config, int NO, const long odims[NO], int NI, const long idims[NI], enum NETWORK_STATUS /*status*/)
 {
 	assert(NO == NI);
-	unsigned int N = NO;
+	int N = NO;
 
 	auto config = CAST_DOWN(network_varnet_s, _config);
 
 	assert(5 == N);
-	assert(md_check_equal_dims(N, idims, odims, ~0));
+	assert(md_check_equal_dims(N, idims, odims, ~0UL));
 
 	//Padding
 	long pad_up[5] = { 0, (config->Kx - 1), (config->Ky - 1), (config->Kz - 1), 0 };
@@ -532,7 +532,7 @@ struct network_s network_mnist_default = {
 	.debug = false,
 };
 
-static nn_t network_mnist_create(const struct network_s* /*_config*/, unsigned int NO, const long odims[NO], unsigned int NI, const long idims[NI], enum NETWORK_STATUS status)
+static nn_t network_mnist_create(const struct network_s* /*_config*/, int NO, const long odims[NO], int NI, const long idims[NI], enum NETWORK_STATUS status)
 {
 	assert(2 == NO);
 	assert(10 == odims[0]);

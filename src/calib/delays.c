@@ -44,7 +44,7 @@
 void radial_self_delays(int N, float shifts[N], const float phi[N], const long dims[DIMS], const complex float* in)
 {
 	int d = 2;
-	int flags = (1 << d);
+	unsigned long flags = (1UL << d);
 
 	assert(N == dims[d]);
 

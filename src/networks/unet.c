@@ -41,6 +41,7 @@
 #include "nn/init.h"
 
 #include "networks/cnn.h"
+
 #include "unet.h"
 
 
@@ -176,8 +177,8 @@ static nn_t unet_sort_names(nn_t network, struct network_unet_s* unet)
 	const char* names[unet->N_level][ARRAY_SIZE(prefixes)][ARRAY_SIZE(weights)];
 
 	for (int i = 0; i < unet->N_level; i++) {
-		for (unsigned int j = 0; j < ARRAY_SIZE(prefixes); j++) {
-			for (unsigned int k = 0; k < ARRAY_SIZE(weights); k++) {
+		for (int j = 0; j < (int)ARRAY_SIZE(prefixes); j++) {
+			for (int k = 0; k < (int)ARRAY_SIZE(weights); k++) {
 
 				names[i][j][k] = ptr_printf("level_%d%s_%s", i, prefixes[j], weights[k]);
 
@@ -187,7 +188,7 @@ static nn_t unet_sort_names(nn_t network, struct network_unet_s* unet)
 		}
 	}
 
-	int N = unet->N_level * ARRAY_SIZE(prefixes) * ARRAY_SIZE(weights);
+	int N = unet->N_level * (int)ARRAY_SIZE(prefixes) * (int)ARRAY_SIZE(weights);
 
 	network = nn_sort_inputs_by_list_F(network, N, &(names[0][0][0]));
 	network = nn_sort_outputs_by_list_F(network, N, &(names[0][0][0]));
@@ -403,9 +404,9 @@ static nn_t unet_append_conv_block(	nn_t network, struct network_unet_s* unet,
 }
 
 
-static nn_t unet_sample_fft_create(struct network_unet_s* unet, unsigned int N, const long dims[N], long down_dims[N], bool up, enum NETWORK_STATUS /*status*/)
+static nn_t unet_sample_fft_create(struct network_unet_s* unet, int N, const long dims[N], long down_dims[N], bool up, enum NETWORK_STATUS /*status*/)
 {
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		down_dims[i] = MD_IS_SET(unet->conv_flag, i) ? MAX(1, round(dims[i] / unet->reduce_factor)) : dims[i];
 
 	const struct linop_s* linop_result = linop_fftc_create(N, dims, unet->conv_flag);
@@ -811,10 +812,10 @@ static nn_t unet_level_create(struct network_unet_s* unet, unsigned int N, const
 	return result;
 }
 
-nn_t network_unet_create(const struct network_s* _unet, unsigned int NO, const long odims[NO], unsigned int NI, const long idims[NI], enum NETWORK_STATUS status)
+nn_t network_unet_create(const struct network_s* _unet, int NO, const long odims[NO], int NI, const long idims[NI], enum NETWORK_STATUS status)
 {
 	assert(NO == NI);
-	unsigned int N = NO;
+	int N = NO;
 
 	auto unet = CAST_DOWN(network_unet_s, _unet);
 

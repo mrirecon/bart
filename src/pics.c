@@ -176,7 +176,7 @@ static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long
 
 		for (int i = 0; i < map_dims[COIL_DIM]; i++) {
 
-			const struct linop_s* maps_op = maps2_create(coilim_dims, map_dims_slc, img_dims, maps + i *  map_strs[COIL_DIM] / CFL_SIZE);
+			const struct linop_s* maps_op = maps2_create(coilim_dims, map_dims_slc, img_dims, maps + i *  map_strs[COIL_DIM] / (long)CFL_SIZE);
 			lops[i] = linop_chain(maps_op, nufft_op);
 			linop_free(maps_op);
 		}
@@ -460,7 +460,7 @@ int main_pics(int argc, char* argv[argc])
 	if (!md_check_compat(DIMS, ~(MD_BIT(MAPS_DIM)|FFT_FLAGS), img_dims, map_dims))
 		error("Dimensions of image and sensitivities do not match!\n");
 
-	if ((NULL != traj_file) && (!md_check_compat(DIMS, ~0, ksp_dims, traj_dims)))
+	if ((NULL != traj_file) && (!md_check_compat(DIMS, ~0UL, ksp_dims, traj_dims)))
 		error("Dimensions of data and trajectory do not match!\n");
 
 	if ((NULL == traj_file) && (NULL != psf_ofile))

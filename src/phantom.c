@@ -109,7 +109,7 @@ int main_phantom(int argc, char* argv[argc])
 	num_init();
 
 	if (-1 != rinit)
-		num_rand_init(rinit);
+		num_rand_init((unsigned int)rinit);
 
 	if (-1 != N) {
 
