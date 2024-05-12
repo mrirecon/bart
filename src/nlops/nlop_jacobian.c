@@ -333,7 +333,7 @@ struct nlop_s* nlop_zrblock_diag_generic_create(nlop_data_t* data, int N,
 			der_funs[i][o] = zblock_diag_der;
 			adj_funs[i][o] = zblock_diag_adj;
 
-			assert(md_check_compat(N, ~0, odims[o], idims[i]));
+			assert(md_check_compat(N, ~0UL, odims[o], idims[i]));
 
 			long ddims[N];
 			md_singleton_dims(N, ddims);
@@ -401,7 +401,7 @@ struct nlop_s* nlop_zblock_diag_generic_create(nlop_data_t* data, int N,
 			der_funs[i][o] = zblock_diag_der;
 			adj_funs[i][o] = zblock_diag_adj;
 
-			assert(md_check_compat(N, ~0, odims[o], idims[i]));
+			assert(md_check_compat(N, ~0UL, odims[o], idims[i]));
 
 			long ddims[N];
 			md_singleton_dims(N, ddims);
@@ -569,7 +569,7 @@ struct nlop_s* nlop_rblock_diag_generic_create(nlop_data_t* data, int N,
 			der_funs[i][o] = rblock_diag_der;
 			adj_funs[i][o] = rblock_diag_adj;
 
-			assert(md_check_compat(N, ~0, rodims[o], ridims[i]));
+			assert(md_check_compat(N, ~0UL, rodims[o], ridims[i]));
 
 			long ddims[N];
 			md_singleton_dims(N, ddims);
@@ -605,8 +605,8 @@ static void zrdiag_fun(const nlop_data_t* _data, int N, int OO, const long odims
 	assert(1 == OO);
 	assert(1 == II);
 
-	assert(md_check_equal_dims(N, idims[0], ddims[0][0], ~0));
-	assert(md_check_equal_dims(N, odims[0], ddims[0][0], ~0));
+	assert(md_check_equal_dims(N, idims[0], ddims[0][0], ~0UL));
+	assert(md_check_equal_dims(N, odims[0], ddims[0][0], ~0UL));
 
 	assert(NULL == data->rdiag_fun);
 	assert(NULL == data->zdiag_fun);
@@ -664,8 +664,8 @@ static void zdiag_fun(const nlop_data_t* _data, int N, int OO, const long odims[
 	assert(1 == OO);
 	assert(1 == II);
 
-	assert(md_check_equal_dims(N, idims[0], ddims[0][0], ~0));
-	assert(md_check_equal_dims(N, odims[0], ddims[0][0], ~0));
+	assert(md_check_equal_dims(N, idims[0], ddims[0][0], ~0UL));
+	assert(md_check_equal_dims(N, odims[0], ddims[0][0], ~0UL));
 
 	assert(NULL == data->rdiag_fun);
 	assert(NULL == data->zrdiag_fun);

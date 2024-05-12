@@ -813,7 +813,7 @@ struct linop_s* linop_stack_cod(int N, struct linop_s* lops[N], int stack_dim)
 
 		assert(NI == linop_domain(lops[i])->N);
 		assert(NO == linop_codomain(lops[i])->N);
-		assert(md_check_equal_dims(NI, idims, linop_domain(lops[i])->dims, ~0));
+		assert(md_check_equal_dims(NI, idims, linop_domain(lops[i])->dims, ~0UL));
 		assert(md_check_equal_dims(NO, odims, linop_codomain(lops[i])->dims, ~MD_BIT(stack_dim)));
 
 		offset[i] = odims[stack_dim] * md_calc_size(stack_dim, odims);

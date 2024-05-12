@@ -73,7 +73,7 @@ void gaussian_rand_vec(long N, float* dst)
 	//This does not need to be scaled as md_gaussian_rand has (complex) variance 2!
 }
 
-void md_gaussian_rand(unsigned int D, const long dims[D], complex float* dst)
+void md_gaussian_rand(int D, const long dims[D], complex float* dst)
 {
 #ifdef  USE_CUDA
 	if (cuda_ondevice(dst)) {
@@ -90,7 +90,7 @@ void md_gaussian_rand(unsigned int D, const long dims[D], complex float* dst)
 		dst[i] = (complex float)gaussian_rand();
 }
 
-void md_uniform_rand(unsigned int D, const long dims[D], complex float* dst)
+void md_uniform_rand(int D, const long dims[D], complex float* dst)
 {
 #ifdef  USE_CUDA
 	if (cuda_ondevice(dst)) {
@@ -106,7 +106,7 @@ void md_uniform_rand(unsigned int D, const long dims[D], complex float* dst)
 		dst[i] = (complex float)uniform_rand();
 }
 
-void md_rand_one(unsigned int D, const long dims[D], complex float* dst, double p)
+void md_rand_one(int D, const long dims[D], complex float* dst, double p)
 {
 #ifdef  USE_CUDA
 	if (cuda_ondevice(dst)) {

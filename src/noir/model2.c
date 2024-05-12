@@ -274,7 +274,7 @@ struct noir2_s noir2_cart_create(int N,
 	struct noir2_s ret = noir2_init_create(N, pat_dims, bas_dims, msk_dims, mask, ksp_dims, cim_dims, img_dims, kco_dims, col_dims, NULL, conf);
 
 	assert(NULL == basis);
-	assert(md_check_equal_dims(N, ret.cim_dims, ret.ksp_dims, ~0));
+	assert(md_check_equal_dims(N, ret.cim_dims, ret.ksp_dims, ~0UL));
 
 	if (!use_compat_to_version("v0.9.00")) {
 
@@ -310,7 +310,7 @@ struct noir2_s noir2_cart_create(int N,
 		assert(!conf->noncart);
 
 		long max_dims[N];
-		md_max_dims(N, ~0, max_dims, ret.cim_dims, ret.ksp_dims);
+		md_max_dims(N, ~0UL, max_dims, ret.cim_dims, ret.ksp_dims);
 
 		assert(md_check_equal_dims(N, max_dims, ret.cim_dims, md_nontriv_dims(N, ret.cim_dims)));
 		assert(md_check_equal_dims(N, max_dims, ret.ksp_dims, md_nontriv_dims(N, ret.ksp_dims)));
@@ -369,7 +369,7 @@ struct noir2_s noir2_cart_create(int N,
 
 
 __attribute__((optimize("-fno-finite-math-only")))
-static void proj_add(unsigned int D, const long dims[D], const long ostrs[D],
+static void proj_add(int D, const long dims[D], const long ostrs[D],
 			complex float* optr, const long v1_strs[D], complex float* v1, const long v2_strs[D], complex float* v2)
 {
 	float v22 = md_zscalar_real2(D, dims, v2_strs, v2, v2_strs, v2); // since it is real anyway

@@ -45,7 +45,7 @@
  * Strang's reconditioner is simply the cropped psf in the image domain
  *
  */
-static struct multiplace_array_s* compute_precond(unsigned int N, const long* pre_dims, const long* pre_strs, const long* psf_dims, const long* psf_strs, const complex float* psf, const complex float* linphase)
+static struct multiplace_array_s* compute_precond(int N, const long* pre_dims, const long* pre_strs, const long* psf_dims, const long* psf_strs, const complex float* psf, const complex float* linphase)
 {
 	int ND = N + 1;
 	unsigned long flags = FFT_FLAGS;
@@ -80,7 +80,7 @@ struct nufft_precond_data {
 
 	INTERFACE(operator_data_t);
 
-	unsigned int N;
+	int N;
 	struct multiplace_array_s* pre; ///< Preconditioner
 
 	long* cim_dims; ///< Coil image dimension

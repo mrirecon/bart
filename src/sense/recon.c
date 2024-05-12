@@ -120,8 +120,8 @@ const struct operator_p_s* sense_recon_create(const struct sense_conf* conf,
 
 		assert(!conf->bpsense); // not compatible
 
-		unsigned int flags = 0;
-		for (unsigned int i = 0; i < DIMS; i++)
+		unsigned long flags = 0;
+		for (int i = 0; i < DIMS; i++)
 			if (pat_dims[i] > 1)
 				flags = MD_SET(flags, i);
 

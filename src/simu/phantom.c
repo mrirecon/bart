@@ -291,7 +291,7 @@ static complex float krn3d(void* _data, int s, const double mpos[3])
 	}
 }
 
-void calc_ellipsoid(unsigned int D, long dims[D], complex float* optr, bool d3, bool kspace,
+void calc_ellipsoid(int D, long dims[D], complex float* optr, bool d3, bool kspace,
 		long tdims[D], long tstrs[D], complex float* traj, float ax[3], long center[3],
 		float rot, struct pha_opts* popts)
 {
@@ -462,11 +462,11 @@ struct moving_ellipsis_s {
 	complex float fourier_coeff_pos[2][3];
 };
 
-static complex float fourier_series(float t, unsigned int N, const complex float coeff[static N])
+static complex float fourier_series(float t, int N, const complex float coeff[static N])
 {
 	complex float val = 0.;
 
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		val += coeff[i] * cexpf(2.i * M_PI * t * (float)i);
 
 	return val;
@@ -837,7 +837,7 @@ void calc_cfl_geom(const long dims[DIMS], complex float* out, bool kspace, const
 				pos[1] = c;
 				pos[2] = p;
 
-				long ind = md_calc_offset(DIMS, cstrs, pos) / CFL_SIZE;
+				long ind = md_calc_offset(DIMS, cstrs, pos) / (long)CFL_SIZE;
 
 				data[s][c][p] = x[0][ind];
 			}
@@ -857,10 +857,10 @@ void calc_cfl_geom(const long dims[DIMS], complex float* out, bool kspace, const
 		pos[0] = i;
 		pos[1] = 1;
 
-		long ind_cp = md_calc_offset(DIMS, mstrs, pos) / CFL_SIZE;
+		long ind_cp = md_calc_offset(DIMS, mstrs, pos) / (long)CFL_SIZE;
 
 		pos[1] = 2;
-		long ind_color = md_calc_offset(DIMS, mstrs, pos) / CFL_SIZE;
+		long ind_color = md_calc_offset(DIMS, mstrs, pos) / (long)CFL_SIZE;
 
 		int cp = (int) cabsf(x[1][ind_cp]);
 		int color = cabsf(x[1][ind_color]);
@@ -981,7 +981,7 @@ void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, 
 
 		if (random) {
 
-			unsigned int max_count = 10000;
+			int max_count = 10000;
 
 			// background circle position and radius
 			float sx_bg = .9;
@@ -1008,8 +1008,8 @@ void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, 
 
 				bool overlap = true;
 
-				unsigned int total_count = 0;
-				unsigned int count = 0;
+				int total_count = 0;
+				int count = 0;
 
 				while (overlap) {
 
@@ -1078,7 +1078,7 @@ void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, 
 		struct ellipsis_s tubes_bkgrd[N];
 		struct ellipsis_s tubes_frgrd[N - 1];
 
-		assert(dims[COEFF_DIM] == (unsigned int)ARRAY_SIZE(tubes_frgrd) + 1); // foreground + 1 background image!
+		assert(dims[COEFF_DIM] == ARRAY_SIZE(tubes_frgrd) + 1); // foreground + 1 background image!
 
 		separate_bckgrd(ARRAY_SIZE(tubes_bkgrd), tubes_bkgrd, ARRAY_SIZE(tubes_frgrd), tubes_frgrd, ARRAY_SIZE(phantom_tubes_N), phantom_tubes_N);
 
@@ -1086,7 +1086,7 @@ void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, 
 
 		long dims2[DIMS];
 		md_copy_dims(DIMS, dims2, dims);
-		dims2[COEFF_DIM] = ARRAY_SIZE(tubes_bkgrd);
+		dims2[COEFF_DIM] = (long)ARRAY_SIZE(tubes_bkgrd);
 
 		complex float* bkgrd = md_alloc(DIMS, dims2, CFL_SIZE);
 
@@ -1112,7 +1112,7 @@ void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, 
 
 		// Determine basis functions of the foreground
 
-		dims2[COEFF_DIM] = ARRAY_SIZE(tubes_frgrd); // remove background
+		dims2[COEFF_DIM] = (long)ARRAY_SIZE(tubes_frgrd); // remove background
 
 		complex float* frgrd = md_alloc(DIMS, dims2, CFL_SIZE);
 

@@ -257,7 +257,7 @@ int main_sqpics(int argc, char* argv[argc])
 	// Initialize default parameters
 
 	bool randshift = true;
-	unsigned int maxiter = 30;
+	int maxiter = 30;
 	float step = -1.;
 
 	// Start time count
@@ -275,7 +275,7 @@ int main_sqpics(int argc, char* argv[argc])
 	bool eigen = false;
 	float scaling = 0.;
 
-	unsigned int llr_blk = 8;
+	int llr_blk = 8;
 
 	const char* image_truth_file = NULL;
 	bool im_truth = false;
@@ -286,7 +286,7 @@ int main_sqpics(int argc, char* argv[argc])
 	bool hogwild = false;
 	bool fast = false;
 	float admm_rho = iter_admm_defaults.rho;
-	unsigned int admm_maxitercg = iter_admm_defaults.maxitercg;
+	int admm_maxitercg = iter_admm_defaults.maxitercg;
 
 	struct opt_reg_s ropts;
 	ropts.r = 0;
@@ -301,13 +301,13 @@ int main_sqpics(int argc, char* argv[argc])
 		{ 'R', NULL, true, OPT_SPECIAL, opt_reg, &ropts, "<T>:A:B:C", "generalized regularization options (-Rh for help)" },
 		//OPT_SET('c', &conf.rvc, "real-value constraint"),
 		OPT_FLOAT('s', &step, "step", "iteration stepsize"),
-		OPT_UINT('i', &maxiter, "iter", "max. number of iterations"),
+		OPT_PINT('i', &maxiter, "iter", "max. number of iterations"),
 		OPT_INFILE('t', &traj_file, "file", "k-space trajectory"),
 		OPT_CLEAR('n', &randshift, "disable random wavelet cycle spinning"),
 		OPT_SET('g', &bart_use_gpu, "use GPU"),
 		OPT_INFILE('p', &pat_file, "file", "pattern or weights"),
 		OPT_SELECT('I', enum algo_t, &ropts.algo, IST, "(select IST)"),
-		OPT_UINT('b', &llr_blk, "blk", "Lowrank block size"),
+		OPT_PINT('b', &llr_blk, "blk", "Lowrank block size"),
 		OPT_SET('e', &eigen, "Scale stepsize based on max. eigenvalue"),
 		OPT_SET('H', &hogwild, "(hogwild)"),
 		OPT_SET('F', &fast, "(fast)"),
@@ -315,7 +315,7 @@ int main_sqpics(int argc, char* argv[argc])
 		OPT_INFILE('W', &image_start_file, "<img>", "Warm start with <img>"),
 		OPT_INT('d', &debug_level, "level", "Debug level"),
 		OPT_FLOAT('u', &admm_rho, "rho", "ADMM rho"),
-		OPT_UINT('C', &admm_maxitercg, "iter", "ADMM max. CG iterations"),
+		OPT_PINT('C', &admm_maxitercg, "iter", "ADMM max. CG iterations"),
 		OPT_FLOAT('f', &restrict_fov, "rfov", "restrict FOV"),
 		OPT_SELECT('m', enum algo_t, &ropts.algo, ADMM, "Select ADMM"),
 		OPT_FLOAT('w', &scaling, "val", "scaling"),

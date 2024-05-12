@@ -105,9 +105,9 @@ void noir2_recon(const struct noir2_conf_s* conf, struct noir2_s* noir_ops,
 	long dat_dims[N];
 	md_copy_dims(N, dat_dims, linop_domain(noir_ops->lop_asym)->dims);
 
-	assert(md_check_equal_dims(N, img_dims, nlop_generic_domain(noir_ops->model, 0)->dims, ~0));
-	assert(md_check_equal_dims(N, kco_dims, nlop_generic_domain(noir_ops->model, 1)->dims, ~0));
-	assert(md_check_equal_dims(N, ksp_dims, linop_codomain(noir_ops->lop_asym)->dims, ~0));
+	assert(md_check_equal_dims(N, img_dims, nlop_generic_domain(noir_ops->model, 0)->dims, ~0UL));
+	assert(md_check_equal_dims(N, kco_dims, nlop_generic_domain(noir_ops->model, 1)->dims, ~0UL));
+	assert(md_check_equal_dims(N, ksp_dims, linop_codomain(noir_ops->lop_asym)->dims, ~0UL));
 
 	complex float* data = md_alloc_sameplace(N, dat_dims, CFL_SIZE, kspace);
 	linop_adjoint(noir_ops->lop_asym, N, dat_dims, data, N, ksp_dims, kspace);
@@ -160,7 +160,7 @@ void noir2_recon(const struct noir2_conf_s* conf, struct noir2_s* noir_ops,
 
 	struct iter3_irgnm_conf irgnm_conf = iter3_irgnm_defaults;
 
-	irgnm_conf.iter = conf->iter;
+	irgnm_conf.iter = (int)conf->iter;
 	irgnm_conf.alpha = conf->alpha;
 	irgnm_conf.alpha_min = conf->alpha_min;
 	irgnm_conf.redu = conf->redu;

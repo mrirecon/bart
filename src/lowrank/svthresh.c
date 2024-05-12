@@ -189,13 +189,14 @@ float nuclearnorm(long M, long N, const complex float* d) { // FIXME: destroys i
 }
 
 
-float maxsingular(long M, long N, const complex float* d) {	// FIXME: destroys input
+float maxsingular(long M, long N, const complex float* d)
+{	// FIXME: destroys input
 	long dimsU[2] = {M,N};
 	long dimsV[2] = {N,N};
   
 	complex float* U = md_alloc(2, dimsU, sizeof(complex float) );
 	complex float* VT = md_alloc(2, dimsV, sizeof(complex float) );
-	float* S = xmalloc( MIN(M,N) * sizeof(float) );
+	float* S = xmalloc( (size_t)(MIN(M, N) * (long)sizeof(float)) );
 
 	// SVD
 	lapack_svd_econ(M, N, (complex float (*) []) U, 

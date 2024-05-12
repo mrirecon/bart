@@ -179,7 +179,7 @@ static NESTED(void, icdf97_line_nosort, (long n, long str, void* ptr))
 
 
 
-void md_wavtrafo2(int D, const long dims[D], unsigned int flags, const long strs[D], void* ptr, md_trafo_fun_t fun, bool inv, bool nosort)
+void md_wavtrafo2(int D, const long dims[D], unsigned long flags, const long strs[D], void* ptr, md_trafo_fun_t fun, bool inv, bool nosort)
 {
 	if (0 == flags)
 		return;
@@ -223,7 +223,7 @@ void md_wavtrafo2(int D, const long dims[D], unsigned int flags, const long strs
 }
 
 
-void md_wavtrafo(int D, const long dims[D], unsigned int flags, void* ptr, size_t size, md_trafo_fun_t fun, bool inv, bool nosort)
+void md_wavtrafo(int D, const long dims[D], unsigned long flags, void* ptr, size_t size, md_trafo_fun_t fun, bool inv, bool nosort)
 {
 	long strs[D];
 	md_calc_strides(D, strs, dims, size);
@@ -231,7 +231,7 @@ void md_wavtrafo(int D, const long dims[D], unsigned int flags, void* ptr, size_
 }
 
 
-void md_wavtrafoz2(int D, const long dims[D], unsigned int flags, const long strs[D], complex float* x, md_trafo_fun_t fun, bool inv, bool nosort)
+void md_wavtrafoz2(int D, const long dims[D], unsigned long flags, const long strs[D], complex float* x, md_trafo_fun_t fun, bool inv, bool nosort)
 {
 	long dims2[D + 1];
 	dims2[0] = 2; // complex float
@@ -244,7 +244,7 @@ void md_wavtrafoz2(int D, const long dims[D], unsigned int flags, const long str
 	md_wavtrafo2(D + 1, dims2, flags << 1, strs2, (void*)x, fun, inv, nosort);
 }
 
-void md_wavtrafoz(int D, const long dims[D], unsigned int flags, complex float* ptr, md_trafo_fun_t fun, bool inv, bool nosort)
+void md_wavtrafoz(int D, const long dims[D], unsigned long flags, complex float* ptr, md_trafo_fun_t fun, bool inv, bool nosort)
 {
 	long strs[D];
 	md_calc_strides(D, strs, dims, sizeof(complex float));
@@ -252,35 +252,35 @@ void md_wavtrafoz(int D, const long dims[D], unsigned int flags, complex float* 
 }
 
 
-void md_cdf97z(int D, const long dims[D], unsigned int flags, complex float* data)
+void md_cdf97z(int D, const long dims[D], unsigned long flags, complex float* data)
 {
 	md_wavtrafoz(D, dims, flags, data, cdf97_line_nosort, false, true);
 }
 
-void md_icdf97z(int D, const long dims[D], unsigned int flags, complex float* data)
+void md_icdf97z(int D, const long dims[D], unsigned long flags, complex float* data)
 {
 	md_wavtrafoz(D, dims, flags, data, icdf97_line_nosort, true, true);
 }
 
-void md_cdf97z2(int D, const long dims[D], unsigned int flags, const long strs[D], complex float* data)
+void md_cdf97z2(int D, const long dims[D], unsigned long flags, const long strs[D], complex float* data)
 {
 	md_wavtrafoz2(D, dims, flags, strs, data, cdf97_line_nosort, false, true);
 }
 
-void md_icdf97z2(int D, const long dims[D], unsigned int flags, const long strs[D], complex float* data)
+void md_icdf97z2(int D, const long dims[D], unsigned long flags, const long strs[D], complex float* data)
 {
 	md_wavtrafoz2(D, dims, flags, strs, data, icdf97_line_nosort, true, true);
 }
 
 
 // FIXME: slow
-void md_resortz(int D, const long dims[D], unsigned int flags, complex float* data)
+void md_resortz(int D, const long dims[D], unsigned long flags, complex float* data)
 {
 	md_wavtrafoz(D, dims, flags, data, icdf97_line_nosort, true, true);
 	md_wavtrafoz(D, dims, flags, data, cdf97_line, false, false);
 }
 
-void md_iresortz(int D, const long dims[D], unsigned int flags, complex float* data)
+void md_iresortz(int D, const long dims[D], unsigned long flags, complex float* data)
 {
 	md_wavtrafoz(D, dims, flags, data, icdf97_line, true, false);
 	md_wavtrafoz(D, dims, flags, data, cdf97_line_nosort, false, true);

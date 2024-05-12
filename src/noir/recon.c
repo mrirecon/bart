@@ -149,7 +149,7 @@ void noir_recon(const struct noir_conf_s* conf, const long dims[DIMS], complex f
 
 	struct iter3_irgnm_conf irgnm_conf = iter3_irgnm_defaults;
 
-	irgnm_conf.iter = conf->iter;
+	irgnm_conf.iter = (int)conf->iter;
 	irgnm_conf.alpha = conf->alpha;
 	irgnm_conf.alpha_min = conf->alpha_min;
 	irgnm_conf.redu = conf->redu;

@@ -504,7 +504,7 @@ static void prox_ineq_del(const operator_data_t* _data)
 	xfree(CAST_DOWN(prox_ineq_data, _data));
 }
 
-static const struct operator_p_s* prox_ineq_create(unsigned int N, const long dims[N], const complex float* b, float a, bool positive)
+static const struct operator_p_s* prox_ineq_create(int N, const long dims[N], const complex float* b, float a, bool positive)
 {
 	PTR_ALLOC(struct prox_ineq_data, pdata);
 	SET_TYPEID(prox_ineq_data, pdata);

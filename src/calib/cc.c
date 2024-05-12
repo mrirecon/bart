@@ -51,7 +51,7 @@ void scc(const long out_dims[DIMS], complex float* out_data, const long caldims[
 	complex float tmp[channels][channels];
 
 
-	size_t csize = md_calc_size(3, caldims);
+	long csize = md_calc_size(3, caldims);
 	gram_matrix(channels, tmp, csize, (const complex float (*)[csize])cal_data);
 
 	float vals[channels];

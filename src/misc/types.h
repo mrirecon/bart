@@ -51,7 +51,7 @@ typedef const struct typeid_s { int size; const char* name; } TYPEID;
 #define DEF_TYPEID(T) TYPEID T ## _TYPEID = { .size = sizeof(struct T), .name = "" #T "" };
 #define SET_TYPEID(T, x) (TYPE_CHECK(struct T*, x)->INTERFACE.TYPEID = &TYPEID(T))
 
-#define SIZEOF(x) ((x)->TYPEID->size)
+#define SIZEOF(x) (size_t)((x)->TYPEID->size)
 
 // redefine auto - needs newer compilers
 #define auto __auto_type

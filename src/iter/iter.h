@@ -33,7 +33,7 @@ struct iter_conjgrad_conf {
 
 	INTERFACE(iter_conf);
 
-	unsigned int maxiter;
+	int maxiter;
 	float l2lambda;
 	float tol;
 
@@ -47,7 +47,7 @@ struct iter_landweber_conf {
 
 	INTERFACE(iter_conf);
 
-	unsigned int maxiter;
+	int maxiter;
 	float step;
 	float tol;
 };
@@ -57,7 +57,7 @@ struct iter_ist_conf {
 
 	INTERFACE(iter_conf);
 
-	unsigned int maxiter;
+	int maxiter;
 	float step;
 	float continuation;
 	_Bool hogwild;
@@ -70,7 +70,7 @@ struct iter_fista_conf {
 
 	INTERFACE(iter_conf);
 
-	unsigned int maxiter;
+	int maxiter;
 	float step;
 	float continuation;
 	_Bool hogwild;
@@ -88,7 +88,7 @@ struct iter_chambolle_pock_conf {
 
 	INTERFACE(iter_conf);
 
-	unsigned int maxiter;
+	int maxiter;
 	float tau;
 	float sigma;
 	float theta;
@@ -103,8 +103,8 @@ struct iter_admm_conf {
 
 	INTERFACE(iter_conf);
 
-	unsigned int maxiter;
-	unsigned int maxitercg;
+	int maxiter;
+	int maxitercg;
 	float rho;
 
 	_Bool do_warmstart;
@@ -133,14 +133,14 @@ struct iter_pocs_conf {
 
 	INTERFACE(iter_conf);
 
-	unsigned int maxiter;
+	int maxiter;
 };
 
 struct iter_niht_conf {
 
 	INTERFACE(iter_conf);
 
-	unsigned int maxiter;
+	int maxiter;
 	float tol;
 	_Bool do_warmstart;
 };

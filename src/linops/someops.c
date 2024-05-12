@@ -36,7 +36,7 @@ struct cdiag_s {
 
 	INTERFACE(linop_data_t);
 
-	unsigned int N;
+	int N;
 	const long* dims;
 	const long* strs;
 	const long* ddims;
@@ -101,7 +101,7 @@ static void cdiag_free(const linop_data_t* _data)
 	xfree(data);
 }
 
-static struct linop_s* linop_gdiag_create(unsigned int N, const long dims[N], unsigned int flags, const complex float* diag, bool rdiag)
+static struct linop_s* linop_gdiag_create(int N, const long dims[N], unsigned long flags, const complex float* diag, bool rdiag)
 {
 	PTR_ALLOC(struct cdiag_s, data);
 	SET_TYPEID(cdiag_s, data);
@@ -166,7 +166,7 @@ void linop_gdiag_set_diag(const struct linop_s* lop, int N, const long ddims[N],
 	auto data = CAST_DOWN(cdiag_s, _data);
 
 	assert(data->N == (unsigned int)N);
-	assert(md_check_equal_dims(N, ddims, data->ddims, ~0));
+	assert(md_check_equal_dims(N, ddims, data->ddims, ~0UL));
 
 	multiplace_free(data->diag);
 	multiplace_free(data->normal);
@@ -181,7 +181,7 @@ void linop_gdiag_set_diag_F(const struct linop_s* lop, int N, const long ddims[N
 	auto data = CAST_DOWN(cdiag_s, _data);
 
 	assert(data->N == (unsigned int)N);
-	assert(md_check_equal_dims(N, ddims, data->ddims, ~0));
+	assert(md_check_equal_dims(N, ddims, data->ddims, ~0UL));
 
 	multiplace_free(data->diag);
 	multiplace_free(data->normal);
@@ -196,7 +196,7 @@ void linop_gdiag_set_diag_ref(const struct linop_s* lop, int N, const long ddims
 	auto data = CAST_DOWN(cdiag_s, _data);
 
 	assert(data->N == (unsigned int)N);
-	assert(md_check_equal_dims(N, ddims, data->ddims, ~0));
+	assert(md_check_equal_dims(N, ddims, data->ddims, ~0UL));
 
 	multiplace_free(data->diag);
 	multiplace_free(data->normal);
@@ -209,7 +209,7 @@ struct scale_s {
 
 	INTERFACE(linop_data_t);
 
-	unsigned int N;
+	int N;
 	const long* dims;
 	const long* strs;
 	complex float scale;
@@ -324,7 +324,7 @@ struct zreal_s {
 
 	INTERFACE(linop_data_t);
 
-	unsigned int N;
+	int N;
 	const long* dims;
 };
 
@@ -493,7 +493,7 @@ struct padding_op_s {
 
 	INTERFACE(linop_data_t);
 
-	unsigned int N;
+	int N;
 	const long* strs_out;
 
 	const long* dims_for;
@@ -522,7 +522,7 @@ static void padding_forward(const linop_data_t* _data, complex float* dst, const
 {
 	auto data = CAST_DOWN(padding_op_s, _data);
 
-	unsigned int N = data->N;
+	int N = data->N;
 
 	assert(dst != src);
 
@@ -626,13 +626,13 @@ struct linop_s* linop_padding_create_onedim(int N, const long dims[N], enum PADD
 	long offset_in_after = 0;
 
 
-	offset_out_for = md_calc_offset(N, *strs_out, pos) / CFL_SIZE;
+	offset_out_for = md_calc_offset(N, *strs_out, pos) / (long)CFL_SIZE;
 
 	pos[pad_dim] += MAX(0, pad_for);
-	offset_out_mid = md_calc_offset(N, *strs_out, pos) / CFL_SIZE;
+	offset_out_mid = md_calc_offset(N, *strs_out, pos) / (long)CFL_SIZE;
 
 	pos[pad_dim] += (*dims_mid)[pad_dim];
-	offset_out_after = md_calc_offset(N, *strs_out, pos) / CFL_SIZE;
+	offset_out_after = md_calc_offset(N, *strs_out, pos) / (long)CFL_SIZE;
 
 	md_singleton_strides(N, pos); //pos = {0, 0, ...}
 
@@ -656,7 +656,7 @@ struct linop_s* linop_padding_create_onedim(int N, const long dims[N], enum PADD
 
 		pos[pad_dim] = pad_for - 1;
 
-		offset_in_for = md_calc_offset(N, strs_in , pos) / CFL_SIZE;
+		offset_in_for = md_calc_offset(N, strs_in , pos) / (long)CFL_SIZE;
 
 		md_calc_strides(N, *strs_for, dims, CFL_SIZE);
 		(*strs_for)[pad_dim] = -(*strs_for)[pad_dim];
@@ -665,7 +665,7 @@ struct linop_s* linop_padding_create_onedim(int N, const long dims[N], enum PADD
 		md_calc_strides(N, *strs_mid, dims, CFL_SIZE);
 
 		pos[pad_dim] = dims[pad_dim] - 1;
-		offset_in_after = md_calc_offset(N, strs_in , pos) / CFL_SIZE;
+		offset_in_after = md_calc_offset(N, strs_in , pos) / (long)CFL_SIZE;
 
 		md_calc_strides(N, *strs_after, dims, CFL_SIZE);
 		(*strs_after)[pad_dim] = -(*strs_after)[pad_dim];
@@ -679,7 +679,7 @@ struct linop_s* linop_padding_create_onedim(int N, const long dims[N], enum PADD
 
 		pos[pad_dim] = pad_for;
 
-		offset_in_for = md_calc_offset(N, strs_in , pos) / CFL_SIZE;
+		offset_in_for = md_calc_offset(N, strs_in , pos) / (long)CFL_SIZE;
 
 		md_calc_strides(N, *strs_for, dims, CFL_SIZE);
 		(*strs_for)[pad_dim] = -(*strs_for)[pad_dim];
@@ -688,7 +688,7 @@ struct linop_s* linop_padding_create_onedim(int N, const long dims[N], enum PADD
 		md_calc_strides(N, *strs_mid, dims, CFL_SIZE);
 
 		pos[pad_dim] = dims[pad_dim] - 2;
-		offset_in_after = md_calc_offset(N, strs_in , pos) / CFL_SIZE;
+		offset_in_after = md_calc_offset(N, strs_in , pos) / (long)CFL_SIZE;
 
 		md_calc_strides(N, *strs_after, dims, CFL_SIZE);
 		(*strs_after)[pad_dim] = -(*strs_after)[pad_dim];
@@ -702,14 +702,14 @@ struct linop_s* linop_padding_create_onedim(int N, const long dims[N], enum PADD
 
 		pos[pad_dim] = dims[pad_dim] - pad_for;
 
-		offset_in_for = md_calc_offset(N, strs_in , pos) / CFL_SIZE;
+		offset_in_for = md_calc_offset(N, strs_in , pos) / (long)CFL_SIZE;
 		md_calc_strides(N, *strs_for, dims, CFL_SIZE);
 
 		offset_in_mid = 0;
 		md_calc_strides(N, *strs_mid, dims, CFL_SIZE);
 
 		pos[pad_dim] = 0;
-		offset_in_after = md_calc_offset(N, strs_in , pos) / CFL_SIZE;
+		offset_in_after = md_calc_offset(N, strs_in , pos) / (long)CFL_SIZE;
 		md_calc_strides(N, *strs_after, dims, CFL_SIZE);
 
 		break;
@@ -1289,7 +1289,7 @@ struct operator_matrix_s {
 	const complex float* mat_gpu;
 	const complex float* mat_gram_gpu;
 #endif
-	unsigned int N;
+	int N;
 
 	const long* mat_dims;
 	const long* out_dims;
@@ -1389,9 +1389,9 @@ static void linop_matrix_del(const linop_data_t* _data)
 }
 
 
-static void shadow_dims(unsigned int N, long out[2 * N], const long in[N])
+static void shadow_dims(int N, long out[2 * N], const long in[N])
 {
-	for (unsigned int i = 0; i < N; i++) {
+	for (int i = 0; i < N; i++) {
 
 		out[2 * i + 0] = in[i];
 		out[2 * i + 1] = 1;
@@ -1409,7 +1409,7 @@ static void shadow_dims(unsigned int N, long out[2 * N], const long in[N])
  * 1 A A A/A - input
  * A A A A   - batch
  */
-static struct operator_matrix_s* linop_matrix_priv2(unsigned int N, const long out_dims[N], const long in_dims[N], const long matrix_dims[N], const complex float* matrix)
+static struct operator_matrix_s* linop_matrix_priv2(int N, const long out_dims[N], const long in_dims[N], const long matrix_dims[N], const complex float* matrix)
 {
 	// to get assertions and cost estimate
 
@@ -1542,7 +1542,7 @@ static struct operator_matrix_s* linop_matrix_priv2(unsigned int N, const long o
 }
 
 
-static struct operator_matrix_s* linop_matrix_priv(unsigned int N, const long out_dims[N], const long in_dims[N], const long matrix_dims[N], const complex float* matrix)
+static struct operator_matrix_s* linop_matrix_priv(int N, const long out_dims[N], const long in_dims[N], const long matrix_dims[N], const complex float* matrix)
 {
 	unsigned long out_flags = md_nontriv_dims(N, out_dims);
 	unsigned long in_flags = md_nontriv_dims(N, in_dims);
@@ -1625,14 +1625,14 @@ struct linop_s* linop_matrix_chain(const struct linop_s* a, const struct linop_s
 	assert(linop_codomain(a)->N == linop_domain(b)->N);
 	assert(md_check_compat(linop_codomain(a)->N, 0u, linop_codomain(a)->dims, linop_domain(b)->dims));
 
-	unsigned int D = linop_domain(a)->N;
+	int D = linop_domain(a)->N;
 
 	unsigned long outB_flags = md_nontriv_dims(D, linop_codomain(b)->dims);
 	unsigned long inB_flags = md_nontriv_dims(D, linop_domain(b)->dims);
 
 	unsigned long delB_flags = inB_flags & ~outB_flags;
 
-	unsigned int N = a_data->N;
+	int N = a_data->N;
 	assert(N == 2 * D);
 
 	long in_dims[N];
@@ -1956,9 +1956,9 @@ struct linop_cdf97_s {
 
 	INTERFACE(linop_data_t);
 
-	unsigned int N;
+	int N;
 	const long* dims;
-	unsigned int flags;
+	unsigned long flags;
 };
 
 static DEF_TYPEID(linop_cdf97_s);

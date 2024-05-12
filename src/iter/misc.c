@@ -24,7 +24,7 @@
 
 
 
-double iter_power(unsigned int maxiter,
+double iter_power(int maxiter,
 		const struct operator_s* normaleq_op,
 		long size, float* u)
 {

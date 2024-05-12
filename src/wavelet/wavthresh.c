@@ -34,11 +34,11 @@ struct wavelet_thresh_s {
 
 	INTERFACE(operator_data_t);
 
-	unsigned int N;
+	int N;
 	const long* dims;
 	const long* minsize;
-	unsigned int flags;
-	unsigned int jflags;
+	unsigned long flags;
+	unsigned long jflags;
 	float lambda;
 	bool randshift;
 	int rand_state;
@@ -69,12 +69,12 @@ static void wavelet_thresh_apply(const operator_data_t* _data, float mu, complex
 	const auto data = CAST_DOWN(wavelet_thresh_s, _data);
 
 	long shift[data->N];
-	for (unsigned int i = 0; i < data->N; i++)
+	for (int i = 0; i < data->N; i++)
 		shift[i] = 0;
 
 	if (data->randshift) {
 
-		for (unsigned int i = 0; i < data->N; i++) {
+		for (int i = 0; i < data->N; i++) {
 
 			if (MD_IS_SET(data->flags, i)) {
 
@@ -120,7 +120,7 @@ static void wavelet_thresh_del(const operator_data_t* _data)
  * @param lambda threshold parameter
  * @param randshift random shifting
  */
-const struct operator_p_s* prox_wavelet_thresh_create(unsigned int N, const long dims[N], unsigned int flags, unsigned int jflags,
+const struct operator_p_s* prox_wavelet_thresh_create(int N, const long dims[N], unsigned long flags, unsigned long jflags,
 				enum wtype wtype, const long minsize[N], float lambda, bool randshift)
 {
 	PTR_ALLOC(struct wavelet_thresh_s, data);

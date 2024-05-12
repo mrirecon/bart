@@ -300,7 +300,7 @@ int main_pics(int argc, char* argv[argc])
 		OPT_INT('O', &conf.rwiter, "rwiter", "(reweighting)"),
 		OPT_FLOAT('o', &conf.gamma, "gamma", "(reweighting)"),
 		OPT_FLOAT('u', &admm.rho, "rho", "ADMM rho"),
-		OPT_UINT('C', &admm.maxitercg, "iter", "ADMM max. CG iterations"),
+		OPT_PINT('C', &admm.maxitercg, "iter", "ADMM max. CG iterations"),
 		OPT_FLOAT('q', &conf.cclambda, "cclambda", "(cclambda)"),
 		OPT_FLOAT('f', &restrict_fov, "rfov", "restrict FOV"),
 		OPTL_SELECT('I', "ist", enum algo_t, &algo, ALGO_IST, "select IST"),

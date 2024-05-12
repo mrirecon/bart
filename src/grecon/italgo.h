@@ -7,7 +7,7 @@ struct admm_conf {
 	bool dynamic_tau;
 	bool relative_norm;
 	float rho;
-	unsigned int maxitercg;
+	int maxitercg;
 	bool fast;
 };
 

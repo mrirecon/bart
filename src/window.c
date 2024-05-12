@@ -27,13 +27,13 @@ static const char help_str[] = "Apply Hamming (Hann) window to <input> along dim
 
 int main_window(int argc, char* argv[argc])
 {
-	long flags = 0;
+	unsigned long flags = 0;
 	const char* in_file = NULL;
 	const char* out_file = NULL;
 
 	struct arg_s args[] = {
 
-		ARG_LONG(true, &flags, "flags"),
+		ARG_ULONG(true, &flags, "flags"),
 		ARG_INFILE(true, &in_file, "input"),
 		ARG_OUTFILE(true, &out_file, "output"),
 	};

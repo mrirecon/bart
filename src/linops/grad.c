@@ -24,7 +24,7 @@
 #define ffs __builtin_ffs
 #endif
 
-static void grad_dims(unsigned int D, long dims2[D], int d, unsigned int flags, const long dims[D])
+static void grad_dims(int D, long dims2[D], int d, unsigned long flags, const long dims[D])
 {
 	md_copy_dims(D, dims2, dims);
 
@@ -35,9 +35,9 @@ static void grad_dims(unsigned int D, long dims2[D], int d, unsigned int flags, 
 }
 
 
-static void grad_op(unsigned int D, const long dims[D], int d, unsigned int flags, complex float* out, const complex float* in)
+static void grad_op(int D, const long dims[D], int d, unsigned long flags, complex float* out, const complex float* in)
 {
-	unsigned int N = bitcount(flags);
+	int N = bitcount(flags);
 
 	assert(N == dims[d]);
 	assert(!MD_IS_SET(flags, d));
@@ -51,11 +51,11 @@ static void grad_op(unsigned int D, const long dims[D], int d, unsigned int flag
 	long strs1[D];
 	md_calc_strides(D, strs1, dims1, CFL_SIZE);
 
-	unsigned int flags2 = flags;
+	unsigned long flags2 = flags;
 
-	for (unsigned int i = 0; i < N; i++) {
+	for (int i = 0; i < N; i++) {
 
-		unsigned int lsb = ffs(flags2) - 1;
+		int lsb = ffs(flags2) - 1;
 		flags2 = MD_CLEAR(flags2, lsb);
 
 		md_zfdiff2(D, dims1, lsb, strs, (void*)out + i * strs[d], strs1, in);
@@ -65,9 +65,9 @@ static void grad_op(unsigned int D, const long dims[D], int d, unsigned int flag
 }
 
 
-static void grad_adjoint(unsigned int D, const long dims[D], int d, unsigned int flags, complex float* out, const complex float* in)
+static void grad_adjoint(int D, const long dims[D], int d, unsigned long flags, complex float* out, const complex float* in)
 {
-	unsigned int N = bitcount(flags);
+	int N = bitcount(flags);
 
 	assert(N == dims[d]);
 	assert(!MD_IS_SET(flags, d));
@@ -81,7 +81,7 @@ static void grad_adjoint(unsigned int D, const long dims[D], int d, unsigned int
 	long strs1[D];
 	md_calc_strides(D, strs1, dims1, CFL_SIZE);
 
-	unsigned int flags2 = flags;
+	unsigned long flags2 = flags;
 
 	complex float* tmp = md_alloc_sameplace(D, dims1, CFL_SIZE, out);
 
@@ -90,7 +90,7 @@ static void grad_adjoint(unsigned int D, const long dims[D], int d, unsigned int
 
 	for (unsigned int i = 0; i < N; i++) {
 
-		unsigned int lsb = ffs(flags2) - 1;
+		int lsb = ffs(flags2) - 1;
 		flags2 = MD_CLEAR(flags2, lsb);
 
 		md_zfdiff_backwards2(D, dims1, lsb, strs1, tmp, strs, (void*)in + i * strs[d]);

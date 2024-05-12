@@ -24,7 +24,7 @@ struct iter_dump_s;
 
 #ifndef MD_IS_SET
 #define MD_BIT(x) (1ul << (x))
-#define MD_IS_SET(x, y)	((unsigned long)(x) & MD_BIT(y))
+#define MD_IS_SET(x, y)	((x) & MD_BIT(y))
 #define MD_CLEAR(x, y) ((x) & ~MD_BIT(y))
 #define MD_SET(x, y)	((x) | MD_BIT(y))
 #endif
@@ -98,7 +98,7 @@ float conjgrad(int maxiter, float l2lambda, float epsilon,
 	float* x, const float* b,
 	struct iter_monitor_s* monitor);
 
-void conjgrad_batch(unsigned int maxiter, float l2lambda, float epsilon,
+void conjgrad_batch(int maxiter, float l2lambda, float epsilon,
 	long N, long Bi, long Bo,
 	const struct vec_iter_s* vops,
 	struct iter_op_s linop,

@@ -79,7 +79,7 @@ int main_nufft(int argc, char* argv[argc])
 		OPT_CLEAR('r', &conf.toeplitz, "turn-off Toeplitz embedding for inverse NUFFT"),
 		OPT_SET('c', &precond, "Preconditioning for inverse NUFFT"),
 		OPT_FLOAT('l', &lambda, "lambda", "l2 regularization"),
-		OPT_UINT('m', &cgconf.maxiter, "iter", "max. number of iterations (inverse only)"),
+		OPT_PINT('m', &cgconf.maxiter, "iter", "max. number of iterations (inverse only)"),
 		OPT_SET('P', &conf.periodic, "periodic k-space"),
 		OPT_SET('s', &dft, "DFT"),
 		OPT_SET('g', &bart_use_gpu, "GPU"),

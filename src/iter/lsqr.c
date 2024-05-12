@@ -79,7 +79,7 @@ const struct operator_p_s* lsqr2_create(const struct lsqr_conf* conf,
 				      const float* init,
 				      const struct linop_s* model_op,
 				      const struct operator_s* precond_op,
-			              unsigned int num_funs,
+			              int num_funs,
 				      const struct operator_p_s* prox_funs[num_funs],
 				      const struct linop_s* prox_linops[num_funs],
 				      struct iter_monitor_s* monitor)
@@ -162,10 +162,10 @@ const struct operator_p_s* lsqr2_create(const struct lsqr_conf* conf,
 /**
  * Perform iterative, multi-regularized least-squares reconstruction
  */
-void lsqr2(unsigned int N, const struct lsqr_conf* conf,
+void lsqr2(int N, const struct lsqr_conf* conf,
 	   italgo_fun2_t italgo, iter_conf* iconf,
 	   const struct linop_s* model_op,
-	   unsigned int num_funs,
+	   int num_funs,
 	   const struct operator_p_s* prox_funs[num_funs],
 	   const struct linop_s* prox_linops[num_funs],
 	   const long x_dims[static N], complex float* x,
@@ -187,7 +187,7 @@ void lsqr2(unsigned int N, const struct lsqr_conf* conf,
 /**
  * Perform iterative, regularized least-squares reconstruction.
  */
-void lsqr(unsigned int N,
+void lsqr(int N,
 	  const struct lsqr_conf* conf,
 	  italgo_fun_t italgo,
 	  iter_conf* iconf,
@@ -211,7 +211,7 @@ const struct operator_p_s* wlsqr2_create(const struct lsqr_conf* conf,
 					const struct linop_s* model_op,
 					const struct linop_s* weights,
 					const struct operator_s* precond_op,
-					unsigned int num_funs,
+					int num_funs,
 					const struct operator_p_s* prox_funs[num_funs],
 					const struct linop_s* prox_linops[num_funs],
 					struct iter_monitor_s* monitor)
@@ -234,10 +234,10 @@ const struct operator_p_s* wlsqr2_create(const struct lsqr_conf* conf,
 }
 
 
-void wlsqr2(unsigned int N, const struct lsqr_conf* conf,
+void wlsqr2(int N, const struct lsqr_conf* conf,
 	    italgo_fun2_t italgo, iter_conf* iconf,
 	    const struct linop_s* model_op,
-	    unsigned int num_funs,
+	    int num_funs,
 	    const struct operator_p_s* prox_funs[num_funs],
 	    const struct linop_s* prox_linops[num_funs],
 	    const long x_dims[static N], complex float* x,
@@ -273,7 +273,7 @@ void wlsqr2(unsigned int N, const struct lsqr_conf* conf,
 }
 
 //  A^H W W A - A^H W W y
-void wlsqr(unsigned int N, const struct lsqr_conf* conf,
+void wlsqr(int N, const struct lsqr_conf* conf,
 	   italgo_fun_t italgo, iter_conf* iconf,
 	   const struct linop_s* model_op,
 	   const struct operator_p_s* thresh_op,

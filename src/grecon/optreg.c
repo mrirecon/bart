@@ -275,8 +275,8 @@ void opt_precond_configure(struct opt_reg_s* ropts, const struct operator_p_s* p
 	assert(NUM_REGS > nr_penalties);
 
 	const struct iovec_s* iov = linop_codomain(model_op);
-	assert(md_check_equal_dims(N, iov->dims, ksp_dims, ~0));
-	assert(md_check_compat(N, ~0, pat_dims, ksp_dims));
+	assert(md_check_equal_dims(N, iov->dims, ksp_dims, ~0UL));
+	assert(md_check_compat(N, ~0UL, pat_dims, ksp_dims));
 
 	if (NULL == pattern) {
 

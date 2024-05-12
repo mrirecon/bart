@@ -181,7 +181,7 @@ const struct operator_p_s* prox_lineq_create(const struct linop_s* op, const com
 	PTR_ALLOC(struct prox_lineq_data, pdata);
 	SET_TYPEID(prox_lineq_data, pdata);
 
-	unsigned int N = linop_domain(op)->N;
+	int N = linop_domain(op)->N;
 	const long* dims = linop_domain(op)->dims;
 
 	pdata->op = op;
@@ -287,7 +287,7 @@ struct auto_norm_s {
 
 	enum norm norm;
 
-	long flags;
+	unsigned long flags;
 	const struct operator_p_s* op;
 };
 
@@ -299,7 +299,7 @@ static void auto_norm_apply(const operator_data_t* _data, float mu, complex floa
 
 	auto io = operator_p_domain(data->op);
 
-	unsigned int N = io->N;
+	int N = io->N;
 
 	long sdims[N];
 	md_select_dims(N, ~data->flags, sdims, io->dims);
@@ -314,7 +314,7 @@ static void auto_norm_apply(const operator_data_t* _data, float mu, complex floa
 	md_zdiv2(N, io->dims, io->strs, y, io->strs, x, sstrs, scale);
 #else
 	long pos[N];
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		pos[i] = 0;
 
 	long xdims[N];
@@ -347,7 +347,7 @@ static void auto_norm_apply(const operator_data_t* _data, float mu, complex floa
 #if 0
 	md_zmul2(N, io->dims, io->strs, y, io->strs, y, sstrs, scale);
 #else
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		pos[i] = 0;
 
 	do {
@@ -378,7 +378,7 @@ static void auto_norm_del(const operator_data_t* _data)
  * the normalization after application of the operator.
  *
  */
-const struct operator_p_s* op_p_auto_normalize(const struct operator_p_s* op, long flags, enum norm norm)
+const struct operator_p_s* op_p_auto_normalize(const struct operator_p_s* op, unsigned long flags, enum norm norm)
 {
 	PTR_ALLOC(struct auto_norm_s, data);
 	SET_TYPEID(auto_norm_s, data);

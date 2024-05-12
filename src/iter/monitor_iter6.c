@@ -364,7 +364,7 @@ static void monitor_iter6_nlop_fun(const monitor_iter6_value_data_t* data, unsig
 
 	assert(nlop_get_nr_in_args(d->nlop) == NI);
 
-	unsigned int NO = nlop_get_nr_out_args(d->nlop);
+	int NO = nlop_get_nr_out_args(d->nlop);
 
 	assert(N == d->INTERFACE.N_vals);
 
@@ -372,7 +372,7 @@ static void monitor_iter6_nlop_fun(const monitor_iter6_value_data_t* data, unsig
 
 	tmp_args[0] = md_alloc_sameplace(1, MD_DIMS(d->INTERFACE.N_vals), CFL_SIZE, args[0]);
 
-	for(unsigned int o = 1; o < NO; o++) {
+	for (int o = 1; o < NO; o++) {
 
 		auto iov = nlop_generic_codomain(d->nlop, o - 1);
 

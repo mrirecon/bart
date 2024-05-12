@@ -33,7 +33,7 @@ struct niht_transop {
 
 struct niht_conf_s {
 
-	unsigned int maxiter;
+	int maxiter;
 	float epsilon;
 	long N;
 	int trans;

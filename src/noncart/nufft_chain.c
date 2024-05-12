@@ -213,8 +213,8 @@ extern struct linop_s* nufft_create_chain(int N,
 	if (0 != basis) {
 
 		long ksp_max_dims[N];
-		md_max_dims(N, ~0, ksp_max_dims, ksp_dims, bas_dims);
-		assert(md_check_compat(N, ~0, ksp_dims, bas_dims));
+		md_max_dims(N, ~0UL, ksp_max_dims, ksp_dims, bas_dims);
+		assert(md_check_compat(N, ~0UL, ksp_dims, bas_dims));
 
 		ret = linop_chain_FF(ret, linop_interpolate_create(N, flags, ksp_max_dims, os_cim_dims, traj_dims, traj, conf));
 		ret = linop_chain_FF(ret, linop_fmac_create(N, ksp_max_dims, ~md_nontriv_dims(N, ksp_dims), 0, ~md_nontriv_dims(N, bas_dims), basis));
@@ -225,11 +225,15 @@ extern struct linop_s* nufft_create_chain(int N,
 
 	if (NULL != weights) {
 
-		assert(md_check_compat(N, ~0, ksp_dims, wgh_dims));
+		assert(md_check_compat(N, ~0UL, ksp_dims, wgh_dims));
+
 		complex float* tmp = md_alloc_sameplace(N, wgh_dims, CFL_SIZE, weights);
+
 		md_zsmul(N, ksp_dims, tmp, weights, powf(conf->os, bitcount(flags) / 2.));
 		ret = linop_chain_FF(ret, linop_cdiag_create(N, ksp_dims, md_nontriv_dims(N, wgh_dims), tmp));
+
 		md_free(tmp);
+
 	} else {
 
 		ret = linop_chain_FF(ret, linop_scale_create(N, ksp_dims, powf(conf->os, bitcount(flags) / 2.)));

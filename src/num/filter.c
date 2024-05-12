@@ -37,7 +37,7 @@ static int cmp_complex_float(const void* a, const void* b) // gives sign for 0. 
 
 static void sort_floats(int N, float ar[N])
 {
-	qsort((void*)ar, N, sizeof(float), cmp_float);
+	qsort((void*)ar, N, (ssize_t)sizeof(float), cmp_float);
 }
 
 static void sort_complex_floats(int N, complex float ar[N])
@@ -238,7 +238,7 @@ void md_moving_avgz(int D, int M, const long dim[D], complex float* optr, const 
 
 
 
-void centered_gradient(unsigned int N, const long dims[N], const complex float grad[N], complex float* out)
+void centered_gradient(int N, const long dims[N], const complex float grad[N], complex float* out)
 {
 	md_zgradient(N, dims, out, grad);
 
@@ -250,7 +250,7 @@ void centered_gradient(unsigned int N, const long dims[N], const complex float g
 
 	complex float cn = 0.;
 
-	for (unsigned int n = 0; n < N; n++)
+	for (int n = 0; n < N; n++)
 		 cn -= grad[n] * (float)dims[n] / 2.;
 
 	long strs[N];
@@ -259,11 +259,11 @@ void centered_gradient(unsigned int N, const long dims[N], const complex float g
 	md_zadd2(N, dims, strs, out, strs, out, strs0, &cn);
 }
 
-void linear_phase(unsigned int N, const long dims[N], const float pos[N], complex float* out)
+void linear_phase(int N, const long dims[N], const float pos[N], complex float* out)
 {
 	complex float grad[N];
 
-	for (unsigned int n = 0; n < N; n++)
+	for (int n = 0; n < N; n++)
 		grad[n] = 2. * M_PI * pos[n] / ((float)dims[n]);
 
 	centered_gradient(N, dims, grad, out);
@@ -271,7 +271,7 @@ void linear_phase(unsigned int N, const long dims[N], const float pos[N], comple
 }
 
 
-void klaplace_scaled(int N, const long dims[N], long flags, const float sc[N], complex float* out)
+void klaplace_scaled(int N, const long dims[N], unsigned long flags, const float sc[N], complex float* out)
 {
 	long flags2 = flags;
 
@@ -298,7 +298,7 @@ void klaplace_scaled(int N, const long dims[N], long flags, const float sc[N], c
 }
 
 
-void klaplace(int N, const long dims[N], long flags, complex float* out)
+void klaplace(int N, const long dims[N], unsigned long flags, complex float* out)
 {
 	float sc[N];
 	for (int j = 0; j < N; j++)
@@ -400,7 +400,7 @@ static void md_zwindow(const unsigned int D, const long dims[D], const long flag
 /*
  * Apply Hamming window to iptr along flags
  */
-void md_zhamming(const unsigned int D, const long dims[D], const long flags, complex float* optr, const complex float* iptr)
+void md_zhamming(int D, const long dims[D], const unsigned long flags, complex float* optr, const complex float* iptr)
 {
 	long strs[D];
 	md_calc_strides(D, strs, dims, CFL_SIZE);
@@ -412,7 +412,7 @@ void md_zhamming(const unsigned int D, const long dims[D], const long flags, com
 /*
  * Apply Hamming window to iptr along flags (with strides)
  */
-void md_zhamming2(const unsigned int D, const long dims[D], const long flags, const long ostrs[D], complex float* optr, const long istrs[D], const complex float* iptr)
+void md_zhamming2(int D, const long dims[D], const unsigned long flags, const long ostrs[D], complex float* optr, const long istrs[D], const complex float* iptr)
 {
 	return md_zwindow2(D, dims, flags, ostrs, optr, istrs, iptr, WINDOW_HAMMING);
 	
@@ -422,7 +422,7 @@ void md_zhamming2(const unsigned int D, const long dims[D], const long flags, co
 /*
  * Apply Hann window to iptr along flags
  */
-void md_zhann(const unsigned int D, const long dims[D], const long flags, complex float* optr, const complex float* iptr)
+void md_zhann(int D, const long dims[D], const unsigned long flags, complex float* optr, const complex float* iptr)
 {
 	long strs[D];
 	md_calc_strides(D, strs, dims, CFL_SIZE);
@@ -434,7 +434,7 @@ void md_zhann(const unsigned int D, const long dims[D], const long flags, comple
 /*
  * Apply Hann window to iptr along flags (with strides)
  */
-void md_zhann2(const unsigned int D, const long dims[D], const long flags, const long ostrs[D], complex float* optr, const long istrs[D], const complex float* iptr)
+void md_zhann2(int D, const long dims[D], const unsigned long flags, const long ostrs[D], complex float* optr, const long istrs[D], const complex float* iptr)
 {
 	return md_zwindow2(D, dims, flags, ostrs, optr, istrs, iptr, WINDOW_HANN);
 }

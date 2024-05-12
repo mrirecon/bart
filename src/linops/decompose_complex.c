@@ -22,16 +22,17 @@
 #endif
 
 struct decompose_complex_s {
+
 	INTERFACE(linop_data_t);
 
-	unsigned int N;
-	unsigned int D;
-	unsigned int K;
+	int N;
+	int D;
+	int K;
 
 	const long* idims;
 	const long* odims;
 
-  complex float* buffer;
+	complex float* buffer;
 };
 
 static DEF_TYPEID(decompose_complex_s);
@@ -67,14 +68,14 @@ static void decompose_complex_free(const linop_data_t* _data)
 	xfree(data);
 }
 
-struct linop_s* linop_decompose_complex_create(unsigned int N, unsigned int D, const long dims[N])
+struct linop_s* linop_decompose_complex_create(int N, int D, const long dims[N])
 {
 	assert(D < N);
-	for (long k = D; k < N; k++)
+	for (int k = D; k < N; k++)
 		assert(1 == dims[k]);
 
 	long K = 1;
-	for (long k = 0; k < D; k++)
+	for (int k = 0; k < D; k++)
 		K = K * dims[k];
 
 	PTR_ALLOC(struct decompose_complex_s, data);

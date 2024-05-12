@@ -49,7 +49,7 @@ void nudft_forward2(int N, unsigned long flags,
 			const long tdims[N], const long tstrs[N], const complex float* traj)
 {
 	assert(1 == kdims[0]);
-	assert(md_check_compat(N, ~0, kdims, tdims));
+	assert(md_check_compat(N, ~0UL, kdims, tdims));
 
 	long tmp_dims[N];
 	long tmp_strs[N];
@@ -92,7 +92,7 @@ void nudft_adjoint2(int N, unsigned long flags,
 			const long tdims[N], const long tstrs[N], const complex float* traj)
 {
 	assert(1 == kdims[0]);
-	assert(md_check_compat(N, ~0, kdims, tdims));
+	assert(md_check_compat(N, ~0UL, kdims, tdims));
 
 	long tmp_dims[N];
 	long tmp_strs[N];

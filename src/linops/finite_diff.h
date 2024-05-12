@@ -9,14 +9,14 @@
 #include "misc/cppwrap.h"
 
 
-extern void md_zfinitediff(unsigned int D, const long dim[__VLA(D)], unsigned int flags, _Bool snip, _Complex float* optr, const _Complex float* iptr);
-extern void md_zfinitediff2(unsigned int D, const long dim[__VLA(D)], unsigned int flags, _Bool snip, const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr);
+extern void md_zfinitediff(int D, const long dim[__VLA(D)], unsigned long flags, _Bool snip, _Complex float* optr, const _Complex float* iptr);
+extern void md_zfinitediff2(int D, const long dim[__VLA(D)], unsigned long flags, _Bool snip, const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr);
 
-extern void md_zcumsum(unsigned int D, const long dim[__VLA(D)], unsigned int flags, _Complex float* optr, const _Complex float* iptr);
-extern void md_zcumsum2(unsigned int D, const long dim[__VLA(D)], unsigned int flags, const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr);
+extern void md_zcumsum(int D, const long dim[__VLA(D)], unsigned long flags, _Complex float* optr, const _Complex float* iptr);
+extern void md_zcumsum2(int D, const long dim[__VLA(D)], unsigned long flags, const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr);
 
 struct linop_s;
-extern const struct linop_s* linop_finitediff_create(unsigned int D, const long dim[__VLA(D)], const unsigned long flags, _Bool snip);
+extern const struct linop_s* linop_finitediff_create(int D, const long dim[__VLA(D)], const unsigned long flags, _Bool snip);
 
 extern void fd_proj_noninc(const struct linop_s* o, _Complex float* optr, const _Complex float* iptr);
 
@@ -32,7 +32,7 @@ extern void fd_proj_noninc(const struct linop_s* o, _Complex float* optr, const 
  *
  * Joseph Y Cheng (jycheng@stanford.edu)
  */
-const struct linop_s* linop_zfinitediff_create(unsigned int D,
+const struct linop_s* linop_zfinitediff_create(int D,
 				    const long dims[__VLA(D)],
 				    const long diffdim,
 				    _Bool circular);

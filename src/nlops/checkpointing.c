@@ -538,14 +538,14 @@ static const struct nlop_s* nlop_checkpoint_loop_create(const struct nlop_s* nlo
 			nl_istrs2[i] = nl_istrs[i];
 
 			if (0 <= iloop_dim[i])
-				d->in_offsets[i] = nl_istrs[i][iloop_dim[i]] / CFL_SIZE;
+				d->in_offsets[i] = nl_istrs[i][iloop_dim[i]] / (long)CFL_SIZE;
 		}
 
 		for (int o = 0; o < OO; o++) {
 
 			md_calc_strides(max_DO, nl_ostrs[o], nl_odims[o], CFL_SIZE);
 			nl_ostrs2[o] = nl_ostrs[o];
-			d->out_offsets[o] = nl_istrs[o][oloop_dim[o]] / CFL_SIZE;
+			d->out_offsets[o] = nl_istrs[o][oloop_dim[o]] / (long)CFL_SIZE;
 		}
 
 		d->nlop = nlop_copy_wrapper_F(OO, nl_ostrs2, II, nl_istrs2, d->nlop);
@@ -554,19 +554,20 @@ static const struct nlop_s* nlop_checkpoint_loop_create(const struct nlop_s* nlo
 	nlop_der_fun_t der_funs[II][OO];
 	nlop_der_fun_t adj_funs[II][OO];
 
-	for(int i = 0; i < II; i++)
-		for(int o = 0; o < OO; o++) {
+	for (int i = 0; i < II; i++) {
+		for (int o = 0; o < OO; o++) {
 
 			der_funs[i][o] = checkpoint_der;
 			adj_funs[i][o] = checkpoint_adj;
 		}
+	}
 
 	const struct nlop_s* result = nlop_generic_managed_create(	OO, max_DO, nl_odims, II, max_DI, nl_idims, CAST_UP(PTR_PASS(d)),
 									checkpoint_fun, der_funs, adj_funs, NULL, NULL, checkpoint_del, checkpoint_clear_der, nlop_graph_checkpointing);
 
 
-	for(int i = 0; i < II; i++)
-		for(int o = 0; o < OO; o++)
+	for (int i = 0; i < II; i++)
+		for (int o = 0; o < OO; o++)
 			if (linop_is_null(nlop_get_derivative(nlop, o, i)))
 				result = nlop_no_der_F(result, o, i);
 

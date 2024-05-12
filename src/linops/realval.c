@@ -23,7 +23,7 @@ struct rvc_s {
 
 	INTERFACE(linop_data_t);
 
-	unsigned int N;
+	int N;
 	const long* dims;
 };
 
@@ -45,7 +45,7 @@ static void rvc_free(const linop_data_t* _data)
 	xfree(data);
 }
 
-struct linop_s* linop_realval_create(unsigned int N, const long dims[N])
+struct linop_s* linop_realval_create(int N, const long dims[N])
 {
 	PTR_ALLOC(struct rvc_s, data);
 	SET_TYPEID(rvc_s, data);

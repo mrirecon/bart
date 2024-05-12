@@ -127,7 +127,7 @@ static complex float* compute_linphases(int N, long lph_dims[N + 1], unsigned lo
 	float shifts[1 << T][T];
 
 	int s = 0;
-	for (int i = 0; i < (1 << T); i++) {
+	for (unsigned long i = 0; i < (1 << T); i++) {
 
 		bool skip = false;
 
@@ -247,7 +247,7 @@ static complex float* compute_square_basis(int N, long sqr_bas_dims[N], const lo
 	long bas_dimsT[N];
 
 	md_transpose_dims(N, 6, 7, bas_dimsT, bas_dims);
-	md_max_dims(N, ~0, sqr_bas_dims, bas_dims, bas_dimsT);
+	md_max_dims(N, ~0UL, sqr_bas_dims, bas_dims, bas_dimsT);
 	sqr_bas_dims[5] = ksp_dims[5];
 
 	complex float* sqr_basis = md_alloc_sameplace(N, sqr_bas_dims, CFL_SIZE, basis);
@@ -298,7 +298,7 @@ static complex float* compute_psf_internal(int N, const long img_dims[N], const 
 	md_select_dims(N, ~MD_BIT(0), ksp_dims, trj_dims);
 
 	if (NULL != weights)
-		md_max_dims(N, ~0, ksp_dims, ksp_dims, wgh_dims);
+		md_max_dims(N, ~0UL, ksp_dims, ksp_dims, wgh_dims);
 
 	long sqr_bas_dims[N];
 
@@ -431,7 +431,7 @@ static complex float* compute_psf2_decomposed(int N, const long psf_dims[N + 1],
 	md_select_dims(N, ~MD_BIT(0), ksp_dims, trj_dims);
 
 	if (NULL != weights)
-		md_max_dims(N, ~0, ksp_dims, ksp_dims, wgh_dims);
+		md_max_dims(N, ~0UL, ksp_dims, ksp_dims, wgh_dims);
 
 	long sqr_bas_dims[N];
 
@@ -1387,7 +1387,7 @@ static void nufft_apply_normal(const linop_data_t* _data, complex float* dst, co
 
 	assert(dst != src);
 
-	int ncycles = data->lph_dims[data->N];
+	unsigned int ncycles = (unsigned int)data->lph_dims[data->N];
 
 	if (data->conf.pcycle)
 		data->cycle = (data->cycle + 1) % ncycles;	// FIXME:
@@ -1746,7 +1746,7 @@ void nufft_update_psf2(const struct linop_s* nufft, int ND, const long psf_dims[
 
 	auto data = CAST_DOWN(nufft_data, _data);
 
-	assert(md_check_equal_dims(ND, data->psf_dims, psf_dims, ~0));
+	assert(md_check_equal_dims(ND, data->psf_dims, psf_dims, ~0UL));
 
 	multiplace_free(data->psf);
 

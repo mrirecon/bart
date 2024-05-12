@@ -266,21 +266,21 @@ complex double krectangle(const double center[2], const double axis[2], double a
 }
 
 
-complex double phantom(unsigned int N, const struct ellipsis_s arr[N], const double pos[2], bool ksp)
+complex double phantom(int N, const struct ellipsis_s arr[N], const double pos[2], bool ksp)
 {
 	complex double res = 0.;
 
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		res += arr[i].intensity * (ksp ? kellipsis : xellipsis)(arr[i].center, arr[i].axis, arr[i].angle, pos);
 
 	return res;
 }
 
-complex double phantomX(unsigned int N, const struct ellipsis_s arr[N], const double pos[2], bool ksp)
+complex double phantomX(int N, const struct ellipsis_s arr[N], const double pos[2], bool ksp)
 {
 	complex double res = 0.;
 
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		res += arr[i].intensity * (ksp ? krectangle : xrectangle)(arr[i].center, arr[i].axis, arr[i].angle, pos);
 
 	return res;
@@ -336,11 +336,11 @@ complex double kellipsis3d(const double center[3], const double axis[3], double 
 }
 
 
-complex double phantom3d(unsigned int N, const struct ellipsis3d_s arr[N], const double pos[3], bool ksp)
+complex double phantom3d(int N, const struct ellipsis3d_s arr[N], const double pos[3], bool ksp)
 {
 	complex double res = 0.;
 
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		res += arr[i].intensity * (ksp ? kellipsis3d : xellipsis3d)(arr[i].center, arr[i].axis, arr[i].angle, pos);
 
 	return res;

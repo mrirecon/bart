@@ -22,7 +22,7 @@
 const struct coil coil_defaults = { .size = 0.2, .dist = 1.5, };
 
 
-complex float coil(const struct coil* data, float x[3], unsigned int N, unsigned int i)
+complex float coil(const struct coil* data, float x[3], int N, int i)
 {
 	assert(i < N);
 

@@ -30,7 +30,7 @@ typedef struct iter6_conf_s {
 	unsigned long dump_flag;
 
 	enum BATCH_GEN_TYPE batchgen_type;
-	int batch_seed;
+	unsigned int batch_seed;
 
 	float min_learning_rate;
 	int epochs_warmup;

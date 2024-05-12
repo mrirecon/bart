@@ -60,9 +60,9 @@ static void robust_consistency(float lambda, const long dims[5], complex float* 
 {
 	assert(1 == dims[4]);
 
-	size_t size = md_calc_size(5, dims);
+	long size = md_calc_size(5, dims);
 
-	for (unsigned int i = 0; i < size; i++)
+	for (long i = 0; i < size; i++)
 		if (1. == pattern[i % (size / dims[3])])
 			dst[i] = kspace[i] + cthresh(lambda, dst[i] - kspace[i]);
 }
@@ -71,7 +71,7 @@ static void robust_consistency(float lambda, const long dims[5], complex float* 
 #define RAVINE
 #endif
 #ifdef RAVINE
-static void ravine(unsigned int N, const long dims[N], float* ftp, complex float* xa, complex float* xb)
+static void ravine(int N, const long dims[N], float* ftp, complex float* xa, complex float* xb)
 {
         float ft = *ftp;
         float tfo = ft;
@@ -144,7 +144,7 @@ static void lowrank(float alpha, int D, const long dims[D], complex float* matri
 		complex float* VT = md_alloc(2, dimsV, CFL_SIZE);
 		//	complex float* U = create_cfl("U", 2, dimsU);
 		//	complex float* VT = create_cfl("VT", 2, dimsV);
-		float* S = xmalloc(MIN(N, M) * sizeof(float));
+		float* S = xmalloc((size_t)(MIN(N, M) * (long)sizeof(float)));
 
 		debug_printf(DP_INFO, "SVD..\n");
 

@@ -351,7 +351,7 @@ static const struct nlop_s* noir_normal_inversion_create(struct noir2_s* model, 
 	conf.iter_conf = &cgconf;
 
 	auto normal_op = noir_get_normal(model);
-	auto result = norm_inv_lambda_create(&conf, normal_op, ~0);
+	auto result = norm_inv_lambda_create(&conf, normal_op, ~0UL);
 	nlop_free(normal_op);
 	return result;
 }
@@ -1017,7 +1017,7 @@ static const struct nlop_s* noir_sense_normal_inversion_create(struct noir2_s* m
 	conf.iter_conf = &cgconf;
 
 	auto normal_op = noir_sense_normal(model);
-	auto result = norm_inv_lambda_create(&conf, normal_op, ~0);
+	auto result = norm_inv_lambda_create(&conf, normal_op, ~0UL);
 	nlop_free(normal_op);
 	return result;
 }

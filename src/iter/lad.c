@@ -43,10 +43,10 @@ const struct lad_conf lad_defaults = { 5, 0.1, ~0u, &lsqr_defaults };
 /**
  * Perform iterative, regularized least-absolute derivation reconstruction.
  */
-void lad2(	unsigned int N, const struct lad_conf* conf,
+void lad2(	int N, const struct lad_conf* conf,
 		italgo_fun2_t italgo, iter_conf* iconf,
 		const struct linop_s* model_op,
-		unsigned int num_funs,
+		int num_funs,
 		const struct operator_p_s* prox_funs[num_funs],
 		const struct linop_s* prox_linops[num_funs],
 		const long x_dims[static N], complex float* x,
@@ -89,7 +89,7 @@ void lad2(	unsigned int N, const struct lad_conf* conf,
 /**
  * Perform iterative, regularized least-absolute derivation reconstruction.
  */
-void lad(	unsigned int N, const struct lad_conf* conf,
+void lad(	int N, const struct lad_conf* conf,
 		italgo_fun_t italgo, iter_conf* iconf,
 		const struct linop_s* model_op,
 		const struct operator_p_s* prox_funs,
@@ -110,7 +110,7 @@ struct lad_s {
 	italgo_fun2_t italgo;
 	iter_conf* iconf;
 	const struct linop_s* model_op;
-	unsigned int num_funs;
+	int num_funs;
 	const struct operator_p_s** prox_funs;
 	const struct linop_s** prox_linops;
 };
@@ -138,7 +138,7 @@ static void lad_del(const operator_data_t* _data)
 
 	if (NULL != data->prox_funs) {
 
-		for (unsigned int i = 0; i < data->num_funs; i++)
+		for (int i = 0; i < data->num_funs; i++)
 			operator_p_free(data->prox_funs[i]);
 
 		xfree(data->prox_funs);
@@ -146,7 +146,7 @@ static void lad_del(const operator_data_t* _data)
 
 	if (NULL != data->prox_linops) {
 
-		for (unsigned int i = 0; i < data->num_funs; i++)
+		for (int i = 0; i < data->num_funs; i++)
 			linop_free(data->prox_linops[i]);
 
 		xfree(data->prox_linops);
@@ -159,7 +159,7 @@ const struct operator_p_s* lad2_create(const struct lad_conf* conf,
 		italgo_fun2_t italgo, iter_conf* iconf,
 		const float* init,
 		const struct linop_s* model_op,
-		unsigned int num_funs,
+		int num_funs,
 		const struct operator_p_s* prox_funs[num_funs],
 		const struct linop_s* prox_linops[num_funs])
 {

@@ -215,9 +215,9 @@ struct sense_model_s* sense_cart_create(int N, const long ksp_dims[N], const lon
 	long max_dims[N];
 	md_singleton_dims(N, max_dims);
 
-	md_max_dims(N, ~0, max_dims, ksp_dims2, max_dims);
-	md_max_dims(N, ~0, max_dims, img_dims, max_dims);
-	md_max_dims(N, ~0, max_dims, col_dims, max_dims);
+	md_max_dims(N, ~0UL, max_dims, ksp_dims2, max_dims);
+	md_max_dims(N, ~0UL, max_dims, img_dims, max_dims);
+	md_max_dims(N, ~0UL, max_dims, col_dims, max_dims);
 
 
 	md_select_dims(N, FFT_FLAGS, result->fftmod_precomp_ksp_dims, result->ksp_dims);
@@ -235,7 +235,7 @@ struct sense_model_s* sense_cart_create(int N, const long ksp_dims[N], const lon
 
 	md_select_dims(N, md_nontriv_dims(N, result->fftmod_precomp_ksp_dims) | md_nontriv_dims(N, result->pat_dims),result->pat_dims_merged, result->ksp_dims);
 
-	if (!md_check_equal_dims(N, ksp_dims, ksp_dims2, ~0)) {
+	if (!md_check_equal_dims(N, ksp_dims, ksp_dims2, ~0UL)) {
 
 		md_select_dims(N, FFT_FLAGS, result->fftmod_precomp_img_dims, result->img_dims);
 
@@ -263,7 +263,7 @@ struct sense_model_s* sense_cart_create(int N, const long ksp_dims[N], const lon
 
 	result->sense = linop_clone(result->coils);
 
-	if (!md_check_equal_dims(N, ksp_dims, ksp_dims2, ~0))
+	if (!md_check_equal_dims(N, ksp_dims, ksp_dims2, ~0UL))
 		result->sense = linop_chain_FF(result->sense, linop_resize_center_create(N, ksp_dims, ksp_dims2));
 
 	result->sense = linop_chain_FF(result->sense, linop_fft_create(N, ksp_dims, FFT_FLAGS));
@@ -292,9 +292,9 @@ struct sense_model_s* sense_noncart_create(int N,
 	long max_dims[N];
 	md_singleton_dims(N, max_dims);
 
-	md_max_dims(N, ~0, max_dims, cim_dims, max_dims);
-	md_max_dims(N, ~0, max_dims, img_dims, max_dims);
-	md_max_dims(N, ~0, max_dims, col_dims, max_dims);
+	md_max_dims(N, ~0UL, max_dims, cim_dims, max_dims);
+	md_max_dims(N, ~0UL, max_dims, img_dims, max_dims);
+	md_max_dims(N, ~0UL, max_dims, col_dims, max_dims);
 
 	result->coils = linop_fmac_create(N, max_dims, ~(md_nontriv_dims(N, cim_dims)), ~(md_nontriv_dims(N, img_dims)), ~(md_nontriv_dims(N, col_dims)), NULL);
 
@@ -861,7 +861,7 @@ static const struct nlop_s* nlop_mri_normal_slice_create(int N, const long max_d
 	else
 		model = sense_cart_normal_create(N, max_dims, &conf2);
 
-	assert(md_check_equal_dims(ND, psf_dims, model->psf_dims, ~0));
+	assert(md_check_equal_dims(ND, psf_dims, model->psf_dims, ~0UL));
 
 	auto result = nlop_sense_model_set_data_create(N, model->img_dims, model, false);
 

@@ -253,7 +253,7 @@ void postprocess2(bool normalize,
 	md_resize_center(N, n_img_dims, n_img, img_dims, img, CFL_SIZE);
 
 	long dims[N];
-	md_max_dims(N, ~0, dims, n_sens_dims, n_img_dims);
+	md_max_dims(N, ~0UL, dims, n_sens_dims, n_img_dims);
 
 	postprocess(dims, normalize,
 		    MD_STRIDES(N, n_sens_dims, CFL_SIZE), n_sens,

@@ -87,9 +87,9 @@ static void robust_consistency(float lambda, const long dims[DIMS], complex floa
 {
 	assert(1 == dims[MAPS_DIM]);
 
-	size_t size = md_calc_size(DIMS, dims);
+	long size = md_calc_size(DIMS, dims);
 
-	for (unsigned int i = 0; i < size; i++)
+	for (int i = 0; i < size; i++)
 		if (1. == pattern[i % (size / dims[COIL_DIM])])
 			dst[i] = kspace[i] + cthresh(lambda, dst[i] - kspace[i]);
 }

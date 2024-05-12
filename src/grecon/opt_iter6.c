@@ -92,7 +92,7 @@ struct opt_s iter6_opts[] = {
 	OPTL_SELECT_DEF(0, "batchgen-shuffle-batches", enum BATCH_GEN_TYPE, &(iter6_conf_opts.batchgen_type), BATCH_GEN_SHUFFLE_BATCHES, BATCH_GEN_SAME, "use the same batches in random order for each epoch"),
 	OPTL_SELECT_DEF(0, "batchgen-shuffle-data", enum BATCH_GEN_TYPE, &(iter6_conf_opts.batchgen_type), BATCH_GEN_SHUFFLE_DATA, BATCH_GEN_SAME, "shuffle data to form batches"),
 	OPTL_SELECT_DEF(0, "batchgen-draw-data", enum BATCH_GEN_TYPE, &(iter6_conf_opts.batchgen_type), BATCH_GEN_RANDOM_DATA, BATCH_GEN_SAME, "randomly draw data to form batches"),
-	OPTL_INT(0, "batchgen-seed", &(iter6_conf_opts.batch_seed), "d", "seed for batch-generator (default: 123)"),
+	OPTL_UINT(0, "batchgen-seed", &(iter6_conf_opts.batch_seed), "d", "seed for batch-generator (default: 123)"),
 	OPTL_SET(0, "average-loss", &(iter6_conf_opts.monitor_averaged_objective), "monitor loss averaged over epoch"),
 };
 

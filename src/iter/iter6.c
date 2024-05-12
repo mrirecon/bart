@@ -39,7 +39,7 @@
 #define NLOP2IT_ADJ_ARR(nlop) ({											\
 	long NO = nlop_get_nr_out_args(nlop);										\
 	long NI = nlop_get_nr_in_args(nlop);										\
-	const struct operator_s** adj_ops = (const struct operator_s**)alloca(sizeof(struct operator_s*) * NI * NO);	\
+	const struct operator_s** adj_ops = (const struct operator_s**)alloca((size_t)((long)sizeof(struct operator_s*) * NI * NO));	\
 	for (int o = 0; o < NO; o++)											\
 		for (int i = 0; i < NI; i++)										\
 			adj_ops[i * NO + o] = nlop_get_derivative(nlop, o, i)->adjoint;					\

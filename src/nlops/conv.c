@@ -236,14 +236,14 @@ static struct nlop_s* nlop_convcorr_geom_valid_create(long N, unsigned long flag
 							odims, MD_STRIDES(N, odims, CFL_SIZE),
 							kdims, MD_STRIDES(N, kdims, CFL_SIZE),
 							idims, MD_STRIDES(N, idims, CFL_SIZE),
-							dilations, strides, conv, false) / CFL_SIZE;
+							dilations, strides, conv, false) / (long)CFL_SIZE;
 	else
 		data->shift = calc_convcorr_geom_strs_dil(N, flags,
 							*nmdims, *nostrs, *nistrs2, *nistrs1,
 							odims, MD_STRIDES(N, odims, CFL_SIZE),
 							kdims, MD_STRIDES(N, kdims, CFL_SIZE),
 							idims, MD_STRIDES(N, idims, CFL_SIZE),
-							dilations, strides, conv, false) / CFL_SIZE;
+							dilations, strides, conv, false) / (long)CFL_SIZE;
 
 	data->odims = *PTR_PASS(nodims);
 	data->idims1 = *PTR_PASS(nidims1);

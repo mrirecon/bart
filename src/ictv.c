@@ -61,7 +61,7 @@ int main_ictv(int argc, char* argv[argc])
 
 	const struct opt_s opts[] = {
 	
-		OPT_UINT('i', &conf.maxiter, "i", "max. iterations"),
+		OPT_PINT('i', &conf.maxiter, "i", "max. iterations"),
 		OPT_FLOAT('u', &conf.rho, "rho", "rho in ADMM"),
 	};
 

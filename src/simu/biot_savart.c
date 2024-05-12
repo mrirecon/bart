@@ -18,13 +18,13 @@
 
 
 typedef float vec3_t[3];
-void biot_savart(vec3_t b, const vec3_t r, unsigned int N, const vec3_t curve[static N])
+void biot_savart(vec3_t b, const vec3_t r, int N, const vec3_t curve[static N])
 {
 	double c = 1. / (4. * M_PI); /* mu_o */
 
 	vec3_clear(b);
 
-	for (unsigned int i = 0; i < N; i++) {
+	for (int i = 0; i < N; i++) {
 
 		vec3_t l;
 		vec3_sub(l, curve[(i + 1) % N], curve[i]);
@@ -44,7 +44,7 @@ void biot_savart(vec3_t b, const vec3_t r, unsigned int N, const vec3_t curve[st
 }
 
 
-void vec3_ring(unsigned int N, vec3_t ring[N], const vec3_t c, const vec3_t n, float r)
+void vec3_ring(int N, vec3_t ring[N], const vec3_t c, const vec3_t n, float r)
 {
 	assert(1.E-7 > fabsf(1.f - vec3_norm(n)));
 
@@ -54,7 +54,7 @@ void vec3_ring(unsigned int N, vec3_t ring[N], const vec3_t c, const vec3_t n, f
 
 	int d = 0;
 
-	for (unsigned int i = 0; i < 3; i++)
+	for (int i = 0; i < 3; i++)
 		if (fabsf(n[d]) < fabsf(n[i]))
 			d = i;
 
@@ -72,7 +72,7 @@ void vec3_ring(unsigned int N, vec3_t ring[N], const vec3_t c, const vec3_t n, f
 	assert(1.E-6 > fabsf(vec3_sdot(b1, b2)));
 
 
-	for (unsigned int i = 0; i < N; i++) {
+	for (int i = 0; i < N; i++) {
 
 		float x = sinf(2. * M_PI * i / N);
 		float y = cosf(2. * M_PI * i / N);

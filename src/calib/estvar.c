@@ -54,20 +54,20 @@ static void noise_calreg(long T, complex float* ncalreg)
  */
 static char* file_name(const char* toolbox, const long kernel_dims[3], const long calreg_dims[4])
 {
-	int size = 0;
+	ssize_t size = 0;
 
-	size = snprintf("", size, "%s/save/nsv/KERNEL_%ldx%ldx%ld_CAL_REG%ldx%ldx%ldx%ld.dat",
+	size = snprintf("", (size_t)size, "%s/save/nsv/KERNEL_%ldx%ldx%ld_CAL_REG%ldx%ldx%ldx%ld.dat",
 		toolbox, kernel_dims[0], kernel_dims[1], kernel_dims[2],
 		calreg_dims[0], calreg_dims[1], calreg_dims[2], calreg_dims[3]);
 
 	assert(size > 0);
     
-	char* name = calloc(size, sizeof(char));
+	char* name = calloc((size_t)size, sizeof(char));
 
 	if (NULL == name)
 		error("Memory out\n");
 
-	size = snprintf(name, size, "%s/save/nsv/KERNEL_%ldx%ldx%ld_CAL_REG%ldx%ldx%ldx%ld.dat",
+	size = snprintf(name, (size_t)size, "%s/save/nsv/KERNEL_%ldx%ldx%ld_CAL_REG%ldx%ldx%ldx%ld.dat",
 		toolbox, kernel_dims[0], kernel_dims[1], kernel_dims[2],
 		calreg_dims[0], calreg_dims[1], calreg_dims[2], calreg_dims[3]);
 
@@ -108,7 +108,7 @@ static int load_noise_sv(const char* toolbox, const long kernel_dims[3], const l
 	if (!fp)
 		goto out1;
 
-	c = fread(E, sizeof(float), L, fp);
+	c = fread(E, sizeof(float), (size_t)L, fp);
 
 	if (c != L)
 		goto out2;
@@ -143,7 +143,7 @@ static void save_noise_sv(const char* toolbox, const long kernel_dims[3], const 
 	if (!fp)
 		goto out;
 
-	fwrite(E, sizeof(float), L, fp);
+	fwrite(E, sizeof(float), (size_t)L, fp);
 
 	fclose(fp);
 out:
@@ -180,7 +180,7 @@ static void nsv(const char* toolbox, const long kernel_dims[3], const long calre
 
 	float tmpE[N];
 
-	long T = md_calc_size(4, calreg_dims) * sizeof(complex float);
+	long T = md_calc_size(4, calreg_dims) * (long)sizeof(complex float);
 
 	long ncalreg_dims[] = { T };
 

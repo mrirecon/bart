@@ -129,8 +129,8 @@ void iter4_irgnm(const iter3_conf* _conf,
 
 	assert(NULL == pinv); // better we allow this only with irgnm2
 
-	assert(M * sizeof(float) == md_calc_size(cd->N, cd->dims) * cd->size);
-	assert(N * sizeof(float) == md_calc_size(dm->N, dm->dims) * dm->size);
+	assert(M * (long)sizeof(float) == md_calc_size(cd->N, cd->dims) * (long)cd->size);
+	assert(N * (long)sizeof(float) == md_calc_size(dm->N, dm->dims) * (long)dm->size);
 
 	auto conf = CAST_DOWN(iter3_irgnm_conf, _conf);
 
@@ -210,8 +210,8 @@ void iter4_irgnm2(const iter3_conf* _conf,
 	auto cd = nlop_codomain(nlop);
 	auto dm = nlop_domain(nlop);
 
-	assert(M * sizeof(float) == md_calc_size(cd->N, cd->dims) * cd->size);
-	assert(N * sizeof(float) == md_calc_size(dm->N, dm->dims) * dm->size);
+	assert(M * (long)sizeof(float) == md_calc_size(cd->N, cd->dims) * (long)cd->size);
+	assert(N * (long)sizeof(float) == md_calc_size(dm->N, dm->dims) * (long)dm->size);
 
 	auto conf = CAST_DOWN(iter3_irgnm_conf, _conf);
 

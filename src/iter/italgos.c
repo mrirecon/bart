@@ -429,7 +429,7 @@ cleanup:
  * @param x initial estimate
  * @param b observations
  */
-void conjgrad_batch(unsigned int maxiter, float l2lambda, float epsilon,
+void conjgrad_batch(int maxiter, float l2lambda, float epsilon,
 	long N, long Bi, long Bo,
 	const struct vec_iter_s* vops,
 	struct iter_op_s linop,

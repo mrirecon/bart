@@ -87,7 +87,7 @@ struct nlop_s* nlop_const_create2(int N, const long dims[N], const long strs[N],
 	data->xn_ref = NULL;
 	data->xn_cop = NULL;
 
-	if (md_check_equal_dims(N, MD_SINGLETON_STRS(N), strs, ~0)) {
+	if (md_check_equal_dims(N, MD_SINGLETON_STRS(N), strs, ~0UL)) {
 
 		md_copy(1, MD_DIMS(1), &(data->val), in, CFL_SIZE);
 

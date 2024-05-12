@@ -227,7 +227,7 @@ struct noir_s noir_create(const long dims[DIMS], const complex float* mask, cons
 
 
 __attribute__((optimize("-fno-finite-math-only")))
-static void proj_add(unsigned int D, const long dims[D], const long ostrs[D],
+static void proj_add(int D, const long dims[D], const long ostrs[D],
 			complex float* optr, const long v1_strs[D], complex float* v1, const long v2_strs[D], complex float* v2)
 {
 	float v22 = md_zscalar_real2(D, dims, v2_strs, v2, v2_strs, v2); // since it is real anyway

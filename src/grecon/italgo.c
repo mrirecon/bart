@@ -88,7 +88,7 @@ struct iter italgo_config(enum algo_t algo, int nr_penalties, const struct reg_s
 
 		PTR_ALLOC(struct iter_conjgrad_conf, cgconf);
 		*cgconf = iter_conjgrad_defaults;
-		cgconf->maxiter = (unsigned int)maxiter;
+		cgconf->maxiter = maxiter;
 		cgconf->l2lambda = (0 == nr_penalties) ? 0. : regs[0].lambda;
 
 		PTR_ALLOC(struct iter_call_s, iter2_data);
