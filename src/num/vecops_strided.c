@@ -70,7 +70,7 @@ typedef void (*md_3op_t)(int D, const long dims[D], const long ostrs[D], float* 
 typedef void (*md_s2op_t)(int D, const long dims[D], const long ostrs[D], float* optr, const long istrs[D], const float* iptr, float val);
 typedef void (*md_z3op_t)(int D, const long dims[D], const long ostrs[D], complex float* optr, const long istrs1[D], const complex float* iptr1, const long istrs2[D], const complex float* iptr2);
 
-static void perm_z3op(	unsigned int D, const long dims[D], int order[D],
+static void perm_z3op(	int D, const long dims[D], int order[D],
 			unsigned long oflag, complex float* out,
 			unsigned long iflag1, const complex float* in1,
 			unsigned long iflag2, const complex float* in2,
@@ -81,11 +81,11 @@ static void perm_z3op(	unsigned int D, const long dims[D], int order[D],
 
 	int order_p[D];
 
-	unsigned oflag_p = 0;
-	unsigned iflag1_p = 0;
-	unsigned iflag2_p = 0;
+	unsigned long oflag_p = 0;
+	unsigned long iflag1_p = 0;
+	unsigned long iflag2_p = 0;
 
-	for (unsigned int i = 0; i < D; i++) {
+	for (int i = 0; i < D; i++) {
 
 		order_p[order[i]] = i;
 
@@ -209,12 +209,12 @@ struct simple_s2op_check {
  * @param size size of data structures, e.g. complex float
  * @param too three-op multiply function
  */
-static void optimized_threeop_oii(unsigned int D, const long dim[D], const long ostr[D], void* optr, const long istr1[D], const void* iptr1, const long istr2[D], const void* iptr2, size_t sizes[3], md_nary_opt_fun_t too)
+static void optimized_threeop_oii(int D, const long dim[D], const long ostr[D], void* optr, const long istr1[D], const void* iptr1, const long istr2[D], const void* iptr2, size_t sizes[3], md_nary_opt_fun_t too)
 {
 	const long (*nstr[3])[D?D:1] = { (const long (*)[D?D:1])ostr, (const long (*)[D?D:1])istr1, (const long (*)[D?D:1])istr2 };
 	void *nptr[3] = { optr, (void*)iptr1, (void*)iptr2 };
 
-	unsigned int io = 1 + ((iptr1 == optr) ? 2 : 0) + ((iptr2 == optr) ? 4 : 0);
+	int io = 1 + ((iptr1 == optr) ? 2 : 0) + ((iptr2 == optr) ? 4 : 0);
 
 	optimized_nop(3, io, D, dim, nstr, nptr, sizes, too);
 }
@@ -885,7 +885,7 @@ static int check_reduce_inner(int N, long ndims[N], long nostrs[N], long nistrs1
 
 // computes the size of an array with strides ignoring dims with 0 strides
 // returns zero if block is not contiguous in memory
-static size_t get_block_size(unsigned int N, const long dims[N], const long strs[N], size_t size)
+static size_t get_block_size(int N, const long dims[N], const long strs[N], size_t size)
 {
 	long tdims[N];
 	long tstrs[N];
@@ -903,7 +903,7 @@ static size_t get_block_size(unsigned int N, const long dims[N], const long strs
 }
 
 
-static bool simple_z3op(int N_checks, struct simple_z3op_check strided_calls[N_checks], const char* fun_name, unsigned int N, const long dims[N], const long ostrs[N], complex float* out, const long istrs1[N], const complex float* in1, const long istrs2[N], const complex float* in2, bool symmetric, bool conj)
+static bool simple_z3op(int N_checks, struct simple_z3op_check strided_calls[N_checks], const char* fun_name, int N, const long dims[N], const long ostrs[N], complex float* out, const long istrs1[N], const complex float* in1, const long istrs2[N], const complex float* in2, bool symmetric, bool conj)
 {
 	if (!use_strided_vecops)
 		return false;
@@ -1086,7 +1086,7 @@ static bool simple_z3op(int N_checks, struct simple_z3op_check strided_calls[N_c
 	return true;
 }
 
-static bool simple_3op(int N_checks, struct simple_3op_check strided_calls[N_checks], const char* fun_name, unsigned int N, const long dims[N], const long ostrs[N], float* out, const long istrs1[N], const float* in1, const long istrs2[N], const float* in2, bool symmetric)
+static bool simple_3op(int N_checks, struct simple_3op_check strided_calls[N_checks], const char* fun_name, int N, const long dims[N], const long ostrs[N], float* out, const long istrs1[N], const float* in1, const long istrs2[N], const float* in2, bool symmetric)
 {
 	if (!use_strided_vecops)
 		return false;
@@ -1234,7 +1234,7 @@ static bool simple_3op(int N_checks, struct simple_3op_check strided_calls[N_che
 
 #if 0
 //not used yet
-static bool simple_s2op(int N_checks, struct simple_s2op_check strided_calls[N_checks], unsigned int N, const long dims[N], const long ostrs[N], float* out, const long istrs[N], const float* in, float val)
+static bool simple_s2op(int N_checks, struct simple_s2op_check strided_calls[N_checks], int N, const long dims[N], const long ostrs[N], float* out, const long istrs[N], const float* in, float val)
 {
 	if (!use_strided_vecops)
 		return false;

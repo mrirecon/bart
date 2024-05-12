@@ -141,7 +141,7 @@ static struct linop_s* linop_gdiag_create(unsigned int N, const long dims[N], un
  * @param flags bitmask specifiying the dimensions present in diag
  * @param diag diagonal matrix
  */
-struct linop_s* linop_cdiag_create(unsigned int N, const long dims[N], unsigned int flags, const complex float* diag)
+struct linop_s* linop_cdiag_create(int N, const long dims[N], unsigned long flags, const complex float* diag)
 {
 	return linop_gdiag_create(N, dims, flags, diag, false);
 }
@@ -155,7 +155,7 @@ struct linop_s* linop_cdiag_create(unsigned int N, const long dims[N], unsigned 
  * @param flags bitmask specifiying the dimensions present in diag
  * @param diag diagonal matrix
  */
-struct linop_s* linop_rdiag_create(unsigned int N, const long dims[N], unsigned int flags, const complex float* diag)
+struct linop_s* linop_rdiag_create(int N, const long dims[N], unsigned long flags, const complex float* diag)
 {
 	return linop_gdiag_create(N, dims, flags, diag, true);
 }
@@ -256,7 +256,7 @@ static void scale_free(const linop_data_t* _data)
  * @param scale scaling factor a
  */
 
-struct linop_s* linop_scale_create(unsigned int N, const long dims[N], const complex float scale)
+struct linop_s* linop_scale_create(int N, const long dims[N], const complex float scale)
 {
 	PTR_ALLOC(struct scale_s, data);
 	SET_TYPEID(scale_s, data);
@@ -304,7 +304,7 @@ static void zconj_del(const linop_data_t* _data)
 }
 
 
-struct linop_s* linop_zconj_create(unsigned int N, const long dims[N])
+struct linop_s* linop_zconj_create(int N, const long dims[N])
 {
 	PTR_ALLOC(struct zconj_s, data);
 	SET_TYPEID(zconj_s, data);
@@ -350,7 +350,7 @@ static void zreal_free(const linop_data_t* _data)
  * @param dims dimensions
  */
 
-struct linop_s* linop_zreal_create(unsigned int N, const long dims[N])
+struct linop_s* linop_zreal_create(int N, const long dims[N])
 {
 	PTR_ALLOC(struct zreal_s, data);
 	SET_TYPEID(zreal_s, data);
@@ -372,7 +372,7 @@ struct linop_s* linop_zreal_create(unsigned int N, const long dims[N])
  * @param N number of dimensions
  * @param dims dimensions of input (domain)
  */
-struct linop_s* linop_identity_create(unsigned int N, const long dims[N])
+struct linop_s* linop_identity_create(int N, const long dims[N])
 {
 	auto op = operator_identity_create(N, dims);
 	auto result = linop_from_ops(op, op, op, NULL);
@@ -822,7 +822,7 @@ static void extract_free(const linop_data_t* _data)
 	xfree(data);
 }
 
-extern struct linop_s* linop_extract_create(unsigned int N, const long pos[N], const long out_dims[N], const long in_dims[N])
+extern struct linop_s* linop_extract_create(int N, const long pos[N], const long out_dims[N], const long in_dims[N])
 {
 	PTR_ALLOC(struct extract_op_s, data);
 	SET_TYPEID(extract_op_s, data);
@@ -860,7 +860,7 @@ extern struct linop_s* linop_slice_one_create(int N, int idx, long pos, const lo
 	return linop_slice_create(N, MD_BIT(idx), _pos, dims);
 }
 
-struct linop_s* linop_reshape_create(unsigned int A, const long out_dims[A], int B, const long in_dims[B])
+struct linop_s* linop_reshape_create(int A, const long out_dims[A], int B, const long in_dims[B])
 {
 	PTR_ALLOC(struct linop_s, c);
 
@@ -990,13 +990,13 @@ static void permute_free(const linop_data_t* _data)
 }
 
 
-struct linop_s* linop_permute_create(unsigned int N, const int order[N], const long idims[N])
+struct linop_s* linop_permute_create(int N, const int order[N], const long idims[N])
 {
 	long odims[N];
 	md_permute_dims(N, order, odims, idims);
 
-	unsigned int order_adj[N];
-	for (unsigned int i = 0; i < N; i++)
+	int order_adj[N];
+	for (int i = 0; i < N; i++)
 		order_adj[order[i]] = i;
 
 	PTR_ALLOC(struct permute_op_s, data);
@@ -1009,7 +1009,7 @@ struct linop_s* linop_permute_create(unsigned int N, const int order[N], const l
 	int* torder = *TYPE_ALLOC(int[N]);
 	int* torder_adj = *TYPE_ALLOC(int[N]);
 
-	for (unsigned int i = 0; i < N; i++) {
+	for (int i = 0; i < N; i++) {
 
 		torder[i] = order[i];
 		torder_adj[i] = order_adj[i];
@@ -1027,7 +1027,7 @@ struct linop_s* linop_permute_create(unsigned int N, const int order[N], const l
 	return linop_create(N, odims, N, idims, CAST_UP(PTR_PASS(data)), permute_forward, permute_adjoint, permute_normal, NULL, permute_free);
 }
 
-extern struct linop_s* linop_permute_create(unsigned int N, const int order[N], const long idims[N]);
+extern struct linop_s* linop_permute_create(int N, const int order[N], const long idims[N]);
 
 struct transpose_op_s {
 
@@ -1598,7 +1598,7 @@ static struct operator_matrix_s* linop_matrix_priv(unsigned int N, const long ou
  * @param matrix_dims dimensions of the matrix
  * @param matrix matrix data
  */
-struct linop_s* linop_matrix_create(unsigned int N, const long out_dims[N], const long in_dims[N], const long matrix_dims[N], const complex float* matrix)
+struct linop_s* linop_matrix_create(int N, const long out_dims[N], const long in_dims[N], const long matrix_dims[N], const complex float* matrix)
 {
 	struct operator_matrix_s* data = linop_matrix_priv(N, out_dims, in_dims, matrix_dims, matrix);
 
@@ -1894,7 +1894,7 @@ static struct linop_s* linop_fft_create_priv(	int N, const long dims[N], unsigne
  * @param dims dimensions of input
  * @param flags bitmask of the dimensions to apply the Fourier transform
  */
-struct linop_s* linop_fftc_create(int N, const long dims[N], unsigned int flags)
+struct linop_s* linop_fftc_create(int N, const long dims[N], unsigned long flags)
 {
 	return linop_fft_create_priv(N, dims, flags, true, flags, flags, 0, NULL, 0, NULL);
 }
@@ -1907,7 +1907,7 @@ struct linop_s* linop_fftc_create(int N, const long dims[N], unsigned int flags)
  * @param dims dimensions of input
  * @param flags bitmask of the dimensions to apply the Fourier transform
  */
-struct linop_s* linop_ifftc_create(int N, const long dims[N], unsigned int flags)
+struct linop_s* linop_ifftc_create(int N, const long dims[N], unsigned long flags)
 {
 	return linop_fft_create_priv(N, dims, flags, false, flags, flags, 0, NULL, 0, NULL);
 }
@@ -2004,7 +2004,7 @@ static void linop_cdf97_free(const linop_data_t* _data)
  * @param dims dimensions of input
  * @param flags bitmask of the dimensions to apply the Fourier transform
  */
-struct linop_s* linop_cdf97_create(int N, const long dims[N], unsigned int flags)
+struct linop_s* linop_cdf97_create(int N, const long dims[N], unsigned long flags)
 {
 	PTR_ALLOC(struct linop_cdf97_s, data);
 	SET_TYPEID(linop_cdf97_s, data);
@@ -2066,7 +2066,7 @@ static void linop_conv_free(const linop_data_t* _data)
  * @param kdims kernel dimensions
  * @param krn convolution kernel
  */
-struct linop_s* linop_conv_create(int N, unsigned int flags, enum conv_type ctype, enum conv_mode cmode, const long odims[N],
+struct linop_s* linop_conv_create(int N, unsigned long flags, enum conv_type ctype, enum conv_mode cmode, const long odims[N],
                 const long idims[N], const long kdims[N], const complex float* krn)
 {
 	PTR_ALLOC(struct conv_data_s, data);
