@@ -29,7 +29,6 @@
 
 #include "linops/waveop.h"
 
-#include "dfwavelet/prox_dfwavelet.h"
 
 // FIXME: lowrank interface should not be coupled to mri.h -- it should take D as an input
 #ifndef DIMS
@@ -82,6 +81,9 @@ static void lrthresh(int D, const long dims[D], int llrblk, float lambda, unsign
 
 static void dfthresh(int D, const long dims[D], float lambda, complex float* out, const complex float* in)
 {
+#if 1
+	error("divergence free wavelet not supported anymore.\n");
+#else
 	long minsize[D];
 	md_singleton_dims(D, minsize);
 
@@ -100,6 +102,7 @@ static void dfthresh(int D, const long dims[D], float lambda, complex float* out
 	operator_p_apply(p, 1., D, dims, out, D, dims, in);
 
 	operator_p_free(p);
+#endif
 }
 
 static void hard_thresh(int D, const long dims[D], float lambda, complex float* out, const complex float* in)
