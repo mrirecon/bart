@@ -41,7 +41,7 @@ complex float* compute_mask(int N, const long msk_dims[N], const float restrict_
 
 void apply_mask(int N, const long dims[N], complex float* x, const float restrict_fov[N])
 {
-	long flags = 0;
+	unsigned long flags = 0;
 
 	for (int i = 0; i < N; i++)
 		if (1. != restrict_fov[i])

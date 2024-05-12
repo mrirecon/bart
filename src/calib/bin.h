@@ -3,10 +3,10 @@
 
 struct bin_conf_s {
 
-	unsigned int n_resp;
-	unsigned int n_card;
-	unsigned int mavg_window;
-	unsigned int mavg_window_card;
+	int n_resp;
+	int n_card;
+	int mavg_window;
+	int mavg_window_card;
 	int cluster_dim;
 
 	long resp_labels_idx[2];

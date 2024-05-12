@@ -53,7 +53,7 @@ int main_epg(int argc, char* argv[argc])
 	float B1 =   1.0;
 	long  SP =     0;
 	long   N =    10;
-	long unknowns = 3;
+	unsigned long unknowns = 3;
 	long verbose = 0;
 
 	const struct opt_s opts[] = {
@@ -73,7 +73,7 @@ int main_epg(int argc, char* argv[argc])
 		OPT_FLOAT('f', &FA, "FA", "flip angle [degrees]"),
 		OPT_LONG('s', &SP, "SP", "spoiling (0: ideal, 1: conventional RF, 2: random RF)"),
 		OPT_LONG('n',   &N, "N", "number of pulses"),
-		OPT_LONG('u',   &unknowns, "U", "unknowns as bitmask (0: T1, 1: T2, 2: B1, 3: off-res)"),
+		OPT_ULONG('u',   &unknowns, "U", "unknowns as bitmask (0: T1, 1: T2, 2: B1, 3: off-res)"),
 		OPT_LONG('v',   &verbose, "V", "verbosity level"),
 	};
 
@@ -193,7 +193,7 @@ int main_epg(int argc, char* argv[argc])
 			int Q = bitcount(unknowns); // selected unknowns
 
 			// determine indeces to unknowns in derivative
-			unsigned long idx_unknowns[Q];
+			int idx_unknowns[Q];
 
 			int P = Q + 1; // selected unknowns + M0
 			getidxunknowns(P, idx_unknowns, unknowns);

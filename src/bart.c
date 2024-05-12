@@ -170,7 +170,7 @@ static void parse_bart_opts(int* argcp, char*** argvp)
 
 	if (NULL != (ompi_str = getenv("OMPI_COMM_WORLD_SIZE"))) {
 
-		long mpi_ranks = strtoul(ompi_str, NULL, 10);
+		unsigned long mpi_ranks = strtoul(ompi_str, NULL, 10);
 
 		if (1 < mpi_ranks)
 			use_mpi = true;
@@ -357,7 +357,7 @@ int main_bart(int argc, char* argv[argc])
 		// also check PATH_TO_BART/../commands/:
 		char exe_loc[1024] = {0};
 		ssize_t exe_loc_size = ARRAY_SIZE(exe_loc);
-		ssize_t rl = readlink("/proc/self/exe", exe_loc, exe_loc_size);
+		ssize_t rl = readlink("/proc/self/exe", exe_loc, (size_t)exe_loc_size);
 
 		char* exe_dir = NULL;
 

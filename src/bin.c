@@ -151,12 +151,12 @@ int main_bin(int argc, char* argv[argc])
 
 		OPT_INT('l', &conf.cluster_dim, "dim", "Bin according to labels: Specify cluster dimension"),
 		OPT_SET('o', &reorder, "Reorder according to labels"),
-		OPT_UINT('R', &conf.n_resp, "n_resp", "Quadrature Binning: Number of respiratory labels"),
-		OPT_UINT('C', &conf.n_card, "n_card", "Quadrature Binning: Number of cardiac labels"),
+		OPT_PINT('R', &conf.n_resp, "n_resp", "Quadrature Binning: Number of respiratory labels"),
+		OPT_PINT('C', &conf.n_card, "n_card", "Quadrature Binning: Number of cardiac labels"),
 		OPT_VEC2('r', &conf.resp_labels_idx, "x:y", "(Respiration: Eigenvector index)"),
 		OPT_VEC2('c', &conf.card_labels_idx, "x:y", "(Cardiac motion: Eigenvector index)"),
-		OPT_UINT('a', &conf.mavg_window, "window", "Quadrature Binning: Moving average"),
-		OPT_UINT('A', &conf.mavg_window_card, "window", "(Quadrature Binning: Cardiac moving average window)"),
+		OPT_PINT('a', &conf.mavg_window, "window", "Quadrature Binning: Moving average"),
+		OPT_PINT('A', &conf.mavg_window_card, "window", "(Quadrature Binning: Cardiac moving average window)"),
 		OPT_FLVEC2('O', &conf.offset_angle, "[r:c]deg", "Quadrature Binning: Angle offset for resp and card."),
 		OPT_STRING('x', &conf.card_out, "file", "(Output filtered cardiac EOFs)"), // To reproduce SSA-FARY paper
 		OPT_SET('M', &conf.amplitude, "Amplitude binning"),

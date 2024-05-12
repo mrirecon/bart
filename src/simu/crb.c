@@ -23,7 +23,7 @@
 #define CFL_SIZE sizeof(complex float)
 #endif
 
-void compute_crb(int P, float rCRB[P], complex float A[P][P], int M, int N, const complex float derivatives[M][N], const complex float signal[N], const unsigned long idx_unknowns[P - 1])
+void compute_crb(int P, float rCRB[P], complex float A[P][P], int M, int N, const complex float derivatives[M][N], const complex float signal[N], const int idx_unknowns[P - 1])
 {
 	// assume first P-1 entries in derivates are w.r.t. parameters (i.e. not M0) 
 	assert(P <= M + 1); // maximum 1 + M unknowns 	
@@ -59,7 +59,7 @@ void compute_crb(int P, float rCRB[P], complex float A[P][P], int M, int N, cons
 		rCRB[i] = crealf(A_inv[i][i]);
 }
 
-void normalize_crb(int P, float rCRB[P], int N, float TR, float T1, float T2, float B1, float /*omega*/, const unsigned long idx_unknowns[P - 1])
+void normalize_crb(int P, float rCRB[P], int N, float TR, float T1, float T2, float B1, float /*omega*/, const int idx_unknowns[P - 1])
 {
 	float normvalues[4];
 	normvalues[0] = powf(T1, 2);
@@ -76,7 +76,7 @@ void normalize_crb(int P, float rCRB[P], int N, float TR, float T1, float T2, fl
 	}
 }
 
-void getidxunknowns(int P, unsigned long idx_unknowns[P - 1], long unknowns)
+void getidxunknowns(int P, int idx_unknowns[P - 1], unsigned long unknowns)
 {
 	int j = 0;
 
@@ -92,7 +92,7 @@ void getidxunknowns(int P, unsigned long idx_unknowns[P - 1], long unknowns)
 	}
 }
 
-void display_crb(int P, float rCRB[P], complex float fisher[P][P], unsigned long idx_unknowns[P - 1])
+void display_crb(int P, float rCRB[P], complex float fisher[P][P], const int idx_unknowns[P - 1])
 {
 	bart_printf("Fisher information matrix: \n");
 
