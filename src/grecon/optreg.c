@@ -249,13 +249,10 @@ bool opt_reg(void* ptr, char c, const char* optarg)
 	return false;
 }
 
+
 bool opt_reg_init(struct opt_reg_s* ropts)
 {
-	ropts->r = 0;
-	ropts->lambda = -1;
-	ropts->svars = 0;
-	ropts->sr = 0;
-
+	*ropts = (struct opt_reg_s){ .lambda = -1. };
 	return false;
 }
 
