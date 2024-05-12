@@ -87,6 +87,7 @@ static const char* opt_arg_str(enum OPT_TYPE type)
 		return "";
 
 	case OPT_INT:
+	case OPT_PINT:
 	case OPT_UINT:
 	case OPT_ULONG:
 	case OPT_LONG:
@@ -140,6 +141,7 @@ static const char* opt_type_str(enum OPT_TYPE type)
 	OPT_ARG_TYPE_CASE(OPT_CLEAR)
 	OPT_ARG_TYPE_CASE(OPT_INT)
 	OPT_ARG_TYPE_CASE(OPT_UINT)
+	OPT_ARG_TYPE_CASE(OPT_PINT)
 	OPT_ARG_TYPE_CASE(OPT_ULONG)
 	OPT_ARG_TYPE_CASE(OPT_LONG)
 	OPT_ARG_TYPE_CASE(OPT_FLOAT)
@@ -176,6 +178,7 @@ static bool opt_dispatch(enum OPT_TYPE type, void* ptr, opt_conv_f* conv, char c
 		return opt_clear(ptr, c, optarg);
 	case OPT_INT:
 		return opt_int(ptr, c, optarg);
+	case OPT_PINT:	// FIXME
 	case OPT_UINT:
 		return opt_uint(ptr, c, optarg);
 	case OPT_ULONG:

@@ -83,6 +83,7 @@ typedef float opt_fvec4_t[4];
 #define OPT_INFILE(c, ptr, argname, descr)	OPT_ARG(c, OPT_INFILE, const char*, ptr, argname, descr)
 #define OPT_OUTFILE(c, ptr, argname, descr)	OPT_ARG(c, OPT_OUTFILE, const char*, ptr, argname, descr)
 #define OPT_INOUTFILE(c, ptr, argname, descr)	OPT_ARG(c, OPT_INOUTFILE, const char*, ptr, argname, descr)
+
 #define OPT_PINT(c, ptr, argname, descr)	OPT_ARG(c, OPT_PINT, int, ptr, argname, descr)
 #define OPT_UINT(c, ptr, argname, descr)	OPT_ARG(c, OPT_UINT, unsigned int, ptr, argname, descr)
 #define OPT_INT(c, ptr, argname, descr)		OPT_ARG(c, OPT_INT, int, ptr, argname, descr)
