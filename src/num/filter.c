@@ -37,18 +37,18 @@ static int cmp_complex_float(const void* a, const void* b) // gives sign for 0. 
 
 static void sort_floats(int N, float ar[N])
 {
-	qsort((void*)ar, N, (ssize_t)sizeof(float), cmp_float);
+	qsort((void*)ar, (size_t)N, sizeof(float), cmp_float);
 }
 
 static void sort_complex_floats(int N, complex float ar[N])
 {
-	qsort((void*)ar, N, sizeof(complex float), cmp_complex_float);
+	qsort((void*)ar, (size_t)N, sizeof(complex float), cmp_complex_float);
 }
 
 float median_float(int N, const float ar[N])
 {
 	float tmp[N];
-	memcpy(tmp, ar, N * sizeof(float));
+	memcpy(tmp, ar, (size_t)(N * (long)sizeof(float)));
 	sort_floats(N, tmp);
 	return (1 == N % 2) ? tmp[(N - 1) / 2] : ((tmp[(N - 1) / 2 + 0] + tmp[(N - 1) / 2 + 1]) / 2.);
 }
@@ -57,7 +57,7 @@ complex float median_complex_float(int N, const complex float ar[N])
 {
 	complex float (*tmp)[N] = xmalloc(sizeof *tmp);
 
-	memcpy(*tmp, ar, N * sizeof(complex float));
+	memcpy(*tmp, ar, (size_t)(N * (long)sizeof(complex float)));
 	sort_complex_floats(N, *tmp);
 
 	complex float result;
@@ -273,7 +273,7 @@ void linear_phase(int N, const long dims[N], const float pos[N], complex float* 
 
 void klaplace_scaled(int N, const long dims[N], unsigned long flags, const float sc[N], complex float* out)
 {
-	long flags2 = flags;
+	unsigned long flags2 = flags;
 
 	complex float* tmp = md_alloc(N, dims, CFL_SIZE);
 
@@ -281,7 +281,7 @@ void klaplace_scaled(int N, const long dims[N], unsigned long flags, const float
 
 	for (int i = 0; i < bitcount(flags); i++) {
 
-		unsigned int lsb = ffs(flags2) - 1;
+		int lsb = (int)ffs(flags2) - 1;
 		flags2 = MD_CLEAR(flags2, lsb);
 
 		complex float grad[N];
@@ -346,7 +346,7 @@ static void nary_zhann(const long N, complex float* ptr)
 
 enum window_type { WINDOW_HAMMING, WINDOW_HANN };
 
-static void md_zwindow2(unsigned int D, const long dims[D], unsigned int flags, const long ostrs[D], complex float* optr, const long istrs[D], const complex float* iptr, enum window_type wt)
+static void md_zwindow2(int D, const long dims[D], unsigned long flags, const long ostrs[D], complex float* optr, const long istrs[D], const complex float* iptr, enum window_type wt)
 {
 	if (0 == flags) {
 
@@ -356,7 +356,7 @@ static void md_zwindow2(unsigned int D, const long dims[D], unsigned int flags, 
 
 	// process first flagged dimension
 
-	unsigned int lsb = ffs(flags) - 1;
+	int lsb = (int)ffs(flags) - 1;
 
 	long win_dims[D];
 	long win_strs[D];

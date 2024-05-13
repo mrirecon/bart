@@ -16,11 +16,11 @@
 #include "misc.h"
 
 
-void onehotenc_to_index(unsigned int N, const long odims[N], complex float* dst, const long idims[N], const complex float* src)
+void onehotenc_to_index(int N, const long odims[N], complex float* dst, const long idims[N], const complex float* src)
 {
 	int class_index = -1;
 
-	for (unsigned int i = 0; i < N; i++) {
+	for (int i = 0; i < N; i++) {
 
 		if (odims[i] != idims[i]) {
 
@@ -72,14 +72,14 @@ void onehotenc_to_index(unsigned int N, const long odims[N], complex float* dst,
 
 		MD_ACCESS(N, ostrs, pos, dst) = index;
 
-	} while (md_next(N, odims, ~0, pos));
+	} while (md_next(N, odims, ~0UL, pos));
 }
 
-void index_to_onehotenc(unsigned int N, const long odims[N], complex float* dst, const long idims[N], const complex float* src)
+void index_to_onehotenc(int N, const long odims[N], complex float* dst, const long idims[N], const complex float* src)
 {
 	int class_index = -1;
 
-	for (unsigned int i = 0; i < N; i++) {
+	for (int i = 0; i < N; i++) {
 
 		if (odims[i] != idims[i]) {
 
@@ -112,11 +112,11 @@ void index_to_onehotenc(unsigned int N, const long odims[N], complex float* dst,
 
 		MD_ACCESS(N, ostrs, tpos, dst) = 1.;
 
-	} while (md_next(N, idims, ~0, pos));
+	} while (md_next(N, idims, ~0UL, pos));
 }
 
 
-void onehotenc_set_max_to_one(unsigned int N, const long dims[N], unsigned int class_index, complex float* dst, const complex float* src)
+void onehotenc_set_max_to_one(int N, const long dims[N], int class_index, complex float* dst, const complex float* src)
 {
 	long bdims[N];
 	md_select_dims(N, ~MD_BIT(class_index), bdims, dims);
@@ -141,7 +141,7 @@ void onehotenc_set_max_to_one(unsigned int N, const long dims[N], unsigned int c
 }
 
 
-float onehotenc_accuracy(unsigned int N, const long dims[N], unsigned int class_index, const complex float* cmp, const complex float* ref)
+float onehotenc_accuracy(int N, const long dims[N], int class_index, const complex float* cmp, const complex float* ref)
 {
 	complex float* tmp_cmp = md_alloc_sameplace(N, dims, CFL_SIZE, cmp);
 	complex float* tmp_ref = md_alloc_sameplace(N, dims, CFL_SIZE, ref);
@@ -157,7 +157,7 @@ float onehotenc_accuracy(unsigned int N, const long dims[N], unsigned int class_
 	return 1. - result;
 }
 
-void onehotenc_confusion_matrix(unsigned int N, const long dims[N], unsigned int class_index, complex float* dst, const complex float* pred, const complex float* ref)
+void onehotenc_confusion_matrix(int N, const long dims[N], int class_index, complex float* dst, const complex float* pred, const complex float* ref)
 {
 	long classes = dims[class_index];
 
@@ -195,7 +195,7 @@ void onehotenc_confusion_matrix(unsigned int N, const long dims[N], unsigned int
 }
 
 
-extern void print_confusion_matrix(unsigned int N, const long dims[N], unsigned int class_index, const complex float* pred, const complex float* ref)
+extern void print_confusion_matrix(int N, const long dims[N], int class_index, const complex float* pred, const complex float* ref)
 {
 	long classes = dims[class_index];
 

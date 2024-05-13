@@ -31,8 +31,8 @@ struct moba_conf {
 
 	enum mdb_t mode;
 
-	unsigned int iter;
-	unsigned int opt_reg;
+	int iter;
+	int opt_reg;
 	float alpha;
 	float alpha_min;
 	bool alpha_min_exp_decay;
@@ -41,15 +41,15 @@ struct moba_conf {
 	float lower_bound;
 	float tolerance;
 	float damping;
-	unsigned int inner_iter;
+	int inner_iter;
 	float sobolev_a;
 	float sobolev_b;
 	bool noncartesian;
         bool sms;
-	unsigned long not_wav_maps;
-	long constrained_maps;
+	int not_wav_maps;
+	long constrained_maps;	// FIXME, this is special, a flag but -1 means uninitialized
 	unsigned long l2para;
-	unsigned int pusteps;
+	int pusteps;
 	float ratio;
 	float l1val;
 

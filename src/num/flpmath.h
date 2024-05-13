@@ -17,22 +17,22 @@
 #define CDL_SIZE	sizeof(_Complex double)
 #define  DL_SIZE	sizeof(double)
 
-#define MD_REAL_DIMS(N, dims)				\
-({							\
-	int _N = (N);					\
-	long* _dims = alloca((_N + 1) * sizeof(long));	\
-	md_copy_dims(_N, _dims + 1, dims);		\
-	_dims[0] = 2;					\
-	_dims;						\
+#define MD_REAL_DIMS(N, dims)						\
+({									\
+	int _N = (N);							\
+	long* _dims = alloca((size_t)((_N + 1) * (long)sizeof(long)));	\
+	md_copy_dims(_N, _dims + 1, dims);				\
+	_dims[0] = 2;							\
+	_dims;								\
 })
 
-#define MD_REAL_STRS(N, strs, size)			\
-({							\
-	int _N = (N);					\
-	long* _strs = alloca((_N + 1) * sizeof(long));	\
-	md_copy_dims(_N, _strs + 1, strs);		\
-	_strs[0] = (size);				\
-	_strs;						\
+#define MD_REAL_STRS(N, strs, size)					\
+({									\
+	int _N = (N);							\
+	long* _strs = alloca((size_t)((_N + 1) * (long)sizeof(long));	\
+	md_copy_dims(_N, _strs + 1, strs);				\
+	_strs[0] = (size);						\
+	_strs;								\
 })
 
 

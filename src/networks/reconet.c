@@ -368,7 +368,7 @@ static nn_t data_consistency_tikhonov_create(const struct reconet_s* config, int
 {
 	struct iter_conjgrad_conf iter_conf = iter_conjgrad_defaults;
 	iter_conf.l2lambda = 0.;
-	iter_conf.maxiter = (unsigned int)config->dc_max_iter;
+	iter_conf.maxiter = config->dc_max_iter;
 
 	const struct nlop_s* nlop_dc = nlop_sense_dc_prox_create(Nb, models, &iter_conf, BATCH_FLAG); // in: input, adjoint, lambda; out: output
 
@@ -459,7 +459,7 @@ static nn_t nn_init_create(const struct reconet_s* config, int Nb, struct sense_
 
 	struct iter_conjgrad_conf iter_conf = iter_conjgrad_defaults;
 	iter_conf.l2lambda = 0.;
-	iter_conf.maxiter = (unsigned int)config->init_max_iter;
+	iter_conf.maxiter = config->init_max_iter;
 
 	auto nlop_result = nlop_sense_normal_inv_create(Nb, models, &iter_conf, BATCH_FLAG); //in: adjoint, lambda; out: (A^HA + l)^-1 adjoint
 	auto nn_result = nn_from_nlop_F(nlop_result);
@@ -1049,7 +1049,7 @@ void train_reconet(	struct reconet_s* config,
 			auto iov_weight = config->weights->iovs[weight_index];
 			auto iov_train_op = nlop_generic_domain(nn_get_nlop(nn_train), i);
 
-			assert(md_check_equal_dims(iov_weight->N, iov_weight->dims, iov_train_op->dims, ~0));
+			assert(md_check_equal_dims(iov_weight->N, iov_weight->dims, iov_train_op->dims, ~0UL));
 
 			src[i] = (float*)config->weights->tensors[weight_index];
 			weight_index++;
@@ -1227,7 +1227,7 @@ void eval_reconet(struct reconet_s* config, int N, const long max_dims[N], int N
 	nlop_free(loss_op);
 
 	complex float losses[NL];
-	md_zavg(N, tloss_dims, ~1, losses, tloss);
+	md_zavg(N, tloss_dims, ~1UL, losses, tloss);
 
 	for (int i = 0; i < NL ; i++)
 		debug_printf(DP_INFO, "%s: %e\n", nn_get_out_name_from_arg_index(loss, i, false), crealf(losses[i]));

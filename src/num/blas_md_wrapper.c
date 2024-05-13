@@ -221,22 +221,20 @@ void blas_zfmac_caxpy(int N, const long dims[N], const long ostr[N], complex flo
  **/
 void blas_zfmac_cdotu(int N, const long dims[N], const long ostr[N], complex float* optr, const long istr1[N], const complex float* iptr1, const long istr2[N], const complex float* iptr2)
 {
-	long size = 8;
-
 	assert(1 == N);
-	assert(check_blas_strides(N, ostr, size));
-	assert(check_blas_strides(N, istr1, size));
-	assert(check_blas_strides(N, istr2, size));
+	assert(check_blas_strides(N, ostr, sizeof(complex float)));
+	assert(check_blas_strides(N, istr1, sizeof(complex float)));
+	assert(check_blas_strides(N, istr2, sizeof(complex float)));
 
 	assert(0 == ostr[0]);
 	assert(0 < istr1[0]);
 	assert(0 < istr2[0]);
 
-	long incx = istr1[0] / size;
-	long incy = istr2[0] / size;
+	long incx = istr1[0] / (long)sizeof(complex float);
+	long incy = istr2[0] / (long)sizeof(complex float);
 
 
-	complex float* tmp = md_alloc_sameplace(1, MAKE_ARRAY(1l), size, optr);
+	complex float* tmp = md_alloc_sameplace(1, MAKE_ARRAY(1l), sizeof(complex float), optr);
 
 	long S = dims[0];
 	
@@ -457,7 +455,7 @@ void blas_fmac_sdot(int N, const long dims[N], const long ostr[N], float* optr, 
 	long incy = istr2[0] / size;
 
 
-	float* tmp = md_alloc_sameplace(1, MAKE_ARRAY(1l), size, optr);
+	float* tmp = md_alloc_sameplace(1, MAKE_ARRAY(1l), (size_t)size, optr);
 
 	long S = dims[0];
 	while (S > 0) {
@@ -598,9 +596,7 @@ void blas_zmul_cdgmm(int N, const long dims[N], const long ostr[N], complex floa
  **/
 void blas_zmul_cgeru(int N, const long dims[N], const long ostr[N], complex float* optr, const long istr1[N], const complex float* iptr1, const long istr2[N], const complex float* iptr2)
 {
-	long size = 8;
-
-	md_clear2(N, dims, ostr, optr, size);
+	md_clear2(N, dims, ostr, optr, sizeof(complex float));
 
 	blas_zfmac_cgeru(N, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
 }
@@ -776,9 +772,7 @@ void blas_mul_sdgmm(int N, const long dims[N], const long ostr[N], float* optr, 
  **/
 void blas_mul_sger(int N, const long dims[N], const long ostr[N], float* optr, const long istr1[N], const float* iptr1, const long istr2[N], const float* iptr2)
 {
-	long size = 4;
-
-	md_clear2(N, dims, ostr, optr, size);
+	md_clear2(N, dims, ostr, optr, sizeof(float));
 
 	blas_fmac_sger(N, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
 }

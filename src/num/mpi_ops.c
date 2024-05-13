@@ -283,7 +283,7 @@ void mpi_copy(void* dst, long size, const void* src, int sender_rank, int recv_r
 				cuda_memcpy(size, dst, src);
 			else
 #endif
-				memcpy(dst, src, size);
+				memcpy(dst, src, (size_t)size);
 		}
 
 		return;
@@ -354,12 +354,12 @@ void mpi_copy2(int N, const long dim[N], const long ostr[N], void* optr, const l
 
 	NESTED(void, nary_copy_mpi, (struct nary_opt_data_s* opt_data, void* ptr[]))
 	{
-		size_t size2 = size * opt_data->size;
+		long size2 = size * opt_data->size;
 
 		mpi_copy(ptr[0], size2, ptr[1], sender_rank, recv_rank);
 	};
 
-	optimized_nop(2, MD_BIT(0), N, dim, nstr, (void*[2]){ optr, (void*)iptr }, (size_t[2]){ size, size }, nary_copy_mpi);
+	optimized_nop(2, MD_BIT(0), N, dim, nstr, (void*[2]){ optr, (void*)iptr }, (size_t[2]){ (size_t)size, (size_t)size }, nary_copy_mpi);
 }
 
 

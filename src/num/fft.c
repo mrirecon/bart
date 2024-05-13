@@ -389,12 +389,12 @@ static char* fftw_wisdom_name(int N, bool backwards, unsigned long flags, const 
 	space += 1;
 
 	int len = space;
-	char* loc = calloc(space, sizeof(char));
+	char* loc = calloc((size_t)space, sizeof(char));
 
 	if (NULL == loc)
 		error("memory out\n");
 
-	int ret = snprintf(loc, len, "%s/save/fftw/N_%d_BACKWARD_%d_FLAGS_%lu_DIMS", tbpath, N, backwards, flags);
+	int ret = snprintf(loc, (size_t)len, "%s/save/fftw/N_%d_BACKWARD_%d_FLAGS_%lu_DIMS", tbpath, N, backwards, flags);
 
 	assert(ret < len);
 	len -= ret;
@@ -443,15 +443,15 @@ static fftwf_plan fft_fftwf_plan(int D, const long dimensions[D], unsigned long 
 			if (MD_IS_SET(flags, i)) {
 
 				dims[k].n = dimensions[i];
-				dims[k].is = istrides[i] / CFL_SIZE;
-				dims[k].os = ostrides[i] / CFL_SIZE;
+				dims[k].is = istrides[i] / (long)CFL_SIZE;
+				dims[k].os = ostrides[i] / (long)CFL_SIZE;
 				k++;
 
 			} else  {
 
 				hmdims[l].n = dimensions[i];
-				hmdims[l].is = istrides[i] / CFL_SIZE;
-				hmdims[l].os = ostrides[i] / CFL_SIZE;
+				hmdims[l].is = istrides[i] / (long)CFL_SIZE;
+				hmdims[l].os = ostrides[i] / (long)CFL_SIZE;
 				l++;
 			}
 		}

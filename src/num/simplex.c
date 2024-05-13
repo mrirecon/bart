@@ -16,20 +16,20 @@
 /*
  * transform matrix so that (d, n) = 1 and (:, n) = 0
  */
-static void trafo(unsigned int D, unsigned int N, float A[D][N], unsigned int d, unsigned int n)
+static void trafo(int D, int N, float A[D][N], int d, int n)
 {
 	float mul = A[d][n];
 
-	for (unsigned int k = 0; k < N; k++)
+	for (int k = 0; k < N; k++)
 		A[d][k] /= mul;
 
-	for (unsigned int l = 0; l < D; l++) {
+	for (int l = 0; l < D; l++) {
 
 		if (l != d) {
 
 			mul = A[l][n];
 
-			for (unsigned int k = 0; k < N; k++)
+			for (int k = 0; k < N; k++)
 				A[l][k] -= mul * A[d][k];
 		}
 	}			
@@ -38,15 +38,15 @@ static void trafo(unsigned int D, unsigned int N, float A[D][N], unsigned int d,
 
 
 
-static bool feasible_p(unsigned int D, unsigned int N, const float x[N], /*const*/ float A[D + 1][N + 1])
+static bool feasible_p(int D, int N, const float x[N], /*const*/ float A[D + 1][N + 1])
 {
 	bool ok = true;
 
-	for (unsigned int j = 0; j < D; j++) {
+	for (int j = 0; j < D; j++) {
 
 		float sum = 0.;
 
-		for (unsigned int i = 0; i < N; i++)
+		for (int i = 0; i < N; i++)
 			sum += A[1 + j][i] * x[i];
 
 		ok &= (0 == A[1 + j][N] - sum);
@@ -55,19 +55,19 @@ static bool feasible_p(unsigned int D, unsigned int N, const float x[N], /*const
 	return ok;
 }
 
-static void solution(unsigned int D, unsigned int N, float x[N], /*const*/ float A[D + 1][N + 1])
+static void solution(int D, int N, float x[N], /*const*/ float A[D + 1][N + 1])
 {
 	// this is needed to deel with duplicate columns
 	bool used[D];
-	for (unsigned int i = 0; i < D; i++)
+	for (int i = 0; i < D; i++)
 		used[i] = false;
 
-	for (unsigned int i = 0; i < N; i++) {
+	for (int i = 0; i < N; i++) {
 
 		x[i] = -1.;
 		int pos = -1;
 
-		for (unsigned int j = 0; j < D; j++) {
+		for (int j = 0; j < D; j++) {
 
 			if (0. == A[1 + j][i])
 				continue;
@@ -97,43 +97,43 @@ static void solution(unsigned int D, unsigned int N, float x[N], /*const*/ float
 	//assert(feasible_p(D, N, x, A));
 }
 
-extern void print_tableaux(unsigned int D, unsigned int N, /*const*/ float A[D + 1][N + 1]);
-void print_tableaux(unsigned int D, unsigned int N, /*const*/ float A[D + 1][N + 1])
+extern void print_tableaux(int D, int N, /*const*/ float A[D + 1][N + 1]);
+void print_tableaux(int D, int N, /*const*/ float A[D + 1][N + 1])
 {
 	float x[N];
 	solution(D, N, x, A);
 
 
 	float y[D];
-	for (unsigned int j = 0; j < D; j++) {
+	for (int j = 0; j < D; j++) {
 
 		y[j] = 0.;
 
-		for (unsigned int i = 0; i < N; i++)
+		for (int i = 0; i < N; i++)
 			y[j] += A[1 + j][i] * x[i];
 	}
 
 	printf("           ");
 
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		printf("x%d    ", i);
 
 	printf("\nSolution: ");
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		printf(" %0.2f ", x[i]);
 
 	printf("(%s)\n", (feasible_p(D, N, x, A)) ? "feasible" : "infeasible");
 	printf("      Max ");
 
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		printf("%+0.2f ", A[0][i]);
 
 	printf("  %+0.2f s.t.:\n", A[0][N]);
-	for (unsigned int j = 0; j < D; j++) {
+	for (int j = 0; j < D; j++) {
 
 		printf("          ");
 
-		for (unsigned int i = 0; i < N; i++)
+		for (int i = 0; i < N; i++)
 			printf("%+0.2f ", A[1 + j][i]);
 
 		printf("= %+0.2f | %+0.2f\n", A[1 + j][N], y[j]);
@@ -150,7 +150,7 @@ void print_tableaux(unsigned int D, unsigned int N, /*const*/ float A[D + 1][N +
  *
  * inplace, b is last column of A, c first row
  */
-static void simplex2(unsigned int D, unsigned int N, float A[D + 1][N + 1])
+static void simplex2(int D, int N, float A[D + 1][N + 1])
 {
 	// 2. Loop over all columns
 
@@ -158,7 +158,7 @@ static void simplex2(unsigned int D, unsigned int N, float A[D + 1][N + 1])
 
 	while (true) {
 
-		unsigned int i = 0;
+		int i = 0;
 
 		for (i = 0; i < N; i++)
 			 if (A[0][i] < 0.)
@@ -174,7 +174,7 @@ static void simplex2(unsigned int D, unsigned int N, float A[D + 1][N + 1])
 		int pivot_index = -1;
 		float pivot_value = 0.;
 
-		for (unsigned int j = 1; j < D + 1; j++) {
+		for (int j = 1; j < D + 1; j++) {
 
 			if (0. < A[j][i]) {
 
@@ -206,18 +206,18 @@ static void simplex2(unsigned int D, unsigned int N, float A[D + 1][N + 1])
 /*
  * maximize c^T x subject to Ax <= b and x >= 0
  */
-void (simplex)(unsigned int D, unsigned int N, float x[N], const float c[N], const float b[D], const float A[D][N])
+void simplex(int D, int N, float x[N], const float c[N], const float b[D], const float A[D][N])
 {
 	// 1. Step: slack variables
 	// max c^T x      Ax + z = b    x,z >= 0
 
 	float A2[D + 1][N + D + 1];
 
-	for (unsigned int i = 0; i < N + D + 1; i++) {
+	for (int i = 0; i < N + D + 1; i++) {
 
 		A2[0][i] = (i < N) ? -c[i] : 0.;
 
-		for (unsigned int j = 0; j < D; j++) {
+		for (int j = 0; j < D; j++) {
 
 			if (i < N) 
 				A2[1 + j][i] = A[j][i];
@@ -234,7 +234,7 @@ void (simplex)(unsigned int D, unsigned int N, float x[N], const float c[N], con
 	float x2[D + N];
 	solution(D, D + N, x2, A2);
 
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		x[i] = x2[i];
 }
 

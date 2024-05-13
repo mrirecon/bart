@@ -56,7 +56,7 @@ const struct initializer_s* initializer_clone(const struct initializer_s* x)
 	return x;
 }
 
-void initializer_apply(const struct initializer_s* x, long N, const long dims[N], complex float* weights)
+void initializer_apply(const struct initializer_s* x, int N, const long dims[N], complex float* weights)
 {
 	x->fun(x, N, dims, weights);
 }
@@ -149,7 +149,7 @@ struct initializer_const_s {
 
 static DEF_TYPEID(initializer_const_s);
 
-static void init_const_fun(const init_t* conf_, long N, const long dims[N], complex float* weights)
+static void init_const_fun(const init_t* conf_, int N, const long dims[N], complex float* weights)
 {
 	auto conf = CAST_DOWN(initializer_const_s, conf_);
 
@@ -189,12 +189,12 @@ struct initializer_fixed_s {
 
 static DEF_TYPEID(initializer_fixed_s);
 
-static void init_fixed_fun(const init_t* conf_, long N, const long dims[N], complex float* weights)
+static void init_fixed_fun(const init_t* conf_, int N, const long dims[N], complex float* weights)
 {
 	auto conf = CAST_DOWN(initializer_fixed_s, conf_);
 
 	assert(N == conf->N);
-	assert(md_check_equal_dims(N, dims, conf->dims, ~0));
+	assert(md_check_equal_dims(N, dims, conf->dims, ~0UL));
 
 	md_copy(N, dims, weights, conf->data, CFL_SIZE);
 }
@@ -234,7 +234,7 @@ const struct initializer_s* init_array_create(int N, const long dims[N], const c
 }
 
 // Returns real/complex uniform/normal distribution with mean 0 and variance 1
-static void get_base_dist(unsigned int N, const long dims[N], complex float* dst, bool uniform, bool real)
+static void get_base_dist(int N, const long dims[N], complex float* dst, bool uniform, bool real)
 {
 	if (uniform) {
 
@@ -269,7 +269,7 @@ static void get_base_dist(unsigned int N, const long dims[N], complex float* dst
 Xavier Glorot, Yoshua Bengio ; Proceedings of the Thirteenth International Conference on Artificial Intelligence and Statistics, JMLR Workshop and Conference Proceedings 9:249-256, 2010.
 Glorot, X. & Bengio, Y.. (2010). Understanding the difficulty of training deep feedforward neural networks. Proceedings of the Thirteenth International Conference on Artificial Intelligence and Statistics, in PMLR 9:249-256
 */
-static float get_scaling_xavier(unsigned int N, const long dims[N], unsigned long in_flags, unsigned long out_flags)
+static float get_scaling_xavier(int N, const long dims[N], unsigned long in_flags, unsigned long out_flags)
 {
 	long tdims[N];
 	md_select_dims(N, in_flags, tdims, dims);
@@ -285,7 +285,7 @@ static float get_scaling_xavier(unsigned int N, const long dims[N], unsigned lon
 /*
 He, K.; Zhang, X.; Ren, S. & Sun, J. (2015). Delving Deep into Rectifiers: Surpassing Human-Level Performance on ImageNet Classification
 */
-static float get_scaling_kaiming(unsigned int N, const long dims[N], unsigned long in_flags, float leaky_val)
+static float get_scaling_kaiming(int N, const long dims[N], unsigned long in_flags, float leaky_val)
 {
 	long tdims[N];
 	md_select_dims(N, in_flags, tdims, dims);
@@ -309,7 +309,7 @@ struct initializer_xavier_kaiming_s {
 
 static DEF_TYPEID(initializer_xavier_kaiming_s);
 
-static void init_xavier_fun(const init_t* conf_, long N, const long dims[N], complex float* weights)
+static void init_xavier_fun(const init_t* conf_, int N, const long dims[N], complex float* weights)
 {
 	auto conf = CAST_DOWN(initializer_xavier_kaiming_s, conf_);
 
@@ -317,7 +317,7 @@ static void init_xavier_fun(const init_t* conf_, long N, const long dims[N], com
 	md_zsmul(N, dims, weights, weights, get_scaling_xavier(N, dims, conf->in_flags, conf->out_flags));
 }
 
-static void init_kaiming_fun(const init_t* conf_, long N, const long dims[N], complex float* weights)
+static void init_kaiming_fun(const init_t* conf_, int N, const long dims[N], complex float* weights)
 {
 	auto conf = CAST_DOWN(initializer_xavier_kaiming_s, conf_);
 
@@ -404,7 +404,7 @@ struct initializer_std_normal_s {
 
 static DEF_TYPEID(initializer_std_normal_s);
 
-static void init_std_normal_fun(const init_t* conf_, long N, const long dims[N], complex float* weights)
+static void init_std_normal_fun(const init_t* conf_, int N, const long dims[N], complex float* weights)
 {
 	auto conf = CAST_DOWN(initializer_std_normal_s, conf_);
 
@@ -451,7 +451,7 @@ struct initializer_linspace_s {
 
 	INTERFACE(init_t);
 
-	unsigned int dim;
+	int dim;
 
 	complex float min_val;
 	complex float max_val;
@@ -461,7 +461,7 @@ struct initializer_linspace_s {
 
 static DEF_TYPEID(initializer_linspace_s);
 
-static void init_linspace_fun(const init_t* conf_, long N, const long dims[N], complex float* weights)
+static void init_linspace_fun(const init_t* conf_, int N, const long dims[N], complex float* weights)
 {
 	auto conf = CAST_DOWN(initializer_linspace_s, conf_);
 
@@ -488,7 +488,7 @@ static void init_linspace_fun(const init_t* conf_, long N, const long dims[N], c
  *
  * @returns Linear spaced initializer
  */
-const struct initializer_s* init_linspace_create(unsigned int dim, complex float min_val, complex float max_val, bool max_inc)
+const struct initializer_s* init_linspace_create(int dim, complex float min_val, complex float max_val, bool max_inc)
 {
 	PTR_ALLOC(struct initializer_linspace_s, data);
 	SET_TYPEID(initializer_linspace_s, data);
@@ -509,7 +509,7 @@ struct initializer_reshape_s {
 
 	INTERFACE(init_t);
 
-	unsigned int N;
+	int N;
 	long* dims;
 
 	const struct initializer_s* init;
@@ -517,7 +517,7 @@ struct initializer_reshape_s {
 
 static DEF_TYPEID(initializer_reshape_s);
 
-static void init_reshape_fun(const init_t* conf_, long N, const long dims[N], complex float* weights)
+static void init_reshape_fun(const init_t* conf_, int N, const long dims[N], complex float* weights)
 {
 	auto d = CAST_DOWN(initializer_reshape_s, conf_);
 
@@ -536,7 +536,7 @@ static void init_reshape_del(const init_t* conf_)
 /**
  * Used internally to apply initializer with original dimensions if the input of a nn_t is reshaped
  */
-const struct initializer_s* init_reshape_create(unsigned int N, const long dims[N], const struct initializer_s* init)
+const struct initializer_s* init_reshape_create(int N, const long dims[N], const struct initializer_s* init)
 {
 	if (NULL == init)
 		return NULL;
@@ -564,7 +564,7 @@ struct initializer_stack_s {
 
 	INTERFACE(init_t);
 
-	unsigned int N;
+	int N;
 	long* dims;
 	long* dimsa;
 	long* dimsb;
@@ -576,7 +576,7 @@ struct initializer_stack_s {
 
 static DEF_TYPEID(initializer_stack_s);
 
-static void init_stack_fun(const init_t* conf_, long N, const long dims[N], complex float* weights)
+static void init_stack_fun(const init_t* conf_, int N, const long dims[N], complex float* weights)
 {
 	auto d = CAST_DOWN(initializer_stack_s, conf_);
 
@@ -614,7 +614,7 @@ static void init_stack_del(const init_t* conf_)
  * Used internally to apply initializers of original inputs if two inputs of a nn_t are stacked
  * If only one initializer is set, the other will fall back to a zero initializer
  */
-const struct initializer_s* init_stack_create(unsigned int N, int stack_dim, const long dimsa[N], const struct initializer_s* inita, const long dimsb[N], const struct initializer_s* initb)
+const struct initializer_s* init_stack_create(int N, int stack_dim, const long dimsa[N], const struct initializer_s* inita, const long dimsb[N], const struct initializer_s* initb)
 {
 	if (NULL == inita && NULL == initb)
 		return NULL;
@@ -628,8 +628,8 @@ const struct initializer_s* init_stack_create(unsigned int N, int stack_dim, con
 
 	data->N = N;
 
-	data->stack_dim = (0 > stack_dim) ? (int)N + stack_dim : stack_dim;
-	assert((0 <= data->stack_dim) && (data->stack_dim < (int)N));
+	data->stack_dim = (0 > stack_dim) ? N + stack_dim : stack_dim;
+	assert((0 <= data->stack_dim) && (data->stack_dim < N));
 
 	data->inita = (NULL == inita) ? init_const_create(0) : initializer_clone(inita);
 	data->initb = (NULL == initb) ? init_const_create(0) : initializer_clone(initb);

@@ -705,8 +705,8 @@ static void rdiag_fun(const nlop_data_t* _data, int N, int OO, const long odims[
 	assert(1 == OO);
 	assert(1 == II);
 
-	assert(md_check_equal_dims(N, idims[0], ddims[0][0], ~0));
-	assert(md_check_equal_dims(N, odims[0], ddims[0][0], ~0));
+	assert(md_check_equal_dims(N, idims[0], ddims[0][0], ~0UL));
+	assert(md_check_equal_dims(N, odims[0], ddims[0][0], ~0UL));
 
 	assert(NULL == data->zdiag_fun);
 	data->rdiag_fun(data->data, N, odims[0], dst[0], src[0], jac[0][0]);
@@ -882,10 +882,10 @@ void linop_compute_matrix_zblock_diag_fwd(const struct linop_s* lop, int N, cons
 	md_calc_strides(N, dstrs, ddims, CFL_SIZE);
 
 	long mdims[N];
-	md_max_dims(N, ~0, mdims, odims, idims);
-	assert(md_check_equal_dims(N, mdims, ddims, ~0));
-	assert(md_check_compat(N, ~0, odims, ddims));
-	assert(md_check_compat(N, ~0, idims, ddims));
+	md_max_dims(N, ~0UL, mdims, odims, idims);
+	assert(md_check_equal_dims(N, mdims, ddims, ~0UL));
+	assert(md_check_compat(N, ~0UL, odims, ddims));
+	assert(md_check_compat(N, ~0UL, idims, ddims));
 
 	unsigned long loop_flags = md_nontriv_dims(N, idims) & ~md_nontriv_dims(N, odims);
 	long diag_dims[N];
@@ -930,10 +930,10 @@ void linop_compute_matrix_zblock_diag_bwd(const struct linop_s* lop, int N, cons
 	md_calc_strides(N, dstrs, ddims, CFL_SIZE);
 
 	long mdims[N];
-	md_max_dims(N, ~0, mdims, odims, idims);
-	assert(md_check_equal_dims(N, mdims, ddims, ~0));
-	assert(md_check_compat(N, ~0, odims, ddims));
-	assert(md_check_compat(N, ~0, idims, ddims));
+	md_max_dims(N, ~0UL, mdims, odims, idims);
+	assert(md_check_equal_dims(N, mdims, ddims, ~0UL));
+	assert(md_check_compat(N, ~0UL, odims, ddims));
+	assert(md_check_compat(N, ~0UL, idims, ddims));
 
 	unsigned long loop_flags = ~md_nontriv_dims(N, idims) & md_nontriv_dims(N, odims);
 	long diag_dims[N];
@@ -1014,10 +1014,10 @@ void linop_compute_matrix_rblock_diag_fwd(const struct linop_s* lop, int N, cons
 	md_calc_strides(N, dstrs, ddims, FL_SIZE);
 
 	long mdims[N];
-	md_max_dims(N, ~0, mdims, odims, idims);
-	assert(md_check_equal_dims(N, mdims, ddims, ~0));
-	assert(md_check_compat(N, ~0, odims, ddims));
-	assert(md_check_compat(N, ~0, idims, ddims));
+	md_max_dims(N, ~0UL, mdims, odims, idims);
+	assert(md_check_equal_dims(N, mdims, ddims, ~0UL));
+	assert(md_check_compat(N, ~0UL, odims, ddims));
+	assert(md_check_compat(N, ~0UL, idims, ddims));
 
 	unsigned long loop_flags = md_nontriv_dims(N, idims) & ~md_nontriv_dims(N, odims);
 	long diag_dims[N];
@@ -1082,10 +1082,10 @@ void linop_compute_matrix_rblock_diag_bwd(const struct linop_s* lop, int N, cons
 	md_calc_strides(N, dstrs, ddims, FL_SIZE);
 
 	long mdims[N];
-	md_max_dims(N, ~0, mdims, odims, idims);
-	assert(md_check_equal_dims(N, mdims, ddims, ~0));
-	assert(md_check_compat(N, ~0, odims, ddims));
-	assert(md_check_compat(N, ~0, idims, ddims));
+	md_max_dims(N, ~0UL, mdims, odims, idims);
+	assert(md_check_equal_dims(N, mdims, ddims, ~0UL));
+	assert(md_check_compat(N, ~0UL, odims, ddims));
+	assert(md_check_compat(N, ~0UL, idims, ddims));
 
 	unsigned long loop_flags = ~md_nontriv_dims(N, idims) & md_nontriv_dims(N, odims);
 	long diag_dims[N];

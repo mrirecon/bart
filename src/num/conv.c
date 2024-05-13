@@ -54,7 +54,7 @@ struct conv_plan {
 
 
 
-struct conv_plan* conv_plan(int N, unsigned int flags, enum conv_type ctype, enum conv_mode cmode, const long odims[N],  
+struct conv_plan* conv_plan(int N, unsigned long flags, enum conv_type ctype, enum conv_mode cmode, const long odims[N],  
 		const long idims1[N], const long idims2[N], const complex float* src2)
 {
 	assert(   (!((CONV_VALID == ctype) || (CONV_EXTENDED == ctype)))
@@ -285,7 +285,7 @@ void conv_adjoint(struct conv_plan* plan, complex float* dst, const complex floa
 
 
 
-void conv(int N, unsigned int flags, enum conv_type ctype, enum conv_mode cmode, const long odims[N], complex float* dst, 
+void conv(int N, unsigned long flags, enum conv_type ctype, enum conv_mode cmode, const long odims[N], complex float* dst,
 		const long idims1[N], const complex float* src1, const long idims2[N], const complex float* src2)
 {
 	struct conv_plan* plan = conv_plan(N, flags, ctype, cmode, odims, idims1, idims2, src2);
@@ -296,7 +296,7 @@ void conv(int N, unsigned int flags, enum conv_type ctype, enum conv_mode cmode,
 
 
 
-void convH(int N, unsigned int flags, enum conv_type ctype, enum conv_mode cmode, const long odims[N], complex float* dst, 
+void convH(int N, unsigned long flags, enum conv_type ctype, enum conv_mode cmode, const long odims[N], complex float* dst,
 		const long idims1[N], const complex float* src1, const long idims2[N], const complex float* src2)
 {
 	struct conv_plan* plan = conv_plan(N, flags, ctype, cmode, idims1, odims, idims2, src2); // idims1 <-> odims

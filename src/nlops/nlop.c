@@ -1114,9 +1114,9 @@ struct nlop_s* nlop_flatten(const struct nlop_s* op)
 
 	long odims[1] = { 0 };
 	long ostrs[] = { CFL_SIZE };
-	size_t olast = 0;
+	long olast = 0;
 
-	PTR_ALLOC(size_t[OO + II], offs);
+	PTR_ALLOC(long[OO + II], offs);
 
 	for (int o = 0; o < OO; o++) {
 
@@ -1127,13 +1127,13 @@ struct nlop_s* nlop_flatten(const struct nlop_s* op)
 
 		odims[0] += md_calc_size(iov->N, iov->dims);
 		(*offs)[o] = olast;
-		olast = odims[0] * CFL_SIZE;
+		olast = odims[0] * (long)CFL_SIZE;
 	}
 
 
 	long idims[1] = { 0 };
 	long istrs[1] = { CFL_SIZE };
-	size_t ilast = 0;
+	long ilast = 0;
 
 	for (int i = 0; i < II; i++) {
 
@@ -1144,7 +1144,7 @@ struct nlop_s* nlop_flatten(const struct nlop_s* op)
 
 		idims[0] += md_calc_size(iov->N, iov->dims);
 		(*offs)[OO + i] = ilast;
-		ilast = idims[0] * CFL_SIZE;
+		ilast = idims[0] * (long)CFL_SIZE;
 	}
 
 	PTR_ALLOC(struct flatten_s, data);

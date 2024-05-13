@@ -22,20 +22,22 @@
 #include "blockproc.h"
 
 
-float lineproc2( unsigned int D,  const long dims[D], const long blkdims[D], const long line_dims[D], const void* data,
+float lineproc2( int D,  const long dims[D], const long blkdims[D], const long line_dims[D], const void* data,
 		 float (*op)(const void* data, const long blkdims[D], complex float* dst, const complex float* src), 
 		 const long ostrs[D], complex float* dst, const long istrs[D], const complex float* src )
 {
 	// Get number of blocks per dimension
 	long nblocks[D];
 	long shifts[D];
-	for (unsigned int i = 0; i < D; i++)
-	{
+
+	for (int i = 0; i < D; i++) {
+
 		nblocks[i] = dims[i] - blkdims[i] + 1;
 		shifts[i] = ( dims[i] - nblocks[i] * line_dims[i]) / 2;
 	}
+
 	long line_strs[D];
-	md_calc_strides( D, line_strs, line_dims, CFL_SIZE );
+	md_calc_strides(D, line_strs, line_dims, CFL_SIZE );
 
 	long numblocks = md_calc_size( D, nblocks );
 	float info = 0;
@@ -75,7 +77,7 @@ float lineproc2( unsigned int D,  const long dims[D], const long blkdims[D], con
 }
 
 
-float lineproc( unsigned int D, const long dims[D], const long blkdims[D], const long line_dims[D], const void* data,
+float lineproc(  int D, const long dims[D], const long blkdims[D], const long line_dims[D], const void* data,
 		 float (*op)(const void* data, const long blkdims[D], complex float* dst, const complex float* src), 
 		 complex float* dst, const complex float* src )
 {
@@ -86,14 +88,14 @@ float lineproc( unsigned int D, const long dims[D], const long blkdims[D], const
 }
 
 
-float blockproc_shift_mult2( unsigned int D, const long dims[D], const long blkdims[D], const long shifts[D], const long mult[D], const void* data,
+float blockproc_shift_mult2(int D, const long dims[D], const long blkdims[D], const long shifts[D], const long mult[D], const void* data,
 			float (*op)(const void* data, const long blkdims[D], complex float* dst, const complex float* src), 
-			const long ostrs[D], complex float* dst, const long istrs[D], const complex float* src )
+			const long ostrs[D], complex float* dst, const long istrs[D], const complex float* src)
 {
 	float info = 0;
 	long pos[D];
 
-	for (unsigned int i = 0; i < D; i++) {	
+	for (int i = 0; i < D; i++) {	
 
 		pos[i] = shifts[i];
 
@@ -101,7 +103,7 @@ float blockproc_shift_mult2( unsigned int D, const long dims[D], const long blkd
 			pos[i] += dims[i];
 	}
 
-	unsigned int i = 0;
+	int i = 0;
 	while ((i < D) && (0 == pos[i]))
 		i++;
 
@@ -131,45 +133,42 @@ float blockproc_shift_mult2( unsigned int D, const long dims[D], const long blkd
 	dim3[i] = dims[i] - (((dims[i] - shift) / mult[i]) * mult[i]) - shift;
 
 	long off0 = 0;
-	long off1 = off0 + dim0[i] * ostrs[i] / CFL_SIZE;
-	long off2 = off1 + dim1[i] * ostrs[i] / CFL_SIZE;
-	long off3 = off2 + dim2[i] * ostrs[i] / CFL_SIZE;
+	long off1 = off0 + dim0[i] * ostrs[i] / (long)CFL_SIZE;
+	long off2 = off1 + dim1[i] * ostrs[i] / (long)CFL_SIZE;
+	long off3 = off2 + dim2[i] * ostrs[i] / (long)CFL_SIZE;
 
 	pos[i] = 0;
 
-	info += blockproc_shift_mult2( D, dim0, blkdims, pos, mult, data, op, ostrs, dst + off0, istrs, src + off0 );
-
-	info += blockproc_shift_mult2( D, dim1, blkdims, pos, mult, data, op, ostrs, dst + off1, istrs, src + off1 );
-
-	info += blockproc_shift_mult2( D, dim2, blkdims, pos, mult, data, op, ostrs, dst + off2, istrs, src + off2 );
-
-	info += blockproc_shift_mult2( D, dim3, blkdims, pos, mult, data, op, ostrs, dst + off3, istrs, src + off3 );
+	info += blockproc_shift_mult2(D, dim0, blkdims, pos, mult, data, op, ostrs, dst + off0, istrs, src + off0);
+	info += blockproc_shift_mult2(D, dim1, blkdims, pos, mult, data, op, ostrs, dst + off1, istrs, src + off1);
+	info += blockproc_shift_mult2(D, dim2, blkdims, pos, mult, data, op, ostrs, dst + off2, istrs, src + off2);
+	info += blockproc_shift_mult2(D, dim3, blkdims, pos, mult, data, op, ostrs, dst + off3, istrs, src + off3);
 
 
 	return info;
 }
 
 
-float blockproc_shift_mult( unsigned int D,  const long dims[D], const long blkdims[D], const long shifts[D], const long mult[D], const void* data,
+float blockproc_shift_mult(int D, const long dims[D], const long blkdims[D], const long shifts[D], const long mult[D], const void* data,
 		 float (*op)(const void* data, const long blkdims[D], complex float* dst, const complex float* src), 
-		 complex float* dst, const complex float* src )
+		 complex float* dst, const complex float* src)
 {
 	long strs[D];
-	md_calc_strides( D, strs, dims, CFL_SIZE );
+	md_calc_strides(D, strs, dims, CFL_SIZE);
 
 	return blockproc_shift_mult2( D, dims, blkdims, shifts, mult, data, op, strs, dst, strs, src );
 }
 
 
 
-float blockproc_shift2( unsigned int D, const long dims[D], const long blkdims[D], const long shifts[D], const void* data,
+float blockproc_shift2(int D, const long dims[D], const long blkdims[D], const long shifts[D], const void* data,
 			float (*op)(const void* data, const long blkdims[D], complex float* dst, const complex float* src), 
-			const long ostrs[D], complex float* dst, const long istrs[D], const complex float* src )
+			const long ostrs[D], complex float* dst, const long istrs[D], const complex float* src)
 {
 	float info = 0;
 	long pos[D];
 
-	for (unsigned int i = 0; i < D; i++) {	
+	for (int i = 0; i < D; i++) {	
 
 		pos[i] = shifts[i];
 
@@ -203,14 +202,14 @@ float blockproc_shift2( unsigned int D, const long dims[D], const long blkdims[D
 	pos[i] = 0;
 
 	info += blockproc_shift2( D, dim1, blkdims, pos, data, op, ostrs, dst, istrs, src );
-	info += blockproc_shift2( D, dim2, blkdims, pos, data, op, ostrs, dst + dim1[i]*ostrs[i]/CFL_SIZE, istrs, src + dim1[i]*istrs[i]/CFL_SIZE );
+	info += blockproc_shift2( D, dim2, blkdims, pos, data, op, ostrs, dst + dim1[i] * ostrs[i] / (long)CFL_SIZE, istrs, src + dim1[i] * istrs[i] / (long)CFL_SIZE );
 
 	return info;
 }
 
 
 
-float blockproc_shift( unsigned int D,  const long dims[D], const long blkdims[D], const long shifts[D], const void* data,
+float blockproc_shift( int D,  const long dims[D], const long blkdims[D], const long shifts[D], const void* data,
 		 float (*op)(const void* data, const long blkdims[D], complex float* dst, const complex float* src), 
 		 complex float* dst, const complex float* src )
 {
@@ -222,7 +221,7 @@ float blockproc_shift( unsigned int D,  const long dims[D], const long blkdims[D
 
 
 
-float blockproc_circshift( unsigned int D,  const long dims[D], const long blkdims[D], const long shifts[D], const void* data,
+float blockproc_circshift( int D,  const long dims[D], const long blkdims[D], const long shifts[D], const void* data,
 		 float (*op)(const void* data, const long blkdims[D], complex float* dst, const complex float* src), 
 		 complex float* dst, const complex float* src )
 {
@@ -247,16 +246,14 @@ float blockproc_circshift( unsigned int D,  const long dims[D], const long blkdi
 
 
 
-float blockproc2( unsigned int D,  const long dims[D], const long blkdims[D], const void* data,
+float blockproc2( int D,  const long dims[D], const long blkdims[D], const void* data,
 		 float (*op)(const void* data, const long blkdims[D], complex float* dst, const complex float* src), 
 		 const long ostrs[D], complex float* dst, const long istrs[D], const complex float* src )
 {
 	// Get number of blocks per dimension
 	long nblocks[D];
-	for (unsigned int i = 0; i < D; i++)
-	{
+	for (int i = 0; i < D; i++)
 		nblocks[i] = (float) ( dims[i] + blkdims[i] - 1 ) / (float) blkdims[i];
-	}
 
 	long numblocks = md_calc_size( D, nblocks );
 	float info = 0;
@@ -295,7 +292,7 @@ float blockproc2( unsigned int D,  const long dims[D], const long blkdims[D], co
 }
 
 
-float blockproc( unsigned int D, const long dims[D], const long blkdims[D], const void* data,
+float blockproc( int D, const long dims[D], const long blkdims[D], const void* data,
 		 float (*op)(const void* data, const long blkdims[D], complex float* dst, const complex float* src), 
 		 complex float* dst, const complex float* src )
 {
@@ -307,7 +304,7 @@ float blockproc( unsigned int D, const long dims[D], const long blkdims[D], cons
 
 
 
-float stackproc2( unsigned int D, const long dims[D], const long blkdims[D], unsigned int stkdim, const void* data,
+float stackproc2( int D, const long dims[D], const long blkdims[D], unsigned int stkdim, const void* data,
 		float (*op)(const void* data, const long stkdims[D], complex float* dst, const complex float* src), 
 		 const long ostrs[D], complex float* dst, const long istrs[D], const complex float* src )
 {
@@ -391,7 +388,7 @@ float stackproc2( unsigned int D, const long dims[D], const long blkdims[D], uns
 }
 
 
-float stackproc( unsigned int D, const long dims[D], const long blkdims[D], unsigned int stkdim, const void* data,
+float stackproc( int D, const long dims[D], const long blkdims[D], unsigned int stkdim, const void* data,
 		float (*op)(const void* data, const long stkdims[D], complex float* dst, const complex float* src), 
 		 complex float* dst, const complex float* src )
 {

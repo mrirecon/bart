@@ -498,7 +498,7 @@ const struct nlop_s* nlop_mssim_create(int N, const long dims[N], const long wdi
 	result = nlop_link_F(result, 1, 0);
 	result = nlop_link_F(result, 1, 0); // in: x, y, c1, c2; out: [(2*Cov(x, y)+c2)(2*E[x]E[y]+c1)] / [(Var[x]+Var[y]+c2)(E[x]^2+E[y]^2+c1)]
 
-	result = nlop_chain2_FF(result, 0, nlop_from_linop_F(linop_avg_create(N, odims, ~0)), 0);
+	result = nlop_chain2_FF(result, 0, nlop_from_linop_F(linop_avg_create(N, odims, ~0UL)), 0);
 
 	result = nlop_reshape_out_F(result, 0, 1, MD_SINGLETON_DIMS(1));
 
@@ -514,6 +514,7 @@ const struct nlop_s* nlop_mssim_create(int N, const long dims[N], const long wdi
 
 		result = nlop_chain2_FF(nlop_smo_abs_create(N, dims, L * 1.e-12), 0, result, 0);
 		result = nlop_chain2_FF(nlop_smo_abs_create(N, dims, L * 1.e-12), 0, result, 0);
+
 	} else {
 
 		long mdims[N]; // mean / batch - dims
@@ -1239,7 +1240,7 @@ const struct nlop_s* nlop_dice_create(int N, const long dims[N], unsigned long l
 
 	if (1 != md_calc_size(N, out_dims)) {
 
-		auto linop_avg = linop_avg_create(N, out_dims, ~0);
+		auto linop_avg = linop_avg_create(N, out_dims, ~0UL);
 
 		dice = nlop_chain2_FF(dice, 0, nlop_from_linop_F(linop_avg), 0);
 	}

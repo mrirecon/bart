@@ -149,7 +149,7 @@ static void pos_value(iter_op_data* _data, float* dst, const float* src)
 	long pos[DIMS] = { 0 };
 
 	do {
-		if (!((1UL << pos[COEFF_DIM]) & data->conf->constrained_maps))
+		if (!((1UL << pos[COEFF_DIM]) & (unsigned long)data->conf->constrained_maps))
 			continue;
 
 		md_zsmax2(DIMS, dims1,
@@ -275,7 +275,7 @@ static void inverse_admm(iter_op_data* _data, float alpha, float* dst, const flo
 	conf1.cg_eps = 0.01 * alpha;
 
 	struct iter_admm_conf *conf = &conf1;
-	unsigned int D = data->conf->ropts->r;;
+	int D = data->conf->ropts->r;;
 
 	struct admm_plan_s admm_plan = {
 
@@ -523,8 +523,8 @@ void mdb_irgnm_l1(const struct mdb_irgnm_l1_conf* conf,
 	auto cd = nlop_codomain(nlop);
 	auto dm = nlop_domain(nlop);
 
-	assert(M * sizeof(float) == md_calc_size(cd->N, cd->dims) * cd->size);
-	assert(N * sizeof(float) == md_calc_size(dm->N, dm->dims) * dm->size);
+	assert(M * (long)sizeof(float) == md_calc_size(cd->N, cd->dims) * (long)cd->size);
+	assert(N * (long)sizeof(float) == md_calc_size(dm->N, dm->dims) * (long)dm->size);
 
 	const struct operator_p_s* inv_op = NULL;
 

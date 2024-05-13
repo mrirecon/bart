@@ -12,24 +12,24 @@ struct opt_reg_s;
 struct mdb_irgnm_l1_conf {
 
 	struct iter3_irgnm_conf* c2;
-	unsigned int opt_reg;
+	int opt_reg;
 
 	float step;
 	float lower_bound;
-	long constrained_maps;
+	int constrained_maps;
 	unsigned long l2flags;
 	_Bool auto_norm;
 	_Bool no_sens_l2;
 
 	int not_wav_maps;
-	unsigned int algo;
+	int algo;
 	float rho;
 	struct opt_reg_s* ropts;
 	int tvscales_N;
 	complex float* tvscales;
 	float l1val;
 
-	unsigned int pusteps;
+	int pusteps;
 	float ratio;
 };
 

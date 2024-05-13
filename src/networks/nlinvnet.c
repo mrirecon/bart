@@ -134,18 +134,18 @@ void nlinvnet_init(struct nlinvnet_s* nlinvnet, int N,
 	*(nlinvnet->iter_conf_net) = iter_conjgrad_defaults;
 	nlinvnet->iter_conf_net->INTERFACE.alpha = 0.;
 	nlinvnet->iter_conf_net->l2lambda = 0.;
-	nlinvnet->iter_conf_net->maxiter = (unsigned int)nlinvnet->conf->cgiter;
+	nlinvnet->iter_conf_net->maxiter = nlinvnet->conf->cgiter;
 	nlinvnet->iter_conf_net->tol = 0.;
 
 	nlinvnet->iter_conf = TYPE_ALLOC(struct iter_conjgrad_conf);
 	*(nlinvnet->iter_conf) = iter_conjgrad_defaults;
 	nlinvnet->iter_conf->INTERFACE.alpha = 0.;
 	nlinvnet->iter_conf->l2lambda = 0.;
-	nlinvnet->iter_conf->maxiter = (unsigned int)nlinvnet->conf->cgiter;
+	nlinvnet->iter_conf->maxiter = nlinvnet->conf->cgiter;
 	nlinvnet->iter_conf->tol = nlinvnet->cgtol;
 
 	if (NULL == get_loss_from_option())
-			nlinvnet->train_loss->weighting_mse=1.;
+			nlinvnet->train_loss->weighting_mse = 1.;
 
 	if (NULL == get_val_loss_from_option())
 		nlinvnet->valid_loss = &loss_image_valid;
@@ -207,7 +207,7 @@ static nn_t nlinvnet_sort_args_F(nn_t net)
 	const char * out_names_nlinv[] = { "ksp", "cim", "img", "col" };
 
 	N = nn_get_nr_named_out_args(net);
-	const char* out_names[ARRAY_SIZE(out_names_nlinv) + N];
+	const char* out_names[(int)ARRAY_SIZE(out_names_nlinv) + N];
 
 	for (int i = 0; i < (int)ARRAY_SIZE(out_names_nlinv); i++)
 		out_names[i] = out_names_nlinv[i];
@@ -215,10 +215,10 @@ static nn_t nlinvnet_sort_args_F(nn_t net)
 
 	nn_get_out_names_copy(N, out_names + ARRAY_SIZE(out_names_nlinv), net);
 
-	net = nn_sort_outputs_by_list_F(net, ARRAY_SIZE(out_names_nlinv) + N, out_names);
+	net = nn_sort_outputs_by_list_F(net, (int)ARRAY_SIZE(out_names_nlinv) + N, out_names);
 
 	for (int i = 0; i < N; i++)
-		xfree(out_names[ARRAY_SIZE(out_names_nlinv) + i]);
+		xfree(out_names[(int)ARRAY_SIZE(out_names_nlinv) + i]);
 
 	net = nn_sort_inputs_F(net);
 	net = nn_sort_outputs_F(net);
@@ -241,13 +241,14 @@ static nn_t nlinvnet_sort_args_F(nn_t net)
 }
 
 
-static nn_t nlinvnet_network_create(const struct nlinvnet_s* nlinvnet, unsigned int N, const long _img_dims[N], enum NETWORK_STATUS status)
+static nn_t nlinvnet_network_create(const struct nlinvnet_s* nlinvnet, int N, const long _img_dims[N], enum NETWORK_STATUS status)
 {
 	nn_t network = NULL;
 
 	if (0 < nlinvnet->conv_time) {
 
 		int window_dim = TIME_DIM;
+
 		while (1 != _img_dims[++window_dim])
 			assert(BATCH_DIM > 1);
 
@@ -435,10 +436,10 @@ static nn_t nlinvnet_gn_reg(const struct nlinvnet_s* nlinvnet, struct noir2_net_
 	auto nlop_reg = noir_join_create(model);
 		
 	auto dom = nlop_generic_domain(nlop_reg, 0);
-	nlop_reg = nlop_prepend_FF(nlop_from_linop_F(linop_repmat_create(dom->N, dom->dims, ~0)), nlop_reg, 0);
+	nlop_reg = nlop_prepend_FF(nlop_from_linop_F(linop_repmat_create(dom->N, dom->dims, ~0UL)), nlop_reg, 0);
 		
 	dom = nlop_generic_domain(nlop_reg, 1);
-	nlop_reg = nlop_prepend_FF(nlop_from_linop_F(linop_repmat_create(dom->N, dom->dims, ~0)), nlop_reg, 1);
+	nlop_reg = nlop_prepend_FF(nlop_from_linop_F(linop_repmat_create(dom->N, dom->dims, ~0UL)), nlop_reg, 1);
 
 	nlop_reg = nlop_reshape_in_F(nlop_reg, 0, 1, MD_SINGLETON_DIMS(1));
 	nlop_reg = nlop_reshape_in_F(nlop_reg, 1, 1, MD_SINGLETON_DIMS(1));
@@ -553,14 +554,14 @@ static nn_t nlinvnet_create(const struct nlinvnet_s* nlinvnet, struct noir2_net_
 	// initialization reco
 	const struct nlop_s* nlop_init_reco;
 	if (nlinvnet->real_time_init)
-		nlop_init_reco = noir_rtnlinv_iter_create(model, nlinvnet->iter_conf, nlinvnet->conf->iter - nlinvnet->iter_net, 0, nlinvnet->conf->redu, nlinvnet->conf->alpha_min, nlinvnet->temp_damp);
+		nlop_init_reco = noir_rtnlinv_iter_create(model, nlinvnet->iter_conf, (int)nlinvnet->conf->iter - nlinvnet->iter_net, 0, nlinvnet->conf->redu, nlinvnet->conf->alpha_min, nlinvnet->temp_damp);
 	else
-		nlop_init_reco = noir_gauss_newton_iter_create_create(model, nlinvnet->iter_conf, nlinvnet->conf->iter - nlinvnet->iter_net, nlinvnet->conf->redu, nlinvnet->conf->alpha_min);
+		nlop_init_reco = noir_gauss_newton_iter_create_create(model, nlinvnet->iter_conf, (int)nlinvnet->conf->iter - nlinvnet->iter_net, nlinvnet->conf->redu, nlinvnet->conf->alpha_min);
 	
 	nlop_init_reco = nlop_set_input_scalar_F(nlop_init_reco, 2, 0);
 
 	auto dom_alp = nlop_generic_domain(nlop_init_reco, 2);
-	nlop_init_reco = nlop_prepend_FF(nlop_from_linop_F(linop_repmat_create(dom_alp->N, dom_alp->dims, ~0)), nlop_init_reco, 2);
+	nlop_init_reco = nlop_prepend_FF(nlop_from_linop_F(linop_repmat_create(dom_alp->N, dom_alp->dims, ~0UL)), nlop_init_reco, 2);
 	nlop_init_reco = nlop_reshape_in_F(nlop_init_reco, 2, 1, MD_DIMS(1));
 	
 
@@ -979,7 +980,7 @@ void train_nlinvnet(struct nlinvnet_s* nlinvnet, int Nb, struct named_data_list_
 			{
 				auto iov_weight = nlinvnet->weights->iovs[weight_index];
 				auto iov_train_op = nlop_generic_domain(nn_get_nlop(nn_train), i);
-				assert(md_check_equal_dims(iov_weight->N, iov_weight->dims, iov_train_op->dims, ~0));
+				assert(md_check_equal_dims(iov_weight->N, iov_weight->dims, iov_train_op->dims, ~0UL));
 				src[i] = (float*)nlinvnet->weights->tensors[weight_index];
 				weight_index++;
 			}

@@ -952,7 +952,7 @@ static const struct nlop_s* nlop_mri_normal_inv_slice_create(int N, const long m
 		model = sense_cart_normal_create(N, max_dims, &conf2);
 
 
-	assert(md_check_equal_dims(ND, psf_dims, model->psf_dims, ~0));
+	assert(md_check_equal_dims(ND, psf_dims, model->psf_dims, ~0UL));
 
 	auto result = nlop_sense_model_set_data_create(N, model->img_dims, model, false);
 
@@ -1097,7 +1097,7 @@ static const struct nlop_s* nlop_mri_normal_max_eigen_slice_create(int N, const 
 	else
 		model = sense_cart_normal_create(N, max_dims, &conf2);
 
-	assert(md_check_equal_dims(ND, psf_dims, model->psf_dims, ~0));
+	assert(md_check_equal_dims(ND, psf_dims, model->psf_dims, ~0UL));
 
 	complex float zero = 0;
 

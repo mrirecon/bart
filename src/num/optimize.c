@@ -199,7 +199,7 @@ static void compute_permutation(int N, int ord[N], const long strs[N])
 static void reorder_long(int N, int ord[N], long x[N])
 {
 	long tmp[N];
-	memcpy(tmp, x, N * sizeof(long));
+	memcpy(tmp, x, (size_t)(N * (long)sizeof(long)));
 
 	for (int i = 0; i < N; i++)
 		x[i] = tmp[ord[i]];
@@ -514,7 +514,7 @@ long num_chunk_size = 32 * 256;
  * compute set of dimensions to parallelize
  *
  */
-unsigned long dims_parallel(int D, unsigned int io, int N, const long dims[N], long (*strs[D])[N], size_t size[D])
+unsigned long dims_parallel(int D, unsigned long io, int N, const long dims[N], long (*strs[D])[N], size_t size[D])
 {
 	unsigned long flags = parallelizable(D, io, N, dims, strs, size);
 
@@ -603,7 +603,7 @@ bool num_auto_parallelize = true;
  * @param too n-op function
  * @param data_ptr pointer to additional data used by too
  */
-void optimized_nop(int N, unsigned int io, int D, const long dim[D], const long (*nstr[N])[D?:1], void* const nptr[N], size_t sizes[N], md_nary_opt_fun_t too)
+void optimized_nop(int N, unsigned long io, int D, const long dim[D], const long (*nstr[N])[D?:1], void* const nptr[N], size_t sizes[N], md_nary_opt_fun_t too)
 {
 	assert(N > 0);
 

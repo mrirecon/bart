@@ -1,4 +1,4 @@
-extern _Bool simple_zconvcorr(	unsigned int N, const long dims[__VLA(N)],
+extern _Bool simple_zconvcorr(	int N, const long dims[__VLA(N)],
 				const long ostrs[__VLA(N)], _Complex float* optr,
 				const long istrs1[__VLA(N)], const _Complex float* iptr1,
 				const long istrs2[__VLA(N)], const _Complex float* iptr2);

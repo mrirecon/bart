@@ -112,6 +112,7 @@ typedef float opt_fvec4_t[4];
 #define OPTL_OUTFILE(c, s, ptr, argname, descr)	OPTL_ARG(c, s, OPT_OUTFILE, const char*, ptr, argname, descr)
 #define OPTL_INOUTFILE(c, s, ptr, argname, descr)	OPTL_ARG(c, s, OPT_INOUTFILE, const char*, ptr, argname, descr)
 #define OPTL_UINT(c, s, ptr, argname, descr)	OPTL_ARG(c, s, OPT_UINT, unsigned int, ptr, argname, descr)
+#define OPTL_PINT(c, s, ptr, argname, descr)	OPTL_ARG(c, s, OPT_INT, int, ptr, argname, descr)
 #define OPTL_INT(c, s, ptr, argname, descr)	OPTL_ARG(c, s, OPT_INT, int, ptr, argname, descr)
 #define OPTL_ULONG(c, s, ptr, argname, descr)	OPTL_ARG(c, s, OPT_ULONG, unsigned long, ptr, argname, descr)
 #define OPTL_LONG(c, s, ptr, argname, descr)	OPTL_ARG(c, s, OPT_LONG, long, ptr, argname, descr)

@@ -55,12 +55,12 @@ static bool use_simple_convcorr = true;
  * @param size size of data structures, e.g. complex float
  * @param too three-op multiply function
  */
-static void optimized_threeop_oii(unsigned int D, const long dim[D], const long ostr[D], void* optr, const long istr1[D], const void* iptr1, const long istr2[D], const void* iptr2, size_t sizes[3], md_nary_opt_fun_t too)
+static void optimized_threeop_oii(int D, const long dim[D], const long ostr[D], void* optr, const long istr1[D], const void* iptr1, const long istr2[D], const void* iptr2, size_t sizes[3], md_nary_opt_fun_t too)
 {
 	const long (*nstr[3])[D?D:1] = { (const long (*)[D?D:1])ostr, (const long (*)[D?D:1])istr1, (const long (*)[D?D:1])istr2 };
 	void *nptr[3] = { optr, (void*)iptr1, (void*)iptr2 };
 
-	unsigned int io = 1 + ((iptr1 == optr) ? 2 : 0) + ((iptr2 == optr) ? 4 : 0);
+	unsigned long io = 1UL + ((iptr1 == optr) ? 2 : 0) + ((iptr2 == optr) ? 4 : 0);
 
 	optimized_nop(3, io, D, dim, nstr, nptr, sizes, too);
 }
@@ -108,15 +108,15 @@ static bool detect_convcorr(	int N,
 
 
 //functions detecting strides for a specific call and running the algorithms
-static bool simple_zconvcorr_fwd(	unsigned int N, const long dims[N],
+static bool simple_zconvcorr_fwd(	int N, const long dims[N],
 					const long ostrs[N], complex float* optr,
 					const long istrs1[N], const complex float* iptr1,
 					const long istrs2[N], const complex float* iptr2);
-static bool simple_zconvcorr_bwd_in(	unsigned int N, const long dims[N],
+static bool simple_zconvcorr_bwd_in(	int N, const long dims[N],
 					const long ostrs[N], complex float* optr,
 					const long istrs1[N], const complex float* iptr1,
 					const long istrs2[N], const complex float* iptr2);
-static bool simple_zconvcorr_bwd_krn(	unsigned int N, const long dims[N],
+static bool simple_zconvcorr_bwd_krn(	int N, const long dims[N],
 					const long ostrs[N], complex float* optr,
 					const long istrs1[N], const complex float* iptr1,
 					const long istrs2[N], const complex float* iptr2);
@@ -130,7 +130,7 @@ static bool detect_convcorr(	int N,
 				const long dims[2 * N], const long ostrs[2 * N], const long istrs[2 * N], const long kstrs[2 * N],
 				size_t size)
 {
-	long istrs_triv = size;
+	long istrs_triv = (long)size;
 
 	*ptr_flag = 0;
 	*ptr_conv = true;
@@ -160,7 +160,7 @@ static bool detect_convcorr(	int N,
 			long test_strides[] = { istrs[i] / istrs_triv, 1, 2, 3, 4, 5, 6, 7, 8 };
 			bool found = false;
 
-			for (unsigned int j = 0; !found && j < ARRAY_SIZE(test_strides); j++) {
+			for (int j = 0; !found && j < ARRAY_SIZE(test_strides); j++) {
 
 				strides[i] = test_strides[j];
 
@@ -229,7 +229,7 @@ static bool detect_convcorr(	int N,
 					nodims, nostrs, nkdims, nkstrs, nidims, nistrs,
 					dilation, strides, *ptr_conv, false);
 
-	assert(md_check_equal_dims(2 * N, tdims, dims, ~(0l)));
+	assert(md_check_equal_dims(2 * N, tdims, dims, ~0UL));
 	assert(md_check_equal_dims(2 * N, tostrs, ostrs, md_nontriv_dims(2 * N, dims)));
 	assert(md_check_equal_dims(2 * N, tistrs, istrs, md_nontriv_dims(2 * N, dims)));
 	assert(md_check_equal_dims(2 * N, tkstrs, kstrs, md_nontriv_dims(2 * N, dims)));
@@ -238,7 +238,7 @@ static bool detect_convcorr(	int N,
 }
 
 
-bool simple_zconvcorr(	unsigned int N, const long dims[N],
+bool simple_zconvcorr(	int N, const long dims[N],
 			const long ostrs[N], complex float* optr,
 			const long istrs1[N], const complex float* iptr1,
 			const long istrs2[N], const complex float* iptr2)
@@ -263,7 +263,7 @@ bool simple_zconvcorr(	unsigned int N, const long dims[N],
 
 
 //The following three function detect a (transposed) convolution and run the specific algorithms
-static bool simple_zconvcorr_fwd(	unsigned int N, const long dims[N],
+static bool simple_zconvcorr_fwd(	int N, const long dims[N],
 					const long ostrs[N], complex float* optr,
 					const long istrs1[N], const complex float* iptr1,
 					const long istrs2[N], const complex float* iptr2)
@@ -335,11 +335,11 @@ static bool simple_zconvcorr_fwd(	unsigned int N, const long dims[N],
 						nodims, nostrs,
 						nkdims, nkstrs,
 						nidims, nistrs,
-						dilation, strides, conv, false) / size;
+						dilation, strides, conv, false) / (long)size;
 
 #ifdef USE_CUDA
 	if (cuda_ondevice(out))
-		for(int i = 0; (unsigned long)i < sizeof(algos_fwd_gpu) / sizeof(algos_fwd_gpu[0]); i++)
+		for (int i = 0; (unsigned long)i < sizeof(algos_fwd_gpu) / sizeof(algos_fwd_gpu[0]); i++)
 			if (algos_fwd_gpu[i](	N,
 						nodims, nostrs, out,
 						nidims, nistrs, in,
@@ -349,7 +349,7 @@ static bool simple_zconvcorr_fwd(	unsigned int N, const long dims[N],
 
 	if (!cuda_ondevice(out))
 #endif
-		for(int i = 0; (unsigned long)i < sizeof(algos_fwd_cpu) / sizeof(algos_fwd_cpu[0]); i++)
+		for (int i = 0; (unsigned long)i < sizeof(algos_fwd_cpu) / sizeof(algos_fwd_cpu[0]); i++)
 			if (algos_fwd_cpu[i](	N,
 						nodims, nostrs, out,
 						nidims, nistrs, in,
@@ -361,7 +361,7 @@ static bool simple_zconvcorr_fwd(	unsigned int N, const long dims[N],
 }
 
 
-static bool simple_zconvcorr_bwd_in(	unsigned int N, const long dims[N],
+static bool simple_zconvcorr_bwd_in(	int N, const long dims[N],
 					const long ostrs[N], complex float* optr,
 					const long istrs1[N], const complex float* iptr1,
 					const long istrs2[N], const complex float* iptr2)
@@ -433,7 +433,7 @@ static bool simple_zconvcorr_bwd_in(	unsigned int N, const long dims[N],
 						nodims, nostrs,
 						nkdims, nkstrs,
 						nidims, nistrs,
-						dilation, strides, conv, false) / size;
+						dilation, strides, conv, false) / (long)size;
 
 #ifdef USE_CUDA
 	if (cuda_ondevice(out))
@@ -464,7 +464,7 @@ static bool simple_zconvcorr_bwd_in(	unsigned int N, const long dims[N],
 }
 
 
-static bool simple_zconvcorr_bwd_krn(	unsigned int N, const long dims[N],
+static bool simple_zconvcorr_bwd_krn(	int N, const long dims[N],
 					const long ostrs[N], complex float* optr,
 					const long istrs1[N], const complex float* iptr1,
 					const long istrs2[N], const complex float* iptr2)
@@ -536,7 +536,7 @@ static bool simple_zconvcorr_bwd_krn(	unsigned int N, const long dims[N],
 						nodims, nostrs,
 						nkdims, nkstrs,
 						nidims, nistrs,
-						dilation, strides, conv, false) / size;
+						dilation, strides, conv, false) / (long)size;
 
 #ifdef USE_CUDA
 	if (cuda_ondevice(out))
@@ -600,10 +600,10 @@ static bool check_trivial_cf(	int N,
 
 static bool check_trivial_strs_dil(int N, const long dilation[N], const long strides[N])
 {
-	if ((NULL != dilation) && (!md_check_equal_dims(N, dilation, MD_SINGLETON_DIMS(N), ~(0l))))
+	if ((NULL != dilation) && (!md_check_equal_dims(N, dilation, MD_SINGLETON_DIMS(N), ~0UL)))
 		return false;
 
-	if ((NULL != strides) && (!md_check_equal_dims(N, strides, MD_SINGLETON_DIMS(N), ~(0l))))
+	if ((NULL != strides) && (!md_check_equal_dims(N, strides, MD_SINGLETON_DIMS(N), ~0UL)))
 		return false;
 
 	return true;
@@ -697,7 +697,7 @@ bool zconvcorr_fwd_im2col_cf_cpu(int N,
 	};
 
 	optimized_threeop_oii(N - 5, mdims, ostrs + 5, (void*)out, istrs + 5, (void*)in, kstrs + 5, (void*)krn,
-				(size_t[3]){ size * osize, size * isize, size * ksize},
+				(size_t[3]){ (size_t)(size * osize), (size_t)(size * isize), (size_t)(size * ksize) },
 				nary_zconvcorr3D_I2C_CF);
 
 	debug_printf(DP_DEBUG3, "conv by %s \n", __func__);

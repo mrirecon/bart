@@ -232,8 +232,8 @@ static void tenmul_block_diag_fun(const nlop_data_t* /*_data*/, int N, int OO, c
 	assert(1 == OO);
 	assert(2 == II);
 
-	assert(md_check_equal_dims(N, idims[0], ddims[0][1], ~0));
-	assert(md_check_equal_dims(N, idims[1], ddims[0][0], ~0));
+	assert(md_check_equal_dims(N, idims[0], ddims[0][1], ~0UL));
+	assert(md_check_equal_dims(N, idims[1], ddims[0][0], ~0UL));
 
 	md_ztenmul(N, odims[0], dst[0], idims[0], src[0], idims[1], src[1]);
 

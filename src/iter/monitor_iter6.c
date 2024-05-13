@@ -28,11 +28,11 @@
 typedef struct monitor_iter6_value_data_s {
 
 	const struct typeid_s* TYPEID;
-	unsigned int N_vals;
+	int N_vals;
 
 } monitor_iter6_value_data_t;
 
-typedef void (*monitor_iter6_value_fun_t)(const monitor_iter6_value_data_t* data, unsigned int N, complex float vals[N], long NI, const float* args[NI]);
+typedef void (*monitor_iter6_value_fun_t)(const monitor_iter6_value_data_t* data, int N, complex float vals[N], long NI, const float* args[NI]);
 typedef bool (*monitor_iter6_value_eval_t)(const monitor_iter6_value_data_t* data, long epoch, long batch, long numbatches);
 typedef const char* (*monitor_iter6_value_print_string_t)(const monitor_iter6_value_data_t* data);
 typedef void (*monitor_iter6_value_free_t)(const monitor_iter6_value_data_t* data);
@@ -166,12 +166,12 @@ static const char* compute_val_monitors(struct monitor_iter6_default_s* monitor,
 
 	for (int i = 0; i < monitor->num_val_monitors; i++) {
 
-		unsigned int N_vals = monitor->val_monitors[i]->data->N_vals;
+		int N_vals = monitor->val_monitors[i]->data->N_vals;
 
 		complex float eval[N_vals];
 		complex float vals[N_vals];
 
-		for (unsigned int i = 0; i < N_vals; i++) {
+		for (int i = 0; i < N_vals; i++) {
 
 			eval[i] = 0;
 			vals[i] = 0;
@@ -179,7 +179,7 @@ static const char* compute_val_monitors(struct monitor_iter6_default_s* monitor,
 
 		if (monitor->val_monitors[i]->eval(monitor->val_monitors[i]->data, epoch, batch, num_batches)) {
 
-			for (unsigned int i = 0; i < N_vals; i++)
+			for (int i = 0; i < N_vals; i++)
 				eval[i] = 1;
 
 			monitor->val_monitors[i]->fun(monitor->val_monitors[i]->data, N_vals, vals, NI, x);
@@ -358,7 +358,7 @@ struct monitor_iter6_nlop_s {
 
 static DEF_TYPEID(monitor_iter6_nlop_s);
 
-static void monitor_iter6_nlop_fun(const monitor_iter6_value_data_t* data, unsigned int N, complex float vals[N], long NI, const float* args[NI])
+static void monitor_iter6_nlop_fun(const monitor_iter6_value_data_t* data, int N, complex float vals[N], long NI, const float* args[NI])
 {
         const auto d = CAST_DOWN(monitor_iter6_nlop_s, data);
 
@@ -406,7 +406,7 @@ static const char* monitor_iter6_nlop_print(const monitor_iter6_value_data_t* _d
 	if (NULL == d->names)
 		return result;
 
-	for (unsigned int i = 0; i < d->INTERFACE.N_vals; i++) {
+	for (int i = 0; i < d->INTERFACE.N_vals; i++) {
 
 		auto tmp = result;
 
@@ -427,7 +427,7 @@ static void monitor_iter6_nlop_free(const monitor_iter6_value_data_t* _data)
 
 	nlop_free(d->nlop);
 
-	for (unsigned int i = 0; i < d->INTERFACE.N_vals; i++)
+	for (int i = 0; i < d->INTERFACE.N_vals; i++)
 		xfree(d->names[i]);
 
 	xfree(d->names);
@@ -436,7 +436,7 @@ static void monitor_iter6_nlop_free(const monitor_iter6_value_data_t* _data)
 }
 
 
-struct monitor_value_s* monitor_iter6_nlop_create(const struct nlop_s* nlop, _Bool eval_each_batch, unsigned int N, const char* print_name[N])
+struct monitor_value_s* monitor_iter6_nlop_create(const struct nlop_s* nlop, bool eval_each_batch, int N, const char* print_name[N])
 {
 	PTR_ALLOC(struct monitor_iter6_nlop_s, data);
 	SET_TYPEID(monitor_iter6_nlop_s, data);
@@ -458,7 +458,7 @@ struct monitor_value_s* monitor_iter6_nlop_create(const struct nlop_s* nlop, _Bo
 
 		PTR_ALLOC(const char*[N], tmp_names);
 
-		for (unsigned int i = 0; i < N; i++) {
+		for (int i = 0; i < N; i++) {
 
 			if ((NULL != print_name[i]) && (0 < strlen(print_name[i]))) {
 
@@ -500,7 +500,7 @@ struct monitor_iter6_function_s {
 
 static DEF_TYPEID(monitor_iter6_function_s);
 
-static void monitor_iter6_function_fun(const monitor_iter6_value_data_t* data, unsigned int N, complex float vals[N], long NI, const float* args[NI])
+static void monitor_iter6_function_fun(const monitor_iter6_value_data_t* data, int N, complex float vals[N], long NI, const float* args[NI])
 {
 	const auto d = CAST_DOWN(monitor_iter6_function_s, data);
 	assert(1 == N);

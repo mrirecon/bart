@@ -47,7 +47,7 @@ void overlapandadd(int N, const long dims[N], const long blk[N], complex float* 
 	complex float* tmp = md_alloc(2 * N, L, CFL_SIZE);
 
 //	conv_causal_extend(2 * N, L, tmp, ndims, src1, ndim2, src2);
-	conv(2 * N, ~0, CONV_EXTENDED, CONV_CAUSAL, L, tmp, ndims, src1, ndim2, src2);
+	conv(2 * N, ~0UL, CONV_EXTENDED, CONV_CAUSAL, L, tmp, ndims, src1, ndim2, src2);
 	// [------++++||||||||
 
 	//long str1[2 * N];
@@ -106,7 +106,7 @@ void overlapandsave(int N, const long dims[N], const long blk[N], complex float*
 
 	md_clear(2 * N, L, tmp, 8);
 	md_copy2(2 * N, ndim3, str2, tmp, str1, src1, 8);
-	conv(2 * N, ~0, CONV_VALID, CONV_CAUSAL, ndims, dst, L, tmp, ndim2, src2);
+	conv(2 * N, ~0UL, CONV_VALID, CONV_CAUSAL, ndims, dst, L, tmp, ndim2, src2);
 
 	md_free(tmp);
 }

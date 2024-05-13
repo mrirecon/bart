@@ -999,7 +999,7 @@ static int xsnprintf(int size, char buf[static size], const char* fmt, ...)
 	va_list ap;
 	va_start(ap, fmt);
 
-	int rv = vsnprintf((size > 0) ? buf : NULL, size, fmt, ap);
+	int rv = vsnprintf((size > 0) ? buf : NULL, (size_t)size, fmt, ap);
 
 	va_end(ap);
 
@@ -1183,7 +1183,7 @@ void cmdline(int* argcp, char* argv[*argcp], int m, struct arg_s args[m], const 
 				continue;
 #if 1
 			for (int k = 0; k < args[i].nargs; ++k)
-				*(void**)args[i].arg[k].ptr = calloc(args[i].arg[k].size, *args[i].count);
+				*(void**)args[i].arg[k].ptr = calloc((size_t)args[i].arg[k].size, *args[i].count);
 #endif
 			int c = 0;
 

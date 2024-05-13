@@ -87,9 +87,9 @@ int get_num_of_coeff(enum meco_model sel_model)
 	return ncoeff;
 }
 
-long get_PD_flag(enum meco_model sel_model)
+unsigned long get_PD_flag(enum meco_model sel_model)
 {
-	long PD_flag = 0;
+	unsigned long PD_flag = 0;
 
 	switch (sel_model) {
 
@@ -132,9 +132,9 @@ long get_PD_flag(enum meco_model sel_model)
 	return PD_flag;
 }
 
-long get_R2S_flag(enum meco_model sel_model)
+unsigned long get_R2S_flag(enum meco_model sel_model)
 {
-	long R2S_flag = 0;
+	unsigned long R2S_flag = 0;
 
 	switch (sel_model) {
 
@@ -173,10 +173,10 @@ long get_R2S_flag(enum meco_model sel_model)
 	return R2S_flag;
 }
 
-long get_fB0_flag(enum meco_model sel_model)
+unsigned long get_fB0_flag(enum meco_model sel_model)
 {
 	// the last parameter is fB0
-	long fB0_flag = 0;
+	unsigned long fB0_flag = 0;
 
 	fB0_flag = MD_SET(fB0_flag, get_num_of_coeff(sel_model) - 1);
 
@@ -876,9 +876,9 @@ static void meco_adj(const nlop_data_t* _data, int /*o*/, int /*i*/, complex flo
 
 
 	// real constraint
-	long  PD_flag = get_PD_flag(data->model);
-	long R2S_flag = get_R2S_flag(data->model);
-	long fB0_flag = get_fB0_flag(data->model);
+	unsigned long  PD_flag = get_PD_flag(data->model);
+	unsigned long R2S_flag = get_R2S_flag(data->model);
+	unsigned long fB0_flag = get_fB0_flag(data->model);
 
 	for (long pind = 0; pind < data->x_dims[COEFF_DIM]; pind++) {
 

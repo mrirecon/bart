@@ -23,7 +23,7 @@ static int compare(const void* _a, const void* _b)
 void zsort(int N, complex float tmp[N])
 {
 
-	qsort(tmp, N, sizeof(complex float), compare);
+	qsort(tmp, (size_t)N, sizeof(complex float), compare);
 }
 
 complex float zselect(int N, int k, const complex float x[N])

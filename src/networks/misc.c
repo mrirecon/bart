@@ -124,7 +124,7 @@ static void load_network_data_precomputed(struct network_data_s* nd)
 
 	nd->ND = (1 != nd->psf_dims[DIMS]) ? DIMS + 1 : DIMS;
 
-	md_max_dims(nd->N, ~0, nd->max_dims, nd->img_dims, nd->col_dims);
+	md_max_dims(nd->N, ~0UL, nd->max_dims, nd->img_dims, nd->col_dims);
 	md_select_dims(nd->N, ~MAPS_FLAG, nd->cim_dims, nd->max_dims);
 
 	if (NULL != nd->filename_basis) {
@@ -142,8 +142,8 @@ static void load_network_data_precomputed(struct network_data_s* nd)
 	} else {
 
 		nd->out = load_cfl(nd->filename_out, DIMS, nd->out_dims);
-		assert(    md_check_equal_dims(DIMS, nd->img_dims, nd->out_dims, ~0)
-			|| md_check_equal_dims(DIMS, nd->cim_dims, nd->out_dims, ~0) );
+		assert(    md_check_equal_dims(DIMS, nd->img_dims, nd->out_dims, ~0UL)
+			|| md_check_equal_dims(DIMS, nd->cim_dims, nd->out_dims, ~0UL));
 	}
 }
 
@@ -194,7 +194,7 @@ static void compute_adjoint_noncart(struct network_data_s* nd)
 
 		md_copy_dims(DIMS, nd->max_dims, nd->ksp_dims);
 		md_copy_dims(5, nd->max_dims, nd->col_dims);
-		md_max_dims(DIMS, ~0, nd->max_dims, nd->max_dims, nd->bas_dims);
+		md_max_dims(DIMS, ~0UL, nd->max_dims, nd->max_dims, nd->bas_dims);
 		nd->max_dims[TE_DIM] = 1;
 
 		md_select_dims(DIMS, ~MAPS_FLAG, nd->cim_dims, nd->max_dims);
@@ -302,7 +302,7 @@ void load_network_data(struct network_data_s* nd)
 			pat_dims[i] = 1;
 	}
 
-	if (!md_check_equal_dims(DIMS, pat_dims, nd->pat_dims, ~0)) {
+	if (!md_check_equal_dims(DIMS, pat_dims, nd->pat_dims, ~0UL)) {
 
 		complex float* tmp = anon_cfl("", DIMS, pat_dims);
 		md_copy2(DIMS, pat_dims, MD_STRIDES(DIMS, pat_dims, CFL_SIZE), tmp, pat_strs, nd->pattern, CFL_SIZE);
@@ -359,8 +359,8 @@ void load_network_data(struct network_data_s* nd)
 	} else {
 
 		nd->out = load_cfl(nd->filename_out, DIMS, nd->out_dims);
-		assert(    md_check_equal_dims(DIMS, nd->img_dims, nd->out_dims, ~0)
-			|| md_check_equal_dims(DIMS, nd->cim_dims, nd->out_dims, ~0) );
+		assert(    md_check_equal_dims(DIMS, nd->img_dims, nd->out_dims, ~0UL)
+			|| md_check_equal_dims(DIMS, nd->cim_dims, nd->out_dims, ~0UL) );
 	}
 
 	load_mem(nd);
@@ -475,7 +475,7 @@ static void merge_slice_to_batch_dim(int N, const long bat_dims[N], long dims[N]
 	md_select_dims(N, bat_flags, tbat_dims, dims);
 	md_copy_dims(N, tdims, dims);
 
-	if ((NULL != data) && (NULL != *data) && (0 != md_nontriv_dims(N, tbat_dims)) && !md_check_equal_dims(N, tbat_dims, bat_dims, ~0)){
+	if ((NULL != data) && (NULL != *data) && (0 != md_nontriv_dims(N, tbat_dims)) && !md_check_equal_dims(N, tbat_dims, bat_dims, ~0UL)){
 
 		for (int i = 0; i < N; i++)
 			if (MD_IS_SET(bat_flags, i))

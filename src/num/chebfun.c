@@ -216,7 +216,7 @@ float* chebfun(int* NP, float (*fun)(float x))
 			       && (coeff[N - 2] < 2. * FLT_EPSILON * coeff[maxind]))
 					N -= 2;
 
-			float* out = xmalloc(sizeof(float) * N);
+			float* out = xmalloc((size_t)((long)sizeof(float) * N));
 
 			for (int i = 0; i < N; i++)
 				out[i] = coeff[i];

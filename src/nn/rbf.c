@@ -144,12 +144,13 @@ static void rbf_fun(const nlop_data_t* _data, int N_args, complex float* args[N_
 			wpos[i] = 0;
 		wpos[data->idx_w] = j;
 
-		const float* wtmp = tmp_w + md_calc_offset(data->N, data->wdom->strs, wpos) / FL_SIZE;
+		const float* wtmp = tmp_w + md_calc_offset(data->N, data->wdom->strs, wpos) / (long)FL_SIZE;
 
 		md_mul2(N, zdims, zstrs, tmp1, wstrs, wtmp, zstrs, tmp1);
 		md_add(N, zdims, real_dst, real_dst, tmp1);
 
 		if (der1) {
+
 			float scale = -(mumin + j * dmu);
 			md_axpy(N, zdims, der_dz, scale, tmp1);
 		}
@@ -225,7 +226,7 @@ static void rbf_der2(const nlop_data_t* _data, int /*o*/, int /*i*/, complex flo
 			wpos[i] = 0;
 		wpos[data->idx_w] = j;
 
-		const float* wtmp = real_src + md_calc_offset(N, wstrs, wpos) / FL_SIZE;
+		const float* wtmp = real_src + md_calc_offset(N, wstrs, wpos) / (long)FL_SIZE;
 
 		md_copy2(N, zdims, zstrs, tmp3, wstrs, wtmp, FL_SIZE); // tmp3 = w_ik
 
@@ -278,7 +279,7 @@ static void rbf_adj2(const nlop_data_t* _data, int /*o*/, int /*i*/, complex flo
 		for (int i = 0; i < N; i++)
 			wpos[i] = 0;
 		wpos[data->idx_w] = j;
-		float* wtmp = real_dst + md_calc_offset(data->N, data->wdom->strs, wpos) / FL_SIZE;
+		float* wtmp = real_dst + md_calc_offset(data->N, data->wdom->strs, wpos) / (long)FL_SIZE;
 
 		md_mul(N, zdims, tmp1, tmp1, real_src); // tmp1 = exp[-(z_ik-mu_j)²/(2*sigma²)] * phi_ik
 		md_add2(N, zdims, wstrs, wtmp, wstrs, wtmp, zstrs, tmp1);

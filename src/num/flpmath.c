@@ -1306,7 +1306,7 @@ void md_zconv2(int N, unsigned long flags,
 	long istrs2[2 * N];
 
 	krn += calc_convcorr_geom(N, flags, mdims, ostrs2, kstrs2, istrs2,
-				  odims, ostrs, kdims, kstrs, idims, istrs, true) / CFL_SIZE;
+				  odims, ostrs, kdims, kstrs, idims, istrs, true) / (long)CFL_SIZE;
 
 	md_ztenmul2(2 * N, mdims, ostrs2, out, kstrs2, krn, istrs2, in);
 }
@@ -1330,7 +1330,7 @@ void md_zcorr2(int N, unsigned long flags,
 	long istrs2[2 * N];
 
 	krn += calc_convcorr_geom(N, flags, mdims, ostrs2, kstrs2, istrs2,
-				  odims, ostrs, kdims, kstrs, idims, istrs, false) / CFL_SIZE;
+				  odims, ostrs, kdims, kstrs, idims, istrs, false) / (long)CFL_SIZE;
 
 	md_ztenmul2(2 * N, mdims, ostrs2, out, kstrs2, krn, istrs2, in);
 }
@@ -2808,8 +2808,8 @@ complex float md_zscalar(int D, const long dim[D], const complex float* ptr1, co
  */
 float md_zscalar_real2(int D, const long dims[D], const long strs1[D], const complex float* ptr1, const long strs2[D], const complex float* ptr2)
 {
-	if (   (is_mpi(ptr1) && !md_check_equal_dims(D, strs1, MD_STRIDES(D, dims, CFL_SIZE), ~0))
-	    || (is_mpi(ptr2) && !md_check_equal_dims(D, strs2, MD_STRIDES(D, dims, CFL_SIZE), ~0))) {
+	if (   (is_mpi(ptr1) && !md_check_equal_dims(D, strs1, MD_STRIDES(D, dims, CFL_SIZE), ~0UL))
+	    || (is_mpi(ptr2) && !md_check_equal_dims(D, strs2, MD_STRIDES(D, dims, CFL_SIZE), ~0UL))) {
 
 		complex float* t1 = md_alloc_sameplace(D, dims, CFL_SIZE, ptr1);
 		complex float* t2 = md_alloc_sameplace(D, dims, CFL_SIZE, ptr2);

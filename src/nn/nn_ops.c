@@ -405,7 +405,7 @@ struct norm_max_abs_s {
 
 	INTERFACE(nlop_data_t);
 
-	unsigned long N;
+	int N;
 	const long* dims;
 	const long* sdims;
 
@@ -423,7 +423,7 @@ static void norm_max_abs_fun(const nlop_data_t* _data, int D, complex float* arg
 
 	const auto data = CAST_DOWN(norm_max_abs_s, _data);
 
-	unsigned long N = data->N;
+	int N = data->N;
 	const long* dims = data->dims;
 	const long* sdims = data->sdims;
 
@@ -459,7 +459,7 @@ static void norm_max_abs_deradj(const nlop_data_t* _data, int /*o*/, int /*i*/, 
 {
 	const auto data = CAST_DOWN(norm_max_abs_s, _data);
 
-	unsigned long N = data->N;
+	int N = data->N;
 	const long* dims = data->dims;
 	const long* sdims = data->sdims;
 
@@ -511,7 +511,7 @@ struct norm_znorm_s {
 
 	INTERFACE(nlop_data_t);
 
-	unsigned long N;
+	int N;
 	const long* dims;
 	const long* sdims;
 
@@ -529,7 +529,7 @@ static void norm_znorm_fun(const nlop_data_t* _data, int D, complex float* args[
 
 	const auto data = CAST_DOWN(norm_znorm_s, _data);
 
-	unsigned long N = data->N;
+	int N = data->N;
 	const long* dims = data->dims;
 	const long* sdims = data->sdims;
 
@@ -554,7 +554,7 @@ static void norm_znorm_deradj(const nlop_data_t* _data, int /*o*/, int /*i*/, co
 {
 	const auto data = CAST_DOWN(norm_znorm_s, _data);
 
-	unsigned long N = data->N;
+	int N = data->N;
 	const long* dims = data->dims;
 	const long* sdims = data->sdims;
 

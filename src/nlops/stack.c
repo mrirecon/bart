@@ -297,6 +297,7 @@ static void stack_container_fun(const nlop_data_t* _data, int N, complex float* 
 	int II = nlop_get_nr_in_args(d->nlops[0]);
 
 	bool der_requested[II][OO];
+
 	for (int i = 0; i < II; i++)
 		for (int o = 0; o < OO; o++)
 			der_requested[i][o]= nlop_der_requested(_data, i, o);
@@ -333,7 +334,7 @@ static void stack_container_fun(const nlop_data_t* _data, int N, complex float* 
 			for (int o = 0; o < d->OO; o++) {
 
 				auto iov = nlop_generic_codomain(d->nlops[i], o);
-				mpi_bcast2(iov->N, iov->dims, iov->strs, (void*)(args[o]) + (d->offsets)[i][o], iov->size, i % mpi_get_num_procs());
+				mpi_bcast2(iov->N, iov->dims, iov->strs, (void*)(args[o]) + (d->offsets)[i][o], (long)iov->size, i % mpi_get_num_procs());
 			}
 		}
 	}
@@ -372,7 +373,7 @@ static void stack_container_der(const nlop_data_t* _data, int o, int i, complex 
 			complex float* dst = (void*)_dst + d->offsets[j][o];
 		
 			auto iov = nlop_generic_codomain(d->nlops[j], o);
-			mpi_bcast2(iov->N, iov->dims, iov->strs, dst, iov->size, j % mpi_get_num_procs());
+			mpi_bcast2(iov->N, iov->dims, iov->strs, dst, (long)iov->size, j % mpi_get_num_procs());
 		}
 	}
 }
@@ -444,7 +445,7 @@ static void stack_container_adj(const nlop_data_t* _data, int o, int i, complex 
 			auto iov = nlop_generic_domain(d->nlops[j], i);
 
 			complex float* dst = (void*)_dst + d->offsets[j][i + d->OO];
-			mpi_bcast2(iov->N, iov->dims, iov->strs, dst, iov->size, j % mpi_get_num_procs());
+			mpi_bcast2(iov->N, iov->dims, iov->strs, dst, (long)iov->size, j % mpi_get_num_procs());
 		}
 
 		auto iov = nlop_generic_domain(d->nlops[0], i);
@@ -522,7 +523,7 @@ static void stack_container_nrm(const nlop_data_t* _data, int o, int i, complex 
 			auto iov = nlop_generic_domain(d->nlops[j], i);
 
 			complex float* dst = (void*)_dst + d->offsets[j][i + d->OO];
-			mpi_bcast2(iov->N, iov->dims, iov->strs, dst, iov->size, j % mpi_get_num_procs());
+			mpi_bcast2(iov->N, iov->dims, iov->strs, dst, (long)iov->size, j % mpi_get_num_procs());
 		}
 
 		auto iov = nlop_generic_domain(d->nlops[0], i);
@@ -915,7 +916,7 @@ static struct nlop_s* nlop_flatten_stacked_transform_input_create(int N, const s
 			} else {
 
 				if (-1 == in_stack_dim[i])
-					assert(md_check_equal_dims(iov->N, st_dims[i], iov->dims, ~0));
+					assert(md_check_equal_dims(iov->N, st_dims[i], iov->dims, ~0UL));
 				else {
 					assert(md_check_equal_dims(iov->N, st_dims[i], iov->dims, ~MD_BIT(in_stack_dim[i])));
 					st_dims[i][in_stack_dim[i]] += iov->dims[in_stack_dim[i]];
@@ -933,7 +934,7 @@ static struct nlop_s* nlop_flatten_stacked_transform_input_create(int N, const s
 		for (int j = 0; j < N; j++) {
 
 			(*istrs)[i][j] = ARR_CLONE(long[(*D)[i][j]], strs);
-			(*ioff)[i][j] = (-1 == in_stack_dim[i]) ? 0 : pos * strs[in_stack_dim[i]] / CFL_SIZE;
+			(*ioff)[i][j] = (-1 == in_stack_dim[i]) ? 0 : pos * strs[in_stack_dim[i]] / (long)CFL_SIZE;
 			pos += (-1 == in_stack_dim[i]) ? 0 : (*dims)[i][j][in_stack_dim[i]];
 		}
 	}
@@ -1024,7 +1025,7 @@ static struct nlop_s* nlop_flatten_stacked_transform_output_create(int N, const 
 		for (int j = 0; j < N; j++) {
 
 			(*ostrs)[i][j] = ARR_CLONE(long[(*D)[i][j]], strs);
-			(*ooff)[i][j] = pos * strs[out_stack_dim[i]] / CFL_SIZE;
+			(*ooff)[i][j] = pos * strs[out_stack_dim[i]] / (long)CFL_SIZE;
 			pos += (*dims)[i][j][out_stack_dim[i]];
 		}
 	}

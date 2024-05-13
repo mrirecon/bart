@@ -177,7 +177,7 @@ static void bloch_fun(const nlop_data_t* _data, complex float* dst, const comple
 				spa_pos[1] = y;
 				spa_pos[2] = z;
 
-				long spa_ind = md_calc_offset(data->N, data->map_strs, spa_pos) / CFL_SIZE;
+				long spa_ind = md_calc_offset(data->N, data->map_strs, spa_pos) / (long)CFL_SIZE;
 
 				//-------------------------------------------------------------------
 				// Define simulation parameter
@@ -249,7 +249,7 @@ static void bloch_fun(const nlop_data_t* _data, complex float* dst, const comple
 
 					curr_pos[TE_DIM] = j;
 
-					position = md_calc_offset(data->N, data->out_strs, curr_pos) / CFL_SIZE;
+					position = md_calc_offset(data->N, data->out_strs, curr_pos) / (long)CFL_SIZE;
 
 					float a = 1.;
 

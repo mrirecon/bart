@@ -185,7 +185,7 @@ const struct nlop_s* nlop_zaxpbz2_create(int N, const long dims[N], unsigned lon
 
 const struct nlop_s* nlop_zaxpbz_create(int N, const long dims[N], complex float scale1, complex float scale2)
 {
-	return nlop_zaxpbz2_create(N, dims, ~0, scale1, ~0, scale2);
+	return nlop_zaxpbz2_create(N, dims, ~0UL, scale1, ~0UL, scale2);
 }
 
 const struct nlop_s* nlop_zsadd_create(int N, const long dims[N], complex float val)
@@ -199,7 +199,7 @@ struct dump_s {
 
 	INTERFACE(nlop_data_t);
 
-	unsigned long N;
+	int N;
 	const long* dims;
 
 	const char* filename;
@@ -372,7 +372,7 @@ struct zmax_s {
 
 	INTERFACE(nlop_data_t);
 
-	unsigned long N;
+	int N;
 	unsigned long flags;
 	const long* outdims;
 	const long* dims;

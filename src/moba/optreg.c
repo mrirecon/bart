@@ -49,13 +49,13 @@ struct optreg_conf optreg_defaults = {
 };
 
 
-static const struct operator_p_s* create_wav_prox(const long img_dims[DIMS], unsigned int x_flags, unsigned int jt_flag, float lambda)
+static const struct operator_p_s* create_wav_prox(const long img_dims[DIMS], unsigned long x_flags, unsigned long jt_flag, float lambda)
 {
 	bool randshift = true;
 	long minsize[DIMS] = { [0 ... DIMS - 1] = 1 };
-	unsigned int wflags = 0;
+	unsigned long wflags = 0;
 
-	for (unsigned int i = 0; i < DIMS; i++) {
+	for (int i = 0; i < DIMS; i++) {
 
 		if ((1 < img_dims[i]) && MD_IS_SET(x_flags, i)) {
 
@@ -68,7 +68,7 @@ static const struct operator_p_s* create_wav_prox(const long img_dims[DIMS], uns
 }
 
 
-static const struct operator_p_s* ops_p_stack_higher_dims(int N, const long maps_dims[N], unsigned int coeff_dim, long higher_flag, const struct operator_p_s* src)
+static const struct operator_p_s* ops_p_stack_higher_dims(int N, const long maps_dims[N], int coeff_dim, unsigned long higher_flag, const struct operator_p_s* src)
 {
 	const struct operator_p_s* tmp = operator_p_ref(src);
 	const struct operator_p_s* dst = operator_p_ref(src);
@@ -91,12 +91,12 @@ static const struct operator_p_s* ops_p_stack_higher_dims(int N, const long maps
 	return dst;
 }
 
-static const struct operator_p_s* moba_joint_wavthresh_prox_create(unsigned int N, const long maps_dims[N], long coeff_dim, long x_flags, long jflag, float lambda, long nr_joint_maps)
+static const struct operator_p_s* moba_joint_wavthresh_prox_create(int N, const long maps_dims[N], int coeff_dim, unsigned long x_flags, unsigned long jflag, float lambda, long nr_joint_maps)
 {
 	// higher dimensions
-	long higher_flag = 0;
+	unsigned long higher_flag = 0;
 
-	for (long d = coeff_dim + 1; d < N; d++)
+	for (int d = coeff_dim + 1; d < N; d++)
 		if (1 < maps_dims[d])
 			higher_flag = MD_SET(higher_flag, d);
 
@@ -126,12 +126,12 @@ static const struct operator_p_s* moba_joint_wavthresh_prox_create(unsigned int 
 }
 
 
-const struct operator_p_s* moba_nonneg_prox_create(unsigned int N, const long maps_dims[N], unsigned int coeff_dim, long nonneg_flag, float lambda)
+const struct operator_p_s* moba_nonneg_prox_create(int N, const long maps_dims[N], int coeff_dim, unsigned long nonneg_flag, float lambda)
 {
 	// higher dimensions
-	long higher_flag = 0;
+	unsigned long higher_flag = 0;
 
-	for (long d = coeff_dim + 1; d < N; d++) {
+	for (int d = coeff_dim + 1; d < N; d++) {
 
 		if (1 < maps_dims[d])
 			higher_flag = MD_SET(higher_flag, d);
@@ -176,7 +176,7 @@ const struct operator_p_s* moba_nonneg_prox_create(unsigned int N, const long ma
 }
 
 
-static const struct operator_p_s* moba_sens_prox_create(unsigned int N, const long sens_dims[N])
+static const struct operator_p_s* moba_sens_prox_create(int N, const long sens_dims[N])
 {
 	const struct operator_p_s* p = prox_zero_create(N, sens_dims);
 	return p;
@@ -289,7 +289,7 @@ bool opt_reg_moba(void* ptr, char c, const char* optarg)
 }
 
 
-static void opt_reg_meco_configure(unsigned int N, const long dims[N], struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], struct optreg_conf* optreg_conf)
+static void opt_reg_meco_configure(int N, const long dims[N], struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], struct optreg_conf* optreg_conf)
 {
 	long maps_dims[N];
 	md_select_dims(N, ~COIL_FLAG, maps_dims, dims);
@@ -312,7 +312,7 @@ static void opt_reg_meco_configure(unsigned int N, const long dims[N], struct op
 
 	// set the flag for the position of the coefficient 
 	// which needs non-negativity constraint
-	long nonneg_flag = get_R2S_flag(optreg_conf->moba_model);
+	unsigned long nonneg_flag = get_R2S_flag(optreg_conf->moba_model);
 
 
 	struct reg_s* regs = ropts->regs;
@@ -388,7 +388,7 @@ static void opt_reg_meco_configure(unsigned int N, const long dims[N], struct op
 	}
 }
 
-static void opt_reg_IRLL_configure(unsigned int N, const long dims[N], struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], struct optreg_conf* optreg_conf)
+static void opt_reg_IRLL_configure(int N, const long dims[N], struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], struct optreg_conf* optreg_conf)
 {
 	float lambda = ropts->lambda;
 #if 0
@@ -537,7 +537,7 @@ static void opt_reg_IRLL_configure(unsigned int N, const long dims[N], struct op
 
 
 
-void opt_reg_moba_configure(unsigned int N, const long dims[N], struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], struct optreg_conf* optreg_conf)
+void opt_reg_moba_configure(int N, const long dims[N], struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], struct optreg_conf* optreg_conf)
 {
 	switch (optreg_conf->moba_model) {
 
