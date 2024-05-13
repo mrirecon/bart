@@ -293,7 +293,7 @@ static void mat_vecmul_columnwise(int A, int B, complex float out[A][B], const c
 			out[a][b] = mat[a][b] * in[a];
 }
 
-void mat_svd_recov(int A, int B, complex float out[A][B], complex float U[A][A], complex float VH[B][B], float S[A])
+void mat_svd_recov(int A, int B, complex float out[A][B], const complex float U[A][A], const complex float VH[B][B], const float S[A])
 {
 	complex float VH2[B][B];
 
@@ -303,14 +303,17 @@ void mat_svd_recov(int A, int B, complex float out[A][B], complex float U[A][A],
 }
 
 // Wrapper for lapack including row-major definition of svd
-void mat_svd(int A, int B, complex float U[A][A], complex float VH[B][B], float S[A], complex float in[A][B])
+void mat_svd(int A, int B, complex float U[A][A], complex float VH[B][B], float S[A], const complex float in[A][B])
 {
-	// Attention: Input will be destroyed by lapack call!
-	lapack_svd(B, A, VH, U, S, in);
+	// Avoid overwriting "in" by lapack call
+	complex float in2[A][B];
+	mat_copy(A, B, in2, in);
+
+	lapack_svd(B, A, VH, U, S, in2);
 }
 
 // pinv(in) = V S^{-1} U^T
-void mat_pinv_svd(int A, int B, complex float out[B][A], complex float in[A][B])
+void mat_pinv_svd(int A, int B, complex float out[B][A], const complex float in[A][B])
 {
 	// Take conj transpose for complex into account
 	mat_conj(A, B, in, in);
@@ -366,7 +369,7 @@ void mat_pinv_svd(int A, int B, complex float out[B][A], complex float in[A][B])
 	}
 }
 
-void mat_schur_recov(int A, complex float out[A][A], complex float T[A][A], complex float Z[A][A])
+void mat_schur_recov(int A, complex float out[A][A], const complex float T[A][A], const complex float Z[A][A])
 {
 
 	complex float Z_adj[A][A];
@@ -379,7 +382,7 @@ void mat_schur_recov(int A, complex float out[A][A], complex float T[A][A], comp
 }
 
 
-void mat_schur(int A, complex float T[A][A], complex float Z[A][A], complex float in[A][A])
+void mat_schur(int A, complex float T[A][A], complex float Z[A][A], const complex float in[A][A])
 {
 	// transpose -> lapack use column-major matrices while native C uses row-major
 	complex float EV[A];
@@ -395,7 +398,7 @@ void mat_schur(int A, complex float T[A][A], complex float Z[A][A], complex floa
 }
 
 
-void mat_ceig_double(int A, complex double EV[A], complex double in[A][A])
+void mat_ceig_double(int A, complex double EV[A], const complex double in[A][A])
 {
 	complex double tmp[A][A];
 
@@ -408,7 +411,7 @@ void mat_ceig_double(int A, complex double EV[A], complex double in[A][A])
 	lapack_schur_double(A, EV, vec, tmp);
 }
 
-void mat_eig_double(int A, double EV[A], double in[A][A])
+void mat_eig_double(int A, double EV[A], const double in[A][A])
 {
 	complex double tmp[A][A];
 	complex double tmp2[A];
