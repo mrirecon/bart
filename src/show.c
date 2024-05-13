@@ -1,11 +1,11 @@
 /* Copyright 2013-2016. The Regents of the University of California.
- * Copyright 2015-2016. Martin Uecker.
+ * Copyright 2015-2024. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2013, 2015-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
- * 2015-2016 Jon Tamir <jtamir.eecs.berkeley.edu>
+ * 2013-2024 Martin Uecker
+ * 2015-2016 Jon Tamir
  */
 
 #define _GNU_SOURCE
@@ -31,7 +31,8 @@
 static const char help_str[] = "Outputs values or meta data.";
 
 
-static void print_cfl(int N, const long dims[N], const complex float* data, const char* fmt, const char* sep)
+static void print_cfl(int N, const long dims[N], const complex float* data, const char* fmt, const char* sep,
+		bool real, bool index)
 {
 	// find first non-trivial dimension
 	int l = 0;
@@ -41,20 +42,23 @@ static void print_cfl(int N, const long dims[N], const complex float* data, cons
 
 	long T = md_calc_size(N, dims);
 
-	const char* allowed_fmts[] = {
-
-		"%%+%*[0-9.]f%%+%*[0-9.]fi%n",
+	const char* allowed_fmts[2][4] = {
+	      { "%%+%*[0-9.]f%%+%*[0-9.]fi%n",
 		"%%+%*[0-9.]e%%+%*[0-9.]ei%n",
 		"%%+%*[0-9.]f,%%+%*[0-9.]f%n",
-		"%%+%*[0-9.]e,%%+%*[0-9.]e%n",
+		"%%+%*[0-9.]e,%%+%*[0-9.]e%n", },
+	      { "%%+%*[0-9.]f%n",
+		"%%+%*[0-9.]e%n",
+		"%%+%*[0-9.]f%n",
+		"%%+%*[0-9.]e%n", },
 	};
 
 	// ensure that the input format string matches one of the valid format templates
-	for (int i = 0; i < (int)ARRAY_SIZE(allowed_fmts); i++) {
+	for (int i = 0; i < (int)ARRAY_SIZE(allowed_fmts[0]); i++) {
 
 		size_t rd = 0;
 
-		if (0 == sscanf(fmt, allowed_fmts[i], &rd))
+		if (0 == sscanf(fmt, allowed_fmts[real][i], &rd))
 			if (strlen(fmt) == rd)
 				goto ok;
 	}
@@ -66,8 +70,18 @@ static void print_cfl(int N, const long dims[N], const complex float* data, cons
 ok:
 	for (long i = 0; i < T; i++) {
 
-		printf(fmt, crealf(data[i]), cimagf(data[i]));
+		if (index)
+			printf("%04d%s", i, sep);
+
+		if (real)
+			printf(fmt, crealf(data[i]));
+		else
+			printf(fmt, crealf(data[i]), cimagf(data[i]));
+
 		printf("%s", (0 == (i + 1) % dims[l]) ? "\n" : sep);
+
+		if (index)
+			printf("\n");
 	}
 }
 
@@ -84,6 +98,8 @@ int main_show(int argc, char* argv[argc])
 
 	bool meta = false;
 	int showdim = -1;
+	bool real = false;
+	bool index = false;
 	const char* sep = "\t";
 	const char* fmt = "%+.6e%+.6ei";
 
@@ -91,6 +107,8 @@ int main_show(int argc, char* argv[argc])
 
 		OPT_SET('m', &meta, "show meta data"),
 		OPT_INT('d', &showdim, "dim", "show size of dimension"),
+		OPT_SET('R', &real, "print only real part"),
+		OPT_SET('N', &index, "print index"),
 		OPT_STRING('s', &sep, "sep", "use <sep> as the separator"),
 		OPT_STRING('f', &fmt, "format", "use <format> as the format. Default: \"%%+.6e%%+.6ei\""),
 	};
@@ -124,9 +142,10 @@ int main_show(int argc, char* argv[argc])
 		goto out;
 	}
 
-	print_cfl(N, dims, data, fmt, sep);
+	print_cfl(N, dims, data, fmt, sep, real, index);
 
 out:
 	unmap_cfl(N, dims, data);
 	return 0;
 }
+
