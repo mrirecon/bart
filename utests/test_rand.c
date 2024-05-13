@@ -11,6 +11,10 @@
 #include <limits.h>
 
 #include "misc/debug.h"
+#include "misc/bench.h"
+#include "misc/nested.h"
+
+
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/fft.h"
@@ -49,58 +53,67 @@ static bool test_threads_rand(md_rand_t function, const char* name)
 	complex float* mt = md_calloc(N, dims, CFL_SIZE);
 	complex float* mt2 = md_calloc(N, dims, CFL_SIZE);
 
+	double gibi = (double) md_calc_size(N, dims) * CHAR_BIT * CFL_SIZE / (1ULL << 30) / 8;
+
+	bool sync_gpu = false; // not need, as it is CPU code
+	bool print_bench = false;
+#ifdef DO_SPEEDTEST
+	print_bench = true;
+#endif
+
 #ifdef _OPENMP
 	int old_omp_dynamic = omp_get_dynamic();
 	int old_omp_threads = omp_get_num_threads();
 
 	omp_set_num_threads(1);
 #endif
-
+	NESTED(void, f_st, (void))
+	{
+		function(N, dims, st);
+	};
 
 	num_rand_init(0xDEADBEEF);
-	double start = timestamp();
-	for (int i = 0; i < rounds; ++i)
-		function(N, dims, st);
-	double stt = timestamp() - start;
+	if (print_bench)
+		bart_printf("times (%s, %ld elements, ~%.2f GiB, %2d rounds):\tsingle thread: ", name, md_calc_size(N, dims), gibi, rounds);
+	run_bench(rounds, print_bench, sync_gpu, f_st);
+
+
 
 	int some_threads = 1;
 #ifdef _OPENMP
 	some_threads = 12;
 	omp_set_num_threads(some_threads);
 #endif
-	num_rand_init(0xDEADBEEF);
-	start = timestamp();
-	for (int i = 0; i < rounds; ++i)
+	NESTED(void, f_mt, (void))
+	{
 		function(N, dims, mt);
-	double mtt = timestamp() - start;
+	};
+	num_rand_init(0xDEADBEEF);
+	if (print_bench)
+		bart_printf("\t\t\t\t\t\t\t\t%5d threads: ", some_threads);
+	run_bench(rounds, print_bench, sync_gpu, f_mt);
 
 	int many_threads = 1;
 #ifdef _OPENMP
 	many_threads = 128;
 	omp_set_num_threads(many_threads);
 #endif
-	num_rand_init(0xDEADBEEF);
-	start = timestamp();
-	for (int i = 0; i < rounds; ++i)
+
+	NESTED(void, f_mt2, (void))
+	{
 		function(N, dims, mt2);
-	double mtt2 = timestamp() - start;
+	};
+	num_rand_init(0xDEADBEEF);
+	if (print_bench)
+		bart_printf("\t\t\t\t\t\t\t\t%5d threads: ", many_threads);
+	run_bench(rounds, print_bench, sync_gpu, f_mt2);
+
 #ifdef _OPENMP
 	omp_set_dynamic(old_omp_dynamic);
 	omp_set_num_threads(old_omp_threads);
 #else
 	(void) some_threads;
 	(void) many_threads;
-#endif
-
-#ifdef DO_SPEEDTEST
-	double gibi = (double) md_calc_size(N, dims) * CHAR_BIT * CFL_SIZE / (1ULL << 30) / 8;
-	debug_printf(DP_INFO, "times (%s, %ld elements, ~%.2f GiB, %d rounds): single thread: %f, %d threads: %f, %d threads: %f\n", name, md_calc_size(N, dims), gibi, rounds, stt/rounds, some_threads, mtt/rounds, many_threads, mtt2/rounds);
-
-#else
-	(void) stt;
-	(void) mtt;
-	(void) mtt2;
-	(void) name;
 #endif
 
 	UT_RETURN_ON_FAILURE(md_compare(N, dims, st, mt, CFL_SIZE));

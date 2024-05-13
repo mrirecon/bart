@@ -19,6 +19,8 @@
 
 #include "misc/debug.h"
 #include "misc/misc.h"
+#include "misc/bench.h"
+#include "misc/nested.h"
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -92,7 +94,10 @@ static bool test_cuda_gaussian_rand(void)
 
 	md_copy(N, dims, gpu_result, gpu, CFL_SIZE);
 
-	UT_RETURN_ON_FAILURE(0 == md_znrmse(N, dims, cpu, gpu_result));
+
+	float err = md_znrmse(N, dims, cpu, gpu_result);
+	debug_printf((err != 0) ? DP_INFO : DP_DEBUG1, "test_cuda_gaussian_rand: error: %.8e, tol %.1e\n", err, 0.0);
+	UT_RETURN_ON_FAILURE(0 == err);
 
 
 	md_free(cpu);
@@ -168,33 +173,35 @@ static bool test_cuda_rand(md_rand_t function, const char* name, double tol)
 	complex float* mt_gpu = md_alloc_gpu(N2, dims2, CFL_SIZE);
 	complex float* mt_gpu_cpu = md_calloc(N2, dims2, CFL_SIZE);
 
+	double gibi = (double) md_calc_size(N2, dims2) * CHAR_BIT * CFL_SIZE / (1ULL << 30) / 8;
+
+	bool sync_gpu = true; // not need, as it is CPU code
+	bool print_bench = false;
+#ifdef DO_SPEEDTEST
+	print_bench = true;
+#endif
+
+	int some_threads = 1;
+
 #ifdef _OPENMP
 	int old_omp_dynamic = omp_get_dynamic();
 	int old_omp_threads = omp_get_num_threads();
 
-	omp_set_num_threads(1);
-#endif
-
-
-	int some_threads = 1;
-#ifdef _OPENMP
 	some_threads = 12;
 	omp_set_num_threads(some_threads);
 #endif
-	num_rand_init(0xDEADBEEF);
-	double start = timestamp();
-	for (int i = 0; i < rounds; ++i)
+
+	NESTED(void, f_mt, (void))
+	{
 		function(N2, dims2, mt);
-	double mtt = timestamp() - start;
+	};
 
 	num_rand_init(0xDEADBEEF);
-	cuda_sync_stream();
-	start = timestamp();
-	for (int i = 0; i < rounds; ++i)
-		function(N2, dims2, mt_gpu);
+	if (print_bench)
+		bart_printf("times (%s, %ld elements, ~%.2f GiB, %2d rounds):\t%5d threads: ", name, md_calc_size(N2, dims2), gibi, rounds, some_threads);
+	run_bench(rounds, print_bench, sync_gpu, f_mt);
 
-	cuda_sync_stream();
-	double gput = timestamp() - start;
+
 #ifdef _OPENMP
 	omp_set_dynamic(old_omp_dynamic);
 	omp_set_num_threads(old_omp_threads);
@@ -202,14 +209,16 @@ static bool test_cuda_rand(md_rand_t function, const char* name, double tol)
 	(void) some_threads;
 #endif
 
-#ifdef DO_SPEEDTEST
-	double gibi = (double) md_calc_size(N2, dims2) * CHAR_BIT * CFL_SIZE / (1ULL << 30) / 8;
-	debug_printf(DP_INFO, "times (%s, %ld elements, ~%.2f GiB, %d rounds): %d threads: %f, GPU: %f\n", name, md_calc_size(N2, dims2), gibi, rounds, some_threads, mtt/rounds, gput/rounds);
-#else
-	(void) mtt;
-	(void) gput;
-	(void) name;
-#endif
+	NESTED(void, f_mt_gpu, (void))
+	{
+		function(N2, dims2, mt_gpu);
+	};
+
+	num_rand_init(0xDEADBEEF);
+	if (print_bench)
+		bart_printf("\t\t\t\t\t\t\t\t\t  GPU: ");
+	run_bench(rounds, print_bench, sync_gpu, f_mt_gpu);
+
 
 	md_copy(N2, dims2, mt_gpu_cpu, mt_gpu, CFL_SIZE);
 	double err = md_znrmse(N2, dims2, mt, mt_gpu_cpu);
@@ -219,7 +228,7 @@ static bool test_cuda_rand(md_rand_t function, const char* name, double tol)
 	md_free(mt_gpu_cpu);
 
 
-	debug_printf(DP_DEBUG1, "test_cuda: %s, error: %.8e, tol %.1e\n", name, err, tol);
+	debug_printf((err > tol) ? DP_INFO : DP_DEBUG1, "test_cuda: %s, error: %.8e, tol %.1e\n", name, err, tol);
 	UT_RETURN_ASSERT(err <= tol);
 }
 
