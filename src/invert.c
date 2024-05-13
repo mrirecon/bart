@@ -1,15 +1,17 @@
 /* Copyright 2016. The Regents of the University of California.
+ * Copyright 2024. TU Graz. Institute of Biomedical Imaging.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
- * 
+ *
  * Authors:
- * 2016 Jon Tamir <jtamir@eecs.berkeley.edu>
+ * 2016 Jon Tamir
  */
 
 #include <stdlib.h>
 #include <assert.h>
 #include <complex.h>
 #include <stdio.h>
+#include <math.h>
 
 #include "num/multind.h"
 #include "num/init.h"
@@ -36,7 +38,12 @@ int main_invert(int argc, char* argv[argc])
 		ARG_OUTFILE(true, &out_file, "output"),
 	};
 
-	const struct opt_s opts[] = { };
+	float reg = 0.;
+
+	const struct opt_s opts[] = {
+
+		OPT_FLOAT('r', &reg, "reg", "regularization"),
+	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
@@ -48,8 +55,18 @@ int main_invert(int argc, char* argv[argc])
 	complex float* odata = create_cfl(out_file, DIMS, dims);
 		
 #pragma omp parallel for
-	for (long i = 0; i < md_calc_size(DIMS, dims); i++)
-		odata[i] = idata[i] == 0 ? 0. : 1. / idata[i];
+	for (long i = 0; i < md_calc_size(DIMS, dims); i++) {
+
+		odata[i] = 0.;
+
+		if (0. == idata[i])
+			continue;
+
+		if (0. == reg)
+			odata[i] = 1. / idata[i];
+		else
+			odata[i] = conjf(idata[i]) / (powf(crealf(idata[i]), 2.) + powf(cimagf(idata[i]), 2.) + reg);
+	}
 
 	unmap_cfl(DIMS, dims, idata);
 	unmap_cfl(DIMS, dims, odata);
