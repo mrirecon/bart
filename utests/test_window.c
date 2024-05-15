@@ -17,9 +17,8 @@
 #include "utest.h"
 
 
-static bool test_window(unsigned int D, long dims[D], long flags, bool hamming, const complex float* ref)
+static bool test_window(int D, long dims[D], unsigned long flags, bool hamming, const complex float* ref)
 {
-
 	complex float* in = md_alloc(3, dims, CFL_SIZE);
 	md_zfill(3, dims, in, 1.);
 

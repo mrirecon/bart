@@ -1206,7 +1206,7 @@ UT_REGISTER_TEST(test_nlop_zinv);
 
 static bool test_zmax(void)
 {
-	unsigned int N = 3;
+	int N = 3;
 
 	long indims[] = { 2, 2, 1 };
 	long outdims[] = { 2, 2, 4 };

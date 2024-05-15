@@ -19,7 +19,7 @@
 #include "utest.h"
 
 
-static bool test_pattern_flags(unsigned int D, const long dims[D], unsigned int flags, const complex float* in, const complex float* ref)
+static bool test_pattern_flags(int D, const long dims[D], unsigned long flags, const complex float* in, const complex float* ref)
 {
 	long odims[D];
 	md_select_dims(D, ~flags, odims, dims);

@@ -18,7 +18,7 @@ static bool test_var(void)
 	complex float var;
 
 	md_gaussian_rand(N, dims, data);	
-	md_zvar(N, dims, ~0, &var, data);
+	md_zvar(N, dims, ~0UL, &var, data);
 
 	md_free(data);
 

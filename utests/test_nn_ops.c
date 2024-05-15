@@ -5,6 +5,7 @@
  */
 
 #include <complex.h>
+#include <stdbool.h>
 
 #include "num/multind.h"
 #include "num/flpmath.h"
@@ -420,7 +421,7 @@ UT_REGISTER_TEST(test_padding_adjoint);
 
 static bool test_dense_der(void)
 {
-	unsigned int N = 2;
+	int N = 2;
 	long indims[] = {210, 18};
 
 	const struct linop_s* id = linop_identity_create(N, indims);
@@ -435,7 +436,9 @@ static bool test_dense_der(void)
 	nlop_free(network);
 
 	debug_printf(DP_DEBUG1, "dense errors der, adj: %.8f, %.8f\n", err_der, err_adj);
-	_Bool test = (err_adj < 3.E-5) && (err_der < 1.E-1);
+
+	bool test = (err_adj < 3.E-5) && (err_der < 1.E-1);
+
 	UT_RETURN_ASSERT(test);
 }
 
@@ -443,15 +446,15 @@ UT_REGISTER_TEST(test_dense_der);
 
 static bool test_conv_der(void)
 {
-	unsigned int N = 5;
-	long indims[] = {5, 7, 6, 3, 5};
+	int N = 5;
+	long indims[] = { 5, 7, 6, 3, 5 };
 
 	const struct linop_s* id = linop_identity_create(N, indims);
 	const struct nlop_s* network = nlop_from_linop(id);
 	linop_free(id);
 
-	long kernel_size[] = {3, 3, 1};
-	long ones[] = {1, 1, 1};
+	long kernel_size[] = { 3, 3, 1 };
+	long ones[] = { 1, 1, 1 };
 
 	network = append_convcorr_layer(network, 0, 4, kernel_size, true, PAD_VALID, true, ones, ones);
 
@@ -461,7 +464,9 @@ static bool test_conv_der(void)
 	nlop_free(network);
 
 	debug_printf(DP_DEBUG1, "conv errors der, adj: %.8f, %.8f\n", err_der, err_adj);
-	_Bool test = (err_adj < 1.E-5) && (err_der < 1.E-1);
+
+	bool test = (err_adj < 1.E-5) && (err_der < 1.E-1);
+
 	UT_RETURN_ASSERT(test);
 }
 
@@ -469,11 +474,11 @@ UT_REGISTER_TEST(test_conv_der);
 
 static bool test_conv_transp(void)
 {
-	unsigned int N = 5;
-	long indims[] = {5, 7, 6, 3, 5};
-	long outdims[] = {4, 5, 4, 3, 5};
-	long kernel_size[] = {3, 3, 1};
-	long kdims[] = {4, 5, 3, 3 ,1};
+	int N = 5;
+	long indims[] = { 5, 7, 6, 3, 5 };
+	long outdims[] = { 4, 5, 4, 3, 5 };
+	long kernel_size[] = { 3, 3, 1 };
+	long kdims[] = { 4, 5, 3, 3 ,1 };
 
 	complex float* kernel = md_alloc(N, kdims, CFL_SIZE);
 	md_gaussian_rand(N, kdims, kernel);
@@ -505,9 +510,9 @@ UT_REGISTER_TEST(test_conv_transp);
 
 static bool test_mpool_der(void)
 {
-	unsigned int N = 5;
-	long indims[] = {2, 6, 1, 1, 2}; //channel, x, y, z, batch
-	long outdims[] = {2, 2, 1, 1, 2}; //channel, x, y, z, batch
+	int N = 5;
+	long indims[] = { 2, 6, 1, 1, 2 }; //channel, x, y, z, batch
+	long outdims[] = { 2, 2, 1, 1, 2 }; //channel, x, y, z, batch
 
 	//digits reference, e.g. 1204.: batch(1), channel(2), count(04)
 	complex float in[] = {	1101., 1202., 1103., 1204., 1105., 1206., 1107., 1208., 1109., 1210., 1111., 1212.,
@@ -539,9 +544,9 @@ UT_REGISTER_TEST(test_mpool_der);
 
 static bool test_bias_der(void)
 {
-	unsigned int N = 4;
-	long dims[] = { 4, 1, 3, 4};
-	long bdims[] = { 1, 1, 3, 4};
+	int N = 4;
+	long dims[] = { 4, 1, 3, 4 };
+	long bdims[] = { 1, 1, 3, 4 };
 
 	const struct nlop_s* network = nlop_bias_create(N, dims, bdims);
 
@@ -560,7 +565,7 @@ UT_REGISTER_TEST(test_bias_der);
 
 static bool test_sigmoid_der(void)
 {
-	unsigned int N = 4;
+	int N = 4;
 	long dims[] = { 3, 8, 3, 5 };
 
 	const struct linop_s* id = linop_identity_create(N, dims);
@@ -628,7 +633,7 @@ UT_REGISTER_TEST(test_nlop_rbf2);
  **/
 static bool test_nlop_conv_strs_dil(void)
 {
-	unsigned int N = 5;
+	int N = 5;
 	long idims[] = {3, 7, 5, 1, 1};
 	long odims[] = {3, 7, 5, 1, 1};
 
@@ -645,6 +650,7 @@ static bool test_nlop_conv_strs_dil(void)
 	long odims_strided[N];
 	md_copy_dims(N, odims_pad_valid, odims);
 	md_copy_dims(N, odims_strided, odims);
+
 	for (int i = 0; i < 3; i++){
 
 		odims_pad_valid[i+1] = odims[i+1] - (kernel_size[i] - 1);
@@ -663,6 +669,7 @@ static bool test_nlop_conv_strs_dil(void)
 	md_copy_strides(N, strs_dil, strs_kdims);
 	long prod_dil = 1;
 	long prod_no_dil = 1;
+
 	for (int i = 0; i < 3; i++){
 
 		strs_dil[2 + i] /= prod_dil;
@@ -714,7 +721,8 @@ static bool test_nlop_conv_strs_dil(void)
 	long prod_strs = 1;
 	long prod_no_strs = 1;
 	strs_strs[4] = odims[0] * 8;
-	for (int i = 0; i < 3; i++){
+
+	for (int i = 0; i < 3; i++) {
 
 		strs_strs[1 + i] /= prod_strs;
 		strs_strs[1 + i] *= strides[i] * prod_no_strs;
@@ -746,12 +754,13 @@ static bool test_nlop_conv_strs_dil(void)
 
 	UT_RETURN_ASSERT(err < 1.e-2);
 }
+
 UT_REGISTER_TEST(test_nlop_conv_strs_dil);
 
 
 static bool test_dice(void)
 {
-	long dims[] = {4, 12};
+	long dims[] = { 4, 12 };
 
 	auto nlop = nlop_dice_create(ARRAY_SIZE(dims), dims, MD_BIT(0), 0, -1., false);
 	nlop = nlop_chain2_FF(nlop_softmax_create(ARRAY_SIZE(dims), dims, 1) , 0, nlop, 0);
@@ -789,7 +798,7 @@ UT_REGISTER_TEST(test_dice2);
 
 static bool test_dice3(void)
 {
-	long dims[] = {4, 12, 5};
+	long dims[] = { 4, 12, 5 };
 
 	auto nlop = nlop_dice_create(ARRAY_SIZE(dims), dims, MD_BIT(0), 0, 0, true);
 	nlop = nlop_chain2_FF(nlop_softmax_create(ARRAY_SIZE(dims), dims, 1) , 0, nlop, 0);

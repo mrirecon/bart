@@ -1,9 +1,6 @@
 /* Copyright 2017. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
- *
- * Authors:
- * 2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 
@@ -20,7 +17,7 @@
 
 static bool test_vec3_ring(void)
 {
-	unsigned int N = 10;
+	int N = 10;
 	vec3_t r[N];
 	vec3_t c = { 0., 0., 0. };
 	vec3_t n = { 1., 0., 0. };
@@ -28,10 +25,10 @@ static bool test_vec3_ring(void)
 
 	bool ok = true;
 
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		ok &= (1.E-6 > fabs(0.33 - vec3_norm(r[i])));
 
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		ok &= (1.E-9 > fabsf(vec3_sdot(r[i], n)));
 
 	return ok;
@@ -40,7 +37,7 @@ static bool test_vec3_ring(void)
 
 static bool test_biot_savart(void)
 {
-	unsigned int N = 100;
+	int N = 100;
 	vec3_t r[N];
 	vec3_t c = { 0.6, 0.3, 0.1 };
 	vec3_t n = { 1., 0., 0. };

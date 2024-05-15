@@ -48,7 +48,7 @@ UT_REGISTER_TEST(test_memcfl_load);
 static bool test_memcfl_register(void)
 {
 	long dims[2] = { 10, 5 };
-	complex float* x = xmalloc(io_calc_size(2, dims, sizeof(complex float)));
+	complex float* x = xmalloc((size_t)io_calc_size(2, dims, sizeof(complex float)));
 
 	for (int i = 0; i < 50; i++)
 		x[i] = i;

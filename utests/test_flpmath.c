@@ -26,7 +26,7 @@
 
 
 
-static bool test_md_zfmacc2_flags(unsigned int D, const long idims[D], unsigned int flags, const complex float* in1, const complex float* in2, const complex float* out_ref)
+static bool test_md_zfmacc2_flags(int D, const long idims[D], unsigned long flags, const complex float* in1, const complex float* in2, const complex float* out_ref)
 {
 	long odims[D];
 	md_select_dims(D, ~flags, odims, idims);
@@ -60,7 +60,7 @@ static bool test_md_zfmacc2(void)
 
 	bool ret = true;
 
-	for (unsigned int flags = 0u; flags < 16u; flags++) {
+	for (unsigned long flags = 0UL; flags < 16UL; flags++) {
 
 		debug_printf(DP_DEBUG1, "Testing md_zfmacc2_flags with flags=%d\n", flags);
 
@@ -71,7 +71,7 @@ static bool test_md_zfmacc2(void)
 }
 
 
-static bool test_md_zavg_flags(unsigned int D, const long idims[D], unsigned int flags, const complex float* in, const complex float* out_ref, bool wavg)
+static bool test_md_zavg_flags(int D, const long idims[D], unsigned long flags, const complex float* in, const complex float* out_ref, bool wavg)
 {
 	long odims[D];
 	md_select_dims(D, ~flags, odims, idims);
@@ -100,7 +100,7 @@ static bool test_md_zwavg(void)
 	bool wavg = true;
 	bool ret = true;
 
-	for (unsigned int flags = 0u; flags < 16u; flags++) {
+	for (unsigned long flags = 0UL; flags < 16UL; flags++) {
 
 		debug_printf(DP_DEBUG1, "Testing md_zwavg_flags with flags=%d\n", flags);
 
@@ -118,7 +118,7 @@ static bool test_md_zavg(void)
 	bool wavg = false;
 	bool ret = true;
 
-	for (unsigned int flags = 0u; flags < 16u; flags++) {
+	for (unsigned long flags = 0UL; flags < 16UL; flags++) {
 
 		debug_printf(DP_DEBUG1, "Testing md_zavg_flags with flags=%d\n", flags);
 
@@ -186,19 +186,19 @@ static bool test_md_zhardthresh(void)
 {
 	complex float test_vec[] = { 1., 2., 3., 4., 5., 6., 7., 8., 9. };
 
-	unsigned int N = ARRAY_SIZE(test_vec);
+	int N = (int)ARRAY_SIZE(test_vec);
 	complex float test_out[N];
 
-	unsigned int k = 5;
+	int k = 5;
 
 	md_zhardthresh(1, (long[1]){ N }, k, 0, test_out, test_vec);
 
 	bool ok = true;
 
-	for (unsigned int i = 0; i < N - k; i++)
+	for (int i = 0; i < N - k; i++)
 		ok &= (0. == test_out[i]);
 
-	for (unsigned int i = N - k; i < N; i++)
+	for (int i = N - k; i < N; i++)
 		ok &= (test_vec[i] == test_out[i]);
 
 	return ok;
