@@ -242,7 +242,7 @@ bool opt_reg_moba(void* ptr, char c, const char* optarg)
 		if (strcmp(rt, "W") == 0) {
 
 			regs[r].xform = L1WAV;
-			int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
+			int ret = sscanf(optarg, "%*[^:]:%lu:%lu:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
 			assert(3 == ret);
 
 		} else 
@@ -267,7 +267,7 @@ bool opt_reg_moba(void* ptr, char c, const char* optarg)
 		if (strcmp(rt, "T") == 0) {
 
 			regs[r].xform = TV;
-			int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
+			int ret = sscanf(optarg, "%*[^:]:%lu:%lu:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
 			assert(3 == ret);
 
 		} else 
@@ -326,7 +326,7 @@ static void opt_reg_meco_configure(int N, const long dims[N], struct opt_reg_s* 
 
 		case L1WAV: {
 
-			debug_printf(DP_INFO, "  > l1-wavelet regularization with parameters %d:%d:%.3f\n", regs[nr].xflags, regs[nr].jflags, regs[nr].lambda);
+			debug_printf(DP_INFO, "  > l1-wavelet regularization with parameters %lu:%lu:%.3f\n", regs[nr].xflags, regs[nr].jflags, regs[nr].lambda);
 
 			auto prox_maps = moba_joint_wavthresh_prox_create(N, maps_dims, COEFF_DIM, regs[nr].xflags, regs[nr].jflags, regs[nr].lambda, nr_joint_coeff);
 
@@ -363,7 +363,7 @@ static void opt_reg_meco_configure(int N, const long dims[N], struct opt_reg_s* 
 
 		case TV: { // temporal dimension
 
-			debug_printf(DP_INFO, "  > TV regularization with parameters %d:%d:%.3f\n", regs[nr].xflags, regs[nr].jflags, regs[nr].lambda);
+			debug_printf(DP_INFO, "  > TV regularization with parameters %lu:%lu:%.3f\n", regs[nr].xflags, regs[nr].jflags, regs[nr].lambda);
 
 			auto lo_extract_maps = linop_extract_create(1, MD_DIMS(0), MD_DIMS(maps_size), MD_DIMS(x_size));
 			lo_extract_maps = linop_reshape_out_F(lo_extract_maps, N, maps_dims);

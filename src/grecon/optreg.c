@@ -98,25 +98,25 @@ bool opt_reg(void* ptr, char c, const char* optarg)
 		if (strcmp(rt, "W") == 0) {
 
 			regs[r].xform = L1WAV;
-			int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
+			int ret = sscanf(optarg, "%*[^:]:%lu:%lu:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
 			assert(3 == ret);
 
 		} else if (strcmp(rt, "H") == 0) {
 			
 			regs[r].xform = NIHTWAV;
-			int ret = sscanf(optarg, "%*[^:]:%d:%d:%d", &regs[r].xflags, &regs[r].jflags, &regs[r].k);
+			int ret = sscanf(optarg, "%*[^:]:%lu:%lu:%d", &regs[r].xflags, &regs[r].jflags, &regs[r].k);
 			assert(3 == ret);
 
 		} else if (strcmp(rt, "N") == 0) {
 
 			regs[r].xform = NIHTIM;
-			int ret = sscanf(optarg, "%*[^:]:%d:%d:%d", &regs[r].xflags, &regs[r].jflags, &regs[r].k);
+			int ret = sscanf(optarg, "%*[^:]:%lu:%lu:%d", &regs[r].xflags, &regs[r].jflags, &regs[r].k);
 			assert(3 == ret);
 
 		} else if (strcmp(rt, "L") == 0) {
 
 			regs[r].xform = LLR;
-			int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
+			int ret = sscanf(optarg, "%*[^:]:%lu:%lu:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
 			assert(3 == ret);
 
 		} else if (strcmp(rt, "M") == 0) {
@@ -129,51 +129,51 @@ bool opt_reg(void* ptr, char c, const char* optarg)
 			regs[r].lambda = regs[0].lambda;
 
 			regs[0].xform = MLR;
-			int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[0].xflags, &regs[0].jflags, &regs[0].lambda);
+			int ret = sscanf(optarg, "%*[^:]:%lu:%lu:%f", &regs[0].xflags, &regs[0].jflags, &regs[0].lambda);
 			assert(3 == ret);
 
 		} else if (strcmp(rt, "T") == 0) {
 
 			regs[r].xform = TV;
-			int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
+			int ret = sscanf(optarg, "%*[^:]:%lu:%lu:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
 			assert(3 == ret);
 
 		} else if (strcmp(rt, "G") == 0) {
 
 			regs[r].xform = TGV;
-			int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
+			int ret = sscanf(optarg, "%*[^:]:%lu:%lu:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
 			assert(3 == ret);
 
 		} else if (strcmp(rt, "C") == 0) {
 
 			regs[r].xform = ICTV;
-			int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
+			int ret = sscanf(optarg, "%*[^:]:%lu:%lu:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
 			assert(3 == ret);
 
 		} else if (strcmp(rt, "P") == 0) {
 
 			regs[r].xform = LAPLACE;
-			int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
+			int ret = sscanf(optarg, "%*[^:]:%lu:%lu:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
 			assert(3 == ret);
 
 		} else if (strcmp(rt, "R1") == 0) {
 
 			regs[r].xform = IMAGL1;
-			int ret = sscanf(optarg, "%*[^:]:%d:%f", &regs[r].jflags, &regs[r].lambda);
+			int ret = sscanf(optarg, "%*[^:]:%lu:%f", &regs[r].jflags, &regs[r].lambda);
 			assert(2 == ret);
 			regs[r].xflags = 0u;
 
 		} else if (strcmp(rt, "R2") == 0) {
 
 			regs[r].xform = IMAGL2;
-			int ret = sscanf(optarg, "%*[^:]:%d:%f", &regs[r].jflags, &regs[r].lambda);
+			int ret = sscanf(optarg, "%*[^:]:%lu:%f", &regs[r].jflags, &regs[r].lambda);
 			assert(2 == ret);
 			regs[r].xflags = 0u;
 
 		} else if (strcmp(rt, "I") == 0) {
 
 			regs[r].xform = L1IMG;
-			int ret = sscanf(optarg, "%*[^:]:%d:%f", &regs[r].jflags, &regs[r].lambda);
+			int ret = sscanf(optarg, "%*[^:]:%lu:%f", &regs[r].jflags, &regs[r].lambda);
 			assert(2 == ret);
 			regs[r].xflags = 0u;
 
@@ -195,7 +195,7 @@ bool opt_reg(void* ptr, char c, const char* optarg)
 		} else if (strcmp(rt, "F") == 0) {
 
 			regs[r].xform = FTL1;
-			int ret = sscanf(optarg, "%*[^:]:%d:%d:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
+			int ret = sscanf(optarg, "%*[^:]:%lu:%ld:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
 			assert(3 == ret);
 
 		} else if (strcmp(rt, "TF") == 0) {
