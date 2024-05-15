@@ -158,7 +158,7 @@ void md_parallel_nary(int C, int D, const long dim[D], unsigned long flags, cons
 
 	while (0 != flags) {
 
-		int b = (int)ffsl(flags & -flags) - 1;
+		int b = (int)ffsl((long)(flags & -flags)) - 1;
 
 		assert(MD_IS_SET(flags, b));
 
@@ -335,9 +335,9 @@ long md_calc_offset(int D, const long strides[D], const long position[D])
 static long md_calc_size_r(int D, const long dim[D], size_t size)
 {
 	if (0 == D)
-		return size;
+		return (long)size;
 
-	return md_calc_size_r(D - 1, dim, size * dim[D - 1]);
+	return md_calc_size_r(D - 1, dim, (size_t)((long)size * dim[D - 1]));
 }
 
 /**
@@ -362,7 +362,7 @@ long md_calc_size(int D, const long dim[D])
  */
 int md_calc_blockdim(int D, const long dim[D], const long str[D], size_t size)
 {
-	long dist = size;
+	long dist = (long)size;
 	int i = 0;
 
 	for (i = 0; i < D; i++) {
@@ -423,7 +423,7 @@ void md_select_strides(int D, unsigned long flags, long ostrs[D], const long ist
  */
 void md_copy_dims(int D, long odims[D], const long idims[D])
 {
-	memcpy(odims, idims, D * sizeof(long));
+	memcpy(odims, idims, (size_t)(D * (long)sizeof(long)));
 }
 
 
@@ -435,7 +435,7 @@ void md_copy_dims(int D, long odims[D], const long idims[D])
  */
 void md_copy_strides(int D, long ostrs[D], const long istrs[D])
 {
-	memcpy(ostrs, istrs, D  * sizeof(long));
+	memcpy(ostrs, istrs, (size_t)(D  * (long)sizeof(long)));
 }
 
 
@@ -654,7 +654,7 @@ void md_clear2(int D, const long dim[D], const long str[D], void* ptr, size_t si
 
 	NESTED(void, nary_clear, (struct nary_opt_data_s* opt_data, void* ptr[]))
 	{
-		size_t size2 = size * opt_data->size;
+		size_t size2 = (size_t)((long)size * opt_data->size);
 
 #ifdef 	USE_CUDA
 		if (use_gpu) {
@@ -682,7 +682,7 @@ void md_clear2(int D, const long dim[D], const long str[D], void* ptr, size_t si
  */
 long* md_calc_strides(int D, long str[D], const long dim[D], size_t size)
 {
-	long old = size;
+	long old = (long)size;
 
 	for (int i = 0; i < D; i++) {
 
@@ -757,7 +757,7 @@ void md_copy2(int D, const long dim[D], const long ostr[D], void* optr, const lo
 
 			if ((ostr[i] == (long)size) && (istr[i] == (long)size)) {
 
-				size *= ldims[i];
+				size = (size_t)((long)size * ldims[i]);
 				ldims[i] = 1;
 			}
 		}
@@ -794,7 +794,7 @@ void md_copy2(int D, const long dim[D], const long ostr[D], void* optr, const lo
 				}
 
 				if (-1 < root)
-					mpi_bcast(dst, size, root);
+					mpi_bcast(dst, (long)size, root);
 
 				continue;
 			}
@@ -809,7 +809,7 @@ void md_copy2(int D, const long dim[D], const long ostr[D], void* optr, const lo
 				const void* _src = (mpi_get_rank() == sender) ? vptr_resolve(src) : NULL;
 				void* _dst = (mpi_get_rank() == receiver) ? vptr_resolve(dst) : NULL;
 
-				mpi_copy(_dst, size, _src, sender, receiver);
+				mpi_copy(_dst, (long)size, _src, sender, receiver);
 			}
 
 		} while (md_next(D, ldims, ~0UL, pos));
@@ -960,7 +960,7 @@ out:	;
 
 	NESTED(void, nary_copy, (struct nary_opt_data_s* opt_data, void* ptr[]))
 	{
-		size_t size2 = size * opt_data->size;
+		size_t size2 = (size_t)((long)size * opt_data->size);
 
 #ifdef  USE_CUDA
 		if (use_gpu) {
@@ -1059,7 +1059,7 @@ void md_circular_swap2(int M, int D, const long dims[D], const long* strs[M], vo
 
 	NESTED(void, nary_swap, (struct nary_opt_data_s* opt_data, void* ptr[]))
 	{
-		size_t size2 = size * opt_data->size;
+		size_t size2 = (size_t)((long)size * opt_data->size);
 
 		char* tmp = (size2 < 32) ? alloca(size2) : xmalloc(size2);
 
@@ -1078,7 +1078,7 @@ void md_circular_swap2(int M, int D, const long dims[D], const long* strs[M], vo
 			xfree(tmp);
 	};
 
-	optimized_nop(M, (1 << M) - 1, D, dims, nstrs, ptr, sizes, nary_swap);
+	optimized_nop(M, (1UL << M) - 1, D, dims, nstrs, ptr, sizes, nary_swap);
 }
 
 
@@ -1231,7 +1231,7 @@ void md_copy_block(int D, const long pos[D], const long odim[D], void* optr, con
 void md_resize(int D, const long odim[D], void* optr, const long idim[D], const void* iptr, size_t size)
 {
 	long pos[D];
-	memset(pos, 0, D * sizeof(long));
+	memset(pos, 0, (size_t)(D * (long)sizeof(long)));
 
 	for (int i = 0; i < D; i++) {
 
@@ -1254,7 +1254,7 @@ void md_resize(int D, const long odim[D], void* optr, const long idim[D], const 
 void md_pad(int D, const void* val, const long odim[D], void* optr, const long idim[D], const void* iptr, size_t size)
 {
 	long pos[D];
-	memset(pos, 0, D * sizeof(long));
+	memset(pos, 0, (size_t)(D * (long)sizeof(long)));
 
 	md_fill(D, odim, optr, val, size);
 	md_copy_block(D, pos, odim, optr, idim, iptr, size);
@@ -1782,7 +1782,7 @@ bool md_compare2(int D, const long dims[D], const long str1[D], const void* src1
 
 	NESTED(void, nary_cmp, (struct nary_opt_data_s* opt_data, void* ptrs[]))
 	{
-		size_t size2 = size * opt_data->size;
+		size_t size2 = (size_t)((long)size * opt_data->size);
 
 		bool eq2 = (0 == memcmp(ptrs[0], ptrs[1], size2));
 #pragma 	omp atomic
@@ -1810,7 +1810,7 @@ bool md_compare(int D, const long dims[D], const void* src1, const void* src2, s
 
 
 
-static void md_septrafo_r(int D, unsigned int R, long dimensions[D], unsigned long flags, const long strides[D], void* ptr, md_trafo_fun_t fun)
+static void md_septrafo_r(int D, int R, long dimensions[D], unsigned long flags, const long strides[D], void* ptr, md_trafo_fun_t fun)
 {
 	if (0 == R--)
 		return;
@@ -2235,7 +2235,7 @@ void md_decompress(int D, const long dims[D], float* dst, const void* _src)
  */
 void* md_alloc(int D, const long dimensions[D], size_t size)
 {
-	return xmalloc(md_calc_size(D, dimensions) * size);
+	return xmalloc((size_t)(md_calc_size(D, dimensions) * (long)size));
 }
 
 
@@ -2401,7 +2401,7 @@ int md_max_idx(unsigned long flags)
 
 int md_min_idx(unsigned long flags)
 {
-	return ffsl(flags) - 1;
+	return ffsl((long)flags) - 1;
 }
 
 /**

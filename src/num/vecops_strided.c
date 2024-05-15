@@ -63,8 +63,8 @@ void deactivate_strided_vecops(void)
 	use_strided_vecops = false;
 }
 
-typedef int (*md_check_3op_t)(int N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], long size);
-typedef int (*md_check_2op_t)(int N, long ndims[N], long nostrs[N], long nistrs[N], const long dims[N], const long ostrs[N], const long istrs[N], long size);
+typedef int (*md_check_3op_t)(int N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], size_t size);
+typedef int (*md_check_2op_t)(int N, long ndims[N], long nostrs[N], long nistrs[N], const long dims[N], const long ostrs[N], const long istrs[N], size_t size);
 
 typedef void (*md_3op_t)(int D, const long dims[D], const long ostrs[D], float* optr, const long istrs1[D], const float* iptr1, const long istrs2[D], const float* iptr2);
 typedef void (*md_s2op_t)(int D, const long dims[D], const long ostrs[D], float* optr, const long istrs[D], const float* iptr, float val);
@@ -214,7 +214,7 @@ static void optimized_threeop_oii(int D, const long dim[D], const long ostr[D], 
 	const long (*nstr[3])[D?D:1] = { (const long (*)[D?D:1])ostr, (const long (*)[D?D:1])istr1, (const long (*)[D?D:1])istr2 };
 	void *nptr[3] = { optr, (void*)iptr1, (void*)iptr2 };
 
-	int io = 1 + ((iptr1 == optr) ? 2 : 0) + ((iptr2 == optr) ? 4 : 0);
+	unsigned long io = 1UL + ((iptr1 == optr) ? 2 : 0) + ((iptr2 == optr) ? 4 : 0);
 
 	optimized_nop(3, io, D, dim, nstr, nptr, sizes, too);
 }
@@ -225,15 +225,15 @@ static void optimized_threeop_oii(int D, const long dim[D], const long ostr[D], 
  * Checks if strides strides define a matrix,
  * i.e. one dimension is continuously in memory and followed by the other
  */
-static bool is_matrix(const long dims[3], const long strs[3], int i1, int i2, long size)
+static bool is_matrix(const long dims[3], const long strs[3], int i1, int i2, size_t size)
 {
 	assert(i1 != i2);
 
 	bool a = (   (strs[i1] == size)
-		  && (strs[i2] == size * dims[i1]));
+		  && (strs[i2] == (long)size * dims[i1]));
 
 	bool b = (   (strs[i2] == size)
-		  && (strs[i1] == size * dims[i2]));
+		  && (strs[i1] == (long)size * dims[i2]));
 
 	return a || b;
 }
@@ -249,7 +249,7 @@ static bool is_matrix(const long dims[3], const long strs[3], int i1, int i2, lo
  *
  * Fixme: we could loose restriction for matrix lying contiguously in memory
  */
-static int check_gemm(int N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], long size)
+static int check_gemm(int N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], size_t size)
 {
 	md_singleton_dims(N, ndims);
 	md_singleton_strides(N, nostrs);
@@ -346,7 +346,7 @@ static int check_gemm(int N, long ndims[N], long nostrs[N], long nistrs1[N], lon
  * nistrs1: (s, (ndim[0]+x)*s) or ((ndim[1]+x)*s, s)
  * nistrs2: (0, s)
  */
-static int check_gemv(int N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], long size)
+static int check_gemv(int N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], size_t size)
 {
 	md_singleton_dims(N, ndims);
 	md_singleton_strides(N, nostrs);
@@ -385,12 +385,12 @@ static int check_gemv(int N, long ndims[N], long nostrs[N], long nistrs1[N], lon
 
 	bool matvecmul = true;
 
-	matvecmul = matvecmul && (0 == nostrs[0] % size) && (size <= nostrs[0]) && (0 == nostrs[1]);	//(s*x, 0)
-	matvecmul = matvecmul && (0 == nistrs2[1] % size) && (size <= nistrs2[1]) && (0 == nistrs2[0]);	//(0, s*x)
+	matvecmul = matvecmul && (0 == nostrs[0] % (long)size) && (size <= nostrs[0]) && (0 == nostrs[1]);	//(s*x, 0)
+	matvecmul = matvecmul && (0 == nistrs2[1] % (long)size) && (size <= nistrs2[1]) && (0 == nistrs2[0]);	//(0, s*x)
 
-	matvecmul = matvecmul && (0 == nistrs1[0] % size) && (0 == nistrs1[1] % size);
-	matvecmul = matvecmul && (   ((size == nistrs1[0]) && (size * ndims[0] <= nistrs1[1]))
-				  || ((size == nistrs1[1]) && (size * ndims[1] <= nistrs1[0])) );		//nistrs1: (s, (ndim[0]+x)*s) or ((ndim[1]+x)*s, s)
+	matvecmul = matvecmul && (0 == nistrs1[0] % (long)size) && (0 == nistrs1[1] % (long)size);
+	matvecmul = matvecmul && (   ((size == nistrs1[0]) && ((long)size * ndims[0] <= nistrs1[1]))
+				  || ((size == nistrs1[1]) && ((long)size * ndims[1] <= nistrs1[0])) );		//nistrs1: (s, (ndim[0]+x)*s) or ((ndim[1]+x)*s, s)
 
 	if (!matvecmul)
 		return -1;
@@ -408,7 +408,7 @@ static int check_gemv(int N, long ndims[N], long nostrs[N], long nistrs1[N], lon
  * nistrs1: (s*(1+x), 0)
  * nistrs2: (0, s*(1+x))
  */
-static int check_ger(int N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], long size)
+static int check_ger(int N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], size_t size)
 {
 	md_singleton_dims(N, ndims);
 	md_singleton_strides(N, nostrs);
@@ -446,9 +446,9 @@ static int check_ger(int N, long ndims[N], long nostrs[N], long nistrs1[N], long
 	md_permute_dims(N, perm, nistrs2, tistrs2);
 
 	bool ger = true;
-	ger = ger && (0 == nistrs1[1]) && (0 < nistrs1[0]) && (0 == nistrs1[0] % size);
-	ger = ger && (0 == nistrs2[0]) && (0 < nistrs2[1]) && (0 == nistrs2[1] % size);
-	ger = ger && (size == nostrs[0]) && (0 == nostrs[1] % size) && (nostrs[0] * ndims[0] <= nostrs[1]);
+	ger = ger && (0 == nistrs1[1]) && (0 < nistrs1[0]) && (0 == nistrs1[0] % (long)size);
+	ger = ger && (0 == nistrs2[0]) && (0 < nistrs2[1]) && (0 == nistrs2[1] % (long)size);
+	ger = ger && (size == nostrs[0]) && (0 == nostrs[1] % (long)size) && (nostrs[0] * ndims[0] <= nostrs[1]);
 
 	return ger ? 2 : -1;
 }
@@ -463,7 +463,7 @@ static int check_ger(int N, long ndims[N], long nostrs[N], long nistrs1[N], long
  * nistrs1: (s*(1+x))
  * nistrs2: (0)
  */
-static int check_axpy(int N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], long size)
+static int check_axpy(int N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], size_t size)
 {
 	md_singleton_dims(N, ndims);
 	md_singleton_strides(N, nostrs);
@@ -484,8 +484,8 @@ static int check_axpy(int N, long ndims[N], long nostrs[N], long nistrs1[N], lon
 
 	N = simplify_dims(3, N, tdims, strs);
 
-	if ((1 > N) || (   (0 != tostrs[0] % size) || (0 >= tostrs[0])
-			|| (0 != tistrs1[0] % size) || (0 >= tistrs1[0])
+	if ((1 > N) || (   (0 != tostrs[0] % (long)size) || (0 >= tostrs[0])
+			|| (0 != tistrs1[0] % (long)size) || (0 >= tistrs1[0])
 			|| (0 != tistrs2[0])))
 		return -1;
 
@@ -507,7 +507,7 @@ static int check_axpy(int N, long ndims[N], long nostrs[N], long nistrs1[N], lon
  * nistrs1: (s*x)
  * nistrs2: (s*x)
  */
-static int check_dot(int N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], long size)
+static int check_dot(int N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], size_t size)
 {
 	md_singleton_dims(N, ndims);
 	md_singleton_strides(N, nostrs);
@@ -529,8 +529,8 @@ static int check_dot(int N, long ndims[N], long nostrs[N], long nistrs1[N], long
 	N = simplify_dims(3, N, tdims, strs);
 
 	if ((1 > N) || (   (0 != tostrs[0])
-			|| (0 != tistrs1[0] % size) || (0 >= tistrs1[0])
-			|| (0 != tistrs2[0] % size) || (0 >= tistrs2[0]) ))
+			|| (0 != tistrs1[0] % (long)size) || (0 >= tistrs1[0])
+			|| (0 != tistrs2[0] % (long)size) || (0 >= tistrs2[0]) ))
 		return -1;
 
 	md_copy_dims(N, ndims, tdims);
@@ -550,7 +550,7 @@ static int check_dot(int N, long ndims[N], long nostrs[N], long nistrs1[N], long
  * nistrs1: (s, s*dim[0])
  * nistrs2: (s, s*dim[0])
  */
-static int check_dot_outer(int N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], long size)
+static int check_dot_outer(int N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], size_t size)
 {
 	md_singleton_dims(N, ndims);
 	md_singleton_strides(N, nostrs);
@@ -572,8 +572,8 @@ static int check_dot_outer(int N, long ndims[N], long nostrs[N], long nistrs1[N]
 	N = simplify_dims(3, N, tdims, strs);
 
 	if ((1 > N) || (   (size != tostrs[0])  || (0 != tostrs[1])
-			|| (size != tistrs1[0]) || (size * tdims[0] != tistrs1[1])
-			|| (size != tistrs2[0]) || (size * tdims[0] != tistrs2[1]) ))
+			|| (size != tistrs1[0]) || ((long)size * tdims[0] != tistrs1[1])
+			|| (size != tistrs2[0]) || ((long)size * tdims[0] != tistrs2[1]) ))
 		return -1;
 
 	if (128 < tdims[0])
@@ -598,7 +598,7 @@ static int check_dot_outer(int N, long ndims[N], long nostrs[N], long nistrs1[N]
  * istr1:	[s, 4s, 0]
  * istr2:	[s, 0, 2s]
  */
-static int check_batched_select(int N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], long size)
+static int check_batched_select(int N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], size_t size)
 {
 	md_singleton_dims(N, ndims);
 	md_singleton_strides(N, nostrs);
@@ -657,7 +657,7 @@ static int check_batched_select(int N, long ndims[N], long nostrs[N], long nistr
  * istr1:	[0, s, 0]
  * istr2:	[s, 0, 2s]
  */
-static int check_unfold(int N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], long size)
+static int check_unfold(int N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], size_t size)
 {
 	md_singleton_dims(N, ndims);
 	md_singleton_strides(N, nostrs);
@@ -719,7 +719,7 @@ static int check_unfold(int N, long ndims[N], long nostrs[N], long nistrs1[N], l
  * nistrs1: (s, s*(dims[0] + x))
  * nistrs2: (s*x, 0) or (0, s*x)
  */
-static int check_dgmm(int N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], long size)
+static int check_dgmm(int N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], size_t size)
 {
 	md_singleton_dims(N, ndims);
 	md_singleton_strides(N, nostrs);
@@ -757,9 +757,9 @@ static int check_dgmm(int N, long ndims[N], long nostrs[N], long nistrs1[N], lon
 	md_permute_dims(N, perm, nistrs2, tistrs2);
 
 	bool dgmm = true;
-	dgmm = dgmm && (size == nostrs[0]) && (0 == nostrs[1] % size) && (size * ndims[0] <= nostrs[1]);
-	dgmm = dgmm && (size == nistrs1[0]) && (0 == nistrs1[1] % size) && (size * ndims[0] <= nistrs1[1]);
-	dgmm = dgmm && (0 == nistrs2[0] % size) && (0 == nistrs2[1] % size);
+	dgmm = dgmm && (size == nostrs[0]) && (0 == nostrs[1] % (long)size) && ((long)size * ndims[0] <= nostrs[1]);
+	dgmm = dgmm && (size == nistrs1[0]) && (0 == nistrs1[1] % (long)size) && ((long)size * ndims[0] <= nistrs1[1]);
+	dgmm = dgmm && (0 == nistrs2[0] % (long)size) && (0 == nistrs2[1] % (long)size);
 	dgmm = dgmm && (0 == nistrs2[0] * nistrs2[1]);
 	dgmm = dgmm && ((0 < nistrs2[0]) || (0 < nistrs2[1]));
 
@@ -778,7 +778,7 @@ static int check_dgmm(int N, long ndims[N], long nostrs[N], long nistrs1[N], lon
  * nistrs1: (s, 0, ...)
  * nistrs2: (s, s * dim[0], ...)
  */
-static int check_reduce_outer(int N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], long size)
+static int check_reduce_outer(int N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], size_t size)
 {
 	md_singleton_dims(N, ndims);
 	md_singleton_strides(N, nostrs);
@@ -809,7 +809,7 @@ static int check_reduce_outer(int N, long ndims[N], long nostrs[N], long nistrs1
 	bool reduce = true;
 	reduce &= ((1 == tdims[0]) || (size == tostrs[0])) && (0 == tostrs[1]);
 	reduce &= ((1 == tdims[0]) || (size == tistrs1[0])) && (0 == tistrs1[1]);
-	reduce &= ((1 == tdims[0]) || (size == tistrs2[0])) && (size * tdims[0] == tistrs2[1]);
+	reduce &= ((1 == tdims[0]) || (size == tistrs2[0])) && ((long)size * tdims[0] == tistrs2[1]);
 
 	if (!reduce)
 		return -1;
@@ -831,7 +831,7 @@ static int check_reduce_outer(int N, long ndims[N], long nostrs[N], long nistrs1
  * nistrs1: (0) or (0, s)
  * nistrs2: (s) or (s, s * dim[0])
  */
-static int check_reduce_inner(int N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], long size)
+static int check_reduce_inner(int N, long ndims[N], long nostrs[N], long nistrs1[N], long nistrs2[N], const long dims[N], const long ostrs[N], const long istrs1[N], const long istrs2[N], size_t size)
 {
 	md_singleton_dims(N, ndims);
 	md_singleton_strides(N, nostrs);
@@ -877,7 +877,7 @@ static int check_reduce_inner(int N, long ndims[N], long nostrs[N], long nistrs1
 
 	reduce &= (size == tostrs[1]);
 	reduce &= (size == tistrs1[1]);
-	reduce &= (size * tdims[0] == tistrs2[1]);
+	reduce &= ((long)size * tdims[0] == tistrs2[1]);
 
 	return reduce ? 2 : 1;
 }
@@ -885,21 +885,21 @@ static int check_reduce_inner(int N, long ndims[N], long nostrs[N], long nistrs1
 
 // computes the size of an array with strides ignoring dims with 0 strides
 // returns zero if block is not contiguous in memory
-static size_t get_block_size(int N, const long dims[N], const long strs[N], size_t size)
+static long get_block_size(int N, const long dims[N], const long strs[N], size_t size)
 {
 	long tdims[N];
 	long tstrs[N];
 	md_select_dims(N, md_nontriv_strides(N, strs), tdims, dims);
 	md_copy_strides(N, tstrs, strs);
 
-	long (*nstr[1])[N?N:1] = { (long (*)[N?N:1])tstrs };
+	long (*nstr[1])[N?:1] = { (long (*)[N?:1])tstrs };
 
 	int NN = optimize_dims_gpu(1, N, tdims, nstr); // sorting of dims
 
 	if (NN != md_calc_blockdim(NN, tdims, tstrs, size))
 		return 0;
 
-	return md_calc_size(NN, tdims) * size;
+	return md_calc_size(NN, tdims) * (long)size;
 }
 
 
@@ -911,11 +911,9 @@ static bool simple_z3op(int N_checks, struct simple_z3op_check strided_calls[N_c
 	if (0 == N)
 		return false;
 
-	long size = CFL_SIZE;
-
-	unsigned long block_flags = vptr_block_loop_flags(N, dims, ostrs, out, size)
-				  | vptr_block_loop_flags(N, dims, istrs1, in1, size)
-				  | vptr_block_loop_flags(N, dims, istrs2, in2, size);
+	unsigned long block_flags = vptr_block_loop_flags(N, dims, ostrs, out, CFL_SIZE)
+				  | vptr_block_loop_flags(N, dims, istrs1, in1, CFL_SIZE)
+				  | vptr_block_loop_flags(N, dims, istrs2, in2, CFL_SIZE);
 
 	if (block_flags && conj) // FIXME
 		return false;
@@ -940,7 +938,7 @@ static bool simple_z3op(int N_checks, struct simple_z3op_check strided_calls[N_c
 	on_gpu = (cuda_ondevice(out));
 #endif
 
-	if (conj && (0 == get_block_size(N, dims, istrs2, size)))
+	if (conj && (0 == get_block_size(N, dims, istrs2, CFL_SIZE)))
 		return false; //the conjugated input is not a continuos memory block
 
 	struct simple_z3op_check strided_call;
@@ -957,7 +955,7 @@ static bool simple_z3op(int N_checks, struct simple_z3op_check strided_calls[N_c
 		if (!applicable)
 			continue;
 
-		N_in = strided_call.check_fun(N, ndims, nostrs, nistrs1, nistrs2, tdims, ostrs, istrs1, istrs2, size);
+		N_in = strided_call.check_fun(N, ndims, nostrs, nistrs1, nistrs2, tdims, ostrs, istrs1, istrs2, CFL_SIZE);
 
 		if ((strided_call.reduction) && (out != in1))
 			N_in = -1;
@@ -969,9 +967,9 @@ static bool simple_z3op(int N_checks, struct simple_z3op_check strided_calls[N_c
 
 			if (conj) {
 
-				long size_tmp = get_block_size(N, dims, istrs2, size);
-				size_tmp /= size;
-				conj_in = md_alloc_sameplace(1, &size_tmp, size, in2);
+				long size_tmp = get_block_size(N, dims, istrs2, CFL_SIZE);
+				size_tmp /= (long)CFL_SIZE;
+				conj_in = md_alloc_sameplace(1, &size_tmp, CFL_SIZE, in2);
 				md_zconj(1, &size_tmp, conj_in, in2);
 				tin2 = conj_in;
 			}
@@ -985,7 +983,7 @@ static bool simple_z3op(int N_checks, struct simple_z3op_check strided_calls[N_c
 			continue;
 
 
-		N_in = strided_call.check_fun(N, ndims, nostrs, nistrs1, nistrs2, tdims, ostrs, istrs2, istrs1, size);
+		N_in = strided_call.check_fun(N, ndims, nostrs, nistrs1, nistrs2, tdims, ostrs, istrs2, istrs1, CFL_SIZE);
 
 		if ((strided_call.reduction) && (out != in2))
 			N_in = -1;
@@ -997,9 +995,9 @@ static bool simple_z3op(int N_checks, struct simple_z3op_check strided_calls[N_c
 
 			if (conj) {
 
-				long size_tmp = get_block_size(N, dims, istrs2, size);
-				size_tmp /= size;
-				conj_in = md_alloc_sameplace(1, &size_tmp, size, in2);
+				long size_tmp = get_block_size(N, dims, istrs2, CFL_SIZE);
+				size_tmp /= (long)CFL_SIZE;
+				conj_in = md_alloc_sameplace(1, &size_tmp, CFL_SIZE, in2);
 				md_zconj(1, &size_tmp, conj_in, in2);
 				tin1 = conj_in;
 			}
@@ -1018,9 +1016,9 @@ static bool simple_z3op(int N_checks, struct simple_z3op_check strided_calls[N_c
 		return false;
 	}
 
-	size_t osize = get_block_size(N_in, ndims, nostrs, size);
-	size_t isize1 = get_block_size(N_in, ndims, nistrs1, size);
-	size_t isize2 = get_block_size(N_in, ndims, nistrs2, size);
+	long osize = get_block_size(N_in, ndims, nostrs, CFL_SIZE);
+	long isize1 = get_block_size(N_in, ndims, nistrs1, CFL_SIZE);
+	long isize2 = get_block_size(N_in, ndims, nistrs2, CFL_SIZE);
 
 	if ((0 == osize) || (0 == isize1) || (0 == isize2))
 	{
@@ -1061,7 +1059,7 @@ static bool simple_z3op(int N_checks, struct simple_z3op_check strided_calls[N_c
 
 	optimized_threeop_oii(	N - N_in, ndims + N_in,
 				nostrs + N_in, (void*)out, nistrs1 + N_in, (void*)tin1, nistrs2 + N_in, (void*)tin2,
-				(size_t[3]){ osize, isize1, isize2 }, nary_inner_z3op);
+				(size_t[3]){ (size_t)osize, (size_t)isize1, (size_t)isize2 }, nary_inner_z3op);
 
 	md_free(conj_in);
 
@@ -1094,11 +1092,9 @@ static bool simple_3op(int N_checks, struct simple_3op_check strided_calls[N_che
 	if (0 == N)
 		return false;
 
-	long size = FL_SIZE;
-
-	unsigned long block_flags = vptr_block_loop_flags(N, dims, ostrs, out, size)
-				  | vptr_block_loop_flags(N, dims, istrs1, in1, size)
-				  | vptr_block_loop_flags(N, dims, istrs2, in2, size);
+	unsigned long block_flags = vptr_block_loop_flags(N, dims, ostrs, out, FL_SIZE)
+				  | vptr_block_loop_flags(N, dims, istrs1, in1, FL_SIZE)
+				  | vptr_block_loop_flags(N, dims, istrs2, in2, FL_SIZE);
 
 	long tdims[N];
 	md_select_dims(N, ~block_flags, tdims, dims);
@@ -1132,7 +1128,7 @@ static bool simple_3op(int N_checks, struct simple_3op_check strided_calls[N_che
 		if (!applicable)
 			continue;
 
-		N_in = strided_call.check_fun(N, ndims, nostrs, nistrs1, nistrs2, tdims, ostrs, istrs1, istrs2, size);
+		N_in = strided_call.check_fun(N, ndims, nostrs, nistrs1, nistrs2, tdims, ostrs, istrs1, istrs2, FL_SIZE);
 
 		if ((strided_call.reduction) && (out != in1))
 			N_in = -1;
@@ -1148,7 +1144,7 @@ static bool simple_3op(int N_checks, struct simple_3op_check strided_calls[N_che
 		if (!symmetric)
 			continue;
 
-		N_in = strided_call.check_fun(N, ndims, nostrs, nistrs1, nistrs2, tdims, ostrs, istrs2, istrs1, size);
+		N_in = strided_call.check_fun(N, ndims, nostrs, nistrs1, nistrs2, tdims, ostrs, istrs2, istrs1, FL_SIZE);
 
 		if ((strided_call.reduction) && (out != in2))
 			N_in = -1;
@@ -1169,9 +1165,9 @@ static bool simple_3op(int N_checks, struct simple_3op_check strided_calls[N_che
 	if (!strided_call.long_dims && (INT_MAX / 2 < md_calc_size(N_in, ndims)))
 		return false;
 
-	size_t osize = get_block_size(N_in, ndims, nostrs, size);
-	size_t isize1 = get_block_size(N_in, ndims, nistrs1, size);
-	size_t isize2 = get_block_size(N_in, ndims, nistrs2, size);
+	long osize = get_block_size(N_in, ndims, nostrs, FL_SIZE);
+	long isize1 = get_block_size(N_in, ndims, nistrs1, FL_SIZE);
+	long isize2 = get_block_size(N_in, ndims, nistrs2, FL_SIZE);
 
 	if ((0 == osize) || (0 == isize1) || (0 == isize2))
 		return false; //cross check: data for inner kernel is contiguous in memory
@@ -1209,7 +1205,7 @@ static bool simple_3op(int N_checks, struct simple_3op_check strided_calls[N_che
 
 	optimized_threeop_oii(	N - N_in, ndims + N_in,
 				nostrs + N_in, (void*)out, nistrs1 + N_in, (void*)tin1, nistrs2 + N_in, (void*)tin2,
-				(size_t[3]){ osize, isize1, isize2 }, nary_inner_3op);
+				(size_t[3]){ (size_t)osize, (size_t)isize1, (size_t)isize2 }, nary_inner_3op);
 	
 	while ((N > 1) && (1 == dims[N - 1]))
 		N--;

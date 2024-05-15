@@ -70,8 +70,8 @@ int (poissondisc_mc)(int D, int T, int N, int I, float vardens, const float delt
 	assert((0 < I) && (I < N));
 	assert(vardens >= 0.); // otherwise grid granularity needs to be changed
 
-	memset(*active, 0, N * sizeof(char));
-	memset(*active, 1, I * sizeof(char));
+	memset(*active, 0, (size_t)(N * (long)sizeof(char)));
+	memset(*active, 1, (size_t)(I * (long)sizeof(char)));
 
 	int k = 30;
 	int p = I;
@@ -268,7 +268,7 @@ out:
 extern int poissondisc(int D, int N, int I, float vardens, float delta, float points[N][D])
 {
 	PTR_ALLOC(int[N], kind);
-	memset(*kind, 0, I * sizeof(int));
+	memset(*kind, 0, (size_t)(I * (long)sizeof(int)));
 	const float dd[1][1] = { { delta } };
 	int P = poissondisc_mc(D, 1, N, I, vardens, dd, points, *kind);
 	XFREE(kind);
@@ -328,7 +328,7 @@ extern void mc_poisson_rmatrix(int D, int T, float rmatrix[T][T], const float de
 		table[i].x = delta[i];
 	}
 
-	qsort(&table, T, sizeof(struct sort_label), sort_cmp);
+	qsort(&table, (size_t)T, sizeof(struct sort_label), sort_cmp);
 
 	int mc[T][T];
 	int nc[T];

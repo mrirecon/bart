@@ -52,8 +52,8 @@ static const void* max_ptr[CUDA_MAX_STREAMS + 1] = { NULL };
 struct mem_s {
 
 	const void* ptr;
-	size_t len;
-	size_t len_used;
+	ssize_t len;
+	ssize_t len_used;
 
 	const char* backtrace;
 };
@@ -194,8 +194,8 @@ static int find_free_p(const void* _rptr, const void* _cmp)
 	const struct mem_s* rptr = _rptr;
 	const long* cmp = _cmp;
 
-	size_t min = cmp[0];
-	size_t max = cmp[1];
+	ssize_t min = cmp[0];
+	ssize_t max = cmp[1];
 
 	if ((rptr->len >= min) && (rptr->len <= max))
 		return 0;
@@ -204,12 +204,12 @@ static int find_free_p(const void* _rptr, const void* _cmp)
 }
 
 
-static struct mem_s* find_free(size_t size, int i)
+static struct mem_s* find_free(ssize_t size, int i)
 {
 	if (NULL == mem_cache[i])
 		return NULL;
 
-	size_t cmp[2] = { size, (0 == size) ? UINT64_MAX : 4 * size };
+	ssize_t cmp[2] = { size, (0 == size) ? INT64_MAX : 4 * size };
 
 	return tree_find_min(mem_cache[i], &cmp, find_free_p, true);
 }
@@ -304,9 +304,10 @@ void mem_device_free(void* ptr, void (*device_free)(const void* ptr))
 
 
 
-void* mem_device_malloc(long size, void* (*device_alloc)(size_t))
+void* mem_device_malloc(size_t size2, void* (*device_alloc)(size_t))
 {
 	int stream = cuda_get_stream_id();
+	long size = (long)size2;
 
 #pragma omp atomic
 	used_memory[stream] += size;
@@ -322,7 +323,7 @@ void* mem_device_malloc(long size, void* (*device_alloc)(size_t))
 
 	} else {
 
-		void* ptr = device_alloc(size);
+		void* ptr = device_alloc(size2);
 
 #pragma 	omp critical
 		{

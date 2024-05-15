@@ -170,7 +170,7 @@ static int dicom_write_element(int len, char buf[static 8 + len], struct element
 		buf[o++] = ((len >> 24) & 0xFF);
 	}
 
-	memcpy(buf + o, e.data, len);
+	memcpy(buf + o, e.data, (size_t)len);
 	return len + o;
 }
 
@@ -235,10 +235,10 @@ int dicom_write(const char* name, int cols, int rows, long inum, const unsigned 
 	size += 4;	// the pixel data element is larger
 
 	for (int i = 0; i < entries; i++)
-		size += 8 + dicom_elements[i].len;
+		size += (size_t)(8 + dicom_elements[i].len);
 
 
-	if (-1 == ftruncate(fd, size))
+	if (-1 == ftruncate(fd, (long)size))
 		goto cleanup;
 
 	if (MAP_FAILED == (addr = mmap(NULL, size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0)))
@@ -261,7 +261,7 @@ int dicom_write(const char* name, int cols, int rows, long inum, const unsigned 
 		last_group = dicom_elements[i].group;
 		last_element = dicom_elements[i].element;
 
-		off += dicom_write_element(dicom_elements[i].len, addr + off, dicom_elements[i]);
+		off += (size_t)dicom_write_element(dicom_elements[i].len, addr + off, dicom_elements[i]);
 	}
 
 	assert(0 == size - off);

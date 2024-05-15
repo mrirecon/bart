@@ -114,7 +114,7 @@ extern _Bool check_simple_copy(const struct operator_s* op);
 extern const struct operator_s* operator_copy_wrapper(int N, const long* strs[N], const struct operator_s* op);
 extern const struct operator_s* operator_copy_wrapper_sameplace(int N, const long* strs[N], const struct operator_s* op, const void* ref);
 
-extern const struct operator_s* operator_gpu_wrapper2(const struct operator_s* op, long move_flags);
+extern const struct operator_s* operator_gpu_wrapper2(const struct operator_s* op, unsigned long move_flags);
 extern const struct operator_s* operator_gpu_wrapper(const struct operator_s* op);
 extern const struct operator_s* operator_cpu_wrapper(const struct operator_s* op);
 

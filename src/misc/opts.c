@@ -1183,14 +1183,14 @@ void cmdline(int* argcp, char* argv[*argcp], int m, struct arg_s args[m], const 
 				continue;
 #if 1
 			for (int k = 0; k < args[i].nargs; ++k)
-				*(void**)args[i].arg[k].ptr = calloc((size_t)args[i].arg[k].size, *args[i].count);
+				*(void**)args[i].arg[k].ptr = calloc((size_t)args[i].arg[k].size, (size_t)*args[i].count);
 #endif
 			int c = 0;
 
 			while (j < tuple_end) {
 
 				for (int k = 0; k < args[i].nargs; ++k)	// FIXME ????
-					if (opt_dispatch(args[i].arg[k].opt_type, (*(void**)args[i].arg[k].ptr) + c * args[i].arg[k].size, NULL, '\0', argv[j++]))
+					if (opt_dispatch(args[i].arg[k].opt_type, (*(void**)args[i].arg[k].ptr) + c * (long)args[i].arg[k].size, NULL, '\0', argv[j++]))
 						error("failed to convert value\n");
 
 				c++;

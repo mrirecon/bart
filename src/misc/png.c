@@ -19,7 +19,6 @@
 
 static int png_write_anyrgb(const char* name, int w, int h, int nbytes, bool rgb, const unsigned char* buf)
 {
-
 	FILE* fp;
 	png_structp structp = NULL;
 	png_infop infop = NULL;
@@ -41,10 +40,10 @@ static int png_write_anyrgb(const char* name, int w, int h, int nbytes, bool rgb
 
 	switch(nbytes){
 		case 3:
-			png_set_IHDR(structp, infop, w, h, 8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+			png_set_IHDR(structp, infop, (unsigned int)w, (unsigned int)h, 8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
 			break;
 		case 4:
-			png_set_IHDR(structp, infop, w, h, 8, PNG_COLOR_TYPE_RGBA, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+			png_set_IHDR(structp, infop, (unsigned int)w, (unsigned int)h, 8, PNG_COLOR_TYPE_RGBA, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
 			break;
 		default:
 			error("Supported PNG formats are 24bit (RGB) and 32bit (RGBA)!\n");
@@ -56,7 +55,7 @@ static int png_write_anyrgb(const char* name, int w, int h, int nbytes, bool rgb
 	png_init_io(structp, fp);
 	png_write_info(structp, infop);
 
-	row_ptrs = xmalloc(sizeof(png_bytep) * h);
+	row_ptrs = xmalloc((size_t)((long)sizeof(png_bytep) * h));
 	row_size = png_get_rowbytes(structp, infop);
 
 	for (int i = 0; i < h; i++)

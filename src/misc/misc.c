@@ -629,7 +629,7 @@ static bool long_mul_overflow_p(long a, long b)
 long io_calc_size(int D, const long dims[D?:1], size_t size)
 {
 	if (0 == D)
-		return size;
+		return (long)size;
 
 	long a = io_calc_size(D - 1, dims + 1, size);
 	long b = dims[0];
@@ -712,16 +712,16 @@ char* construct_filename(int D, const long loopdims[D], const long pos[D], const
 	len += snprintf(NULL, 0, ".%s", ext);
 	len++;
 
-	char* name = xmalloc(len);
+	char* name = xmalloc((size_t)len);
 	int off = 0;
 
-	off += snprintf(name + off, len - off, "%s", prefix);
+	off += snprintf(name + off, (size_t)(len - off), "%s", prefix);
 
 	for (int i = 0; i < D; i++)
 		if (1 != loopdims[i])
-			off += snprintf(name + off, len - off, "_%c%04ld", spec[i], pos[i]);
+			off += snprintf(name + off, (size_t)(len - off), "_%c%04ld", spec[i], pos[i]);
 
-	off += snprintf(name + off, len - off, ".%s", ext);
+	off += snprintf(name + off, (size_t)(len - off), ".%s", ext);
 
 	return name;
 }

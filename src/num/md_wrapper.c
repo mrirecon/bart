@@ -48,8 +48,6 @@
  **/
 void zfmac_gpu_batched_loop(int N, const long dims[N], const long ostr[N], complex float* optr, const long istr1[N], const complex float* iptr1, const long istr2[N], const complex float* iptr2)
 {
-	long size = 8;
-
 	assert(4 >= N);
 
 	long todims[N];
@@ -64,9 +62,9 @@ void zfmac_gpu_batched_loop(int N, const long dims[N], const long ostr[N], compl
 	md_select_dims(N, MD_BIT(0) | md_nontriv_strides(N, istr1), tidims1, dims);
 	md_select_dims(N, MD_BIT(0) | md_nontriv_strides(N, istr2), tidims2, dims);
 
-	md_calc_strides(N, tostrs, todims, size);
-	md_calc_strides(N, tistrs1, tidims1, size);
-	md_calc_strides(N, tistrs2, tidims2, size);
+	md_calc_strides(N, tostrs, todims, CFL_SIZE);
+	md_calc_strides(N, tistrs1, tidims1, CFL_SIZE);
+	md_calc_strides(N, tistrs2, tidims2, CFL_SIZE);
 
 	for (int i = 0; i < N; i++) {
 
@@ -136,8 +134,6 @@ void zfmac_gpu_unfold(int N, const long dims[N], const long ostr[N], complex flo
  **/
 void zfmacc_gpu_batched_loop(int N, const long dims[N], const long ostr[N], complex float* optr, const long istr1[N], const complex float* iptr1, const long istr2[N], const complex float* iptr2)
 {
-	long size = 8;
-
 	assert(4 >= N);
 
 	long todims[N];
@@ -152,9 +148,9 @@ void zfmacc_gpu_batched_loop(int N, const long dims[N], const long ostr[N], comp
 	md_select_dims(N, MD_BIT(0) | md_nontriv_strides(N, istr1), tidims1, dims);
 	md_select_dims(N, MD_BIT(0) | md_nontriv_strides(N, istr2), tidims2, dims);
 
-	md_calc_strides(N, tostrs, todims, size);
-	md_calc_strides(N, tistrs1, tidims1, size);
-	md_calc_strides(N, tistrs2, tidims2, size);
+	md_calc_strides(N, tostrs, todims, CFL_SIZE);
+	md_calc_strides(N, tistrs1, tidims1, CFL_SIZE);
+	md_calc_strides(N, tistrs2, tidims2, CFL_SIZE);
 
 	for (int i = 0; i < N; i++) {
 

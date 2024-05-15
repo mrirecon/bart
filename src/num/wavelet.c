@@ -201,7 +201,7 @@ void md_wavtrafo2(int D, const long dims[D], unsigned long flags, const long str
 	if (rec) {
 
 		long dims2[D];
-		md_select_dims(D, ~0, dims2, dims);
+		md_select_dims(D, ~0UL, dims2, dims);
 		
 		for (int i = 0; i < D; i++)
 			if (MD_IS_SET(flags, i))

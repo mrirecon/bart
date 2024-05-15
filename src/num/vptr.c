@@ -246,15 +246,15 @@ static struct mem_s* search(const void* ptr, bool remove)
 
 static struct mem_s* vptr_create(int N, const long dims[N], size_t size, struct vptr_hint_s* hint)
 {
-	long len = md_calc_size(N, dims) * size;
+	long len = md_calc_size(N, dims) * (long)size;
 
-	void* ptr = mmap(0, len, PROT_NONE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+	void* ptr = mmap(0, (size_t)len, PROT_NONE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
 
 	PTR_ALLOC(struct mem_s, x);
 
 	x->ptr = ptr;
 	x->mem = NULL;
-	x->len = len;
+	x->len = (size_t)len;
 
 	x->num_blocks = 1;
 	x->block_size = len;
@@ -276,12 +276,12 @@ static struct mem_s* vptr_create(int N, const long dims[N], size_t size, struct 
 
 		x->mpi_flags = md_nontriv_dims(N, dims) & hint->mpi_flags;
 
-		x->block_size = size;	// size of continous blocks located on one rank
+		x->block_size = (long)size;	// size of continous blocks located on one rank
 
 		for (int i = 0; (i < N) && !MD_IS_SET(x->mpi_flags, i); i++)
 			x->block_size *= x->dims[i];
 
-		x->num_blocks = x->len / x->block_size;	
+		x->num_blocks = (long)x->len / x->block_size;
 	}
 
 	vptr_init();
@@ -325,7 +325,7 @@ static void* vptr_resolve_int(const void* ptr, bool assert_rank)
 			mem->mem[idx] = cuda_malloc(mem->block_size);
 		else
 #endif
-		mem->mem[idx] = xmalloc(mem->block_size);
+		mem->mem[idx] = xmalloc((size_t)mem->block_size);
 	}
 	
 	return mem->mem[idx] + ((ptr - mem->ptr) % mem->block_size);
@@ -379,12 +379,12 @@ bool vptr_free(const void* ptr)
 
 		// only for continuous allocations
 		if (mem->writeback)
-			md_copy(mem->N, mem->dims, mem->mem[0], mem->ptr, mem->size);
+			md_copy(mem->N, mem->dims, mem->mem[0], mem->ptr, (size_t)mem->size);
 	}
 
 	mem = search(ptr, true);
 
-	munmap((void*)ptr, mem->len);
+	munmap((void*)ptr, (size_t)mem->len);
 
 	if (NULL != mem->dims)
 		xfree(mem->dims);
@@ -491,7 +491,7 @@ unsigned long vptr_block_loop_flags(int N, const long dims[N], const long strs[N
 	long tdims[N + 1];
 	long tstrs[N + 1];
 	
-	tdims[0] = size;
+	tdims[0] = (long)size;
 	tstrs[0] = 1;
 
 	md_select_dims(N, md_nontriv_strides(N, strs), tdims + 1, dims);
@@ -604,7 +604,7 @@ int mpi_ptr_get_rank(const void* ptr)
 	md_set_dims(N, pos, 0);
 
 	// position in allocation
-	md_unravel_index(mem->N, pos, ~(0UL), mem->dims, (ptr - mem->ptr) / mem->size);
+	md_unravel_index(mem->N, pos, ~(0UL), mem->dims, (ptr - mem->ptr) / (long)mem->size);
 	
 	return hint_get_rank(h->N, pos, mem->hint);
 }
@@ -623,7 +623,7 @@ bool mpi_accessible_from(const void* ptr, int rank)
 	long pos[N];
 	md_set_dims(N, pos, 0);
 
-	md_unravel_index(mem->N, pos, ~0UL, mem->dims, (ptr - mem->ptr) / mem->size);
+	md_unravel_index(mem->N, pos, ~0UL, mem->dims, (ptr - mem->ptr) / (long)mem->size);
 
 
 	unsigned long loop_flags = ~md_nontriv_dims(mem->N, mem->dims);
@@ -663,7 +663,7 @@ int mpi_reduce_color(unsigned long reduce_flags, const void* ptr)
 	md_set_dims(N, pos, 0);
 
 	//position in allocation
-	md_unravel_index(mem->N, pos, ~0UL, mem->dims, (ptr - mem->ptr) / mem->size);
+	md_unravel_index(mem->N, pos, ~0UL, mem->dims, (ptr - mem->ptr) / (long)mem->size);
 
 
 	unsigned long loop_flags = ~md_nontriv_dims(mem->N, mem->dims);

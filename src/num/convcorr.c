@@ -620,12 +620,10 @@ bool zconvcorr_fwd_im2col_cf_cpu(int N,
 	if (cuda_ondevice(out))
 		return false;
 #endif
-	size_t size = CFL_SIZE;
-
 	if (5 > N)
 		return false;
 
-	if (!check_trivial_cf(5, odims, ostrs, idims, istrs, kdims, kstrs, flags, size))
+	if (!check_trivial_cf(5, odims, ostrs, idims, istrs, kdims, kstrs, flags, CFL_SIZE))
 		return false;
 
 	if (!check_trivial_strs_dil(5, dilation, strides))
@@ -658,8 +656,8 @@ bool zconvcorr_fwd_im2col_cf_cpu(int N,
 
 	long istrs_mat[8];
 
-	md_copy_strides(5, istrs_mat, MD_STRIDES(5, idims, size));
-	md_copy_strides(3, istrs_mat + 5, MD_STRIDES(5, idims, size) + 2);
+	md_copy_strides(5, istrs_mat, MD_STRIDES(5, idims, CFL_SIZE));
+	md_copy_strides(3, istrs_mat + 5, MD_STRIDES(5, idims, CFL_SIZE) + 2);
 
 
 	long osize = odims[0] * odims[1] * odims[2] * odims[3] * odims[4];
@@ -682,9 +680,10 @@ bool zconvcorr_fwd_im2col_cf_cpu(int N,
 	{
 		for (long i = 0; i < data->size; i++){
 
-			complex float* imat_tmp = md_alloc_sameplace(8, idims_matP, size, in);
+			complex float* imat_tmp = md_alloc_sameplace(8, idims_matP, CFL_SIZE, in);
 
-			md_copy2(8, idims_matP, MD_STRIDES(8, idims_matP, size), imat_tmp, istrs_matP, (const complex float*)ptr[1] + i * isize, size);
+			md_copy2(8, idims_matP, MD_STRIDES(8, idims_matP, CFL_SIZE), imat_tmp,
+					istrs_matP, (const complex float*)ptr[1] + i * isize, CFL_SIZE);
 
 			blas_matrix_zfmac(	M1, N1, K1,
 						(complex float*)ptr[0] + i * osize,
@@ -697,7 +696,7 @@ bool zconvcorr_fwd_im2col_cf_cpu(int N,
 	};
 
 	optimized_threeop_oii(N - 5, mdims, ostrs + 5, (void*)out, istrs + 5, (void*)in, kstrs + 5, (void*)krn,
-				(size_t[3]){ (size_t)(size * osize), (size_t)(size * isize), (size_t)(size * ksize) },
+				(size_t[3]){ (size_t)(osize * (long)CFL_SIZE), (size_t)(isize * (long)CFL_SIZE), (size_t)(ksize * (long)CFL_SIZE) },
 				nary_zconvcorr3D_I2C_CF);
 
 	debug_printf(DP_DEBUG3, "conv by %s \n", __func__);
@@ -793,7 +792,7 @@ bool zconvcorr_bwd_krn_im2col_cf_cpu(int N,
 	};
 
 	optimized_threeop_oii(N - 5, mdims, kstrs + 5, (void*)krn, istrs + 5, (void*)in, ostrs + 5, (void*)out,
-				(size_t[3]){ size * ksize, size * isize, size * osize},
+				(size_t[3]){ (size_t)(ksize * (long)CFL_SIZE), (size_t)(isize * (long)CFL_SIZE), (size_t)(osize * (long)CFL_SIZE) },
 				nary_zconvcorr_im2col);
 
 	debug_printf(DP_DEBUG3, "conv by %s \n", __func__);
@@ -812,12 +811,11 @@ bool zconvcorr_bwd_in_im2col_cf_cpu(int N,
 	if (cuda_ondevice(out))
 		return false;
 #endif
-	size_t size = CFL_SIZE;
 
 	if (5 > N)
 		return false;
 
-	if (!check_trivial_cf(5, odims, ostrs, idims, istrs, kdims, kstrs, flags, size))
+	if (!check_trivial_cf(5, odims, ostrs, idims, istrs, kdims, kstrs, flags, CFL_SIZE))
 		return false;
 
 	if (!check_trivial_strs_dil(5, dilation, strides))
@@ -851,8 +849,8 @@ bool zconvcorr_bwd_in_im2col_cf_cpu(int N,
 
 	long istrs_mat[8];
 
-	md_copy_strides(5, istrs_mat, MD_STRIDES(5, idims, size));
-	md_copy_strides(3, istrs_mat + 5, MD_STRIDES(5, idims, size) + 2);
+	md_copy_strides(5, istrs_mat, MD_STRIDES(5, idims, CFL_SIZE));
+	md_copy_strides(3, istrs_mat + 5, MD_STRIDES(5, idims, CFL_SIZE) + 2);
 
 
 	long osize = odims[0] * odims[1] * odims[2] * odims[3] * odims[4];
@@ -875,8 +873,8 @@ bool zconvcorr_bwd_in_im2col_cf_cpu(int N,
 	{
 		for (long i = 0; i < data->size; i++){
 
-			complex float* imat_tmp = md_alloc_sameplace(8, idims_matP, size, in);
-			md_clear(8, idims_matP, imat_tmp, size);
+			complex float* imat_tmp = md_alloc_sameplace(8, idims_matP, CFL_SIZE, in);
+			md_clear(8, idims_matP, imat_tmp, CFL_SIZE);
 
 			blas_matrix_zfmac(	K1, N1, M1,
 						imat_tmp,
@@ -884,14 +882,16 @@ bool zconvcorr_bwd_in_im2col_cf_cpu(int N,
 						(complex float*)ptr[1] + i * osize, 'N'
 						);
 
-			md_zadd2(8, idims_matP, istrs_matP, (complex float*)ptr[0] + i * isize, istrs_matP, (const complex float*)ptr[0] + i * isize, MD_STRIDES(8, idims_matP, size), imat_tmp);
+			md_zadd2(8, idims_matP, istrs_matP, (complex float*)ptr[0] + i * isize,
+					istrs_matP, (const complex float*)ptr[0] + i * isize,
+					MD_STRIDES(8, idims_matP, CFL_SIZE), imat_tmp);
 
 			md_free(imat_tmp);
 		}
 	};
 
 	optimized_threeop_oii(N - 5, mdims, istrs + 5, (void*)in, ostrs + 5, (void*)out, kstrs + 5, (void*)krn,
-				(size_t[3]){ size * osize, size * isize, size * ksize},
+				(size_t[3]){ (size_t)(osize * (long)CFL_SIZE), (size_t)(isize * (long)CFL_SIZE), (size_t)(ksize * (long)CFL_SIZE) },
 				nary_zconvcorr3D_I2C_CF);
 
 	debug_printf(DP_DEBUG3, "conv by %s \n", __func__);
@@ -910,12 +910,10 @@ bool zconvcorr_fwd_im2col_cf_gpu(int N,
 	if (!cuda_ondevice(out))
 		return false;
 
-	size_t size = CFL_SIZE;
-
 	if (5 > N)
 		return false;
 
-	if (!check_trivial_cf(5, odims, ostrs, idims, istrs, kdims, kstrs, flags, size))
+	if (!check_trivial_cf(5, odims, ostrs, idims, istrs, kdims, kstrs, flags, CFL_SIZE))
 		return false;
 
 	if (conv)
@@ -951,7 +949,7 @@ bool zconvcorr_fwd_im2col_cf_gpu(int N,
 	{
 		for (long i = 0; i < data->size; i++){
 
-			complex float* imat_tmp = md_alloc_gpu(1, &imat_size, size);
+			complex float* imat_tmp = md_alloc_gpu(1, &imat_size, CFL_SIZE);
 			cuda_im2col(imat_tmp, (const complex float*)ptr[1] + i * isize, odimsp, idimsp, kdimsp, dilationp, stridesp);
 
 			blas_matrix_zfmac(	M1, N1, K1,
@@ -964,7 +962,7 @@ bool zconvcorr_fwd_im2col_cf_gpu(int N,
 	};
 
 	optimized_threeop_oii(N - 5, mdims, ostrs + 5, (void*)out, istrs + 5, (void*)in, kstrs + 5, (void*)krn,
-				(size_t[3]){ size * osize, size * isize, size * ksize},
+				(size_t[3]){ (size_t)((long)CFL_SIZE * osize), (size_t)((long)CFL_SIZE * isize), (size_t)((long)CFL_SIZE * ksize) },
 				nary_zconvcorr_im2col);
 
 	debug_printf(DP_DEBUG3, "conv by %s \n", __func__);
@@ -1038,7 +1036,7 @@ bool zconvcorr_bwd_krn_im2col_cf_gpu(int N,
 	};
 
 	optimized_threeop_oii(N - 5, mdims, kstrs + 5, (void*)krn, istrs + 5, (void*)in, ostrs + 5, (void*)out,
-				(size_t[3]){ size * ksize, size * isize, size * osize},
+				(size_t[3]){ (size_t)((long)CFL_SIZE * ksize), (size_t)((long)CFL_SIZE * isize), (size_t)((long)CFL_SIZE * osize) },
 				nary_zconvcorr_im2col);
 
 	debug_printf(DP_DEBUG3, "conv by %s \n", __func__);
@@ -1058,12 +1056,10 @@ bool zconvcorr_bwd_in_im2col_cf_gpu(int N,
 	if (!cuda_ondevice(out))
 		return false;
 
-	size_t size = CFL_SIZE;
-
 	if (5 > N)
 		return false;
 
-	if (!check_trivial_cf(5, odims, ostrs, idims, istrs, kdims, kstrs, flags, size))
+	if (!check_trivial_cf(5, odims, ostrs, idims, istrs, kdims, kstrs, flags, CFL_SIZE))
 		return false;
 
 	if (conv)
@@ -1107,8 +1103,8 @@ bool zconvcorr_bwd_in_im2col_cf_gpu(int N,
 	{
 		for (long i = 0; i < data->size; i++){
 
-			complex float* imat_tmp = md_alloc_gpu(1, &imat_size, size);
-			md_clear(1, &imat_size, imat_tmp, size);
+			complex float* imat_tmp = md_alloc_gpu(1, &imat_size, CFL_SIZE);
+			md_clear(1, &imat_size, imat_tmp, CFL_SIZE);
 
 			blas_matrix_zfmac(	K1, N1, M1,
 						imat_tmp,
@@ -1124,7 +1120,7 @@ bool zconvcorr_bwd_in_im2col_cf_gpu(int N,
 	};
 
 	optimized_threeop_oii(N - 5, mdims, istrs + 5, (void*)in, ostrs + 5, (void*)out, kstrs + 5, (void*)krn,
-				(size_t[3]){ size * isize, size * osize, size * ksize},
+				(size_t[3]){ (size_t)((long)CFL_SIZE * isize), (size_t)((long)CFL_SIZE * osize), (size_t)((long)CFL_SIZE * ksize) },
 				nary_zconvcorr_im2col);
 
 	debug_printf(DP_DEBUG3, "conv by %s \n", __func__);

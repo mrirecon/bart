@@ -405,7 +405,7 @@ static const void* free_worker_buffer(int D, long dims[D], const void* addr)
 	}
 
 	if (   (desc->file_addr > desc->data_addr)
-	    || (desc->data_addr > desc->file_addr + (sizeof(complex float) * md_calc_size(desc->D, desc->file_dims))))
+	    || (desc->data_addr > desc->file_addr + ((long)sizeof(complex float) * md_calc_size(desc->D, desc->file_dims))))
 		md_free(desc->data_addr);
 
 	addr = desc->file_addr;
@@ -446,7 +446,7 @@ static complex float* load_zra_internal(int fd, const char* name, int D, long di
 
 	assert(header_size < 4096);
 
-	if (MAP_FAILED == (addr = mmap(NULL, st.st_size, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0)))
+	if (MAP_FAILED == (addr = mmap(NULL, (size_t)st.st_size, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0)))
 		io_error("Loading ra file %s\n", name);
 
 	if (-1 == close(fd))
@@ -480,14 +480,14 @@ complex float* load_zshm(const char* name, int D, long dims[D])
 
 static void* create_data(int ofd, size_t header_size, size_t size)
 {
-	if (-1 == ftruncate(ofd, size + header_size))
+	if (-1 == ftruncate(ofd, (off_t)(size + header_size)))
 		return NULL;
 
 	size_t skip = header_size & ~4095UL;
 	size_t off = header_size & 4095UL;
 	void* addr;
 
-	if (MAP_FAILED == (addr = mmap(NULL, size + off, PROT_READ|PROT_WRITE, MAP_SHARED, ofd, skip)))
+	if (MAP_FAILED == (addr = mmap(NULL, size + off, PROT_READ|PROT_WRITE, MAP_SHARED, ofd, (off_t)skip)))
 		return NULL;
 
 	return (char*)addr + off;
@@ -510,7 +510,7 @@ static complex float* create_zra_internal(int ofd, const char* name, int D, cons
 
 	void* data;
 
-	if (NULL == (data = create_data(ofd, header_size, T)))
+	if (NULL == (data = create_data(ofd, (size_t)header_size, (size_t)T)))
 		error("Creating ra file %s\n", name);
 
 	if (-1 == close(ofd))
@@ -560,7 +560,7 @@ float* create_coo(const char* name, int D, const long dims[D])
 
 	void* addr;
 
-	if (NULL == (addr = create_data(ofd, 4096, T)))
+	if (NULL == (addr = create_data(ofd, 4096, (size_t)T)))
 		error("Creating coo file %s\n", name);
 
 	if (-1 == close(ofd))
@@ -574,7 +574,7 @@ complex float* create_zcoo(const char* name, int D, const long dimensions[D])
 {
 	long dims[D + 1];
 	dims[0] = 2; // complex
-	memcpy(dims + 1, dimensions, D * sizeof(long));
+	memcpy(dims + 1, dimensions, (size_t)(D * (long)sizeof(long)));
 
 	return (complex float*)create_coo(name, D + 1, dims);
 }
@@ -604,7 +604,7 @@ static complex float* create_pipe(int pfd, int D, long dimensions[D])
 
 	complex float* ptr;
 
-	if (NULL == (ptr = create_data(fd, 0, T)))
+	if (NULL == (ptr = create_data(fd, 0, (size_t)T)))
 		error("temp cfl %s\n", filename);
 
 	if (-1 == close(fd))
@@ -734,7 +734,7 @@ float* load_coo(const char* name, int D, long dims[D])
 	if (T + 4096 != st.st_size)
 		error("Loading coo file %s\n", name);
 
-	if (MAP_FAILED == (addr = mmap(NULL, T, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 4096)))
+	if (MAP_FAILED == (addr = mmap(NULL, (size_t)T, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 4096)))
 		io_error("Loading coo file %s\n", name);
 
 	if (-1 == close(fd))
@@ -752,7 +752,7 @@ complex float* load_zcoo(const char* name, int D, long dimensions[D])
 	if (2 != dims[0])
 		error("Loading coo file %s\n", name);
 
-	memcpy(dimensions, dims + 1, D * sizeof(long));
+	memcpy(dimensions, dims + 1, (size_t)(D * (long)sizeof(long)));
 
 	return (complex float*)data;
 }
@@ -846,7 +846,7 @@ static complex float* load_cfl_internal(const char* name, int D, long dimensions
 
 	if (1 < mpi_get_num_procs() && !mpi_shared_files) {
 
-		mpi_sync_val(dimensions, D * sizeof(long));
+		mpi_sync_val(dimensions, D * (long)sizeof(long));
 
 		if (!mpi_is_main_proc())
 			addr = anon_cfl(NULL, D, dimensions);
@@ -893,7 +893,7 @@ complex float* shared_cfl(int D, const long dims[D], const char* name)
 //	if (!((0 == st.st_size) || (T == st.st_size)))
 //		error("abort\n");
 
-	if (NULL == (addr = create_data(fd, 0, T)))
+	if (NULL == (addr = create_data(fd, 0, (size_t)T)))
 		error("shared cfl %s\n", name);
 
 	if (-1 == close(fd))
@@ -911,7 +911,7 @@ complex float* anon_cfl(const char* /*name*/, int D, const long dims[D])
 	if (-1 == (T = io_calc_size(D, dims, sizeof(complex float))))
 		error("anon cfl\n");
 
-	if (MAP_FAILED == (addr = mmap(NULL, T, PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE, -1, 0)))
+	if (MAP_FAILED == (addr = mmap(NULL, (size_t)T, PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE, -1, 0)))
 		io_error("anon cfl\n");
 
 	return addr;
@@ -938,7 +938,7 @@ void* private_raw(size_t* size, const char* name)
 	if (-1 == (fstat(fd, &st)))
 		error("abort\n");
 
-	*size = st.st_size;
+	*size = (size_t)st.st_size;
 
 	if (MAP_FAILED == (addr = mmap(NULL, *size, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0)))
 		error("abort\n");
@@ -970,7 +970,7 @@ complex float* private_cfl(int D, const long dims[D], const char* name)
 	if (T != st.st_size)
 		error("private cfl %s\n", name);
 
-	if (MAP_FAILED == (addr = mmap(NULL, T, PROT_READ|PROT_WRITE, MAP_PRIVATE | MAP_NORESERVE, fd, 0)))
+	if (MAP_FAILED == (addr = mmap(NULL, (size_t)T, PROT_READ|PROT_WRITE, MAP_PRIVATE | MAP_NORESERVE, fd, 0)))
 		io_error("private cfl %s\n", name);
 
 	if (-1 == close(fd))
@@ -998,7 +998,7 @@ void unmap_cfl(int D, const long dims[D], const complex float* x)
 #ifdef _WIN32
 	if (-1 == munmap((void*)x, T))
 #else
-	if (-1 == munmap((void*)((uintptr_t)x & ~4095UL), T))
+	if (-1 == munmap((void*)((uintptr_t)x & ~4095UL), (size_t)T))
 #endif
 		io_error("unmap cfl\n");
 }
@@ -1189,7 +1189,7 @@ void unmap_multi_cfl(int N, int D[N], const long* dimensions[N], _Complex float*
 			error("unmap multi cfl 2\n");
 	}
 
-	if (-1 == munmap((void*)((uintptr_t)args[0] & ~4095UL), T))
+	if (-1 == munmap((void*)((uintptr_t)args[0] & ~4095UL), (size_t)T))
 		io_error("unmap multi cfl 3\n");
 #endif
 }

@@ -146,7 +146,7 @@ static void optimized_threeop_oii(int D, const long dim[D], const long ostr[D], 
 	const long (*nstr[3])[D?D:1] = { (const long (*)[D?D:1])ostr, (const long (*)[D?D:1])istr1, (const long (*)[D?D:1])istr2 };
 	void *nptr[3] = { optr, (void*)iptr1, (void*)iptr2 };
 
-	unsigned long io = 1 + ((iptr1 == optr) ? 2 : 0) + ((iptr2 == optr) ? 4 : 0);
+	unsigned long io = 1UL + ((iptr1 == optr) ? 2 : 0) + ((iptr2 == optr) ? 4 : 0);
 
 	optimized_nop(3, io, D, dim, nstr, nptr, sizes, too);
 }
@@ -3492,7 +3492,7 @@ void md_zfill2(int D, const long dim[D], const long str[D], complex float* ptr, 
 #if 1
 	const long (*nstr[1])[D?D:1] = { (const long (*)[D ?: 1])str };
 	void *nptr[1] = { ptr };
-	int io = 1;
+	unsigned long io = 1UL;
 	size_t sizes[1] = { CFL_SIZE };
 
 	NESTED(void, nary_zfill, (struct nary_opt_data_s* data, void* ptr[]))
@@ -4173,7 +4173,7 @@ void md_zfftmod2(int D, const long dims[D], const long ostrs[D], complex float* 
 	};
 
 	optimized_twoop_oi(D - 1, dims + 1, ostrs + 1, optr, istrs + 1, iptr,
-		(size_t[2]){ N * CFL_SIZE, N * CFL_SIZE }, nary_zfftmod);
+		(size_t[2]){ (size_t)(N * (long)CFL_SIZE), (size_t)(N * (long)CFL_SIZE) }, nary_zfftmod);
 }
 
 void md_zfftmod(int D, const long dims[D], complex float* optr, const complex float* iptr, bool inv, double phase)

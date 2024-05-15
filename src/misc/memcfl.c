@@ -52,7 +52,7 @@ void memcfl_register(const char* name, int D, const long dims[D], complex float*
 
 complex float* memcfl_create(const char* name, int D, const long dims[D])
 {
-	complex float* data = xmalloc(io_calc_size(D, dims, sizeof(complex float)));
+	complex float* data = xmalloc((size_t)io_calc_size(D, dims, sizeof(complex float)));
 	memcfl_register(name, D, dims, data, true);
 	return data;
 }

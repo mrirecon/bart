@@ -324,7 +324,7 @@ int write_cfl_header(int fd, const char* filename, int n, const long dimensions[
 int read_cfl_header2(int N, char header[N + 1], int fd, char **file, int n, long dimensions[n])
 {
 	*file = NULL;
-	memset(header, 0, N + 1);
+	memset(header, 0, (size_t)(N + 1));
 
 	int r = 0;
 
@@ -332,7 +332,7 @@ int read_cfl_header2(int N, char header[N + 1], int fd, char **file, int n, long
 
 		int rd;
 
-		if (0 > (rd = read(fd, header + r, N - r)))
+		if (0 > (rd = read(fd, header + r, (size_t)(N - r))))
 			return -1;
 
 		if (0 == rd)
@@ -643,13 +643,13 @@ out:
 int write_coo(int fd, int n, const long dimensions[n])
 {
 	char header[4096];
-	size_t len = ARRAY_SIZE(header);
+	long len = (long)ARRAY_SIZE(header);
 	memset(header, 0, 4096);
 
 	int pos = 0;
 	int ret;
 
-	ret = snprintf(header + pos, len, "Type: float\nDimensions: %d\n", n);
+	ret = snprintf(header + pos, (size_t)len, "Type: float\nDimensions: %d\n", n);
 
 	if ((ret < 0) || (ret >= (int)len))
 		return -1;
@@ -664,9 +664,9 @@ int write_coo(int fd, int n, const long dimensions[n])
 
 		long size = dimensions[i];
 
-		ret = snprintf(header + pos, len, "[%ld\t%ld\t%ld\t%ld]\n", start, stride * size, size, stride);
+		ret = snprintf(header + pos, (size_t)len, "[%ld\t%ld\t%ld\t%ld]\n", start, stride * size, size, stride);
 
-		if ((ret < 0) || (ret >= (int)len))
+		if ((ret < 0) || (ret >= len))
 			return -1;
 
 		pos += ret;
@@ -785,13 +785,13 @@ int read_ra(int fd, int n, long dimensions[n])
 	for (int i = 0; i < (int)header.ndims; i++) {
 
 		if (i < n)
-			dimensions[i] = dims[i];
+			dimensions[i] = (long)dims[i];
 		else
 			err_assert(1 == dims[i]);
 	}
 
 	// this can overflow, but we check in mmio
-	err_assert(header.size == md_calc_size(n, dimensions) * sizeof(complex float));
+	err_assert(header.size == md_calc_size(n, dimensions) * (long)sizeof(complex float));
 
 	return 0;
 }
@@ -806,8 +806,8 @@ int write_ra(int fd, int n, const long dimensions[n])
 		.flags = 0ULL,
 		.eltype = RA_TYPE_COMPLEX,
 		.elbyte = sizeof(complex float),
-		.size = md_calc_size(n, dimensions) * sizeof(complex float),
-		.ndims = n,
+		.size = (size_t)(md_calc_size(n, dimensions) * (long)sizeof(complex float)),
+		.ndims = (size_t)n,
 	};
 
 	if (sizeof(header) != write(fd, &header, sizeof(header)))
@@ -816,7 +816,7 @@ int write_ra(int fd, int n, const long dimensions[n])
 	uint64_t dims[n];
 
 	for (int i = 0; i < n; i++)
-		dims[i] = dimensions[i];
+		dims[i] = (uint64_t)dimensions[i];
 
 	if ((int)sizeof(dims) != write(fd, &dims, sizeof(dims)))
 		return -1;

@@ -80,7 +80,7 @@ static void fft_xzeropad(int N, const long dims[N], int d, int x, complex float*
 }
 
 
-static void fft_zeropad_simple(int N, long flags, const long odims[N], complex float* dst, const long idims[N], const complex float* src)
+static void fft_zeropad_simple(int N, unsigned long flags, const long odims[N], complex float* dst, const long idims[N], const complex float* src)
 {
 	md_resize_center(N, odims, dst, idims, src, CFL_SIZE);
 	fftc(N, odims, flags, dst, dst);
@@ -145,9 +145,9 @@ static void fft_zeropad_r(int N, const long odims[N], complex float* dst, const 
  * perform zero-padded FFT
  *
  */
-void fft_zeropad(int N, long flags, const long odims[N], complex float* dst, const long idims[N], const complex float* src)
+void fft_zeropad(int N, unsigned long flags, const long odims[N], complex float* dst, const long idims[N], const complex float* src)
 {
-	long lflags = 0;
+	unsigned long lflags = 0;
 
 	for (int i = 0; i < N; i++)
 		if (odims[i] > idims[i])
@@ -155,7 +155,7 @@ void fft_zeropad(int N, long flags, const long odims[N], complex float* dst, con
 
 	assert(flags == lflags);
 
-	long sflags = 0;
+	unsigned long sflags = 0;
 
 	for (int i = 0; i < N; i++)
 		if (odims[i] < idims[i])
@@ -205,9 +205,9 @@ static void fft_zeropadH_r(int N, const long odims[N], complex float* dst, const
  * perform zero-padded FFT
  *
  */
-void fft_zeropadH(int N, long flags, const long odims[N], complex float* dst, const long idims[N], const complex float* src)
+void fft_zeropadH(int N, unsigned long flags, const long odims[N], complex float* dst, const long idims[N], const complex float* src)
 {
-	long lflags = 0;
+	unsigned long lflags = 0;
 
 	for (int i = 0; i < N; i++)
 		if (odims[i] > idims[i])
@@ -215,7 +215,7 @@ void fft_zeropadH(int N, long flags, const long odims[N], complex float* dst, co
 
 	assert(0 == lflags);
 
-	long sflags = 0;
+	unsigned long sflags = 0;
 
 	for (int i = 0; i < N; i++)
 		if (odims[i] < idims[i])
@@ -236,7 +236,7 @@ void sinc_resize(int D, const long out_dims[D], complex float* out, const long i
 {
 	complex float* tmp = md_alloc_sameplace(D, in_dims, CFL_SIZE, in);
 
-	long flags = 0;
+	unsigned long flags = 0;
 
 	for (int i = 0; i < D; i++)
 		if (out_dims[i] != in_dims[i])

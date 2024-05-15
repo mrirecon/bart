@@ -474,7 +474,7 @@ static unsigned long parallelizable(int D, unsigned int io, int N, const long di
 	//		     [1111111111111111]
 	//                                [333333333]
 
-	unsigned long flags = (1 << N) - 1;
+	unsigned long flags = (1UL << N) - 1;
 
 	for (int d = 0; d < D; d++) {
 
@@ -520,9 +520,9 @@ unsigned long dims_parallel(int D, unsigned long io, int N, const long dims[N], 
 
 	int i = N;
 
-	size_t max_size = 0;
+	long max_size = 0;
 	for (int i = 0; i < D; i++)
-		max_size = MAX(max_size, size[i]);
+		max_size = MAX(max_size, (long)size[i]);
 
 	long reps = md_calc_size(N, dims) * max_size;
 
@@ -709,7 +709,7 @@ void optimized_nop(int N, unsigned long io, int D, const long dim[D], const long
 		cnst_size *= tdims[cnst_dims];
 
 		for (int i = 0; i < N; i++) {
-			if (cnst_size * sizes[i] > 4096) {	// buffer too big
+			if (cnst_size * (long)sizes[i] > 4096) {	// buffer too big
 
 				cnst_size /= tdims[cnst_dims];
 				cnst_dims--;
@@ -736,12 +736,12 @@ out:
 			if (MD_IS_SET(cnst_flags, i)) {
 
 				for (int d = 0; d < cnst_dims; d++)
-					tstrs[i][d] = ((0 < d) ? tdims[d - 1] : 1) * sizes[i];
+					tstrs[i][d] = ((0 < d) ? tdims[d - 1] : 1) * (long)sizes[i];
 
-				void* np = alloca(cnst_size * sizes[i]);
+				void* np = alloca((size_t)(cnst_size * (long)sizes[i]));
 
 				for (long n = 0; n < cnst_size; n++)
-					memcpy(np + n * sizes[i], vptr_resolve(nptr[i]), sizes[i]);
+					memcpy(np + n * (long)sizes[i], vptr_resolve(nptr[i]), sizes[i]);
 
 				nptr1[i] = np;
 			}

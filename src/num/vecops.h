@@ -73,7 +73,7 @@ struct vec_ops {
 
 	void (*zcmp)(long N, _Complex float* dst, const _Complex float* src1, const _Complex float* src2);
 	void (*zdiv_reg)(long N, _Complex float* dst, const _Complex float* src1, const _Complex float* src2, _Complex float lambda);
-	void (*zfftmod)(long N, _Complex float* dst, const _Complex float* src, unsigned int n, _Bool inv, double phase);
+	void (*zfftmod)(long N, _Complex float* dst, const _Complex float* src, int n, _Bool inv, double phase);
 
 	void (*zmax)(long N, _Complex float* dst, const _Complex float* src1, const _Complex float* src2);
 	void (*zsmax)(long N, float alpha, _Complex float* dst, const _Complex float* src);
@@ -88,8 +88,8 @@ struct vec_ops {
 	void (*softthresh_half)(long N, float lambda,  float* dst, const float* src);
 	void (*softthresh)(long N, float lambda,  float* dst, const float* src);
 //	void (*swap)(long N, float* a, float* b);
-	void (*zhardthresh)(long N,  unsigned int k, _Complex float* d, const _Complex float* x);
-	void (*zhardthresh_mask)(long N,  unsigned int k, _Complex float* d, const _Complex float* x);
+	void (*zhardthresh)(long N, int k, _Complex float* d, const _Complex float* x);
+	void (*zhardthresh_mask)(long N, int k, _Complex float* d, const _Complex float* x);
 
 	void (*pdf_gauss)(long N, float mu, float sig, float* dst, const float* src);
 

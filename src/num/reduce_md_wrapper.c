@@ -101,8 +101,6 @@ void reduce_zadd_outer_gpu(int N, const long dims[N], const long ostr[N], comple
  **/
 void reduce_zadd_gemv(int N, const long dims[N], const long ostr[N], complex float* optr, const long istr1[N], const complex float* iptr1, const long istr2[N], const complex float* iptr2)
 {
-	long size = 8;
-
 	assert(optr == iptr1);
 
 	for (int i = 0; i < N; i++)
@@ -111,9 +109,9 @@ void reduce_zadd_gemv(int N, const long dims[N], const long ostr[N], complex flo
 	long one_dims[N];
 	long one_strs[N];
 	md_select_dims(N, ~md_nontriv_strides(N, ostr) & md_nontriv_strides(N, istr2), one_dims, dims);
-	md_calc_strides(N, one_strs, one_dims, size);
+	md_calc_strides(N, one_strs, one_dims, CFL_SIZE);
 
-	complex float* ones = md_alloc_sameplace(N, one_dims, size, optr);
+	complex float* ones = md_alloc_sameplace(N, one_dims, CFL_SIZE, optr);
 	md_zfill(N, one_dims, ones, 1.);
 	md_zfmac2(N, dims, ostr, optr, istr2, iptr2, one_strs, ones);
 	md_free(ones);
@@ -198,8 +196,6 @@ void reduce_add_outer_gpu(int N, const long dims[N], const long ostr[N], float* 
  **/
 void reduce_add_gemv(int N, const long dims[N], const long ostr[N], float* optr, const long istr1[N], const float* iptr1, const long istr2[N], const float* iptr2)
 {
-	long size = 4;
-
 	assert(optr == iptr1);
 
 	for (int i = 0; i < N; i++)
@@ -208,11 +204,11 @@ void reduce_add_gemv(int N, const long dims[N], const long ostr[N], float* optr,
 	long one_dims[N];
 	long one_strs[N];
 	md_select_dims(N, ~md_nontriv_strides(N, ostr) & md_nontriv_strides(N, istr2), one_dims, dims);
-	md_calc_strides(N, one_strs, one_dims, size);
+	md_calc_strides(N, one_strs, one_dims, FL_SIZE);
 
-	float* ones = md_alloc_sameplace(N, one_dims, size, optr);
+	float* ones = md_alloc_sameplace(N, one_dims, FL_SIZE, optr);
 	float one = 1.;
-	md_fill(N, one_dims, ones, &one, size);
+	md_fill(N, one_dims, ones, &one, FL_SIZE);
 	md_fmac2(N, dims, ostr, optr, istr2, iptr2, one_strs, ones);
 	md_free(ones);
 }

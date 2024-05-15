@@ -1182,7 +1182,7 @@ const struct operator_s* operator_cpu_wrapper(const struct operator_s* op)
 	for (int i = 0; i < N; i++) {
 
 		auto dom = operator_arg_domain(op, i);
-		assert(md_check_equal_dims(dom->N, MD_STRIDES(dom->N, dom->dims, dom->size), dom->strs, ~0));
+		assert(md_check_equal_dims(dom->N, MD_STRIDES(dom->N, dom->dims, dom->size), dom->strs, ~0UL));
 		strs[i] = dom->strs;
 	}
 
@@ -1198,7 +1198,7 @@ const struct operator_s* operator_nograph_wrapper(const struct operator_s* op)
 	for (int i = 0; i < N; i++) {
 
 		auto dom = operator_arg_domain(op, i);
-		assert(md_check_equal_dims(dom->N, MD_STRIDES(dom->N, dom->dims, dom->size), dom->strs, ~0));
+		assert(md_check_equal_dims(dom->N, MD_STRIDES(dom->N, dom->dims, dom->size), dom->strs, ~0UL));
 		strs[i] = dom->strs;
 	}
 
@@ -1234,7 +1234,7 @@ const struct operator_s* operator_copy_wrapper(int N, const long* strs[N], const
 	return operator_copy_wrapper_sameplace(N, strs, op, NULL);
 }
 
-const struct operator_s* operator_gpu_wrapper2(const struct operator_s* op, long move_flags)
+const struct operator_s* operator_gpu_wrapper2(const struct operator_s* op, unsigned long move_flags)
 {
 	int N = operator_nr_args(op);
 	assert(N <= 8 * (int)sizeof(move_flags));
@@ -1254,7 +1254,7 @@ const struct operator_s* operator_gpu_wrapper2(const struct operator_s* op, long
 
 const struct operator_s* operator_gpu_wrapper(const struct operator_s* op)
 {
-	return operator_gpu_wrapper2(op, ~0L);
+	return operator_gpu_wrapper2(op, ~0UL);
 }
 
 
@@ -1865,7 +1865,7 @@ struct extract_data_s {
 	INTERFACE(operator_data_t);
 
 	int a;
-	size_t off;
+	off_t off;
 	const struct operator_s* op;
 
 	long* strs;
@@ -2009,7 +2009,7 @@ static bool stack_compatible(int D, const struct iovec_s* a, const struct iovec_
 	long dims[N];
 	md_select_dims(N, ~MD_BIT(D), dims, a->dims);
 
-	long S = md_calc_size(N, dims) * a->size;
+	long S = md_calc_size(N, dims) * (long)a->size;
 
 	if ((1 != a->dims[D]) && (S != a->strs[D]))
 		return false;
@@ -2045,7 +2045,7 @@ static void stack_dims(int N, long dims[N], long strs[N], int D, const struct io
 	long dimsa[N];
 	md_select_dims(N, ~MD_BIT(D), dimsa, a->dims);
 
-	strs[D] = md_calc_size(N, dimsa) * a->size;
+	strs[D] = md_calc_size(N, dimsa) * (long)a->size;
 	dims[D] = a->dims[D] + b->dims[D];
 }
 

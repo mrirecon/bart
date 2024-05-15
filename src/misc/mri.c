@@ -97,7 +97,7 @@ static void calib_readout_pos(const long caldims[DIMS], long calpos[DIMS], const
 		calpos[READ_DIM] = r;
 
 		long offset = md_calc_offset(DIMS, calpos, in_strs);
-		float energy = md_znorm2(DIMS, caldims, in_strs, in_data + offset / CFL_SIZE);
+		float energy = md_znorm2(DIMS, caldims, in_strs, in_data + offset / (long)CFL_SIZE);
 
 		if (energy > maxeng) {
 
@@ -161,7 +161,7 @@ void calib_geom(long caldims[DIMS], long calpos[DIMS], const long calsize[3], co
 			long offset = md_calc_offset(DIMS, calpos, pat_strs);
 			float si = sqrtf((float)caldims[0] * (float)caldims[1] * (float)caldims[2]);
 		
-			if (si != md_znorm2(DIMS, caldims, pat_strs, pattern + offset / CFL_SIZE)) {
+			if (si != md_znorm2(DIMS, caldims, pat_strs, pattern + offset / (long)CFL_SIZE)) {
 		
 				caldims[i]--;
 				calpos[i] = (in_dims[i] - caldims[i]) / 2;

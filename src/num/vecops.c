@@ -577,11 +577,11 @@ static void softthresh(long N, float lambda, float* d, const float* x)
  *
  */
 
-static float klargest_complex_partsort( unsigned int N,  unsigned int k, const complex float* ar)
+static float klargest_complex_partsort(int N, int k, const complex float* ar)
 {
 	assert(k <= N);
 
-	complex float* tmp =  (complex float*)xmalloc(N * sizeof(complex float));
+	complex float* tmp =  (complex float*)xmalloc((size_t)(N * (long)sizeof(complex float)));
 	copy(2 * N, (float*)tmp, (float*)ar);
 
 	float thr = quickselect_complex(tmp, N, k);
@@ -601,7 +601,7 @@ static float klargest_complex_partsort( unsigned int N,  unsigned int k, const c
  * @param x pointer to input
  */
 
-static void zhardthresh(long N,  unsigned int k, complex float* d, const complex float* x)
+static void zhardthresh(long N, int k, complex float* d, const complex float* x)
 {
 	float thr = klargest_complex_partsort(N, k, x);
 
@@ -623,7 +623,7 @@ static void zhardthresh(long N,  unsigned int k, complex float* d, const complex
  * @param x pointer to input
  */
 
-static void zhardthresh_mask(long N,  unsigned int k, complex float* d, const complex float* x)
+static void zhardthresh_mask(long N, int k, complex float* d, const complex float* x)
 {
 	float thr = klargest_complex_partsort(N, k, x);
 
@@ -674,7 +674,7 @@ static complex double fftmod_phase2(long n, int j, bool inv, double phase)
 	return cexp(M_PI * 2.i * sgn * rem);
 }
 
-static void zfftmod(long N, complex float* dst, const complex float* src, unsigned int n, bool inv, double phase)
+static void zfftmod(long N, complex float* dst, const complex float* src, int n, bool inv, double phase)
 {
 #if 1
 	if (0 == n % 2) {
@@ -682,7 +682,7 @@ static void zfftmod(long N, complex float* dst, const complex float* src, unsign
 		complex float ph = fftmod_phase2(n, 0, inv, phase);
 
 		for (long i = 0; i < N; i++)
-			for (unsigned int j = 0; j < n; j++)
+			for (int j = 0; j < n; j++)
 				dst[i * n + j] = src[i * n + j] * ((0 == j % 2) ? ph : -ph);
 
 		return;
@@ -690,7 +690,7 @@ static void zfftmod(long N, complex float* dst, const complex float* src, unsign
 #endif
 
 	for (long i = 0; i < N; i++)
-		for (unsigned int j = 0; j < n; j++)
+		for (int j = 0; j < n; j++)
 			dst[i * n + j] = src[i * n + j] * fftmod_phase2(n, j, inv, phase);
 }
 

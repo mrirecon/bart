@@ -1083,7 +1083,7 @@ static __device__ cuDoubleComplex fftmod_phase2(long n, int j, bool inv, double 
 	return zexpD(make_cuDoubleComplex(0., M_PI * 2. * sgn * rem));
 }
 
-__global__ void kern_zfftmod(long N, cuFloatComplex* dst, const cuFloatComplex* src, unsigned int n, _Bool inv, double phase)
+__global__ void kern_zfftmod(long N, cuFloatComplex* dst, const cuFloatComplex* src, int n, _Bool inv, double phase)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
@@ -1094,7 +1094,7 @@ __global__ void kern_zfftmod(long N, cuFloatComplex* dst, const cuFloatComplex* 
 						 cuFloat2Double(src[i * n + j])));
 }
 
-extern "C" void cuda_zfftmod(long N, _Complex float* dst, const _Complex float* src, unsigned int n, _Bool inv, double phase)
+extern "C" void cuda_zfftmod(long N, _Complex float* dst, const _Complex float* src, int n, _Bool inv, double phase)
 {
 	kern_zfftmod<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, (cuFloatComplex*)dst, (const cuFloatComplex*)src, n, inv, phase);
 }

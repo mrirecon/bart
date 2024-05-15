@@ -33,7 +33,7 @@
 
 #include "init.h"
 
-extern unsigned long num_chunk_size;	// num/optimize.c
+extern long num_chunk_size;	// num/optimize.c
 
 static _Bool bart_gpu_support = false;
 _Bool bart_use_gpu = false;
@@ -44,7 +44,7 @@ static void num_init_internal(void)
 
 	if (NULL != (wisdom_str = getenv("BART_USE_FFTW_WISDOM"))) {
 		
-		long wisdom = strtoul(wisdom_str, NULL, 10);
+		long wisdom = strtol(wisdom_str, NULL, 10);
 
 		if ((1 != wisdom) && (0 != wisdom))
 			error("BART_USE_FFTW_WISDOM environment variable must be 0 or 1!\n");
@@ -57,7 +57,7 @@ static void num_init_internal(void)
 
 	if (NULL != (chunk_str = getenv("BART_PARALLEL_CHUNK_SIZE"))) {
 
-		long chunk_size = strtoul(chunk_str, NULL, 10);
+		long chunk_size = strtol(chunk_str, NULL, 10);
 
 		if (0 < chunk_size) {
 
@@ -74,7 +74,7 @@ static void num_init_internal(void)
 
 	if (NULL != (gpu_str = getenv("BART_GPU"))) {
 
-		int bart_num_gpus = strtoul(gpu_str, NULL, 10);
+		int bart_num_gpus = strtol(gpu_str, NULL, 10);
 		
 		if (0 < bart_num_gpus)
 			bart_use_gpu = true;
@@ -82,7 +82,7 @@ static void num_init_internal(void)
 
 	if (NULL != (gpu_str = getenv("BART_GPU_STREAMS"))) {
 
-		int bart_num_streams = strtoul(gpu_str, NULL, 10);
+		int bart_num_streams = strtol(gpu_str, NULL, 10);
 		
 		if (0 < bart_num_streams)
 			cuda_num_streams = bart_num_streams;

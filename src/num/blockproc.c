@@ -205,7 +205,8 @@ float blockproc_shift2(int D, const long dims[D], const long blkdims[D], const l
 	pos[i] = 0;
 
 	info += blockproc_shift2(D, dim1, blkdims, pos, data, op, ostrs, dst, istrs, src);
-	info += blockproc_shift2(D, dim2, blkdims, pos, data, op, ostrs, dst + dim1[i] * ostrs[i] / CFL_SIZE, istrs, src + dim1[i] * istrs[i] / CFL_SIZE);
+	info += blockproc_shift2(D, dim2, blkdims, pos, data, op, ostrs,
+			dst + dim1[i] * ostrs[i] / (long)CFL_SIZE, istrs, src + dim1[i] * istrs[i] / (long)CFL_SIZE);
 
 	return info;
 }

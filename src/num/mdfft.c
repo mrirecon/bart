@@ -52,10 +52,10 @@ static void rot45z2(int D, int M,
 
 static int find_bit(unsigned long N)
 {
-	return (int)ffsl(N) - 1;
+	return (int)ffsl((long)N) - 1;
 }
 
-static int next_powerof2(unsigned int x)
+static int next_powerof2(int x)
 {
 	x--;
 
@@ -199,7 +199,7 @@ static void cooley_tukey(int N, const long dims[N],
 	md_select_dims(N + 1, MD_BIT(D) | MD_BIT(N), tdims, xdims);
 	md_calc_strides(N + 1, tstrs, tdims, CFL_SIZE);
 
-	complex float (*xtw)[b][a] = xmalloc(a * b * CFL_SIZE);
+	complex float (*xtw)[b][a] = xmalloc((size_t)(a * b * (long)CFL_SIZE));
 	compute_twiddle(b, a, *xtw);
 
 	complex float* tw = md_alloc_sameplace(N + 1, tdims, CFL_SIZE, dst);

@@ -99,7 +99,7 @@ static void get_datetime_str(int len, char* datetime_str)
 	time_t tv = time(NULL);
 	struct tm* dt = gmtime(&tv);
 
-	strftime(datetime_str, len, "%F %T", dt);
+	strftime(datetime_str, (size_t)len, "%F %T", dt);
 }
 
 #define RESET	"\033[0m"
@@ -226,7 +226,7 @@ void debug_backtrace(size_t n)
 {
 #if !defined(__CYGWIN__) && !defined(_WIN32) && !defined(__EMSCRIPTEN__)
 	void* ptrs[n + 1];
-	size_t l = backtrace(ptrs, n + 1);
+	int l = backtrace(ptrs, n + 1);
 
 	if (l > 1)
 		backtrace_symbols_fd(ptrs + 1, l - 1, STDERR_FILENO);
