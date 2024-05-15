@@ -1,13 +1,12 @@
 /* Copyright 2015. The Regents of the University of California.
+ * Copyright 2024. TU Graz. Institute of Biomedical Imaging.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
  * 2014 Frank Ong <frankong@berkeley.edu>
- *
  */
 
-#include <stdlib.h>
 #include <complex.h>
 #include <math.h>
 #include <stdbool.h>
@@ -24,7 +23,7 @@
 
 float lineproc2( int D,  const long dims[D], const long blkdims[D], const long line_dims[D], const void* data,
 		 float (*op)(const void* data, const long blkdims[D], complex float* dst, const complex float* src), 
-		 const long ostrs[D], complex float* dst, const long istrs[D], const complex float* src )
+		 const long ostrs[D], complex float* dst, const long istrs[D], const complex float* src)
 {
 	// Get number of blocks per dimension
 	long nblocks[D];
@@ -33,58 +32,60 @@ float lineproc2( int D,  const long dims[D], const long blkdims[D], const long l
 	for (int i = 0; i < D; i++) {
 
 		nblocks[i] = dims[i] - blkdims[i] + 1;
-		shifts[i] = ( dims[i] - nblocks[i] * line_dims[i]) / 2;
+		shifts[i] = (dims[i] - nblocks[i] * line_dims[i]) / 2;
 	}
 
 	long line_strs[D];
-	md_calc_strides(D, line_strs, line_dims, CFL_SIZE );
+	md_calc_strides(D, line_strs, line_dims, CFL_SIZE);
 
-	long numblocks = md_calc_size( D, nblocks );
+	long numblocks = md_calc_size(D, nblocks);
 	float info = 0;
 
 	// Loop over blocks
-	complex float* blk = md_alloc_sameplace(D, blkdims, sizeof( complex float ), src);
-	complex float* line = md_alloc_sameplace(D, line_dims, sizeof( complex float ), src);
-	for (long b = 0; b < numblocks; b++)
-	{
+	complex float* blk = md_alloc_sameplace(D, blkdims, CFL_SIZE, src);
+	complex float* line = md_alloc_sameplace(D, line_dims, CFL_SIZE, src);
+
+	for (long b = 0; b < numblocks; b++) {
+
 		// Get block position and actual block size
 		long blkpos[D];
 		long linepos[D];
 
 		long ind = b;
-		for ( unsigned int i = 0; i < D; i++)
-		{
+		for (int i = 0; i < D; i++) {
+
 			long blkind = ind % nblocks[i];
 			blkpos[i] = blkind;
 			linepos[i] = blkind + shifts[i];
 			ind = (ind - blkind) / nblocks[i];
 		}
+
 		long blkstrs[D];
-		md_calc_strides( D, blkstrs, blkdims, CFL_SIZE );
+		md_calc_strides(D, blkstrs, blkdims, CFL_SIZE);
 
-		// Extract block
-		md_copy_block2( D, blkpos, blkdims, blkstrs, blk, dims, istrs, src, sizeof(complex float) );
+		md_copy_block2(D, blkpos, blkdims, blkstrs, blk, dims, istrs, src, CFL_SIZE);
+
 		// Process block
-		info += op( data, blkdims, line, blk );
+		info += (*op)(data, blkdims, line, blk);
 
-		// Put back block
-		md_copy_block2( D, linepos, dims, ostrs, dst, line_dims, line_strs, line, sizeof( complex float ));
-
+		md_copy_block2(D, linepos, dims, ostrs, dst, line_dims, line_strs, line, CFL_SIZE);
 	}
-	md_free( blk );
-	md_free( line );
+
+	md_free(blk);
+	md_free(line);
+
 	return info;
 }
 
 
 float lineproc(  int D, const long dims[D], const long blkdims[D], const long line_dims[D], const void* data,
 		 float (*op)(const void* data, const long blkdims[D], complex float* dst, const complex float* src), 
-		 complex float* dst, const complex float* src )
+		 complex float* dst, const complex float* src)
 {
 	long strs[D];
-	md_calc_strides( D, strs, dims, CFL_SIZE );
+	md_calc_strides(D, strs, dims, CFL_SIZE);
 
-	return lineproc2( D, dims, blkdims, line_dims, data, op, strs, dst, strs, src );
+	return lineproc2(D, dims, blkdims, line_dims, data, op, strs, dst, strs, src);
 }
 
 
@@ -104,6 +105,7 @@ float blockproc_shift_mult2(int D, const long dims[D], const long blkdims[D], co
 	}
 
 	int i = 0;
+
 	while ((i < D) && (0 == pos[i]))
 		i++;
 
@@ -144,7 +146,6 @@ float blockproc_shift_mult2(int D, const long dims[D], const long blkdims[D], co
 	info += blockproc_shift_mult2(D, dim2, blkdims, pos, mult, data, op, ostrs, dst + off2, istrs, src + off2);
 	info += blockproc_shift_mult2(D, dim3, blkdims, pos, mult, data, op, ostrs, dst + off3, istrs, src + off3);
 
-
 	return info;
 }
 
@@ -168,7 +169,7 @@ float blockproc_shift2(int D, const long dims[D], const long blkdims[D], const l
 	float info = 0;
 	long pos[D];
 
-	for (int i = 0; i < D; i++) {	
+	for (int i = 0; i < D; i++) {
 
 		pos[i] = shifts[i];
 
@@ -176,13 +177,15 @@ float blockproc_shift2(int D, const long dims[D], const long blkdims[D], const l
 			pos[i] += dims[i];
 	}
 
-	unsigned int i = 0;
+	int i = 0;
+
 	while ((i < D) && (0 == pos[i]))
 		i++;
 
 	if (D == i) {
 
-		info += blockproc2( D, dims, blkdims, data, op, ostrs, dst, istrs, src );
+		info += blockproc2(D, dims, blkdims, data, op, ostrs, dst, istrs, src);
+
 		return info;
 	}
 
@@ -201,93 +204,89 @@ float blockproc_shift2(int D, const long dims[D], const long blkdims[D], const l
 
 	pos[i] = 0;
 
-	info += blockproc_shift2( D, dim1, blkdims, pos, data, op, ostrs, dst, istrs, src );
-	info += blockproc_shift2( D, dim2, blkdims, pos, data, op, ostrs, dst + dim1[i] * ostrs[i] / (long)CFL_SIZE, istrs, src + dim1[i] * istrs[i] / (long)CFL_SIZE );
+	info += blockproc_shift2(D, dim1, blkdims, pos, data, op, ostrs, dst, istrs, src);
+	info += blockproc_shift2(D, dim2, blkdims, pos, data, op, ostrs, dst + dim1[i] * ostrs[i] / CFL_SIZE, istrs, src + dim1[i] * istrs[i] / CFL_SIZE);
 
 	return info;
 }
 
 
-
-float blockproc_shift( int D,  const long dims[D], const long blkdims[D], const long shifts[D], const void* data,
+float blockproc_shift(int D,  const long dims[D], const long blkdims[D], const long shifts[D], const void* data,
 		 float (*op)(const void* data, const long blkdims[D], complex float* dst, const complex float* src), 
-		 complex float* dst, const complex float* src )
+		 complex float* dst, const complex float* src)
 {
 	long strs[D];
-	md_calc_strides( D, strs, dims, CFL_SIZE );
+	md_calc_strides(D, strs, dims, CFL_SIZE);
 
-	return blockproc_shift2( D, dims, blkdims, shifts, data, op, strs, dst, strs, src );
+	return blockproc_shift2(D, dims, blkdims, shifts, data, op, strs, dst, strs, src);
 }
 
 
-
-float blockproc_circshift( int D,  const long dims[D], const long blkdims[D], const long shifts[D], const void* data,
+float blockproc_circshift(int D,  const long dims[D], const long blkdims[D], const long shifts[D], const void* data,
 		 float (*op)(const void* data, const long blkdims[D], complex float* dst, const complex float* src), 
-		 complex float* dst, const complex float* src )
+		 complex float* dst, const complex float* src)
 {
 	complex float* tmp = md_alloc( D, dims, CFL_SIZE );
 	
 	long unshifts[D];
-	for (unsigned int i = 0; i < D; i++)
+	for (int i = 0; i < D; i++)
 		unshifts[i] = -shifts[i];
 
-	md_circ_shift( D, dims, shifts, tmp, src, CFL_SIZE );
+	md_circ_shift(D, dims, shifts, tmp, src, CFL_SIZE);
 
-	float info = blockproc( D, dims, blkdims, data, op, tmp, tmp );
+	float info = blockproc(D, dims, blkdims, data, op, tmp, tmp);
 
-	md_circ_shift( D, dims, unshifts, dst, tmp, CFL_SIZE );
+	md_circ_shift(D, dims, unshifts, dst, tmp, CFL_SIZE);
 
-	md_free( tmp );
+	md_free(tmp);
 
 	return info;
 }
 
 
-
-
-
-float blockproc2( int D,  const long dims[D], const long blkdims[D], const void* data,
+float blockproc2(int D,  const long dims[D], const long blkdims[D], const void* data,
 		 float (*op)(const void* data, const long blkdims[D], complex float* dst, const complex float* src), 
-		 const long ostrs[D], complex float* dst, const long istrs[D], const complex float* src )
+		 const long ostrs[D], complex float* dst, const long istrs[D], const complex float* src)
 {
 	// Get number of blocks per dimension
 	long nblocks[D];
 	for (int i = 0; i < D; i++)
-		nblocks[i] = (float) ( dims[i] + blkdims[i] - 1 ) / (float) blkdims[i];
+		nblocks[i] = (float)(dims[i] + blkdims[i] - 1) / (float)blkdims[i];
 
-	long numblocks = md_calc_size( D, nblocks );
+	long numblocks = md_calc_size(D, nblocks);
 	float info = 0;
 
 	// Loop over blocks
-	complex float* blk = md_alloc_sameplace(D, blkdims, sizeof( complex float ), src);
-	for (long b = 0; b < numblocks; b++)
-	{
+	complex float* blk = md_alloc_sameplace(D, blkdims, CFL_SIZE, src);
+
+	for (long b = 0; b < numblocks; b++) {
+
 		// Get block position and actual block size
 		long blkpos[D];
 		long blkdims_b[D]; // actual block size
 
 		long ind = b;
-		for ( unsigned int i = 0; i < D; i++)
-		{
+		for (int i = 0; i < D; i++) {
+
 			long blkind = ind % nblocks[i];
 			blkpos[i] = blkind * blkdims[i];
 			ind = (ind - blkind) / nblocks[i];
 
-			blkdims_b[i] = MIN( dims[i] - blkpos[i], blkdims[i] );
+			blkdims_b[i] = MIN(dims[i] - blkpos[i], blkdims[i]);
 		}
+
 		long blkstrs[D];
-		md_calc_strides( D, blkstrs, blkdims_b, CFL_SIZE );
+		md_calc_strides(D, blkstrs, blkdims_b, CFL_SIZE);
 
-		// Extract block
-		md_copy_block2( D, blkpos, blkdims_b, blkstrs, blk, dims, istrs, src, sizeof(complex float) );
+		md_copy_block2(D, blkpos, blkdims_b, blkstrs, blk, dims, istrs, src, CFL_SIZE);
+
 		// Process block
-		info += op( data, blkdims_b, blk, blk );
+		info += (*op)(data, blkdims_b, blk, blk);
 
-		// Put back block
-		md_copy_block2( D, blkpos, dims, ostrs, dst, blkdims_b, blkstrs, blk, sizeof( complex float ));
-
+		md_copy_block2( D, blkpos, dims, ostrs, dst, blkdims_b, blkstrs, blk, CFL_SIZE);
 	}
-	md_free( blk );
+
+	md_free(blk);
 	return info;
 }
 
@@ -303,32 +302,31 @@ float blockproc( int D, const long dims[D], const long blkdims[D], const void* d
 }
 
 
-
-float stackproc2( int D, const long dims[D], const long blkdims[D], unsigned int stkdim, const void* data,
+float stackproc2(int D, const long dims[D], const long blkdims[D], int stkdim, const void* data,
 		float (*op)(const void* data, const long stkdims[D], complex float* dst, const complex float* src), 
-		 const long ostrs[D], complex float* dst, const long istrs[D], const complex float* src )
+		 const long ostrs[D], complex float* dst, const long istrs[D], const complex float* src)
 {
 	// Get number of blocks per dimension
 	long nblocks[D];
-	for (unsigned int i = 0; i < D; i++)
-	{
-		nblocks[i] = (float) ( dims[i] + blkdims[i] - 1 ) / (float) blkdims[i];
-	}
+	for (int i = 0; i < D; i++)
+		nblocks[i] = (float)(dims[i] + blkdims[i] - 1) / (float)blkdims[i];
 
-	long numblocks = md_calc_size( D, nblocks );
+	long numblocks = md_calc_size(D, nblocks);
 	float info = 0;
 
 	// Initialize stack
 	long stkdims[D];
-	md_copy_dims( D, stkdims, blkdims );
+	md_copy_dims(D, stkdims, blkdims);
 	stkdims[stkdim] = numblocks;
-	long stkstrs[D];
-	md_calc_strides( D, stkstrs, stkdims, CFL_SIZE );
-	long stkstr1[D];
-	md_calc_strides( D, stkstr1, stkdims, 1 );
 
-	complex float* stk = md_alloc(D, stkdims, sizeof( complex float ));
-	md_clear( D, stkdims, stk, sizeof( complex float ) );
+	long stkstrs[D];
+	md_calc_strides(D, stkstrs, stkdims, CFL_SIZE);
+
+	long stkstr1[D];
+	md_calc_strides(D, stkstr1, stkdims, 1);
+
+	complex float* stk = md_alloc(D, stkdims, CFL_SIZE);
+	md_clear(D, stkdims, stk, CFL_SIZE);
 
 	// Loop over blocks and stack them up
 	for (long b = 0; b < numblocks; b++)
@@ -337,63 +335,64 @@ float stackproc2( int D, const long dims[D], const long blkdims[D], unsigned int
 		long blkpos[D];
 		long blkdims_b[D]; // actual block size
 		long ind = b;
-		for ( unsigned int i = 0; i < D; i++)
-		{
+
+		for (int i = 0; i < D; i++) {
+
 			long blkind = ind % nblocks[i];
 			blkpos[i] = blkind * blkdims[i];
 			ind = (ind - blkind) / nblocks[i];
 
-			blkdims_b[i] = MIN( dims[i] - blkpos[i], blkdims[i] );
+			blkdims_b[i] = MIN(dims[i] - blkpos[i], blkdims[i]);
 		}
+
 		long blkstrs[D];
-		md_calc_strides( D, blkstrs, blkdims_b, CFL_SIZE );
+		md_calc_strides(D, blkstrs, blkdims_b, CFL_SIZE);
 
-		// Extract block and put in stack
-		md_copy_block2( D, blkpos, blkdims_b, blkstrs, stk + stkstr1[stkdim] * b, dims, istrs, src, sizeof(complex float) );
-
+		md_copy_block2(D, blkpos, blkdims_b, blkstrs, stk + stkstr1[stkdim] * b, dims, istrs, src, CFL_SIZE);
 	}
 
 	long blkstrs[D];
-	md_calc_strides( D, blkstrs, blkdims, CFL_SIZE );
+	md_calc_strides(D, blkstrs, blkdims, CFL_SIZE);
 
 	// Process block
-	info = op( data, stkdims, stk, stk );
+	info = (*op)(data, stkdims, stk, stk);
 
 	// Put back block
-	for (long b = 0; b < numblocks; b++)
-	{
+	for (long b = 0; b < numblocks; b++) {
+
 		// Get block position and actual block size
 		long blkpos[D];
 		long blkdims_b[D]; // actual block size
 		long ind = b;
-		for ( unsigned int i = 0; i < D; i++)
-		{
+
+		for (int i = 0; i < D; i++) {
+
 			long blkind = ind % nblocks[i];
 			blkpos[i] = blkind * blkdims[i];
 			ind = (ind - blkind) / nblocks[i];
 
-			blkdims_b[i] = MIN( dims[i] - blkpos[i], blkdims[i] );
+			blkdims_b[i] = MIN(dims[i] - blkpos[i], blkdims[i]);
 		}
-		long blkstrs[D];
-		md_calc_strides( D, blkstrs, blkdims_b, CFL_SIZE );
 
-		// Put back block
-		md_copy_block2( D, blkpos, dims, ostrs, dst, blkdims_b, blkstrs, stk + stkstr1[stkdim] * b, sizeof( complex float ));
+		long blkstrs[D];
+		md_calc_strides(D, blkstrs, blkdims_b, CFL_SIZE);
+
+		md_copy_block2(D, blkpos, dims, ostrs, dst, blkdims_b, blkstrs, stk + stkstr1[stkdim] * b, CFL_SIZE);
 	}
 
-	// Free stack
-	md_free( stk );
+	md_free(stk);
 
 	return info;
 }
 
 
-float stackproc( int D, const long dims[D], const long blkdims[D], unsigned int stkdim, const void* data,
+float stackproc(int D, const long dims[D], const long blkdims[D], int stkdim, const void* data,
 		float (*op)(const void* data, const long stkdims[D], complex float* dst, const complex float* src), 
-		 complex float* dst, const complex float* src )
+		complex float* dst, const complex float* src)
 {
 	long strs[D];
-	md_calc_strides( D, strs, dims, CFL_SIZE );
+	md_calc_strides(D, strs, dims, CFL_SIZE);
 
-	return stackproc2( D, dims, blkdims, stkdim, data, op, strs, dst, strs, src );
+	return stackproc2(D, dims, blkdims, stkdim, data, op, strs, dst, strs, src);
 }
+

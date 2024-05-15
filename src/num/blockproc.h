@@ -12,56 +12,45 @@ extern float lineproc2(int D, const long dims[__VLA(D)], const long blkdims[__VL
 			 float (*op)(const void* data, const long blkdims[__VLA(D)], complex float* dst, const complex float* src),
 			 const long ostrs[__VLA(D)], complex float* dst, const long istrs[__VLA(D)], const complex float* src);
 
-
 extern float lineproc(int D, const long dims[__VLA(D)], const long blkdims[__VLA(D)], const long line_dims[__VLA(D)], const void * data,
 			float (*op)(const void* data, const long blkdims[__VLA(D)], complex float* dst, const complex float* src),
 			complex float* dst, const complex float* src);
-
 
 extern float blockproc2(int D, const long dims[__VLA(D)], const long blkdims[__VLA(D)], const void * data,
 			 float (*op)(const void* data, const long blkdims[__VLA(D)], complex float* dst, const complex float* src),
 			 const long ostrs[__VLA(D)], complex float* dst, const long istrs[__VLA(D)], const complex float* src);
 
-
 extern float blockproc(int D, const long dims[__VLA(D)], const long blkdims[__VLA(D)], const void * data,
 			float (*op)(const void* data, const long blkdims[__VLA(D)], complex float* dst, const complex float* src),
 			complex float* dst, const complex float* src);
-
 
 extern float blockproc_shift2(int D, const long dims[__VLA(D)], const long blkdims[__VLA(D)], const long shifts[__VLA(D)], const void* data,
 			       float (*op)(const void* data, const long blkdims[__VLA(D)], complex float* dst, const complex float* src), 
 			       const long ostrs[__VLA(D)], complex float* dst, const long istrs[__VLA(D)], const complex float* src);
 
-
 extern float blockproc_shift(int D, const long dims[__VLA(D)], const long blkdims[__VLA(D)], const long shifts[__VLA(D)], const void* data,
 			      float (*op)(const void* data, const long blkdims[__VLA(D)], complex float* dst, const complex float* src), 
 			      complex float* dst, const complex float* src);
-
-
-
 
 extern float blockproc_circshift(int D, const long dims[__VLA(D)], const long blkdims[__VLA(D)], const long shifts[__VLA(D)], const void* data,
 			      float (*op)(const void* data, const long blkdims[__VLA(D)], complex float* dst, const complex float* src), 
 			      complex float* dst, const complex float* src);
 
-
 extern float blockproc_shift_mult2(int D, const long dims[__VLA(D)], const long blkdims[__VLA(D)], const long shifts[__VLA(D)], const long mult[__VLA(D)], const void* data,
 			       float (*op)(const void* data, const long blkdims[__VLA(D)], complex float* dst, const complex float* src),
 			       const long ostrs[__VLA(D)], complex float* dst, const long istrs[__VLA(D)], const complex float* src);
-
 
 extern float blockproc_shift_mult(int D, const long dims[__VLA(D)], const long blkdims[__VLA(D)], const long shifts[__VLA(D)], const long mult[__VLA(D)], const void* data,
 			      float (*op)(const void* data, const long blkdims[__VLA(D)], complex float* dst, const complex float* src),
 			      complex float* dst, const complex float* src);
 
-extern float stackproc2(int D, const long dims[__VLA(D)], const long blkdims[__VLA(D)], unsigned int stkdim, const void* data,
+extern float stackproc2(int D, const long dims[__VLA(D)], const long blkdims[__VLA(D)], int stkdim, const void* data,
 			float (*op)(const void* data, const long stkdims[__VLA(D)], complex float* dst, const complex float* src),
 			const long ostrs[__VLA(D)], complex float* dst, const long istrs[__VLA(D)], const complex float* src);
 
-extern float stackproc(int D, const long dims[__VLA(D)], const long blkdims[__VLA(D)], unsigned int stkdim, const void* data,
+extern float stackproc(int D, const long dims[__VLA(D)], const long blkdims[__VLA(D)], int stkdim, const void* data,
 			float (*op)(const void* data, const long stkdims[__VLA(D)], complex float* dst, const complex float* src),
 			complex float* dst, const complex float* src);
-
 
 #include "misc/cppwrap.h"
 
