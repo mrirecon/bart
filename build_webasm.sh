@@ -1,7 +1,8 @@
+#!/bin/bash
 emcc -O3 -Wall bart.o -s EXPORTED_FUNCTIONS="['__Block_object_dispose','_malloc','_free','_bart_version', '_calc_phantom', '_calc_bart', \
  '_calc_circ', '_fftc','_ifftc','_num_init', '_pha_opts_defaults', '_memcfl_create', '_load_cfl', '_main_ecalib', '_main_pics', '_main_phantom', \
   '_main_fft']" -s ALLOW_MEMORY_GROWTH=1 -s MAXIMUM_MEMORY=4GB -o ./web/wwwroot/bart.js \
-  ../fftw/lib/libfftw3f.a ../openblas/lib/libopenblas.a ../blocksruntime/libBlocksRuntime.a
+  $HOME/wasm_libs/lib/libfftw3f.a $HOME/wasm_libs/lib/libopenblas.a $HOME/wasm_libs/usr/local/lib/libBlocksRuntime.a
 emcc -O3 -Wall bart.o -s EXPORTED_FUNCTIONS="['__Block_object_dispose','_malloc','_free','_bart_version', \
 '_memcfl_create', '_load_cfl', '_memcfl_list_all', '_memcfl_unlink', \
 '_main_avg', '_main_bench', '_main_bin', '_main_bitmask', '_main_cabs', '_main_caldir', '_main_calmat', '_main_carg', '_main_casorati', \
@@ -18,4 +19,4 @@ emcc -O3 -Wall bart.o -s EXPORTED_FUNCTIONS="['__Block_object_dispose','_malloc'
 '_main_threshold', '_main_toimg', '_main_traj', '_main_transpose', '_main_twixread', '_main_upat', '_main_var', '_main_vec', '_main_version', \
 '_main_walsh', '_main_wave', '_main_wavelet', '_main_wavepsf', '_main_whiten', '_main_window', '_main_wshfl', '_main_zeros', '_main_zexp' \
  ]" -s ALLOW_MEMORY_GROWTH=1 -s MAXIMUM_MEMORY=4GB -o ./web/wwwroot/bart_cmd.js \
- ../fftw/lib/libfftw3f.a ../openblas/lib/libopenblas.a ../blocksruntime/libBlocksRuntime.a
+ $HOME/wasm_libs/lib/libfftw3f.a $HOME/wasm_libs/lib/libopenblas.a $HOME/wasm_libs/usr/local/lib/libBlocksRuntime.a

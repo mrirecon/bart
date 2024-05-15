@@ -131,6 +131,12 @@ ifneq (,$(findstring MSYS,$(UNAME)))
 	SLINK = 1
 endif
 
+
+ifeq ($(CC),emcc)
+	BUILDTYPE = WASM
+endif
+
+
 # Automatic dependency generation
 
 DEPFILE = $(*D)/.$(*F).d
@@ -504,7 +510,11 @@ else
 ifeq ($(BUILDTYPE), MSYS)
 	BLAS_L := -L/mingw64/lib -lopenblas
 else
-BLAS_L := -Wl,-rpath $(BLAS_BASE)/lib -L$(BLAS_BASE)/lib 
+ifeq ($(BUILDTYPE), WASM)
+	BLAS_L := -L$(BLAS_BASE)/lib
+else
+BLAS_L := -Wl,-rpath $(BLAS_BASE)/lib -L$(BLAS_BASE)/lib
+
 ifeq ($(NOLAPACKE),1)
 BLAS_L += -llapack -lblas
 CPPFLAGS += -Isrc/lapacke
@@ -519,6 +529,7 @@ CPPFLAGS += -DUSE_OPENBLAS
 CFLAGS += -DUSE_OPENBLAS
 else
 BLAS_L += -llapacke -lblas
+endif
 endif
 endif
 endif
@@ -579,7 +590,11 @@ endif
 # fftw
 
 FFTW_H := -I$(FFTW_BASE)/include/
+ifeq ($(BUILDTYPE), WASM)
+	FFTW_L :=  -L$(FFTW_BASE)/lib -lfftw3f
+else
 FFTW_L :=  -Wl,-rpath $(FFTW_BASE)/lib -L$(FFTW_BASE)/lib -lfftw3f
+endif
 
 ifeq ($(FFTWTHREADS),1)
 ifneq ($(BUILDTYPE), MSYS)

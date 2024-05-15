@@ -4,38 +4,37 @@ A short guide on how I compiled BART to WebAssembler:
     - emscripten (3.1.41)
     - OpenBLAS source (0.3.23)
     - libfftw3 source (3.3.10)
-    - BlocksRuntime source (from git)
+    - BlocksRuntime source (standalone from git)
     - bart source
 
 2. Prepare:
     - use emsdk to install and activate latest emscripten.
+    - create a folder for the webasm libraries: e.g. mkdir $HOME/wasm_libs
 
 3. Compile OpenBLAS:
     - compiling this is a bit troublesome, for me it only works on a linux system and not on windows with wsl.
     - a few month ago OpenBLAS got support for emscripten so just use this make command to compile:
     make CC=emcc HOSTCC=gcc TARGET=RISCV64_GENERIC NOFORTRAN=1 USE_THREAD=0
     - install the results outside of the standard places in /usr/ ! e.g. somewhere in your home directory
-    make CC=emcc HOSTCC=gcc TARGET=RISCV64_GENERIC NOFORTRAN=1 USE_THREAD=0 PREFIX=$HOME/openblas install
+    make CC=emcc HOSTCC=gcc TARGET=RISCV64_GENERIC NOFORTRAN=1 USE_THREAD=0 PREFIX=$HOME/wasm_libs install
 
 4. Compile libfftw3
     - again: set install prefix outside of /usr/ !
     - enable float and disable fortran
-    emconfigure ./configure --prefix=$HOME/fftw/ --disable-fortran --enable-float
+    emconfigure ./configure --prefix=$HOME/wasm_libs --disable-fortran --enable-float
     emmake make
     make install
 
 5. Compile BlocksRuntime
     CC=emcc AR=emar RANLIB=emranlib ./buildlib
-    - run the install script with sudo or:
-    - open ./installlib in a texteditor and delete the lines 85 to 89. then run it without sudo
-    sudo prefix=$HOME/blocksruntime ./installlib
+    env DESTDIR=$HOME/wasm_libs ./installlib
 
 6. Compile bart
     - create a Makefile.local in folder Makefiles
     - content should be this:
 """
-FFTW_BASE=$HOME/fftw
-BLAS_BASE=$HOME/openblas
+FFTW_BASE=$(HOME)/wasm_libs
+BLAS_BASE=$(HOME)/wasm_libs
 CC=emcc
 
 CFLAGS+=-fblocks
@@ -70,8 +69,8 @@ ISMRMRD=0
     emcc -O3 -Wall bart.o -s EXPORTED_FUNCTIONS="['__Block_object_dispose','_malloc','_free', \
        '_calc_phantom', '_calc_bart', '_calc_circ', '_fftc','_ifftc', '_num_init', '_pha_opts_defaults', \
        '_memcfl_create', '_load_cfl', '_main_ecalib', '_main_pics', '_main_phantom', '_main_fft']" \
-       -s ALLOW_MEMORY_GROWTH=1 -s MAXIMUM_MEMORY=4GB -o ./web/wwwroot/bart.js /home/ich/fftw/lib/libfftw3f.a \
-       /home/ich/openblas/lib/libopenblas.a /home/ich/blocksruntime/libBlocksRuntime.a
+       -s ALLOW_MEMORY_GROWTH=1 -s MAXIMUM_MEMORY=4GB -o ./web/wwwroot/bart.js $HOME/wasm_libs/lib/libfftw3f.a \
+       $HOME/wasm_libs/lib/libopenblas.a $HOME/wasm_libs/usr/local/lib/libBlocksRuntime.a
 
     - the script build_webasm.sh builds the files needed for the included web examples
 
