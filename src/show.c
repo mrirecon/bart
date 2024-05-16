@@ -71,7 +71,7 @@ ok:
 	for (long i = 0; i < T; i++) {
 
 		if (index)
-			printf("%04d%s", i, sep);
+			printf("%04ld%s", i, sep);
 
 		if (real)
 			printf(fmt, crealf(data[i]));

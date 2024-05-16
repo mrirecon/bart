@@ -146,7 +146,7 @@ void linop_fmac_set_tensor(const struct linop_s* lop, int N, const long tdims[N]
 	auto _data = linop_get_data(lop);
 	auto data = CAST_DOWN(fmac_data, _data);
 
-	assert(data->N == (unsigned int)N);
+	assert(data->N == N);
 	assert(md_check_equal_dims(N, tdims, data->tdims, ~0UL));
 
 	multiplace_free(data->tensor);
@@ -159,7 +159,7 @@ void linop_fmac_set_tensor_F(const struct linop_s* lop, int N, const long tdims[
 	auto _data = linop_get_data(lop);
 	auto data = CAST_DOWN(fmac_data, _data);
 
-	assert(data->N == (unsigned int)N);
+	assert(data->N == N);
 	assert(md_check_equal_dims(N, tdims, data->tdims, ~0UL));
 
 	multiplace_free(data->tensor);
@@ -172,7 +172,7 @@ void linop_fmac_set_tensor_ref(const struct linop_s* lop, int N, const long tdim
 	auto _data = linop_get_data(lop);
 	auto data = CAST_DOWN(fmac_data, _data);
 
-	assert(data->N == (unsigned int)N);
+	assert(data->N == N);
 	assert(md_check_equal_dims(N, tdims, data->tdims, ~0UL));
 
 	multiplace_free(data->tensor);

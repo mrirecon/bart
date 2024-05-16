@@ -88,7 +88,7 @@ static void grad_adjoint(int D, const long dims[D], int d, unsigned long flags, 
 	md_clear(D, dims1, out, CFL_SIZE);
 	md_clear(D, dims1, tmp, CFL_SIZE);
 
-	for (unsigned int i = 0; i < N; i++) {
+	for (int i = 0; i < N; i++) {
 
 		int lsb = ffs(flags2) - 1;
 		flags2 = MD_CLEAR(flags2, lsb);

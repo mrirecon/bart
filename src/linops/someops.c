@@ -165,7 +165,7 @@ void linop_gdiag_set_diag(const struct linop_s* lop, int N, const long ddims[N],
 	auto _data = linop_get_data(lop);
 	auto data = CAST_DOWN(cdiag_s, _data);
 
-	assert(data->N == (unsigned int)N);
+	assert(data->N == N);
 	assert(md_check_equal_dims(N, ddims, data->ddims, ~0UL));
 
 	multiplace_free(data->diag);
@@ -180,7 +180,7 @@ void linop_gdiag_set_diag_F(const struct linop_s* lop, int N, const long ddims[N
 	auto _data = linop_get_data(lop);
 	auto data = CAST_DOWN(cdiag_s, _data);
 
-	assert(data->N == (unsigned int)N);
+	assert(data->N == N);
 	assert(md_check_equal_dims(N, ddims, data->ddims, ~0UL));
 
 	multiplace_free(data->diag);
@@ -195,7 +195,7 @@ void linop_gdiag_set_diag_ref(const struct linop_s* lop, int N, const long ddims
 	auto _data = linop_get_data(lop);
 	auto data = CAST_DOWN(cdiag_s, _data);
 
-	assert(data->N == (unsigned int)N);
+	assert(data->N == N);
 	assert(md_check_equal_dims(N, ddims, data->ddims, ~0UL));
 
 	multiplace_free(data->diag);
@@ -1475,7 +1475,7 @@ static struct operator_matrix_s* linop_matrix_priv2(int N, const long out_dims[N
 	/* move removed input dims into shadow position
 	 * for the gram matrix can have an output there
 	 */
-	for (unsigned int i = 0; i < N; i++) {
+	for (int i = 0; i < N; i++) {
 
 		if (MD_IS_SET(del_flags, i)) {
 
@@ -1489,7 +1489,7 @@ static struct operator_matrix_s* linop_matrix_priv2(int N, const long out_dims[N
 		}
 	}
 
-	for (unsigned int i = 0; i < N; i++) {
+	for (int i = 0; i < N; i++) {
 
 		if (MD_IS_SET(new_flags, i)) {
 
@@ -1564,7 +1564,7 @@ static struct operator_matrix_s* linop_matrix_priv(int N, const long out_dims[N]
 	/* move removed input dims into shadow position
 	 * which makes chaining easier below
 	 */
-	for (unsigned int i = 0; i < N; i++) {
+	for (int i = 0; i < N; i++) {
 
 		if (MD_IS_SET(del_flags, i)) {
 
@@ -1647,7 +1647,7 @@ struct linop_s* linop_matrix_chain(const struct linop_s* a, const struct linop_s
 	long out_dims[N];
 	md_copy_dims(N, out_dims, b_data->out_dims);
 
-	for (unsigned int i = 0; i < D; i++) {
+	for (int i = 0; i < D; i++) {
 
 		if (MD_IS_SET(delB_flags, i)) {
 

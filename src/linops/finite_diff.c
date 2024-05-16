@@ -351,7 +351,7 @@ void fd_proj_noninc(const struct linop_s* o, complex float* optr, const complex 
 	// add back initial value
 	dims2[0] = tmpdim;
 
-	for (unsigned int i = 0; i < data->D; i++) {
+	for (int i = 0; i < data->D; i++) {
 
 		if (MD_IS_SET(data->flags, i)) {
 

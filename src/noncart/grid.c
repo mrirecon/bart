@@ -617,8 +617,8 @@ void apply_rolloff_correction2(float os, float width, float beta, int N, const l
 	if (cuda_ondevice(dst)) {
 
 		long dims_cuda[4] = { dims[0], dims[1], dims[2], md_calc_size(N - 3, dims + 3) };
-		long ostrs_cuda[4] = { ostrs[0] / CFL_SIZE, ostrs[1] / CFL_SIZE, ostrs[2] / CFL_SIZE, obstr };
-		long istrs_cuda[4] = { istrs[0] / CFL_SIZE, istrs[1] / CFL_SIZE, istrs[2] / CFL_SIZE, ibstr };
+		long ostrs_cuda[4] = { ostrs[0] / (long)CFL_SIZE, ostrs[1] / (long)CFL_SIZE, ostrs[2] / (long)CFL_SIZE, obstr };
+		long istrs_cuda[4] = { istrs[0] / (long)CFL_SIZE, istrs[1] / (long)CFL_SIZE, istrs[2] / (long)CFL_SIZE, ibstr };
 
 		cuda_apply_rolloff_correction2(os, width, beta, N, dims_cuda, ostrs_cuda, dst, istrs_cuda, src);
 

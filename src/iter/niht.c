@@ -47,8 +47,8 @@ static void niht_imdom(const struct niht_conf_s* conf,  const struct vec_iter_s*
 	double rsold = 1.; // previous residual
   
 	float mu = 1.; // step size
-	unsigned int ic = 0; // iteration counter for criterion 3
-	unsigned int iter = 0;
+	int ic = 0; // iteration counter for criterion 3
+	int iter = 0;
 	long N = conf->N;
 	
 	float* r = vops->allocate(N);

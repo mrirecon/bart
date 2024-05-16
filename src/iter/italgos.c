@@ -464,7 +464,7 @@ void conjgrad_batch(int maxiter, float l2lambda, float epsilon,
 
 	vops->smul(Bo * Bi, pow(epsilon, 2.), rsnot, rsnot);
 
-	unsigned int i = 0;
+	int i = 0;
 
 	if (0. == vops->norm(Bo * Bi, rsold)) {
 
@@ -472,7 +472,7 @@ void conjgrad_batch(int maxiter, float l2lambda, float epsilon,
 		goto cleanup;
 	}
 
-	for (i = 0; i <maxiter; i++) {
+	for (i = 0; i < maxiter; i++) {
 
 		iter_monitor(monitor, vops, x);
 

@@ -1078,7 +1078,7 @@ void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, 
 		struct ellipsis_s tubes_bkgrd[N];
 		struct ellipsis_s tubes_frgrd[N - 1];
 
-		assert(dims[COEFF_DIM] == ARRAY_SIZE(tubes_frgrd) + 1); // foreground + 1 background image!
+		assert(dims[COEFF_DIM] == (long)ARRAY_SIZE(tubes_frgrd) + 1); // foreground + 1 background image!
 
 		separate_bckgrd(ARRAY_SIZE(tubes_bkgrd), tubes_bkgrd, ARRAY_SIZE(tubes_frgrd), tubes_frgrd, ARRAY_SIZE(phantom_tubes_N), phantom_tubes_N);
 

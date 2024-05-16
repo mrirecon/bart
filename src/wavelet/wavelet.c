@@ -354,7 +354,7 @@ void iwtN(int N, unsigned long flags, const long shifts[N], const long dims[N], 
 	long tostrs[2 * N];
 
 	long ishifts[N];
-	for (unsigned int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		ishifts[i] = -shifts[i];
 
 	md_copy2(2 * N, tidims, tistrs, tmpA, istr, in, CFL_SIZE);

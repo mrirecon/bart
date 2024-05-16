@@ -181,7 +181,7 @@ const struct operator_p_s* lad2_create(const struct lad_conf* conf,
 	assert(NULL == init);
 
 
-	for (unsigned int i = 0; i < num_funs; i++) {
+	for (int i = 0; i < num_funs; i++) {
 
 		data->prox_funs[i] = operator_p_ref(prox_funs[i]);
 		data->prox_linops[i] = linop_clone(prox_linops[i]);

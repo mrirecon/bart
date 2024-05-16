@@ -245,8 +245,8 @@ void wlsqr2(int N, const struct lsqr_conf* conf,
 	    const long w_dims[static N], const complex float* w,
 	    const struct operator_s* precond_op)
 {
-	unsigned int flags = 0;
-	for (unsigned int i = 0; i < N; i++)
+	unsigned long flags = 0;
+	for (int i = 0; i < N; i++)
 		if (1 < w_dims[i])
 			flags = MD_SET(flags, i);
 

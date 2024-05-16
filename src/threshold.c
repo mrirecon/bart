@@ -79,7 +79,7 @@ static void lrthresh(int D, const long dims[D], int llrblk, float lambda, unsign
 }
 
 
-static void dfthresh(int D, const long dims[D], float lambda, complex float* out, const complex float* in)
+static void dfthresh(int D, const long /*dims*/[D], float /*lambda*/, complex float* /*out*/, const complex float* /*in*/)
 {
 #if 1
 	error("divergence free wavelet not supported anymore.\n");
