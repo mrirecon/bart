@@ -127,7 +127,7 @@ static complex float* compute_linphases(int N, long lph_dims[N + 1], unsigned lo
 	float shifts[1 << T][T];
 
 	int s = 0;
-	for (unsigned long i = 0; 1 < (1 << T); i++) {
+	for (unsigned long i = 0; i < (1 << T); i++) {
 
 		bool skip = false;
 
