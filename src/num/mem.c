@@ -11,6 +11,7 @@
 #include <stdbool.h>
 #include <assert.h>
 #include <stdint.h>
+#include <sys/types.h>
 
 #include "misc/tree.h"
 #include "misc/misc.h"
