@@ -1205,7 +1205,7 @@ void operator_linops_apply_joined_unchecked(int N, const struct operator_s* op[N
 
 	void* args[N + 1];
 
-	for (int i = 0; i < (int)N; i++)
+	for (int i = 0; i < N; i++)
 		args[i] = dst[i];
 
 	args[N] = (void*)src;

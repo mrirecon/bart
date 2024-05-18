@@ -281,7 +281,7 @@ void klaplace_scaled(int N, const long dims[N], unsigned long flags, const float
 
 	for (int i = 0; i < bitcount(flags); i++) {
 
-		int lsb = (int)ffs(flags2) - 1;
+		int lsb = ffs(flags2) - 1;
 		flags2 = MD_CLEAR(flags2, lsb);
 
 		complex float grad[N];
@@ -356,7 +356,7 @@ static void md_zwindow2(int D, const long dims[D], unsigned long flags, const lo
 
 	// process first flagged dimension
 
-	int lsb = (int)ffs(flags) - 1;
+	int lsb = ffs(flags) - 1;
 
 	long win_dims[D];
 	long win_strs[D];

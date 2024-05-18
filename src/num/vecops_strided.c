@@ -1026,7 +1026,7 @@ static bool simple_z3op(int N_checks, struct simple_z3op_check strided_calls[N_c
 		return false; //cross check: data for inner kernel is contiguous in memory
 	}
 
-	for (int i = 0; i < (int)N; i++) {
+	for (int i = 0; i < N; i++) {
 
 		if (!MD_IS_SET(block_flags, i))
 			continue;
@@ -1172,7 +1172,7 @@ static bool simple_3op(int N_checks, struct simple_3op_check strided_calls[N_che
 	if ((0 == osize) || (0 == isize1) || (0 == isize2))
 		return false; //cross check: data for inner kernel is contiguous in memory
 
-	for (int i = 0; i < (int)N; i++) {
+	for (int i = 0; i < N; i++) {
 
 		if (!MD_IS_SET(block_flags, i))
 			continue;

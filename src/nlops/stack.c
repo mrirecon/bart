@@ -70,7 +70,7 @@ static void stack_der(const nlop_data_t* _data, int o, int i, complex float* dst
 	int II = data->II;
 
 	assert(0 == o);
-	assert((int)i < II);
+	assert(i < II);
 
 	long (*idims)[II][data->N] = (void*)data->idims;
 	long (*istrs)[II][data->N] = (void*)data->istrs;
@@ -86,7 +86,7 @@ static void stack_adj(const nlop_data_t* _data, int o, int i, complex float* dst
 	int II = data->II;
 
 	assert(0 == o);
-	assert((int)i < II);
+	assert(i < II);
 
 	long (*idims)[II][data->N] = (void*)data->idims;
 	long (*istrs)[II][data->N] = (void*)data->istrs;

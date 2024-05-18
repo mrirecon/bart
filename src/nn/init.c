@@ -644,7 +644,7 @@ const struct initializer_s* init_stack_create(int N, int stack_dim, const long d
 
 	PTR_ALLOC(long[N], dims);
 
-	for (int i = 0; i < (int)N; i++) {
+	for (int i = 0; i < N; i++) {
 
 		if (i == data->stack_dim) {
 

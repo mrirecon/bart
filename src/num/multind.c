@@ -158,7 +158,7 @@ void md_parallel_nary(int C, int D, const long dim[D], unsigned long flags, cons
 
 	while (0 != flags) {
 
-		int b = (int)ffsl((long)(flags & -flags)) - 1;
+		int b = ffsl((long)(flags & -flags)) - 1;
 
 		assert(MD_IS_SET(flags, b));
 

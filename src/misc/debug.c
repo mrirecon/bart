@@ -238,7 +238,7 @@ void debug_backtrace(size_t n)
 
 #ifdef USE_DWARF
 
-enum {backtrace_size = 50};
+enum { backtrace_size = 50 };
 
 static void debug_good_backtrace_file(FILE * stream, int skip)
 {

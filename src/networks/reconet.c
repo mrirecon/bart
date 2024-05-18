@@ -535,7 +535,7 @@ static nn_t network_block_create(const struct reconet_s* config, int N, const lo
 			long pos[N];
 			long res_dims[N];
 
-			for (int i = 0; i < (int)N; i++)
+			for (int i = 0; i < N; i++)
 				pos[i] = 0;
 			
 			pos[MAPS_DIM] = 1;

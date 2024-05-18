@@ -52,7 +52,7 @@ static void rot45z2(int D, int M,
 
 static int find_bit(unsigned long N)
 {
-	return (int)ffsl((long)N) - 1;
+	return ffsl((long)N) - 1;
 }
 
 static int next_powerof2(int x)

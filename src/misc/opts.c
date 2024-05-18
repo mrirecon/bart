@@ -1183,7 +1183,7 @@ void cmdline(int* argcp, char* argv[*argcp], int m, struct arg_s args[m], const 
 				continue;
 #if 1
 			for (int k = 0; k < args[i].nargs; ++k)
-				*(void**)args[i].arg[k].ptr = calloc((size_t)args[i].arg[k].size, (size_t)*args[i].count);
+				*(void**)args[i].arg[k].ptr = calloc(args[i].arg[k].size, (size_t)*args[i].count);
 #endif
 			int c = 0;
 

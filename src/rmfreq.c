@@ -127,7 +127,7 @@ int main_rmfreq(int argc, char* argv[argc])
 
 	int count = 0;
 
-	for (int h = 0; h < (int)n_harmonics; h++) {
+	for (int h = 0; h < n_harmonics; h++) {
 
 		// exp(i * theta * (h+1))
 		md_zsmul(DIMS, angles_dims, angles1, angles, (h + 1));

@@ -379,12 +379,12 @@ bool vptr_free(const void* ptr)
 
 		// only for continuous allocations
 		if (mem->writeback)
-			md_copy(mem->N, mem->dims, mem->mem[0], mem->ptr, (size_t)mem->size);
+			md_copy(mem->N, mem->dims, mem->mem[0], mem->ptr, mem->size);
 	}
 
 	mem = search(ptr, true);
 
-	munmap((void*)ptr, (size_t)mem->len);
+	munmap((void*)ptr, mem->len);
 
 	if (NULL != mem->dims)
 		xfree(mem->dims);
