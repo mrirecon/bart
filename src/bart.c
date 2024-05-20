@@ -138,6 +138,7 @@ static void parse_bart_opts(int* argcp, char*** argvp)
 	long param_end[DIMS] = { [0 ... DIMS - 1] = -1 };
 	const char* ref_file = NULL;
 	bool use_mpi = false;
+	bool version = false;
 
 	struct arg_s args[] = { };
 
@@ -151,9 +152,13 @@ static void parse_bart_opts(int* argcp, char*** argvp)
 		OPTL_INFILE('r', "ref-file", &ref_file, "<file>", "Obtain loop size from reference file"),
 		OPTL_SET('M', "mpi", &use_mpi, "Initialize MPI"),
 		OPT_SET('S', &mpi_shared_files, "Maps files from each rank (requires shared files system)"),
+		OPTL_SET(0, "version", &version, "print version"),
 	};
 
 	int next_arg = options(argcp, *argvp, "", help_str, ARRAY_SIZE(opts), opts, ARRAY_SIZE(args), args, true);
+
+	if (version)
+		debug_printf(DP_INFO, "%s\n", bart_version);
 
 	*argcp -= next_arg;
 	*argvp += next_arg;
