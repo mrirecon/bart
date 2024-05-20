@@ -304,7 +304,7 @@ static void inverse_admm(iter_op_data* _data, float alpha, float* dst, const flo
 	struct iter_op_p_s a_prox_ops[D ?:1];
 
 
-	for (unsigned int i = 0; i < D; i++) {
+	for (int i = 0; i < D; i++) {
 
 		a_ops[i].forward = OPERATOR2ITOP(trafos[i]->forward),
 		a_ops[i].normal = OPERATOR2ITOP(trafos[i]->normal);
@@ -319,7 +319,7 @@ static void inverse_admm(iter_op_data* _data, float alpha, float* dst, const flo
 
 	long z_dims[D ?: 1];
 
-	for (unsigned int i = 0; i < D; i++)
+	for (int i = 0; i < D; i++)
 		z_dims[i] = 2 * md_calc_size(linop_codomain(trafos[i])->N, linop_codomain(trafos[i])->dims);
 
 
@@ -339,7 +339,7 @@ static const struct operator_p_s* create_prox(const long img_dims[DIMS], unsigne
 {
 	bool randshift = true;
 	long minsize[DIMS] = { [0 ... DIMS - 1] = 1 };
-	unsigned int wflags = 0;
+	unsigned long wflags = 0;
 
 	for (int i = 0; i < DIMS; i++) {
 

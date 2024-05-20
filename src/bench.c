@@ -586,7 +586,7 @@ static void do_test(const long dims[BENCH_DIMS], complex float* out, long scale,
 {
 	printf("%30.30s |", str);
 	
-	int N = dims[REPETITION_IND];
+	int N = (int)dims[REPETITION_IND];
 	double sum = 0.;
 	double min = 1.E10;
 	double max = 0.;
@@ -695,7 +695,7 @@ int main_bench(int argc, char* argv[argc])
 
 		if (threads) {
 
-			num_set_num_threads(pos[THREADS_IND] + 1);
+			num_set_num_threads((int)pos[THREADS_IND] + 1);
 			debug_printf(DP_INFO, "%02d threads. ", pos[THREADS_IND] + 1);
 		}
 

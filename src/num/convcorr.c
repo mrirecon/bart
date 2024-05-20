@@ -160,7 +160,7 @@ static bool detect_convcorr(	int N,
 			long test_strides[] = { istrs[i] / istrs_triv, 1, 2, 3, 4, 5, 6, 7, 8 };
 			bool found = false;
 
-			for (int j = 0; !found && j < ARRAY_SIZE(test_strides); j++) {
+			for (int j = 0; !found && j < (int)ARRAY_SIZE(test_strides); j++) {
 
 				strides[i] = test_strides[j];
 

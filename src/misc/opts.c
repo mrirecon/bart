@@ -476,17 +476,16 @@ static void process_option(char c, const char* optarg, const char* name, const c
 
 	for (int i = 0; i < n; i++) {
 
-		if (opts[i].c == c) {
+		if (opts[i].c != c)
+			continue;
 
+		if (opt_dispatch(opts[i].type, opts[i].ptr, opts[i].conv, c, optarg)) {
 
-			if (opt_dispatch(opts[i].type, opts[i].ptr, opts[i].conv, c, optarg)) {
-
-				print_usage(stderr, name, usage_str, n, opts);
-				error("process_option: failed to convert value\n");
-			}
-
-			return;
+			print_usage(stderr, name, usage_str, n, opts);
+			error("process_option: failed to convert value\n");
 		}
+
+		return;
 	}
 
 	print_usage(stderr, name, usage_str, n, opts);

@@ -598,7 +598,7 @@ static nn_t unet_lowest_level_create(struct network_unet_s* unet, int N, const l
 	bool init_same = true;
 	bool last_same = true;
 
-	for (unsigned int i = 0; i < N; i++){
+	for (int i = 0; i < N; i++){
 
 		if (MD_IS_SET(igroup_flag, i) && (kdims[i] != idims[i])) {
 
@@ -697,7 +697,7 @@ static nn_t unet_level_create(struct network_unet_s* unet, int N, const long odi
 	bool init_same = true;
 	bool last_same = true;
 
-	for (unsigned int i = 0; i < N; i++){
+	for (int i = 0; i < N; i++){
 
 		if (MD_IS_SET(igroup_flag, i) && (kdims[i] != idims[i])) {
 
