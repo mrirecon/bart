@@ -238,7 +238,7 @@ ISMRM_BASE ?= /usr/local/ismrmrd/
 TBASE=show slice crop resize join transpose squeeze flatten zeros ones flip circshift extract repmat bitmask reshape version delta copy casorati vec poly index multicfl
 TFLP=scale invert conj fmac saxpy sdot spow cpyphs creal carg normalize cdf97 pattern nrmse mip avg cabs zexp calc
 TNUM=fft fftmod fftshift noise bench threshold conv rss filter nlmeans mandelbrot wavelet window var std fftrot roistat pol2mask conway morphop
-TRECO=pics pocsense sqpics itsense nlinv moba nufft nufftbase rof tgv ictv sake wave lrmatrix estdims estshift estdelay wavepsf wshfl rtnlinv mobafit
+TRECO=pics pocsense sqpics itsense nlinv moba nufft nufftbase rof tgv ictv sake wave lrmatrix estdims estshift estdelay wavepsf wshfl rtnlinv mobafit grog
 TCALIB=ecalib ecaltwo caldir walsh cc ccapply rovir calmat svd estvar whiten rmfreq ssa bin psf
 TMRI=homodyne poisson twixread fakeksp looklocker upat fovshift
 TSIM=phantom traj signal epg sim
@@ -302,7 +302,7 @@ MODULES_sim = -lsimu
 MODULES_morphop = -lnlops -llinops -lgeom
 MODULES_psf = -lnoncart -llinops
 MODULES_nlinvnet = -lnetworks -lnoir -liter -lnn -lnlops -llinops -lnoncart -lgrecon -lnetworks -lsense -liter -llinops -lwavelet -llowrank -lnoncart -lnlops -lnn
-
+MODULES_grog = -lnoncart
 
 
 
@@ -703,9 +703,10 @@ MODULES_test_nlop += -lnlops -lnoncart -llinops -liter
 MODULES_test_nlop_jacobian += -lnlops -llinops
 
 # lib noncart
-UTARGETS += test_nufft test_fib
+UTARGETS += test_nufft test_fib test_grog
 MODULES_test_nufft += -lnoncart -llinops
 MODULES_test_fib += -lnoncart
+MODULES_test_grog += -lnoncart -lsimu -lgeom
 
 # lib num
 UTARGETS += test_multind test_flpmath test_splines test_linalg test_polynom test_window test_conv test_ode test_nlmeans test_rand test_matexp
