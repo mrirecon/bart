@@ -155,11 +155,12 @@ static bool test_mat_pinvT(void)
 	complex float B3[4][3];
 	complex float A2[4][3];
 
-	mat_transpose(3, 4, A2, A);// before svd otherwise input A is destroyed (lapack)
+	mat_transpose(3, 4, A2, A);
 
 	mat_pinv_svd(3, 4, B, A);
 
 	mat_pinv_svd(4, 3, B2, A2);
+
 	mat_transpose(3, 4, B3, B2);
 
 	float err = 0.;

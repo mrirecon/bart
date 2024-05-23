@@ -330,7 +330,7 @@ void mat_pinv_svd(int A, int B, complex float out[B][A], const complex float in[
 
 	for (int i = 0; i < A; i++)
 		if (tol < S[i])
-			S[i] = 1./S[i];
+			S[i] = 1. / S[i];
 
 	// UT = U^T
 	complex float UT[A][A];
@@ -619,7 +619,7 @@ void sqrtm_tri_matrix(int N, int blocksize, complex float out[N][N], const compl
 		s += size_small;
 	}
 
-	// 2. large
+	// 2. Large
 	for (int i = 0; i < n_large; i++) {
 
 		pairs[i + n_small][0] = s;
@@ -647,7 +647,7 @@ void sqrtm_tri_matrix(int N, int blocksize, complex float out[N][N], const compl
 				else if ( (0 == denom) && (0 == num) ) // FIXME: eps
 					out[k][j] = 0.;
 				else
-					error("matrix square root error.");
+					error("Error in calculating matrix sqrt of triangular matrix.");
 			}
 
 	// Between-Blocks interaction
@@ -928,6 +928,7 @@ void logm_tri_matrix(int N, complex float out[N][N], const complex float in[N][N
 		if (theta[6] >= a3) {
 
 			int j1 = 2000; // Random large initialization
+
 			for (int i = 2; i <= 6; i++)
 				j1 = ( (theta[i] >= a3) && (j1 > i) ) ? i : j1;
 
@@ -956,13 +957,14 @@ void logm_tri_matrix(int N, complex float out[N][N], const complex float in[N][N
 
 			pade_approx_deg = 5;
 			break;
-		}
- 		else if (theta[6] >= eta) {
+
+		} else if (theta[6] >= eta) {
 
 			pade_approx_deg = 6;
 			break;
 		}
-		if (-1 != pade_approx_deg) // FIXME: required?!
+
+		if (-1 != pade_approx_deg)
 			break;
 
 		sqrtm_tri_matrix(N, 32, T_tmp, T);
@@ -1030,7 +1032,7 @@ void logm_tri_matrix(int N, complex float out[N][N], const complex float in[N][N
 				out[i][j] += M2[i][j];
 	}
 
-	// loop could be combined, but might be easier to understand like this
+	// loop could be combined, but might be easier to understand in this form
 	for (int i = 0; i < N; i++)
 		for (int j = 0; j < N; j++)
 			out[i][j] *= pow(2, s);

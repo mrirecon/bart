@@ -285,7 +285,7 @@ double Si(double x)
 // Gamma Function
 double gamma_func(double x)
 {
-	if(x == (int)x) // FIXME: Some implementations set this case just very high: =1e300
+	if (x == (int)x) // FIXME: Some implementations set this case just very high: =1e300
 		assert(0. < x);
 
 	double out = 0.;
@@ -300,7 +300,7 @@ double gamma_func(double x)
 
 			int m = (int)(x - 1);
 
-			for  (int k = 2; k < m + 1; k++)
+			for (int k = 2; k < m + 1; k++)
 				out *= k;
 		}
 	} else { // Solve Gamma(z) = \int_0^{\inf}t^{z-1}e^{-t}dt
@@ -315,7 +315,7 @@ double gamma_func(double x)
 
 			int m = (int)z;
 
-			for  (int k = 1; k < m + 1; k++)
+			for (int k = 1; k < m + 1; k++)
 				r *= (z - k);
 
 			z -= m;
@@ -411,10 +411,10 @@ double hyp2f1(double a, double b, double c, double x)
 	if ( (eps > x) && (eps > a) && (eps > b) )
 		out = 1.;
 
-	else if ( (eps > fabs(1. - x)) && (0. < (c - a - b)) )
+	else if ((eps > fabs(1. - x)) && (0. < (c - a - b)))
 		out = gamma_func(c) * gamma_func(c - a - b) / (gamma_func(c - a) * gamma_func(c - b));
 
-	else if ( (eps > fabs(1. - x)) && (eps > fabs(c - a + b - 1.)) )
+	else if ((eps > fabs(1. - x)) && (eps > fabs(c - a + b - 1.)))
 		out = sqrt(M_PI) * pow(2., -a) * gamma_func(c) /
 			(gamma_func(1. + 0.5 * a - b) * gamma_func(0.5 + 0.5 * a));
 
@@ -426,7 +426,7 @@ double hyp2f1(double a, double b, double c, double x)
 
 			out *= 1. / pow(1. - x, a);
 
-		} else if ( (a > c - a) && (b > c - b) ) {
+		} else if ((a > c - a) && (b > c - b)) {
 
 			double x00 = pow(1. - x, c - a - b);
 
@@ -446,7 +446,6 @@ double hyp2f1(double a, double b, double c, double x)
 static double assoc_legendre(double lambda, double mu, double x)
 {
 	// FIXME: iterative definition faster?
-
 	double scale = 1. / (gamma_func(1. - mu)) * pow((x + 1.) / (x - 1.), mu / 2.);
 
 	return scale * hyp2f1(-lambda, lambda + 1., 1. - mu, 0.5 * (1. - x));
@@ -461,12 +460,15 @@ double legendre(double lambda, double x)
 
 static int compare(const void* a, const void* b)
 {
+	int out = 0;
+
 	if (*(double*)a > *(double*)b)
-		return 1;
+		out = 1;
+
 	else if (*(double*)a < *(double*)b)
-		return -1;
-	else
-		return 0;
+		out = -1;
+
+	return out;
 }
 
 // Compute weights and sample points for Gauss-Legendre quadrature
@@ -493,7 +495,7 @@ void roots_weights_gauss_legendre(const int N, double mu0, double roots[N], doub
 	double ev[N];
 	mat_eig_double(N, ev, c);
 
-	qsort(ev, N, sizeof(double), compare);
+	qsort(ev, (size_t)N, sizeof(double), compare);
 
 	double y[N];
 	double dy[N];
@@ -516,7 +518,7 @@ void roots_weights_gauss_legendre(const int N, double mu0, double roots[N], doub
 		r[i] = ev[i] - y[i] / dy[i];
 
 		// Prepare log-normalization to maintain precision
-		fm[i] = legendre(N-1, ev[i]);
+		fm[i] = legendre(N - 1, ev[i]);
 		log_fm[i] = log(fabs(fm[i]));
 		log_dy[i] = log(fabs(dy[i]));
 
