@@ -101,7 +101,7 @@ int main_show(int argc, char* argv[argc])
 	bool real = false;
 	bool index = false;
 	const char* sep = "\t";
-	const char* fmt = "%+.6e%+.6ei";
+	const char* fmt = NULL;
 
 	const struct opt_s opts[] = {
 
@@ -114,6 +114,9 @@ int main_show(int argc, char* argv[argc])
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
+
+	if (NULL == fmt)
+		fmt = real ? "%+.6e" : "%+.6e%+.6ei";
 
 	int N = DIMS;
 
