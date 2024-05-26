@@ -62,7 +62,7 @@ int main_traj(int argc, char* argv[argc])
 
 	const char* custom_angle_file = NULL;
 	const char* gdelays_file = NULL;
-
+	const char* raga_index_file = NULL;
 
 	const struct opt_s opts[] = {
 
@@ -94,6 +94,7 @@ int main_traj(int argc, char* argv[argc])
 		OPT_INFILE('C', &custom_angle_file, "file", "custom_angle file [phi + i * psi]"),
 		OPT_INFILE('V', &gdelays_file, "file", "(custom_gdelays)"),
 		OPTL_INT(0, "raga-inc", &raga_inc, "d", "Increment of RAGA Sampling"),
+		OPTL_OUTFILE(0, "raga-index-file", &raga_index_file, "file", "Output file with indices of RAGA trajectory."),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -228,7 +229,7 @@ int main_traj(int argc, char* argv[argc])
 
 	} else { // Cartesian
 
-		if ((turns != 1) || (mb != 1))
+		if (((turns != 1) || (mb != 1)) && (!raga_index_file))
 			error("Turns or partitions not allowed/implemented for Cartesian trajectories!\n");
 	}
 
@@ -389,6 +390,36 @@ int main_traj(int argc, char* argv[argc])
 	} while (md_next(DIMS, dims, ~1UL, pos));
 
 	assert(p == N - 0);
+
+	// Generate file including RAGA indices for given tiny_golden and spokes
+	if (NULL != raga_index_file) {
+
+		assert(0 != conf.tiny_gold);
+
+		N /= X;
+
+		long dims2[DIMS] = { [0 ... DIMS - 1] = 1  };
+		md_select_dims(DIMS, ~(READ_FLAG|PHS1_FLAG), dims2, dims);
+
+		complex float* indices = create_cfl(raga_index_file, DIMS, dims2);
+		md_clear(DIMS, dims2, indices, CFL_SIZE);
+
+		p = 0;
+		md_set_dims(DIMS, pos, 0);
+
+		do {
+			int j = pos[PHS2_DIM];
+
+			indices[p] = (j * raga_increment(Y  / (conf.double_base ? 1 : 2), conf.tiny_gold)) % Y;
+
+			p++;
+
+		} while (md_next(DIMS, dims2, ~1UL, pos));
+
+		assert(p == N - 0);
+
+		unmap_cfl(DIMS, dims2, indices);
+	}
 
 	if (NULL != gdelays2)
 		unmap_cfl(DIMS, gdims, gdelays2);

@@ -39,4 +39,5 @@ extern void calc_base_angles(double base_angle[DIMS], int Y, int E, int mb, int 
 extern bool zpartition_skip(long partitions, long z_usamp[2], long partition, long frame);
 extern int gen_fibonacci(int n, int ind);
 extern int recover_gen_fib_ind(int Y, int inc);
+extern int raga_increment(int Y, int n);
 

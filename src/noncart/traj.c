@@ -116,7 +116,7 @@ static int raga_find_index(int Y, int n)
 	return i;
 }
 
-static int raga_increment(int Y, int n)
+int raga_increment(int Y, int n)
 {
 	int i = raga_find_index(Y, n);
 
