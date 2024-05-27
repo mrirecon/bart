@@ -33,7 +33,7 @@ void mat_exp(int N, float t, float out[N][N], const float in[N][N])
 static void zode_matrix_interval(float h, float tol, int N, complex float x[N], float st, float end, const complex float matrix[N][N])
 {
 #ifdef __clang__
-	const void* matrix2 = matrix1;	// clang workaround
+	const void* matrix2 = matrix;	// clang workaround
 #endif
 	NESTED(void, zode_matrix_fun, (float* x, float t, const float* in))
 	{
