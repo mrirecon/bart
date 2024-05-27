@@ -313,10 +313,11 @@ void mat_svd(int A, int B, complex float U[A][A], complex float VH[B][B], float 
 }
 
 // pinv(in) = V S^{-1} U^T
-void mat_pinv_svd(int A, int B, complex float out[B][A], const complex float in[A][B])
+void mat_pinv_svd(int A, int B, complex float out[B][A], const complex float in1[A][B])
 {
 	// Take conj transpose for complex into account
-	mat_conj(A, B, in, in);
+	complex float in[A][B];
+	mat_conj(A, B, in, in1);
 
 	complex float VH[B][B];
 	complex float U[A][A];
