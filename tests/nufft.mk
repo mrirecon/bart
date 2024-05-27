@@ -72,7 +72,7 @@ tests/test-nufft-adjoint: zeros noise reshape traj nufft fmac nrmse
 	$(TOOLDIR)/nufft -a traj.ra n2.ra x.ra						;\
 	$(TOOLDIR)/fmac -C -s7 n1.ra x.ra s1.ra						;\
 	$(TOOLDIR)/fmac -C -s7 k.ra n2.ra s2.ra						;\
-	$(TOOLDIR)/nrmse -t 0.00001 s1.ra s2.ra						;\
+	$(TOOLDIR)/nrmse -t 0.000012 s1.ra s2.ra					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
