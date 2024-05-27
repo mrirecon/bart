@@ -51,7 +51,8 @@ static void estimate_vtheta(int D, const long vtheta_dims[D], complex float* vth
 	md_copy_block(DIMS, pos_shift, ddims_shift, shift2, ddims, data, CFL_SIZE);
 
 	// Iterate through spokes solving Eq. 3
-	#pragma omp parallel for
+
+#pragma omp parallel for
 	for (int spoke = 0; spoke < ddims[PHS2_DIM]; spoke++) {
 
 		long pos[DIMS] = { [0 ... DIMS - 1] = 0 };
@@ -116,10 +117,13 @@ static void get_pseudo_dist(int D, const long pinv_dims[D], complex float* pinv,
 	long pos_sample[DIMS] = { [0 ... DIMS - 1] = 0 };
 
 	complex float* sample = md_alloc(DIMS, nmdims, CFL_SIZE);
+
 	md_copy_block(DIMS, pos_sample, nmdims, sample, tdims, traj, CFL_SIZE);
 
 	pos_sample[PHS1_DIM] = 1;
+
 	complex float* nm = md_alloc(DIMS, nmdims, CFL_SIZE);
+
 	md_copy_block(DIMS, pos_sample, nmdims, nm, tdims, traj, CFL_SIZE);
 
 	md_zaxpy(DIMS, nmdims, nm, -1., sample);
@@ -127,7 +131,7 @@ static void get_pseudo_dist(int D, const long pinv_dims[D], complex float* pinv,
 	md_free(sample);
 
 	// Allocation on stack for more than 1 MB is not be possible
-	assert(1. > 8. * (float)(pinv_dims[READ_DIM] * pinv_dims[READ_DIM]) / 1e6);
+	assert(1. > 8. * (float)(pinv_dims[READ_DIM] * pinv_dims[READ_DIM]) / 1.e6);
 
 	// Estimate pseudo inverse of nm: pinv(s(theta, r))
 	mat_pinv_svd(nmdims[PHS2_DIM], nmdims[READ_DIM],
@@ -148,8 +152,8 @@ static void estimate_lnG(int D, const long lnG_dims[D], complex float* lnG, cons
 	complex float* pinvT = md_alloc(DIMS, pinv_dimsT, CFL_SIZE);
 	md_transpose(DIMS, READ_DIM, PHS2_DIM, pinv_dimsT, pinvT, pinv_dims, pinv, CFL_SIZE);
 
-	#pragma omp parallel for collapse(2)
-	for (int i = 0; i < lnG_dims[COIL_DIM]; i++)
+#pragma omp parallel for collapse(2)
+	for (int i = 0; i < lnG_dims[COIL_DIM]; i++) {
 		for (int j = 0; j < lnG_dims[MAPS_DIM]; j++) {
 
 			long pos[DIMS] = { [0 ... DIMS - 1] = 0 };
@@ -159,6 +163,7 @@ static void estimate_lnG(int D, const long lnG_dims[D], complex float* lnG, cons
 			// Slice coil of vtheta
 			long tmp_dims[DIMS];
 			md_select_dims(DIMS, ~(COIL_FLAG|MAPS_FLAG), tmp_dims, vtheta_dims);
+
 			complex float* tmp = md_alloc(DIMS, tmp_dims, CFL_SIZE);
 
 			md_copy_block(DIMS, pos, tmp_dims, tmp, vtheta_dims, vtheta, CFL_SIZE);
@@ -176,6 +181,7 @@ static void estimate_lnG(int D, const long lnG_dims[D], complex float* lnG, cons
 			md_free(tmp);
 			md_free(tmp2);
 		}
+	}
 
 	md_free(pinvT);
 }
@@ -242,6 +248,7 @@ static void estimate_Gshift(int D, int axis, const long lnG_dims[D], complex flo
 
 	// Matrix exponential to find operator G from ln(G)
 	md_clear(DIMS, single_lnG_dims, G_shift, CFL_SIZE);
+
 	zmat_exp(single_lnG_dims[COIL_DIM], 1.,
 		MD_CAST_ARRAY2(complex float, DIMS, single_lnG_dims, G_shift, COIL_DIM, MAPS_DIM),
 		MD_CAST_ARRAY2(const complex float, DIMS, single_lnG_dims, lnG_axis, COIL_DIM, MAPS_DIM));
@@ -266,8 +273,8 @@ void grog_grid(int D, const long tdims[D], complex float* traj_grid, const compl
 	long lnG_strs[DIMS];
 	md_calc_strides(DIMS, lnG_strs, lnG_dims, CFL_SIZE);
 
-	#pragma omp parallel for collapse(2)
-	for (int s = 0; s < ddims[PHS2_DIM]; s++)		// Spoke
+#pragma omp parallel for collapse(2)
+	for (int s = 0; s < ddims[PHS2_DIM]; s++) {		// Spoke
 		for (int r = 0; r < ddims[PHS1_DIM]; r++) {	// Readout sample
 
 			long pos_dataframe[DIMS] = { [0 ... DIMS - 1] = 0 };
@@ -343,6 +350,8 @@ void grog_grid(int D, const long tdims[D], complex float* traj_grid, const compl
 			md_free(tmp_data2);
 			md_free(tmp_dataT);
 		}
+	}
 
 	debug_printf(DP_DEBUG2, "Finished GROG gridding.\n");
 }
+

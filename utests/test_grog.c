@@ -79,7 +79,7 @@ static bool test_grog(void)
 
 		p++;
 
-	} while (md_next(DIMS, tdims, ~1L, pos));
+	} while (md_next(DIMS, tdims, ~1UL, pos));
 
 	// 2. Generate test data
 
@@ -154,18 +154,18 @@ static bool test_grog(void)
 
 			int order[3] = { 0, 1, 2 };
 
-			for (int _d = 0; _d < tdims[READ_DIM]; _d++) {
+			for (int d0 = 0; d0 < tdims[READ_DIM]; d0++) {
 
-				int d = order[_d];
+				int d = order[d0];
 
 				pos[READ_DIM] = d;
 				pos[PHS1_DIM] = r;
-				long ind_sample = md_calc_offset(DIMS, tstrs, pos) / CFL_SIZE;
+				long ind_sample = md_calc_offset(DIMS, tstrs, pos) / (long)CFL_SIZE;
 
 				complex float coord = traj[ind_sample];
 
 				pos[PHS1_DIM]++;
-				long ind_sample2 = md_calc_offset(DIMS, tstrs, pos) / CFL_SIZE;
+				long ind_sample2 = md_calc_offset(DIMS, tstrs, pos) / (long)CFL_SIZE;
 
 				complex float coord_r = traj[ind_sample2];
 
