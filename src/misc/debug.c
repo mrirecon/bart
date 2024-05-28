@@ -238,7 +238,7 @@ void debug_backtrace(size_t n)
 
 #ifdef USE_DWARF
 
-enum { backtrace_size = 50 };
+enum { BACKTRACE_SIZE = 50 };
 
 static void debug_good_backtrace_file(FILE * stream, int skip)
 {
@@ -263,9 +263,10 @@ static void debug_good_backtrace_file(FILE * stream, int skip)
 	if (0 != dwfl_report_end(dwfl, NULL, NULL))
 		goto err;
 
-	void* stack[backtrace_size + 1];
+	void* stack[BACKTRACE_SIZE + 1];
 
-	int stack_size = backtrace(stack, backtrace_size + 1);
+	int stack_size;	// suppress warning
+	stack_size = backtrace(stack, BACKTRACE_SIZE + 1);
 
 	for (int i = skip; i < stack_size; ++i) {
 
@@ -294,6 +295,7 @@ static void debug_good_backtrace_file(FILE * stream, int skip)
 
 	dwfl_end(dwfl);
 	return;
+
 err:
 	debug_printf(DP_WARN, "Backtrace failed\n.");
 #else
