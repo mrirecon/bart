@@ -409,6 +409,7 @@ void mat_ceig_double(int A, complex double EV[A], const complex double in[A][A])
 			tmp[i][j] = in[j][i];
 
 	complex double vec[A][A];
+
 	lapack_schur_double(A, EV, vec, tmp);
 }
 
@@ -553,6 +554,7 @@ void solve_tri_matrix(int A, int B, complex float M[A][A], complex float N[A][B]
 void solve_tri_matrix_vec(int A, complex float M[A][A], complex float N[A], bool upper)
 {
 	complex float N2[A][1];
+
 	for (int i = 0; i < A; i++)
 		N2[i][0] = N[i];
 
@@ -588,13 +590,14 @@ void sqrtm_tri_matrix(int N, int blocksize, complex float out[N][N], const compl
 {
 	complex float T_diag[N][N];
 
-	for (int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++) {
 		for (int j = 0; j < N; j++) {
 
 			T_diag[i][j] = (i == j) ? in[i][j] : 0.;
 
 			out[i][j] = csqrtf(T_diag[i][j]);
 		}
+	}
 
 	// Implemented standard block method for increased efficiency
 
@@ -665,6 +668,7 @@ void sqrtm_tri_matrix(int N, int blocksize, complex float out[N][N], const compl
 			int j_size = j_ind_e - j_ind_s;
 
 			complex float S[j_size][i_size];
+
 			for (int ii = 0; ii < i_size; ii++)
 				for (int jj = 0; jj < j_size; jj++)
 					S[jj][ii] = in[jj + j_ind_s][ii + i_ind_s];
@@ -677,11 +681,13 @@ void sqrtm_tri_matrix(int N, int blocksize, complex float out[N][N], const compl
 							* out[jj+j_ind_e][ii+i_ind_s];
 
 			complex float Ujj[j_size][j_size];
+
 			for (int x = 0; x < j_size; x++)
 				for (int y = 0; y < j_size; y++)
 					Ujj[x][y] = out[x + j_ind_s][y + j_ind_s];
 
 			complex float Uii[i_size][i_size];
+
 			for (int x = 0; x < i_size; x++)
 				for (int y = 0; y < i_size; y++)
 					Uii[x][y] = out[x + i_ind_s][y + i_ind_s];
@@ -760,39 +766,36 @@ float mat_onenorm_power(int N, int order, complex float A[N][N])
 static complex float mat_briggs(int N, complex float z)
 {
 	assert(0 <= N);
-	assert((int) N == N);
 
 	if (0 == N)
 		return z - 1.;
 
-	else if (1 == N)
+	if (1 == N)
 		return csqrtf(z) - 1.;
 
-	else {
-		int N2 = N;
+	int N2 = N;
 
-		if (M_PI / 2. <= cargf(z)) {
-
-			z = csqrtf(z);
-			N2 = N - 1;
-		}
-
-		complex float z0 = z - 1.;
+	if (M_PI / 2. <= cargf(z)) {
 
 		z = csqrtf(z);
-
-		complex float out = 1 + z;
-
-		for (int i = 1; i < N2; i++) {
-
-			z = csqrtf(z);
-			out *= (1. + z);
-		}
-
-		out = z0 / out;
-
-		return out;
+		N2 = N - 1;
 	}
+
+	complex float z0 = z - 1.;
+
+	z = csqrtf(z);
+
+	complex float out = 1 + z;
+
+	for (int i = 1; i < N2; i++) {
+
+		z = csqrtf(z);
+		out *= (1. + z);
+	}
+
+	out = z0 / out;
+
+	return out;
 }
 
 // Superdiagonal of fractional matrix power
@@ -804,23 +807,21 @@ static complex float frac_power_superdiag(complex float l1, complex float l2, co
 	if (l1 == l2)
 		return t12 * p * cpowf(l1, p - 1);
 
-	else if (cabsf(l2 - l1) > cabsf(l1 + l2) / 2.)
+	if (cabsf(l2 - l1) > cabsf(l1 + l2) / 2.)
 		return t12 * (cpowf(l2, p) - cpowf(l1, p)) / (l2 - l1);
 
-	else {
-		complex float z = (l2 - l1) / (l2 + l1);
+	complex float z = (l2 - l1) / (l2 + l1);
 
-		int unwinding_num = (int)(ceilf((cimagf(clogf(l2) - clogf(l1)) - M_PI) / (2. * M_PI)));
+	int unwinding_num = (int)(ceilf((cimagf(clogf(l2) - clogf(l1)) - M_PI) / (2. * M_PI)));
 
-		complex float tmp = 0.;
+	complex float tmp = 0.;
 
-		if (unwinding_num)
-			tmp = p * (catanhf(z) + M_PI * 1.i * unwinding_num);
-		else
-			tmp = p * catanhf(z);
+	if (unwinding_num)
+		tmp = p * (catanhf(z) + M_PI * 1.i * unwinding_num);
+	else
+		tmp = p * catanhf(z);
 
-		return t12 * cexpf(p / 2. * (clogf(l2) + clogf(l1))) * 2. * csinhf(tmp) / (l2 - l1);
-	}
+	return t12 * cexpf(p / 2. * (clogf(l2) + clogf(l1))) * 2. * csinhf(tmp) / (l2 - l1);
 }
 
 // Superdiagonal entry of matrix logarithm
@@ -832,23 +833,22 @@ static complex float logm_superdiag(complex float l1, complex float l2, complex 
 	if (l1 == l2)
 		return t12 / l1;
 
-	else if (cabsf(l2 - l1) > cabsf(l1 + l2) / 2.)
+	if (cabsf(l2 - l1) > cabsf(l1 + l2) / 2.)
 		return t12 * (clogf(l2) - clogf(l1)) / (l2 - l1);
 
-	else {
-		complex float z = (l2 - l1) / (l2 + l1);
 
-		int unwinding_num = (int)(ceilf((cimagf(clogf(l2) - clogf(l1)) - M_PI) / (2. * M_PI)));
+	complex float z = (l2 - l1) / (l2 + l1);
 
-		complex float out = 0.;
+	int unwinding_num = (int)(ceilf((cimagf(clogf(l2) - clogf(l1)) - M_PI) / (2. * M_PI)));
 
-		if (unwinding_num)
-			out = 2. * t12 * (catanhf(z) + M_PI * 1.i * unwinding_num) / (l2 - l1);
-		else
-			out =  2. * t12 * catanhf(z) / (l2 - l1);
+	complex float out = 0.;
 
-		return out;
-	}
+	if (unwinding_num)
+		out = 2. * t12 * (catanhf(z) + M_PI * 1.i * unwinding_num) / (l2 - l1);
+	else
+		out =  2. * t12 * catanhf(z) / (l2 - l1);
+
+	return out;
 }
 
 // Matrix logarithm of upper triangular matrix
@@ -879,14 +879,15 @@ void logm_tri_matrix(int N, complex float out[N][N], const complex float in[N][N
 	// Find smallest s that fulfills a highest spectral radius of theta[6]
 
 	complex float T_diag[N][N];
+
 	for (int i = 0; i < N; i++)
 		for (int j = 0; j < N; j++)
 			T_diag[i][j] = (i == j) ? T[i][j] : 0.;
 
 	int s0 = 0;
 
-	while (theta[6] < max_abs_diag(N, T_diag))
-	{
+	while (theta[6] < max_abs_diag(N, T_diag)) {
+
 		matf_sqrt(N, N, T_diag, T_diag);
 		s0++;
 	}
@@ -913,7 +914,6 @@ void logm_tri_matrix(int N, complex float out[N][N], const complex float in[N][N
 
 	if (theta[0] >= a2)
 		pade_approx_deg = 0;
-
 	else if (theta[1] >= a2)
 		pade_approx_deg = 1;
 
@@ -931,14 +931,15 @@ void logm_tri_matrix(int N, complex float out[N][N], const complex float in[N][N
 			int j1 = 2000; // Random large initialization
 
 			for (int i = 2; i <= 6; i++)
-				j1 = ( (theta[i] >= a3) && (j1 > i) ) ? i : j1;
+				j1 = ((theta[i] >= a3) && (j1 > i)) ? i : j1;
 
 			if (5 >= j1) {
 
 				pade_approx_deg = j1;
 				break;
 			}
-			else if ( (theta[4] >= a3 / 2.) && (2 > k) ) {
+
+			if ((theta[4] >= a3 / 2.) && (2 > k)) {
 
 				sqrtm_tri_matrix(N, 32, T_tmp, T);
 				mat_copy(N, N, T, T_tmp);
@@ -958,8 +959,9 @@ void logm_tri_matrix(int N, complex float out[N][N], const complex float in[N][N
 
 			pade_approx_deg = 5;
 			break;
+		}
 
-		} else if (theta[6] >= eta) {
+		if (theta[6] >= eta) {
 
 			pade_approx_deg = 6;
 			break;
@@ -977,6 +979,7 @@ void logm_tri_matrix(int N, complex float out[N][N], const complex float in[N][N
 	pade_approx_deg++; // zero indexing vs ones-indexing in paper
 
 	complex float R[N][N];
+
 	for (int i = 0; i < N; i++)
 		for (int j = 0; j < N; j++)
 			R[i][j] = T[i][j] - ((i == j) ? 1. : 0.);
@@ -1007,6 +1010,7 @@ void logm_tri_matrix(int N, complex float out[N][N], const complex float in[N][N
 	}
 
 	complex float id[N][N];
+
 	for (int i = 0; i < N; i++)
 		for (int j = 0; j < N; j++)
 			id[i][j] = (i == j) ? 1. : 0.;
@@ -1019,11 +1023,12 @@ void logm_tri_matrix(int N, complex float out[N][N], const complex float in[N][N
 		complex float M1[N][N];
 		complex float M2[N][N];
 
-		for (int i = 0; i < N; i++)
+		for (int i = 0; i < N; i++) {
 			for (int j = 0; j < N; j++) {
 
 				M1[i][j] = ((i == j) ? 1. : 0.) + ir * R[i][j];
 				M2[i][j] = iw * R[i][j];
+			}
 		}
 
 		solve_tri_matrix(N, N, M1, M2, true);
@@ -1046,6 +1051,7 @@ void logm_tri_matrix(int N, complex float out[N][N], const complex float in[N][N
 	for (int i = 0; i < N-1; i++)
 		out[i][i+1] = logm_superdiag(in[i][i], in[i+1][i+1], in[i][i+1]);
 }
+
 
 // Input matrix is destroyed by schur decomposition
 void mat_logm(int N, complex float out[N][N], complex float in[N][N])
