@@ -302,7 +302,7 @@ MODULES_sim = -lsimu
 MODULES_morphop = -lnlops -llinops -lgeom
 MODULES_psf = -lnoncart -llinops
 MODULES_nlinvnet = -lnetworks -lnoir -liter -lnn -lnlops -llinops -lnoncart -lgrecon -lnetworks -lsense -liter -llinops -lwavelet -llowrank -lnoncart -lnlops -lnn
-MODULES_grog = -lnoncart
+MODULES_grog = -lcalib
 
 
 
@@ -680,6 +680,10 @@ lib/libismrm.a: CPPFLAGS += $(ISMRM_H)
 # additional rules for lib box
 lib/libbox.a: CPPFLAGS += -DMAIN_LIST="$(XTARGETS:%=%,) ()" -include src/main.h
 
+# lib calib
+UTARGETS += test_grog
+MODULES_test_grog += -lcalib -lnoncart -lsimu -lgeom
+
 # lib linop
 UTARGETS += test_linop_matrix test_linop test_padding
 MODULES_test_linop += -llinops
@@ -703,10 +707,9 @@ MODULES_test_nlop += -lnlops -lnoncart -llinops -liter
 MODULES_test_nlop_jacobian += -lnlops -llinops
 
 # lib noncart
-UTARGETS += test_nufft test_fib test_grog
+UTARGETS += test_nufft test_fib
 MODULES_test_nufft += -lnoncart -llinops
 MODULES_test_fib += -lnoncart
-MODULES_test_grog += -lnoncart -lsimu -lgeom
 
 # lib num
 UTARGETS += test_multind test_flpmath test_splines test_linalg test_polynom test_window test_conv test_ode test_nlmeans test_rand test_matexp

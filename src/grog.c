@@ -32,15 +32,14 @@
 #include "misc/io.h"
 #include "misc/mri.h"
 
-#include "noncart/grog.h"
+#include "calib/grog.h"
 
 #ifndef CFL_SIZE
 #define CFL_SIZE sizeof(complex float)
 #endif
 
 
-static const char help_str[] =
-	"GROG calibration and gridding of radial data.\n";
+static const char help_str[] = "GROG calibration and gridding of radial data.\n";
 
 
 int main_grog(int argc, char* argv[argc])

@@ -1,24 +1,18 @@
-#include <stdio.h>
+
 #include <complex.h>
-#include <assert.h>
 #include <stdbool.h>
-#include <math.h>
 
 #include "num/multind.h"
 #include "num/flpmath.h"
-#include "num/linalg.h"
 #include "num/matexp.h"
 
-#include "misc/mmio.h"
-#include "misc/debug.h"
-#include "misc/misc.h"
-#include "misc/io.h"
 #include "misc/mri.h"
 
 #include "simu/phantom.h"
 
 #include "noncart/traj.h"
-#include "noncart/grog.h"
+
+#include "calib/grog.h"
 
 #include "utest.h"
 
