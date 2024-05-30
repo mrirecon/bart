@@ -30,7 +30,7 @@ tests/test-grog-repeat: traj repmat phantom grog pics slice nrmse
 	$(TOOLDIR)/pics -e -S -t tg.ra kg.ra s.ra r.ra 	;\
 	$(TOOLDIR)/slice 10 0 r.ra s1.ra		;\
 	$(TOOLDIR)/slice 10 1 r.ra s2.ra		;\
-	$(TOOLDIR)/nrmse -t 0.00001 s1.ra s2.ra		;\
+	$(TOOLDIR)/nrmse -t 0. s1.ra s2.ra		;\
 	rm *.ra; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
@@ -47,7 +47,7 @@ tests/test-grog-repeat2: traj repmat phantom grog pics slice nrmse
 	$(TOOLDIR)/pics -e -S -t tg.ra kg.ra s.ra r.ra 	;\
 	$(TOOLDIR)/slice 10 0 r.ra s1.ra		;\
 	$(TOOLDIR)/slice 10 1 r.ra s2.ra		;\
-	$(TOOLDIR)/nrmse -t 0.00001 s1.ra s2.ra		;\
+	$(TOOLDIR)/nrmse -t 0. s1.ra s2.ra		;\
 	rm *.ra; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
@@ -63,14 +63,14 @@ tests/test-grog-input-dims: traj repmat reshape phantom transpose grog nrmse
 	$(TOOLDIR)/transpose 2 3 k.ra k1.ra		;\
 	$(TOOLDIR)/reshape 1544 19 3 2 k1.ra k2.ra 	;\
 	$(TOOLDIR)/transpose 2 3 k2.ra k3.ra		;\
-	$(TOOLDIR)/grog t3.ra k3.ra t3g.ra k3g.ra 	;\
-	$(TOOLDIR)/grog t1.ra k.ra t2g.ra kg.ra 	;\
+	$(TOOLDIR)/grog --calib-spokes=53 t3.ra k3.ra t3g.ra k3g.ra 	;\
+	$(TOOLDIR)/grog --calib-spokes=53 t1.ra k.ra t2g.ra kg.ra 	;\
 	$(TOOLDIR)/reshape 516 19 3 t2g.ra t2g2.ra 	;\
-	$(TOOLDIR)/nrmse -t 0.00001 t2g2.ra t3g.ra	;\
+	$(TOOLDIR)/nrmse -t 0. t2g2.ra t3g.ra	;\
 	$(TOOLDIR)/transpose 2 3 kg.ra kg1.ra		;\
 	$(TOOLDIR)/reshape 1544 19 3 2 kg1.ra kg2.ra 	;\
 	$(TOOLDIR)/transpose 2 3 kg2.ra kg3.ra		;\
-	$(TOOLDIR)/nrmse -t 0.00001 kg3.ra k3g.ra 	;\
+	$(TOOLDIR)/nrmse -t 0. kg3.ra k3g.ra 	;\
 	rm *.ra; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
