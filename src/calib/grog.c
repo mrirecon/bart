@@ -242,15 +242,17 @@ void grog_calib(int D, const long lnG_dims[D], complex float* lnG, const long td
 }
 
 
-static void estimate_Gshift(int D, const long single_lnG_dims[D], complex float* G_shift, complex float* lnG_axis, float shift)
+static void estimate_Gshift(int C, complex float G_shift[C][C],
+		int d, complex float* lnG_axis, float shift[3])
 {
-	md_zsmul(D, single_lnG_dims, lnG_axis, lnG_axis, shift);
+	complex float lnG[C][C];
+	for (int i = 0; i < C; i++)
+		for (int j = 0; j < C; j++)
+			lnG[i][j] = lnG_axis[(i * C + j) * 3 + d] * shift[d];
 
 	// Matrix exponential to find operator G from ln(G)
 
-	zmat_exp(single_lnG_dims[COIL_DIM], 1.,
-		MD_CAST_ARRAY2(complex float, D, single_lnG_dims, G_shift, COIL_DIM, MAPS_DIM),
-		MD_CAST_ARRAY2(const complex float, D, single_lnG_dims, lnG_axis, COIL_DIM, MAPS_DIM));
+	zmat_exp(C, 1., G_shift, lnG);
 }
 
 
@@ -296,15 +298,11 @@ void grog_grid(int D, const long tdims[D], complex float* traj_grid, const compl
 			long single_lnG_dims[D];
 			md_select_dims(D, ~READ_FLAG, single_lnG_dims, lnG_dims);
 
-			complex float* lnG_axis = md_alloc(D, single_lnG_dims, CFL_SIZE); //GROG operator
-			complex float* G_shift = md_alloc(D, single_lnG_dims, CFL_SIZE);
-
 			complex float* tmp_data = md_alloc(D, tmp_data_dims, CFL_SIZE);
 			complex float* tmp_dataT = md_alloc(D, tmp_data_dimsT, CFL_SIZE); //for tenmul operation
 
 			md_clear(D, tmp_data_dims, tmp_data, CFL_SIZE);
 			md_copy_block(D, pos, tmp_data_dims, tmp_data, ddims, data, CFL_SIZE);
-
 
 			float shift[3];
 
@@ -325,26 +323,18 @@ void grog_grid(int D, const long tdims[D], complex float* traj_grid, const compl
 
 				int d = order[dd];
 
-				long pos2[D];
-				for (int i = 0; i < D; i++)
-					pos2[i] = 0;
-
-				pos2[READ_DIM] = d;
-				md_copy_block(D, pos2, single_lnG_dims, lnG_axis, lnG_dims, lnG, CFL_SIZE);
-
 				// Find shift operator for the specific sampling point (d, r, s)
-				estimate_Gshift(D, single_lnG_dims, G_shift, lnG_axis, shift[d]);
+				complex float G_shift[C][C];
+				estimate_Gshift(C, G_shift, d, lnG, shift);
 
 				// Transform data with calculated shift operator
 				md_transpose(D, COIL_DIM, MAPS_DIM, tmp_data_dimsT, tmp_dataT, tmp_data_dims, tmp_data, CFL_SIZE);
-				md_ztenmul(D, tmp_data_dims, tmp_data, single_lnG_dims, G_shift, tmp_data_dimsT, tmp_dataT);
+				md_ztenmul(D, tmp_data_dims, tmp_data, single_lnG_dims, &G_shift[0][0], tmp_data_dimsT, tmp_dataT);
 			}
 
 			pos[READ_DIM] = 0;
 			md_copy_block(D, pos, ddims, data_grid, tmp_data_dims, tmp_data, CFL_SIZE);
 
-			md_free(lnG_axis);
-			md_free(G_shift);
 			md_free(tmp_data);
 			md_free(tmp_dataT);
 		}
