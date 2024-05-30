@@ -267,6 +267,50 @@ static void estimate_Gshift(int D, int axis, const long lnG_dims[D], complex flo
 
 
 // Gridding, following Eq. 2
+void grog_grid_traj(int D, const long tdims[D], complex float* traj_grid, const complex float* traj)
+{
+	debug_printf(DP_DEBUG2, "tdims:\t");
+	debug_print_dims(DP_DEBUG2, D, tdims);
+
+	long tstrs[D];
+	md_calc_strides(D, tstrs, tdims, CFL_SIZE);
+
+	long tmp_traj_dims[D];
+	md_select_dims(D, ~(READ_FLAG|PHS1_FLAG|PHS2_FLAG), tmp_traj_dims, tdims);
+
+	assert(1 == md_calc_size(D, tmp_traj_dims));
+
+#pragma omp parallel for collapse(2)
+	for (int s = 0; s < tdims[PHS2_DIM]; s++) {		// Spoke
+		for (int r = 0; r < tdims[PHS1_DIM]; r++) {	// Readout sample
+
+			long pos[D];
+			for (int i = 0; i < D; i++)
+				pos[i] = 0;
+
+			pos[PHS1_DIM] = r;
+			pos[PHS2_DIM] = s;
+
+			// Allocate data of data HERE avoids even more allocations within the most inner dimension-loop
+
+			for (int dd = 0; dd < tdims[READ_DIM]; dd++) { // dimension
+
+				pos[READ_DIM] = dd;
+
+				long ind_dataframe = md_calc_offset(D, tstrs, pos) / (long)CFL_SIZE;
+
+				float coord = crealf(traj[ind_dataframe]);
+				complex float coord_r = round(coord);
+
+				md_copy_block(D, pos, tdims, traj_grid, tmp_traj_dims, &coord_r, CFL_SIZE);
+			}
+		}
+	}
+}
+
+
+
+// Gridding, following Eq. 2
 void grog_grid(int D, const long tdims[D], complex float* traj_grid, const complex float* traj, const long ddims[D], complex float* data_grid, const complex float* data, const long lnG_dims[D], complex float* lnG)
 {
 	debug_printf(DP_DEBUG2, "tdims:\t");
@@ -278,22 +322,24 @@ void grog_grid(int D, const long tdims[D], complex float* traj_grid, const compl
 	debug_printf(DP_DEBUG2, "lnG_dims:\t");
 	debug_print_dims(DP_DEBUG2, D, lnG_dims);
 
+	long lnG_strs[D];
+	md_calc_strides(D, lnG_strs, lnG_dims, CFL_SIZE);
+
 	long tstrs[D];
 	md_calc_strides(D, tstrs, tdims, CFL_SIZE);
 
-	long lnG_strs[D];
-	md_calc_strides(D, lnG_strs, lnG_dims, CFL_SIZE);
+	grog_grid_traj(D, tdims, traj_grid, traj);
 
 #pragma omp parallel for collapse(2)
 	for (int s = 0; s < ddims[PHS2_DIM]; s++) {		// Spoke
 		for (int r = 0; r < ddims[PHS1_DIM]; r++) {	// Readout sample
 
-			long pos_dataframe[D];
+			long pos[D];
 			for (int i = 0; i < D; i++)
-				pos_dataframe[i] = 0;
+				pos[i] = 0;
 
-			pos_dataframe[PHS1_DIM] = r;
-			pos_dataframe[PHS2_DIM] = s;
+			pos[PHS1_DIM] = r;
+			pos[PHS2_DIM] = s;
 
 			// Allocate data of data HERE avoids even more allocations within the most inner dimension-loop
 
@@ -303,13 +349,8 @@ void grog_grid(int D, const long tdims[D], complex float* traj_grid, const compl
 			long tmp_data_dimsT[D];
 			md_transpose_dims(D, COIL_DIM, MAPS_DIM, tmp_data_dimsT, tmp_data_dims);
 
-			long tmp_traj_dims[D];
-			md_select_dims(D, ~(READ_FLAG|PHS1_FLAG|PHS2_FLAG), tmp_traj_dims, tdims);
-
 			long single_lnG_dims[D];
 			md_select_dims(D, ~READ_FLAG, single_lnG_dims, lnG_dims);
-
-			complex float* tmp_traj = md_alloc(D, tmp_traj_dims, CFL_SIZE); // Storage for coordinate in trajectory (Required for multi-dim support)
 
 			complex float* lnG_axis = md_alloc(D, single_lnG_dims, CFL_SIZE); //GROG operator
 			complex float* G_shift = md_alloc(D, single_lnG_dims, CFL_SIZE);
@@ -318,43 +359,42 @@ void grog_grid(int D, const long tdims[D], complex float* traj_grid, const compl
 			complex float* tmp_dataT = md_alloc(D, tmp_data_dimsT, CFL_SIZE); //for tenmul operation
 
 			md_clear(D, tmp_data_dims, tmp_data, CFL_SIZE);
-			md_copy_block(D, pos_dataframe, tmp_data_dims, tmp_data, ddims, data, CFL_SIZE);
+			md_copy_block(D, pos, tmp_data_dims, tmp_data, ddims, data, CFL_SIZE);
+
+			float shift[3];
+			assert(3 == tdims[READ_DIM]);
+
+			for (int d = 0; d < 3; d++) { // dimension
+
+				pos[READ_DIM] = d;
+				long ind_dataframe = md_calc_offset(D, tstrs, pos) / (long)CFL_SIZE;
+
+				shift[d] = crealf(traj_grid[ind_dataframe] - traj[ind_dataframe]);
+			}
 
 			// Iterate through different dimensions and apply operator to s(kx, ky, kz)
 			// Theoretically, the order does matter but, well, GROG
 			// Nevertheless, order allows you to change the order of the applied operators
 			int order[3] = { 0, 1, 2 };
 
-			long pos[D];
-			md_copy_dims(D, pos, pos_dataframe);
-
-			for (int dd = 0; dd < tdims[READ_DIM]; dd++) { // dimension
+			for (int dd = 0; dd < 3; dd++) { // dimension
 
 				int d = order[dd];
 				pos[READ_DIM] = d;
 
-				long ind_dataframe = md_calc_offset(D, tstrs, pos) / (long)CFL_SIZE;
-
-				float coord = crealf(traj[ind_dataframe]);
-				float coord_r = round(coord);
-				float shift = coord_r - coord;
-
-				md_zfill(D, tmp_traj_dims, tmp_traj, coord_r);
-				md_copy_block(D, pos, tdims, traj_grid, tmp_traj_dims, tmp_traj, CFL_SIZE);
-
 				// Find shift operator for the specific sampling point (d, r, s)
-				estimate_Gshift(D, d, lnG_dims, G_shift, lnG_axis, lnG, shift);
+				estimate_Gshift(D, d, lnG_dims, G_shift, lnG_axis, lnG, shift[d]);
 
 				// Transform data with calculated shift operator
 				md_transpose(D, COIL_DIM, MAPS_DIM, tmp_data_dimsT, tmp_dataT, tmp_data_dims, tmp_data, CFL_SIZE);
 				md_ztenmul(D, tmp_data_dims, tmp_data, single_lnG_dims, G_shift, tmp_data_dimsT, tmp_dataT);
 			}
 
-			md_copy_block(D, pos_dataframe, ddims, data_grid, tmp_data_dims, tmp_data, CFL_SIZE);
+			pos[READ_DIM] = 0;
+			md_copy_block(D, pos, ddims, data_grid, tmp_data_dims, tmp_data, CFL_SIZE);
 
 			md_free(lnG_axis);
 			md_free(G_shift);
-			md_free(tmp_traj);
 			md_free(tmp_data);
 			md_free(tmp_dataT);
 		}
