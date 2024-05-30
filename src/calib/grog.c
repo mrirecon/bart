@@ -110,6 +110,7 @@ static void estimate_vtheta(int D, const long vtheta_dims[D], complex float* vth
 	md_free(shift2);
 }
 
+
 // Estimate pseudo inverse of distance matrix
 static void get_pseudo_dist(int D, const long pinv_dims[D], complex float* pinv, const long tdims[D], const complex float* traj)
 {
@@ -320,8 +321,7 @@ void grog_grid(int D, const long tdims[D], complex float* traj_grid, const compl
 			md_copy_block(D, pos_dataframe, tmp_data_dims, tmp_data, ddims, data, CFL_SIZE);
 
 			// Iterate through different dimensions and apply operator to s(kx, ky, kz)
-			// Theoretically, the order should not matter, but practically it does
-			// due to noise,....
+			// Theoretically, the order does matter but, well, GROG
 			// Nevertheless, order allows you to change the order of the applied operators
 			int order[3] = { 0, 1, 2 };
 
