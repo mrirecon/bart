@@ -242,17 +242,49 @@ void grog_calib(int D, const long lnG_dims[D], complex float* lnG, const long td
 }
 
 
-static void estimate_Gshift(int C, complex float G_shift[C][C],
-		int d, complex float* lnG_axis, float shift[3])
+static void apply_Gshift(int D, const long dims[D], complex float* data,
+		complex float* lnG_axis, float shift[3])
 {
-	complex float lnG[C][C];
-	for (int i = 0; i < C; i++)
-		for (int j = 0; j < C; j++)
-			lnG[i][j] = lnG_axis[(i * C + j) * 3 + d] * shift[d];
+	int C = dims[COIL_DIM];
 
-	// Matrix exponential to find operator G from ln(G)
+	assert(1 == dims[READ_DIM]);
+	assert(1 == dims[MAPS_DIM]);
 
-	zmat_exp(C, 1., G_shift, lnG);
+	long single_lnG_dims[D];
+	md_singleton_dims(D, single_lnG_dims);
+
+	single_lnG_dims[COIL_DIM] = C;
+	single_lnG_dims[MAPS_DIM] = C;
+
+	long dimsT[D];
+	md_transpose_dims(D, COIL_DIM, MAPS_DIM, dimsT, dims);
+
+	complex float* tmp = md_alloc(D, dims, CFL_SIZE); //for tenmul operation
+
+	// Iterate through different dimensions and apply operator to s(kx, ky, kz)
+	// Theoretically, the order does matter but, well, GROG
+
+	for (int d = 0; d < 3; d++) { // dimension
+
+		// Find shift operator for the specific sampling point (d, r, s)
+
+		complex float lnG[C][C];
+		for (int i = 0; i < C; i++)
+			for (int j = 0; j < C; j++)
+				lnG[i][j] = lnG_axis[(i * C + j) * 3 + d] * shift[d];
+
+		// Matrix exponential to find operator G from ln(G)
+
+		complex float G_shift[C][C];
+		zmat_exp(C, 1., G_shift, lnG);
+
+		// Transform data with calculated shift operator
+
+		md_transpose(D, COIL_DIM, MAPS_DIM, dimsT, tmp, dims, data, CFL_SIZE);
+		md_ztenmul(D, dims, data, single_lnG_dims, &G_shift[0][0], dimsT, tmp);
+	}
+
+	md_free(tmp);
 }
 
 
@@ -288,18 +320,10 @@ void grog_grid(int D, const long tdims[D], complex float* traj_grid, const compl
 			pos[PHS2_DIM] = s;
 
 			// Allocate data of data HERE avoids even more allocations within the most inner dimension-loop
-
 			long tmp_data_dims[D];
 			md_select_dims(D, ~(PHS1_FLAG|PHS2_FLAG), tmp_data_dims, ddims);
 
-			long tmp_data_dimsT[D];
-			md_transpose_dims(D, COIL_DIM, MAPS_DIM, tmp_data_dimsT, tmp_data_dims);
-
-			long single_lnG_dims[D];
-			md_select_dims(D, ~READ_FLAG, single_lnG_dims, lnG_dims);
-
 			complex float* tmp_data = md_alloc(D, tmp_data_dims, CFL_SIZE);
-			complex float* tmp_dataT = md_alloc(D, tmp_data_dimsT, CFL_SIZE); //for tenmul operation
 
 			md_clear(D, tmp_data_dims, tmp_data, CFL_SIZE);
 			md_copy_block(D, pos, tmp_data_dims, tmp_data, ddims, data, CFL_SIZE);
@@ -314,29 +338,12 @@ void grog_grid(int D, const long tdims[D], complex float* traj_grid, const compl
 				shift[d] = crealf(traj_grid[ind_dataframe] - traj[ind_dataframe]);
 			}
 
-			// Iterate through different dimensions and apply operator to s(kx, ky, kz)
-			// Theoretically, the order does matter but, well, GROG
-			// Nevertheless, order allows you to change the order of the applied operators
-			int order[3] = { 0, 1, 2 };
-
-			for (int dd = 0; dd < 3; dd++) { // dimension
-
-				int d = order[dd];
-
-				// Find shift operator for the specific sampling point (d, r, s)
-				complex float G_shift[C][C];
-				estimate_Gshift(C, G_shift, d, lnG, shift);
-
-				// Transform data with calculated shift operator
-				md_transpose(D, COIL_DIM, MAPS_DIM, tmp_data_dimsT, tmp_dataT, tmp_data_dims, tmp_data, CFL_SIZE);
-				md_ztenmul(D, tmp_data_dims, tmp_data, single_lnG_dims, &G_shift[0][0], tmp_data_dimsT, tmp_dataT);
-			}
+			apply_Gshift(D, tmp_data_dims, tmp_data, lnG, shift);
 
 			pos[READ_DIM] = 0;
 			md_copy_block(D, pos, ddims, data_grid, tmp_data_dims, tmp_data, CFL_SIZE);
 
 			md_free(tmp_data);
-			md_free(tmp_dataT);
 		}
 	}
 
