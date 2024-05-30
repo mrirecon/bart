@@ -266,48 +266,6 @@ static void estimate_Gshift(int D, int axis, const long lnG_dims[D], complex flo
 }
 
 
-// Gridding, following Eq. 2
-void grog_grid_traj(int D, const long tdims[D], complex float* traj_grid, const complex float* traj)
-{
-	debug_printf(DP_DEBUG2, "tdims:\t");
-	debug_print_dims(DP_DEBUG2, D, tdims);
-
-	long tstrs[D];
-	md_calc_strides(D, tstrs, tdims, CFL_SIZE);
-
-	long tmp_traj_dims[D];
-	md_select_dims(D, ~(READ_FLAG|PHS1_FLAG|PHS2_FLAG), tmp_traj_dims, tdims);
-
-	assert(1 == md_calc_size(D, tmp_traj_dims));
-
-#pragma omp parallel for collapse(2)
-	for (int s = 0; s < tdims[PHS2_DIM]; s++) {		// Spoke
-		for (int r = 0; r < tdims[PHS1_DIM]; r++) {	// Readout sample
-
-			long pos[D];
-			for (int i = 0; i < D; i++)
-				pos[i] = 0;
-
-			pos[PHS1_DIM] = r;
-			pos[PHS2_DIM] = s;
-
-			// Allocate data of data HERE avoids even more allocations within the most inner dimension-loop
-
-			for (int dd = 0; dd < tdims[READ_DIM]; dd++) { // dimension
-
-				pos[READ_DIM] = dd;
-
-				long ind_dataframe = md_calc_offset(D, tstrs, pos) / (long)CFL_SIZE;
-
-				float coord = crealf(traj[ind_dataframe]);
-				complex float coord_r = round(coord);
-
-				md_copy_block(D, pos, tdims, traj_grid, tmp_traj_dims, &coord_r, CFL_SIZE);
-			}
-		}
-	}
-}
-
 
 
 // Gridding, following Eq. 2
@@ -328,7 +286,7 @@ void grog_grid(int D, const long tdims[D], complex float* traj_grid, const compl
 	long tstrs[D];
 	md_calc_strides(D, tstrs, tdims, CFL_SIZE);
 
-	grog_grid_traj(D, tdims, traj_grid, traj);
+	md_zround(D, tdims, traj_grid, traj);
 
 #pragma omp parallel for collapse(2)
 	for (int s = 0; s < ddims[PHS2_DIM]; s++) {		// Spoke
