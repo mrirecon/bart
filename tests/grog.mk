@@ -19,7 +19,7 @@ tests/test-grog: traj phantom grog pics calc nrmse
 # Trajectory repeats in time dim
 # tdims: [  3  64  57   1   1   1   1   1   1   1   1   1   1   1   1   1 ]
 # ddims: [  1  64  57   8   1   1   1   1   1   1   2   1   1   1   1   1 ]
-tests/test-grog-repeat: traj repmat phantom calc grog pics slice nrmse
+tests/test-grog-repeat: traj repmat phantom calc grog slice nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP) 	;\
 	$(TOOLDIR)/traj -x 32 -y 57 -o2 -r t.ra 	;\
 	$(TOOLDIR)/repmat 10 2 t.ra t2.ra 		;\
@@ -27,9 +27,8 @@ tests/test-grog-repeat: traj repmat phantom calc grog pics slice nrmse
 	$(TOOLDIR)/phantom -x 32 -S 8 s.ra 		;\
 	$(TOOLDIR)/calc zround t.ra tg.ra		;\
 	$(TOOLDIR)/grog t.ra k.ra tg.ra kg.ra 		;\
-	$(TOOLDIR)/pics -e -S -t tg.ra kg.ra s.ra r.ra 	;\
-	$(TOOLDIR)/slice 10 0 r.ra s1.ra		;\
-	$(TOOLDIR)/slice 10 1 r.ra s2.ra		;\
+	$(TOOLDIR)/slice 10 0 kg.ra s1.ra		;\
+	$(TOOLDIR)/slice 10 1 kg.ra s2.ra		;\
 	$(TOOLDIR)/nrmse -t 0. s1.ra s2.ra		;\
 	rm *.ra; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
@@ -38,7 +37,7 @@ tests/test-grog-repeat: traj repmat phantom calc grog pics slice nrmse
 # Trajectory provides unique infomration in time dim
 # tdims: [  3  64  57   1   1   1   1   1   1   1   2   1   1   1   1   1 ]
 # ddims: [  1  64  57   8   1   1   1   1   1   1   2   1   1   1   1   1 ]
-tests/test-grog-repeat2: traj repmat phantom calc grog pics slice nrmse
+tests/test-grog-repeat2: traj repmat phantom calc grog slice nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP) 	;\
 	$(TOOLDIR)/traj -x 32 -y 57 -o2 -r t.ra 	;\
 	$(TOOLDIR)/repmat 10 2 t.ra t2.ra 		;\
@@ -46,9 +45,8 @@ tests/test-grog-repeat2: traj repmat phantom calc grog pics slice nrmse
 	$(TOOLDIR)/phantom -x 32 -S 8 s.ra 		;\
 	$(TOOLDIR)/calc zround t2.ra tg.ra		;\
 	$(TOOLDIR)/grog t2.ra k.ra tg.ra kg.ra 		;\
-	$(TOOLDIR)/pics -e -S -t tg.ra kg.ra s.ra r.ra 	;\
-	$(TOOLDIR)/slice 10 0 r.ra s1.ra		;\
-	$(TOOLDIR)/slice 10 1 r.ra s2.ra		;\
+	$(TOOLDIR)/slice 10 0 kg.ra s1.ra		;\
+	$(TOOLDIR)/slice 10 1 kg.ra s2.ra		;\
 	$(TOOLDIR)/nrmse -t 0. s1.ra s2.ra		;\
 	rm *.ra; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
