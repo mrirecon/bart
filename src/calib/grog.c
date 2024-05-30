@@ -137,9 +137,6 @@ static void get_pseudo_dist(int D, const long pinv_dims[D], complex float* pinv,
 
 	md_free(sample);
 
-	// Allocation on stack for more than 1 MB is not be possible
-	assert(1. > 8. * (float)(pinv_dims[READ_DIM] * pinv_dims[READ_DIM]) / 1.e6);
-
 	// Estimate pseudo inverse of nm: pinv(s(theta, r))
 	mat_pinv_svd(nmdims[PHS2_DIM], nmdims[READ_DIM],
 		MD_CAST_ARRAY2(complex float, D, pinv_dims, pinv, READ_DIM, PHS2_DIM),
