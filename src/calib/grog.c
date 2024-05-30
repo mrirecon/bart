@@ -241,24 +241,12 @@ void grog_calib(int D, const long lnG_dims[D], complex float* lnG, const long td
 	debug_printf(DP_DEBUG2, "Finished GROG calibration.\n");
 }
 
-static void estimate_Gshift(int D, int axis, const long lnG_dims[D], complex float* G_shift, complex float* lnG_axis, complex float* lnG, float shift)
+
+static void estimate_Gshift(int D, const long single_lnG_dims[D], complex float* G_shift, complex float* lnG_axis, float shift)
 {
-	long pos[D];
-	for (int i = 0; i < D; i++)
-		pos[i] = 0;
-
-	pos[READ_DIM] = axis;
-
-	long single_lnG_dims[D];
-	md_select_dims(D, ~READ_FLAG, single_lnG_dims, lnG_dims);
-
-	md_clear(D, single_lnG_dims, lnG_axis, CFL_SIZE);
-	md_copy_block(D, pos, single_lnG_dims, lnG_axis, lnG_dims, lnG, CFL_SIZE);
-
 	md_zsmul(D, single_lnG_dims, lnG_axis, lnG_axis, shift);
 
 	// Matrix exponential to find operator G from ln(G)
-	md_clear(D, single_lnG_dims, G_shift, CFL_SIZE);
 
 	zmat_exp(single_lnG_dims[COIL_DIM], 1.,
 		MD_CAST_ARRAY2(complex float, D, single_lnG_dims, G_shift, COIL_DIM, MAPS_DIM),
@@ -271,17 +259,15 @@ static void estimate_Gshift(int D, int axis, const long lnG_dims[D], complex flo
 // Gridding, following Eq. 2
 void grog_grid(int D, const long tdims[D], complex float* traj_grid, const complex float* traj, const long ddims[D], complex float* data_grid, const complex float* data, const long lnG_dims[D], complex float* lnG)
 {
-	debug_printf(DP_DEBUG2, "tdims:\t");
-	debug_print_dims(DP_DEBUG2, D, tdims);
+	assert(3 == tdims[READ_DIM]);
+	assert(1 == ddims[READ_DIM]);
+	assert(1 == ddims[MAPS_DIM]);
 
-	debug_printf(DP_DEBUG2, "ddims:\t");
-	debug_print_dims(DP_DEBUG2, D, ddims);
-
-	debug_printf(DP_DEBUG2, "lnG_dims:\t");
-	debug_print_dims(DP_DEBUG2, D, lnG_dims);
-
-	long lnG_strs[D];
-	md_calc_strides(D, lnG_strs, lnG_dims, CFL_SIZE);
+	int C = ddims[COIL_DIM];
+	assert(3 == lnG_dims[READ_DIM]);
+	assert(C == lnG_dims[COIL_DIM]);
+	assert(C == lnG_dims[MAPS_DIM]);
+	assert(3L * C * C == md_calc_size(D, lnG_dims));
 
 	long tstrs[D];
 	md_calc_strides(D, tstrs, tdims, CFL_SIZE);
@@ -319,14 +305,14 @@ void grog_grid(int D, const long tdims[D], complex float* traj_grid, const compl
 			md_clear(D, tmp_data_dims, tmp_data, CFL_SIZE);
 			md_copy_block(D, pos, tmp_data_dims, tmp_data, ddims, data, CFL_SIZE);
 
+
 			float shift[3];
-			assert(3 == tdims[READ_DIM]);
 
 			for (int d = 0; d < 3; d++) { // dimension
 
 				pos[READ_DIM] = d;
-				long ind_dataframe = md_calc_offset(D, tstrs, pos) / (long)CFL_SIZE;
 
+				long ind_dataframe = md_calc_offset(D, tstrs, pos) / (long)CFL_SIZE;
 				shift[d] = crealf(traj_grid[ind_dataframe] - traj[ind_dataframe]);
 			}
 
@@ -338,10 +324,16 @@ void grog_grid(int D, const long tdims[D], complex float* traj_grid, const compl
 			for (int dd = 0; dd < 3; dd++) { // dimension
 
 				int d = order[dd];
-				pos[READ_DIM] = d;
+
+				long pos2[D];
+				for (int i = 0; i < D; i++)
+					pos2[i] = 0;
+
+				pos2[READ_DIM] = d;
+				md_copy_block(D, pos2, single_lnG_dims, lnG_axis, lnG_dims, lnG, CFL_SIZE);
 
 				// Find shift operator for the specific sampling point (d, r, s)
-				estimate_Gshift(D, d, lnG_dims, G_shift, lnG_axis, lnG, shift[d]);
+				estimate_Gshift(D, single_lnG_dims, G_shift, lnG_axis, shift[d]);
 
 				// Transform data with calculated shift operator
 				md_transpose(D, COIL_DIM, MAPS_DIM, tmp_data_dimsT, tmp_dataT, tmp_data_dims, tmp_data, CFL_SIZE);
