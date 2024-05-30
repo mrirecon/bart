@@ -40,6 +40,100 @@
 #endif
 
 
+static void grog_calib2(int calib_spokes, int D, const long lnG_dims[D], complex float* lnG, const long tdims[D], const complex float* traj, const long ddims[D], const complex float* data)
+{
+	unsigned long tflags = md_nontriv_dims(DIMS, tdims);
+	unsigned long dflags = md_nontriv_dims(DIMS, ddims);
+
+	// if we have multiple data for some position, we only use the first
+
+	long ddims1[D];
+	md_select_dims(D, ~(dflags & ~tflags) | COIL_FLAG, ddims1, ddims);
+
+	complex float *data1 = md_alloc(D, ddims1, CFL_SIZE);
+
+	long pos[D];
+	for (int i = 0; i < D; i++)
+		pos[i] = 0;
+
+	md_copy_block(D, pos, ddims1, data1, ddims, data, CFL_SIZE);
+
+	long tdims2[5];
+	md_copy_dims(5, tdims2, tdims);
+	tdims2[PHS2_DIM] *= md_calc_size(D - 5, tdims + 5);
+
+	long ddims2[D];
+	md_singleton_dims(D - 5, ddims2 + 5);
+	md_copy_dims(5, ddims2, ddims1);
+	ddims2[PHS2_DIM] *= md_calc_size(D - 5, ddims1 + 5);
+
+	complex float *data2 = md_alloc(D, ddims2, CFL_SIZE);
+
+	md_reshape(D, ~(READ_FLAG|COIL_FLAG), ddims2, data2, ddims1, data1, CFL_SIZE);
+
+	long ddims3[5];
+	md_copy_dims(5, ddims3, ddims2);
+
+	// truncate numer of spokes
+
+	if (0 < calib_spokes) {
+
+		tdims2[PHS2_DIM] = MIN(tdims2[PHS2_DIM], calib_spokes);
+		ddims3[PHS2_DIM] = MIN(ddims3[PHS2_DIM], calib_spokes);
+	}
+
+	assert(ddims3[PHS2_DIM] == tdims2[PHS2_DIM]);
+
+	md_copy_block(5, pos, ddims3, data1, ddims2, data2, CFL_SIZE);
+
+	grog_calib(5, lnG_dims, lnG, tdims2, traj, ddims3, data1);
+
+	md_free(data1);
+	md_free(data2);
+}
+
+
+static void grog_grid2(int D, const long tdims[D], const complex float* traj_shift, const long ddims[D], complex float* data_grid, const complex float* data, const long lnG_dims[D], complex float* lnG)
+{
+	unsigned long tflags = md_nontriv_dims(D, tdims);
+	unsigned long dflags = md_nontriv_dims(D, ddims);
+
+	// loop over dimensions
+
+	unsigned long loop_flags = tflags & dflags & ~(PHS1_FLAG|PHS2_FLAG);
+
+	if (0UL == loop_flags)
+		return grog_grid(D, tdims, traj_shift, ddims, data_grid, data, lnG_dims, lnG);
+
+	long tdims1[D];
+	long ddims1[D];
+	md_select_dims(D, ~loop_flags, tdims1, tdims);
+	md_select_dims(D, ~loop_flags, ddims1, ddims);
+
+	complex float* shift1 = md_alloc(D, tdims1, CFL_SIZE);
+	complex float* data1 = md_alloc(D, ddims1, CFL_SIZE);
+	complex float* data_grid1 = md_alloc(D, ddims1, CFL_SIZE);
+
+	long pos[D];
+	for (int i = 0; i < D; i++)
+		pos[i] = 0;
+
+	do {
+		md_copy_block(D, pos, ddims1, data1, ddims, data, CFL_SIZE);
+		md_copy_block(D, pos, tdims1, shift1, tdims, traj_shift, CFL_SIZE);
+
+		grog_grid(D, tdims1, shift1, ddims1, data_grid1, data1, lnG_dims, lnG);
+
+		md_copy_block(D, pos, ddims, data_grid, ddims1, data_grid1, CFL_SIZE);
+
+	} while (md_next(D, ddims, loop_flags, pos));
+
+	md_free(shift1);
+	md_free(data1);
+	md_free(data_grid1);
+}
+
+
 static const char help_str[] = "GROG calibration and gridding of radial data.\n";
 
 
@@ -82,238 +176,46 @@ int main_grog(int argc, char* argv[argc])
 	debug_printf(DP_DEBUG2, "ddims:\t");
 	debug_print_dims(DP_DEBUG2, DIMS, ddims);
 
-	// ------------------------------------------
-	//	Prepare data for calibration
-	// ------------------------------------------
+	unsigned long tflags = md_nontriv_dims(DIMS, tdims);
+	unsigned long dflags = md_nontriv_dims(DIMS, ddims);
 
-	// Only data from unique set of projection angles -> Extract first time step
-	// in case of equal dims it becomes a simple copy operation
-	long ddims_slice[DIMS];
-	md_copy_dims(DIMS, ddims_slice, ddims);
+	if (!md_check_compat(DIMS - 1, ~0UL, tdims + 1, ddims + 1))
+		error("Incompatible dimensions\n");
 
-	if (tdims[TIME_DIM] < ddims[TIME_DIM])
-		ddims_slice[TIME_DIM] = tdims[TIME_DIM];
+	if (1UL != (tflags & ~dflags))
+		error("Incompatible dimensions\n");
 
-	complex float* data_slice = md_alloc(DIMS, ddims_slice, CFL_SIZE);
 
-	long pos[DIMS] = { [0 ... DIMS - 1] = 0 };
-	md_copy_block(DIMS, pos, ddims_slice, data_slice, ddims, data, CFL_SIZE);
-
-	// Combine data from unique projections:
-	// Scenario: DIM > COIL_DIM and traj[DIM] == data[DIM]
-	unsigned long flags = 0;
-	int joined_dim = 1;
-	int info_dim = PHS2_DIM; // Split dimension with unique projection angle INFOrmation can repeat in TIME_DIM
-	int c = 0;
-
-	for (int i = PHS2_DIM; i < DIMS; i++) {
-
-		if ((1 != tdims[i]) && (tdims[i] == ddims[i])) {
-
-			flags = MD_SET(flags, i);
-
-			joined_dim *= tdims[i];
-
-			if ((PHS2_DIM != i)) {
-
-				assert(0 == c); // Constraint to only one repeating dimension
-				c++;
-
-				info_dim = i;
-			}
-		}
-	}
-
-	debug_printf(DP_DEBUG2, "Joined Dim: %d,\tFlag: %d,\t info_dim: %ld\n", joined_dim, flags, info_dim);
-
-	// Split dimension including unique projections should not be larger than TIME_DIM
-	// See grog.mk for examples which combination sof input dimensions are supported
-	assert(TIME_DIM >= info_dim);
-
-	// Combine Trajectory
-	long tdims2[DIMS];
-	md_select_dims(DIMS, FFT_FLAGS, tdims2, tdims);
-	tdims2[PHS2_DIM] = joined_dim;
-
-	complex float* traj2 = md_alloc(DIMS, tdims2, CFL_SIZE);
-	md_reshape(DIMS, flags, tdims2, traj2, tdims, traj, CFL_SIZE);
-
-	// Combine Data
-	long ddims2[DIMS];
-	md_select_dims(DIMS, FFT_FLAGS|COIL_FLAG, ddims2, ddims_slice);
-	ddims2[PHS2_DIM] = joined_dim;
-
-	complex float* data2 = md_alloc(DIMS, ddims2, CFL_SIZE);
-
-	md_reshape(DIMS, flags, ddims2, data2, ddims_slice, data_slice, CFL_SIZE);
-
-	md_free(data_slice);
-
-	// Reduce to selected number of spokes
-	long tdims_calib[DIMS];
-	md_copy_dims(DIMS, tdims_calib, tdims2);
-
-	long ddims_calib[DIMS];
-	md_copy_dims(DIMS, ddims_calib, ddims2);
-
-	if (-1 != calib_spokes) {
-
-		tdims_calib[PHS2_DIM] = calib_spokes;
-		ddims_calib[PHS2_DIM] = calib_spokes;
-	}
-
-	complex float* traj_calib = md_alloc(DIMS, tdims_calib, CFL_SIZE);
-	complex float* data_calib = md_alloc(DIMS, ddims_calib, CFL_SIZE);
-
-	long pos2[DIMS] = { [0 ... DIMS - 1] = 0 };
-
-	md_copy_block(DIMS, pos2, tdims_calib, traj_calib, tdims2, traj2, CFL_SIZE);
-	md_copy_block(DIMS, pos2, ddims_calib, data_calib, ddims2, data2, CFL_SIZE);
-
-	md_free(traj2);
-	md_free(data2);
-
-	// ------------------------------------------
-	//	1. Calibration of GROG kernels
-	// ------------------------------------------
+	// Calibration of GROG kernels
 
 	long lnG_dims[DIMS];
 	md_select_dims(DIMS, COIL_FLAG, lnG_dims, ddims);
 	lnG_dims[READ_DIM] = tdims[READ_DIM]; // Number of dimensions
-	lnG_dims[MAPS_DIM] = ddims[COIL_DIM]; // Number of coils
+	lnG_dims[MAPS_DIM] = ddims[COIL_DIM];
 
 	complex float* lnG = md_alloc(DIMS, lnG_dims, CFL_SIZE);
 
 	double calib_start = timestamp();
 
-	grog_calib(DIMS, lnG_dims, lnG, tdims_calib, traj_calib, ddims_calib, data_calib);
+	grog_calib2(calib_spokes, DIMS, lnG_dims, lnG, tdims, traj, ddims, data);
 
 	double calib_end = timestamp();
 
 	debug_printf(DP_DEBUG1, "Time for calibration: %f\n", calib_end - calib_start);
 
-	md_free(traj_calib);
-	md_free(data_calib);
+	// Shifting of Data
 
-	// ------------------------------------------
-	//	Prepare data for Gridding
-	// ------------------------------------------
+	complex float* traj_grid = create_cfl(grid_traj_file, DIMS, tdims);
+	complex float* data_grid = create_cfl(grid_data_file, DIMS, ddims);
 
-	// If info_dim is between COIL_DIM and TIME_DIM, copy will not work.
-	// Therefore, reordering of the dimensions is required ensuring info_dim and PHS2_DIM are at the
-	// end of the data block
-	long tdimsT[DIMS];
-	long ddimsT[DIMS];
-
-	if (PHS2_DIM != info_dim) {
-
-		md_transpose_dims(DIMS, PHS2_DIM, TIME_DIM, tdimsT, tdims);
-		md_transpose_dims(DIMS, PHS2_DIM, TIME_DIM, ddimsT, ddims);
-
-	} else {
-
-		md_copy_dims(DIMS, tdimsT, tdims);
-		md_copy_dims(DIMS, ddimsT, ddims);
-	}
-
-	complex float* trajT = md_alloc(DIMS, tdimsT, CFL_SIZE);
-	complex float* dataT = md_alloc(DIMS, ddimsT, CFL_SIZE);
-
-	if (PHS2_DIM != info_dim) {
-
-		md_transpose(DIMS, PHS2_DIM, TIME_DIM, tdimsT, trajT, tdims, traj, CFL_SIZE);
-		md_transpose(DIMS, PHS2_DIM, TIME_DIM, ddimsT, dataT, ddims, data, CFL_SIZE);
-
-	} else {
-
-		md_copy(DIMS, tdimsT, trajT, traj, CFL_SIZE);
-		md_copy(DIMS, ddimsT, dataT, data, CFL_SIZE);
-	}
-
-	// Join spokes of info_dim and PHS2_DIM (latter is was transposed to TIME_DIM)
-	long tdims_rs[DIMS];
-	long ddims_rs[DIMS];
-
-	if (PHS2_DIM == info_dim) {
-
-		md_copy_dims(DIMS, tdims_rs, tdimsT);
-		md_copy_dims(DIMS, ddims_rs, ddimsT);
-
-	 } else if (TIME_DIM == info_dim) {
-
-		md_select_dims(DIMS, ~(PHS2_FLAG | TIME_FLAG), tdims_rs, tdimsT);
-		tdims_rs[TIME_DIM] = joined_dim;
-
-		md_select_dims(DIMS, ~(PHS2_FLAG | TIME_FLAG), ddims_rs, ddimsT);
-		ddims_rs[TIME_DIM] = joined_dim;
-
-	} else {
-
-		md_select_dims(DIMS, ~(MD_BIT(info_dim) | TIME_FLAG), tdims_rs, tdimsT);
-		tdims_rs[TIME_DIM] = joined_dim;
-
-		md_select_dims(DIMS, ~(MD_BIT(info_dim) | TIME_FLAG), ddims_rs, ddimsT);
-		ddims_rs[TIME_DIM] = joined_dim;
-	}
-
-	complex float* traj_rs = md_alloc(DIMS, tdims_rs, CFL_SIZE);
-	complex float* data_rs = md_alloc(DIMS, ddims_rs, CFL_SIZE);
-
-	if (TIME_DIM != info_dim) {
-
-		md_reshape(DIMS, MD_BIT(info_dim)|TIME_FLAG, tdims_rs, traj_rs, tdimsT, trajT, CFL_SIZE);
-		md_reshape(DIMS, MD_BIT(info_dim)|TIME_FLAG, ddims_rs, data_rs, ddimsT, dataT, CFL_SIZE);
-
-	} else {
-
-		md_reshape(DIMS, MD_BIT(info_dim)|PHS2_FLAG, tdims_rs, traj_rs, tdimsT, trajT, CFL_SIZE);
-		md_reshape(DIMS, MD_BIT(info_dim)|PHS2_FLAG, ddims_rs, data_rs, ddimsT, dataT, CFL_SIZE);
-	}
-
-	// Move combined spokes from TIME_DIM back to PHS2_DIM
-	long tdims_rs2[DIMS];
-	long ddims_rs2[DIMS];
-
-	if (PHS2_DIM != info_dim) {
-
-		md_transpose_dims(DIMS, PHS2_DIM, TIME_DIM, tdims_rs2, tdims_rs);
-		md_transpose_dims(DIMS, PHS2_DIM, TIME_DIM, ddims_rs2, ddims_rs);
-
-	} else {
-
-		md_copy_dims(DIMS, tdims_rs2, tdims_rs);
-		md_copy_dims(DIMS, ddims_rs2, ddims_rs);
-	}
-
-	complex float* traj_rs2 = md_alloc(DIMS, tdims_rs2, CFL_SIZE);
-	complex float* data_rs2 = md_alloc(DIMS, ddims_rs2, CFL_SIZE);
-
-	if (PHS2_DIM != info_dim) {
-
-		md_transpose(DIMS, PHS2_DIM, TIME_DIM, tdims_rs2, traj_rs2, tdims_rs, traj_rs, CFL_SIZE);
-		md_transpose(DIMS, PHS2_DIM, TIME_DIM, ddims_rs2, data_rs2, ddims_rs, data_rs, CFL_SIZE);
-
-	} else {
-
-		md_copy(DIMS, tdims_rs2, traj_rs2, traj_rs, CFL_SIZE);
-		md_copy(DIMS, ddims_rs2, data_rs2, data_rs, CFL_SIZE);
-	}
-
-	// Copies of *_rs2 files for storing data calculated in multiple threads
-	complex float* traj_rs2_grid = md_alloc(DIMS, tdims_rs2, CFL_SIZE);
-	complex float* data_rs2_grid = md_calloc(DIMS, ddims_rs2, CFL_SIZE);
-	complex float* shift = md_alloc(DIMS, tdims_rs2, CFL_SIZE);
-
-	// ------------------------------------------
-	// 	2. Shifting of Data
-	// ------------------------------------------
+	complex float* shift = md_alloc(DIMS, tdims, CFL_SIZE);
 
 	double grid_start = timestamp();
 
-	md_zround(DIMS, tdims_rs2, traj_rs2_grid, traj_rs2);
-	md_zsub(DIMS, tdims_rs2, shift, traj_rs2_grid, traj_rs2);
+	md_zround(DIMS, tdims, traj_grid, traj);
+	md_zsub(DIMS, tdims, shift, traj_grid, traj);
 
-	grog_grid(DIMS, tdims_rs2, shift, ddims_rs2, data_rs2_grid, data_rs2, lnG_dims, lnG);
+	grog_grid2(DIMS, tdims, shift, ddims, data_grid, data, lnG_dims, lnG);
 
 	md_free(shift);
 
@@ -323,58 +225,8 @@ int main_grog(int argc, char* argv[argc])
 
 	md_free(lnG);
 
-	// ------------------------------------------
-	//	Reshape data to original format
-	// ------------------------------------------
-
-	if (PHS2_DIM != info_dim) {
-
-		md_transpose(DIMS, PHS2_DIM, TIME_DIM, tdims_rs, traj_rs, tdims_rs2, traj_rs2_grid, CFL_SIZE);
-		md_transpose(DIMS, PHS2_DIM, TIME_DIM, ddims_rs, data_rs, ddims_rs2, data_rs2_grid, CFL_SIZE);
-
-	} else {
-
-		md_copy(DIMS, tdims_rs, traj_rs, traj_rs2_grid, CFL_SIZE);
-		md_copy(DIMS, ddims_rs, data_rs, data_rs2_grid, CFL_SIZE);
-	}
-
-	if (TIME_DIM != info_dim) {
-
-		md_reshape(DIMS, MD_BIT(info_dim)|TIME_FLAG, tdimsT, trajT, tdims_rs, traj_rs, CFL_SIZE);
-		md_reshape(DIMS, MD_BIT(info_dim)|TIME_FLAG, ddimsT, dataT, ddims_rs, data_rs, CFL_SIZE);
-
-	} else {
-
-		md_reshape(DIMS, MD_BIT(info_dim)|PHS2_FLAG, tdims_rs, traj_rs, tdimsT, trajT, CFL_SIZE);
-		md_reshape(DIMS, MD_BIT(info_dim)|PHS2_FLAG, ddims_rs, data_rs, ddimsT, dataT, CFL_SIZE);
-	}
-
-	// Write to ouput
-	complex float* traj_grid = create_cfl(grid_traj_file, DIMS, tdims);
-	complex float* data_grid = create_cfl(grid_data_file, DIMS, ddims);
-
-	if (PHS2_DIM != info_dim) {
-
-		md_transpose(DIMS, PHS2_DIM, TIME_DIM, tdims, traj_grid, tdimsT, trajT, CFL_SIZE);
-		md_transpose(DIMS, PHS2_DIM, TIME_DIM, ddims, data_grid, ddimsT, dataT, CFL_SIZE);
-
-	} else {
-
-		md_copy(DIMS, tdims, traj_grid, trajT, CFL_SIZE);
-		md_copy(DIMS, ddims, data_grid, dataT, CFL_SIZE);
-	}
-
-	md_free(trajT);
-	md_free(dataT);
-
-	md_free(traj_rs);
-	md_free(data_rs);
-
-	md_free(traj_rs2);
-	md_free(data_rs2);
-
-	md_free(traj_rs2_grid);
-	md_free(data_rs2_grid);
+	unmap_cfl(DIMS, tdims, traj);
+	unmap_cfl(DIMS, ddims, data);
 
 	unmap_cfl(DIMS, tdims, traj_grid);
 	unmap_cfl(DIMS, ddims, data_grid);
