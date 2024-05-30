@@ -314,7 +314,6 @@ void grog_grid(int D, const long tdims[D], complex float* traj_grid, const compl
 			complex float* G_shift = md_alloc(D, single_lnG_dims, CFL_SIZE);
 
 			complex float* tmp_data = md_alloc(D, tmp_data_dims, CFL_SIZE);
-			complex float* tmp_data2 = md_alloc(D, tmp_data_dims, CFL_SIZE);
 			complex float* tmp_dataT = md_alloc(D, tmp_data_dimsT, CFL_SIZE); //for tenmul operation
 
 			md_clear(D, tmp_data_dims, tmp_data, CFL_SIZE);
@@ -347,11 +346,8 @@ void grog_grid(int D, const long tdims[D], complex float* traj_grid, const compl
 				estimate_Gshift(D, d, lnG_dims, G_shift, lnG_axis, lnG, shift);
 
 				// Transform data with calculated shift operator
-				md_clear(D, tmp_data_dims, tmp_data2, CFL_SIZE);
 				md_transpose(D, COIL_DIM, MAPS_DIM, tmp_data_dimsT, tmp_dataT, tmp_data_dims, tmp_data, CFL_SIZE);
-				md_ztenmul(D, tmp_data_dims, tmp_data2, single_lnG_dims, G_shift, tmp_data_dimsT, tmp_dataT);
-
-				md_copy(D, tmp_data_dims, tmp_data, tmp_data2, CFL_SIZE);
+				md_ztenmul(D, tmp_data_dims, tmp_data, single_lnG_dims, G_shift, tmp_data_dimsT, tmp_dataT);
 			}
 
 			md_copy_block(D, pos_dataframe, ddims, data_grid, tmp_data_dims, tmp_data, CFL_SIZE);
@@ -360,7 +356,6 @@ void grog_grid(int D, const long tdims[D], complex float* traj_grid, const compl
 			md_free(G_shift);
 			md_free(tmp_traj);
 			md_free(tmp_data);
-			md_free(tmp_data2);
 			md_free(tmp_dataT);
 		}
 	}
