@@ -64,7 +64,6 @@ int main_grog(int argc, char* argv[argc])
 	const struct opt_s opts[] = {
 
 		OPTL_INT('s', "calib-spokes", &calib_spokes, "num", "Number of spokes for GROG calibration"),
-		OPTL_OUTFILE(0, "measure-time", &measure_file, "file", "Output file with timing of 1. calibration and 2. gridding."),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -100,18 +99,18 @@ int main_grog(int argc, char* argv[argc])
 	long pos[DIMS] = { [0 ... DIMS - 1] = 0 };
 	md_copy_block(DIMS, pos, ddims_slice, data_slice, ddims, data, CFL_SIZE);
 
-	// Combine data from unique projections projections:
+	// Combine data from unique projections:
 	// Scenario: DIM > COIL_DIM and traj[DIM] == data[DIM]
 	unsigned long flags = 0;
-	long joined_dim = 1;
-	long info_dim = PHS2_DIM; // Split dimension with unique projection angle INFOrmation can repeat in TIME_DIM
+	int joined_dim = 1;
+	int info_dim = PHS2_DIM; // Split dimension with unique projection angle INFOrmation can repeat in TIME_DIM
 	int c = 0;
 
 	for (int i = PHS2_DIM; i < DIMS; i++) {
 
 		if ((1 != tdims[i]) && (tdims[i] == ddims[i])) {
 
-			flags = MD_SET(flags, (unsigned long)i);
+			flags = MD_SET(flags, i);
 
 			joined_dim *= tdims[i];
 
@@ -186,8 +185,12 @@ int main_grog(int argc, char* argv[argc])
 	complex float* lnG = md_alloc(DIMS, lnG_dims, CFL_SIZE);
 
 	double calib_start = timestamp();
+
 	grog_calib(DIMS, lnG_dims, lnG, tdims_calib, traj_calib, ddims_calib, data_calib);
+
 	double calib_end = timestamp();
+
+	debug_printf(DP_DEBUG1, "Time for calibration: %f\n", calib_end - calib_start);
 
 	md_free(traj_calib);
 	md_free(data_calib);
@@ -305,8 +308,12 @@ int main_grog(int argc, char* argv[argc])
 	// ------------------------------------------
 
 	double grid_start = timestamp();
+
 	grog_grid(DIMS, tdims_rs2, traj_rs2_grid, traj_rs2, ddims_rs2, data_rs2_grid, data_rs2, lnG_dims, lnG);
+
 	double grid_end = timestamp();
+
+	debug_printf(DP_DEBUG1, "Time for gridding: %f\n", grid_end - grid_start);
 
 	md_free(lnG);
 
@@ -365,22 +372,6 @@ int main_grog(int argc, char* argv[argc])
 
 	unmap_cfl(DIMS, tdims, traj_grid);
 	unmap_cfl(DIMS, ddims, data_grid);
-
-	// 3. Benchmark calibration and gridding times
-
-	long time_dims[DIMS] = { [0 ... DIMS - 1] = 1 };
-
-	if (NULL != measure_file) {
-
-		time_dims[READ_DIM] = 2;
-
-		complex float* time = create_cfl(measure_file, DIMS, time_dims);
-
-		time[0] = (float) (calib_end - calib_start);
-		time[1] = (float) (grid_end - grid_start);
-
-		unmap_cfl(DIMS, time_dims, time);
-	}
 
 	return 0;
 }
