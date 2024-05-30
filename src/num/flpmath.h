@@ -381,6 +381,14 @@ extern void md_zfdiff_backwards(int D, const long dims[__VLA(D)], int d, _Comple
 extern void md_zfftmod(int D, const long dim[__VLA(D)], _Complex float* optr, const _Complex float* iptr, bool inv, double phase);
 extern void md_zfftmod2(int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr, bool inv, double phase);
 
+
+extern void md_round(int D, const long dim[__VLA(D)], float* optr, const float* iptr);
+extern void md_round2(int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], float* optr, const long istr[__VLA(D)], const float* iptr);
+
+extern void md_zround(int D, const long dim[__VLA(D)], _Complex float* optr, const _Complex float* iptr);
+extern void md_zround2(int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr);
+
+
 extern void md_zsum(int D, const long dims[__VLA(D)], unsigned long flags, _Complex float* dst, const _Complex float* src);
 
 extern void md_imag2(int D, const long dims[__VLA(D)], const long ostr[__VLA(D)], float* dst, const long istr[__VLA(D)], const _Complex float* src);

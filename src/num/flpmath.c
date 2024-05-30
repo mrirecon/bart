@@ -505,6 +505,19 @@ static void make_z3op_from_real(size_t offset, int D, const long dims[D], const 
 	make_3op(offset, D + 1, rdims, rostr, (float*)optr, ristr1, (const float*)iptr1, ristr2, (const float*)iptr2);
 }
 
+static void make_z2op_from_real(size_t offset, int D, const long dims[D], const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr)
+{
+	long rdims[D + 1];
+	long rostr[D + 1];
+	long ristr[D + 1];
+
+	real_from_complex_dims(D, rdims, dims);
+	real_from_complex_strides(D, rostr, ostr);
+	real_from_complex_strides(D, ristr, istr);
+
+	make_2op(offset, D + 1, rdims, rostr, (float*)optr, ristr, (const float*)iptr);
+}
+
 static void make_z2opd_from_real(size_t offset, int D, const long dims[D], const long ostr[D], complex double* optr, const long istr1[D], const complex float* iptr1)
 {
 	long rdims[D + 1];
@@ -543,6 +556,8 @@ static void make_z2opf_from_real(size_t offset, int D, const long dims[D], const
 #define MAKE_Z2OPF(fun, ...)	((void)TYPE_CHECK(z2opf_t, cpu_ops.fun), make_z2opf(offsetof(struct vec_ops, fun),  __VA_ARGS__))
 #define MAKE_3OPD(fun, ...)	((void)TYPE_CHECK(r3opd_t, cpu_ops.fun), make_3opd(offsetof(struct vec_ops, fun),  __VA_ARGS__))
 #define MAKE_Z3OPD(fun, ...)	((void)TYPE_CHECK(z3opd_t, cpu_ops.fun), make_z3opd(offsetof(struct vec_ops, fun),  __VA_ARGS__))
+#define MAKE_Z2OP_FROM_REAL(fun, ...) \
+				((void)TYPE_CHECK(r2op_t, cpu_ops.fun), make_z2op_from_real(offsetof(struct vec_ops, fun), __VA_ARGS__))
 #define MAKE_Z3OP_FROM_REAL(fun, ...) \
 				((void)TYPE_CHECK(r3op_t, cpu_ops.fun), make_z3op_from_real(offsetof(struct vec_ops, fun), __VA_ARGS__))
 #define MAKE_Z2OPD_FROM_REAL(fun, ...) \
@@ -879,6 +894,54 @@ void md_sqrt2(int D, const long dims[D], const long ostr[D], float* optr, const 
 {
 	MAKE_2OP(sqrt, D, dims, ostr, optr, istr, iptr);
 }
+
+
+
+/**
+ * Round value of scalar array and save to output (with strides)
+ *
+ * optr = roundf(iptr)
+ */
+void md_round2(int D, const long dims[D], const long ostr[D], float* optr, const long istr[D], const float* iptr)
+{
+	MAKE_2OP(round, D, dims, ostr, optr, istr, iptr);
+}
+
+
+/**
+ * Round value of scalar array and save to output (without strides)
+ *
+ * optr = roundf(iptr)
+ */
+void md_round(int D, const long dims[D], float* optr, const float* iptr)
+{
+	make_2op_simple(md_round2, D, dims, optr, iptr);
+}
+
+
+/**
+ * Round value of real and imaginary part of complex array and save to output (with strides)
+ *
+ * crealf(optr) = roundf(crealf(iptr))
+ * cimagf(optr) = roundf(cimagf(iptr))
+ */
+void md_zround2(int D, const long dims[D], const long ostrs[D], complex float* dst, const long istrs[D], const complex float* src)
+{
+	MAKE_Z2OP_FROM_REAL(round, D, dims, ostrs, dst, istrs, src);
+}
+
+
+/**
+ * Round value of real and imaginary part of complex array and save to output (with strides)
+ *
+ * crealf(optr) = roundf(crealf(iptr))
+ * cimagf(optr) = roundf(cimagf(iptr))
+ */
+void md_zround(int D, const long dims[D], complex float* optr, const complex float* iptr)
+{
+	make_z2op_simple(md_zround2, D, dims, optr, iptr);
+}
+
 
 
 

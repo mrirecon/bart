@@ -39,6 +39,7 @@ extern void cuda_zfsq2(long N, _Complex float* dst, const _Complex float* src);
 extern void cuda_pow(long N, float* dst, const float* src1, const float* src2);
 extern void cuda_zpow(long N, _Complex float* dst, const _Complex float* src1, const _Complex float* src2);
 extern void cuda_sqrt(long N, float* dst, const float* src);
+extern void cuda_round(long N, float* dst, const float* src);
 extern void cuda_zconj(long N, _Complex float* dst, const _Complex float* src);
 extern void cuda_zphsr(long N, _Complex float* dst, const _Complex float* src);
 extern void cuda_zexpj(long N, _Complex float* dst, const _Complex float* src);

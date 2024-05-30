@@ -652,6 +652,21 @@ extern "C" void cuda_sqrt(long N, float* dst, const float* src)
 }
 
 
+__global__ void kern_round(long N, float* dst, const float* src)
+{
+	int start = threadIdx.x + blockDim.x * blockIdx.x;
+	int stride = blockDim.x * gridDim.x;
+
+	for (long i = start; i < N; i += stride)
+		dst[i] = roundf(fabs(src[i]));
+}
+
+extern "C" void cuda_round(long N, float* dst, const float* src)
+{
+	kern_round<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, dst, src);
+}
+
+
 __global__ void kern_zconj(long N, cuFloatComplex* dst, const cuFloatComplex* src)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;

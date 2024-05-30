@@ -26,6 +26,7 @@ struct vec_ops {
 
 	void (*pow)(long N, float* dst, const float* src1, const float* src2);
 	void (*sqrt)(long N, float* dst, const float* src);
+	void (*round)(long N, float* dst, const float* src);
 
 	void (*zle)(long N, _Complex float* dst, const _Complex float* src1, const _Complex float* src2);
 	void (*le)(long N, float* dst, const float* src1, const float* src2);

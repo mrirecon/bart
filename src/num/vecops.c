@@ -498,6 +498,13 @@ static void vec_sqrt(long N, float* dst, const float* src)
 }
 
 
+static void vec_round(long N, float* dst, const float* src)
+{
+	for (long i = 0; i < N; i++)
+		dst[i] = roundf(src[i]);
+}
+
+
 static void vec_zle(long N, complex float* dst, const complex float* src1, const complex float* src2)
 {
 	for (long i = 0; i < N; i++)
@@ -825,6 +832,7 @@ const struct vec_ops cpu_ops = {
 
 	.pow = vec_pow,
 	.sqrt = vec_sqrt,
+	.round = vec_round,
 
 	.zle = vec_zle,
 	.le = vec_le,
