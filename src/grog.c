@@ -151,7 +151,7 @@ int main_grog(int argc, char* argv[argc])
 
 		ARG_INFILE(true, &traj_file, "radial trajectory"),
 		ARG_INFILE(true, &data_file, "radial data"),
-		ARG_OUTFILE(true, &grid_traj_file, "gridded trajectory"),
+		ARG_INFILE(true, &grid_traj_file, "gridded trajectory"),
 		ARG_OUTFILE(true, &grid_data_file, "gridded data"),
 	};
 
@@ -205,14 +205,18 @@ int main_grog(int argc, char* argv[argc])
 
 	// Shifting of Data
 
-	complex float* traj_grid = create_cfl(grid_traj_file, DIMS, tdims);
+	long tdims2[DIMS];
+	const complex float* traj_grid = load_cfl(grid_traj_file, DIMS, tdims2);
+
+	if (!md_check_compat(DIMS, 0UL, tdims, tdims2))
+		error("Incompatible trajectory.\n");
+
 	complex float* data_grid = create_cfl(grid_data_file, DIMS, ddims);
 
 	complex float* shift = md_alloc(DIMS, tdims, CFL_SIZE);
 
 	double grid_start = timestamp();
 
-	md_zround(DIMS, tdims, traj_grid, traj);
 	md_zsub(DIMS, tdims, shift, traj_grid, traj);
 
 	grog_grid2(DIMS, tdims, shift, ddims, data_grid, data, lnG_dims, lnG);
