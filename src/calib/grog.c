@@ -266,6 +266,9 @@ static void apply_Gshift(int D, const long dims[D], complex float* data,
 
 	for (int d = 0; d < 3; d++) { // dimension
 
+		if (0. == shift[d])
+			continue;
+
 		// Find shift operator for the specific sampling point (d, r, s)
 
 		complex float lnG[C][C];
