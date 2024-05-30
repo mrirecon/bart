@@ -291,9 +291,13 @@ static void apply_Gshift(int D, const long dims[D], complex float* data,
 
 
 // Gridding, following Eq. 2
-void grog_grid(int D, const long tdims[D], complex float* traj_grid, const complex float* traj, const long ddims[D], complex float* data_grid, const complex float* data, const long lnG_dims[D], complex float* lnG)
+void grog_grid(int D, const long tdims[D], const complex float* traj_shift,
+		const long ddims[D], complex float* data_grid, const complex float* data,
+		const long lnG_dims[D], complex float* lnG)
 {
 	assert(3 == tdims[READ_DIM]);
+	assert(!md_check_dimensions(D, tdims, READ_FLAG|PHS1_FLAG|PHS2_FLAG));
+
 	assert(1 == ddims[READ_DIM]);
 	assert(1 == ddims[MAPS_DIM]);
 
@@ -306,7 +310,8 @@ void grog_grid(int D, const long tdims[D], complex float* traj_grid, const compl
 	long tstrs[D];
 	md_calc_strides(D, tstrs, tdims, CFL_SIZE);
 
-	md_zround(D, tdims, traj_grid, traj);
+	long tmp_data_dims[D];
+	md_select_dims(D, ~(PHS1_FLAG|PHS2_FLAG), tmp_data_dims, ddims);
 
 #pragma omp parallel for collapse(2)
 	for (int s = 0; s < ddims[PHS2_DIM]; s++) {		// Spoke
@@ -320,27 +325,20 @@ void grog_grid(int D, const long tdims[D], complex float* traj_grid, const compl
 			pos[PHS2_DIM] = s;
 
 			// Allocate data of data HERE avoids even more allocations within the most inner dimension-loop
-			long tmp_data_dims[D];
-			md_select_dims(D, ~(PHS1_FLAG|PHS2_FLAG), tmp_data_dims, ddims);
 
 			complex float* tmp_data = md_alloc(D, tmp_data_dims, CFL_SIZE);
 
-			md_clear(D, tmp_data_dims, tmp_data, CFL_SIZE);
 			md_copy_block(D, pos, tmp_data_dims, tmp_data, ddims, data, CFL_SIZE);
 
 			float shift[3];
 
-			for (int d = 0; d < 3; d++) { // dimension
+			for (int d = 0; d < 3; d++)
+				shift[d] = crealf(MD_ACCESS(D, (pos[READ_DIM] = d, pos), tstrs, traj_shift));
 
-				pos[READ_DIM] = d;
-
-				long ind_dataframe = md_calc_offset(D, tstrs, pos) / (long)CFL_SIZE;
-				shift[d] = crealf(traj_grid[ind_dataframe] - traj[ind_dataframe]);
-			}
+			pos[READ_DIM] = 0;
 
 			apply_Gshift(D, tmp_data_dims, tmp_data, lnG, shift);
 
-			pos[READ_DIM] = 0;
 			md_copy_block(D, pos, ddims, data_grid, tmp_data_dims, tmp_data, CFL_SIZE);
 
 			md_free(tmp_data);

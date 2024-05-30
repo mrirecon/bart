@@ -23,6 +23,7 @@
 #include <string.h>
 
 #include "num/multind.h"
+#include "num/flpmath.h"
 #include "num/init.h"
 
 #include "misc/mmio.h"
@@ -299,8 +300,9 @@ int main_grog(int argc, char* argv[argc])
 	}
 
 	// Copies of *_rs2 files for storing data calculated in multiple threads
-	complex float* traj_rs2_grid = md_calloc(DIMS, tdims_rs2, CFL_SIZE);
+	complex float* traj_rs2_grid = md_alloc(DIMS, tdims_rs2, CFL_SIZE);
 	complex float* data_rs2_grid = md_calloc(DIMS, ddims_rs2, CFL_SIZE);
+	complex float* shift = md_alloc(DIMS, tdims_rs2, CFL_SIZE);
 
 	// ------------------------------------------
 	// 	2. Shifting of Data
@@ -308,7 +310,12 @@ int main_grog(int argc, char* argv[argc])
 
 	double grid_start = timestamp();
 
-	grog_grid(DIMS, tdims_rs2, traj_rs2_grid, traj_rs2, ddims_rs2, data_rs2_grid, data_rs2, lnG_dims, lnG);
+	md_zround(DIMS, tdims_rs2, traj_rs2_grid, traj_rs2);
+	md_zsub(DIMS, tdims_rs2, shift, traj_rs2_grid, traj_rs2);
+
+	grog_grid(DIMS, tdims_rs2, shift, ddims_rs2, data_rs2_grid, data_rs2, lnG_dims, lnG);
+
+	md_free(shift);
 
 	double grid_end = timestamp();
 
