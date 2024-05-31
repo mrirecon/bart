@@ -261,31 +261,34 @@ static void apply_Gshift(int D, const long dims[D], complex float* data,
 
 	complex float* tmp = md_alloc(D, dims, CFL_SIZE); //for tenmul operation
 
-	// Iterate through different dimensions and apply operator to s(kx, ky, kz)
-	// Theoretically, the order does matter but, well, GROG
+	complex float lnG[C][C];
+
+	for (int i = 0; i < C; i++)
+		for (int j = 0; j < C; j++)
+			lnG[i][j] = 0.;
+
+	// Find shift operator for the specific sampling point (d, r, s)
 
 	for (int d = 0; d < 3; d++) { // dimension
 
 		if (0. == shift[d])
 			continue;
 
-		// Find shift operator for the specific sampling point (d, r, s)
 
-		complex float lnG[C][C];
 		for (int i = 0; i < C; i++)
 			for (int j = 0; j < C; j++)
-				lnG[i][j] = lnG_axis[(i * C + j) * 3 + d] * shift[d];
-
-		// Matrix exponential to find operator G from ln(G)
-
-		complex float G_shift[C][C];
-		zmat_exp(C, 1., G_shift, lnG);
-
-		// Transform data with calculated shift operator
-
-		md_transpose(D, COIL_DIM, MAPS_DIM, dimsT, tmp, dims, data, CFL_SIZE);
-		md_ztenmul(D, dims, data, single_lnG_dims, &G_shift[0][0], dimsT, tmp);
+				lnG[i][j] += lnG_axis[(i * C + j) * 3 + d] * shift[d];
 	}
+
+	// Matrix exponential to find operator G from ln(G)
+
+	complex float G_shift[C][C];
+	zmat_exp(C, 1., G_shift, lnG);
+
+	// Transform data with calculated shift operator
+
+	md_transpose(D, COIL_DIM, MAPS_DIM, dimsT, tmp, dims, data, CFL_SIZE);
+	md_ztenmul(D, dims, data, single_lnG_dims, &G_shift[0][0], dimsT, tmp);
 
 	md_free(tmp);
 }

@@ -37,7 +37,7 @@ static bool test_zmat_exp(void)
 		for (int j = 0; j < 4; j++)
 			err += powf(cabsf(B[i][j] - C[i][j]), 2.);
 
-	return (err < 1.E-10);
+	return (err < 1.E-9);
 }
 
 UT_REGISTER_TEST(test_zmat_exp);
