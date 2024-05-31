@@ -54,8 +54,8 @@ void zmat_exp(int N, float t, complex float out[N][N], const complex float in[N]
 	// F(0) = id
 	// d/dt F = A
 
-	float h = t / 100.;
-	float tol = 1.E-6;
+	float h = t / 10.;
+	float tol = 1.E-5;
 
 	for (int i = 0; i < N; i++) {
 
