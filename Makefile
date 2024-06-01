@@ -34,6 +34,7 @@ srcdir = $(root)/src
 libdir = $(root)/lib
 bindir = $(root)/bin
 
+export LOCKDIR?=${libdir}
 export BART_TOOLBOX_PATH=$(root)
 
 MAKEFILES = $(wildcard $(root)/Makefiles/Makefile.*)
@@ -77,8 +78,6 @@ LOG_BACKEND?=0
 LOG_SIEMENS_BACKEND?=0
 LOG_ORCHESTRA_BACKEND?=0
 LOG_GADGETRON_BACKEND?=0
-
-
 
 
 DESTDIR ?= /

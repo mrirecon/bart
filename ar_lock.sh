@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 if command -v flock > /dev/null ; then
-	flock `dirname $2`/.`basename $2`.lock -c "ar $*"
+	flock ${LOCKDIR}/.`basename $2`.lock -c "ar $*"
 	exit 0
 fi
 
