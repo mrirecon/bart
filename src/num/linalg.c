@@ -1009,12 +1009,6 @@ void logm_tri_matrix(int N, complex float out[N][N], const complex float in[N][N
 		w_shift[i] = 0.5 * weights[i];
 	}
 
-	complex float id[N][N];
-
-	for (int i = 0; i < N; i++)
-		for (int j = 0; j < N; j++)
-			id[i][j] = (i == j) ? 1. : 0.;
-
 	for (int d = 0; d < pade_approx_deg; d++) {
 
 		float ir = (float)r_shift[d];

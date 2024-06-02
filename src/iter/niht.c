@@ -24,11 +24,7 @@
 #include <assert.h>
 #include <complex.h>
 
-#include "num/ops.h"
-
 #include "misc/debug.h"
-#include "misc/misc.h"
-#include "misc/types.h"
 
 #include "iter/italgos.h"
 #include "iter/vec.h"
@@ -165,8 +161,8 @@ void niht(const struct niht_conf_s* conf, const struct niht_transop* trans,
 	double rsold = 1.; // previous residual
   
 	float mu = 1.; // step size
-	unsigned int ic = 0; // iteration counter for criterion 3
-	unsigned int iter = 0;
+	int ic = 0; // iteration counter for criterion 3
+	int iter = 0;
 	long N = conf->N;
 	long WN = trans->N;
 	
