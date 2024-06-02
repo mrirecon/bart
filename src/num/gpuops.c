@@ -334,7 +334,7 @@ void cuda_free(void* ptr)
 
 void* cuda_malloc(long size)
 {
-	return mem_device_malloc(size, cuda_malloc_wrapper);
+	return mem_device_malloc((size_t)size, cuda_malloc_wrapper);
 }
 
 void cuda_use_global_memory(void)
@@ -398,33 +398,33 @@ bool cuda_ondevice(const void* ptr)
 void cuda_clear(long size, void* dst)
 {
 	CUDA_ERROR_PTR(dst);
-	CUDA_ERROR(cudaMemsetAsync(dst, 0, size, cuda_get_stream()));
+	CUDA_ERROR(cudaMemsetAsync(dst, 0, (size_t)size, cuda_get_stream()));
 }
 
 static void cuda_float_clear(long size, float* dst)
 {
-	cuda_clear(size * sizeof(float), (void*)dst);
+	cuda_clear(size * (long)sizeof(float), (void*)dst);
 }
 
 void cuda_memcpy(long size, void* dst, const void* src)
 {
-	CUDA_ERROR(cudaMemcpyAsync(dst, src, size, cudaMemcpyDefault, cuda_get_stream()));
+	CUDA_ERROR(cudaMemcpyAsync(dst, src, (size_t)size, cudaMemcpyDefault, cuda_get_stream()));
 }
 
 void cuda_memcpy_strided(const long dims[2], long ostr, void* dst, long istr, const void* src)
 {
-	CUDA_ERROR(cudaMemcpy2DAsync(dst, ostr, src, istr, dims[0], dims[1], cudaMemcpyDefault, cuda_get_stream()));
+	CUDA_ERROR(cudaMemcpy2DAsync(dst, (size_t)ostr, src, (size_t)istr, (size_t)dims[0], (size_t)dims[1], cudaMemcpyDefault, cuda_get_stream()));
 }
 
 static void cuda_float_copy(long size, float* dst, const float* src)
 {
-	cuda_memcpy(size * sizeof(float), (void*)dst, (const void*)src);
+	cuda_memcpy(size * (long)sizeof(float), (void*)dst, (const void*)src);
 }
 
 
 static float* cuda_float_malloc(long size)
 {
-	return (float*)cuda_malloc(size * sizeof(float));
+	return (float*)cuda_malloc(size * (long)sizeof(float));
 }
 
 static void cuda_float_free(float* x)

@@ -229,10 +229,10 @@ static bool is_matrix(const long dims[3], const long strs[3], int i1, int i2, si
 {
 	assert(i1 != i2);
 
-	bool a = (   (strs[i1] == size)
+	bool a = (   (strs[i1] == (long)size)
 		  && (strs[i2] == (long)size * dims[i1]));
 
-	bool b = (   (strs[i2] == size)
+	bool b = (   (strs[i2] == (long)size)
 		  && (strs[i1] == (long)size * dims[i2]));
 
 	return a || b;
@@ -308,7 +308,7 @@ static int check_gemm(int N, long ndims[N], long nostrs[N], long nistrs1[N], lon
 	matrix = matrix && is_matrix(tdims, tistrs2, (ipos2 + 1) % 3, (ipos2 + 2) % 3, size);
 
 	// ipos1 is permuted to index 2:
-	matrix = matrix && (tostrs[ipos1] > size);
+	matrix = matrix && (tostrs[ipos1] > (long)size);
 
 	if (!matrix)
 		return -1;
@@ -385,12 +385,12 @@ static int check_gemv(int N, long ndims[N], long nostrs[N], long nistrs1[N], lon
 
 	bool matvecmul = true;
 
-	matvecmul = matvecmul && (0 == nostrs[0] % (long)size) && (size <= nostrs[0]) && (0 == nostrs[1]);	//(s*x, 0)
-	matvecmul = matvecmul && (0 == nistrs2[1] % (long)size) && (size <= nistrs2[1]) && (0 == nistrs2[0]);	//(0, s*x)
+	matvecmul = matvecmul && (0 == nostrs[0] % (long)size) && ((long)size <= nostrs[0]) && (0 == nostrs[1]);	//(s*x, 0)
+	matvecmul = matvecmul && (0 == nistrs2[1] % (long)size) && ((long)size <= nistrs2[1]) && (0 == nistrs2[0]);	//(0, s*x)
 
 	matvecmul = matvecmul && (0 == nistrs1[0] % (long)size) && (0 == nistrs1[1] % (long)size);
-	matvecmul = matvecmul && (   ((size == nistrs1[0]) && ((long)size * ndims[0] <= nistrs1[1]))
-				  || ((size == nistrs1[1]) && ((long)size * ndims[1] <= nistrs1[0])) );		//nistrs1: (s, (ndim[0]+x)*s) or ((ndim[1]+x)*s, s)
+	matvecmul = matvecmul && (   (((long)size == nistrs1[0]) && ((long)size * ndims[0] <= nistrs1[1]))
+				  || (((long)size == nistrs1[1]) && ((long)size * ndims[1] <= nistrs1[0])) );		//nistrs1: (s, (ndim[0]+x)*s) or ((ndim[1]+x)*s, s)
 
 	if (!matvecmul)
 		return -1;
@@ -429,7 +429,7 @@ static int check_ger(int N, long ndims[N], long nostrs[N], long nistrs1[N], long
 
 	N = simplify_dims(3, N, tdims, strs);
 
-	if ((2 > N) || ((size != tostrs[0]) && (size != tostrs[1])))
+	if ((2 > N) || (((long)size != tostrs[0]) && ((long)size != tostrs[1])))
 		return -1;
 
 	int perm[N];
@@ -437,8 +437,8 @@ static int check_ger(int N, long ndims[N], long nostrs[N], long nistrs1[N], long
 	for (int i = 2; i < N; i++)
 		perm[i] = i;
 
-	perm[0] = (tostrs[0] == size) ? 0 : 1;
-	perm[1] = (tostrs[0] == size) ? 1 : 0;
+	perm[0] = (tostrs[0] == (long)size) ? 0 : 1;
+	perm[1] = (tostrs[0] == (long)size) ? 1 : 0;
 
 	md_permute_dims(N, perm, ndims, tdims);
 	md_permute_dims(N, perm, nostrs, tostrs);
@@ -448,7 +448,7 @@ static int check_ger(int N, long ndims[N], long nostrs[N], long nistrs1[N], long
 	bool ger = true;
 	ger = ger && (0 == nistrs1[1]) && (0 < nistrs1[0]) && (0 == nistrs1[0] % (long)size);
 	ger = ger && (0 == nistrs2[0]) && (0 < nistrs2[1]) && (0 == nistrs2[1] % (long)size);
-	ger = ger && (size == nostrs[0]) && (0 == nostrs[1] % (long)size) && (nostrs[0] * ndims[0] <= nostrs[1]);
+	ger = ger && ((long)size == nostrs[0]) && (0 == nostrs[1] % (long)size) && (nostrs[0] * ndims[0] <= nostrs[1]);
 
 	return ger ? 2 : -1;
 }
@@ -571,9 +571,9 @@ static int check_dot_outer(int N, long ndims[N], long nostrs[N], long nistrs1[N]
 
 	N = simplify_dims(3, N, tdims, strs);
 
-	if ((1 > N) || (   (size != tostrs[0])  || (0 != tostrs[1])
-			|| (size != tistrs1[0]) || ((long)size * tdims[0] != tistrs1[1])
-			|| (size != tistrs2[0]) || ((long)size * tdims[0] != tistrs2[1]) ))
+	if ((1 > N) || (   ((long)size != tostrs[0])  || (0 != tostrs[1])
+			|| ((long)size != tistrs1[0]) || ((long)size * tdims[0] != tistrs1[1])
+			|| ((long)size != tistrs2[0]) || ((long)size * tdims[0] != tistrs2[1]) ))
 		return -1;
 
 	if (128 < tdims[0])
@@ -704,7 +704,7 @@ static int check_unfold(int N, long ndims[N], long nostrs[N], long nistrs1[N], l
 	if (0 == i)
 		return -1;
 
-	if ((1 == i) && (size == nostrs[0]) && (size == nistrs1[0]) && (size == nistrs2[0]))
+	if ((1 == i) && ((long)size == nostrs[0]) && ((long)size == nistrs1[0]) && ((long)size == nistrs2[0]))
 		return -1; // simple vecop case
 	
 	return MIN(2, i);
@@ -748,8 +748,8 @@ static int check_dgmm(int N, long ndims[N], long nostrs[N], long nistrs1[N], lon
 	for (int i = 2; i < N; i++)
 		perm[i] = i;
 
-	perm[0] = (tostrs[0] == size) ? 0 : 1;
-	perm[1] = (tostrs[0] == size) ? 1 : 0;
+	perm[0] = (tostrs[0] == (long)size) ? 0 : 1;
+	perm[1] = (tostrs[0] == (long)size) ? 1 : 0;
 
 	md_permute_dims(N, perm, ndims, tdims);
 	md_permute_dims(N, perm, nostrs, tostrs);
@@ -757,8 +757,8 @@ static int check_dgmm(int N, long ndims[N], long nostrs[N], long nistrs1[N], lon
 	md_permute_dims(N, perm, nistrs2, tistrs2);
 
 	bool dgmm = true;
-	dgmm = dgmm && (size == nostrs[0]) && (0 == nostrs[1] % (long)size) && ((long)size * ndims[0] <= nostrs[1]);
-	dgmm = dgmm && (size == nistrs1[0]) && (0 == nistrs1[1] % (long)size) && ((long)size * ndims[0] <= nistrs1[1]);
+	dgmm = dgmm && ((long)size == nostrs[0]) && (0 == nostrs[1] % (long)size) && ((long)size * ndims[0] <= nostrs[1]);
+	dgmm = dgmm && ((long)size == nistrs1[0]) && (0 == nistrs1[1] % (long)size) && ((long)size * ndims[0] <= nistrs1[1]);
 	dgmm = dgmm && (0 == nistrs2[0] % (long)size) && (0 == nistrs2[1] % (long)size);
 	dgmm = dgmm && (0 == nistrs2[0] * nistrs2[1]);
 	dgmm = dgmm && ((0 < nistrs2[0]) || (0 < nistrs2[1]));
@@ -807,9 +807,9 @@ static int check_reduce_outer(int N, long ndims[N], long nostrs[N], long nistrs1
 		return -1;
 
 	bool reduce = true;
-	reduce &= ((1 == tdims[0]) || (size == tostrs[0])) && (0 == tostrs[1]);
-	reduce &= ((1 == tdims[0]) || (size == tistrs1[0])) && (0 == tistrs1[1]);
-	reduce &= ((1 == tdims[0]) || (size == tistrs2[0])) && ((long)size * tdims[0] == tistrs2[1]);
+	reduce &= ((1 == tdims[0]) || ((long)size == tostrs[0])) && (0 == tostrs[1]);
+	reduce &= ((1 == tdims[0]) || ((long)size == tistrs1[0])) && (0 == tistrs1[1]);
+	reduce &= ((1 == tdims[0]) || ((long)size == tistrs2[0])) && ((long)size * tdims[0] == tistrs2[1]);
 
 	if (!reduce)
 		return -1;
@@ -862,7 +862,7 @@ static int check_reduce_inner(int N, long ndims[N], long nostrs[N], long nistrs1
 	bool reduce = true;
 	reduce &= ((0 == tostrs[0]));
 	reduce &= ((0 == tistrs1[0]));
-	reduce &= ((size == tistrs2[0]));
+	reduce &= (((long)size == tistrs2[0]));
 
 	if (!reduce)
 		return -1;
@@ -875,8 +875,8 @@ static int check_reduce_inner(int N, long ndims[N], long nostrs[N], long nistrs1
 	if (1 == N)
 		return 1;
 
-	reduce &= (size == tostrs[1]);
-	reduce &= (size == tistrs1[1]);
+	reduce &= ((long)size == tostrs[1]);
+	reduce &= ((long)size == tistrs1[1]);
 	reduce &= ((long)size * tdims[0] == tistrs2[1]);
 
 	return reduce ? 2 : 1;

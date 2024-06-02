@@ -659,7 +659,7 @@ void md_clear2(int D, const long dim[D], const long str[D], void* ptr, size_t si
 #ifdef 	USE_CUDA
 		if (use_gpu) {
 
-			cuda_clear(size2, ptr[0]);
+			cuda_clear((long)size2, ptr[0]);
 			return;
 		}
 #endif
@@ -932,7 +932,7 @@ void md_copy2(int D, const long dim[D], const long ostr[D], void* optr, const lo
 			goto out;
 
 		void* nptr[2] = { optr, (void*)iptr };
-		long sizes[2] = { md_calc_size(skip, tdims) * size, tdims[skip] };
+		long sizes[2] = { md_calc_size(skip, tdims) * (long)size, tdims[skip] };
 
 		skip++;
 
@@ -965,7 +965,7 @@ out:	;
 #ifdef  USE_CUDA
 		if (use_gpu) {
 
-			cuda_memcpy(size2, ptr[0], ptr[1]);
+			cuda_memcpy((long)size2, ptr[0], ptr[1]);
 			return;
 		}
 #endif
@@ -2264,7 +2264,7 @@ void* md_calloc(int D, const long dimensions[D], size_t size)
  */
 void* md_alloc_gpu(int D, const long dimensions[D], size_t size)
 {
-	return cuda_malloc(md_calc_size(D, dimensions) * size);
+	return cuda_malloc(md_calc_size(D, dimensions) * (long)size);
 }
 
 

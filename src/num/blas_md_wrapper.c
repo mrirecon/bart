@@ -623,7 +623,7 @@ void blas_zmul_cscal(int N, const long dims[N], const long ostr[N], complex floa
 	if (cuda_ondevice(optr)) {
 
 		if (optr != iptr1)
-			md_copy2(N, dims, ostr, optr, istr1, iptr1, size);
+			md_copy2(N, dims, ostr, optr, istr1, iptr1, (size_t)size);
 
 		blas2_cscal(dims[0], iptr2, ostr[0] / size, optr);
 
@@ -799,7 +799,7 @@ void blas_mul_sscal(int N, const long dims[N], const long ostr[N], float* optr, 
 	if (cuda_ondevice(optr)) {
 
 		if (optr != iptr1)
-			md_copy2(N, dims, ostr, optr, istr1, iptr1, size);
+			md_copy2(N, dims, ostr, optr, istr1, iptr1, (size_t)size);
 
 		blas2_sscal(dims[0], iptr2, ostr[0] / size, optr);
 

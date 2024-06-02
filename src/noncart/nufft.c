@@ -127,7 +127,7 @@ static complex float* compute_linphases(int N, long lph_dims[N + 1], unsigned lo
 	float shifts[1 << T][T];
 
 	int s = 0;
-	for (unsigned long i = 0; i < (1 << T); i++) {
+	for (unsigned long i = 0; i < (1ul << T); i++) {
 
 		bool skip = false;
 
@@ -1387,7 +1387,7 @@ static void nufft_apply_normal(const linop_data_t* _data, complex float* dst, co
 
 	assert(dst != src);
 
-	unsigned int ncycles = (unsigned int)data->lph_dims[data->N];
+	int ncycles = data->lph_dims[data->N];
 
 	if (data->conf.pcycle)
 		data->cycle = (data->cycle + 1) % ncycles;	// FIXME:

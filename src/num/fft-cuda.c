@@ -27,7 +27,7 @@
 #include "num/gpuops.h"
 
 #ifndef CFL_SIZE
-#define CFL_SIZE sizeof(complex float)
+#define CFL_SIZE (long)sizeof(complex float)
 #endif
 
 struct fft_cuda_plan_s {
@@ -187,8 +187,8 @@ static struct fft_cuda_plan_s* fft_cuda_plan0(int D, const long dimensions[D], u
 
 	// check that batch dimensions can be collapsed to one
 
-	bi = md_calc_blockdim(l, batchdims, batchistr, hmdims[0].is);
-	bo = md_calc_blockdim(l, batchdims, batchostr, hmdims[0].os);
+	bi = md_calc_blockdim(l, batchdims, batchistr, (size_t)hmdims[0].is);
+	bo = md_calc_blockdim(l, batchdims, batchostr, (size_t)hmdims[0].os);
 
 	if (bi != bo)
 		goto errout;
@@ -204,10 +204,10 @@ static struct fft_cuda_plan_s* fft_cuda_plan0(int D, const long dimensions[D], u
 
 		// check that batch dimensions can be collapsed to one
 
-		if (l - bi != md_calc_blockdim(l - bi, batchdims + bi, batchistr + bi, hmdims[bi].is))
+		if (l - bi != md_calc_blockdim(l - bi, batchdims + bi, batchistr + bi, (size_t)hmdims[bi].is))
 			goto errout;
 
-		if (l - bo != md_calc_blockdim(l - bo, batchdims + bo, batchostr + bo, hmdims[bo].os))
+		if (l - bo != md_calc_blockdim(l - bo, batchdims + bo, batchostr + bo, (size_t)hmdims[bo].os))
 			goto errout;
 
 		plan->idist = hmdims[bi].is;

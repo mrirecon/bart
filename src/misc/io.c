@@ -791,7 +791,7 @@ int read_ra(int fd, int n, long dimensions[n])
 	}
 
 	// this can overflow, but we check in mmio
-	err_assert(header.size == md_calc_size(n, dimensions) * (long)sizeof(complex float));
+	err_assert((long)header.size == md_calc_size(n, dimensions) * (long)sizeof(complex float));
 
 	return 0;
 }

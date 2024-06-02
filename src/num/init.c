@@ -92,7 +92,7 @@ static void num_init_internal(void)
 
 	if (NULL != (mem_str = getenv("BART_GPU_GLOBAL_MEMORY"))) {
 		
-		long mem = strtoul(mem_str, NULL, 10);
+		long mem = strtol(mem_str, NULL, 10);
 
 		if ((1 != mem) && (0 != mem))
 			error("BART_GPU_GLOBAL_MEMORY environment variable must be 0 or 1!\n");

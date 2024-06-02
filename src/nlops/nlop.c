@@ -758,7 +758,7 @@ struct flatten_graph_s {
 
 	INTERFACE(nlop_data_t);
 
-	size_t* off;
+	long* off;
 	const struct nlop_s* op;
 
 	const struct operator_s* der;
@@ -976,7 +976,7 @@ struct flatten_s {
 
 	INTERFACE(nlop_data_t);
 
-	size_t* off;
+	long* off;
 	const struct nlop_s* op;
 };
 
