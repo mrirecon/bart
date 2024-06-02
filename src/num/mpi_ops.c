@@ -161,6 +161,7 @@ void mpi_signoff_proc(bool signoff)
 #endif
 }
 
+#ifdef USE_MPI
 #ifdef USE_CUDA
 static void print_cuda_aware_warning(void)
 {
@@ -172,7 +173,7 @@ static void print_cuda_aware_warning(void)
 	printed = true;
 }
 #endif
-
+#endif
 
 void mpi_sync(void)
 {
@@ -182,6 +183,7 @@ void mpi_sync(void)
 #endif
 }
 
+#ifdef USE_MPI
 #ifdef USE_CUDA
 static void mpi_bcast_selected_gpu(bool tag, void* ptr, long size, int root)
 {
@@ -190,7 +192,7 @@ static void mpi_bcast_selected_gpu(bool tag, void* ptr, long size, int root)
 
 	print_cuda_aware_warning();
 
-	void* tmp = xmalloc(size);
+	void* tmp = xmalloc((size_t)size);
 	
 	if (mpi_get_rank() == root)
 		cuda_memcpy(size, tmp, ptr);
@@ -202,6 +204,7 @@ static void mpi_bcast_selected_gpu(bool tag, void* ptr, long size, int root)
 
 	xfree(tmp);
 }
+#endif
 #endif
 
 void mpi_bcast_selected(bool tag, void* ptr, long size, int root)
@@ -439,6 +442,7 @@ void mpi_gather_batch(void* dst, long count, const void* src, size_t size)
 * Reduction kernels
 */
 
+#ifdef USE_MPI
 #ifdef USE_CUDA
 static void mpi_reduce_land_gpu(long N, bool vec[N])
 {
@@ -454,6 +458,7 @@ static void mpi_reduce_land_gpu(long N, bool vec[N])
 	cuda_memcpy(size, vec, tmp);
 	xfree(tmp);
 }
+#endif
 #endif
 
 void mpi_reduce_land(long N, bool vec[__VLA(N)])

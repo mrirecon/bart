@@ -143,7 +143,6 @@ int main_grog(int argc, char* argv[argc])
 	const char* data_file = NULL;
 	const char* grid_traj_file = NULL;
 	const char* grid_data_file = NULL;
-	const char* measure_file = NULL;
 
 	int calib_spokes = -1;
 
