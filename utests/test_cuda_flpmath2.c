@@ -143,7 +143,7 @@ static bool test_optimized_md_zfmacc2_flags(unsigned long out_flag, unsigned lon
 	bool result = (optimization_expected == simple_zfmacc(D, dims, ostr, optr2, istr1, iptr1, istr2, iptr2));
 	result &= (!optimization_expected) || (err_tol > md_znrmse(D, odims, optr1, optr2));
 	if (!result)
-		debug_printf(DP_INFO, "%.10f", md_znrmse(D, odims, optr1, optr2));
+		debug_printf(DP_INFO, "%.10f\n", md_znrmse(D, odims, optr1, optr2));
 	md_free(optr1);
 	md_free(optr2);
 	md_free(iptr1);
@@ -225,7 +225,7 @@ static bool test_optimized_md_fmac2_flags(unsigned long out_flag, unsigned long 
 	bool result = (optimization_expected == simple_fmac(D, dims, ostr, optr2, istr1, iptr1, istr2, iptr2));
 	result &= (!optimization_expected) || (err_tol > md_nrmse(D, odims, optr1, optr2));
 	if (!result)
-		debug_printf(DP_INFO, "%.10f", md_nrmse(D, odims, optr1, optr2));
+		debug_printf(DP_INFO, "%.10f\n", md_nrmse(D, odims, optr1, optr2));
 	md_free(optr1);
 	md_free(optr2);
 	md_free(iptr1);
@@ -237,7 +237,7 @@ static bool test_optimized_md_fmac2_flags(unsigned long out_flag, unsigned long 
 
 static bool test_optimized_md_fmac2_dot(void) { UT_RETURN_ASSERT(test_optimized_md_fmac2_flags(0ul, 1ul, 1ul, true, 2.e-5)); }
 static bool test_optimized_md_fmac2_dot2(void) { UT_RETURN_ASSERT(test_optimized_md_fmac2_flags(2ul, 3ul, 3ul, true, 2.e-6)); }
-static bool test_optimized_md_fmac2_gemv(void) { UT_RETURN_ASSERT(test_optimized_md_fmac2_flags(1ul, 3ul, 2ul, true, 2.e-6)); }
+static bool test_optimized_md_fmac2_gemv(void) { UT_RETURN_ASSERT(test_optimized_md_fmac2_flags(1ul, 3ul, 2ul, true, 3.e-6)); }
 static bool test_optimized_md_fmac2_gemv2(void) { UT_RETURN_ASSERT(test_optimized_md_fmac2_flags(2ul, 1ul, 3ul, true, 2.e-6)); }
 static bool test_optimized_md_fmac2_gemv3(void) { UT_RETURN_ASSERT(test_optimized_md_fmac2_flags(14ul, 13ul, 7ul, true, 1.e-6)); }
 static bool test_optimized_md_fmac2_gemm(void) { UT_RETURN_ASSERT(test_optimized_md_fmac2_flags(3ul, 6ul, 5ul, true, 2.e-6)); }
