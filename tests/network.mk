@@ -215,7 +215,7 @@ tests/test-reconet-nnmodl-train-basis: nrmse $(TESTS_OUT)/weights.ra reconet rep
 	$(TOOLDIR)/scale 0.70710678118 bas1 bas2							;\
 	$(TOOLDIR)/resize 5 2 bas2 bas									;\
 	$(TOOLDIR)/reconet --network modl --initial-reco=sense -Bbas --test -t -n --train-algo e=1 -b2 --pattern=pat.ra --trajectory=$(TESTS_OUT)/traj_net.ra trn_ksp.ra $(TESTS_OUT)/train_sens.ra weights0 trn_ref.ra		;\
-	$(TOOLDIR)/reconet --network modl --initial-reco=sense -Bbas --test -t -n --train-algo e=10 -b2 --trajectory=$(TESTS_OUT)/traj_net.ra --pattern=pat.ra trn_ksp.ra $(TESTS_OUT)/train_sens.ra weights1 trn_ref.ra	;\
+	$(TOOLDIR)/reconet --network modl --initial-reco=sense -Bbas --test -t -n --train-algo e=20 -b2 --trajectory=$(TESTS_OUT)/traj_net.ra --pattern=pat.ra trn_ksp.ra $(TESTS_OUT)/train_sens.ra weights1 trn_ref.ra	;\
 	$(TOOLDIR)/reconet --network modl --initial-reco=sense -Bbas --test -a -n --trajectory=$(TESTS_OUT)/traj_net.ra --pattern=pat.ra tst_ksp.ra $(TESTS_OUT)/test_sens.ra weights0 out0.ra					;\
 	$(TOOLDIR)/reconet --network modl --initial-reco=sense -Bbas --test -a -n --trajectory=$(TESTS_OUT)/traj_net.ra --pattern=pat.ra tst_ksp.ra $(TESTS_OUT)/test_sens.ra weights1 out1.ra					;\
 	if [ 1 == $$( echo "`$(TOOLDIR)/nrmse out0.ra tst_ref.ra` <= 1.05 * `$(TOOLDIR)/nrmse out1.ra tst_ref.ra`" | bc ) ] ; then \
