@@ -260,9 +260,16 @@ static complex double gaussian_rand_state(struct bart_rand_state* state)
 	double u1, u2, s;
 	uint64_t out[2];
 
+	// We initialize a new PRNG here, so that we never repeat random numbers
+	// Without this, it might happen that two calls of md_gaussian_rand() might repeat random numbers (as the counter states are the same)
+	philox_4x32(state->state, state->ctr1, state->ctr2, out);
+	state->ctr1++;
+
+	struct bart_rand_state gauss_state = { .num_rand_seed = 0, .state = out[0], .ctr1 = 0, .ctr2 = 0 };
+
 	do {
-		philox_4x32(state->state, state->ctr1, state->ctr2, out);
-		state->ctr1++;
+		philox_4x32(gauss_state.state, gauss_state.ctr1, gauss_state.ctr2, out);
+		gauss_state.ctr1++;
 
 		u1 = 2. * ull2double(out[0]) - 1.;
 		u2 = 2. * ull2double(out[1]) - 1.;

@@ -63,9 +63,13 @@ __device__ static cuDoubleComplex gaussian_stable_rand(struct philox_state state
 	double u1, u2, s;
 	uint64_t out[2];
 
+	philox_4x32(state.state, state.ctr1, state.ctr2, out);
+
+	struct philox_state gauss_state = { .state = out[0], .ctr1 = 0, .ctr2 = 0 };
+
 	do {
-		philox_4x32(state.state, state.ctr1, state.ctr2, out);
-		state.ctr1++;
+		philox_4x32(gauss_state.state, gauss_state.ctr1, gauss_state.ctr2, out);
+		gauss_state.ctr1++;
 
 		u1 = 2. * ull2double(out[0]) - 1.;
 		u2 = 2. * ull2double(out[1]) - 1.;
