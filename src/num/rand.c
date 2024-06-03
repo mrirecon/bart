@@ -335,7 +335,7 @@ static void md_gaussian_philox_rand(int D, const long dims[D], complex float* ds
 {
 
 	struct bart_rand_state worker_state;
-	#pragma omp critical(global_rand_state)
+#pragma omp critical(global_rand_state)
 	{
 		worker_state = global_rand_state[cfl_loop_worker_id()];
 		global_rand_state[cfl_loop_worker_id()].ctr1++;
@@ -390,7 +390,7 @@ static void md_uniform_philox_rand(int D, const long dims[D], complex float* dst
 {
 
 	struct bart_rand_state worker_state;
-	#pragma omp critical(global_rand_state)
+#pragma omp critical(global_rand_state)
 	{
 		worker_state = global_rand_state[cfl_loop_worker_id()];
 		global_rand_state[cfl_loop_worker_id()].ctr1++;
@@ -442,7 +442,7 @@ static void md_philox_rand_one(int D, const long dims[D], complex float* dst, do
 {
 
 	struct bart_rand_state worker_state;
-	#pragma omp critical(global_rand_state)
+#pragma omp critical(global_rand_state)
 	{
 		worker_state = global_rand_state[cfl_loop_worker_id()];
 		global_rand_state[cfl_loop_worker_id()].ctr1++;
