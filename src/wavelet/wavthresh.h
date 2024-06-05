@@ -10,6 +10,6 @@ extern const struct operator_p_s* prox_wavelet_thresh_create(int N, const long d
 				enum wtype wtype, const long minsize[N], float lambda, bool randshift);
 
 
-extern void wavthresh_rand_state_set(const struct operator_p_s* op, int x);
+extern void wavthresh_rand_state_set(const struct operator_p_s* op, unsigned long long x);
 
 
