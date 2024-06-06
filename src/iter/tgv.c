@@ -31,6 +31,8 @@
  * */
 struct reg2 tgv_reg(unsigned long flags, unsigned long jflags, float lambda, int N, const long out_dims[N], int* ext_shift)
 {
+	assert(1 <= N);
+
 	long in_dims[N];
 	struct reg2 reg2;
 
