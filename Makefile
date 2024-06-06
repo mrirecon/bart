@@ -79,13 +79,6 @@ ALLMAKEFILES = $(root)/Makefile $(wildcard $(root)/Makefile.* $(root)/*.mk $(roo
 
 
 
-# for debug backtraces
-ifeq ($(DEBUG_DWARF),1)
-DEBUG=1
-LIBS += -ldw -lunwind
-CPPFLAGS += -DUSE_DWARF
-endif
-
 DESTDIR ?= /
 PREFIX ?= usr/local/
 
@@ -115,14 +108,6 @@ else
 	ARFLAGS ?= rs
 endif
 
-ifeq ($(BUILDTYPE), Linux)
-ifneq ($(OPENBLAS), 1)
-ifneq (,$(findstring Red Hat,$(shell gcc --version)))
-	CPPFLAGS+=-I/usr/include/lapacke/
-	LDFLAGS+=-L/usr/lib64/atlas -ltatlas
-endif
-endif
-endif
 
 ifeq ($(UNAME),Cygwin)
 	BUILDTYPE = Cygwin
@@ -142,12 +127,6 @@ ifneq (,$(findstring MSYS,$(UNAME)))
 	NOLAPACKE ?= 1
 	SLINK = 1
 endif
-
-ifeq ($(MNAME),riscv64)
-	CFLAGS+=-ffp-contract=off
-endif
-
-
 
 # Automatic dependency generation
 
@@ -179,6 +158,17 @@ endif
 endif
 
 
+# for debug backtraces
+ifeq ($(DEBUG_DWARF),1)
+DEBUG=1
+LIBS += -ldw -lunwind
+CPPFLAGS += -DUSE_DWARF
+endif
+
+
+ifeq ($(MNAME),riscv64)
+	CFLAGS+=-ffp-contract=off
+endif
 
 
 # openblas
@@ -194,6 +184,15 @@ ifeq ($(MACPORTS),1)
 	CPPFLAGS += -DUSE_MACPORTS
 endif
 	BLAS_BASE ?= /usr/local/opt/openblas/
+endif
+endif
+
+ifeq ($(BUILDTYPE), Linux)
+ifneq ($(OPENBLAS), 1)
+ifneq (,$(findstring Red Hat,$(shell gcc --version)))
+	CPPFLAGS+=-I/usr/include/lapacke/
+	LDFLAGS+=-L/usr/lib64/atlas -ltatlas
+endif
 endif
 endif
 
