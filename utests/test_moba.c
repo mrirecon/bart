@@ -156,8 +156,6 @@ static bool test_nlop_blochfun(void)
 	complex float* dst = md_alloc(N, out_dims, CFL_SIZE);
 	complex float* src = md_alloc(N, in_dims, CFL_SIZE);
 
-	bool gpu_use = false;
-
 	struct moba_conf_s data;
 
         data.sim.seq = simdata_seq_defaults;

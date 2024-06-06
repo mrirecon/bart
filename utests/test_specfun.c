@@ -27,7 +27,7 @@ static bool test_sine_integral(void)
 				{ 100,	1.562226 }
 	};
 
-	for (int i = 0; i < ARRAY_SIZE(tests); i++) {
+	for (int i = 0; i < (long) ARRAY_SIZE(tests); i++) {
 
 		if ((Si(tests[i][0]) - tests[i][1]) > 10E-5)
 			return 0;
@@ -73,7 +73,7 @@ static bool test_gamma_func(void)
 				{ 3.5, 3.32335097044784}
 		};
 
-	for (int i = 0; i < ARRAY_SIZE(tests); i++)
+	for (int i = 0; i < (long) ARRAY_SIZE(tests); i++)
 		if (fabs(gamma_func(tests[i][0]) - tests[i][1]) > 10E-12)
 			return 0;
 
@@ -98,7 +98,7 @@ static bool test_hyp2f1(void)
 		{ 1., -2., 3., 0.2, 0.873333333333333},
 		{ -1., 2., 3., 0.4, 0.733333333333333} };
 
-	for (int i = 0; i < ARRAY_SIZE(tests); i++) {
+	for (int i = 0; i < (long) ARRAY_SIZE(tests); i++) {
 
 		double val = hyp2f1(tests[i][0], tests[i][1], tests[i][2], tests[i][3]);
 		// debug_printf(DP_INFO, "%1.15e,\t%1.15e\n", val, tests[i][4]);
@@ -133,7 +133,7 @@ static bool test_legendre(void)
 		{ 4.,	0., 0.375},
 		{ 4.,	1., 1.} };
 
-	for (int i = 0; i < ARRAY_SIZE(tests); i++) {
+	for (int i = 0; i < (long) ARRAY_SIZE(tests); i++) {
 
 		double val = legendre(tests[i][0], tests[i][1]);
 		// debug_printf(DP_INFO, "%1.15e,\t%1.15e\n", val, tests[i][2]);
