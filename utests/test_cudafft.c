@@ -24,7 +24,7 @@
 
 
 
-static bool run_cuda_fft_test(const unsigned int D, const long* dims, const unsigned long flags,
+static bool run_cuda_fft_test(const int D, const long* dims, const unsigned long flags,
 			       const complex float* in, complex float* cpu_inout,
 			       complex float* gpu_inout, complex float* gpu_result)
 {
