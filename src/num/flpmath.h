@@ -29,7 +29,7 @@
 #define MD_REAL_STRS(N, strs, size)					\
 ({									\
 	int _N = (N);							\
-	long* _strs = alloca((size_t)((_N + 1) * (long)sizeof(long));	\
+	long* _strs = alloca((size_t)((_N + 1) * (long)sizeof(long)));	\
 	md_copy_dims(_N, _strs + 1, strs);				\
 	_strs[0] = (size);						\
 	_strs;								\
