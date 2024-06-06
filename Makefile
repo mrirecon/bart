@@ -136,6 +136,9 @@ ALLDEPS = $(shell find $(srcdir) utests -name ".*.d")
 
 
 # Compilation flags
+ifeq ($(DEBUG_DWARF),1)
+DEBUG=1
+endif
 
 ifneq ($(DEBUG),1)
 	OPT = -O2
@@ -160,7 +163,6 @@ endif
 
 # for debug backtraces
 ifeq ($(DEBUG_DWARF),1)
-DEBUG=1
 LIBS += -ldw -lunwind
 CPPFLAGS += -DUSE_DWARF
 endif
