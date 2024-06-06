@@ -1396,7 +1396,7 @@ static void nufft_apply_normal(const linop_data_t* _data, complex float* dst, co
 
 	for (int i = 0; i < ncycles; i++) {
 
-		if (data->conf.pcycle && (i != (int)data->cycle))
+		if (data->conf.pcycle && (i != data->cycle))
 			continue;
 
 		toeplitz_mult_lowmem(data, i, dst, src);

@@ -517,7 +517,7 @@ static void fft_apply(const operator_data_t* _plan, int N, void* args[N])
 
 #pragma 	omp critical(cufft_create_plan_in_threads)
 		if (NULL == plan->cuplan)
-			((struct fft_plan_s*)plan)->cuplan = fft_cuda_plan(plan->D, plan->dims, plan->flags, plan->ostrs, plan->istrs, plan->backwards);
+			plan->cuplan = fft_cuda_plan(plan->D, plan->dims, plan->flags, plan->ostrs, plan->istrs, plan->backwards);
 #endif
 		if (NULL == plan->cuplan)
 			error("Failed to plan a GPU FFT (too large?)\n");
