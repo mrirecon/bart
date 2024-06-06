@@ -53,6 +53,7 @@ PARALLEL_NJOBS?=
 FORTRAN?=1
 PNG?=1
 DEBUG_DWARF?=0
+WERROR?=0
 
 LOG_BACKEND?=0
 LOG_SIEMENS_BACKEND?=0
@@ -165,6 +166,10 @@ endif
 ifeq ($(DEBUG_DWARF),1)
 LIBS += -ldw -lunwind
 CPPFLAGS += -DUSE_DWARF
+endif
+
+ifeq ($(WERROR),1)
+CFLAGS += -Werror
 endif
 
 
