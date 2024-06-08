@@ -390,7 +390,7 @@ static void print_help(const char* help_str_prefix, const char* help_str, bool d
 
 static const char* arg_type_str(enum ARG_TYPE type);
 
-static void print_interface(FILE* fp, const char* name, const char* usage_str, const char* help_str, int n, const struct opt_s opts[static n ?: 1], int m, struct arg_s args[m ?: 1])
+static void print_interface(FILE* fp, const char* name, const char* usage_str, const char* help_str, int n, const struct opt_s opts[static n ?: 1], int m, const struct arg_s args[m ?: 1])
 {
 	fprintf(fp, "name: %s, usage_str: \"%s\", help_str: \"%s\"\n", name, usage_str, help_str);
 
@@ -464,7 +464,7 @@ static void add_argnames(int n, struct opt_s wopts[n ?: 1])
 }
 
 
-static void process_option(char c, const char* optarg, const char* name, const char* usage_str, const char* help_str, int n, const struct opt_s opts[n ?: 1], int m, struct arg_s args[m ?: 1])
+static void process_option(char c, const char* optarg, const char* name, const char* usage_str, const char* help_str, int n, const struct opt_s opts[n ?: 1], int m, const struct arg_s args[m ?: 1])
 {
 	if ('h' == c) {
 
@@ -498,7 +498,7 @@ static void process_option(char c, const char* optarg, const char* name, const c
 }
 
 
-int options(int* argcp, char* argv[*argcp], const char* usage_str, const char* help_str, int n, const struct opt_s opts[n], int m, struct arg_s args[m], bool stop_at_nonopt)
+int options(int* argcp, char* argv[*argcp], const char* usage_str, const char* help_str, int n, const struct opt_s opts[n], int m, const struct arg_s args[m], bool stop_at_nonopt)
 {
 	int argc = *argcp;
 
@@ -1083,7 +1083,7 @@ static int add_tuple_args(int bufsize, char buf[static bufsize], const struct ar
 
 
 
-void cmdline(int* argcp, char* argv[*argcp], int m, struct arg_s args[m], const char* help_str, int n, const struct opt_s opts[n])
+void cmdline(int* argcp, char* argv[*argcp], int m, const struct arg_s args[m], const char* help_str, int n, const struct opt_s opts[n])
 {
 	check_args(m, args);
 
