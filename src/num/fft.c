@@ -23,7 +23,12 @@
 #include <stdbool.h>
 #include <math.h>
 
+#ifndef NO_FFTW
 #include <fftw3.h>
+#else
+#include <stdio.h>
+typedef void *fftwf_plan;
+#endif
 
 #include "num/multind.h"
 #include "num/flpmath.h"
@@ -417,6 +422,7 @@ static char* fftw_wisdom_name(int N, bool backwards, unsigned long flags, const 
 }
 
 
+#ifndef NO_FFTW
 static fftwf_plan fft_fftwf_plan(int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src, bool backwards, bool measure)
 {
 	fftwf_plan fftwf;
@@ -455,7 +461,7 @@ static fftwf_plan fft_fftwf_plan(int D, const long dimensions[D], unsigned long 
 				l++;
 			}
 		}
-
+#ifndef NO_FFTW
 		fftwf = fftwf_plan_guru64_dft(k, dims, l, hmdims, (complex float*)src, dst,
 					backwards ? 1 : (-1), measure ? FFTW_MEASURE : FFTW_ESTIMATE);
 
@@ -465,10 +471,14 @@ static fftwf_plan fft_fftwf_plan(int D, const long dimensions[D], unsigned long 
 			fftwf_export_wisdom_to_filename(wisdom);
 			xfree(wisdom);
 		}
+#else
+		assert(0);
+#endif
 	}
 
 	return fftwf;
 }
+#endif
 
 
 static void fft_apply(const operator_data_t* _plan, int N, void* args[N])
@@ -528,7 +538,9 @@ static void fft_apply(const operator_data_t* _plan, int N, void* args[N])
 #endif
 	{
 		assert(NULL != plan->fftw);
+#ifndef NO_FFTW
 		fftwf_execute_dft(plan->fftw, (complex float*)src, dst);
+#endif
 	}
 }
 
@@ -536,10 +548,10 @@ static void fft_apply(const operator_data_t* _plan, int N, void* args[N])
 static void fft_free_plan(const operator_data_t* _data)
 {
 	const auto plan = CAST_DOWN(fft_plan_s, _data);
-
+#ifndef NO_FFTW
 	if (NULL != plan->fftw)
 		fftwf_destroy_plan(plan->fftw);
-
+#endif
 	if (NULL != plan->fft_flags_only)
 		operator_free(plan->fft_flags_only);
 
@@ -570,9 +582,10 @@ static const struct operator_s* fft_measure_create_int(int D, const long dimensi
 
 	plan->fftw = NULL;
 
+#ifndef NO_FFTW
 	if (0u != flags)
 		plan->fftw = fft_fftwf_plan(D, dimensions, flags, strides, dst, strides, src, backwards, true);
-
+#endif
 	plan->fft_flags_only = NULL;
 
 	if (!nested) {
@@ -628,9 +641,10 @@ static const struct operator_s* fft_create2_int(int D, const long dimensions[D],
 
 	plan->fftw = NULL;
 
+#ifndef NO_FFTW
 	if (0u != flags)
 		plan->fftw = fft_fftwf_plan(D, dimensions, flags, ostrides, dst, istrides, src, backwards, false);
-
+#endif
 	plan->fft_flags_only = NULL;
 
 	if (!nested) {

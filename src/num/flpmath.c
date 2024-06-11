@@ -44,6 +44,9 @@
 #include "num/loop.h"
 #include "num/mpi_ops.h"
 #include "num/vptr.h"
+#ifdef NO_BLAS
+#include "num/linalg.h"
+#endif
 
 #include "misc/misc.h"
 #include "misc/types.h"
@@ -1164,7 +1167,7 @@ static bool simple_matmul(int N, const long max_dims[N], const long ostrs[N], co
 	if ((3 == ND) && detect_matrix(dims, ostrs2, istrs2, mstrs2)) {
 
 		debug_printf(DP_DEBUG4, "matmul: matrix multiplication (1).\n");
-#if 0
+#ifdef NO_BLAS
 		// num/linalg.h
 
 		mat_mul(A, B, C,
@@ -1183,7 +1186,7 @@ static bool simple_matmul(int N, const long max_dims[N], const long ostrs[N], co
 	if ((3 == ND) && detect_matrix(dims, ostrs2, mstrs2, istrs2)) {
 
 		debug_printf(DP_DEBUG4, "matmul: matrix multiplication (2).\n");
-#if 0
+#ifdef NO_BLAS
 		// num/linalg.h
 
 		mat_mul(A, B, C,

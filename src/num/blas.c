@@ -9,6 +9,8 @@
  * 2019-2021 Moritz Blumenthal
  */
 
+#ifndef NO_BLAS
+
 #include <assert.h>
 #include <complex.h>
 #include <stdbool.h>
@@ -807,4 +809,5 @@ void blas_matrix_zfmac(long M, long N, long K, complex float* C, const complex f
 	blas_cgemm(transa, transb, M, N, K, 1., lda, A, ldb, B, 1., M, C);
 }
 
+#endif
 

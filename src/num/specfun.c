@@ -471,6 +471,7 @@ static int compare(const void* a, const void* b)
 	return out;
 }
 
+#ifndef NO_LAPACK
 // Compute weights and sample points for Gauss-Legendre quadrature
 void roots_weights_gauss_legendre(const int N, double mu0, double roots[N], double weights[N])
 {
@@ -557,3 +558,6 @@ void roots_weights_gauss_legendre(const int N, double mu0, double roots[N], doub
 	for (int i = 0; i < N; i++)
 		weights[i] *= mu0 / sum;
 }
+#endif
+
+

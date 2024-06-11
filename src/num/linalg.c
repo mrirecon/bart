@@ -30,10 +30,9 @@
 
 #ifdef MAT_USE_LAPACK
 #include "num/blas.h"
-#include "num/lapack.h"
 #endif
-#include "num/rand.h"
 #include "num/lapack.h"
+#include "num/rand.h"
 #include "num/specfun.h"
 
 #include "linalg.h"
@@ -302,6 +301,7 @@ void mat_svd_recov(int A, int B, complex float out[A][B], const complex float U[
 	mat_mul(A, A, B, out, U, VH2);
 }
 
+#ifndef NO_LAPACK
 // Wrapper for lapack including row-major definition of svd
 void mat_svd(int A, int B, complex float U[A][A], complex float VH[B][B], float S[A], const complex float in[A][B])
 {
@@ -429,6 +429,7 @@ void mat_eig_double(int A, double EV[A], const double in[A][A])
 	for (int i = 0; i < A; i++)
 		EV[i] = creal(tmp2[i]);
 }
+#endif
 
 
 void mat_kron(int A, int B, int C, int D,
@@ -536,6 +537,7 @@ void pack_tri_matrix(int N, complex float cov[N * (N + 1) / 2], const complex fl
 			cov[l++] = m[i][j];
 }
 
+#ifndef NO_LAPACK
 // Solve M x = N for x with non-unit triangular matrix M
 void solve_tri_matrix(int A, int B, complex float M[A][A], complex float N[A][B], bool upper)
 {
@@ -1063,6 +1065,7 @@ void mat_logm(int N, complex float out[N][N], complex float in[N][N])
 	// Transform back from triangular shape
 	mat_schur_recov(N, out, U, Z);
 }
+#endif
 
 void unpack_tri_matrix(int N, complex float m[N][N], const complex float cov[N * (N + 1) / 2])
 {
