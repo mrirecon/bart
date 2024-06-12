@@ -25,6 +25,24 @@ $(eval $(foreach VAR,CC CXX CPP LD ARFLAGS ,$(eval $(call undef_builtin,$(VAR)))
 # use for parallel make
 AR=./ar_lock.sh
 
+# Paths
+
+here  = $(realpath $(dir $(lastword $(MAKEFILE_LIST))))
+root := $(here)
+
+srcdir = $(root)/src
+libdir = $(root)/lib
+bindir = $(root)/bin
+
+export BART_TOOLBOX_PATH=$(root)
+
+MAKEFILES = $(wildcard $(root)/Makefiles/Makefile.*)
+ALLMAKEFILES = $(root)/Makefile $(wildcard $(root)/Makefile.* $(root)/*.mk $(root)/rules/*.mk $(root)/Makefiles/Makefile.*)
+
+-include Makefile.$(NNAME)
+-include Makefile.local
+-include $(MAKEFILES)
+
 # some operations might still be non deterministic
 NON_DETERMINISTIC?=0
 
@@ -60,23 +78,6 @@ LOG_SIEMENS_BACKEND?=0
 LOG_ORCHESTRA_BACKEND?=0
 LOG_GADGETRON_BACKEND?=0
 
-# Paths
-
-here  = $(realpath $(dir $(lastword $(MAKEFILE_LIST))))
-root := $(here)
-
-srcdir = $(root)/src
-libdir = $(root)/lib
-bindir = $(root)/bin
-
-export BART_TOOLBOX_PATH=$(root)
-
-MAKEFILES = $(wildcard $(root)/Makefiles/Makefile.*)
-ALLMAKEFILES = $(root)/Makefile $(wildcard $(root)/Makefile.* $(root)/*.mk $(root)/rules/*.mk $(root)/Makefiles/Makefile.*)
-
--include Makefile.$(NNAME)
--include Makefile.local
--include $(MAKEFILES)
 
 
 
