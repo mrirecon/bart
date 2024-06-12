@@ -58,6 +58,10 @@
 #define DIMS 16
 #endif
 
+#ifdef __EMSCRIPTEN__
+int wasm_fds[WASM_MAX_FDS] = { };
+int wasm_fd_offset = 0;
+#endif
 
 static void io_error(const char* fmt, ...)
 {
@@ -908,6 +912,13 @@ complex float* shared_cfl(int D, const long dims[D], const char* name)
 	if (NULL == (addr = create_data(fd, 0, (size_t)T)))
 		error("shared cfl %s\n", name);
 
+#ifdef __EMSCRIPTEN__
+	// FIXME: This is a bug in emscripten.
+	// https://github.com/emscripten-core/emscripten/issues/15140
+	// https://github.com/emscripten-core/emscripten/issues/17801
+	wasm_fds[wasm_fd_offset++] = fd;
+	return addr;
+#endif
 	if (-1 == close(fd))
 		io_error("shared cfl %s\n", name);
 
@@ -1206,3 +1217,14 @@ void unmap_multi_cfl(int N, int D[N], const long* dimensions[N], _Complex float*
 #endif
 }
 
+#ifdef __EMSCRIPTEN__
+void wasm_close_fds(void)
+{
+	while (wasm_fd_offset > 0) {
+
+		int fd = wasm_fds[--wasm_fd_offset];
+		if (-1 == close(fd))
+			io_error("close_open_fds %d\n", fd);
+	}
+}
+#endif

@@ -78,6 +78,9 @@ static void bart_exit_cleanup(void)
 #ifdef USE_CUDA
 	cuda_memcache_clear();
 #endif
+#ifdef __EMSCRIPTEN__
+	wasm_close_fds();
+#endif
 }
 
 typedef int (main_fun_t)(int argc, char* argv[]);
@@ -279,6 +282,10 @@ static int batch_wrapper(main_fun_t* dispatch_func, int argc, char *argv[argc], 
 
 int main_bart(int argc, char* argv[argc])
 {
+	#ifdef __EMSCRIPTEN__
+	wasm_fd_offset = 0;
+	#endif
+
 	char* bn = basename(argv[0]);
 
 	// only skip over initial bart or bart.exe. calling "bart bart" is an error.

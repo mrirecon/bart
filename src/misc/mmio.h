@@ -44,5 +44,11 @@ extern _Complex float* load_zra(const char* name, int D, long dims[__VLA(D)]);
 extern _Complex float* create_zshm(const char* name, int D, const long dims[__VLA(D)]);
 extern _Complex float* load_zshm(const char* name, int D, long dims[__VLA(D)]);
 
+#ifdef __EMSCRIPTEN__
+#define WASM_MAX_FDS 100
+extern int wasm_fds[WASM_MAX_FDS];
+extern int wasm_fd_offset;
+void wasm_close_fds(void);
+#endif
 
 #include "misc/cppwrap.h"
