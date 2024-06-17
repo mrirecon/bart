@@ -158,7 +158,7 @@ int main_mobafit(int argc, char* argv[argc])
 		OPT_SELECT('B', enum seq_type, &seq, BSSFP, "bSSFP"),
 		OPT_SELECT('M', enum seq_type, &seq, MOLLI, "MOLLI"),
 #endif
-		OPT_SELECT('T', enum seq_type, &seq, TSE, "TSE"),
+		OPT_SELECT('T', enum seq_type, &seq, TSE, "Multi-Echo Spin Echo: f(M0, R2) = M0 * exp(-t * R2)"),
 		OPT_SELECT('I', enum seq_type, &seq, IR, "Inversion Recovery: f(M0, R1, c) =  M0 * (1 - exp(-t * R1 + c))"),
 		OPT_SELECT('L', enum seq_type, &seq, IR_LL, "Inversion Recovery Look-Locker"),
 		OPT_SELECT('G', enum seq_type, &seq, MGRE, "MGRE"),
