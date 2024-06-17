@@ -265,6 +265,8 @@ void iPALM(	long NI, long isize[__VLA(NI)], enum IN_TYPE in_type[__VLA(NI)], flo
 		struct iter_nlop_s nlop_batch_gen,
 		struct iter_op_s callback, struct monitor_iter6_s* monitor, const struct iter_dump_s* dump);
 
+void lbfgs(int maxiter, int M, float step, float ftol, float gtol, float c1, float c2, struct iter_op_s op, struct iter_op_s adj, int N, float *x, const struct vec_iter_s* vops);
+
 #include "misc/cppwrap.h"
 
 #endif // __ITALGOS_H

@@ -235,5 +235,33 @@ void iter4_irgnm2(const iter3_conf* _conf,
 	md_free(tmp);
 }
 
+void iter4_lbfgs(const iter3_conf* _conf,
+		struct nlop_s* nlop,
+		long N, float* dst, const float* ref,
+		long M, const float* src,
+		const struct operator_p_s* lsqr,
+		struct iter_op_s cb)
+{
+	struct iter4_nlop_s data = { { &TYPEID(iter4_nlop_s) }, *nlop };
+
+	auto cd = nlop_codomain(nlop);
+	auto dm = nlop_domain(nlop);
+
+	assert(M * (long)sizeof(float) == md_calc_size(cd->N, cd->dims) * (long)cd->size);
+	assert(N * (long)sizeof(float) == md_calc_size(dm->N, dm->dims) * (long)dm->size);
+	assert(2 == M);
+	assert(NULL == src);
+	assert(NULL == ref);
+	assert(NULL == lsqr);
+	(void)cb;
+
+	auto conf = CAST_DOWN(iter3_lbfgs_conf, _conf);
+
+	struct iter_op_s frw = { nlop_for_iter, CAST_UP(&data) };
+	struct iter_op_s adj = { nlop_adj_iter, CAST_UP(&data) };
+
+	lbfgs(conf->iter, conf->M, conf->step, conf->ftol, conf->gtol, conf->c1, conf->c2, frw, adj, N, dst, select_vecops(dst));
+}
+
 
 

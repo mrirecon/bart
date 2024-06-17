@@ -21,9 +21,11 @@ typedef void iter4_fun_f(const struct iter3_conf_s* _conf,
 iter4_fun_f iter4_irgnm;
 iter4_fun_f iter4_irgnm2;
 iter4_fun_f iter4_landweber;
+iter4_fun_f iter4_lbfgs;
 
 struct iter3_irgnm_conf;
 extern const struct iter3_irgnm_conf iter3_irgnm_defaults;
 extern const struct iter3_landweber_conf iter3_landweber_defaults;
+extern const struct iter3_lbfgs_conf iter3_lbfgs_defaults;
 
 

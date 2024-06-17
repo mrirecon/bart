@@ -48,6 +48,7 @@
 #include "iter/iter_dump.h"
 
 #include "italgos.h"
+#include "misc/types.h"
 
 extern inline void iter_op_call(struct iter_op_s op, float* dst, const float* src);
 extern inline void iter_nlop_call(struct iter_nlop_s op, int N, float* args[N]);
@@ -1506,3 +1507,295 @@ void iPALM(	long NI, long isize[NI], enum IN_TYPE in_type[NI], float* x[NI], flo
 			vops->del(args[o]);
 }
 
+
+static float compute_grad_obj(struct iter_op_s op, struct iter_op_s adj, float* grad, const float* arg, const struct vec_iter_s* vops)
+{
+	float result = 0;
+	float* tmp = vops->allocate(2);
+
+	iter_op_call(op, tmp, arg);
+	vops->copy(1, &result, tmp);
+
+	float one_var[2] = { 1., 0. };	// complex
+	vops->copy(2, tmp, one_var);
+
+	iter_op_call(adj, grad, tmp);
+	vops->del(tmp);
+
+	return result;
+}
+
+
+static bool line_search_backtracking(struct iter_op_s op, struct iter_op_s adj, const struct vec_iter_s* vops,
+		 int N, float x[N], const float xprev[N], float g[N], const float p[N],
+		 float* f, float* stp,
+		 float c1, float c2)
+{
+	const float dec = 0.5;
+	const float inc = 2.1;
+	const float stp_max = 1.e10;
+	const float stp_min = 1.e-10;
+	const int max_iter = 50;
+
+	bool armijo = (0 >= c2); //wolfe condition else
+	
+	if (0. >= *stp)
+		error("Non-positive step size!\n");
+
+	/* Compute the initial gradient in the search direction. */
+	float finit = *f;
+	float dginit = vops->dot(N, g, p);
+	float dgtest = c1 * dginit;
+	float fprev = 0;
+
+	
+	if (0 < dginit)
+		error("Non-decreasing search direction!\n");	
+
+	for (int i = 0; i < max_iter; i++) {
+
+		vops->axpbz(N, x, 1., xprev, *stp, p);
+
+		*f = compute_grad_obj(op, adj, g, x, vops);
+
+		float width;
+
+		if (*f > finit + *stp * dgtest) {
+
+			if ((i > 0) && (fabsf(finit - *f) < 1.e-6 * MAX(fabsf(finit), fabsf(*f))) && (fabsf(fprev - *f) < 1.e-6 * MAX(fabsf(fprev), fabsf(*f))))
+				return false;
+
+			width = dec;
+		} else {
+
+			if (armijo)
+				return true;
+
+			/* Check the Wolfe condition. */
+			float dg = vops->dot(N, g, p);
+
+			if (dg < c2 * dginit)
+				width = inc;
+			else
+				return true;
+		}
+
+		if (*stp < stp_min)
+			return false;
+
+		if (*stp > stp_max)
+			error("Backtracking maximum step size reached!\n");
+
+		(*stp) *= width;
+
+		fprev = *f;
+	}
+
+	return false;
+}
+
+#if 0
+//Algorithm 3.6 in Numerical Optimization by Jorge Nocedal & Stephen J. Wright
+static bool zoom(struct iter_op_s op, struct iter_op_s adj, const struct vec_iter_s* vops,
+		 int N,
+		 float x[N], const float xprev[N],
+		 float g[N],  const float p[N],
+		 float phi0, float phip0, float phi_lo,
+		 float* f, float* stp,
+		 float stp_hi, float stp_lo, float c1, float c2)
+{
+	for (int j = 0; j < 20; j++) {
+
+		if (fabsf(stp_hi - stp_lo) / MAX(stp_hi, stp_lo) < 1.e-5)
+			return true;
+
+		if (1.e-20 > MAX(stp_hi, stp_lo))
+			return false;
+
+		*stp = (stp_hi + stp_lo) / 2.;
+
+		vops->axpbz(N, x, 1., xprev, *stp, p);
+		*f = compute_grad_obj(op, adj, g, x, vops);
+
+		if ((*f > phi0 + c1 * (*stp) * phip0) || (*f >= phi_lo)) {
+
+			stp_hi = *stp;
+		} else {
+
+			float phip = vops->dot(N, g, p);
+
+			if (fabsf(phip) <= -c2 * phip0)
+				return true;
+
+			if (phip * (stp_hi - stp_lo) >= 0)
+				stp_hi = stp_lo;
+			
+			*stp = stp_hi;
+			phi_lo = *f;
+		}
+	}
+
+	debug_printf(DP_WARN,"L-BFGS: Maximum recursion in zoom! %e %e\n", stp_lo, stp_hi);
+	return false;
+}
+
+//Algorithm 3.6 in Numerical Optimization by Jorge Nocedal & Stephen J. Wright
+//after return f, x, and g will be updated
+static bool stepsize(struct iter_op_s op, struct iter_op_s adj, const struct vec_iter_s* vops,
+		 int N, float x[N], const float xprev[N], float g[N], const float p[N],
+		 float* f, float* stp,
+		 float c1, float c2)
+{
+	float aim1 = 0;
+
+	float phi0 = *f;
+	float phiaim1 = *f;
+
+	float phip0 = vops->dot(N, g, p);
+
+	for (int i = 1; i < 20; i++) {
+
+		vops->axpbz(N, x, 1., xprev, *stp, p);
+
+		float phiai = compute_grad_obj(op, adj, g, x, vops);
+
+		if ((phiai > phi0 + c1 * (*stp) * phip0) || ((phiai >= phiaim1) && (1 < i))) {
+
+			return zoom(op, adj, vops, N, x, xprev, g, p, phi0, phip0, phiaim1, f, stp, *stp, aim1, c1, c2);
+		}
+
+		float phipai = vops->dot(N, g, p);
+
+		if (fabsf(phipai) <= -c2 * phip0)
+			return true;
+
+		if (0 <= phipai)
+			return zoom(op, adj, vops, N, x, xprev, g, p, phi0, phip0, phiai, f, stp, aim1, *stp, c1, c2);
+
+		if (*stp > 1.e10)
+			return false;
+
+		aim1 = *stp;
+		phiaim1 = phiai;
+		(*stp) *=  2;
+	}
+
+	debug_printf(DP_WARN,"L-BFGS: Maximum recursion in stepsize estimation!\n");
+	return false;
+}
+
+#endif
+
+void lbfgs(int maxiter, int M, float step, float ftol, float gtol, float c1, float c2, struct iter_op_s op, struct iter_op_s adj, int N, float *x, const struct vec_iter_s* vops)
+{
+	float* y[M];
+	float* s[M];
+	float rho[M];
+
+	float* r = vops->allocate(N);
+
+	for (int i = 0; i < M; i++) {
+
+		y[i] = vops->allocate(N);;
+		s[i] = vops->allocate(N);;
+		rho[i] = 0;
+	}
+
+	float* gprev = vops->allocate(N);
+	float* xprev = vops->allocate(N);
+
+	float* g = vops->allocate(N);
+	float f = compute_grad_obj(op, adj, g, x, vops);
+
+	float* p = vops->allocate(N);
+
+	for (int k = 0; k < maxiter || -1 == maxiter; k++) {
+
+		debug_printf(DP_DEBUG1, "L-BFGS iter %d: obj: %e!\n", k, f);
+
+		if (gtol > vops->norm(N, g) / MAX(1., vops->norm(N, x))) {
+
+			debug_printf(DP_DEBUG1, "L-BFGS converged after %d iterations\n", k);
+			break;
+		}
+
+		float q[N];
+		vops->copy(N, q, g);
+
+		float alpha[M];
+
+		for (int ip = k - 1; ip >= MAX(k - M, 0); ip--) {
+
+			int i = ip % M;
+
+			alpha[i] = rho[i] * vops->dot(N, s[i], q);
+			vops->axpy(N, q, -alpha[i], y[i]);
+		}
+
+		float gamma = 1;
+		
+		if (0 < k) {
+
+			float num = vops->dot(N, s[(k - 1) % M], y[(k - 1) % M]);
+			float den = vops->dot(N, y[(k - 1) % M], y[(k - 1) % M]);
+
+			if ((0. >= num) || (0. == den))
+				gamma = 1.;
+			else
+				gamma = num / den;
+		}
+
+		vops->smul(N, gamma, r, q);
+
+		for (int ip = MAX(k - M, 0); ip < k; ip++) {
+
+			int i = ip % M;
+
+			float beta = rho[i] * vops->dot(N, y[i], r);
+			vops->axpy(N, r, alpha[i] - beta, s[i]);
+		}
+
+		vops->smul(N, -1, p, r);
+
+		vops->copy(N, xprev, x);
+		vops->copy(N, gprev, g);
+
+		float fprev = f;
+
+		if (!line_search_backtracking(op, adj, vops, N, x, xprev, g, p, &f, &step, c1, c2)) {
+
+			debug_printf(DP_DEBUG1, "L-BFGS terminated after %d iterations as no new stepsize could be found (stp = %e)!\n", k, step);
+
+			vops->copy(N, x, xprev);
+			vops->copy(N, g, gprev);
+			break;
+		}
+
+		if (ftol >= (fprev - f) / MAX(1., MAX(fabsf(fprev), fabsf(f)))) {
+
+			debug_printf(DP_DEBUG1, "L-BFGS converged after %d iterations with fopt=%e\n", k + 1, f);
+			break;
+		}
+
+		vops->sub(N, s[k % M], x, xprev);
+		vops->sub(N, y[k % M], g, gprev);
+		
+		rho[k % M] = 1. / vops->dot(N, y[k % M], s[k % M]);
+
+
+		if (0. >= c2)
+			step = 1.; //no increase in step size for armijo condition
+	}
+
+	vops->del(r);
+	vops->del(gprev);
+	vops->del(xprev);
+	vops->del(g);
+	vops->del(p);
+
+	for (int i = 0; i < M; i++) {
+
+		vops->del(y[i]);
+		vops->del(s[i]);
+	}
+}
