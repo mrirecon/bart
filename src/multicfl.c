@@ -33,7 +33,7 @@ int main_multicfl(int argc, char* argv[argc])
 		OPT_SET('s', &separate, "separate"),
 	};
 
-	long count = 0;
+	int count = 0;
 	const char** cfl_files = NULL;
 
 	struct arg_s args[] = {

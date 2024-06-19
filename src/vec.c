@@ -27,7 +27,7 @@ static const char help_str[] = "Create a vector of values.";
 
 int main_vec(int argc, char* argv[argc])
 {
-	long count = 0;
+	int count = 0;
 	complex float* vals = NULL;
 	const char* out_file = NULL;
 

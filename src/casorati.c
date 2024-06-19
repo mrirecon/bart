@@ -32,7 +32,7 @@ static const char help_str[] = "Casorati matrix with kernel (kern1, ..., kernN) 
 
 int main_casorati(int argc, char* argv[argc])
 {
-	long count = 0;
+	int count = 0;
 	unsigned int* dims = NULL;
 	unsigned int* kerns = NULL;
 	const char* in_file = NULL;

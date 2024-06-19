@@ -32,7 +32,7 @@ static const char help_str[] = "Copy an array (to a given position in the output
 
 int main_copy(int argc, char* argv[argc])
 {
-	long count = 0;
+	int count = 0;
 	long* dims = NULL;
 	long* poss = NULL;
 	const char* in_file = NULL;

@@ -40,7 +40,7 @@ static const char help_str[] =
 
 int main_join(int argc, char* argv[argc])
 {
-	long count = 0;
+	int count = 0;
 	int dim = -1;
 	const char** in_files = NULL;
 	const char* out_file = NULL;
@@ -74,7 +74,7 @@ int main_join(int argc, char* argv[argc])
 
 		assert(count > 1);
 
-		int len = strlen(out_file);
+		int len = (int)strlen(out_file);
 		char buf[len + 5];
 		strcpy(buf, out_file);
 		strcat(buf, ".cfl");

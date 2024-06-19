@@ -33,7 +33,7 @@ static const char help_str[] = "Resizes an array along dimensions to sizes by tr
 
 int main_resize(int argc, char* argv[argc])
 {
-	long count = 0;
+	int count = 0;
 	unsigned int* dims = NULL;
 	unsigned int* sizes = NULL;
 

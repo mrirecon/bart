@@ -27,7 +27,7 @@ static const char help_str[] = "Create a zero-filled array with {dims} dimension
 
 int main_zeros(int argc, char* argv[argc])
 {
-	long count = 0;
+	int count = 0;
 	long N = -1;
 	long* dims = NULL;
 

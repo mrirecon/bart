@@ -41,7 +41,7 @@ static const char help_str[] =
 
 int main_tensorflow(int argc, char* argv[argc])
 {
-	long count = 0;
+	int count = 0;
 	const char* graph = NULL;
 	const char* key = NULL;
 

@@ -151,7 +151,7 @@ struct arg_s {
 
 	bool required;
 	enum ARG_TYPE arg_type;
-	long* count;
+	int* count;
 	int nargs;
 	struct arg_single_s* arg;
 };

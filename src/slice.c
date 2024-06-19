@@ -36,7 +36,7 @@ static const char help_str[] = "Extracts a slice from positions along dimensions
 
 int main_slice(int argc, char* argv[argc])
 {
-	long count = 0;
+	int count = 0;
 	long* dims = NULL;
 	long* poss = NULL;
 

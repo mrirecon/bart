@@ -33,7 +33,7 @@ static const char help_str[] = "Extracts a sub-array along dims from index start
 
 int main_extract(int argc, char* argv[argc])
 {
-	long count = 0;
+	int count = 0;
 	long* dims = NULL;
 	long* starts = NULL;
 	long* ends = NULL;

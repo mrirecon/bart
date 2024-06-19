@@ -31,7 +31,7 @@ int main_poly(int argc, char* argv[argc])
 {
 	int L = -1;
 	int N = -1;
-	long count = 0;
+	int count = 0;
 	float* as = NULL;
 	const char* out_file = NULL;
 

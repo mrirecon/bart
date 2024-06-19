@@ -28,7 +28,7 @@ static const char help_str[] = "Create an array filled with ones with {dims} dim
 
 int main_ones(int argc, char* argv[argc])
 {
-	long count = 0;
+	int count = 0;
 	long N = -1;
 	long* dims = NULL;
 

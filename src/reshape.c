@@ -29,7 +29,7 @@ static const char help_str[] = "Reshape selected dimensions.";
 int main_reshape(int argc, char* argv[argc])
 {
 	unsigned long flags = 0;
-	long count = 0;
+	int count = 0;
 	long* dims = NULL;
 	const char* in_file = NULL;
 	const char* out_file = NULL;
