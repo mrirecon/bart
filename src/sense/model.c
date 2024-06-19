@@ -70,7 +70,7 @@ struct linop_s* linop_sampling_create(const long dims[DIMS], const long pat_dims
  * @param sens sensitivities
  */
 struct linop_s* maps_create(const long max_dims[DIMS], 
-			unsigned int sens_flags, const complex float* sens)
+			unsigned long sens_flags, const complex float* sens)
 {
 	long mps_dims[DIMS];
 	md_select_dims(DIMS, sens_flags, mps_dims, max_dims);
@@ -122,7 +122,7 @@ struct linop_s* maps2_create(const long coilim_dims[DIMS], const long maps_dims[
  * @param sens sensitivities
  */
 struct linop_s* sense_init(const long max_dims[DIMS], 
-			unsigned int sens_flags, const complex float* sens)
+			unsigned long sens_flags, const complex float* sens)
 {
 	long ksp_dims[DIMS];
 	md_select_dims(DIMS, ~MAPS_FLAG, ksp_dims, max_dims);

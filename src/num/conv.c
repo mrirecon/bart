@@ -28,7 +28,7 @@ struct conv_plan {
 	enum conv_type ctype;
 
 	int N;
-	unsigned int flags;
+	unsigned long flags;
 
 	const struct operator_s* fft1;
 	const struct operator_s* ifft1;

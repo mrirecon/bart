@@ -16,9 +16,9 @@ struct vec_ops;
 
 extern struct linop_s* linop_sampling_create(const long dims[DIMS], const long pat_dims[DIMS], const complex float* pattern);
 
-extern struct linop_s* sense_init(const long max_dims[DIMS], unsigned int sens_flags, const complex float* sens);
+extern struct linop_s* sense_init(const long max_dims[DIMS], unsigned long sens_flags, const complex float* sens);
 extern struct linop_s* maps_create(const long max_dims[DIMS], 
-			unsigned int sens_flags, const complex float* sens);
+			unsigned long sens_flags, const complex float* sens);
 extern struct linop_s* maps2_create(const long coilim_dims[DIMS], const long maps_dims[DIMS], const long img_dims[DIMS], const complex float* maps);
 
 
