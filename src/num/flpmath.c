@@ -4418,9 +4418,9 @@ void md_pdf_gauss(int D, const long dims[D], float* optr, const float* iptr, flo
 /* Sample multivariate normal distribution
  * with covariance matrix = diag([S,..S])
  */
-void md_zgausspdf(int D, const long dim[D], complex float *optr, complex float S)
+void md_zgausspdf(int D, const long dim[D], complex float *optr, float S)
 {
-	assert(cabsf(S) > 0);
+	assert(S > 0);
 
 	md_clear(D, dim, optr, CFL_SIZE);
 

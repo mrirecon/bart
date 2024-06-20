@@ -218,7 +218,7 @@ static void rbf_der2(const nlop_data_t* _data, int /*o*/, int /*i*/, complex flo
 
 		md_sadd(N, zdims, tmp1, der_z, -(mumin + j * dmu));
 		md_mul(N, zdims, tmp2, tmp1, tmp1); // tmp2 = (z_ik-mu_j)²
-		md_smul(N, zdims, tmp2, tmp2, (complex float)(-1. / (2 * data->sigma * data->sigma))); // tmp2 = -(z_ik-mu_j)²/(2*sigma²)
+		md_smul(N, zdims, tmp2, tmp2, -1. / (2 * data->sigma * data->sigma)); // tmp2 = -(z_ik-mu_j)²/(2*sigma²)
 		md_exp(N, zdims, tmp2, tmp2); // tmp2 = exp[-(z_ik-mu_j)²/(2*sigma²)]
 
 		long wpos[N];
@@ -351,7 +351,7 @@ static void rbf_del(const nlop_data_t* _data)
  * Note that Nb denotes the product of the parallel computable dimensions,
  * i.e. the number of different vectors z which is Nb = Nx*Ny*Nz*Nb
  */
-const struct nlop_s* nlop_activation_rbf_create(const long dims[3], complex float Imax, complex float Imin, bool use_imag)
+const struct nlop_s* nlop_activation_rbf_create(const long dims[3], float Imax, float Imin, bool use_imag)
 {
 	PTR_ALLOC(struct rbf_s, data);
 	SET_TYPEID(rbf_s, data);

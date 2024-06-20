@@ -187,7 +187,8 @@ static void apply_linphases_3D(int N, const long img_dims[N], const float shifts
 	for (int n = 0; n < 3; n++)
 		shifts2[n] = 2. * M_PI * (double)(shifts[n]) / ((double)img_dims[n]);
 
-	complex double cn = 0.;
+	double cn = 0.;
+
 	for (int n = 0; n < 3; n++)
 		cn -= shifts2[n] * (double)img_dims[n] / 2.;
 

@@ -203,9 +203,9 @@ static complex float kkernel(void* _data, const long pos[])
 	} else {
 
 		assert(0 == pos[0]);
-		mpos[0] = (&MD_ACCESS(DIMS, data->tstrs, pos, data->traj))[0] / 2.;
-		mpos[1] = (&MD_ACCESS(DIMS, data->tstrs, pos, data->traj))[1] / 2.;
-		mpos[2] = (&MD_ACCESS(DIMS, data->tstrs, pos, data->traj))[2] / 2.;
+		mpos[0] = creal((&MD_ACCESS(DIMS, data->tstrs, pos, data->traj))[0]) / 2.;
+		mpos[1] = creal((&MD_ACCESS(DIMS, data->tstrs, pos, data->traj))[1]) / 2.;
+		mpos[2] = creal((&MD_ACCESS(DIMS, data->tstrs, pos, data->traj))[2]) / 2.;
 	}
 
 	return (data->sens ? ksens : nosens)(pos[COIL_DIM], pos[COEFF_DIM], mpos, data->data, data->fun);
@@ -839,7 +839,7 @@ void calc_cfl_geom(const long dims[DIMS], complex float* out, bool kspace, const
 
 				long ind = md_calc_offset(DIMS, cstrs, pos) / (long)CFL_SIZE;
 
-				data[s][c][p] = x[0][ind];
+				data[s][c][p] = crealf(x[0][ind]);
 			}
 		}
 	}

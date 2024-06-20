@@ -405,7 +405,7 @@ extern void md_zcmpl(int D, const long dims[__VLA(D)], _Complex float* dst, cons
 extern void md_pdf_gauss2(int D, const long dims[__VLA(D)], const long ostr[__VLA(D)], float* optr, const long istr[__VLA(D)], const float* iptr, float mu, float sigma);
 extern void md_pdf_gauss(int D, const long dims[__VLA(D)], float* optr, const float* iptr, float mu, float sigma);
 
-extern void md_zgausspdf(int D, const long dims[__VLA(D)], _Complex float *optr, _Complex float S);
+extern void md_zgausspdf(int D, const long dims[__VLA(D)], _Complex float *optr, float S);
 
 extern float md_zmaxnorm2(int D, const long dims[__VLA(D)], const long strs[__VLA(D)], const _Complex float* ptr);
 extern float md_zmaxnorm(int D, const long dims[__VLA(D)], const _Complex float* ptr);

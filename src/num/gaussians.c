@@ -137,7 +137,7 @@ void gaussian_convolve(int N, complex float m[N],
 
 	m[0] = m1[0] + m2[0];
 
-	sqr_cov[0][0] = sqrtf(powf(sqr_cov1[0][0], 2.) + powf(sqr_cov2[0][0], 2.));
+	sqr_cov[0][0] = sqrtf(powf(crealf(sqr_cov1[0][0]), 2.) + powf(crealf(sqr_cov2[0][0]), 2.));
 }
 
 
@@ -154,12 +154,12 @@ void gaussian_multiply(int N, complex float m[N],
 	assert(0. == cimagf(isqr_cov1[0][0]));
 	assert(0. == cimagf(isqr_cov2[0][0]));
 
-	float v1 = powf(isqr_cov1[0][0], -2.);
-	float v2 = powf(isqr_cov2[0][0], -2.);
+	float v1 = powf(crealf(isqr_cov1[0][0]), -2.);
+	float v2 = powf(crealf(isqr_cov2[0][0]), -2.);
 
 	m[0] = (v1 * m1[0] + v2 * m2[0]) / (v1 + v2);
 
-	isqr_cov[0][0] = sqrtf(powf(isqr_cov1[0][0], 2.) + powf(isqr_cov2[0][0], 2.));
+	isqr_cov[0][0] = sqrtf(powf(crealf(isqr_cov1[0][0]), 2.) + powf(crealf(isqr_cov2[0][0]), 2.));
 }
 
 

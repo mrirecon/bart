@@ -55,9 +55,9 @@ void fit_quadratic_form(float qf[3], int N, const float phi[N], const float v[N]
 	mat_inverse(3, inv, mat);
 	mat_vecmul(3, 3, out, inv, lhs);
 
-	qf[0] = out[0];
-	qf[1] = out[1];
-	qf[2] = out[2];
+	qf[0] = crealf(out[0]);
+	qf[1] = crealf(out[1]);
+	qf[2] = crealf(out[2]);
 }
 
 
@@ -98,8 +98,8 @@ void fit_harmonic(float qf[3], int N, const float phi[N], const float v[N])
 	mat_inverse(3, inv, mat);
 	mat_vecmul(3, 3, out, inv, lhs);
 
-	qf[0] = out[0];
-	qf[1] = out[1];
-	qf[2] = out[2];
+	qf[0] = crealf(out[0]);
+	qf[1] = crealf(out[1]);
+	qf[2] = crealf(out[2]);
 }
 

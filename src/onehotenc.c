@@ -65,7 +65,7 @@ int main_onehotenc(int argc, char* argv[argc])
 
 		complex float max = in[0];
 		md_zmax2(DIMS, idims, MD_SINGLETON_STRS(DIMS), &max, MD_SINGLETON_STRS(DIMS), &max, MD_STRIDES(DIMS, idims, CFL_SIZE), in);
-		odims[class_index] = lroundf(max) + 1;
+		odims[class_index] = lroundf(crealf(max)) + 1;
 
 		complex float* out = create_cfl(output, DIMS, odims);
 
