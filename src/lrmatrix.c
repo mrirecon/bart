@@ -231,7 +231,7 @@ int main_lrmatrix(int argc, char* argv[argc])
 		md_clear(DIMS, idims, sdata, sizeof(complex float));
 
 		odims[LEVEL_DIM]--;
-		md_zaxpy2(DIMS, odims, istrs, sdata, 1. / sqrt(levels), ostrs, odata);
+		md_zaxpy2(DIMS, odims, istrs, sdata, 1. / sqrt((double)levels), ostrs, odata);
 		odims[LEVEL_DIM]++;
 
 		unmap_cfl(DIMS, idims, sdata);

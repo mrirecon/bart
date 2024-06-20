@@ -41,7 +41,7 @@ static void get_signal(const struct signal_model* parm, int N, complex float* ou
 		for (int av = 0; av < av_spokes; av++)
 			sum += in[t * av_spokes + av];
 
-		out[t] = sum / av_spokes;
+		out[t] = sum / (float)av_spokes;
 	}
 }
 
@@ -168,7 +168,7 @@ int main_signal(int argc, char* argv[argc])
 	dims[COEFF2_DIM] = (1 != Ms[2]) ? truncf(Ms[2]) : truncf(T2[2]);
 	dims[ITER_DIM] = truncf(off_reson[2]);
 	dims[CSHIFT_DIM] = truncf(t1_fat[2]);
-	dims[TIME_DIM] = MAX(1, truncf(FA_range[2]));
+	dims[TIME_DIM] = MAX(1, (long)truncf(FA_range[2]));
 
 	if ((dims[TE_DIM] < 1) || (dims[COEFF_DIM] < 1) || (dims[COEFF2_DIM] < 1) || (dims[TIME_DIM] < 1))
 		error("invalid parameter range\n");

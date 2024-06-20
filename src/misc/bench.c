@@ -23,11 +23,14 @@ void run_bench(long rounds, bool print, bool sync_gpu, bench_f fun)
 	double runtimes[rounds];
 
 	bench_sync(sync_gpu);
+
 	for (long i = 0; i < rounds; ++i) {
 
 		double tic = timestamp();
+
 		NESTED_CALL(fun, ());
 		bench_sync(sync_gpu);
+
 		runtimes[i] = timestamp() - tic;
 	}
 
@@ -39,14 +42,18 @@ void run_bench(long rounds, bool print, bool sync_gpu, bench_f fun)
 	double max = 0.;
 
 	debug_printf(DP_DEBUG2, "Runtimes: ");
+
 	for (long i = 0; i < rounds; ++i) {
 
 		sum += runtimes[i];
 		min = MIN(min, runtimes[i]);
 		max = MAX(max, runtimes[i]);
+
 		debug_printf(DP_DEBUG2, "%8.4f, ", runtimes[i]);
 	}
+
 	debug_printf(DP_DEBUG2, "\r\r\n");
 
-	bart_printf("Avg: %8.4f Max: %8.4f Min: %8.4f\n", sum/rounds, max, min);
+	bart_printf("Avg: %8.4f Max: %8.4f Min: %8.4f\n", sum / (double)rounds, max, min);
 }
+

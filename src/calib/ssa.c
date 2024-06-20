@@ -150,7 +150,7 @@ static void ssa_backprojection( const long N,
 
 	complex float* norm = md_alloc(DIMS, norm_dims, CFL_SIZE);
 
-	md_zfill(DIMS, norm_dims, norm, 1. / b);
+	md_zfill(DIMS, norm_dims, norm, 1. / (double)b);
 
 	for (int i = 0; i < b; i++) {
 

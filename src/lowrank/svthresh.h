@@ -4,7 +4,7 @@
  */ 
 
 
-#define GWIDTH( M, N, B) ( (sqrtf( M ) + sqrtf( N )) + sqrtf( logf( B * ((M > N) ? N : M )) ))
+#define GWIDTH( M, N, B) ( (sqrtf( (float)M ) + sqrtf( (float)N )) + sqrtf( logf( (float)B * (float) ((M > N) ? N : M )) ))
 
 //#define GWIDTH( M, N, B) ( sqrtf( M ) + sqrtf( N ) )
 
@@ -18,9 +18,9 @@ extern float svthresh(long M, long N, float lambda, complex float* dst, const co
 
 extern float svthresh2(long M, long N, float lambda, complex float* dst, const complex float* src, complex float* U, float* S, complex float* VT);
 
-extern float svthresh_nomeanu(long M, long N, float lambda, complex float* dst, const complex float* src);
+extern float svthresh_nomeanu(int M, int N, float lambda, complex float* dst, const complex float* src);
 
-extern float svthresh_nomeanv(long M, long N, float lambda, complex float* dst, const complex float* src);
+extern float svthresh_nomeanv(int M, int N, float lambda, complex float* dst, const complex float* src);
 
 
 // Singular value analysis (maybe useful to help determining regularization parameter for min nuclear norm)

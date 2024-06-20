@@ -319,7 +319,7 @@ static void nary_zwindow(const long N, const float alpha, const float beta, comp
 
 #pragma omp parallel for
 	for (long i = 0; i < N; i++)
-		ptr[i] = alpha - beta * cosf(2. * M_PI * i / (N - 1));
+		ptr[i] = alpha - beta * cosf(2. * M_PI * (double)i / (double)(N - 1));
 }
 
 static void nary_zhamming(const long N, complex float* ptr)

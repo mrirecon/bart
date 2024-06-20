@@ -3292,7 +3292,7 @@ void md_zvar2(int D, const long dims[D], unsigned long flags, const long ostr[D]
 	md_zsmul2(D, odims, ostr, optr, ostr, optr, -1.);
 	md_zadd2(D, dims, tstrs, tmp, istr, iptr, ostr, optr);
 
-	double scale = md_calc_size(D, fdims) - 1.;
+	double scale = (double)md_calc_size(D, fdims) - 1.;
 
 	md_zss2(D, dims, flags, ostr, optr, tstrs, tmp);
 
@@ -3390,7 +3390,7 @@ void md_zcovar2(int D, const long dims[D], unsigned long flags,
 	md_zavg2(D, dims, flags, ostr, optr, istr2, iptr2);
 	md_zsub2(D, dims, tstrs, tmp2, istr2, iptr2, ostr, optr);
 
-	double scale = md_calc_size(D, fdims) - 1.;
+	double scale = (double)md_calc_size(D, fdims) - 1.;
 
 	md_clear2(D, odims, ostr, optr, CFL_SIZE);
 	md_zfmacc2(D, dims, ostr, optr, tstrs, tmp1, tstrs, tmp2);

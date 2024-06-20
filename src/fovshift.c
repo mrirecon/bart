@@ -97,7 +97,7 @@ int main_fovshift(int argc, char* argv[argc])
 		phase = md_alloc(DIMS, pdims, CFL_SIZE);
 
 		for (int i = 0; i < 3; i++)
-			shift[i] *= idims[i];
+			shift[i] *= (float)idims[i];
 
 		linear_phase(3, pdims, shift, phase);
 	}

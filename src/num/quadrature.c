@@ -71,5 +71,5 @@ void quadrature_simpson_ext(int N, float T, int P, float out[P],
 	}
 
 	for (int p = 0; p < P; p++)
-		out[p] *= T / N;
+		out[p] *= T / (float)N;
 }

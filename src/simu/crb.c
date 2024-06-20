@@ -67,12 +67,12 @@ void normalize_crb(int P, float rCRB[P], int N, float TR, float T1, float T2, fl
 	normvalues[2] = powf(B1, 2);	
 	normvalues[3] = 1;
 
-	rCRB[0] *= N * TR; // M0 normalization
+	rCRB[0] *= (float)N * TR; // M0 normalization
 
 	for (int i = 1; i < P; i++) {
 
 		rCRB[i] /= normvalues[idx_unknowns[i - 1]];
-		rCRB[i] *= N * TR;
+		rCRB[i] *= (float)N * TR;
 	}
 }
 

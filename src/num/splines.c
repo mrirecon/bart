@@ -31,7 +31,7 @@ double bernstein(int n, int v, double x)
 {
 	assert(v <= n);
 
-	return binomial(n, v) * pow(x, v) * pow(1. - x, n - v);
+	return (double)binomial(n, v) * pow(x, v) * pow(1. - x, n - v);
 }
 
 

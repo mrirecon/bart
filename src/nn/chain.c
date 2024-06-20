@@ -1610,7 +1610,7 @@ nn_t nn_stack_multigpu_F(int N , nn_t x[N], int stack_dim)
 	
 	complex float wgh[N];
 	for (int i = 0; i < N; i++)
-		wgh[i] = (float)lwgh[i] / ltot;
+		wgh[i] = (float)lwgh[i] / (float)ltot;
 
 	for (int o = 0; o < OO; o++)
 		if (x[0]->out_types[o] == OUT_OPTIMIZE)

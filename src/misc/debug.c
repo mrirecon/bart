@@ -51,7 +51,7 @@ double timestamp(void)
 	struct timeval tv;
 	gettimeofday(&tv, 0); // more accurate than <time.h>
 
-	return tv.tv_sec + 1e-6 * tv.tv_usec;
+	return (double)tv.tv_sec + 1e-6 * (double)tv.tv_usec;
 }
 
 

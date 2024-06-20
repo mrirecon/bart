@@ -88,7 +88,7 @@ int main_wavepsf(int argc, char* argv[argc])
 	assert(0 == adc % 10);					// Scanners require ADC_duration to be a multiple of 10.
 
 	int wavepoints = adc / 10;				// Number of points in the gradient wave.
-	float T = wavepoints * dt / ncyc; // Time period of the sine wave.
+	float T = (float)wavepoints * dt / (float)ncyc;		// Time period of the sine wave.
 	float w = 2 * M_PI / T;					// Frequency in radians per second.
 
 	/* Calculating the wave-amplitude to use. It is either slew limited or gradient 
@@ -97,7 +97,7 @@ int main_wavepsf(int argc, char* argv[argc])
 	float gwave[wavepoints];
 
 	for (int tdx = 0; tdx < wavepoints; tdx++)
-		gwave[tdx] = gamp * ((cs) ? cos(w * tdx * dt) : sin(w * tdx * dt));
+		gwave[tdx] = gamp * (cs ? cos(w * (float)tdx * dt) : sin(w * (float)tdx * dt));
 	
 	complex float phasepercm[wavepoints];
 	float prephase = -2 * M_PI * LARMOR * gamp/w;
@@ -131,7 +131,7 @@ int main_wavepsf(int argc, char* argv[argc])
 	md_zreal(1, interp_dims, phasepercm_interp_real, phasepercm_interp_complex);
 
 	complex float phasepercm_interp[sx]; 
-	float scale = sqrt((float) sx / wavepoints);
+	float scale = sqrt((float)sx / (float)wavepoints);
 
 	md_zsmul(1, interp_dims, phasepercm_interp, phasepercm_interp_real, scale);
 
@@ -144,7 +144,7 @@ int main_wavepsf(int argc, char* argv[argc])
 
 	for (int ydx = 0; ydx < sy; ydx++) {
 
-		val = -dy * (ydx - midy);
+		val = -dy * (float)(ydx - midy);
 
 		md_zsmul(1, interp_dims, phase, phasepercm_interp, val);
 		md_zexpj(1, interp_dims, psf[ydx], phase);

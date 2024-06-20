@@ -341,7 +341,7 @@ int main_rtnlinv(int argc, char* argv[argc])
 			if (frames > turns) {
 
 				// For turn-based reconstructions we use the conventional scaling
-				float patnorm = 1.f / ksp_dims[2];
+				float patnorm = 1.f / (float)ksp_dims[2];
 				md_zsmul(DIMS, pat_dims, pattern, pattern, patnorm);
 
 			} else {

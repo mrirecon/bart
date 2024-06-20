@@ -244,7 +244,7 @@ void iter2_fista(const iter_conf* _conf,
 	NESTED(void, continuation, (struct ist_data* itrdata))
 	{
 		float a = logf(conf->continuation) / (float)itrdata->maxiter;
-		itrdata->scale = expf(a * itrdata->iter);
+		itrdata->scale = expf(a * (float)itrdata->iter);
 
 		if (conf->hogwild) {
 

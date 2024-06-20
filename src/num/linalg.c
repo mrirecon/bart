@@ -105,7 +105,7 @@ complex float vec_mean(long D, const complex float src[D])
 	for (long i = 0; i < D; i++)
 		val += src[i];
 
-	return val / D;
+	return val / (float)D;
 }
 
 void mat_add(int A, int B, complex float x[A][B], const complex float y[A][B], const complex float z[A][B])

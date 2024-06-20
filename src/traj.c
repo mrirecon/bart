@@ -151,7 +151,7 @@ int main_traj(int argc, char* argv[argc])
 	if (over <= 0.)
 		error("Oversampling factor must be positive.\n");
 
-	X *= over;
+	X = (int)((float)X * over);
 
 
 	int tot_sp = Y * E * mb * turns;	// total number of lines/spokes
@@ -292,7 +292,7 @@ int main_traj(int argc, char* argv[argc])
 			double angle = 0.;
 
 			for (int d = 1; d < DIMS; d++)
-				angle += pos[d] * base_angle[d];
+				angle += (double)pos[d] * base_angle[d];
 
 
 			if (conf.half_circle_gold)
@@ -380,8 +380,8 @@ int main_traj(int argc, char* argv[argc])
 			double y = (j - Y / 2);
 			double angle = -rot / 180. * M_PI;
 
-			samples[p * 3 + 0] =  x * cos(angle) + -y * sin(angle);
-			samples[p * 3 + 1] =  x * sin(angle) + y * cos(angle);
+			samples[p * 3 + 0] = x * cos(angle) + -y * sin(angle);
+			samples[p * 3 + 1] = x * sin(angle) + y * cos(angle);
 			samples[p * 3 + 2] = 0;
 		}
 

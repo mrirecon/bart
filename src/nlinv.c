@@ -330,7 +330,7 @@ int main_nlinv(int argc, char* argv[argc])
 
 	if (conf.ret_os_coils)
 		for (int i = 0; i < 3; i++)
-			sens_dims[i] = (1 == sens_dims[i]) ? sens_dims[i] : lround(conf.oversampling_coils * sens_dims[i]);
+			sens_dims[i] = (1 == sens_dims[i]) ? sens_dims[i] : lround(conf.oversampling_coils * (float)sens_dims[i]);
 
 	long img_dims[DIMS];
 	md_select_dims(DIMS, ~COIL_FLAG, img_dims, dims);

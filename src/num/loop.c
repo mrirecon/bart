@@ -93,10 +93,10 @@ void md_zgradient(int N, const long dims[N], complex float* out, const complex f
 		complex float val = 0;
 		
 		for (int i = 0; i < N - 1; i++)
-			val += pos[i] * gradp[i + 1];
+			val += (float)pos[i] * gradp[i + 1];
 
 		for (long i = 0; i < dimsp[0]; i++)
-			out[offset + i] = val + gradp[0] * i;
+			out[offset + i] = val + gradp[0] * (float)i;
 	};
 
 	md_parallel_loop(N - 1, dims + 1, ~0UL, gradient_kernel);

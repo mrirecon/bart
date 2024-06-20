@@ -57,8 +57,8 @@ static float homodyne_filter(int N, float frac, float alpha, bool clear, long p)
 	if (frac <= 0.5)
 		return 1.;
 
-	float start = N * (1 - frac);
-	float end = N * frac;
+	float start = (float)N * (1 - frac);
+	float end = (float)N * frac;
 
 	float ret = clear ? 0. : 1.;
 
@@ -66,7 +66,7 @@ static float homodyne_filter(int N, float frac, float alpha, bool clear, long p)
 	if (p < start)
 		ret = 2.;
 	else if (p >= start && p < end)
-		ret = 2 * (alpha - 1) / (end - start) * (p - end) + alpha;
+		ret = 2 * (alpha - 1) / (end - start) * ((float)p - end) + alpha;
 
 	return ret;
 }
@@ -80,7 +80,7 @@ static complex float* estimate_phase(struct wdata wdata, unsigned long flags,
 	long cdims[N];
 	md_copy_dims(N, cdims, dims);
 	// cdims[0] = cdims[1] = cdims[2] = 24;
-	cdims[wdata.pfdim] = (wdata.frac - 0.5) * dims[wdata.pfdim];
+	cdims[wdata.pfdim] = (wdata.frac - 0.5) * (double)dims[wdata.pfdim];
 
 	complex float* center = md_alloc(N, cdims, CFL_SIZE);
 	complex float* phase = md_alloc(N, dims, CFL_SIZE);
@@ -171,7 +171,7 @@ int main_homodyne(int argc, char* argv[argc])
 	NESTED(void, comp_weights, (const long pos[]))
 	{
 		wdata.weights[md_calc_offset(DIMS, wdata.wstrs, pos) / (long)CFL_SIZE]
-			= homodyne_filter(wdata.wdims[pfdim], frac, alpha, clear, pos[pfdim]);
+			= homodyne_filter((int)wdata.wdims[pfdim], frac, alpha, clear, pos[pfdim]);
 	};
 
 	md_loop(N, wdata.wdims, comp_weights);

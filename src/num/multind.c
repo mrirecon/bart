@@ -2222,7 +2222,7 @@ void md_decompress(int D, const long dims[D], float* dst, const void* _src)
 		for (long j = 0; j < 32; j++) {
 
 			if (((32 * i + j) < N))
-				dst[32 * i + j] = MD_IS_SET(src[i], j) ? 1 : 0;
+				dst[32 * i + j] = MD_IS_SET(src[i], j) ? 1. : 0.;
 		}
 	}
 }
