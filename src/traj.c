@@ -83,7 +83,7 @@ int main_traj(int argc, char* argv[argc])
 		OPT_SET('D', &conf.full_circle, "projection angle in [0,360°), else in [0,180°)"),
 		OPTL_SET(0, "double-base", &conf.double_base, "Define GA over 2Pi base instead of default Pi."),
 		OPT_FLOAT('o', &over, "o", "oversampling factor"),
-		OPT_FLOAT('R', &rot, "phi", "rotate"),
+		OPT_FLOAT('R', &rot, "phi", "rotate [°]"),
 		OPT_FLVEC3('q', &gdelays[0], "delays", "gradient delays: x, y, xy"),
 		OPT_FLVEC3('Q', &gdelays[1], "delays", "(gradient delays: z, xz, yz)"),
 		OPT_SET('O', &conf.transverse, "correct transverse gradient error for radial tajectories"),
