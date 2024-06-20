@@ -12,8 +12,8 @@ extern void set_cfl_loop_index(long index);
 extern long get_cfl_loop_index(void);
 extern _Bool cfl_loop_desc_active(void);
 extern _Bool cfl_loop_omp(void);
-extern long cfl_loop_worker_id(void);
-extern long cfl_loop_num_workers(void);
+extern int cfl_loop_worker_id(void);
+extern int cfl_loop_num_workers(void);
 extern long cfl_loop_desc_total(void);
 extern long calc_size_cfl_loop(int D, const long dims[__VLA(D)], size_t size);
 

@@ -68,7 +68,7 @@ void rss_combine(const long dims[DIMS], complex float* image, const complex floa
 
 
 
-float estimate_scaling_norm(float rescale, long imsize, complex float* tmpnorm, bool compat)
+float estimate_scaling_norm(float rescale, int imsize, complex float* tmpnorm, bool compat)
 {
 	zsort(imsize, tmpnorm);
 
@@ -92,7 +92,7 @@ extern float estimate_scaling_cal(const long dims[DIMS], const complex float* se
 	long img_dims[DIMS];
 	md_select_dims(DIMS, ~COIL_FLAG, img_dims, cal_dims);
 
-	long imsize = md_calc_size(DIMS, img_dims);
+	int imsize = (int)md_calc_size(DIMS, img_dims);
 
 	complex float* tmp1 = md_alloc_sameplace(DIMS, img_dims, CFL_SIZE, cal_data);
 

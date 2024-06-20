@@ -90,11 +90,11 @@ int main_lrmatrix(int argc, char* argv[argc])
         bool decom = false;
 
 	bool llr = false;
-	long llrblk = -1;
+	int llrblk = -1;
 	bool ls = false;
 	bool hogwild = false;
 	bool fast = true;
-	long initblk = 1;
+	int initblk = 1;
 	int remove_mean = 0;
 
 
@@ -105,11 +105,11 @@ int main_lrmatrix(int argc, char* argv[argc])
 		OPT_INT('i', &maxiter, "iter", "maximum iterations."),
 		OPT_ULONG('m', &mflags, "flags", "which dimensions are reshaped to matrix columns."),
 		OPT_ULONG('f', &flags, "flags", "which dimensions to perform multi-scale partition."),
-		OPT_INT('j', &blkskip, "scale", "block size scaling from one scale to the next one."),
-		OPT_LONG('k', &initblk, "size", "smallest block size"),
+		OPT_PINT('j', &blkskip, "scale", "block size scaling from one scale to the next one."),
+		OPT_PINT('k', &initblk, "size", "smallest block size"),
 		OPT_SET('N', &noise, "add noise scale to account for Gaussian noise."),
 		OPT_SET('s', &ls, "perform low rank + sparse matrix completion."),
-		OPT_LONG('l', &llrblk, "size", "perform locally low rank soft thresholding with specified block size."),
+		OPT_PINT('l', &llrblk, "size", "perform locally low rank soft thresholding with specified block size."),
 		OPT_OUTFILE('o', &sum_str, "out2", "summed over all non-noise scales to create a denoised output."),
 		OPT_SELECT('u', int, &remove_mean, 1, "()"),
 		OPT_SELECT('v', int, &remove_mean, 2, "()"),
@@ -132,7 +132,7 @@ int main_lrmatrix(int argc, char* argv[argc])
 
 	// Get levels and block dimensions
 	long blkdims[MAX_LEV][DIMS];
-	long levels;
+	int levels;
 
 	if (llr)
 		levels = llr_blkdims(blkdims, flags, idims, llrblk);

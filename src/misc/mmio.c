@@ -126,7 +126,7 @@ bool cfl_loop_omp(void)
 #endif
 }
 
-long cfl_loop_worker_id(void)
+int cfl_loop_worker_id(void)
 {
 	if (!cfl_loop_desc_active())
 		return 0;
@@ -159,7 +159,7 @@ long cfl_loop_worker_id(void)
 	return 0;
 }
 
-long cfl_loop_num_workers(void)
+int cfl_loop_num_workers(void)
 {
 	if (!cfl_loop_desc_active())
 		return 1;

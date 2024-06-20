@@ -182,7 +182,7 @@ static void lrthresh_apply(const operator_data_t* _data, float mu, complex float
 		long zpad_dims[DIMS];
 		long M = 1;
 
-		for (unsigned int i = 0; i < DIMS; i++) {
+		for (int i = 0; i < DIMS; i++) {
 
 			blkdims[i] = data->blkdims[l][i];
 			zpad_dims[i] = (data->dims[i] + blkdims[i] - 1) / blkdims[i];
@@ -192,7 +192,7 @@ static void lrthresh_apply(const operator_data_t* _data, float mu, complex float
 				M *= blkdims[i];
 
 			if (data->randshift)
-				shifts[i] = rand_lim(MIN(blkdims[i] - 1, zpad_dims[i] - blkdims[i]));
+				shifts[i] = rand_lim((int)MIN(blkdims[i] - 1, zpad_dims[i] - blkdims[i]));
 			else
 				shifts[i] = 0;
 

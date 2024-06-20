@@ -931,7 +931,7 @@ static bool simple_z3op(int N_checks, struct simple_z3op_check strided_calls[N_c
 
 	complex float* conj_in = NULL;
 
-	long N_in = -1;
+	int N_in = -1;
 
 	bool on_gpu = false;
 #ifdef USE_CUDA
@@ -1107,7 +1107,7 @@ static bool simple_3op(int N_checks, struct simple_3op_check strided_calls[N_che
 	const float* tin1 = NULL;
 	const float* tin2 = NULL;
 
-	long N_in = -1;
+	int N_in = -1;
 
 	bool on_gpu = false;
 #ifdef USE_CUDA

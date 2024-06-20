@@ -63,7 +63,7 @@ static int hint_get_rank(int N, const long pos[N], struct vptr_hint_s* hint)
 		stride *= hint->dims[i];
 	}
 
-	return hint->rank[offset];
+	return (int)hint->rank[offset];
 }
 
 struct vptr_hint_s* vptr_hint_ref(struct vptr_hint_s* hint)
@@ -96,12 +96,12 @@ struct vptr_hint_s* hint_mpi_create(unsigned long mpi_flags, int N, const long d
 	for (int i = N - 1; i >= 0; i--) {
 
 		procs = MAX(1, procs);
-		max_proc *= MIN(procs, mdims[i]);
+		max_proc *= MIN(procs, (int)mdims[i]);
 
 		if (procs <= 1)
 			mdims[i] = 1;
 
-		procs /= mdims[i];
+		procs /= (int)mdims[i];
 	}
 
 	mpi_flags &= md_nontriv_dims(N, mdims);
@@ -598,7 +598,7 @@ int mpi_ptr_get_rank(const void* ptr)
 
 	auto h = mem->hint;
 	
-	long N = MAX(mem->N, h->N);
+	int N = MAX(mem->N, h->N);
 
 	long pos[N];
 	md_set_dims(N, pos, 0);
@@ -673,7 +673,7 @@ int mpi_reduce_color(unsigned long reduce_flags, const void* ptr)
 
 	do {
 		if (hint_get_rank(h->N, pos, h) == mpi_get_rank())
-			return 1 + md_ravel_index(h->N, pos, ~reduce_flags, h->dims);
+			return 1 + (int)md_ravel_index(h->N, pos, ~reduce_flags, h->dims);
 
 	} while (md_next(h->N, h->dims, loop_flags, pos));
 

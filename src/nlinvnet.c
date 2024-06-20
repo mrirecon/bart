@@ -100,7 +100,7 @@ int main_nlinvnet(int argc, char* argv[argc])
 	unsigned long batch_flags = BATCH_FLAG;
 	unsigned long cnstcoil_flags = 0;
 	unsigned long scl_flags = 0;
-	long Nb = 0;
+	int Nb = 0;
 
 	char* filename_weights_load = NULL;
 
@@ -136,7 +136,6 @@ int main_nlinvnet(int argc, char* argv[argc])
 	_Bool norm_max = true;
 
 	const struct opt_s opts[] = {
-
 
 		OPTL_INT(0, "iter-net", &(nlinvnet.iter_net), "iter", "number of iterations with network"),
 
@@ -177,7 +176,7 @@ int main_nlinvnet(int argc, char* argv[argc])
 		OPTL_ULONG(0, "scaling-flags", &scl_flags, "flags", "scaling is increased with sqrt(selected dims)"),
 
 		OPTL_SET('g', "gpu", &bart_use_gpu, "run on gpu"),
-		OPTL_LONG('b', "batch-size", &(Nb), "", "size of mini batches"),
+		OPTL_INT('b', "batch-size", &(Nb), "", "size of mini batches"),
 
 		OPTL_SUBOPT(0, "valid-data", "...", "(provide validation data)", ARRAY_SIZE(valid_opts),valid_opts),
 
@@ -216,6 +215,7 @@ int main_nlinvnet(int argc, char* argv[argc])
 
 			iter_6_select_algo = ITER6_ADAM;
 			nlinvnet.train_conf = iter6_get_conf_from_opts();
+
 		} else {
 
 			iter6_copy_config_from_opts(nlinvnet.train_conf);
@@ -269,10 +269,14 @@ int main_nlinvnet(int argc, char* argv[argc])
 
 			estimate_im_dims(DIMS, FFT_FLAGS, dims, trj_dims, traj);
 			debug_printf(DP_INFO, "Est. image size: %ld %ld %ld\n", dims[0], dims[1], dims[2]);
-		} else
+
+		} else {
+
 			md_copy_dims(3, dims, im_vec);;
+		}
 
 		md_copy_dims(DIMS - 3, dims + 3, ksp_dims + 3);
+
 	} else {
 
 		md_copy_dims(DIMS, dims, ksp_dims);
@@ -310,7 +314,7 @@ int main_nlinvnet(int argc, char* argv[argc])
 
 	long scl_dims[DIMS];
 	md_select_dims(DIMS, scl_flags, scl_dims, dims);
-	nlinvnet.scaling *= sqrtf(md_calc_size(DIMS, scl_dims));
+	nlinvnet.scaling *= sqrtf((float)md_calc_size(DIMS, scl_dims));
 
 	long img_dims[DIMS];
 	long cim_dims[DIMS];
@@ -340,7 +344,7 @@ int main_nlinvnet(int argc, char* argv[argc])
 	md_select_dims(DIMS, ~batch_flags, trj_dims_s, trj_dims);
 
 	Nb = Nb ? Nb : 10;
-	Nb = MIN(Nb, ksp_dims[BATCH_DIM]);
+	Nb = MIN(Nb, (int)ksp_dims[BATCH_DIM]);
 
 	complex float one = 1.;
 
@@ -404,6 +408,7 @@ int main_nlinvnet(int argc, char* argv[argc])
 			if (NULL != val_file_pattern) {
 
 				val_pattern = load_cfl(val_file_pattern, DIMS, pat_dims_val);
+
 			} else {
 
 				md_select_dims(DIMS, ~COIL_FLAG, pat_dims_val, ksp_dims_val);
@@ -457,6 +462,7 @@ int main_nlinvnet(int argc, char* argv[argc])
 
 		if (NULL != mask)
 			unmap_cfl(DIMS, mask_dims, mask);
+
 		if (NULL != mask_val)
 			unmap_cfl(DIMS, mask_dims_val, mask_val);
 	}

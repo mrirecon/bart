@@ -112,7 +112,7 @@ struct cg_xupdate_s {
 
 	INTERFACE(iter_op_data);
 
-	int N;
+	long N;
 	const struct vec_iter_s* vops;
 
 	int maxitercg;
@@ -418,8 +418,8 @@ void admm(const struct admm_plan_s* plan,
 
 			long M = sum_long_array(num_funs, z_dims);
 
-			float eps_pri = plan->ABSTOL * sqrt(M) + plan->RELTOL * r_scaling;
-			float eps_dual = plan->ABSTOL * sqrt(N) + plan->RELTOL * s_scaling;
+			float eps_pri = plan->ABSTOL * sqrt((double)M) + plan->RELTOL * r_scaling;
+			float eps_dual = plan->ABSTOL * sqrt((double)N) + plan->RELTOL * s_scaling;
 
 
 			struct admm_history_s history;

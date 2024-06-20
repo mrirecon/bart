@@ -586,7 +586,7 @@ int options(int* argcp, char* argv[*argcp], const char* usage_str, const char* h
 		int longindex = -1;
 
 		while (-1 != (c = ya_getopt_long(argc, argv, optstr, longopts, &longindex)))
-			process_option(c, optarg, argv[0], usage_str, help_str, n, wopts, m, args);
+			process_option((char)c, optarg, argv[0], usage_str, help_str, n, wopts, m, args);
 
 		next_opt = optind;
 	}
@@ -1087,8 +1087,8 @@ void cmdline(int* argcp, char* argv[*argcp], int m, const struct arg_s args[m], 
 {
 	check_args(m, args);
 
-	long min_args = 0;
-	long max_args = 0;
+	int min_args = 0;
+	int max_args = 0;
 
 	enum { bufsize = 1024 };
 	char buf[bufsize] = { 0 };

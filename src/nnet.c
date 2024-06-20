@@ -255,7 +255,7 @@ int main_nnet(int argc, char* argv[argc])
 
 	if (eval) {
 
-		long NO = config.get_no_odims(&config, NI, dims_in);
+		int NO = config.get_no_odims(&config, NI, dims_in);
 		long dims_out[NO];
 		complex float* out = load_cfl(filename_out, NO, dims_out);
 
@@ -269,7 +269,7 @@ int main_nnet(int argc, char* argv[argc])
 
 	if (apply) {
 
-		long NO = config.get_no_odims(&config, NI, dims_in);
+		int NO = config.get_no_odims(&config, NI, dims_in);
 		long dims_out[NO];
 		config.get_odims(&config, NO, dims_out, NO, dims_in);
 

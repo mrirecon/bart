@@ -76,7 +76,7 @@ static void asgn_bins(const long bins_dims[DIMS], const float* bins, const long 
 
 	complex float* in_singleton = md_alloc(DIMS, in_singleton_dims, CFL_SIZE);
 
-	int T = bins_dims[TIME_DIM]; // Number of time samples
+	int T = (int)bins_dims[TIME_DIM]; // Number of time samples
 
 	long pos0[DIMS] = { 0 };
 	long pos1[DIMS] = { 0 };
@@ -264,12 +264,12 @@ int main_bin(int argc, char* argv[argc])
 		md_check_bounds(DIMS, ~0u, labels_dims, src_dims);
 
 		int dim = find_dim(DIMS, labels_dims); // Dimension to be binned
-		int N = labels_dims[dim]; // number of samples to be binned
+		long N = labels_dims[dim]; // number of samples to be binned
 
 		// Determine number of clusters
 		int n_clusters = 0;
 
-		for (int i = 0; i < N; i++) {
+		for (long i = 0; i < N; i++) {
 
 			int label = (int)crealf(labels[i]);
 
@@ -353,7 +353,7 @@ int main_bin(int argc, char* argv[argc])
 			md_copy_block(DIMS, pos_dst, dst_dims, dst, singleton_dims, singleton, CFL_SIZE);
 
 			if (0 == i % (N / 10))
-				debug_printf(DP_DEBUG3, "Binning: %f%\n", 100. * i / N);
+				debug_printf(DP_DEBUG3, "Binning: %f%\n", 100. * i / (double)N);
 		}
 
 		md_free(singleton);

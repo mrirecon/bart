@@ -32,7 +32,7 @@ struct bat_gen_conf_s bat_gen_conf_default = {
 
 static void rand_draw_data(struct bart_rand_state* rand_state, long N, long perm[N], long /*Nb*/)
 {
-	for (int i = 0; i < N; i++) {
+	for (long i = 0; i < N; i++) {
 
 #pragma 	omp critical
 		perm[i] = rand_range_state(rand_state, N);

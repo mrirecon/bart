@@ -15,8 +15,8 @@ typedef int (*tree_rel_f)(const void* a, const void* b);
 extern tree_t tree_create(tree_rel_f rel);
 extern void tree_free(tree_t tree);
 
-extern long tree_count(tree_t tree);
-extern void tree_to_array(tree_t tree, long N, void* arr[__VLA(N)]);
+extern int tree_count(tree_t tree);
+extern void tree_to_array(tree_t tree, int N, void* arr[__VLA(N)]);
 
 extern void tree_insert(tree_t tree, void* item);
 

@@ -25,7 +25,7 @@ struct node_s {
 	struct node_s* leafa;
 	struct node_s* leafb;
 
-	long height;
+	int height;
 
 	void* item;
 };
@@ -99,7 +99,7 @@ void tree_free(tree_t tree)
 }
 
 
-static long height(node_t node)
+static int height(node_t node)
 {
 	if (NULL == node)
 		return 0;
@@ -470,7 +470,7 @@ static void** write_node(node_t node, void** arr)
 	return arr;
 }
 
-void tree_to_array(tree_t tree, long N, void* arr[N])
+void tree_to_array(tree_t tree, int N, void* arr[N])
 {
 	tree_set_lock(tree);
 	assert(N == tree->N);
@@ -478,7 +478,7 @@ void tree_to_array(tree_t tree, long N, void* arr[N])
 	tree_unset_lock(tree);
 }
 
-long tree_count(tree_t tree)
+int tree_count(tree_t tree)
 {
 	return tree->N;
 }

@@ -31,8 +31,8 @@ static const char help_str[] = "Non-local means filter";
 int main_nlmeans(int argc, char* argv[argc])
 {
 	unsigned long flags = 0;
-	long patch_length = 5;
-	long patch_dist = 5;
+	int patch_length = 5;
+	int patch_dist = 5;
 	float h_factor = 0.04;
 	float a_factor = -1.;
 
@@ -48,8 +48,8 @@ int main_nlmeans(int argc, char* argv[argc])
 
 	const struct opt_s opts[] = {
 
-		OPTL_LONG('p', "patch_length", &patch_length, "int", "patch length"),
-		OPTL_LONG('d', "patch_dist", &patch_dist, "int", "patch distance"),
+		OPTL_PINT('p', "patch_length", &patch_length, "int", "patch length"),
+		OPTL_PINT('d', "patch_dist", &patch_dist, "int", "patch distance"),
 		OPT_FLOAT('H', &h_factor, "h", "NLMeans h"),
 		OPT_FLOAT('a', &a_factor, "a", "NLMeans a (stddev for gaussian euclidean distance)"),
 	};
@@ -58,7 +58,7 @@ int main_nlmeans(int argc, char* argv[argc])
 
 	num_init();
 
-	a_factor = (0 > a_factor) ? ((patch_length > 1) ? (patch_length - 1.) / 4. : 1.) : a_factor;
+	a_factor = (0 > a_factor) ? ((patch_length > 1) ? ((double)patch_length - 1.) / 4. : 1.) : a_factor;
 
 	long dims[DIMS];
 

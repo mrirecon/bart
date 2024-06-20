@@ -20,11 +20,11 @@
 
 
 
-void batch_svthresh(long M, long N, long num_blocks, float lambda, complex float dst[num_blocks][N][M])
+void batch_svthresh(int M, int N, int num_blocks, float lambda, complex float dst[num_blocks][N][M])
 {
 #pragma omp parallel
     {
-	long minMN = MIN(M, N);
+	int minMN = MIN(M, N);
 
 	PTR_ALLOC(complex float[minMN][M], U);
 	PTR_ALLOC(complex float[N][minMN], VT);

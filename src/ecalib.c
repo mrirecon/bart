@@ -153,8 +153,8 @@ int main_ecalib(int argc, char* argv[argc])
 			 conf.kdims[i] = 1;
 
 
-	 long channels = cal_dims[3];
-	 int K = conf.kdims[0] * conf.kdims[1] * conf.kdims[2] * channels;
+	 int channels = (int)cal_dims[3];
+	 int K = (int)(conf.kdims[0] * conf.kdims[1] * conf.kdims[2] * channels);
 
 	 float svals[K];
 

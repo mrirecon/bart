@@ -76,10 +76,10 @@ static nn_t network_mnist_create(const long odims[2], const long idims[3], enum 
 	long strides[] = { 1, 1, 1 };
 	long dilation[] = { 1, 1, 1 };
 	
-	long chan1 = 32;
-	long chan2 = 64;
-	long chan3 = 128;
-	long chan4 = 10;
+	int chan1 = 32;
+	int chan2 = 64;
+	int chan3 = 128;
+	int chan4 = 10;
 
 	const struct initializer_s* init = NULL; // fallback to default initializer
 	
@@ -149,13 +149,13 @@ int main_mnist(int argc, char* argv[argc])
 	if (apply && train)
 		error("Either train or apply!\n");
 
-	long NI = 3;
-	long NO = 2;
+	int NI = 3;
+	int NO = 2;
 
 	long dims_in[NI];
 	complex float* in = load_cfl(filename_in, NI, dims_in);
 
-	long Nb = MIN(128, dims_in[NI - 1]);
+	int Nb = MIN(128, (int)dims_in[NI - 1]);
 
 
 	if (train) {
@@ -166,7 +166,7 @@ int main_mnist(int argc, char* argv[argc])
 		long bdims_in[] = { dims_in[0], dims_in[1], Nb };
 		long bdims_out[] = { dims_out[0], Nb };
 
-		long Nt = dims_out[1];	 //dataset size
+		int Nt = (int)dims_out[1];	 //dataset size
 		assert(Nt == dims_in[2]);
 
 

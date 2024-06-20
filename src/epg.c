@@ -51,9 +51,9 @@ int main_epg(int argc, char* argv[argc])
 	float FA =  15.0;
 	float offres = 0.0;
 	float B1 =   1.0;
-	long  SP =     0;
-	long   N =    10;
-	unsigned long unknowns = 3;
+	int SP = 0;
+	int N = 10;
+	unsigned long unknowns = 3UL;
 	long verbose = 0;
 
 	const struct opt_s opts[] = {
@@ -71,24 +71,29 @@ int main_epg(int argc, char* argv[argc])
 		OPT_FLOAT('r', &TR, "TR", "repetition time [units of time]"),
 		OPT_FLOAT('e', &TE, "TE", "echo time [units of time]"),
 		OPT_FLOAT('f', &FA, "FA", "flip angle [degrees]"),
-		OPT_LONG('s', &SP, "SP", "spoiling (0: ideal, 1: conventional RF, 2: random RF)"),
-		OPT_LONG('n',   &N, "N", "number of pulses"),
-		OPT_ULONG('u',   &unknowns, "U", "unknowns as bitmask (0: T1, 1: T2, 2: B1, 3: off-res)"),
-		OPT_LONG('v',   &verbose, "V", "verbosity level"),
+		OPT_PINT('s', &SP, "SP", "spoiling (0: ideal, 1: conventional RF, 2: random RF)"),
+		OPT_PINT('n', &N, "N", "number of pulses"),
+		OPT_ULONG('u', &unknowns, "U", "unknowns as bitmask (0: T1, 1: T2, 2: B1, 3: off-res)"),
+		OPT_LONG('v', &verbose, "V", "verbosity level"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 
-	long M;
+	int M;
 
-	if ((FMSSFP == seq) || (BSSFP == seq))
+	switch (seq) {
+	case FMSSFP:
+	case BSSFP:
 		M = 1;
-	else if (FLASH == seq)
+		break;
+	case FLASH:
 		M = N;
-	else
+		break;
+	default:
 		M = 2 * N;
-	
+	}
+
 	complex float out_signal[N];
 
 	long dims[DIMS] = { [0 ... DIMS - 1] = 1 };

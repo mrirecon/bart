@@ -34,7 +34,7 @@ extern struct iter_monitor_s* iter_monitor_create(long N, const float* image_tru
 
 struct monitor_iter6_s;
 
-typedef void (*monitor_iter6_fun_t)(struct monitor_iter6_s* data, long epoch, long batch, long numbatches, float objective, long NI, const float* x[NI], char* post_string);
+typedef void (*monitor_iter6_fun_t)(struct monitor_iter6_s* data, int epoch, int batch, int numbatches, float objective, long NI, const float* x[NI], char* post_string);
 typedef void (*monitor_iter6_free_t)(const struct monitor_iter6_s* data);
 
 struct monitor_iter6_s {
@@ -44,6 +44,6 @@ struct monitor_iter6_s {
 	monitor_iter6_free_t free;
 };
 
-void monitor_iter6(struct monitor_iter6_s* monitor, long epoch, long batch, long num_batches, float objective, long NI, const float* x[NI], char* post_string);
+void monitor_iter6(struct monitor_iter6_s* monitor, int epoch, int batch, int num_batches, float objective, long NI, const float* x[NI], char* post_string);
 
 #endif // __ITER_MONITOR_H

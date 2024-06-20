@@ -434,16 +434,16 @@ void eigenmaps(const long out_dims[DIMS], complex float* optr, complex float* ep
 	assert(!ecal_usegpu);
 #endif
 
-	long channels = out_dims[3];
-	long maps = out_dims[4];
+	int channels = (int)out_dims[3];
+	int maps = (int)out_dims[4];
 
 	assert(DIMS >= 5);
 	assert(1 == md_calc_size(DIMS - 5, out_dims + 5));
 	assert(maps <= channels);
 
-	long xx = out_dims[0];
-	long yy = out_dims[1];
-	long zz = out_dims[2];
+	int xx = (int)out_dims[0];
+	int yy = (int)out_dims[1];
+	int zz = (int)out_dims[2];
 
 	float scale = 1.; // for some reason, not
 
@@ -457,9 +457,9 @@ void eigenmaps(const long out_dims[DIMS], complex float* optr, complex float* ep
 	md_clear(5, out_dims, optr, CFL_SIZE);
 
 #pragma omp parallel for collapse(3)
-	for (long k = 0; k < zz; k++) {
-		for (long j = 0; j < yy; j++) {
-			for (long i = 0; i < xx; i++) {
+	for (int k = 0; k < zz; k++) {
+		for (int j = 0; j < yy; j++) {
+			for (int i = 0; i < xx; i++) {
 
 				if (!msk || msk[i + xx * (j + yy * k)])	{
 
@@ -468,7 +468,7 @@ void eigenmaps(const long out_dims[DIMS], complex float* optr, complex float* ep
 
 					complex float tmp[channels * (channels + 1) / 2];
 
-					for (long l = 0; l < channels * (channels + 1) / 2; l++)
+					for (int l = 0; l < channels * (channels + 1) / 2; l++)
 						tmp[l] = imgcov2[((l * zz + k) * yy + j) * xx + i] / scale;
 
 					unpack_tri_matrix(channels, cov, tmp);
@@ -478,11 +478,11 @@ void eigenmaps(const long out_dims[DIMS], complex float* optr, complex float* ep
 					else 
 						lapack_eig(channels, val, cov);
 
-					for (long u = 0; u < maps; u++) {
+					for (int u = 0; u < maps; u++) {
 
-						long ru = (orthiter ? maps : channels) - 1 - u;
+						int ru = (orthiter ? maps : channels) - 1 - u;
 
-						for (long v = 0; v < channels; v++) 
+						for (int v = 0; v < channels; v++)
 							optr[((((u * channels + v) * zz + k) * yy + j) * xx + i)] = cov[ru][v];
 
 						if (NULL != eptr)
@@ -701,9 +701,9 @@ static void perturb(const long dims[2], complex float* vecs, float amt)
 }
 
 
-static int number_of_kernels(const struct ecalib_conf* conf, int N, const float val[N])
+static long number_of_kernels(const struct ecalib_conf* conf, long N, const float val[N])
 {
-	int n = 0;
+	long n = 0;
 
 	if (-1 != conf->numsv) {
 
@@ -713,7 +713,7 @@ static int number_of_kernels(const struct ecalib_conf* conf, int N, const float 
 
 	} else if (conf->percentsv != -1.) {
 
-		n = N * conf->percentsv / 100.;
+		n = (float)N * conf->percentsv / 100.;
 		assert(-1 == conf->numsv);
 		assert(-1. == conf->threshold);
 
@@ -757,7 +757,7 @@ void compute_kernels(const struct ecalib_conf* conf, long nskerns_dims[5], compl
 	nskerns_dims[2] = conf->kdims[2];
 	nskerns_dims[3] = caldims[3];
 
-	long N = md_calc_size(4, nskerns_dims);
+	int N = (int)md_calc_size(4, nskerns_dims);
 
 	assert(N > 0);
 	nskerns_dims[4] = N;
@@ -779,7 +779,7 @@ void compute_kernels(const struct ecalib_conf* conf, long nskerns_dims[5], compl
 		soft_weight_singular_vectors(N, conf->var, conf->kdims, caldims, val, val);
 
 	for (int i = 0; i < N; i++)
-		for (int j = 0; j < N; j++) 
+		for (int j = 0; j < N; j++)
 #ifndef FLIP
 			nskerns[i * N + j] = ((*vec)[j][i]) * (conf->weighting ? val[i] : 1.);
 #else
@@ -842,8 +842,8 @@ void compute_imgcov(const long cov_dims[4], complex float* imgcov, const long ns
 	long ky = nskerns_dims[1];
 	long kz = nskerns_dims[2];
 
-	long channels = nskerns_dims[3];
-	long nr_kernels = nskerns_dims[4];
+	int channels = (int)nskerns_dims[3];
+	int nr_kernels = (int)nskerns_dims[4];
 
 	long imgkern_dims[5] = { xh, yh, zh, channels, nr_kernels };
 
@@ -870,7 +870,7 @@ void compute_imgcov(const long cov_dims[4], complex float* imgcov, const long ns
 	ifftmod(5, imgkern_dims, FFT_FLAGS, imgkern1, imgkern1);
 	ifft2(5, imgkern_dims, FFT_FLAGS, m2str, imgkern2, istr, imgkern1);
 
-	float scalesq = (kx * ky * kz) * (xh * yh * zh); // second part for FFT scaling
+	float scalesq = (float)((kx * ky * kz) * (xh * yh * zh)); // second part for FFT scaling
 
 	md_free(imgkern1);
 

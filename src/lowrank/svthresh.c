@@ -32,76 +32,70 @@
 #include "svthresh.h"
 
 
-float svthresh_nomeanu( long M, long N, float lambda, complex float* dst, const complex float* src)
+float svthresh_nomeanu(int M, int N, float lambda, complex float* dst, const complex float* src)
 {
-	long MN = M*N;
+	int MN = M * N;
+
+	complex float* basis = md_alloc(1, (long[1]){ M }, CFL_SIZE);
+	complex float* coeff = md_alloc(1, (long[1]){ N }, CFL_SIZE);
+	complex float* tmp = md_alloc(1, (long[1]){ MN }, CFL_SIZE);
+
+	for (int i = 0; i < M; i++)
+		basis[i] = 1. / sqrtf((float)M);
 
 
-	complex float* basis = md_alloc( 1, &M, CFL_SIZE );
-	complex float* coeff = md_alloc( 1, &N, CFL_SIZE );
-	complex float* tmp = md_alloc( 1, &MN, CFL_SIZE );
+	md_clear(1, (long[1]){ N }, coeff, CFL_SIZE);
+	md_clear(1, (long[1]){ MN }, tmp, CFL_SIZE);
 
-	for( int i = 0; i < M; i++)
-		basis[i] = 1./sqrtf( M );
+	for (int j = 0; j < N; j++)
+		for (int i = 0; i < M; i++)
+			coeff[j] += basis[i] * src[i + j * M];
 
-
-	md_clear( 1, &N, coeff, CFL_SIZE );
-	md_clear( 1, &MN, tmp, CFL_SIZE );
-
-	for( int j = 0; j < N; j++)
-		for( int i = 0; i < M; i++)
-			coeff[j] += basis[i] * src[i + j*M];
-
-	for( int j = 0; j < N; j++)
-		for( int i = 0; i < M; i++)
-			tmp[i + j*M] = src[i + j*M] - coeff[j] * basis[i];
+	for (int j = 0; j < N; j++)
+		for (int i = 0; i < M; i++)
+			tmp[i + j * M] = src[i + j*M] - coeff[j] * basis[i];
 
 	svthresh(M, N, lambda , dst, tmp);
 
-	for( int j = 0; j < N; j++)
-		for( int i = 0; i < M; i++)
-			dst[i + j*M] += coeff[j] * basis[i];
-
+	for (int j = 0; j < N; j++)
+		for (int i = 0; i < M; i++)
+			dst[i + j * M] += coeff[j] * basis[i];
 
 	return 0;
-
 }
 
 
-float svthresh_nomeanv( long M, long N, float lambda, complex float* dst, const complex float* src)
+float svthresh_nomeanv(int M, int N, float lambda, complex float* dst, const complex float* src)
 {
-	long MN = M*N;
+	int MN = M * N;
+
+	complex float* basis = md_alloc(1, (long[1]){ N }, CFL_SIZE);
+	complex float* coeff = md_alloc(1, (long[1]){ M }, CFL_SIZE);
+	complex float* tmp = md_alloc(1, (long[1]){ MN }, CFL_SIZE);
+
+	for (int i = 0; i < N; i++)
+		basis[i] = 1. / sqrtf((float)N);
+
+	md_clear(1, (long[1]){ M }, coeff, CFL_SIZE);
+	md_clear(1, (long[1]){ MN }, tmp, CFL_SIZE);
+
+	for (int j = 0; j < N; j++)
+		for (int i = 0; i < M; i++)
+			coeff[i] += basis[j] * src[i + j * M];
+
+	for (int j = 0; j < N; j++)
+		for (int i = 0; i < M; i++)
+			tmp[i + j * M] = src[i + j * M] - coeff[i] * basis[j];
 
 
-	complex float* basis = md_alloc( 1, &N, CFL_SIZE );
-	complex float* coeff = md_alloc( 1, &M, CFL_SIZE );
-	complex float* tmp = md_alloc( 1, &MN, CFL_SIZE );
+	svthresh(M, N, lambda, dst, tmp);
 
-	for( int i = 0; i < N; i++)
-		basis[i] = 1. / sqrtf( N );
-
-	md_clear( 1, &M, coeff, CFL_SIZE );
-	md_clear( 1, &MN, tmp, CFL_SIZE );
-
-	for( int j = 0; j < N; j++)
-		for( int i = 0; i < M; i++)
-			coeff[i] += basis[j] * src[i + j*M];
-;
-
-	for( int j = 0; j < N; j++)
-		for( int i = 0; i < M; i++)
-			tmp[i + j*M] = src[i + j*M] - coeff[i] * basis[j];
-
-
-	svthresh(M, N, lambda , dst, tmp);
-
-	for( int j = 0; j < N; j++)
-		for( int i = 0; i < M; i++)
-			dst[i + j*M] += coeff[i] * basis[j];
+	for (int j = 0; j < N; j++)
+		for (int i = 0; i < M; i++)
+			dst[i + j * M] += coeff[i] * basis[j];
 
 
 	return 0;
-
 }
 
 /**
@@ -114,12 +108,10 @@ float svthresh_nomeanv( long M, long N, float lambda, complex float* dst, const 
  */
 float svthresh(long M, long N, float lambda, complex float* dst, const complex float* src) //FIXME: destroys input
 {
-
-
-	long minMN = MIN(M,N);
-	long dimsU[3] = {M,minMN,1};
-	long dimsVT[3] = {minMN,N,1};
-	long dimsS[3] = {minMN,1,1};
+	long minMN = MIN(M, N);
+	long dimsU[3] = { M, minMN, 1};
+	long dimsVT[3] = { minMN, N, 1 };
+	long dimsS[3] = { minMN, 1, 1 };
 //	long dimsAA[3] = {minMN, minMN,1};
 
 	long strsVT[3];
@@ -143,11 +135,11 @@ float svthresh(long M, long N, float lambda, complex float* dst, const complex f
 	md_softthresh(3, dimsS, lambda, 0, S, S);
 
 	// VT = S * VT
-	md_mul2( 3, dimsVT, strsVT, (float*) VT, strsVT, (float*) VT, strsS, S );
-	md_mul2( 3, dimsVT, strsVT, ((float*) VT)+1, strsVT, ((float*) VT)+1, strsS, S );
+	md_mul2(3, dimsVT, strsVT, (float*) VT, strsVT, (float*) VT, strsS, S);
+	md_mul2(3, dimsVT, strsVT, ((float*) VT)+1, strsVT, ((float*) VT)+1, strsS, S);
 
 	// dst = U * VT
-	blas_matrix_multiply( M, N, minMN, (complex float (*) [N])dst, (const complex float (*) [minMN])U, (const complex float (*) [N])VT );
+	blas_matrix_multiply(M, N, minMN, (complex float (*) [N])dst, (const complex float (*) [minMN])U, (const complex float (*) [N])VT );
 
 	md_free(U);
 	md_free(VT);
@@ -160,18 +152,17 @@ float svthresh(long M, long N, float lambda, complex float* dst, const complex f
 
 
 
-float nuclearnorm(long M, long N, const complex float* d) { // FIXME: destroys input
+float nuclearnorm(long M, long N, const complex float* d)
+{ // FIXME: destroys input
 
 	long minMN = MIN(M,N);
-	long dimsU[3]	=	{M, minMN, 1};
-	long dimsVT[3]	=	{minMN, N, 1};
-	long dimsS[3]	=	{minMN, 1, 1};
-
+	long dimsU[3]	= { M, minMN, 1 };
+	long dimsVT[3]	= { minMN, N, 1 };
+	long dimsS[3]	= { minMN, 1, 1 };
 
 	complex float* U = md_alloc_sameplace(3, dimsU, CFL_SIZE, d);
 	complex float* VT = md_alloc_sameplace(3, dimsVT, CFL_SIZE, d );
 	float* S = md_alloc_sameplace(3, dimsS, FL_SIZE, d);
-
 
 	// SVD
 	lapack_svd_econ(M, N, (complex float (*) []) U, (complex float (*) []) VT, S, (complex float (*) [N])d);
@@ -184,19 +175,19 @@ float nuclearnorm(long M, long N, const complex float* d) { // FIXME: destroys i
 	md_free(VT);
 	md_free(S);
 
-
 	return nnorm;
 }
 
 
 float maxsingular(long M, long N, const complex float* d)
 {	// FIXME: destroys input
-	long dimsU[2] = {M,N};
-	long dimsV[2] = {N,N};
+	long dimsU[2] = { M, N };
+	long dimsV[2] = { N, N };
   
-	complex float* U = md_alloc(2, dimsU, sizeof(complex float) );
-	complex float* VT = md_alloc(2, dimsV, sizeof(complex float) );
-	float* S = xmalloc( (size_t)(MIN(M, N) * (long)sizeof(float)) );
+	complex float* U = md_alloc(2, dimsU, sizeof(complex float));
+	complex float* VT = md_alloc(2, dimsV, sizeof(complex float));
+
+	float* S = xmalloc((size_t)(MIN(M, N) * (long)sizeof(float)));
 
 	// SVD
 	lapack_svd_econ(M, N, (complex float (*) []) U, 
@@ -224,7 +215,7 @@ struct svthresh_blockproc_data {
 	int remove_mean;
 };
 
-struct svthresh_blockproc_data* svthresh_blockproc_create( unsigned long mflags, float lambda, int remove_mean )
+struct svthresh_blockproc_data* svthresh_blockproc_create(unsigned long mflags, float lambda, int remove_mean)
 {
 	PTR_ALLOC(struct svthresh_blockproc_data, data);
 	data->mflags = mflags;
@@ -233,34 +224,37 @@ struct svthresh_blockproc_data* svthresh_blockproc_create( unsigned long mflags,
 	return data;
 }
 
-float svthresh_blockproc( const void* _data, const long blkdims[DIMS], complex float* dst, const complex float* src )
+float svthresh_blockproc(const void* _data, const long blkdims[DIMS], complex float* dst, const complex float* src)
 {
-	const struct svthresh_blockproc_data* data = (const struct svthresh_blockproc_data*) _data;
+	const struct svthresh_blockproc_data* data = _data;
 
-	long M = 1;
-	long N = md_calc_size( DIMS, blkdims );
+	int M = 1;
+	int N = (int)md_calc_size(DIMS, blkdims);
 
+	for (int i = 0; i < DIMS; i++) {
 
-	for ( unsigned int i = 0; i < DIMS; i++ )
-	{
-		if (MD_IS_SET(data->mflags, i))
-		{
-			M *= blkdims[i];
-			N /= blkdims[i];
-		}
+		if (!MD_IS_SET(data->mflags, i))
+			continue;
+
+		M *= blkdims[i];
+		N /= blkdims[i];
 	}
 
-	if (data->remove_mean == 1)
+	switch (data->remove_mean) {
+	case 1:
 		svthresh_nomeanu(M, N, data->lambda , dst, src);
-	else if (data->remove_mean == 2)
+		break;
+	case 2:
 		svthresh_nomeanv(M, N, data->lambda , dst, src);
-	else if (data->remove_mean == 0)
+		break;
+	case 0:
 		svthresh(M, N, data->lambda , dst, src);
-	else
+		break;
+	default:
 		assert(0);
+	}
 
 	return 0;
-	
 }
 
 

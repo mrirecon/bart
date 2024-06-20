@@ -28,12 +28,12 @@
 typedef struct monitor_iter6_value_data_s {
 
 	const struct typeid_s* TYPEID;
-	int N_vals;
+	long N_vals;
 
 } monitor_iter6_value_data_t;
 
-typedef void (*monitor_iter6_value_fun_t)(const monitor_iter6_value_data_t* data, int N, complex float vals[N], long NI, const float* args[NI]);
-typedef bool (*monitor_iter6_value_eval_t)(const monitor_iter6_value_data_t* data, long epoch, long batch, long numbatches);
+typedef void (*monitor_iter6_value_fun_t)(const monitor_iter6_value_data_t* data, long N, complex float vals[N], int NI, const float* args[NI]);
+typedef bool (*monitor_iter6_value_eval_t)(const monitor_iter6_value_data_t* data, int epoch, int batch, int numbatches);
 typedef const char* (*monitor_iter6_value_print_string_t)(const monitor_iter6_value_data_t* data);
 typedef void (*monitor_iter6_value_free_t)(const monitor_iter6_value_data_t* data);
 
@@ -99,11 +99,11 @@ static const char* print_progress_bar(int length, int done, int total)
 static const char* print_time_string(double time, double est_time)
 {
 	return ptr_printf(" time: %d:%02d:%02d/%d:%02d:%02d;",
-		(int)time / 3600, ((int)time %3600)/60, ((int)time % 3600) % 60,
-		(int)est_time / 3600, ((int)est_time %3600)/60, ((int)est_time % 3600) % 60);
+		(int)time / 3600, ((int)time %3600) / 60, ((int)time % 3600) % 60,
+		(int)est_time / 3600, ((int)est_time % 3600) / 60, ((int)est_time % 3600) % 60);
 }
 
-static void create_record(struct monitor_iter6_default_s* monitor, long epoch, long num_batches)
+static void create_record(struct monitor_iter6_default_s* monitor, int epoch, int num_batches)
 {
 	if (!monitor->use_record)
 		return;
@@ -156,7 +156,7 @@ void monitor_iter6_dump_record(struct monitor_iter6_s* _monitor, const char* fil
 	unmap_cfl(4, rdims_write, file);
 }
 
-static const char* compute_val_monitors(struct monitor_iter6_default_s* monitor, long epoch, long batch, long num_batches, long NI, const float* x[NI])
+static const char* compute_val_monitors(struct monitor_iter6_default_s* monitor, int epoch, int batch, int num_batches, long NI, const float* x[NI])
 {
 	create_record(monitor, epoch, num_batches);
 
@@ -215,7 +215,7 @@ static const char* compute_val_monitors(struct monitor_iter6_default_s* monitor,
 
 
 
-static void monitor6_default_fun(struct monitor_iter6_s* _monitor, long epoch, long batch, long numbatches, float objective, long NI, const float* x[NI], char* post_string)
+static void monitor6_default_fun(struct monitor_iter6_s* _monitor, int epoch, int batch, int numbatches, float objective, long NI, const float* x[NI], char* post_string)
 {
 	auto monitor = CAST_DOWN(monitor_iter6_default_s, _monitor);
 
@@ -230,7 +230,7 @@ static void monitor6_default_fun(struct monitor_iter6_s* _monitor, long epoch, l
 	double est_time = time + (double)(numbatches - batch - 1) * time / (double)(batch + 1);
 	const char* str_time = (print_time) ? print_time_string(time, est_time) : ptr_printf("");
 
-	monitor->average_obj = ((batch) * monitor->average_obj + objective) / (batch + 1);
+	monitor->average_obj = ((float)batch * monitor->average_obj + objective) / ((float)batch + 1);
 
 	const char* str_loss = (print_loss) ? ptr_printf(" loss: %e;", monitor->print_average_obj ? monitor->average_obj: objective) :  ptr_printf("");
 
@@ -358,7 +358,7 @@ struct monitor_iter6_nlop_s {
 
 static DEF_TYPEID(monitor_iter6_nlop_s);
 
-static void monitor_iter6_nlop_fun(const monitor_iter6_value_data_t* data, int N, complex float vals[N], long NI, const float* args[NI])
+static void monitor_iter6_nlop_fun(const monitor_iter6_value_data_t* data, long N, complex float vals[N], int NI, const float* args[NI])
 {
         const auto d = CAST_DOWN(monitor_iter6_nlop_s, data);
 
@@ -390,7 +390,7 @@ static void monitor_iter6_nlop_fun(const monitor_iter6_value_data_t* data, int N
 	md_free(tmp_args[0]);
 }
 
-static bool monitor_iter6_nlop_eval(const monitor_iter6_value_data_t* _data, long /*epoch*/, long batch, long num_batches)
+static bool monitor_iter6_nlop_eval(const monitor_iter6_value_data_t* _data, int /*epoch*/, int batch, int num_batches)
 {
 	const auto d = CAST_DOWN(monitor_iter6_nlop_s, _data);
 
@@ -500,7 +500,7 @@ struct monitor_iter6_function_s {
 
 static DEF_TYPEID(monitor_iter6_function_s);
 
-static void monitor_iter6_function_fun(const monitor_iter6_value_data_t* data, int N, complex float vals[N], long NI, const float* args[NI])
+static void monitor_iter6_function_fun(const monitor_iter6_value_data_t* data, long N, complex float vals[N], int NI, const float* args[NI])
 {
 	const auto d = CAST_DOWN(monitor_iter6_function_s, data);
 	assert(1 == N);
@@ -510,7 +510,7 @@ static void monitor_iter6_function_fun(const monitor_iter6_value_data_t* data, i
 	vals[0] = d->last_result;
 }
 
-static bool monitor_iter6_function_eval(const monitor_iter6_value_data_t* _data, long /*epoch*/, long batch, long num_batches)
+static bool monitor_iter6_function_eval(const monitor_iter6_value_data_t* _data, int /*epoch*/, int batch, int num_batches)
 {
 	const auto d = CAST_DOWN(monitor_iter6_function_s, _data);
 

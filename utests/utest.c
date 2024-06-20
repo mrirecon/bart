@@ -57,7 +57,7 @@ void abort_or_print(const char* testname)
 		if (NULL != str) {
 
 			errno = 0;
-			long r = strtol(str, NULL, 10);
+			int r = (int)strtol(str, NULL, 10);
 
 			if ((errno == 0) && (0 <= r) && (r <= 1))
 				abort_on_error = r;

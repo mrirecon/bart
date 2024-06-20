@@ -42,7 +42,7 @@
 
 void scc(const long out_dims[DIMS], complex float* out_data, const long caldims[DIMS], const complex float* cal_data)
 {
-	int channels = caldims[COIL_DIM];
+	int channels = (int)caldims[COIL_DIM];
 
 	assert(1 == md_calc_size(3, out_dims));
 	assert(out_dims[COIL_DIM] == channels);
@@ -51,7 +51,7 @@ void scc(const long out_dims[DIMS], complex float* out_data, const long caldims[
 	complex float tmp[channels][channels];
 
 
-	long csize = md_calc_size(3, caldims);
+	int csize = (int)md_calc_size(3, caldims);
 	gram_matrix(channels, tmp, csize, (const complex float (*)[csize])cal_data);
 
 	float vals[channels];
@@ -119,7 +119,7 @@ static void align_ro2(const long dims[DIMS], int start, int end, complex float* 
 
 		md_copy_block(DIMS, (long[DIMS]){ [READ_DIM] = i + dir }, tmp_dims, tmp2, dims, idata, CFL_SIZE);
 
-		align1(tmp_dims[MAPS_DIM], tmp_dims[COIL_DIM],
+		align1((int)tmp_dims[MAPS_DIM], (int)tmp_dims[COIL_DIM],
 				MD_CAST_ARRAY2(      complex float, DIMS, tmp_dims, tmp3, COIL_DIM, MAPS_DIM),
 				MD_CAST_ARRAY2(const complex float, DIMS, tmp_dims, tmp1, COIL_DIM, MAPS_DIM),
 				MD_CAST_ARRAY2(const complex float, DIMS, tmp_dims, tmp2, COIL_DIM, MAPS_DIM));
@@ -136,7 +136,7 @@ static void align_ro2(const long dims[DIMS], int start, int end, complex float* 
 
 void align_ro(const long dims[DIMS], complex float* odata, const complex float* idata)
 {
-	int ro = dims[READ_DIM];
+	int ro = (int)dims[READ_DIM];
 	assert(ro > 1);
 #if 1
 	align_ro2(dims, 0, ro, odata, idata);
@@ -154,7 +154,7 @@ void align_ro(const long dims[DIMS], complex float* odata, const complex float* 
 
 void gcc(const long out_dims[DIMS], complex float* out_data, const long caldims[DIMS], const complex float* cal_data)
 {
-	int ro = out_dims[READ_DIM];
+	int ro = (int)out_dims[READ_DIM];
 
 	// zero pad calibration region along readout and FFT
 
@@ -199,7 +199,7 @@ void gcc(const long out_dims[DIMS], complex float* out_data, const long caldims[
 
 void ecc(const long out_dims[DIMS], complex float* out_data, const long caldims[DIMS], const complex float* cal_data)
 {
-	int channels = caldims[COIL_DIM];
+	int channels = (int)caldims[COIL_DIM];
 
 	assert(1 == out_dims[PHS1_DIM]);
 	assert(1 == out_dims[PHS2_DIM]);
@@ -222,7 +222,7 @@ void ecc(const long out_dims[DIMS], complex float* out_data, const long caldims[
 	md_select_dims(DIMS, ~MAPS_FLAG, map_dims, out_dims);
         complex float* emaps = md_alloc(DIMS, map_dims, CFL_SIZE);
 
-	int K = conf.kdims[0] * caldims[COIL_DIM];
+	int K = (int)(conf.kdims[0] * caldims[COIL_DIM]);
 	float svals[K];
 	calib(&conf, out_dims, out_data, emaps, K, svals, caldims, cal_data); 
 

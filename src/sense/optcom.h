@@ -13,7 +13,7 @@ extern "C" {
 
 extern void rss_combine(const long dims[DIMS], _Complex float* image, const _Complex float* data);
 extern void optimal_combine(const long dims[DIMS], float alpha, _Complex float* image, const _Complex float* sens, const _Complex float* data);
-extern float estimate_scaling_norm(float rescale, long imsize, _Complex float* tmpnorm, bool compat);
+extern float estimate_scaling_norm(float rescale, int imsize, _Complex float* tmpnorm, bool compat);
 extern float estimate_scaling(const long dims[DIMS], const _Complex float* sens, const _Complex float* data);
 extern float estimate_scaling2(const long dims[DIMS], const _Complex float* sens, const long strs[DIMS], const _Complex float* data);
 extern float estimate_scaling_old2(const long dims[DIMS], const _Complex float* sens, const long strs[DIMS], const _Complex float* data);

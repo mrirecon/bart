@@ -476,7 +476,7 @@ void conjgrad_batch(int maxiter, float l2lambda, float epsilon,
 
 		iter_monitor(monitor, vops, x);
 
-		debug_printf(DP_DEBUG3, "#%d: %f\n", i, (double)sqrtf(vops->norm(Bo * Bi, rsnew) / (Bo * Bi)));
+		debug_printf(DP_DEBUG3, "#%d: %f\n", i, (double)sqrtf(vops->norm(Bo * Bi, rsnew) / (float)(Bo * Bi)));
 
 		iter_op_call(linop, Ap, p);	// Ap = A p
 		vops->axpy(Bo * Bi * N, Ap, l2lambda, p);
@@ -865,7 +865,7 @@ void chambolle_pock(int maxiter, float epsilon, float tau, float sigma, float th
  * @param der_in_flag only information to compute derivatives with respect to selected inputs are stores
  * @param vops vector operators
  **/
-static float compute_objective(long NO, long NI, struct iter_nlop_s nlop, float* args[NO + NI], unsigned long out_optimize_flag, unsigned long der_in_flag, const struct vec_iter_s* vops)
+static float compute_objective(int NO, int NI, struct iter_nlop_s nlop, float* args[NO + NI], unsigned long out_optimize_flag, unsigned long der_in_flag, const struct vec_iter_s* vops)
 {
 	float result = 0;
 	iter_nlop_call_select_der(nlop, NO + NI, args, out_optimize_flag, der_in_flag); 	// r = F x
@@ -963,8 +963,8 @@ static void getgrad(int NI, unsigned long in_optimize_flag, long isize[NI], floa
 void sgd(	int epochs, int batches,
 		float learning_rate, float batchnorm_momentum,
 		float learning_rate_schedule[epochs][batches],
-		long NI, long isize[NI], enum IN_TYPE in_type[NI], float* x[NI],
-		long NO, long osize[NO], enum OUT_TYPE out_type[NI],
+		int NI, long isize[NI], enum IN_TYPE in_type[NI], float* x[NI],
+		int NO, long osize[NO], enum OUT_TYPE out_type[NI],
 		int N_batch, int N_total,
 		const struct vec_iter_s* vops,
 		struct iter_nlop_s nlop, struct iter_op_arr_s adj,

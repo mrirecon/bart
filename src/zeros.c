@@ -28,7 +28,7 @@ static const char help_str[] = "Create a zero-filled array with {dims} dimension
 int main_zeros(int argc, char* argv[argc])
 {
 	int count = 0;
-	long N = -1;
+	int N = -1;
 	long* dims = NULL;
 
 	const char* out_file = NULL;
@@ -36,7 +36,7 @@ int main_zeros(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_LONG(true, &N, "dims"),
+		ARG_INT(true, &N, "dims"),
 		ARG_TUPLE(true, &count, 1, TUPLE_LONG(&dims, "dim")),
 		ARG_OUTFILE(true, &out_file, "output"),
 	};
