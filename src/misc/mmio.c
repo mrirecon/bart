@@ -89,7 +89,7 @@ static void io_error(const char* fmt, ...)
 }
 
 
-#define err_assert(x)	({ if (!(x)) { debug_printf(DP_ERROR, "%s", #x); exit(EXIT_FAILURE); } })
+#define err_assert(x)	({ if (!(x)) { error("%s", #x); } })
 
 
 bool mpi_shared_files = false;
