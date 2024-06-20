@@ -33,14 +33,22 @@ int main_estshift(int argc, char* argv[argc])
 	const char* arg1_file = NULL;
 	const char* arg2_file = NULL;
 
+	const char* out_file = NULL;
+
 	struct arg_s args[] = {
 
 		ARG_ULONG(true, &flags, "flags"),
 		ARG_INFILE(true, &arg1_file, "arg1"),
 		ARG_INFILE(true, &arg2_file, "arg2"),
+		ARG_OUTFILE(false, &out_file, "out"),
 	};
 
-	const struct opt_s opts[] = { };
+	bool fov = false;
+
+	const struct opt_s opts[] = {
+		
+		OPT_SET('f', &fov, "use FoV coordinates"),
+	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
@@ -55,12 +63,23 @@ int main_estshift(int argc, char* argv[argc])
 	float shifts[DIMS];
 	est_subpixel_shift(DIMS, shifts, dims1, flags, in1, in2);
 
+	long odims[DIMS];
+	md_singleton_dims(DIMS, odims);
+	odims[0] = bitcount(flags);
+
+	complex float* out = (out_file ? create_cfl : anon_cfl)(out_file, DIMS, odims);
+
 	bart_printf("Shifts:");
 
-	for (int i = 0; i < DIMS; i++) {
+	for (int i = 0, ip = 0; i < DIMS; i++) {
 
 		if (!MD_IS_SET(flags, i))
 			continue;
+
+		if (fov)
+			shifts[i] /= dims1[i];
+
+		out[ip++] = shifts[i];
 
 		bart_printf("\t%f", shifts[i]);
 	}
@@ -69,6 +88,7 @@ int main_estshift(int argc, char* argv[argc])
 
 	unmap_cfl(DIMS, dims1, in1);
 	unmap_cfl(DIMS, dims2, in2);
+	unmap_cfl(DIMS, odims, out);
 
 	return 0;
 }
