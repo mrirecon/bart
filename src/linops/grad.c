@@ -55,7 +55,7 @@ static void grad_op(int D, const long dims[D], int d, unsigned long flags, compl
 
 	for (int i = 0; i < N; i++) {
 
-		int lsb = ffs(flags2) - 1;
+		int lsb = (int)ffsl((long)flags2) - 1;
 		flags2 = MD_CLEAR(flags2, lsb);
 
 		md_zfdiff2(D, dims1, lsb, strs, (void*)out + i * strs[d], strs1, in);
@@ -90,7 +90,7 @@ static void grad_adjoint(int D, const long dims[D], int d, unsigned long flags, 
 
 	for (int i = 0; i < N; i++) {
 
-		int lsb = ffs(flags2) - 1;
+		int lsb = ffsl((long)flags2) - 1;
 		flags2 = MD_CLEAR(flags2, lsb);
 
 		md_zfdiff_backwards2(D, dims1, lsb, strs1, tmp, strs, (void*)in + i * strs[d]);
@@ -152,7 +152,7 @@ static void grad_op_free(const linop_data_t* _data)
 	xfree(data);
 }
 
-struct linop_s* linop_grad_create(long N, const long dims[N], int d, unsigned int flags)
+struct linop_s* linop_grad_create(long N, const long dims[N], int d, unsigned long flags)
 {
 	PTR_ALLOC(struct grad_s, data);
 	SET_TYPEID(grad_s, data);

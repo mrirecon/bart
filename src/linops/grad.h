@@ -5,7 +5,7 @@
 
 #include "misc/cppwrap.h"
 
-extern struct linop_s* linop_grad_create(long N, const long dims[__VLA(N)], int d, unsigned int flags);
+extern struct linop_s* linop_grad_create(long N, const long dims[__VLA(N)], int d, unsigned long flags);
 
 #include "misc/cppwrap.h"
 
