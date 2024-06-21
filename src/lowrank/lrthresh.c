@@ -349,12 +349,12 @@ float lrnucnorm(const struct operator_p_s* op, const complex float* src)
  *
  * returns number of levels
  */
-long multilr_blkdims(long blkdims[MAX_LEV][DIMS], unsigned long flags, const long idims[DIMS], int blkskip, long initblk)
+int multilr_blkdims(long blkdims[MAX_LEV][DIMS], unsigned long flags, const long idims[DIMS], int blkskip, int initblk)
 {
 	// Multiscale low rank block sizes
 	long tmp_block[DIMS];
 
-	for (unsigned int i = 0; i < DIMS; i++) {
+	for (int i = 0; i < DIMS; i++) {
 
 		if (MD_IS_SET(flags, i))
 			tmp_block[i] = MIN(initblk, idims[i]);
@@ -364,13 +364,13 @@ long multilr_blkdims(long blkdims[MAX_LEV][DIMS], unsigned long flags, const lon
 
 	bool done;
 	// Loop block_sizes
-	long levels = 0;
+	int levels = 0;
 
 	do {
 		levels++;
 		debug_printf(DP_INFO, "[\t");
 
-		for (unsigned int i = 0; i < DIMS; i++) {
+		for (int i = 0; i < DIMS; i++) {
 
 			blkdims[levels - 1][i] = tmp_block[i];
 			debug_printf(DP_INFO, "%ld\t", blkdims[levels-1][i]);
@@ -381,7 +381,7 @@ long multilr_blkdims(long blkdims[MAX_LEV][DIMS], unsigned long flags, const lon
 
 		done = true;
 
-		for (unsigned int i = 0; i < DIMS; i++) {
+		for (int i = 0; i < DIMS; i++) {
 
 			if (MD_IS_SET(flags, i) && (idims[i] != 1)) {
 
@@ -397,13 +397,13 @@ long multilr_blkdims(long blkdims[MAX_LEV][DIMS], unsigned long flags, const lon
 
 
 
-void add_lrnoiseblk(long* levels, long blkdims[MAX_LEV][DIMS], const long idims[DIMS])
+void add_lrnoiseblk(int* levels, long blkdims[MAX_LEV][DIMS], const long idims[DIMS])
 {
 	levels[0]++;
 		
 	debug_printf(DP_DEBUG1, "[\t");
 
-	for (unsigned int i = 0; i < DIMS; i++) {
+	for (int i = 0; i < DIMS; i++) {
 
 		blkdims[levels[0] - 1][i] = idims[i];
 
@@ -425,9 +425,9 @@ void add_lrnoiseblk(long* levels, long blkdims[MAX_LEV][DIMS], const long idims[
  *
  * returns number of levels = 1
  */
-long llr_blkdims(long blkdims[MAX_LEV][DIMS], unsigned long flags, const long idims[DIMS], long llrblk)
+int llr_blkdims(long blkdims[MAX_LEV][DIMS], unsigned long flags, const long idims[DIMS], int llrblk)
 {
-	for (unsigned int i = 0; i < DIMS; i++) {
+	for (int i = 0; i < DIMS; i++) {
 
 		if (MD_IS_SET(flags, i))
 			blkdims[0][i] = MIN(llrblk, idims[i]);
@@ -448,9 +448,9 @@ long llr_blkdims(long blkdims[MAX_LEV][DIMS], unsigned long flags, const long id
  *
  * returns number of levels = 2
  */
-long ls_blkdims(long blkdims[MAX_LEV][DIMS], const long idims[DIMS])
+int ls_blkdims(long blkdims[MAX_LEV][DIMS], const long idims[DIMS])
 {
-	for (unsigned int i = 0; i < DIMS; i++) {
+	for (int i = 0; i < DIMS; i++) {
 
 		blkdims[0][i] = 1;
 		blkdims[1][i] = idims[i];
@@ -466,3 +466,4 @@ float get_lrthresh_lambda(const struct operator_p_s* o)
 
 	return data->lambda;
 }
+
