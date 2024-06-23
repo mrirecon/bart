@@ -9,6 +9,8 @@
 import subprocess as sp
 import tempfile as tmp
 import os
+import sys
+import asyncio
 
 if __spec__.parent:
     from . import cfl
@@ -18,7 +20,18 @@ else:
     from wslsupport import PathCorrection
     import cfl
 
-def bart(nargout, cmd, *args, **kwargs):
+isWASM = True if sys.platform == 'emscripten' else False
+
+
+def bart(*args, **kwargs):
+    if isWASM:
+        print("Please use await bart.bart2!", file=sys.stderr)
+        raise RuntimeError("Synchronous bart not available in wasm")
+
+    loop = asyncio.new_event_loop()
+    return loop.run_until_complete(bart2(*args, **kwargs))
+
+async def bart2(nargout, cmd, *args, **kwargs):
 
     if type(nargout) != int or nargout < 0:
         print("Usage: bart(<nargout>, <command>, <arguments...>)")
@@ -37,7 +50,7 @@ def bart(nargout, cmd, *args, **kwargs):
 
     isWSL = False
 
-    if not bart_path:
+    if not isWASM and not bart_path:
         if os.path.isfile('/usr/local/bin/bart'):
             bart_path = '/usr/local/bin'
         elif os.path.isfile('/usr/bin/bart'):
@@ -85,12 +98,18 @@ def bart(nargout, cmd, *args, **kwargs):
             args_infiles_kw = [item for pair in zip(args_kw, infiles_kw) for item in pair]
             shell_cmd = ['bash.exe', '--login',  '-c', os.path.join(bart_path, 'bart'), *cmd, *args_infiles_kw, *infiles, *outfiles]
             #TODO: Test with cygwin, this is just translation from matlab code
+
+        assert(not isWASM)
+
     else:
         args_infiles_kw = [item for pair in zip(args_kw, infiles_kw) for item in pair]
-        shell_cmd = [os.path.join(bart_path, 'bart'), *cmd, *args_infiles_kw, *infiles, *outfiles]
+        shell_cmd = [os.path.join(bart_path, 'bart') if not isWASM else 'bart', *cmd, *args_infiles_kw, *infiles, *outfiles]
 
     # run bart command
-    ERR, stdout, stderr = execute_cmd(shell_cmd)
+    if isWASM:
+        ERR, stdout, stderr = await run_wasm_cmd(shell_cmd, infiles, infiles_kw, outfiles)
+    else:
+        ERR, stdout, stderr = execute_cmd(shell_cmd)
 
     # store error code, stdout and stderr in function attributes for outside access
     # this makes it possible to access these variables from outside the function (e.g "print(bart.ERR)")
@@ -135,7 +154,7 @@ def execute_cmd(cmd):
     Execute a command in a shell.
     Print and catch the output.
     """
-    
+
     errcode = 0
     stdout = ""
     stderr = ""
@@ -160,3 +179,94 @@ def execute_cmd(cmd):
     proc.stderr.close()
 
     return errcode, stdout, stderr
+
+
+
+wasm_bart_ok = False;
+
+async def get_wasm_cfl(name):
+    await wasm_async_call(f"get_cfl('{name}')")
+
+async def put_wasm_cfl(name):
+    await wasm_async_call(f"send_cfl('{name}')")
+
+async def rm_bart_cfl(name):
+    await wasm_async_call(f"rm_cfl('{name}')")
+
+async def wasm_load_bart():
+    global wasm_bart_ok
+    await wasm_async_call("reload_bart()")
+    wasm_bart_ok = True
+
+async def run_wasm_cmd(cmd, infiles, infiles_kw, outfiles):
+    global wasm_bart_ok;
+    try:
+        if not wasm_bart_ok:
+            await wasm_load_bart()
+
+        for f in infiles + infiles_kw:
+            await put_wasm_cfl(f)
+
+        non_empty_cmd = [x for x in cmd if len(cmd) > 0]
+
+        result = await wasm_async_call("bart_cmd('" + ' '.join(non_empty_cmd) + "')")
+        ERR, stdout, stderr = result['ret'], result['stdout'], result['stderr']
+
+        if not stdout is None and len(stdout.strip()) > 0:
+            print(stdout)
+
+        if not stderr is None and len(stderr.strip()) > 0:
+            print(stderr, file=sys.stderr)
+
+        if not 0 == ERR:
+            print(f"Function exited with {ERR}", file=sys.stderr)
+
+        for f in outfiles:
+            await get_wasm_cfl(f)
+
+        for f in infiles + infiles_kw + outfiles:
+            await rm_bart_cfl(f)
+
+        return ERR, stdout, stderr
+
+    except Exception as e:
+        print("Exception in bart worker calls occured:")
+        print(e)
+        wasm_bart_ok = False
+        raise e
+
+async def wasm_async_call(cmd):
+    # synchronous function would be nice
+    # but this seems impossible: https://github.com/pyodide/pyodide/issues/3932
+    #loop = asyncio.get_event_loop()
+    #task = pyodide.code.run_js(cmd)
+    #return loop.run_until_complete(asyncio.wait([task]))
+
+    ret = (await pyodide.code.run_js(cmd)).to_py()
+    if 0 != ret[0]:
+        raise Exception(f"Error in JS call: {ret[1]}")
+
+    return ret[1];
+
+
+if isWASM:
+    import pyodide, pyodide_js, js
+
+    # Export pyodide to webworker namespace:
+    pyodide.code.run_js("var pyodide;")
+    js.pyodide = pyodide_js
+
+    # load BART:
+    pyodide.code.run_js("""
+                        if ('undefined' == (typeof window)) {
+                            importScripts("bart_base.js");
+
+                        } else {
+
+                            script = document.createElement('script');
+                            script.type = 'text/javascript';
+                            script.async = true;
+                            script.src = "bart_base.js";
+                            document.body.appendChild(script);
+                        }
+                        """)

@@ -87,3 +87,23 @@ ISMRMRD=0
     - set the reserved function pointers to the number of functions u need at the same time.
     - Results in two files: a.out.js and a.out.wasm (can be changed to anything with -o filename.js but the .js at the end is important)
     - Both have to be in the same directory on the web server
+
+======
+
+Embedding in JupyterLite:
+
+- Install JupyterLite CLI: python -m pip install jupyterlite-core
+- Install Pyodide kernel: jupyterlite-pyodide-kernel
+- Create folder, e.g.: mkdir lite
+- jupyter lite init --output-dir demo --port 8000
+
+- Add a folder for python packages: mkdir lite/pypi
+- Build BART python package: from bart/pkg/python,  python3 -m build --wheel
+- Copy wheel: e.g. cp bart/pkg/python/dist/bart-0.0.1-py3-none-any.whl lite/pypi
+
+- Build bart wasm: bart/build_webasm_main.sh
+- Copy files to web: cp bart/web/wwwroot/bart_main.{js,wasm} /bart/web/wwwroot/bart_{base,worker}.js lite/demo/extensions/@jupyterlite/pyodide-kernel-extension/static/
+
+- jupyter lite build
+
+Plain pyodide repl works similar
