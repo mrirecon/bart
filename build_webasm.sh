@@ -20,3 +20,12 @@ emcc -O3 -Wall bart.o -s EXPORTED_FUNCTIONS="['__Block_object_dispose','_malloc'
 '_main_walsh', '_main_wave', '_main_wavelet', '_main_wavepsf', '_main_whiten', '_main_window', '_main_wshfl', '_main_zeros', '_main_zexp' \
  ]" -s ALLOW_MEMORY_GROWTH=1 -s MAXIMUM_MEMORY=4GB -o ./web/wwwroot/bart_cmd.js \
  $HOME/wasm_libs/lib/libfftw3f.a $HOME/wasm_libs/lib/libopenblas.a $HOME/wasm_libs/usr/local/lib/libBlocksRuntime.a
+
+# modularized:
+emcc -Wall \
+-s EXPORTED_FUNCTIONS=_main,_malloc,_free,_mmap,_munmap,_setenv,_getenv,__Block_object_dispose \
+-s EXPORTED_RUNTIME_METHODS=ccall,cwrap,FS \
+-s ALLOW_MEMORY_GROWTH=1 -s MAXIMUM_MEMORY=4GB -s INITIAL_MEMORY=256MB -s TOTAL_STACK=64MB -sMODULARIZE=1 -sEXPORT_NAME=bart_main \
+-O3 \
+-o ./web/wwwroot/bart_main.js \
+bart.o $HOME/wasm_libs/lib/libfftw3f.a $HOME/wasm_libs/lib/libopenblas.a $HOME/wasm_libs/usr/local/lib/libBlocksRuntime.a
