@@ -8,9 +8,15 @@
 
 import subprocess as sp
 import tempfile as tmp
-import cfl
 import os
-from wslsupport import PathCorrection
+
+if __spec__.parent:
+    from . import cfl
+    from .wslsupport import PathCorrection
+else:
+    # 'traditional' copy-paste bart.py
+    from wslsupport import PathCorrection
+    import cfl
 
 def bart(nargout, cmd, *args, **kwargs):
 

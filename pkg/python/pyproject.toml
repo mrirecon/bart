@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bart"
+description = "Python wrapper for the Berkeley Advanced Reconstruction Toolbox (BART). Requires existing BART installation."
+dependencies = ["numpy"]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://mrirecon.github.io/bart/"
+
+[tool.setuptools.dynamic]
+version = {file = ["version.txt"]}
