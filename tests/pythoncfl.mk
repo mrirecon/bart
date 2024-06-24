@@ -7,7 +7,7 @@ tests/test-python-cfl: $(TESTS_DIR)/pythoncfl.py nrmse flip $(TESTS_OUT)/shepplo
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
 	$(TOOLDIR)/flip 0 $(TESTS_OUT)/shepplogan.ra shepplogan					;\
 	PYTHONPATH=$(ROOTDIR)/python $(TESTS_DIR)/pythoncfl.py shepplogan shepplogan2	;\
-	$(TOOLDIR)/nrmse -t 0.000001 shepplogan shepplogan2					;\
+	$(TOOLDIR)/nrmse -t 0.0 shepplogan shepplogan2					;\
 	rm *.cfl *.hdr ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
