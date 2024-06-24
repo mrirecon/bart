@@ -26,6 +26,7 @@
 #include "misc/mri.h"
 #include "misc/opts.h"
 #include "misc/debug.h"
+#include "misc/version.h"
 
 #include "noncart/traj.h"
 
@@ -256,9 +257,6 @@ int main_traj(int argc, char* argv[argc])
 
 	md_clear(DIMS, dims, samples, CFL_SIZE);
 
-	double golden_ratio = (sqrtf(5.) + 1.) / 2;
-	double angle_atom = M_PI / Y;
-
 	double base_angle[DIMS] = { 0. };
 	calc_base_angles(base_angle, Y, E, mb2, turns, conf);
 
@@ -285,9 +283,15 @@ int main_traj(int argc, char* argv[argc])
 
 			double read = (float)sample + (conf.asym_traj ? 0 : 0.5) - (float)D / 2.;
 
+			// Used, for example, in the SMS-NLINV paper
+			if (conf.golden_partition && use_compat_to_version("v0.9.00")) {
 
-			if (conf.golden_partition)
-				base_angle[SLICE_DIM] = (m > 0) ? (fmod(angle_atom * m / golden_ratio, angle_atom) / m) : 0;
+				double golden_ratio = (sqrtf(5.) + 1.) / 2;
+				double angle_atom = M_PI / Y;
+
+				if (conf.golden_partition)
+					base_angle[SLICE_DIM] = (m > 0) ? (fmod(angle_atom * m / golden_ratio, angle_atom) / m) : 0;
+			}
 
 			double angle = 0.;
 
