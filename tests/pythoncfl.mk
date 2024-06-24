@@ -23,7 +23,14 @@ tests/test-python-multicfl: $(TESTS_DIR)/pythonmulticfl.py multicfl ones nrmse $
 	rm *.ra ; rm *.cfl; rm *.hdr ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-python-ra: $(TESTS_DIR)/pythoncfl.py nrmse flip $(TESTS_OUT)/shepplogan.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/flip 0 $(TESTS_OUT)/shepplogan.ra shepplogan_fl.ra					;\
+	PYTHONPATH=$(ROOTDIR)/python $(TESTS_DIR)/pythoncfl.py shepplogan_fl.ra shepplogan_fl2.ra	;\
+	$(TOOLDIR)/nrmse -t 0.0 shepplogan_fl.ra shepplogan_fl2.ra					;\
+	rm *.ra; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
 
 
-TESTS_PYTHON += tests/test-python-cfl tests/test-python-multicfl
+TESTS_PYTHON += tests/test-python-cfl tests/test-python-multicfl tests/test-python-ra
 

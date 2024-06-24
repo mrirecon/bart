@@ -1,5 +1,6 @@
 # Copyright 2013-2015. The Regents of the University of California.
 # Copyright 2021. Uecker Lab. University Center Göttingen.
+# Copyright 2024. Institute for Biomedical Imaging. TU Graz.
 # All rights reserved. Use of this source code is governed by
 # a BSD-style license which can be found in the LICENSE file.
 #
@@ -14,8 +15,67 @@ import numpy as np
 import mmap
 import os
 
+# see src/misc/io.c for rawarray header defintion
+_RA_MAGIC = int(0x7961727261776172)
+_RA_TYPE_COMPLEX = int(4)
+_RA_CFL_SIZE = int(8)
+_RA_HEADER_ELEMS = 6
+
+def _readra(name):
+
+    with open(name, "rb") as f:
+        header = np.fromfile(f, dtype=np.uint64, count=_RA_HEADER_ELEMS)
+        magic = header[0]
+        flags = header[1]
+        eltype = header[2]
+        elsize = header[3]
+        datasize = header[4]
+        ndims = header[5]
+
+        if ( magic != _RA_MAGIC
+                or (flags & np.uint64(1)) != 0
+                or eltype != _RA_TYPE_COMPLEX
+                or elsize != _RA_CFL_SIZE ):
+            print("Invalid .ra header!")
+            raise RuntimeError
+
+        shape_arr = np.fromfile(f, dtype=np.uint64, count = ndims)
+
+        arr = np.fromfile(f, dtype=np.complex64, count = datasize // elsize).reshape(shape_arr, order='F')
+    return arr
+
+def _writera(name, array):
+
+    header = np.empty((6,), dtype=np.uint64)
+    header[0] = _RA_MAGIC
+    header[1] = np.uint64(0)
+    header[2] = _RA_TYPE_COMPLEX
+    header[3] = _RA_CFL_SIZE
+    header[4] = np.prod(array.shape) * np.dtype(np.complex64).itemsize
+    header[5] = array.ndim
+
+
+    shape_arr = np.array(array.shape, dtype=np.uint64)
+    fullsize = int(header[4] + header.nbytes + shape_arr.nbytes)
+
+    with open(name, "a+b") as d:
+        os.ftruncate(d.fileno(), fullsize)
+        mm = mmap.mmap(d.fileno(), fullsize, flags=mmap.MAP_SHARED, prot=mmap.PROT_WRITE)
+        if array.dtype != np.complex64:
+            array = array.astype(np.complex64)
+        mm.write(np.ascontiguousarray(header))
+        mm.write(np.ascontiguousarray(shape_arr))
+        mm.write(np.ascontiguousarray(array.T))
+        mm.close()
+
+    return
+
 
 def readcfl(name):
+
+    if name.endswith(".ra"):
+        return _readra(name)
+
     # get dims from .hdr
     with open(name + ".hdr", "rt") as h:
         h.readline() # skip
@@ -61,6 +121,10 @@ def readmulticfl(name):
 
 
 def writecfl(name, array):
+
+    if name.endswith(".ra"):
+        return _writera(name, array)
+
     with open(name + ".hdr", "wt") as h:
         h.write('# Dimensions\n')
         for i in (array.shape):
