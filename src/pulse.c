@@ -40,7 +40,7 @@ int main_pulse(int argc, char* argv[argc])
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	int N = 256;
-	const struct pulse* ps;
+	const struct pulse* ps = NULL;
 
 	switch (pulse_type) {
 	case PULSE_SINC: ps = CAST_UP(&pulse_sinc_defaults); break;

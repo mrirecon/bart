@@ -182,7 +182,7 @@ static void compute_fields(struct sim_data* data, float gb_eff[3], float t)
 
 	if (data->seq.pulse_applied) {
 
-		struct pulse* ps;
+		struct pulse* ps = NULL;
 
 		switch (data->pulse.type) {
 
