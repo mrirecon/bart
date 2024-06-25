@@ -55,7 +55,7 @@ static void grad_op(int D, const long dims[D], int d, unsigned long flags, compl
 
 	for (int i = 0; i < N; i++) {
 
-		int lsb = (int)ffsl((long)flags2) - 1;
+		int lsb = ffsl((long)flags2) - 1;
 		flags2 = MD_CLEAR(flags2, lsb);
 
 		md_zfdiff2(D, dims1, lsb, strs, (void*)out + i * strs[d], strs1, in);

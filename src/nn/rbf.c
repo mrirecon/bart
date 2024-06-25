@@ -384,7 +384,7 @@ const struct nlop_s* nlop_activation_rbf_create(const long dims[3], float Imax, 
 	//The paper states \sigma = (Imax - Imin) / (Nw - 1)
 	//However sigma is implemented differently, i.e. \sigma = (Imax - Imin) / (Nw)
 	//C.f. https://github.com/VLOGroup/tensorflow-icg/blob/a11ad61d93d57c83f1af312b84a922e7612ec398/tensorflow/contrib/icg/kernels/activations.cu.cc#L123
-	data->sigma = (float)(Imax - Imin) / (float)(dims[2]);
+	data->sigma = (Imax - Imin) / (float)(dims[2]);
 
 	long zdims[2] = {dims[0], dims[1]};
 	long wdims[2] = {dims[0], dims[2]};
