@@ -29,7 +29,7 @@ extern __attribute__((noreturn)) void error(const char* str, ...);
 #define CAST_MAYBE(T, x)	({ \
 	__typeof__(x) __tmp = (x); \
 	extern __typeof__(*__tmp->TYPEID) T ## _TYPEID; \
-	(__tmp->TYPEID == &T ## _TYPEID) ?		\
+	((NULL != __tmp) && (__tmp->TYPEID == &T ## _TYPEID)) ? \
 		CONTAINER_OF(__tmp, struct T, INTERFACE)\
 		: NULL;	\
 })

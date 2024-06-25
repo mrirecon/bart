@@ -74,7 +74,7 @@ int main_rmfreq(int argc, char* argv[argc])
 		error("k-space and trajectory inconsistent!\n");
 
 	// Modulation file
-	long mod_dims[DIMS];
+	long mod_dims[DIMS] = { 0 };	// analyzer false positive
 	const complex float* mod = NULL;
 
 	if (NULL != mod_file) {
@@ -163,13 +163,14 @@ int main_rmfreq(int argc, char* argv[argc])
 	complex float* n_mod = NULL;
 
 	long n_mod_dims[DIMS];
-	md_copy_dims(DIMS, n_mod_dims, n_dims);
-	n_mod_dims[COIL_DIM] = mod_dims[COIL_DIM];
-
 	long n_mod_strs[DIMS];
-	md_calc_strides(DIMS, n_mod_strs, n_mod_dims, CFL_SIZE);
 
 	if (NULL != mod_file) {
+
+		md_copy_dims(DIMS, n_mod_dims, n_dims);
+		n_mod_dims[COIL_DIM] = mod_dims[COIL_DIM];
+
+		md_calc_strides(DIMS, n_mod_strs, n_mod_dims, CFL_SIZE);
 
 		assert(md_check_equal_dims(DIMS, n_dims, mod_dims, ~(COIL_FLAG|(1u << LAST_DIM))));
 
@@ -258,6 +259,9 @@ int main_rmfreq(int argc, char* argv[argc])
 
 	unmap_cfl(DIMS, k_dims, k);
 	unmap_cfl(DIMS, k_dims, k_cor);
+
+	if (NULL != mod_file)
+		unmap_cfl(DIMS, mod_dims, mod);
 
 	xfree(n_mod);
 
