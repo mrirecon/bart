@@ -938,6 +938,19 @@ struct linop_s* linop_copy_wrapper(int D, const long istrs[D], const long ostrs[
 	return linop_copy_wrapper2(D, istrs, D, ostrs, op);
 }
 
+struct linop_s* linop_cpu_wrapper(struct linop_s* op)
+{
+	PTR_ALLOC(struct linop_s, op2);
+
+	op2->forward = operator_cpu_wrapper(op->forward);
+	op2->adjoint = operator_cpu_wrapper(op->adjoint);
+	op2->normal = (NULL == op->normal) ? NULL : operator_cpu_wrapper(op->normal);
+	op2->norm_inv = NULL; // FIXME
+
+	return PTR_PASS(op2);
+}
+
+
 struct linop_s* linop_gpu_wrapper(struct linop_s* op)
 {
 	PTR_ALLOC(struct linop_s, op2);
@@ -1083,34 +1096,6 @@ const linop_data_t* operator_get_linop_data(const struct operator_s* op)
 		return NULL;
 	else
 		return data->data;
-}
-
-struct linop_s* linop_assign_gpu(const struct linop_s* op, int device)
-{
-#ifdef USE_CUDA
-	if (operator_zero_or_null_p(op->forward))
-		return (struct linop_s*)linop_clone(op);
-
-	PTR_ALLOC(struct linop_s, c);
-
-	c->forward =  operator_assign_gpu(op->forward, device);
-	c->adjoint = operator_assign_gpu(op->adjoint, device);
-	c->normal = operator_assign_gpu(op->normal, device);
-	c->norm_inv = NULL;
-
-	return PTR_PASS(c);
-#else
-	(void)device;
-
-	return (struct linop_s*)linop_clone(op);
-#endif
-}
-
-struct linop_s* linop_assign_gpu_F(const struct linop_s* op, int device)
-{
-	auto result = linop_assign_gpu(op, device);
-	linop_free(op);
-	return result;
 }
 
 static enum node_identic node_identify_linop(const struct node_s* _a, const struct node_s* _b)

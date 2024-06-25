@@ -750,20 +750,6 @@ nn_t nn_checkpoint_F(nn_t op, bool der_once, bool clear_mem)
 	return result;
 }
 
-nn_t nn_assign_gpu_F(nn_t op, int device)
-{
-	auto result = nn_from_nlop_F(nlop_assign_gpu(op->nlop, device));
-
-	for (int i = 0; i < nn_get_nr_in_args(result); i++)
-		nn_clone_arg_i_from_i(result, i, op, i);
-	for (int i = 0; i < nn_get_nr_out_args(result); i++)
-		nn_clone_arg_o_from_o(result, i, op, i);
-
-	nn_free(op);
-
-	return result;
-}
-
 nn_t nn_dump_input_F(nn_t op, int i, const char* iname, const char* fname, bool frw, bool der, bool adj)
 {
 	i = nn_get_in_arg_index(op, i, iname);

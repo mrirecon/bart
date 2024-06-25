@@ -127,7 +127,6 @@ extern const struct iovec_s* nn_generic_domain(nn_t op, int i, const char* iname
 extern const struct iovec_s* nn_generic_codomain(nn_t op, int o, const char* oname);
 
 extern nn_t nn_checkpoint_F(nn_t op, _Bool der_once, _Bool clear_mem);
-extern nn_t nn_assign_gpu_F(nn_t op, int device);
 
 extern nn_t nn_optimize_graph_F(nn_t op);
 

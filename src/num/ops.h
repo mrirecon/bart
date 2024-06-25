@@ -121,8 +121,6 @@ extern const struct operator_s* operator_cpu_wrapper(const struct operator_s* op
 struct vptr_hint_s;
 extern const struct operator_s* operator_vptr_wrapper(const struct operator_s* op, struct vptr_hint_s* hint);
 
-extern const struct operator_s* operator_assign_gpu(const struct operator_s* op, int device);
-
 extern const struct operator_s* operator_loop2(int N, const int D,
 				const long dims[D], const long (*strs)[D],
 				const struct operator_s* op);

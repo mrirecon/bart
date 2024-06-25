@@ -1258,21 +1258,6 @@ const struct operator_s* operator_gpu_wrapper(const struct operator_s* op)
 }
 
 
-const struct operator_s* operator_assign_gpu(const struct operator_s* op, int device)
-{
-	int N = op->N;
-	enum COPY_LOCATION loc[N];
-	const long* strs[N];
-
-	for (int i = 0; i < N; i++) {
-
-		loc[i] = CL_DEVICE;
-		strs[i] = NULL;
-	}
-
-	return operator_copy_wrapper_generic(N, strs, loc, op, device, false);
-}
-
 
 struct vptr_wrapper_s {
 

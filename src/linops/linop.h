@@ -112,12 +112,9 @@ extern struct linop_s* linop_loop(int D, const long dims[D], struct linop_s* op)
 extern struct linop_s* linop_loop_F(int D, const long dims[D], struct linop_s* op);
 extern struct linop_s* linop_copy_wrapper2(int DI, const long istrs[DI], int DO, const long ostrs[DO],  struct linop_s* op);
 extern struct linop_s* linop_copy_wrapper(int D, const long istrs[D], const long ostrs[D], struct linop_s* op);
+extern struct linop_s* linop_cpu_wrapper(struct linop_s* op);
 extern struct linop_s* linop_gpu_wrapper(struct linop_s* op);
 extern struct linop_s* linop_vptr_wrapper(struct vptr_hint_s* hint, struct linop_s* op);
-
-extern struct linop_s* linop_assign_gpu(const struct linop_s* op, int device);
-extern struct linop_s* linop_assign_gpu_F(const struct linop_s* op, int device);
-
 
 extern struct linop_s* linop_null_create2(int NO, const long odims[NO], const long ostrs[NO], int NI, const long idims[NI], const long istrs[NI]);
 extern struct linop_s* linop_null_create(int NO, const long odims[NO], int NI, const long idims[NI]);
