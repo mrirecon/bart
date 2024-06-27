@@ -10,7 +10,6 @@ import subprocess as sp
 import tempfile as tmp
 import os
 import sys
-import asyncio
 
 if __spec__.parent:
     from . import cfl
@@ -22,17 +21,43 @@ else:
 
 isWASM = True if sys.platform == 'emscripten' else False
 
-
-def bart(*args, **kwargs):
+def bart(nargout, cmd, *args, **kwargs):
     if isWASM:
         print("Please use await bart.bart2!", file=sys.stderr)
         raise RuntimeError("Synchronous bart not available in wasm")
 
-    loop = asyncio.new_event_loop()
-    return loop.run_until_complete(bart2(*args, **kwargs))
+    prep = bart_prepare(nargout, cmd, *args, **kwargs)
+    if not prep:
+        return
+
+    ERR, stdout, stderr = execute_cmd(prep['shell_cmd'])
+
+    # store error code, stdout and stderr in function attributes for outside access
+    # this makes it possible to access these variables from outside the function (e.g "print(bart.ERR)")
+    bart.ERR, bart.stdout, bart.stderr = ERR, stdout, stderr
+
+    return bart_postprocess(nargout, ERR, prep['infiles'], prep['infiles_kw'], prep['outfiles'])
+
 
 async def bart2(nargout, cmd, *args, **kwargs):
+    if not isWASM:
+        print("Please use synchronous bart.bart!", file=sys.stderr)
+        raise RuntimeError("Asynchronous bart is only available in wasm")
 
+    prep = bart_prepare(nargout, cmd, *args, **kwargs)
+    if not prep:
+        return
+
+    ERR, stdout, stderr = await run_wasm_cmd(**prep)
+
+    # store error code, stdout and stderr in function attributes for outside access
+    # this makes it possible to access these variables from outside the function (e.g "print(bart.ERR)")
+    bart.ERR, bart.stdout, bart.stderr = ERR, stdout, stderr
+
+    return bart_postprocess(nargout, ERR, prep['infiles'], prep['infiles_kw'], prep['outfiles'])
+
+
+def bart_prepare(nargout, cmd, *args, **kwargs):
     if type(nargout) != int or nargout < 0:
         print("Usage: bart(<nargout>, <command>, <arguments...>)")
         return
@@ -105,16 +130,10 @@ async def bart2(nargout, cmd, *args, **kwargs):
         args_infiles_kw = [item for pair in zip(args_kw, infiles_kw) for item in pair]
         shell_cmd = [os.path.join(bart_path, 'bart') if not isWASM else 'bart', *cmd, *args_infiles_kw, *infiles, *outfiles]
 
-    # run bart command
-    if isWASM:
-        ERR, stdout, stderr = await run_wasm_cmd(shell_cmd, infiles, infiles_kw, outfiles)
-    else:
-        ERR, stdout, stderr = execute_cmd(shell_cmd)
+    return dict(shell_cmd=shell_cmd, infiles=infiles, infiles_kw=infiles_kw, outfiles=outfiles)
 
-    # store error code, stdout and stderr in function attributes for outside access
-    # this makes it possible to access these variables from outside the function (e.g "print(bart.ERR)")
-    bart.ERR, bart.stdout, bart.stderr = ERR, stdout, stderr
 
+def bart_postprocess(nargout, ERR, infiles, infiles_kw, outfiles):
     for elm in infiles:
         if os.path.isfile(elm + '.cfl'):
             os.remove(elm + '.cfl')
@@ -198,7 +217,7 @@ async def wasm_load_bart():
     await wasm_async_call("reload_bart()")
     wasm_bart_ok = True
 
-async def run_wasm_cmd(cmd, infiles, infiles_kw, outfiles):
+async def run_wasm_cmd(shell_cmd, infiles, infiles_kw, outfiles):
     global wasm_bart_ok;
     try:
         if not wasm_bart_ok:
@@ -207,7 +226,7 @@ async def run_wasm_cmd(cmd, infiles, infiles_kw, outfiles):
         for f in infiles + infiles_kw:
             await put_wasm_cfl(f)
 
-        non_empty_cmd = [x for x in cmd if len(cmd) > 0]
+        non_empty_cmd = [x for x in shell_cmd if len(shell_cmd) > 0]
 
         result = await wasm_async_call("bart_cmd('" + ' '.join(non_empty_cmd) + "')")
         ERR, stdout, stderr = result['ret'], result['stdout'], result['stderr']
