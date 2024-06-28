@@ -549,7 +549,7 @@ int main_pics(int argc, char* argv[argc])
 
 		debug_printf(DP_INFO, "Size: %ld Samples: %ld Acc: %.2f\n", T, samples, (float)T / (float)samples);
 
-		fftmod(DIMS, ksp_dims, FFT_FLAGS, kspace_p, kspace_p);
+		ifftmod(DIMS, ksp_dims, FFT_FLAGS, kspace_p, kspace_p);
 		fftmod(DIMS, map_dims, FFT_FLAGS, maps_p, maps_p);
 	}
 
