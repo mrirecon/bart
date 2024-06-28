@@ -98,6 +98,8 @@ endif
 
 ifeq ($(BUILDTYPE), MacOSX)
 	MACPORTS ?= 1
+else
+	MACPORTS ?= 0
 endif
 
 
@@ -460,8 +462,14 @@ CFLAGS += -fopenmp
 CXXFLAGS += -fopenmp
 NVCCFLAGS += -Xcompiler -fopenmp
 else
+ifeq ($(MACPORTS),1)
+CFLAGS += -fopenmp
+CXXFLAGS += -fopenmp
+NVCCFLAGS += -Xcompiler -fopenmp
+else
 LDFLAGS += "-L/usr/local/opt/libomp/lib" -lomp
 CPPFLAGS += "-I/usr/local/opt/libomp/include" -Xclang -fopenmp
+endif
 endif
 else
 CFLAGS += -Wno-unknown-pragmas
