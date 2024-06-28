@@ -168,7 +168,7 @@ static void interpolate_free(const linop_data_t* _d)
 	xfree(d);
 }
 
-struct linop_s* linop_interpolate_create(int N, unsigned long flags, const long ksp_dims[N], const long grd_dims[N], const long trj_dims[N], const complex float* traj, struct grid_conf_s* conf)
+struct linop_s* linop_interpolate_kb_create(int N, unsigned long flags, const long ksp_dims[N], const long grd_dims[N], const long trj_dims[N], const complex float* traj, struct grid_conf_s* conf)
 {
 	PTR_ALLOC(struct kb_iterpolate_s, data);
 	SET_TYPEID(kb_iterpolate_s, data);
@@ -216,11 +216,11 @@ extern struct linop_s* nufft_create_chain(int N,
 		md_max_dims(N, ~0UL, ksp_max_dims, ksp_dims, bas_dims);
 		assert(md_check_compat(N, ~0UL, ksp_dims, bas_dims));
 
-		ret = linop_chain_FF(ret, linop_interpolate_create(N, flags, ksp_max_dims, os_cim_dims, traj_dims, traj, conf));
+		ret = linop_chain_FF(ret, linop_interpolate_kb_create(N, flags, ksp_max_dims, os_cim_dims, traj_dims, traj, conf));
 		ret = linop_chain_FF(ret, linop_fmac_create(N, ksp_max_dims, ~md_nontriv_dims(N, ksp_dims), 0, ~md_nontriv_dims(N, bas_dims), basis));
 	} else {
 
-		ret = linop_chain_FF(ret, linop_interpolate_create(N, flags, ksp_dims, os_cim_dims, traj_dims, traj, conf));
+		ret = linop_chain_FF(ret, linop_interpolate_kb_create(N, flags, ksp_dims, os_cim_dims, traj_dims, traj, conf));
 	}
 
 	if (NULL != weights) {
