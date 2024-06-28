@@ -1,24 +1,24 @@
 T_TOL=1e-8
 
-TRAJ_TURNS=$(AGUE_TWIX_REF)/traj_tests/t_turns
+TRAJ_TURNS=$(AGUE_REF)/traj/t_turns
 O_TRAJ_TURNS=-x128 -y73 -t5 -D
 
-TRAJ_GA_c=$(AGUE_TWIX_REF)/traj_tests/t_GA_c
+TRAJ_GA_c=$(AGUE_REF)/traj/t_GA_c
 O_TRAJ_GA_c=-x128 -y51 -r -G -c
 
-TRAJ_GA_H=$(AGUE_TWIX_REF)/traj_tests/t_GA_H
+TRAJ_GA_H=$(AGUE_REF)/traj/t_GA_H
 O_TRAJ_GA_H=-x128 -y53 -r -H
 
-TRAJ_tiny_GA=$(AGUE_TWIX_REF)/traj_tests/t_tiny_GA
+TRAJ_tiny_GA=$(AGUE_REF)/traj/t_tiny_GA
 O_TRAJ_tiny_GA=-x128 -y127 -s11 -G -t10 -D -r
 
-TRAJ_MEMS=$(AGUE_TWIX_REF)/traj_tests/t_MEMS
+TRAJ_MEMS=$(AGUE_REF)/traj/t_MEMS
 O_TRAJ_MEMS=-x128 -y31 -t7 -r -s3 -D -E -e5 -c
 
-TRAJ_MEMS_ASYM=$(AGUE_TWIX_REF)/traj_tests/t_MEMS_asym
+TRAJ_MEMS_ASYM=$(AGUE_REF)/traj/t_MEMS_asym
 O_TRAJ_MEMS_ASYM=-x128 -d192 -y31 -t7 -r -s3 -D -E -e5 -c
 
-TRAJ_GOLDEN_PARTITIONS=$(AGUE_TWIX_REF)/traj_tests/t_golden_partitions
+TRAJ_GOLDEN_PARTITIONS=$(AGUE_REF)/traj/t_golden_partitions
 O_TRAJ_GOLDEN_PARTITIONS=-x 384 -y 29 -t 1 -m 3 -g -D
 
 tests/test-traj_turns: traj nrmse ${TRAJ_TURNS}.cfl

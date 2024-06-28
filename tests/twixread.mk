@@ -1,7 +1,7 @@
-TWIX_SingleRaid=$(AGUE_TWIX_REF)/TWIX_SingleRaid.dat
-TWIX_MultiRaid=$(AGUE_TWIX_REF)/TWIX_MultiRaid.dat
-TWIX_MPI=$(AGUE_TWIX_REF)/TWIX_MPI.dat
-TWIX_VE=$(AGUE_TWIX_REF)/TWIX_VE.dat
+TWIX_SingleRaid=$(AGUE_REF)/twix/TWIX_SingleRaid.dat
+TWIX_MultiRaid=$(AGUE_REF)/twix/TWIX_MultiRaid.dat
+TWIX_MPI=$(AGUE_REF)/twix/TWIX_MPI.dat
+TWIX_VE=$(AGUE_REF)/twix/TWIX_VE.dat
 
 tests/test-twixread: twixread ${TIWX_SingleRaid}
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
