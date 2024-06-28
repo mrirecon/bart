@@ -173,6 +173,9 @@ unsigned int rand_range_state(struct bart_rand_state* state, unsigned int range)
 {
 	static_assert(sizeof(unsigned int) == sizeof(uint32_t), "unsigned int is not 32 bits!\n");
 
+	if (1 >= range)
+		return 0;
+
 	if (!use_obsolete_rng()) {
 
 		// Lemire's Method, see https://arxiv.org/abs/1805.10941
