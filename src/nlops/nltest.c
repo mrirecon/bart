@@ -161,6 +161,9 @@ static float nlop_test_derivative_priv(const struct nlop_s* op, const complex fl
 
 			vall = val;
 			scale /= 2.;
+
+			if (1.e-6 * md_znorm(N_cod, dims_cod, y1) > md_znorm(N_cod, dims_cod, d2))
+				break;
 		}
 
 		float ratio = val / val0;
