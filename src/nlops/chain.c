@@ -665,7 +665,7 @@ struct nlop_s* nlop_permute_inputs(const struct nlop_s* x, int I2, const int per
 
 	PTR_ALLOC(struct nlop_s, n);
 
-	const struct linop_s* (*der)[II][OO] = TYPE_ALLOC(const struct linop_s*[II][OO]);
+	const struct linop_s* (*der)[II?:1][OO?:1] = TYPE_ALLOC(const struct linop_s*[II?:1][OO?:1]);
 	n->derivative = &(*der)[0][0];
 
 	for (int i = 0; i < II; i++)
@@ -698,7 +698,7 @@ struct nlop_s* nlop_permute_outputs(const struct nlop_s* x, int O2, const int pe
 
 	PTR_ALLOC(struct nlop_s, n);
 
-	const struct linop_s* (*der)[II][OO] = TYPE_ALLOC(const struct linop_s*[II][OO]);
+	const struct linop_s* (*der)[II?:1][OO?:1] = TYPE_ALLOC(const struct linop_s*[II?:1][OO?:1]);
 	n->derivative = &(*der)[0][0];
 
 	for (int i = 0; i < II; i++)

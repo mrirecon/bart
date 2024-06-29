@@ -448,9 +448,9 @@ struct nlop_s* nlop_clone(const struct nlop_s* op)
 
 	n->op = operator_ref(op->op);
 
-	const struct linop_s* (*der)[II][OO] = (void*)op->derivative;
+	const struct linop_s* (*der)[II?:1][OO?:1] = (void*)op->derivative;
 
-	PTR_ALLOC(const struct linop_s*[II][OO], nder);
+	PTR_ALLOC(const struct linop_s*[II?:1][OO?:1], nder);
 
 	for (int i = 0; i < II; i++)
 		for (int o = 0; o < OO; o++)
