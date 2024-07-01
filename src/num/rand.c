@@ -19,6 +19,7 @@
 
 #include "misc/version.h"
 #include "misc/debug.h"
+#include "misc/misc.h"
 #include "misc/mmio.h"
 
 #include "num/multind.h"
@@ -72,7 +73,7 @@ void rand_state_update(struct bart_rand_state* state, unsigned long long seed)
 	if (0 == seed) // special case to preserve old behavior
 		state->num_rand_seed = 123;
 	else
-		state->num_rand_seed = (unsigned int) seed; // truncate here, as rand_r cannot use 64 bits of state
+		state->num_rand_seed = (unsigned int)seed; // truncate here, as rand_r cannot use 64 bits of state
 
 
 	// For Philox:
@@ -87,12 +88,11 @@ void rand_state_update(struct bart_rand_state* state, unsigned long long seed)
 	state->state = out[0];
 	state->ctr1 = 0;
 	state->ctr2 = 0;
-
 }
 
 struct bart_rand_state* rand_state_create(unsigned long long seed)
 {
-	struct bart_rand_state* state = malloc(sizeof *state);
+	struct bart_rand_state* state = xmalloc(sizeof *state);
 	rand_state_update(state, seed);
 	return state;
 }
@@ -111,8 +111,8 @@ void num_rand_init(unsigned long long seed)
 
 static uint64_t rand64_state(struct bart_rand_state* state)
 {
-
 	uint64_t out[2];
+
 	philox_4x32(state->state, state->ctr1, state->ctr2, out);
 	state->ctr1++;
 
@@ -134,6 +134,7 @@ static double uniform_rand_state(struct bart_rand_state* state)
 static double uniform_rand_obsolete()
 {
 	struct bart_rand_state* state = &global_rand_state[cfl_loop_worker_id()];
+
 	return rand_r(&state->num_rand_seed) / (double)RAND_MAX;
 }
 
@@ -153,6 +154,7 @@ double uniform_rand(void)
 #pragma 	omp critical(global_rand_state)
 		r = uniform_rand_state(&global_rand_state[cfl_loop_worker_id()]);
 	}
+
 	return r;
 }
 
@@ -174,13 +176,14 @@ unsigned int rand_range_state(struct bart_rand_state* state, unsigned int range)
 		uint32_t l;
 
 		do {
-
 			uint32_t x = rand64_state(state);
 			m = (uint64_t) x * (uint64_t) range;
 			l = (uint32_t) m;
+
 		} while (l < t);
 
 		return m >> 32;
+
 	} else {
 
 		// Division with rejection, for use with rand_r, as Lemire's method needs a 32-bit PRNG
@@ -188,8 +191,8 @@ unsigned int rand_range_state(struct bart_rand_state* state, unsigned int range)
 		uint32_t retval;
 
 		do {
-
 			retval = (uint32_t)rand_r(&state->num_rand_seed) / divisor;
+
 		} while (retval >= range);
 
 		return retval;
@@ -234,7 +237,6 @@ static complex double gaussian_rand_func(uniform_rand_t func)
 
 static complex double gaussian_rand_obsolete(void)
 {
-
 	NESTED(double, uniform_rand_obsolete_wrapper, (void))
 	{
 		double r;
@@ -281,8 +283,6 @@ static complex double gaussian_rand_state(struct bart_rand_state* state)
 	double im = sqrt(-2. * log(s) / s) * u2;
 
 	return re + 1.i * im;
-
-
 #endif
 }
 
@@ -293,13 +293,14 @@ complex double gaussian_rand(void)
 	if (use_obsolete_rng()) {
 
 		r = gaussian_rand_obsolete();
+
 	} else {
 
 #pragma 	omp critical(global_rand_state)
 		r = gaussian_rand_state(&global_rand_state[cfl_loop_worker_id()]);
 	}
-	return r;
 
+	return r;
 }
 
 
@@ -307,8 +308,8 @@ complex double gaussian_rand(void)
 
 void gaussian_rand_vec(long N, float* dst)
 {
-	complex float* tmp = md_alloc(1, MD_DIMS(N / 2 + 1), sizeof(complex float));
-	md_gaussian_rand(1, MD_DIMS(N / 2 + 1), tmp);
+	complex float* tmp = md_alloc(1, MD_DIMS((N + 1) / 2), sizeof(complex float));
+	md_gaussian_rand(1, MD_DIMS((N + 1) / 2), tmp);
 	md_copy(1, MD_DIMS(N), dst, tmp, sizeof(float));
 	md_free(tmp);
 	//This does not need to be scaled as md_gaussian_rand has (complex) variance 2!
@@ -321,8 +322,10 @@ static void md_gaussian_obsolete_rand(int D, const long dims[D], complex float* 
 	if (cuda_ondevice(dst)) {
 
 		complex float* tmp = md_alloc(D, dims, sizeof(complex float));
+
 		md_gaussian_obsolete_rand(D, dims, tmp);
 		md_copy(D, dims, dst, tmp, sizeof(complex float));
+
 		md_free(tmp);
 		return;
 	}
@@ -333,19 +336,19 @@ static void md_gaussian_obsolete_rand(int D, const long dims[D], complex float* 
 
 static void md_gaussian_philox_rand(int D, const long dims[D], complex float* dst)
 {
-
 	struct bart_rand_state worker_state;
+
 #pragma omp critical(global_rand_state)
 	{
 		worker_state = global_rand_state[cfl_loop_worker_id()];
 		global_rand_state[cfl_loop_worker_id()].ctr1++;
 	}
 
-
 #ifdef  USE_CUDA
 	if (cuda_ondevice(dst)) {
 
 		cuda_gaussian_rand(md_calc_size(D, dims), dst, worker_state.state, worker_state.ctr1);
+
 	} else
 #endif
 	{
@@ -388,8 +391,8 @@ static void md_uniform_obsolete_rand(int D, const long dims[D], complex float* d
 
 static void md_uniform_philox_rand(int D, const long dims[D], complex float* dst)
 {
-
 	struct bart_rand_state worker_state;
+
 #pragma omp critical(global_rand_state)
 	{
 		worker_state = global_rand_state[cfl_loop_worker_id()];
@@ -403,7 +406,6 @@ static void md_uniform_philox_rand(int D, const long dims[D], complex float* dst
 	} else
 #endif
 	{
-
 #pragma 	omp parallel for
 		for (long i = 0; i < md_calc_size(D, dims); i++) {
 
@@ -440,8 +442,8 @@ static void md_obsolete_rand_one(int D, const long dims[D], complex float* dst, 
 
 static void md_philox_rand_one(int D, const long dims[D], complex float* dst, double p)
 {
-
 	struct bart_rand_state worker_state;
+
 #pragma omp critical(global_rand_state)
 	{
 		worker_state = global_rand_state[cfl_loop_worker_id()];
@@ -460,7 +462,8 @@ static void md_philox_rand_one(int D, const long dims[D], complex float* dst, do
 		for (long i = 0; i < md_calc_size(D, dims); i++) {
 
 			struct bart_rand_state state = worker_state;
-			state.ctr2 = (uint64_t) i;
+
+			state.ctr2 = (uint64_t)i;
 			dst[i] = (complex float)(uniform_rand_state(&state) < p);
 		}
 	}

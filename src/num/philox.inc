@@ -31,14 +31,13 @@ struct prod_hilo {
 
 __device__ static inline struct prod_hilo mulhilo(uint32_t M, uint32_t R)
 {
+	uint64_t product = ((uint64_t)M) * ((uint64_t)R);
 
-	uint64_t product = ((uint64_t) M) * ((uint64_t) R);
-	return (struct prod_hilo) {.lo = (uint32_t) product, .hi = (uint32_t) (product >> 32)};
+	return (struct prod_hilo){ .lo = (uint32_t)product, .hi = (uint32_t)(product >> 32) };
 }
 
 __device__ static inline void _round(const uint32_t key[2], uint32_t ctrs[4])
 {
-
 	struct prod_hilo hilo0 = mulhilo(PHILOX_M0, ctrs[0]);
 	struct prod_hilo hilo1 = mulhilo(PHILOX_M1, ctrs[2]);
 
@@ -52,9 +51,7 @@ __device__ static inline void _round(const uint32_t key[2], uint32_t ctrs[4])
 
 __device__ static void philox_4x32(const uint64_t state, const uint64_t ctr1, const uint64_t ctr2, uint64_t out[2])
 {
-
-	uint32_t key[2] = {(uint32_t) state, (uint32_t) (state >> 32)};
-
+	uint32_t key[2] = { (uint32_t)state, (uint32_t)(state >> 32) };
 
 	uint32_t ctrs[4] = {
 
@@ -65,6 +62,7 @@ __device__ static void philox_4x32(const uint64_t state, const uint64_t ctr1, co
 	};
 
 	const int nrounds = 10;
+
 	for (int r = 0; r < nrounds; r++) {
 
 		_round(key, ctrs);
@@ -75,5 +73,5 @@ __device__ static void philox_4x32(const uint64_t state, const uint64_t ctr1, co
 
 	out[0] = ((uint64_t)ctrs[0]) << 32 | (uint64_t)ctrs[1];
 	out[1] = ((uint64_t)ctrs[2]) << 32 | (uint64_t)ctrs[3];
-
 }
+
