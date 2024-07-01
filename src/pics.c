@@ -453,9 +453,6 @@ int main_pics(int argc, char* argv[argc])
 		debug_print_dims(DP_INFO, DIMS, max_dims);
 	}
 
-	if ((NULL == traj_file) && (0 != shared_img_flags))
-		error("Shared image flags only supported for non-Cartesian trajectories.\n");
-
 	md_select_dims(DIMS, ~COIL_FLAG & ~shared_img_flags, img_dims, max_dims);
 	md_select_dims(DIMS, ~MAPS_FLAG, coilim_dims, max_dims);
 
@@ -574,7 +571,7 @@ int main_pics(int argc, char* argv[argc])
 
 	if (NULL == traj_file) {
 
-		forward_op = sense_init(max_dims, map_flags, maps_p);
+		forward_op = sense_init(shared_img_flags, max_dims, map_flags, maps_p);
 
 		// apply temporal basis
 

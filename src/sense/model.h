@@ -1,9 +1,3 @@
-/* Copyright 2013-2014. The Regents of the University of California.
- * Copyright 2016. Martin Uecker.
- * All rights reserved. Use of this source code is governed by
- * a BSD-style license which can be found in the LICENSE file.
- */
- 
 
 #ifdef __cplusplus
 extern "C" {
@@ -11,15 +5,14 @@ extern "C" {
 
 #include "misc/mri.h"
 
-struct operator_s;
-struct vec_ops;
+struct linop_s;
 
-extern struct linop_s* linop_sampling_create(const long dims[DIMS], const long pat_dims[DIMS], const complex float* pattern);
+extern struct linop_s* linop_sampling_create(const long dims[DIMS], const long pat_dims[DIMS], const _Complex float* pattern);
 
-extern struct linop_s* sense_init(const long max_dims[DIMS], unsigned long sens_flags, const complex float* sens);
-extern struct linop_s* maps_create(const long max_dims[DIMS], 
-			unsigned long sens_flags, const complex float* sens);
-extern struct linop_s* maps2_create(const long coilim_dims[DIMS], const long maps_dims[DIMS], const long img_dims[DIMS], const complex float* maps);
+extern struct linop_s* sense_init(unsigned long shared_img_flags, const long max_dims[DIMS], unsigned long sens_flags, const _Complex float* sens);
+extern struct linop_s* maps_create(unsigned long shared_img_flags, const long max_dims[DIMS], 
+			unsigned long sens_flags, const _Complex float* sens);
+extern struct linop_s* maps2_create(const long coilim_dims[DIMS], const long maps_dims[DIMS], const long img_dims[DIMS], const _Complex float* maps);
 
 
 #ifdef __cplusplus

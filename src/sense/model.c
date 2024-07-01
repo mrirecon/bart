@@ -27,25 +27,19 @@
 #include <string.h>
 #include <complex.h>
 #include <assert.h>
-#include <math.h>
 #include <stdbool.h>
 
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/fft.h"
-#include "num/ops.h"
-#ifdef USE_CUDA
-#include "num/gpuops.h"
-#endif
-#include "num/multiplace.h"
+
 
 #include "linops/linop.h"
 #include "linops/someops.h"
 #include "linops/fmac.h"
 
-#include "misc/misc.h"
 #include "misc/mri.h"
-#include "misc/debug.h"
+
 
 
 #include "model.h"
@@ -65,11 +59,12 @@ struct linop_s* linop_sampling_create(const long dims[DIMS], const long pat_dims
 /**
  * Create maps operator, m = S x
  *
+ * @param shared_img_flags select dimensions not present in image
  * @param max_dims maximal dimensions across all data structures
  * @param sens_flags active map dimensions
  * @param sens sensitivities
  */
-struct linop_s* maps_create(const long max_dims[DIMS], 
+struct linop_s* maps_create(unsigned long shared_img_flags, const long max_dims[DIMS], 
 			unsigned long sens_flags, const complex float* sens)
 {
 	long mps_dims[DIMS];
@@ -81,7 +76,7 @@ struct linop_s* maps_create(const long max_dims[DIMS],
 	long img_dims[DIMS];
 
 	md_select_dims(DIMS, ~MAPS_FLAG, cim_dims, max_dims);
-	md_select_dims(DIMS, ~COIL_FLAG, img_dims, max_dims);
+	md_select_dims(DIMS, ~COIL_FLAG & ~shared_img_flags, img_dims, max_dims);
 
 	auto ret = (struct linop_s*)linop_fmac_dims_create(DIMS, cim_dims, img_dims, mps_dims, NULL);
 	linop_fmac_set_tensor_F(ret, DIMS, mps_dims, nsens);
@@ -117,18 +112,19 @@ struct linop_s* maps2_create(const long coilim_dims[DIMS], const long maps_dims[
  * Create sense operator, y = F S x,
  * where F is the Fourier transform and S is the sensitivity maps
  *
+ * @param shared_img_flags select dimensions not present in image
  * @param max_dims maximal dimensions across all data structures
  * @param sens_flags active map dimensions
  * @param sens sensitivities
  */
-struct linop_s* sense_init(const long max_dims[DIMS], 
+struct linop_s* sense_init(unsigned long shared_img_flags, const long max_dims[DIMS], 
 			unsigned long sens_flags, const complex float* sens)
 {
 	long ksp_dims[DIMS];
 	md_select_dims(DIMS, ~MAPS_FLAG, ksp_dims, max_dims);
 
 	struct linop_s* fft = linop_fft_create(DIMS, ksp_dims, FFT_FLAGS);
-	struct linop_s* maps = maps_create(max_dims, sens_flags, sens);
+	struct linop_s* maps = maps_create(shared_img_flags, max_dims, sens_flags, sens);
 
 	struct linop_s* sense_op = linop_chain(maps, fft);
 

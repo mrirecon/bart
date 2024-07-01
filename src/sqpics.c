@@ -442,7 +442,7 @@ int main_sqpics(int argc, char* argv[argc])
 	const struct operator_s* precond_op = NULL;
 
 	if (NULL == traj_file)
-		forward_op = sense_init(max_dims, FFT_FLAGS|COIL_FLAG|MAPS_FLAG, maps);
+		forward_op = sense_init(0UL, max_dims, FFT_FLAGS|COIL_FLAG|MAPS_FLAG, maps);
 	else
 		forward_op = sense_nc_init(max_dims, map_dims, maps, ksp_dims, traj_dims, traj, nuconf, (struct operator_s**) &precond_op);
 
