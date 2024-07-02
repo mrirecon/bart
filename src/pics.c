@@ -305,6 +305,7 @@ int main_pics(int argc, char* argv[argc])
 		OPT_FLOAT('f', &restrict_fov, "rfov", "restrict FOV"),
 		OPTL_SELECT('I', "ist", enum algo_t, &algo, ALGO_IST, "select IST"),
 		OPTL_SELECT(0, "fista", enum algo_t, &algo, ALGO_FISTA, "select FISTA"),
+		OPTL_SELECT(0, "eulermaruyama", enum algo_t, &algo, ALGO_EULERMARUYAMA, "select Euler Maruyama"),
 		OPTL_SELECT('m', "admm", enum algo_t, &algo, ALGO_ADMM, "select ADMM"),
 		OPTL_SELECT('a', "pridu", enum algo_t, &algo, ALGO_PRIDU, "select Primal Dual"),
 		OPT_FLOAT('w', &scaling, "", "inverse scaling of the data"),
@@ -330,6 +331,7 @@ int main_pics(int argc, char* argv[argc])
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	bool use_mpi = (0 != mpi_flags);
+
 	if (use_mpi) {
 
 #ifndef USE_MPI

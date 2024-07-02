@@ -127,6 +127,29 @@ struct iter italgo_config(enum algo_t algo, int nr_penalties, const struct reg_s
 		break;
 	}
 
+	case ALGO_EULERMARUYAMA: {
+
+		debug_printf(DP_INFO, "Euler Maruyama\n");
+
+		assert(1 == nr_penalties);
+
+		PTR_ALLOC(struct iter_eulermaruyama_conf, isconf);
+		*isconf = iter_eulermaruyama_defaults;
+		isconf->maxiter = maxiter;
+		isconf->step = step;
+
+		PTR_ALLOC(struct iter_call_s, iter2_eulermaruyama_data);
+		SET_TYPEID(iter_call_s, iter2_eulermaruyama_data);
+
+		iter2_eulermaruyama_data->fun = iter_eulermaruyama;
+		iter2_eulermaruyama_data->_conf = CAST_UP(PTR_PASS(isconf));
+
+		italgo = iter2_call_iter;
+		iconf = CAST_UP(PTR_PASS(iter2_eulermaruyama_data));
+
+		break;
+	}
+
 	case ALGO_ADMM: {
 
 		debug_printf(DP_INFO, "ADMM\n");
