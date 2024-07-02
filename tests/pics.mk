@@ -783,10 +783,47 @@ tests/test-pics-non-cart-batch-mpi: bart $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sen
 	$(ROOTDIR)/bart join 13 ksp_rad ksp_rad_g ksp_rad_b ksp_rad_p								;\
 	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra sens1_p			;\
 	$(ROOTDIR)/bart join 13 tr tr1 tr2 tr_p											;\
-	mpirun -n 2 $(ROOTDIR)/bart -p 8192 -e 3 pics -i 3 -ttr_p ksp_rad_p sens1_p pics_rad_p		;\
+	mpirun -n 2 $(ROOTDIR)/bart -p 8192 -e 3 pics -i 3 -ttr_p ksp_rad_p sens1_p pics_rad_p					;\
 	$(ROOTDIR)/bart nrmse -t 5e-3 pics_rad_ref pics_rad_p									;\
 	rm *.cfl ; rm *.hdr ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
+
+
+tests/test-pics-eulermaruyama: ones zeros pics var nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/ones 3 1 1 1 o.ra							;\
+	$(TOOLDIR)/zeros 3 128 128 1 z.ra						;\
+	$(TOOLDIR)/pics --eulermaruyama -S -w1. -s0.02 -i100 -l2 -r1. z.ra z.ra x.ra	;\
+	$(TOOLDIR)/var 3 x.ra v.ra							;\
+	$(TOOLDIR)/nrmse -t 0.005 o.ra v.ra						;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+tests/test-pics-eulermaruyama2: ones zeros pics var nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/ones 3 1 1 1 o.ra								;\
+	$(TOOLDIR)/ones 3 128 128 1 s.ra							;\
+	$(TOOLDIR)/zeros 3 128 128 1 z.ra							;\
+	$(TOOLDIR)/pics --eulermaruyama -S -w1. -s0.02 -i150 -l2 -r0. -p s.ra z.ra s.ra x.ra	;\
+	$(TOOLDIR)/var 3 x.ra v.ra								;\
+	$(TOOLDIR)/nrmse -t 0.01 o.ra v.ra							;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+tests/test-pics-eulermaruyama3: ones scale zeros pics var nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/ones 3 1 1 1 o.ra								;\
+	$(TOOLDIR)/scale -- 0.5 o.ra os.ra							;\
+	$(TOOLDIR)/ones 3 128 128 1 s.ra							;\
+	$(TOOLDIR)/zeros 3 128 128 1 z.ra							;\
+	$(TOOLDIR)/pics --eulermaruyama -S -w1. -s0.01 -i100 -l2 -r1. -p s.ra z.ra s.ra x.ra	;\
+	$(TOOLDIR)/var 3 x.ra v.ra								;\
+	$(TOOLDIR)/nrmse -t 0.01 os.ra v.ra							;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 
 TESTS += tests/test-pics-pi tests/test-pics-noncart tests/test-pics-cs tests/test-pics-pics
 TESTS += tests/test-pics-poisson-wavl1 tests/test-pics-joint-wavl1 tests/test-pics-bpwavl1
@@ -800,6 +837,7 @@ TESTS += tests/test-pics-wavl1-dau2 tests/test-pics-wavl1-cdf44 tests/test-pics-
 TESTS += tests/test-pics-noncart-lowmem tests/test-pics-noncart-lowmem-stack0 tests/test-pics-noncart-lowmem-stack1 tests/test-pics-noncart-lowmem-stack2 tests/test-pics-noncart-lowmem-no-toeplitz
 TESTS += tests/test-pics-phase
 TESTS += tests/test-pics-cart-loop tests/test-pics-cart-loop_range tests/test-pics-cart-slice
+TESTS += tests/test-pics-eulermaruyama tests/test-pics-eulermaruyama2 tests/test-pics-eulermaruyama3
 
 ifeq ($(MPI),1)
 TESTS_SLOW += tests/test-pics-cart-batch-mpi tests/test-pics-non-cart-batch-mpi tests/test-pics-cart-slice-batch-mpi tests/test-pics-cart-range-batch-mpi
