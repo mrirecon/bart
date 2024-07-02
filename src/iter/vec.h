@@ -40,7 +40,6 @@ struct vec_iter_s {
 	void (*xpay_bat)(long Bi, long N, long Bo, const float* beta, float* a, const float* x);
 	void (*dot_bat)(long Bi, long N, long Bo, float* dst, const float* src1, const float* src2);
 	void (*axpy_bat)(long Bi, long N, long Bo, float* a, const float* alpha, const float* x);
-
 };
 
 #ifdef USE_CUDA

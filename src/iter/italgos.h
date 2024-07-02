@@ -122,6 +122,14 @@ void landweber_sym(int maxiter, float epsilon, float alpha,
 	float* x, const float* b,
 	struct iter_monitor_s* monitor);
 
+void eulermaruyama(int maxiter, float alpha, float step,
+	long N,
+	const struct vec_iter_s* vops,
+	struct iter_op_s op,
+	struct iter_op_p_s* thresh,
+	float* x, const float *b,
+	struct iter_monitor_s* monitor);
+
 void sgd(int epochs, int batches,
 	float learning_rate, float batchnorm_momentum,
 	float learning_rate_schedule[epochs][batches],

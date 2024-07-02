@@ -39,6 +39,7 @@
 DEF_TYPEID(iter_conjgrad_conf);
 DEF_TYPEID(iter_landweber_conf);
 DEF_TYPEID(iter_ist_conf);
+DEF_TYPEID(iter_eulermaruyama_conf);
 DEF_TYPEID(iter_fista_conf);
 DEF_TYPEID(iter_chambolle_pock_conf);
 DEF_TYPEID(iter_pocs_conf);
@@ -79,6 +80,15 @@ const struct iter_ist_conf iter_ist_defaults = {
 	.continuation = 1.,
 	.hogwild = false,
 	.tol = 0.,
+};
+
+const struct iter_eulermaruyama_conf iter_eulermaruyama_defaults = {
+
+	.INTERFACE.TYPEID = &TYPEID2(iter_eulermaruyama_conf),
+	.INTERFACE.alpha = 1.,
+
+	.maxiter = 50,
+	.step = 0.95,
 };
 
 const struct iter_fista_conf iter_fista_defaults = {
@@ -229,6 +239,15 @@ void iter_ist(iter_conf* _conf,
 		struct iter_monitor_s* monitor)
 {
 	iter2_ist(_conf, normaleq_op, 1, &thresh_prox, NULL, NULL, NULL, size, image, image_adj, monitor);
+}
+
+void iter_eulermaruyama(iter_conf* _conf,
+		const struct operator_s* normaleq_op,
+		const struct operator_p_s* thresh_prox,
+		long size, float* image, const float* image_adj,
+		struct iter_monitor_s* monitor)
+{
+	iter2_eulermaruyama(_conf, normaleq_op, 1, &thresh_prox, NULL, NULL, NULL, size, image, image_adj, monitor);
 }
 
 void iter_fista(iter_conf* _conf,

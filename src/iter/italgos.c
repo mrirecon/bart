@@ -116,8 +116,8 @@ static float optista_gamma(int i, int N, const float theta[N + 1])
 }
 #endif
 
-
-void landweber_sym(int maxiter, float epsilon, float alpha, long N,
+void landweber_sym(int maxiter, float epsilon, float alpha,
+	long N,
 	const struct vec_iter_s* vops,
 	struct iter_op_s op,
 	float* x, const float* b,
@@ -347,6 +347,46 @@ void landweber(int maxiter, float epsilon, float alpha, long N, long M,
 
 	vops->del(r);
 	vops->del(p);
+}
+
+
+/**
+ *
+ */
+void eulermaruyama(int maxiter, float alpha,
+	float step, long N,
+	const struct vec_iter_s* vops,
+	struct iter_op_s op,
+	struct iter_op_p_s* thresh,
+	float* x, const float* b,
+	struct iter_monitor_s* monitor)
+{
+	float* r = vops->allocate(N);
+	float* o = vops->allocate(N);
+
+	for (int i = 0; i < maxiter; i++) {
+
+		iter_monitor(monitor, vops, x);
+
+		iter_op_call(op, r, x);		// r = A x
+		vops->xpay(N, -1., r, b);	// r = b - r = b - A x
+
+		if (thresh) {	// plug&play
+
+			iter_op_p_call(*thresh, step * alpha, o, x);
+
+			vops->axpy(N, x, -1., x);
+			vops->axpy(N, x, +1., o);
+		}
+
+		vops->axpy(N, x, step, r);
+
+		vops->rand(N, r);
+		vops->axpy(N, x, sqrtf(step), r);
+	}
+
+	vops->del(o);
+	vops->del(r);
 }
 
 

@@ -65,6 +65,16 @@ struct iter_ist_conf {
 };
 
 
+struct iter_eulermaruyama_conf {
+
+	INTERFACE(iter_conf);
+
+	int maxiter;
+	float step;
+};
+
+
+
 
 struct iter_fista_conf {
 
@@ -149,6 +159,7 @@ struct iter_niht_conf {
 extern const struct iter_conjgrad_conf iter_conjgrad_defaults;
 extern const struct iter_landweber_conf iter_landweber_defaults;
 extern const struct iter_ist_conf iter_ist_defaults;
+extern const struct iter_eulermaruyama_conf iter_eulermaruyama_defaults;
 extern const struct iter_fista_conf iter_fista_defaults;
 extern const struct iter_admm_conf iter_admm_defaults;
 extern const struct iter_pocs_conf iter_pocs_defaults;
@@ -159,6 +170,7 @@ extern const struct iter_chambolle_pock_conf iter_chambolle_pock_defaults;
 italgo_fun_f iter_conjgrad;
 italgo_fun_f iter_landweber;
 italgo_fun_f iter_ist;
+italgo_fun_f iter_eulermaruyama;
 italgo_fun_f iter_fista;
 italgo_fun_f iter_admm;
 
