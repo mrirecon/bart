@@ -215,6 +215,45 @@ Build_Tensorflow:
     expire_in: 45 minutes
 
 
+Build_wasm:
+  stage: build
+  image: registry.gitlab.tugraz.at/ibi/reproducibility/reproducibility_testing/ibi_wasm_bart
+  variables:
+    DEPS_FOLDER: /wasm_libs
+  script:
+    - sudo -E -u ibi echo -e
+        "FFTW_BASE=$DEPS_FOLDER\n
+        BLAS_BASE=$DEPS_FOLDER\n
+        CC=emcc\n
+        CFLAGS+=-O3 -fblocks\n
+        LDFLAGS=-s EXPORTED_FUNCTIONS=_main,__Block_object_dispose -s ALLOW_MEMORY_GROWTH=1 -s MAXIMUM_MEMORY=4GB -s INITIAL_MEMORY=256MB -s TOTAL_STACK=64MB $DEPS_FOLDER/lib/libfftw3f.a $DEPS_FOLDER/lib/libopenblas.a $DEPS_FOLDER/usr/local/lib/libBlocksRuntime.a -lnodefs.js -lnoderawfs.js\n
+        OPENBLAS=1\n
+        FORTRAN=0\n
+        FFTWTHREADS=0\n
+        USE_THREAD=1\n
+        PNG=0\n
+        OMP=0\n
+        TENSORFLOW=0\n
+        DEBUG=0\n
+        MKL=0\n
+        ACML=0\n
+        CUDA=0\n
+        CUDNN=0\n
+        ISMRMRD=0\n" > Makefiles/Makefile.wasm
+    - sudo -E -u ibi bash -c "source /emsdk/emsdk_env.sh && make -j 4 DEBUG=0 DEBUG_DWARF=0 all"
+  artifacts:
+    paths:
+      - bart
+      - bart.wasm
+      - "./lib/*.a"
+      - ./commands/
+      - "./src/*.o"
+      - ./src/misc/version.inc
+      - ./Makefiles/Makefile.wasm
+    expire_in: 45 minutes
+
+
+
 UTest:
   stage: test1
   script:
@@ -309,6 +348,17 @@ UTest_LTO:
   needs: [Build_LTO]
   dependencies:
     - Build_LTO
+
+
+UTest_wasm:
+  stage: test1
+  image: registry.gitlab.tugraz.at/ibi/reproducibility/reproducibility_testing/ibi_wasm_bart
+  script:
+    - sudo -E -u ibi bash -c "source /emsdk/emsdk_env.sh && AUTOCLEAN=0 DEBUG=0 DEBUG_DWARF=0 make utest"
+  needs: [Build_wasm]
+  dependencies:
+     - Build_wasm
+
 
 
 

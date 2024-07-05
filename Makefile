@@ -920,6 +920,10 @@ UTARGETS:=$(filter-out test_flpmath test_blas,$(UTARGETS))
 UTEST_RUN=valgrind --quiet --leak-check=full --error-exitcode=1 valgrind --suppressions=./valgrind.supp --log-file=/dev/null
 endif
 
+ifeq ($(BUILDTYPE), WASM)
+UTEST_RUN=node
+endif
+
 .PHONY: utests-all utest utests_gpu-all utest_gpu
 
 utests-all: $(UTARGETS)
