@@ -25,40 +25,38 @@
   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
   THE POSSIBILITY OF SUCH DAMAGE.
-******************************************************************************
-* Contents: Native C interface to LAPACK utility function
+*****************************************************************************
+* Contents: Native high-level C interface to LAPACK function ctrsyl
 * Author: Intel Corporation
 *****************************************************************************/
 
 #include "lapacke_utils.h"
 
-/* Converts input general matrix from row-major(C) to column-major(Fortran)
- * layout or vice versa.
- */
-
-void API_SUFFIX(LAPACKE_cge_trans)( int matrix_layout, lapack_int m, lapack_int n,
-                        const lapack_complex_float* in, lapack_int ldin,
-                        lapack_complex_float* out, lapack_int ldout )
+lapack_int API_SUFFIX(LAPACKE_ctrsyl)( int matrix_layout, char trana, char tranb,
+                           lapack_int isgn, lapack_int m, lapack_int n,
+                           const lapack_complex_float* a, lapack_int lda,
+                           const lapack_complex_float* b, lapack_int ldb,
+                           lapack_complex_float* c, lapack_int ldc,
+                           float* scale )
 {
-    lapack_int i, j, x, y;
-
-    if( in == NULL || out == NULL ) return;
-
-    if( matrix_layout == LAPACK_COL_MAJOR ) {
-        x = n;
-        y = m;
-    } else if ( matrix_layout == LAPACK_ROW_MAJOR ) {
-        x = m;
-        y = n;
-    } else {
-        /* Unknown input layout */
-        return;
+    if( matrix_layout != LAPACK_COL_MAJOR && matrix_layout != LAPACK_ROW_MAJOR ) {
+        API_SUFFIX(LAPACKE_xerbla)( "LAPACKE_ctrsyl", -1 );
+        return -1;
     }
-
-    /* In case of incorrect m, n, ldin or ldout the function does nothing */
-    for( i = 0; i < MIN( y, ldin ); i++ ) {
-        for( j = 0; j < MIN( x, ldout ); j++ ) {
-            out[ (size_t)i*ldout + j ] = in[ (size_t)j*ldin + i ];
+#ifndef LAPACK_DISABLE_NAN_CHECK
+    if( LAPACKE_get_nancheck() ) {
+        /* Optionally check input matrices for NaNs */
+        if( API_SUFFIX(LAPACKE_cge_nancheck)( matrix_layout, m, m, a, lda ) ) {
+            return -7;
+        }
+        if( API_SUFFIX(LAPACKE_cge_nancheck)( matrix_layout, n, n, b, ldb ) ) {
+            return -9;
+        }
+        if( API_SUFFIX(LAPACKE_cge_nancheck)( matrix_layout, m, n, c, ldc ) ) {
+            return -11;
         }
     }
+#endif
+    return API_SUFFIX(LAPACKE_ctrsyl_work)( matrix_layout, trana, tranb, isgn, m, n, a, lda,
+                                b, ldb, c, ldc, scale );
 }

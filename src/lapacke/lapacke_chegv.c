@@ -26,82 +26,67 @@
   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
   THE POSSIBILITY OF SUCH DAMAGE.
 *****************************************************************************
-* Contents: Native high-level C interface to LAPACK function zgesdd
+* Contents: Native high-level C interface to LAPACK function chegv
 * Author: Intel Corporation
 *****************************************************************************/
 
 #include "lapacke_utils.h"
 
-lapack_int API_SUFFIX(LAPACKE_zgesdd)( int matrix_layout, char jobz, lapack_int m,
-                           lapack_int n, lapack_complex_double* a,
-                           lapack_int lda, double* s, lapack_complex_double* u,
-                           lapack_int ldu, lapack_complex_double* vt,
-                           lapack_int ldvt )
+lapack_int API_SUFFIX(LAPACKE_chegv)( int matrix_layout, lapack_int itype, char jobz,
+                          char uplo, lapack_int n, lapack_complex_float* a,
+                          lapack_int lda, lapack_complex_float* b,
+                          lapack_int ldb, float* w )
 {
     lapack_int info = 0;
     lapack_int lwork = -1;
-    /* Additional scalars declarations for work arrays */
-    size_t lrwork;
-    lapack_int* iwork = NULL;
-    double* rwork = NULL;
-    lapack_complex_double* work = NULL;
-    lapack_complex_double work_query;
+    float* rwork = NULL;
+    lapack_complex_float* work = NULL;
+    lapack_complex_float work_query;
     if( matrix_layout != LAPACK_COL_MAJOR && matrix_layout != LAPACK_ROW_MAJOR ) {
-        API_SUFFIX(LAPACKE_xerbla)( "LAPACKE_zgesdd", -1 );
+        API_SUFFIX(LAPACKE_xerbla)( "LAPACKE_chegv", -1 );
         return -1;
     }
 #ifndef LAPACK_DISABLE_NAN_CHECK
     if( LAPACKE_get_nancheck() ) {
         /* Optionally check input matrices for NaNs */
-        if( API_SUFFIX(LAPACKE_zge_nancheck)( matrix_layout, m, n, a, lda ) ) {
-            return -5;
+        if( API_SUFFIX(LAPACKE_che_nancheck)( matrix_layout, uplo, n, a, lda ) ) {
+            return -6;
+        }
+        if( API_SUFFIX(LAPACKE_che_nancheck)( matrix_layout, uplo, n, b, ldb ) ) {
+            return -8;
         }
     }
 #endif
-    /* Additional scalars initializations for work arrays */
-    if( API_SUFFIX(LAPACKE_lsame)( jobz, 'n' ) ) {
-        lrwork = MAX(1,7*MIN(m,n));
-    } else {
-        lrwork = (size_t)MAX(1,MIN(m,n)*MAX(5*MIN(m,n)+7,2*MAX(m,n)+2*MIN(m,n)+1));
-    }
     /* Allocate memory for working array(s) */
-    iwork = (lapack_int*)
-        LAPACKE_malloc( sizeof(lapack_int) * MAX(1,8*MIN(m,n)) );
-    if( iwork == NULL ) {
+    rwork = (float*)LAPACKE_malloc( sizeof(float) * MAX(1,3*n-2) );
+    if( rwork == NULL ) {
         info = LAPACK_WORK_MEMORY_ERROR;
         goto exit_level_0;
     }
-    rwork = (double*)LAPACKE_malloc( sizeof(double) * lrwork );
-    if( rwork == NULL ) {
+    /* Query optimal working array(s) size */
+    info = API_SUFFIX(LAPACKE_chegv_work)( matrix_layout, itype, jobz, uplo, n, a, lda, b,
+                               ldb, w, &work_query, lwork, rwork );
+    if( info != 0 ) {
+        goto exit_level_1;
+    }
+    lwork = LAPACK_C2INT( work_query );
+    /* Allocate memory for work arrays */
+    work = (lapack_complex_float*)
+        LAPACKE_malloc( sizeof(lapack_complex_float) * lwork );
+    if( work == NULL ) {
         info = LAPACK_WORK_MEMORY_ERROR;
         goto exit_level_1;
     }
-    /* Query optimal working array(s) size */
-    info = API_SUFFIX(LAPACKE_zgesdd_work)( matrix_layout, jobz, m, n, a, lda, s, u, ldu, vt,
-                                ldvt, &work_query, lwork, rwork, iwork );
-    if( info != 0 ) {
-        goto exit_level_2;
-    }
-    lwork = LAPACK_Z2INT( work_query );
-    /* Allocate memory for work arrays */
-    work = (lapack_complex_double*)
-        LAPACKE_malloc( sizeof(lapack_complex_double) * lwork );
-    if( work == NULL ) {
-        info = LAPACK_WORK_MEMORY_ERROR;
-        goto exit_level_2;
-    }
     /* Call middle-level interface */
-    info = API_SUFFIX(LAPACKE_zgesdd_work)( matrix_layout, jobz, m, n, a, lda, s, u, ldu, vt,
-                                ldvt, work, lwork, rwork, iwork );
+    info = API_SUFFIX(LAPACKE_chegv_work)( matrix_layout, itype, jobz, uplo, n, a, lda, b,
+                               ldb, w, work, lwork, rwork );
     /* Release memory and exit */
     LAPACKE_free( work );
-exit_level_2:
-    LAPACKE_free( rwork );
 exit_level_1:
-    LAPACKE_free( iwork );
+    LAPACKE_free( rwork );
 exit_level_0:
     if( info == LAPACK_WORK_MEMORY_ERROR ) {
-        API_SUFFIX(LAPACKE_xerbla)( "LAPACKE_zgesdd", info );
+        API_SUFFIX(LAPACKE_xerbla)( "LAPACKE_chegv", info );
     }
     return info;
 }

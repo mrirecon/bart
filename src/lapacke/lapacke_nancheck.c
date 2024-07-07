@@ -1,5 +1,5 @@
 /*****************************************************************************
-  Copyright (c) 2014, Intel Corp.
+  Copyright (c) 2017, Intel Corp.
   All rights reserved.
 
   Redistribution and use in source and binary forms, with or without
@@ -25,40 +25,35 @@
   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
   THE POSSIBILITY OF SUCH DAMAGE.
-******************************************************************************
-* Contents: Native C interface to LAPACK utility function
+*****************************************************************************
+* Contents: Native C interface to control NaN checking
 * Author: Intel Corporation
 *****************************************************************************/
 
 #include "lapacke_utils.h"
 
-/* Converts input general matrix from row-major(C) to column-major(Fortran)
- * layout or vice versa.
- */
+static int nancheck_flag = -1;
 
-void API_SUFFIX(LAPACKE_cge_trans)( int matrix_layout, lapack_int m, lapack_int n,
-                        const lapack_complex_float* in, lapack_int ldin,
-                        lapack_complex_float* out, lapack_int ldout )
+void LAPACKE_set_nancheck( int flag )
 {
-    lapack_int i, j, x, y;
+    nancheck_flag = ( flag ) ? 1 : 0;
+}
 
-    if( in == NULL || out == NULL ) return;
+int LAPACKE_get_nancheck( )
+{
+    char* env;
+    if ( nancheck_flag != -1 ) {
+        return nancheck_flag;
+    }
 
-    if( matrix_layout == LAPACK_COL_MAJOR ) {
-        x = n;
-        y = m;
-    } else if ( matrix_layout == LAPACK_ROW_MAJOR ) {
-        x = m;
-        y = n;
+    /* Check environment variable, once and only once */
+    env = getenv( "API_SUFFIX(LAPACKE_)NANCHECK" );
+    if ( !env ) {
+        /* By default, NaN checking is enabled */
+        nancheck_flag = 1;
     } else {
-        /* Unknown input layout */
-        return;
+        nancheck_flag = atoi( env ) ? 1 : 0;
     }
 
-    /* In case of incorrect m, n, ldin or ldout the function does nothing */
-    for( i = 0; i < MIN( y, ldin ); i++ ) {
-        for( j = 0; j < MIN( x, ldout ); j++ ) {
-            out[ (size_t)i*ldout + j ] = in[ (size_t)j*ldin + i ];
-        }
-    }
+    return nancheck_flag;
 }

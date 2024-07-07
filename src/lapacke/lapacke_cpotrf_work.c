@@ -1,5 +1,5 @@
 /*****************************************************************************
-  Copyright (c) 2011, Intel Corp.
+  Copyright (c) 2014, Intel Corp.
   All rights reserved.
 
   Redistribution and use in source and binary forms, with or without
@@ -28,28 +28,27 @@
 *****************************************************************************
 * Contents: Native middle-level C interface to LAPACK function cpotrf
 * Author: Intel Corporation
-* Generated November, 2011
 *****************************************************************************/
 
 #include "lapacke_utils.h"
 
-lapack_int LAPACKE_cpotrf_work( int matrix_order, char uplo, lapack_int n,
+lapack_int API_SUFFIX(LAPACKE_cpotrf_work)( int matrix_layout, char uplo, lapack_int n,
                                 lapack_complex_float* a, lapack_int lda )
 {
     lapack_int info = 0;
-    if( matrix_order == LAPACK_COL_MAJOR ) {
+    if( matrix_layout == LAPACK_COL_MAJOR ) {
         /* Call LAPACK function and adjust info */
         LAPACK_cpotrf( &uplo, &n, a, &lda, &info );
         if( info < 0 ) {
             info = info - 1;
         }
-    } else if( matrix_order == LAPACK_ROW_MAJOR ) {
+    } else if( matrix_layout == LAPACK_ROW_MAJOR ) {
         lapack_int lda_t = MAX(1,n);
         lapack_complex_float* a_t = NULL;
         /* Check leading dimension(s) */
         if( lda < n ) {
             info = -5;
-            LAPACKE_xerbla( "LAPACKE_cpotrf_work", info );
+            API_SUFFIX(LAPACKE_xerbla)( "LAPACKE_cpotrf_work", info );
             return info;
         }
         /* Allocate memory for temporary array(s) */
@@ -60,23 +59,23 @@ lapack_int LAPACKE_cpotrf_work( int matrix_order, char uplo, lapack_int n,
             goto exit_level_0;
         }
         /* Transpose input matrices */
-        LAPACKE_cpo_trans( matrix_order, uplo, n, a, lda, a_t, lda_t );
+        API_SUFFIX(LAPACKE_cpo_trans)( matrix_layout, uplo, n, a, lda, a_t, lda_t );
         /* Call LAPACK function and adjust info */
         LAPACK_cpotrf( &uplo, &n, a_t, &lda_t, &info );
         if( info < 0 ) {
             info = info - 1;
         }
         /* Transpose output matrices */
-        LAPACKE_cpo_trans( LAPACK_COL_MAJOR, uplo, n, a_t, lda_t, a, lda );
+        API_SUFFIX(LAPACKE_cpo_trans)( LAPACK_COL_MAJOR, uplo, n, a_t, lda_t, a, lda );
         /* Release memory and exit */
         LAPACKE_free( a_t );
 exit_level_0:
         if( info == LAPACK_TRANSPOSE_MEMORY_ERROR ) {
-            LAPACKE_xerbla( "LAPACKE_cpotrf_work", info );
+            API_SUFFIX(LAPACKE_xerbla)( "LAPACKE_cpotrf_work", info );
         }
     } else {
         info = -1;
-        LAPACKE_xerbla( "LAPACKE_cpotrf_work", info );
+        API_SUFFIX(LAPACKE_xerbla)( "LAPACKE_cpotrf_work", info );
     }
     return info;
 }

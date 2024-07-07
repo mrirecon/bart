@@ -1,5 +1,5 @@
 /*****************************************************************************
-  Copyright (c) 2011, Intel Corp.
+  Copyright (c) 2014, Intel Corp.
   All rights reserved.
 
   Redistribution and use in source and binary forms, with or without
@@ -28,12 +28,11 @@
 *****************************************************************************
 * Contents: Native high-level C interface to LAPACK function cgesdd
 * Author: Intel Corporation
-* Generated November, 2011
 *****************************************************************************/
 
 #include "lapacke_utils.h"
 
-lapack_int LAPACKE_cgesdd( int matrix_order, char jobz, lapack_int m,
+lapack_int API_SUFFIX(LAPACKE_cgesdd)( int matrix_layout, char jobz, lapack_int m,
                            lapack_int n, lapack_complex_float* a,
                            lapack_int lda, float* s, lapack_complex_float* u,
                            lapack_int ldu, lapack_complex_float* vt,
@@ -47,21 +46,23 @@ lapack_int LAPACKE_cgesdd( int matrix_order, char jobz, lapack_int m,
     float* rwork = NULL;
     lapack_complex_float* work = NULL;
     lapack_complex_float work_query;
-    if( matrix_order != LAPACK_COL_MAJOR && matrix_order != LAPACK_ROW_MAJOR ) {
-        LAPACKE_xerbla( "LAPACKE_cgesdd", -1 );
+    if( matrix_layout != LAPACK_COL_MAJOR && matrix_layout != LAPACK_ROW_MAJOR ) {
+        API_SUFFIX(LAPACKE_xerbla)( "LAPACKE_cgesdd", -1 );
         return -1;
     }
 #ifndef LAPACK_DISABLE_NAN_CHECK
-    /* Optionally check input matrices for NaNs */
-    if( LAPACKE_cge_nancheck( matrix_order, m, n, a, lda ) ) {
-        return -5;
+    if( LAPACKE_get_nancheck() ) {
+        /* Optionally check input matrices for NaNs */
+        if( API_SUFFIX(LAPACKE_cge_nancheck)( matrix_layout, m, n, a, lda ) ) {
+            return -5;
+        }
     }
 #endif
     /* Additional scalars initializations for work arrays */
-    if( LAPACKE_lsame( jobz, 'n' ) ) {
-        lrwork = MAX(1,5*MIN(m,n));
+    if( API_SUFFIX(LAPACKE_lsame)( jobz, 'n' ) ) {
+        lrwork = MAX(1,7*MIN(m,n));
     } else {
-        lrwork = (size_t)5*MAX(1,MIN(m,n))*MAX(1,MIN(m,n))+7*MIN(m,n);
+        lrwork = (size_t)MAX(1,MIN(m,n)*MAX(5*MIN(m,n)+7,2*MAX(m,n)+2*MIN(m,n)+1));
     }
     /* Allocate memory for working array(s) */
     iwork = (lapack_int*)
@@ -76,7 +77,7 @@ lapack_int LAPACKE_cgesdd( int matrix_order, char jobz, lapack_int m,
         goto exit_level_1;
     }
     /* Query optimal working array(s) size */
-    info = LAPACKE_cgesdd_work( matrix_order, jobz, m, n, a, lda, s, u, ldu, vt,
+    info = API_SUFFIX(LAPACKE_cgesdd_work)( matrix_layout, jobz, m, n, a, lda, s, u, ldu, vt,
                                 ldvt, &work_query, lwork, rwork, iwork );
     if( info != 0 ) {
         goto exit_level_2;
@@ -90,7 +91,7 @@ lapack_int LAPACKE_cgesdd( int matrix_order, char jobz, lapack_int m,
         goto exit_level_2;
     }
     /* Call middle-level interface */
-    info = LAPACKE_cgesdd_work( matrix_order, jobz, m, n, a, lda, s, u, ldu, vt,
+    info = API_SUFFIX(LAPACKE_cgesdd_work)( matrix_layout, jobz, m, n, a, lda, s, u, ldu, vt,
                                 ldvt, work, lwork, rwork, iwork );
     /* Release memory and exit */
     LAPACKE_free( work );
@@ -100,7 +101,7 @@ exit_level_1:
     LAPACKE_free( iwork );
 exit_level_0:
     if( info == LAPACK_WORK_MEMORY_ERROR ) {
-        LAPACKE_xerbla( "LAPACKE_cgesdd", info );
+        API_SUFFIX(LAPACKE_xerbla)( "LAPACKE_cgesdd", info );
     }
     return info;
 }

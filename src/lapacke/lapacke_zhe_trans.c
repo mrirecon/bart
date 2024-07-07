@@ -1,5 +1,5 @@
 /*****************************************************************************
-  Copyright (c) 2010, Intel Corp.
+  Copyright (c) 2014, Intel Corp.
   All rights reserved.
 
   Redistribution and use in source and binary forms, with or without
@@ -28,7 +28,6 @@
 ******************************************************************************
 * Contents: Native C interface to LAPACK utility function
 * Author: Intel Corporation
-* Created in February, 2010
 *****************************************************************************/
 
 #include "lapacke_utils.h"
@@ -37,9 +36,9 @@
  * layout or vice versa.
  */
 
-void LAPACKE_zhe_trans( int matrix_order, char uplo, lapack_int n,
+void API_SUFFIX(LAPACKE_zhe_trans)( int matrix_layout, char uplo, lapack_int n,
                         const lapack_complex_double *in, lapack_int ldin,
                         lapack_complex_double *out, lapack_int ldout )
 {
-    LAPACKE_ztr_trans( matrix_order, uplo, 'n', n, in, ldin, out, ldout );
+    API_SUFFIX(LAPACKE_ztr_trans)( matrix_layout, uplo, 'n', n, in, ldin, out, ldout );
 }

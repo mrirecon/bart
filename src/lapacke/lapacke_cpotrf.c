@@ -1,5 +1,5 @@
 /*****************************************************************************
-  Copyright (c) 2011, Intel Corp.
+  Copyright (c) 2014, Intel Corp.
   All rights reserved.
 
   Redistribution and use in source and binary forms, with or without
@@ -28,23 +28,24 @@
 *****************************************************************************
 * Contents: Native high-level C interface to LAPACK function cpotrf
 * Author: Intel Corporation
-* Generated November, 2011
 *****************************************************************************/
 
 #include "lapacke_utils.h"
 
-lapack_int LAPACKE_cpotrf( int matrix_order, char uplo, lapack_int n,
+lapack_int API_SUFFIX(LAPACKE_cpotrf)( int matrix_layout, char uplo, lapack_int n,
                            lapack_complex_float* a, lapack_int lda )
 {
-    if( matrix_order != LAPACK_COL_MAJOR && matrix_order != LAPACK_ROW_MAJOR ) {
-        LAPACKE_xerbla( "LAPACKE_cpotrf", -1 );
+    if( matrix_layout != LAPACK_COL_MAJOR && matrix_layout != LAPACK_ROW_MAJOR ) {
+        API_SUFFIX(LAPACKE_xerbla)( "LAPACKE_cpotrf", -1 );
         return -1;
     }
 #ifndef LAPACK_DISABLE_NAN_CHECK
-    /* Optionally check input matrices for NaNs */
-    if( LAPACKE_cpo_nancheck( matrix_order, uplo, n, a, lda ) ) {
-        return -4;
+    if( LAPACKE_get_nancheck() ) {
+        /* Optionally check input matrices for NaNs */
+        if( API_SUFFIX(LAPACKE_cpo_nancheck)( matrix_layout, uplo, n, a, lda ) ) {
+            return -4;
+        }
     }
 #endif
-    return LAPACKE_cpotrf_work( matrix_order, uplo, n, a, lda );
+    return API_SUFFIX(LAPACKE_cpotrf_work)( matrix_layout, uplo, n, a, lda );
 }

@@ -1,5 +1,5 @@
 /*****************************************************************************
-  Copyright (c) 2011, Intel Corp.
+  Copyright (c) 2014, Intel Corp.
   All rights reserved.
 
   Redistribution and use in source and binary forms, with or without
@@ -28,32 +28,31 @@
 *****************************************************************************
 * Contents: Native middle-level C interface to LAPACK function cheev
 * Author: Intel Corporation
-* Generated November, 2011
 *****************************************************************************/
 
 #include "lapacke_utils.h"
 
-lapack_int LAPACKE_cheev_work( int matrix_order, char jobz, char uplo,
+lapack_int API_SUFFIX(LAPACKE_cheev_work)( int matrix_layout, char jobz, char uplo,
                                lapack_int n, lapack_complex_float* a,
                                lapack_int lda, float* w,
                                lapack_complex_float* work, lapack_int lwork,
                                float* rwork )
 {
     lapack_int info = 0;
-    if( matrix_order == LAPACK_COL_MAJOR ) {
+    if( matrix_layout == LAPACK_COL_MAJOR ) {
         /* Call LAPACK function and adjust info */
         LAPACK_cheev( &jobz, &uplo, &n, a, &lda, w, work, &lwork, rwork,
                       &info );
         if( info < 0 ) {
             info = info - 1;
         }
-    } else if( matrix_order == LAPACK_ROW_MAJOR ) {
+    } else if( matrix_layout == LAPACK_ROW_MAJOR ) {
         lapack_int lda_t = MAX(1,n);
         lapack_complex_float* a_t = NULL;
         /* Check leading dimension(s) */
         if( lda < n ) {
             info = -6;
-            LAPACKE_xerbla( "LAPACKE_cheev_work", info );
+            API_SUFFIX(LAPACKE_xerbla)( "LAPACKE_cheev_work", info );
             return info;
         }
         /* Query optimal working array(s) size if requested */
@@ -70,7 +69,7 @@ lapack_int LAPACKE_cheev_work( int matrix_order, char jobz, char uplo,
             goto exit_level_0;
         }
         /* Transpose input matrices */
-        LAPACKE_cge_trans( matrix_order, n, n, a, lda, a_t, lda_t );
+        API_SUFFIX(LAPACKE_che_trans)( matrix_layout, uplo, n, a, lda, a_t, lda_t );
         /* Call LAPACK function and adjust info */
         LAPACK_cheev( &jobz, &uplo, &n, a_t, &lda_t, w, work, &lwork, rwork,
                       &info );
@@ -78,16 +77,20 @@ lapack_int LAPACKE_cheev_work( int matrix_order, char jobz, char uplo,
             info = info - 1;
         }
         /* Transpose output matrices */
-        LAPACKE_cge_trans( LAPACK_COL_MAJOR, n, n, a_t, lda_t, a, lda );
+        if ( jobz == 'V' || jobz == 'v' ) {
+            API_SUFFIX(LAPACKE_cge_trans)( LAPACK_COL_MAJOR, n, n, a_t, lda_t, a, lda );
+        } else {
+            API_SUFFIX(LAPACKE_che_trans)( LAPACK_COL_MAJOR, uplo, n, a_t, lda_t, a, lda );
+        }
         /* Release memory and exit */
         LAPACKE_free( a_t );
 exit_level_0:
         if( info == LAPACK_TRANSPOSE_MEMORY_ERROR ) {
-            LAPACKE_xerbla( "LAPACKE_cheev_work", info );
+            API_SUFFIX(LAPACKE_xerbla)( "LAPACKE_cheev_work", info );
         }
     } else {
         info = -1;
-        LAPACKE_xerbla( "LAPACKE_cheev_work", info );
+        API_SUFFIX(LAPACKE_xerbla)( "LAPACKE_cheev_work", info );
     }
     return info;
 }

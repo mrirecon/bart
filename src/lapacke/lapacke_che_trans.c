@@ -32,33 +32,13 @@
 
 #include "lapacke_utils.h"
 
-/* Converts input general matrix from row-major(C) to column-major(Fortran)
+/* Converts input Hermitian matrix from row-major(C) to column-major(Fortran)
  * layout or vice versa.
  */
 
-void API_SUFFIX(LAPACKE_cge_trans)( int matrix_layout, lapack_int m, lapack_int n,
-                        const lapack_complex_float* in, lapack_int ldin,
-                        lapack_complex_float* out, lapack_int ldout )
+void API_SUFFIX(LAPACKE_che_trans)( int matrix_layout, char uplo, lapack_int n,
+                        const lapack_complex_float *in, lapack_int ldin,
+                        lapack_complex_float *out, lapack_int ldout )
 {
-    lapack_int i, j, x, y;
-
-    if( in == NULL || out == NULL ) return;
-
-    if( matrix_layout == LAPACK_COL_MAJOR ) {
-        x = n;
-        y = m;
-    } else if ( matrix_layout == LAPACK_ROW_MAJOR ) {
-        x = m;
-        y = n;
-    } else {
-        /* Unknown input layout */
-        return;
-    }
-
-    /* In case of incorrect m, n, ldin or ldout the function does nothing */
-    for( i = 0; i < MIN( y, ldin ); i++ ) {
-        for( j = 0; j < MIN( x, ldout ); j++ ) {
-            out[ (size_t)i*ldout + j ] = in[ (size_t)j*ldin + i ];
-        }
-    }
+    API_SUFFIX(LAPACKE_ctr_trans)( matrix_layout, uplo, 'n', n, in, ldin, out, ldout );
 }

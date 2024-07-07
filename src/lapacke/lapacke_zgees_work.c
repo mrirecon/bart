@@ -26,39 +26,48 @@
   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
   THE POSSIBILITY OF SUCH DAMAGE.
 *****************************************************************************
-* Contents: Native middle-level C interface to LAPACK function zheev
+* Contents: Native middle-level C interface to LAPACK function zgees
 * Author: Intel Corporation
 *****************************************************************************/
 
 #include "lapacke_utils.h"
 
-lapack_int API_SUFFIX(LAPACKE_zheev_work)( int matrix_layout, char jobz, char uplo,
-                               lapack_int n, lapack_complex_double* a,
-                               lapack_int lda, double* w,
+lapack_int API_SUFFIX(LAPACKE_zgees_work)( int matrix_layout, char jobvs, char sort,
+                               LAPACK_Z_SELECT1 select, lapack_int n,
+                               lapack_complex_double* a, lapack_int lda,
+                               lapack_int* sdim, lapack_complex_double* w,
+                               lapack_complex_double* vs, lapack_int ldvs,
                                lapack_complex_double* work, lapack_int lwork,
-                               double* rwork )
+                               double* rwork, lapack_logical* bwork )
 {
     lapack_int info = 0;
     if( matrix_layout == LAPACK_COL_MAJOR ) {
         /* Call LAPACK function and adjust info */
-        LAPACK_zheev( &jobz, &uplo, &n, a, &lda, w, work, &lwork, rwork,
-                      &info );
+        LAPACK_zgees( &jobvs, &sort, select, &n, a, &lda, sdim, w, vs, &ldvs,
+                      work, &lwork, rwork, bwork, &info );
         if( info < 0 ) {
             info = info - 1;
         }
     } else if( matrix_layout == LAPACK_ROW_MAJOR ) {
         lapack_int lda_t = MAX(1,n);
+        lapack_int ldvs_t = MAX(1,n);
         lapack_complex_double* a_t = NULL;
+        lapack_complex_double* vs_t = NULL;
         /* Check leading dimension(s) */
         if( lda < n ) {
-            info = -6;
-            API_SUFFIX(LAPACKE_xerbla)( "LAPACKE_zheev_work", info );
+            info = -7;
+            API_SUFFIX(LAPACKE_xerbla)( "LAPACKE_zgees_work", info );
+            return info;
+        }
+        if( ldvs < n ) {
+            info = -11;
+            API_SUFFIX(LAPACKE_xerbla)( "LAPACKE_zgees_work", info );
             return info;
         }
         /* Query optimal working array(s) size if requested */
         if( lwork == -1 ) {
-            LAPACK_zheev( &jobz, &uplo, &n, a, &lda_t, w, work, &lwork, rwork,
-                          &info );
+            LAPACK_zgees( &jobvs, &sort, select, &n, a, &lda_t, sdim, w, vs,
+                          &ldvs_t, work, &lwork, rwork, bwork, &info );
             return (info < 0) ? (info - 1) : info;
         }
         /* Allocate memory for temporary array(s) */
@@ -68,29 +77,41 @@ lapack_int API_SUFFIX(LAPACKE_zheev_work)( int matrix_layout, char jobz, char up
             info = LAPACK_TRANSPOSE_MEMORY_ERROR;
             goto exit_level_0;
         }
+        if( API_SUFFIX(LAPACKE_lsame)( jobvs, 'v' ) ) {
+            vs_t = (lapack_complex_double*)
+                LAPACKE_malloc( sizeof(lapack_complex_double) *
+                                ldvs_t * MAX(1,n) );
+            if( vs_t == NULL ) {
+                info = LAPACK_TRANSPOSE_MEMORY_ERROR;
+                goto exit_level_1;
+            }
+        }
         /* Transpose input matrices */
-        API_SUFFIX(LAPACKE_zhe_trans)( matrix_layout, uplo, n, a, lda, a_t, lda_t );
+        API_SUFFIX(LAPACKE_zge_trans)( matrix_layout, n, n, a, lda, a_t, lda_t );
         /* Call LAPACK function and adjust info */
-        LAPACK_zheev( &jobz, &uplo, &n, a_t, &lda_t, w, work, &lwork, rwork,
-                      &info );
+        LAPACK_zgees( &jobvs, &sort, select, &n, a_t, &lda_t, sdim, w, vs_t,
+                      &ldvs_t, work, &lwork, rwork, bwork, &info );
         if( info < 0 ) {
             info = info - 1;
         }
         /* Transpose output matrices */
-        if ( jobz == 'V' || jobz == 'v' ) {
-            API_SUFFIX(LAPACKE_zge_trans)( LAPACK_COL_MAJOR, n, n, a_t, lda_t, a, lda );
-        } else {
-            API_SUFFIX(LAPACKE_zhe_trans)( LAPACK_COL_MAJOR, uplo, n, a_t, lda_t, a, lda );
+        API_SUFFIX(LAPACKE_zge_trans)( LAPACK_COL_MAJOR, n, n, a_t, lda_t, a, lda );
+        if( API_SUFFIX(LAPACKE_lsame)( jobvs, 'v' ) ) {
+            API_SUFFIX(LAPACKE_zge_trans)( LAPACK_COL_MAJOR, n, n, vs_t, ldvs_t, vs, ldvs );
         }
         /* Release memory and exit */
+        if( API_SUFFIX(LAPACKE_lsame)( jobvs, 'v' ) ) {
+            LAPACKE_free( vs_t );
+        }
+exit_level_1:
         LAPACKE_free( a_t );
 exit_level_0:
         if( info == LAPACK_TRANSPOSE_MEMORY_ERROR ) {
-            API_SUFFIX(LAPACKE_xerbla)( "LAPACKE_zheev_work", info );
+            API_SUFFIX(LAPACKE_xerbla)( "LAPACKE_zgees_work", info );
         }
     } else {
         info = -1;
-        API_SUFFIX(LAPACKE_xerbla)( "LAPACKE_zheev_work", info );
+        API_SUFFIX(LAPACKE_xerbla)( "LAPACKE_zgees_work", info );
     }
     return info;
 }
