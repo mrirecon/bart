@@ -1020,10 +1020,17 @@ void unmap_cfl(int D, const long dims[D], const complex float* x)
 
 #ifdef _WIN32
 	if (-1 == munmap((void*)x, T))
-#else
-	if (-1 == munmap((void*)((uintptr_t)x & ~4095UL), (size_t)T))
-#endif
 		io_error("unmap cfl\n");
+#else
+	complex float* trunc_ptr = (complex float*) ((uintptr_t)x & ~4095UL);
+	ssize_t offset = (void*) x - (void*) trunc_ptr;
+
+	// we still need to provide the full size of the memory map to munmap
+	// Therefore, we add the difference of the truncated pointer to the size here
+	// Apparently, only emscripten checks for this
+	if (-1 == munmap(trunc_ptr, (size_t)T + offset))
+		io_error("unmap cfl\n");
+#endif
 }
 
 
