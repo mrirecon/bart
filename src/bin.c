@@ -352,7 +352,7 @@ int main_bin(int argc, char* argv[argc])
 			md_copy_block(DIMS, pos_src, singleton_dims, singleton, src_dims, src, CFL_SIZE);
 			md_copy_block(DIMS, pos_dst, dst_dims, dst, singleton_dims, singleton, CFL_SIZE);
 
-			if (0 == i % (N / 10))
+			if (0 == i % ((10 >= N) ? 1 : N / 10))
 				debug_printf(DP_DEBUG3, "Binning: %f%\n", 100. * i / (double)N);
 		}
 
