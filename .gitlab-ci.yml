@@ -456,3 +456,12 @@ IntTest_MPI_GPU:
 #  dependencies:
 #    - Build_LTO
 
+IntTest_wasm:
+  stage: test2
+  image: registry.gitlab.tugraz.at/ibi/reproducibility/reproducibility_testing/ibi_wasm_bart
+  script:
+    - sudo -E -u ibi bash -c "source /emsdk/emsdk_env.sh && AUTOCLEAN=0 DEBUG=0 DEBUG_DWARF=0 make test"
+  needs: [Build_wasm]
+  dependencies:
+     - Build_wasm
+
