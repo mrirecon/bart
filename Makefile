@@ -840,7 +840,9 @@ endif
 .SECONDEXPANSION:
 $(CTARGETS): commands/% : src/main.c $(srcdir)/%.o $$(MODULES_%) $(MODULES)
 	$(LINKER) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) -Dmain_real=main_$(@F) -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(PNG_L) $(ISMRM_L) $(LIBS) -lm $(LIBRT)
-
+ifeq ($(BUILDTYPE), WASM)
+	./rules/add_node_shebang.sh $@
+endif
 
 .SECONDEXPANSION:
 bart: % : src/main.c $(srcdir)/%.o $$(MODULES_%) $(MODULES)
@@ -849,6 +851,10 @@ ifeq ($(SHARED),1)
 else
 	$(LINKER) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) -Dmain_real=main_$(@F) -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(PNG_L) $(ISMRM_L) $(LIBS) -lm $(LIBRT)
 endif
+ifeq ($(BUILDTYPE), WASM)
+	./rules/add_node_shebang.sh $@
+endif
+
 
 #	rm $(srcdir)/$@.o
 
