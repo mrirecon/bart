@@ -135,6 +135,7 @@ int main_bin(int argc, char* argv[argc])
 	bool reorder = false;
 	bool amplitude = false;
 	struct bin_conf_s conf = bin_defaults;
+	long zero_fill[2] = { 0, 1 };
 	
 	const char* label_file = NULL;
 	const char* src_file = NULL;
@@ -160,7 +161,7 @@ int main_bin(int argc, char* argv[argc])
 		OPT_FLVEC2('O', &conf.offset_angle, "[r:c]deg", "Quadrature Binning: Angle offset for resp and card."),
 		OPT_STRING('x', &conf.card_out, "file", "(Output filtered cardiac EOFs)"), // To reproduce SSA-FARY paper
 		OPT_SET('M', &conf.amplitude, "Amplitude binning"),
-
+		OPTL_VEC2(0, "zero-fill", &zero_fill, "<dim>:<num_of_frames>", "Specify dimension and number of zero filled frames. Zero-filling according to order in label_file."),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -174,7 +175,7 @@ int main_bin(int argc, char* argv[argc])
 	long src_dims[DIMS];
 	complex float* src = load_cfl(src_file, DIMS, src_dims);
 
-	enum { BIN_QUADRATURE, BIN_LABEL, BIN_REORDER } bin_type;
+	enum { BIN_QUADRATURE, BIN_LABEL, BIN_REORDER, BIN_ZEROFILL } bin_type;
 
 	if (amplitude) {
 		
@@ -214,6 +215,12 @@ int main_bin(int argc, char* argv[argc])
 		assert((conf.n_resp == 0) && (conf.n_card == 0));
 		assert(conf.cluster_dim == -1);
 		assert(reorder);
+
+	} else if ((0 < zero_fill[0]) && (1 < zero_fill[1])) {
+
+		debug_printf(DP_INFO, "Zero-filled binning...\n");
+
+		bin_type = BIN_ZEROFILL;
 
 	} else {
 
@@ -257,6 +264,7 @@ int main_bin(int argc, char* argv[argc])
 
 		break;
 
+	case BIN_ZEROFILL: // Zero-fill: Assign to dst from src with zero-filling based on temporal order in labels
 	case BIN_REORDER: // Reorder: Assign to dst from src according to labels
 	case BIN_LABEL: // Label binning: Bin elements from src according to labels
 
@@ -300,7 +308,7 @@ int main_bin(int argc, char* argv[argc])
 		long dst_dims[DIMS];
 		md_copy_dims(DIMS, dst_dims, src_dims);
 
-		if (BIN_REORDER != bin_type) {
+		if ((BIN_REORDER != bin_type) && (BIN_ZEROFILL != bin_type)) {
 
 			dst_dims[conf.cluster_dim] = cluster_max;
 			dst_dims[dim] = n_clusters;
@@ -312,6 +320,24 @@ int main_bin(int argc, char* argv[argc])
 			assert(n_clusters <= src_dims[dim]);
 		}
 
+		long spokes_per_frame = 0;
+		long zero_filled_dim = 0;
+
+		if (BIN_ZEROFILL == bin_type) {
+
+			zero_filled_dim = zero_fill[0];
+
+			assert(1 == dst_dims[zero_filled_dim]);
+			assert(dst_dims[dim] > zero_fill[1]);
+
+			spokes_per_frame = 1 + ((dst_dims[dim] - 1) / zero_fill[1]);
+
+			dst_dims[zero_filled_dim] = zero_fill[1];
+
+			debug_printf(DP_DEBUG3, "Spokes per Frame: %ld\n", spokes_per_frame);
+			debug_printf(DP_DEBUG3, "dst_dim:\n");
+			debug_print_dims(DP_DEBUG3, DIMS, dst_dims);
+		}
 
 		complex float* dst = create_cfl(dst_file, DIMS, dst_dims);
 
@@ -335,7 +361,14 @@ int main_bin(int argc, char* argv[argc])
 
 			int label = (int)crealf(labels[i]);
 
-			if (BIN_REORDER != bin_type) {
+			if (BIN_ZEROFILL == bin_type) {
+
+				pos_src[dim] = label;
+				pos_dst[dim] = label;
+
+				pos_dst[zero_filled_dim] = i / spokes_per_frame;
+
+			} else if (BIN_REORDER != bin_type) {
 
 				pos_src[dim] = i;
 				pos_dst[dim] = label;

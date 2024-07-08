@@ -157,5 +157,18 @@ tests/test-bin-amplitude: ones scale reshape transpose join bin nrmse
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@	
 
+tests/test-bin-zero-fill: vec join bin nrmse
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+		$(TOOLDIR)/vec 0 1 2 3 4 5 6 v.ra					;\
+		$(TOOLDIR)/vec 2 3 4 0 6 5 1 i.ra					;\
+		$(TOOLDIR)/vec 0 0 2 3 4 0 0 ref1.ra 					;\
+		$(TOOLDIR)/vec 0 1 0 0 0 5 6 ref2.ra 					;\
+		$(TOOLDIR)/join 7 ref1.ra ref2.ra ref.ra				;\
+		$(TOOLDIR)/bin --zero-fill 7:2 i.ra v.ra r.ra 			;\
+		$(TOOLDIR)/nrmse -t 0.000001 ref.ra r.ra			;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 TESTS += tests/test-bin-label tests/test-bin-reorder tests/test-bin-quadrature tests/test-bin-quadrature-offset tests/test-bin-amplitude
+TESTS += tests/test-bin-zero-fill
 
