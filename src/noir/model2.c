@@ -9,7 +9,6 @@
  * Magn Reson Med 2008; 60:674-682.
  */
 
-
 #include <stdlib.h>
 #include <complex.h>
 #include <math.h>
@@ -120,11 +119,19 @@ static struct noir2_s noir2_init_create(int N,
 	md_copy_dims(3, ret.col_ten_dims, ret.cim_dims);
 
 	long wgh_dims[N];
-	for (int i = 0; i < N; i++)
-		wgh_dims[i] = MD_IS_SET(conf->wght_flags & md_nontriv_dims(N, ret.col_dims), i) ? lround(col_dims[i] * (conf->ret_os_coils ? 1. : conf->oversampling_coils)) : 1;
 
-	ret.lop_coil = linop_noir_weights_create(N, ret.col_ten_dims, ret.col_dims, wgh_dims, conf->wght_flags, conf->oversampling_coils, conf->a, conf->b, 1);
-	ret.lop_coil2 = linop_noir_weights_create(N, col_dims, ret.col_dims, wgh_dims, conf->wght_flags, (conf->ret_os_coils ? 1. : conf->oversampling_coils), conf->a, conf->b, 1);
+	for (int i = 0; i < N; i++)
+		wgh_dims[i] = MD_IS_SET(conf->wght_flags & md_nontriv_dims(N, ret.col_dims), i)
+				? lround(col_dims[i] * (conf->ret_os_coils ? 1. : conf->oversampling_coils)) : 1;
+
+	ret.lop_coil = linop_noir_weights_create(N, ret.col_ten_dims, ret.col_dims,
+						wgh_dims, conf->wght_flags, conf->oversampling_coils,
+						conf->a, conf->b, 1);
+
+	ret.lop_coil2 = linop_noir_weights_create(N, col_dims, ret.col_dims,
+						wgh_dims, conf->wght_flags,
+						(conf->ret_os_coils ? 1. : conf->oversampling_coils),
+						conf->a, conf->b, 1);
 
 
 	ret.lop_im = NULL;
@@ -163,18 +170,22 @@ static void noir2_join(struct noir2_s* ret, bool asym)
 	model = nlop_chain2_FF(nlop_from_linop(ret->lop_coil), 0, model, 1);
 
 	if (asym) {
+
 		struct linop_s* lop_id = linop_identity_create(ret->N, ret->cim_dims);
 		struct linop_s* lop_asym = linop_from_ops(ret->lop_fft->normal, lop_id->adjoint, NULL, NULL);
 
 		linop_free(lop_id);
+
 		ret->model = nlop_chain2_FF(model, 0, nlop_from_linop_F(lop_asym), 0);
 		ret->lop_asym = linop_clone(ret->lop_fft);
 
 	} else {
+
 		ret->model = nlop_chain2_FF(model, 0, nlop_from_linop(ret->lop_fft), 0);
 		ret->lop_asym  = linop_identity_create(ret->N, ret->ksp_dims);
 	}
 }
+
 
 /**
  * This function creates the non (bi)-linear part of the sense model, i.e.
@@ -248,6 +259,7 @@ struct noir2_s noir2_noncart_create(int N,
 	return ret;
 }
 
+
 /**
  * This function creates the non (bi)-linear part of the sense model, i.e.
  * 	cim = (mask * img) * ifftuc[weights * ksens]
@@ -272,14 +284,17 @@ struct noir2_s noir2_cart_create(int N,
 	const long col_dims[N],
 	const struct noir2_model_conf_s* conf)
 {
-	struct noir2_s ret = noir2_init_create(N, pat_dims, bas_dims, msk_dims, mask, ksp_dims, cim_dims, img_dims, kco_dims, col_dims, NULL, conf);
+	struct noir2_s ret = noir2_init_create(N, pat_dims, bas_dims, msk_dims, mask,
+						ksp_dims, cim_dims, img_dims, kco_dims, col_dims, NULL, conf);
 
 	assert(NULL == basis);
 	assert(md_check_equal_dims(N, ret.cim_dims, ret.ksp_dims, ~0UL));
 
 	if (!use_compat_to_version("v0.9.00")) {
 
-		ret.lop_fft = linop_fft_generic_create(N, ret.cim_dims, conf->fft_flags, conf->fft_flags & FFT_FLAGS, conf->fft_flags & FFT_FLAGS, 0, NULL, 0, NULL);
+		ret.lop_fft = linop_fft_generic_create(N, ret.cim_dims, conf->fft_flags,
+						conf->fft_flags & FFT_FLAGS,
+						conf->fft_flags & FFT_FLAGS, 0, NULL, 0, NULL);
 
 	} else {
 
@@ -679,6 +694,7 @@ static const struct nlop_s* nlop_noir_opt_create(int N,
 
 	long fftm_dims[N];
 	md_select_dims(N, FFT_FLAGS, fftm_dims, cim_dims_os);
+
 	complex float* fftm = md_alloc(N, fftm_dims, CFL_SIZE);
 	md_zfill(N, fftm_dims, fftm, 1.);
 	fftmod(N, fftm_dims, FFT_FLAGS, fftm, fftm);
@@ -751,7 +767,6 @@ static const struct nlop_s* nlop_noir_opt_create(int N,
 
 	return nlop_create(N, out_dims, 1, MD_DIMS(md_calc_size(N, img_dims) + md_calc_size(N, kco_dims)), CAST_UP(PTR_PASS(d)),
 					noir2_opt_fun, noir2_opt_der, noir2_opt_adj, noir2_opt_nrm, NULL, nlop_noir_opt_del);
-
 }
 
 
@@ -896,3 +911,4 @@ void noir2_cart_update(struct noir2_s* model, int N,
 	assert(NULL != model->lop_pattern);
 	linop_gdiag_set_diag(model->lop_pattern, N, pat_dims, pattern);
 }
+
