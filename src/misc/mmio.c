@@ -1023,7 +1023,10 @@ void unmap_cfl(int D, const long dims[D], const complex float* x)
 		io_error("unmap cfl\n");
 #else
 	complex float* trunc_ptr = (complex float*) ((uintptr_t)x & ~4095UL);
-	ssize_t offset = (void*) x - (void*) trunc_ptr;
+
+	ptrdiff_t pdiff = (void*) x - (void*) trunc_ptr;
+	assert(0 <= pdiff);
+	size_t offset = (size_t) pdiff;
 
 	// we still need to provide the full size of the memory map to munmap
 	// Therefore, we add the difference of the truncated pointer to the size here
