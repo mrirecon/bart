@@ -529,6 +529,14 @@ static complex float* create_zra_internal(int ofd, const char* name, int D, cons
 	if (NULL == (data = create_data(ofd, (size_t)header_size, (size_t)T)))
 		error("Creating ra file %s\n", name);
 
+#ifdef __EMSCRIPTEN__
+	// FIXME: This is a bug in emscripten.
+	// https://github.com/emscripten-core/emscripten/issues/15140
+	// https://github.com/emscripten-core/emscripten/issues/17801
+	wasm_fds[wasm_fd_offset++] = ofd;
+	return data;
+#endif
+
 	if (-1 == close(ofd))
 		io_error("Creating ra file %s\n", name);
 
