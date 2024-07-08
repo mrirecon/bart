@@ -821,10 +821,10 @@ mat2cfl: $(srcdir)/mat2cfl.c -lnum -lmisc
 # implicit rules
 
 %.o: %.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 %.o: %.cc
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
 ifeq ($(PARALLEL),1)
 (%): %
@@ -839,17 +839,18 @@ endif
 
 .SECONDEXPANSION:
 $(CTARGETS): commands/% : src/main.c $(srcdir)/%.o $$(MODULES_%) $(MODULES)
-	$(LINKER) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) -Dmain_real=main_$(@F) -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(PNG_L) $(ISMRM_L) $(LIBS) -lm $(LIBRT)
+	$(LINKER) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) -Dmain_real=main_$(@F) $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(PNG_L) $(ISMRM_L) $(LIBS) -lm $(LIBRT) -o $@
 ifeq ($(BUILDTYPE), WASM)
 	./rules/add_node_shebang.sh $@
 endif
 
+
 .SECONDEXPANSION:
 bart: % : src/main.c $(srcdir)/%.o $$(MODULES_%) $(MODULES)
 ifeq ($(SHARED),1)
-	$(LINKER) $(LDFLAGS) -shared $(CFLAGS) $(CPPFLAGS) -Dmain_real=main_$@ -o bart.o $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(PNG_L) $(ISMRM_L) $(LIBS) -lm $(LIBRT)
+	$(LINKER) $(LDFLAGS) -shared $(CFLAGS) $(CPPFLAGS) -Dmain_real=main_$@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(PNG_L) $(ISMRM_L) $(LIBS) -lm $(LIBRT) -o bart.o
 else
-	$(LINKER) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) -Dmain_real=main_$(@F) -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(PNG_L) $(ISMRM_L) $(LIBS) -lm $(LIBRT)
+	$(LINKER) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) -Dmain_real=main_$(@F) $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(PNG_L) $(ISMRM_L) $(LIBS) -lm $(LIBRT) -o $@
 endif
 ifeq ($(BUILDTYPE), WASM)
 	./rules/add_node_shebang.sh $@
@@ -862,13 +863,13 @@ UTESTS=$(shell $(root)/utests/utests-collect.sh ./utests/$@.c)
 
 .SECONDEXPANSION:
 $(UTARGETS): % : utests/utest.c utests/%.o $$(MODULES_%) $(MODULES)
-	$(CC) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) -DUTESTS="$(UTESTS)" -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(LIBS) -lm $(LIBRT)
+	$(CC) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) -DUTESTS="$(UTESTS)" $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(LIBS) -lm $(LIBRT) -o $@
 
 UTESTS_GPU=$(shell $(root)/utests/utests_gpu-collect.sh ./utests/$@.c)
 
 .SECONDEXPANSION:
 $(UTARGETS_GPU): % : utests/utest.c utests/%.o $$(MODULES_%) $(MODULES)
-	$(CC) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) -DUTESTS="$(UTESTS_GPU)" -DUTEST_GPU -o $@ $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(LIBS) -lm $(LIBRT)
+	$(CC) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) -DUTESTS="$(UTESTS_GPU)" -DUTEST_GPU $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(LIBS) -lm $(LIBRT) -o $@
 
 
 
@@ -993,7 +994,7 @@ endif
 shared-lib:
 	make allclean
 	CFLAGS="-fPIC $(OPT) -Wmissing-prototypes" make
-	gcc -shared -fopenmp -o libbart.so src/bart.o -Wl,-whole-archive lib/lib*.a -Wl,-no-whole-archive -Wl,-Bdynamic $(FFTW_L) $(CUDA_L) $(BLAS_L) $(PNG_L) $(ISMRM_L) $(LIBS) -lm -lrt
+	gcc -shared -fopenmp src/bart.o -Wl,-whole-archive lib/lib*.a -Wl,-no-whole-archive -Wl,-Bdynamic $(FFTW_L) $(CUDA_L) $(BLAS_L) $(PNG_L) $(ISMRM_L) $(LIBS) -lm -lrt -o libbart.so
 	make allclean
 
 libbart.so: shared-lib
