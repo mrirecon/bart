@@ -490,8 +490,12 @@ static complex float* load_zra_internal(int fd, const char* name, int D, long di
 	if (MAP_FAILED == (addr = mmap(NULL, (size_t)st.st_size, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0)))
 		io_error("Loading ra file %s\n", name);
 
+#ifdef __EMSCRIPTEN__
+	close_later(fd);
+#else
 	if (-1 == close(fd))
 		io_error("Loading ra file %s\n", name);
+#endif
 
 	return addr + header_size;
 }
@@ -609,8 +613,12 @@ float* create_coo(const char* name, int D, const long dims[D])
 	if (NULL == (addr = create_data(ofd, 4096, (size_t)T)))
 		error("Creating coo file %s\n", name);
 
+#ifdef __EMSCRIPTEN__
+	close_later(fd);
+#else
 	if (-1 == close(ofd))
 		io_error("Creating coo file %s\n", name);
+#endif
 
 	return (float*)addr;
 }
@@ -653,8 +661,12 @@ static complex float* create_pipe(int pfd, int D, long dimensions[D])
 	if (NULL == (ptr = create_data(fd, 0, (size_t)T)))
 		error("temp cfl %s\n", filename);
 
+#ifdef __EMSCRIPTEN__
+	close_later(fd);
+#else
 	if (-1 == close(fd))
 		io_error("temp cfl %s\n", filename);
+#endif
 
 	if (-1 == write_cfl_header(pfd, filename, D, dimensions))
 		error("Writing to stdout\n");
@@ -783,8 +795,12 @@ float* load_coo(const char* name, int D, long dims[D])
 	if (MAP_FAILED == (addr = mmap(NULL, (size_t)T, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 4096)))
 		io_error("Loading coo file %s\n", name);
 
+#ifdef __EMSCRIPTEN__
+	close_later(fd);
+#else
 	if (-1 == close(fd))
 		io_error("Loading coo file %s\n", name);
+#endif
 
 	return (float*)addr;
 }
@@ -993,8 +1009,12 @@ void* private_raw(size_t* size, const char* name)
 	if (MAP_FAILED == (addr = mmap(NULL, *size, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0)))
 		error("abort\n");
 
+#ifdef __EMSCRIPTEN__
+	close_later(fd);
+#else
 	if (-1 == close(fd))
 		error("abort\n");
+#endif
 
 	return addr;
 }
@@ -1023,8 +1043,12 @@ complex float* private_cfl(int D, const long dims[D], const char* name)
 	if (MAP_FAILED == (addr = mmap(NULL, (size_t)T, PROT_READ|PROT_WRITE, MAP_PRIVATE | MAP_NORESERVE, fd, 0)))
 		io_error("private cfl %s\n", name);
 
+#ifdef __EMSCRIPTEN__
+	close_later(fd);
+#else
 	if (-1 == close(fd))
 		io_error("private cfl %s\n", name);
+#endif
 
 	return addr;
 }
