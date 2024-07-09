@@ -1054,6 +1054,20 @@ complex float* private_cfl(int D, const long dims[D], const char* name)
 	return addr;
 }
 
+static int munmap_rounded(const complex float* x, long sz)
+{
+	complex float* trunc_ptr = (complex float*)((uintptr_t)x & ~4095UL);
+
+	ptrdiff_t pdiff = (void*)x - (void*)trunc_ptr;
+	assert(0 <= pdiff);
+	size_t offset = (size_t)pdiff;
+
+	// we still need to provide the full size of the memory map to munmap
+	// Therefore, we add the difference of the truncated pointer to the size here
+	// Apparently, only emscripten checks for this
+	return munmap(trunc_ptr, (size_t)sz + offset);
+}
+
 
 void unmap_cfl(int D, const long dims[D], const complex float* x)
 {
@@ -1074,16 +1088,7 @@ void unmap_cfl(int D, const long dims[D], const complex float* x)
 	if (-1 == munmap((void*)x, T))
 		io_error("unmap cfl\n");
 #else
-	complex float* trunc_ptr = (complex float*) ((uintptr_t)x & ~4095UL);
-
-	ptrdiff_t pdiff = (void*) x - (void*) trunc_ptr;
-	assert(0 <= pdiff);
-	size_t offset = (size_t) pdiff;
-
-	// we still need to provide the full size of the memory map to munmap
-	// Therefore, we add the difference of the truncated pointer to the size here
-	// Apparently, only emscripten checks for this
-	if (-1 == munmap(trunc_ptr, (size_t)T + offset))
+	if (-1 == munmap_rounded(x, T))
 		io_error("unmap cfl\n");
 #endif
 }
