@@ -595,12 +595,12 @@ complex float* create_zshm(const char* name, int D, const long dims[D])
 
 float* create_coo(const char* name, int D, const long dims[D])
 {
-	int ofd;
+	int fd;
 
-	if (-1 == (ofd = open(name, O_RDWR|O_CREAT, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)))
+	if (-1 == (fd = open(name, O_RDWR|O_CREAT, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)))
 		io_error("Creating coo file %s\n", name);
 
-	if (-1 == write_coo(ofd, D, dims))
+	if (-1 == write_coo(fd, D, dims))
 		error("Creating coo file %s\n", name);
 
 	long T;
@@ -610,13 +610,13 @@ float* create_coo(const char* name, int D, const long dims[D])
 
 	void* addr;
 
-	if (NULL == (addr = create_data(ofd, 4096, (size_t)T)))
+	if (NULL == (addr = create_data(fd, 4096, (size_t)T)))
 		error("Creating coo file %s\n", name);
 
 #ifdef __EMSCRIPTEN__
 	close_later(fd);
 #else
-	if (-1 == close(ofd))
+	if (-1 == close(fd))
 		io_error("Creating coo file %s\n", name);
 #endif
 
