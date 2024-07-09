@@ -1284,11 +1284,15 @@ void unmap_multi_cfl(int N, int D[N], const long* dimensions[N], _Complex float*
 		if (args[i] != args[0] + T)
 			error("unmap multi cfl 1 %ld\n", T);
 
-		if (-1 == (T += md_calc_size(D[i], dimensions[i])))
+		long isize = md_calc_size(D[i], dimensions[i]);
+
+		if (-1 == isize)
 			error("unmap multi cfl 2\n");
+
+		T += isize;
 	}
 
-	if (-1 == munmap((void*)((uintptr_t)args[0] & ~4095UL), (size_t)T))
+	if (-1 == munmap(args[0], T * (long)sizeof(complex float)))
 		io_error("unmap multi cfl 3\n");
 #endif
 }
