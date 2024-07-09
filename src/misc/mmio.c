@@ -1129,25 +1129,25 @@ void create_multi_cfl(const char* name, int N, int D[N], const long* dimensions[
 
 	char name_bdy[1024];
 	if (1024 <= snprintf(name_bdy, 1024, "%s.cfl", name))
-		error("Creating cfl file %s\n", name);
+		error("Creating multi cfl file %s\n", name);
 
 	char name_hdr[1024];
 	if (1024 <= snprintf(name_hdr, 1024, "%s.hdr", name))
-		error("Creating cfl file %s\n", name);
+		error("Creating multi cfl file %s\n", name);
 
-	int ofd;
-	if (-1 == (ofd = open(name_hdr, O_RDWR|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)))
-		io_error("Creating cfl file %s\n", name);
+	int fd;
+	if (-1 == (fd = open(name_hdr, O_RDWR|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)))
+		io_error("Creating multi cfl file %s\n", name);
 
 	long num_ele = 0;
 	for (int i = 0; i < N; i++)
 		num_ele += md_calc_size(D[i], dimensions[i]);
 
-	if (-1 == write_multi_cfl_header(ofd, NULL, num_ele, N, D, dimensions))
-		error("Creating cfl file %s\n", name);
+	if (-1 == write_multi_cfl_header(fd, NULL, num_ele, N, D, dimensions))
+		error("Creating multi cfl file %s\n", name);
 
-	if (-1 == close(ofd))
-		io_error("Creating cfl file %s\n", name);
+	if (-1 == close(fd))
+		io_error("Creating multi cfl file %s\n", name);
 
 	args[0] = shared_cfl(1, &num_ele, name_bdy);
 
@@ -1184,21 +1184,21 @@ static int load_multi_cfl_internal(const char* name, int N_max, int D_max, int D
 
 	char name_bdy[1024];
 	if (1024 <= snprintf(name_bdy, 1024, "%s.cfl", name))
-		error("Loading cfl file %s\n", name);
+		error("Loading multi cfl file %s\n", name);
 
 	char name_hdr[1024];
 	if (1024 <= snprintf(name_hdr, 1024, "%s.hdr", name))
-		error("Loading cfl file %s\n", name);
+		error("Loading multi cfl file %s\n", name);
 
-	int ofd;
-	if (-1 == (ofd = open(name_hdr, O_RDONLY)))
-		io_error("Loading cfl file %s\n", name);
+	int fd;
+	if (-1 == (fd = open(name_hdr, O_RDONLY)))
+		io_error("Loading multi cfl file %s\n", name);
 
-	if (-1 == read_multi_cfl_header(ofd, &filename, N_max, D_max, D, dimensions))
-		error("Loading cfl file %s\n", name);
+	if (-1 == read_multi_cfl_header(fd, &filename, N_max, D_max, D, dimensions))
+		error("Loading multi cfl file %s\n", name);
 
-	if (-1 == close(ofd))
-		io_error("Loading cfl file %s\n", name);
+	if (-1 == close(fd))
+		io_error("Loading multi cfl file %s\n", name);
 
 	long num_ele = 0;
 	int N = 0;
