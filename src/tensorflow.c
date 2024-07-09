@@ -77,6 +77,7 @@ int main_tensorflow(int argc, char* argv[argc])
 	if (0 == count) {
 
 		nlop_debug(DP_INFO, nlop);
+
 	} else {
 
 		int II = nlop_get_nr_in_args(nlop);
