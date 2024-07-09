@@ -960,10 +960,10 @@ complex float* shared_cfl(int D, const long dims[D], const char* name)
 
 #ifdef __EMSCRIPTEN__
 	close_later(fd);
-	return addr;
-#endif
+#else
 	if (-1 == close(fd))
 		io_error("shared cfl %s\n", name);
+#endif
 
 	return addr;
 }
