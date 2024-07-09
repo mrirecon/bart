@@ -1277,15 +1277,42 @@ void md_resize_center(int D, const long odim[D], void* optr, const long idim[D],
 
 	for (int i = 0; i < D; i++) {
 
-		if (odim[i] > idim[i]) {
+		if (odim[i] <= idim[i])
+			continue;
 
-			md_clear(D, odim, optr, size);
-			break;
-		}
+		md_clear(D, odim, optr, size);
+		break;
 	}
 
 	md_copy_block(D, pos, odim, optr, idim, iptr, size);
 }
+
+
+
+/**
+ * Resize an array by zero-padding or by truncation at the beginning.
+ *
+ * optr = [0 0 0 0 iptr]
+ *
+ */
+void md_resize_front(int D, const long odim[D], void* optr, const long idim[D], const void* iptr, size_t size)
+{
+	long pos[D];
+	for (int i = 0; i < D; i++)
+		pos[i] = odim[i] - idim[i];
+
+	for (int i = 0; i < D; i++) {
+
+		if (odim[i] <= idim[i])
+			continue;
+
+		md_clear(D, odim, optr, size);
+		break;
+	}
+
+	md_copy_block(D, pos, odim, optr, idim, iptr, size);
+}
+
 
 /**
  * Pad an array on both ends by val.

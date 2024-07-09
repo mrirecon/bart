@@ -48,11 +48,12 @@ int main_resize(int argc, char* argv[argc])
 		ARG_OUTFILE(true, &out_file, "output"),
 	};
 
-	bool center = false;
+	enum mode { FRONT, CENTER, END } mode = END;;
 
 	const struct opt_s opts[] = {
 
-		OPT_SET('c', &center, "center"),
+		OPT_SELECT('c', enum mode, &mode, CENTER, "center"),
+		OPT_SELECT('f', enum mode, &mode, FRONT, "front"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -81,7 +82,21 @@ int main_resize(int argc, char* argv[argc])
 
 	void* out_data = create_cfl(out_file, N, out_dims);
 
-	(center ? md_resize_center : md_resize)(N, out_dims, out_data, in_dims, in_data, CFL_SIZE);
+	switch (mode) {
+	case FRONT:
+
+		md_resize_front(N, out_dims, out_data, in_dims, in_data, CFL_SIZE);
+		break;
+
+	case CENTER:
+
+		md_resize_center(N, out_dims, out_data, in_dims, in_data, CFL_SIZE);
+		break;
+
+	case END:
+		md_resize(N, out_dims, out_data, in_dims, in_data, CFL_SIZE);
+		break;
+	}
 
 	unmap_cfl(N, in_dims, in_data);
 	unmap_cfl(N, out_dims, out_data);
