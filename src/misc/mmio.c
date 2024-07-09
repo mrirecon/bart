@@ -58,10 +58,35 @@
 #define DIMS 16
 #endif
 
+
 #ifdef __EMSCRIPTEN__
+// FIXME: This is a workaround for a bug in emscripten.
+// https://github.com/emscripten-core/emscripten/issues/15140
+// https://github.com/emscripten-core/emscripten/issues/17801
+
 int wasm_fds[WASM_MAX_FDS] = { };
 int wasm_fd_offset = 0;
+
+static void close_later(int fd)
+{
+	if (wasm_fd_offset >= WASM_MAX_FDS)
+		error("WASM close_later: too many files.\n");
+	wasm_fds[wasm_fd_offset++] = fd;
+}
+
+static void io_error(const char* fmt, ...);
+
+void wasm_close_fds(void)
+{
+	while (wasm_fd_offset > 0) {
+
+		int fd = wasm_fds[--wasm_fd_offset];
+		if (-1 == close(fd))
+			io_error("close_open_fds %d\n", fd);
+	}
+}
 #endif
+
 
 static void io_error(const char* fmt, ...)
 {
@@ -530,10 +555,7 @@ static complex float* create_zra_internal(int ofd, const char* name, int D, cons
 		error("Creating ra file %s\n", name);
 
 #ifdef __EMSCRIPTEN__
-	// FIXME: This is a bug in emscripten.
-	// https://github.com/emscripten-core/emscripten/issues/15140
-	// https://github.com/emscripten-core/emscripten/issues/17801
-	wasm_fds[wasm_fd_offset++] = ofd;
+	close_later(ofd);
 	return data;
 #endif
 
@@ -921,10 +943,7 @@ complex float* shared_cfl(int D, const long dims[D], const char* name)
 		error("shared cfl %s\n", name);
 
 #ifdef __EMSCRIPTEN__
-	// FIXME: This is a bug in emscripten.
-	// https://github.com/emscripten-core/emscripten/issues/15140
-	// https://github.com/emscripten-core/emscripten/issues/17801
-	wasm_fds[wasm_fd_offset++] = fd;
+	close_later(fd);
 	return addr;
 #endif
 	if (-1 == close(fd))
@@ -1234,15 +1253,3 @@ void unmap_multi_cfl(int N, int D[N], const long* dimensions[N], _Complex float*
 		io_error("unmap multi cfl 3\n");
 #endif
 }
-
-#ifdef __EMSCRIPTEN__
-void wasm_close_fds(void)
-{
-	while (wasm_fd_offset > 0) {
-
-		int fd = wasm_fds[--wasm_fd_offset];
-		if (-1 == close(fd))
-			io_error("close_open_fds %d\n", fd);
-	}
-}
-#endif
