@@ -190,6 +190,16 @@ tests/test-nlinv-pics: traj phantom resize pics nlinv nrmse
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+ifeq ($(BUILDTYPE), WASM) # WASM needs relaxed test
+tests/test-nlinv-ksens: nlinv nrmse $(TESTS_OUT)/shepplogan_coil_ksp.ra
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/nlinv		      $(TESTS_OUT)/shepplogan_coil_ksp.ra r1.ra c1.ra	;\
+	$(TOOLDIR)/nlinv --ksens-dims=16:16:1 $(TESTS_OUT)/shepplogan_coil_ksp.ra r2.ra c2.ra	;\
+	$(TOOLDIR)/nrmse -t 0.0004 r1.ra r2.ra							;\
+	$(TOOLDIR)/nrmse -t 0.0005 c1.ra c2.ra							;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+else
 tests/test-nlinv-ksens: nlinv nrmse $(TESTS_OUT)/shepplogan_coil_ksp.ra
 	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
 	$(TOOLDIR)/nlinv		      $(TESTS_OUT)/shepplogan_coil_ksp.ra r1.ra c1.ra	;\
@@ -198,6 +208,8 @@ tests/test-nlinv-ksens: nlinv nrmse $(TESTS_OUT)/shepplogan_coil_ksp.ra
 	$(TOOLDIR)/nrmse -t 0.00003 c1.ra c2.ra							;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
+endif
+
 
 
 tests/test-nlinv-pf-vcc: nlinv conj nrmse zeros ones join flip circshift fmac $(TESTS_OUT)/shepplogan_ksp.ra
