@@ -582,9 +582,14 @@ static const struct operator_s* fft_measure_create_int(int D, const long dimensi
 
 	plan->fftw = NULL;
 
+	bool measure = true;
+#ifdef __EMSCRIPTEN__
+	measure = false;
+#endif
+
 #ifndef NO_FFTW
 	if (0u != flags)
-		plan->fftw = fft_fftwf_plan(D, dimensions, flags, strides, dst, strides, src, backwards, true);
+		plan->fftw = fft_fftwf_plan(D, dimensions, flags, strides, dst, strides, src, backwards, measure);
 #endif
 	plan->fft_flags_only = NULL;
 
