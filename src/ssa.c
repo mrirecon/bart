@@ -155,10 +155,10 @@ int main_ssa(int argc, char* argv[argc])
 	complex float* U = create_cfl(EOF_file, 2, U_dims);
 
 	complex float* back = NULL;
+	long back_dims[DIMS];
 
 	if (NULL != backproj_file) {
 
-		long back_dims[DIMS];
 		md_transpose_dims(DIMS, 3, 1, back_dims, cal_dims);
 
 		back = create_cfl(backproj_file, DIMS, back_dims);
@@ -180,6 +180,9 @@ int main_ssa(int argc, char* argv[argc])
 	}
 
 	xfree(S_square);
+
+	if (NULL != backproj_file)
+		unmap_cfl(DIMS, back_dims, back);
 
 	unmap_cfl(2, U_dims, U);
 	unmap_cfl(DIMS, in_dims, in);
