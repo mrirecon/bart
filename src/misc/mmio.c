@@ -1146,8 +1146,12 @@ void create_multi_cfl(const char* name, int N, int D[N], const long* dimensions[
 	if (-1 == write_multi_cfl_header(fd, NULL, num_ele, N, D, dimensions))
 		error("Creating multi cfl file %s\n", name);
 
+#ifdef __EMSCRIPTEN__
+	close_later(fd);
+#else
 	if (-1 == close(fd))
 		io_error("Creating multi cfl file %s\n", name);
+#endif
 
 	args[0] = shared_cfl(1, &num_ele, name_bdy);
 
@@ -1197,8 +1201,13 @@ static int load_multi_cfl_internal(const char* name, int N_max, int D_max, int D
 	if (-1 == read_multi_cfl_header(fd, &filename, N_max, D_max, D, dimensions))
 		error("Loading multi cfl file %s\n", name);
 
+#ifdef __EMSCRIPTEN__
+	close_later(fd);
+#else
 	if (-1 == close(fd))
 		io_error("Loading multi cfl file %s\n", name);
+#endif
+
 
 	long num_ele = 0;
 	int N = 0;
