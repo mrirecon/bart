@@ -327,7 +327,7 @@ int main_phantom(int argc, char* argv[argc])
 	}
 
 	if (NULL != samples)
-		unmap_cfl(3, sdims, samples);
+		unmap_cfl(DIMS, sdims, samples);
 
 	if (NULL != file_load)
 		unmap_multi_cfl(2, D_dim, store_dims, multifile);
