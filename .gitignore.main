@@ -25,8 +25,9 @@ python/.ipynb_checkpoints/
 # Mac file
 .DS_Store
 
-# local Makefile
+# local Makefiles
 Makefile.local
+Makefiles/Makefile.*
 
 # version string
 src/misc/version.inc
@@ -59,3 +60,6 @@ compile_commands.json
 
 #vscode
 .vscode/*
+
+#wasm:
+*.wasm
