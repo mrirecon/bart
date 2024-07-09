@@ -9,15 +9,12 @@ variables:
 # utests give a backtrace + abort on the first error
   BART_UTEST_ABORT: "1"
 
-image: registry.gitlab.tugraz.at/ibi/reproducibility/reproducibility_testing/ibi_cuda_all_deps
+image: registry.gitlab.tugraz.at/ibi/reproducibility/reproducibility_testing/ibi_cuda_bart
 
 
 default:
   # Make Builds interruptible by default
   interruptible: true
-  before_script:
-#    - apt-get update -qq && apt-get install -y -qq
-    - chown -R ibi .
 
 stages:
   - build
@@ -27,7 +24,7 @@ stages:
 Build_NoDEBUG:
   stage: build
   script:
-    - sudo -E -u ibi DEBUG=0 DEBUG_DWARF=0 WERROR=1 make all
+    - DEBUG=0 DEBUG_DWARF=0 WERROR=1 make all
   artifacts:
     paths:
       - bart
@@ -38,7 +35,7 @@ Build_NoDEBUG:
 Build:
   stage: build
   script:
-    - sudo -E -u ibi WERROR=1 make all
+    - WERROR=1 make all
   artifacts:
     paths:
       - bart
@@ -52,9 +49,9 @@ Build_riscv:
   stage: build
   tags:
     - riscv
-  image: registry.gitlab.tugraz.at/ibi/reproducibility/reproducibility_testing/ibi_riscv
+  image: registry.gitlab.tugraz.at/ibi/reproducibility/reproducibility_testing/ibi_riscv_noroot
   script:
-    - sudo -E -u ibi make -j 4 all
+    - make -j 4 all
   artifacts:
     paths:
       - bart
@@ -68,7 +65,7 @@ Build_riscv:
 Build_Clang:
   stage: build
   script:
-    - sudo -E -u ibi CC=clang-16 make all
+    - CC=clang-16 make all
   artifacts:
     paths:
       - bart
@@ -81,7 +78,7 @@ Build_Clang:
 Build_Clang_GPU:
   stage: build
   script:
-    - sudo -E -u ibi CC=clang-16 CUDA_CC=clang-14 CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" make all
+    - CC=clang-16 CUDA_CC=clang-14 CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" make all
   artifacts:
     paths:
       - bart
@@ -95,7 +92,7 @@ Build_Static:
   stage: build
   script:
 #    - apt-get update -qq && apt-get install -y libgfortran-12-dev
-    - sudo -E -u ibi SLINK=1 make
+    - SLINK=1 make
   artifacts:
     paths:
       - bart
@@ -105,7 +102,7 @@ Build_Static:
 Build_Shared:
   stage: build
   script:
-    - sudo -E -u ibi make libbart.so
+    - make libbart.so
   artifacts:
     paths:
       - libbart.so
@@ -114,7 +111,7 @@ Build_Shared:
 Build_Shared_GPU:
   stage: build
   script:
-    - sudo -E -u ibi CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" make libbart.so
+    - CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" make libbart.so
   artifacts:
     paths:
       - libbart.so
@@ -124,7 +121,7 @@ Build_Shared_GPU:
 Build_UBSan:
   stage: build
   script:
-    - sudo -E -u ibi UBSAN=1 ASAN=1 make all
+    - UBSAN=1 ASAN=1 make all
   artifacts:
     paths:
       - bart
@@ -138,7 +135,7 @@ Build_UBSan:
 Build_GPU:
   stage: build
   script:
-    - sudo -E -u ibi CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" WERROR=1 make all
+    - CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" WERROR=1 make all
   artifacts:
     paths:
       - bart
@@ -151,7 +148,7 @@ Build_GPU:
 Build_MPI_GPU:
   stage: build
   script:
-    - sudo -E -u ibi MPI=1 CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" make all
+    - MPI=1 CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" make all
   artifacts:
     paths:
       - bart
@@ -164,7 +161,7 @@ Build_MPI_GPU:
 Build_MPI:
   stage: build
   script:
-    - sudo -E -u ibi MPI=1 make all
+    - MPI=1 make all
   artifacts:
     paths:
       - bart
@@ -177,7 +174,7 @@ Build_MPI:
 Build_LTO:
   stage: build
   script:
-    - sudo -E -u ibi CFLAGS="-flto -O2 -g" DEBUG=0 DEBUG_DWARF=0 make
+    - CFLAGS="-flto -O2 -g" DEBUG=0 DEBUG_DWARF=0 make
   artifacts:
     paths:
       - bart
@@ -190,7 +187,7 @@ Build_LTO:
 Build_Analyzer:
   stage: build
   script:
-    - sudo -E -u ibi CFLAGS="-fanalyzer -Werror" DEBUG=0 DEBUG_DWARF=0 make all
+    - CFLAGS="-fanalyzer -Werror" DEBUG=0 DEBUG_DWARF=0 make all
   artifacts:
     paths:
       - bart
@@ -207,7 +204,7 @@ Build_Tensorflow:
 # Already part of the Docker image
 #    - wget --no-verbose https://storage.googleapis.com/tensorflow/libtensorflow/libtensorflow-gpu-linux-x86_64-2.4.0.tar.gz
 #    - mkdir tensorflow_dir && tar -C tensorflow_dir -xvzf libtensorflow-gpu-linux-x86_64-2.4.0.tar.gz
-    - sudo -E -u ibi TENSORFLOW=1 TENSORFLOW_BASE=/tensorflow_dir/ CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" make all
+    - TENSORFLOW=1 TENSORFLOW_BASE=/tensorflow_dir/ CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" make all
   artifacts:
     paths:
       - bart
@@ -221,7 +218,7 @@ Build_Tensorflow:
 UTest:
   stage: test1
   script:
-    - sudo -E -u ibi AUTOCLEAN=0 WERROR=1 make utest
+    - AUTOCLEAN=0 WERROR=1 make utest
   needs: [Build]
   dependencies:
      - Build
@@ -230,9 +227,9 @@ UTest_riscv:
   stage: test1
   tags:
     - riscv
-  image: registry.gitlab.tugraz.at/ibi/reproducibility/reproducibility_testing/ibi_riscv
+  image: registry.gitlab.tugraz.at/ibi/reproducibility/reproducibility_testing/ibi_riscv_noroot
   script:
-    - sudo -E -u ibi AUTOCLEAN=0 make -j 4 utest
+    - AUTOCLEAN=0 make -j 4 utest
   needs: [Build_riscv]
   dependencies:
      - Build_riscv
@@ -241,7 +238,7 @@ UTest_riscv:
 UTest_Clang:
   stage: test1
   script:
-    - sudo -E -u ibi AUTOCLEAN=0 CC=clang-16 make utest
+    - AUTOCLEAN=0 CC=clang-16 make utest
   needs: [Build_Clang]
   dependencies:
      - Build_Clang
@@ -250,7 +247,7 @@ UTest_Clang_GPU:
   stage: test1
   script:
     - if ! nvidia-smi ; then printf "No usable GPU found, skipping GPU tests!\n"; exit 0; fi
-    - sudo -E -u ibi AUTOCLEAN=0 CC=clang-16 CUDA_CC=clang-14 CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" make utest_gpu
+    - AUTOCLEAN=0 CC=clang-16 CUDA_CC=clang-14 CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" make utest_gpu
   needs: [Build_Clang_GPU]
   dependencies:
     - Build_Clang_GPU
@@ -260,7 +257,7 @@ UTest_Clang_GPU:
 UTest_Valgrind:
   stage: test1
   script:
-    - sudo -E -u ibi AUTOCLEAN=0 UTESTLEAK=1 make utest
+    - AUTOCLEAN=0 UTESTLEAK=1 make utest
   needs: [Build]
   dependencies:
      - Build
@@ -269,7 +266,7 @@ UTest_Valgrind:
 UTest_UBSan:
   stage: test1
   script:
-    - sudo -E -u ibi AUTOCLEAN=0 UBSAN=1 ASAN=1 make utest
+    - AUTOCLEAN=0 UBSAN=1 ASAN=1 make utest
   needs: [Build_UBSan]
   dependencies:
      - Build_UBSan
@@ -279,7 +276,7 @@ UTest_GPU:
   stage: test1
   script:
     - if ! nvidia-smi ; then printf "No usable GPU found, skipping GPU tests!\n"; exit 0; fi
-    - sudo -E -u ibi AUTOCLEAN=0 CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" WERROR=1 make utest_gpu
+    - AUTOCLEAN=0 CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" WERROR=1 make utest_gpu
   needs: [Build_GPU]
   dependencies:
     - Build_GPU
@@ -287,7 +284,7 @@ UTest_GPU:
 UTest_MPI:
   stage: test1
   script:
-    - sudo -E -u ibi AUTOCLEAN=0 MPI=1 make utest
+    - AUTOCLEAN=0 MPI=1 make utest
   needs: [Build_MPI]
   dependencies:
      - Build_MPI
@@ -299,7 +296,7 @@ UTest_Tensorflow:
 # Already part of the Docker image
 #    - wget --no-verbose https://storage.googleapis.com/tensorflow/libtensorflow/libtensorflow-gpu-linux-x86_64-2.4.0.tar.gz
 #    - mkdir tensorflow_dir && tar -C tensorflow_dir -xvzf libtensorflow-gpu-linux-x86_64-2.4.0.tar.gz
-    - sudo -E -u ibi AUTOCLEAN=0 TENSORFLOW=1 TENSORFLOW_BASE=/tensorflow_dir/ CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" make utest
+    - AUTOCLEAN=0 TENSORFLOW=1 TENSORFLOW_BASE=/tensorflow_dir/ CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" make utest
   needs: [Build_Tensorflow]
   dependencies:
     - Build_Tensorflow
@@ -308,7 +305,7 @@ UTest_Tensorflow:
 UTest_LTO:
   stage: test1
   script:
-    - sudo -E -u ibi AUTOCLEAN=0 CFLAGS="-flto -O2 -g" DEBUG=0 DEBUG_DWARF=0 make utest
+    - AUTOCLEAN=0 CFLAGS="-flto -O2 -g" DEBUG=0 DEBUG_DWARF=0 make utest
   needs: [Build_LTO]
   dependencies:
     - Build_LTO
@@ -318,7 +315,7 @@ UTest_LTO:
 IntTest:
   stage: test2
   script:
-    - sudo -E -u ibi AUTOCLEAN=0 AGUE_TWIX_REF=/reference_data/twix/ WERROR=1 make test testslow testague
+    - AUTOCLEAN=0 AGUE_TWIX_REF=/reference_data/twix/ WERROR=1 make test testslow testague
   needs: [Build]
   dependencies:
     - Build
@@ -327,9 +324,9 @@ IntTest_riscv:
   stage: test2
   tags:
     - riscv
-  image: registry.gitlab.tugraz.at/ibi/reproducibility/reproducibility_testing/ibi_riscv
+  image: registry.gitlab.tugraz.at/ibi/reproducibility/reproducibility_testing/ibi_riscv_noroot
   script:
-    - sudo -E -u ibi AUTOCLEAN=0 AGUE_TWIX_REF=/reference_data/twix/ make -j 4 test testague
+    - AUTOCLEAN=0 AGUE_TWIX_REF=/reference_data/twix/ make -j 4 test testague
   needs: [Build_riscv]
   dependencies:
     - Build_riscv
@@ -339,7 +336,7 @@ IntTest_riscv:
 IntTest_Python:
   stage: test2
   script:
-    - sudo -E -u ibi AUTOCLEAN=0 make pythontest
+    - AUTOCLEAN=0 make pythontest
   needs: [Build]
   dependencies:
     - Build
@@ -350,7 +347,7 @@ IntTest_GPU:
   stage: test2
   script:
     - if ! nvidia-smi ; then printf "No usable GPU found, skipping GPU tests!\n"; exit 0; fi
-    - sudo -E -u ibi AUTOCLEAN=0 CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" WERROR=1 make gputest
+    - AUTOCLEAN=0 CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" WERROR=1 make gputest
   needs: [Build_GPU]
   dependencies:
     - Build_GPU
@@ -359,7 +356,7 @@ IntTest_GPU:
 IntTest_Clang:
   stage: test2
   script:
-    - sudo -E -u ibi AUTOCLEAN=0 CC=clang-16 make test
+    - AUTOCLEAN=0 CC=clang-16 make test
   needs: [Build_Clang]
   dependencies:
     - Build_Clang
@@ -369,7 +366,7 @@ IntTest_Clang_GPU:
   stage: test2
   script:
     - if ! nvidia-smi ; then printf "No usable GPU found, skipping GPU tests!\n"; exit 0; fi
-    - sudo -E -u ibi AUTOCLEAN=0 CC=clang-16 CUDA_CC=clang-14 CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" make gputest
+    - AUTOCLEAN=0 CC=clang-16 CUDA_CC=clang-14 CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" make gputest
   needs: [Build_Clang_GPU]
   dependencies:
     - Build_Clang_GPU
@@ -378,7 +375,7 @@ IntTest_Clang_GPU:
 IntTest_UBSan:
   stage: test2
   script:
-    - sudo -E -u ibi AUTOCLEAN=0 UBSAN=1 ASAN=1 DEBUG=1 UBSAN_OPTIONS=print_stacktrace=1 make test
+    - AUTOCLEAN=0 UBSAN=1 ASAN=1 DEBUG=1 UBSAN_OPTIONS=print_stacktrace=1 make test
   needs: [Build_UBSan]
   dependencies:
     - Build_UBSan
@@ -387,7 +384,7 @@ IntTest_UBSan:
 IntTest_MPI:
   stage: test2
   script:
-    - sudo -E -u ibi AUTOCLEAN=0 MPI=1 make testslow
+    - AUTOCLEAN=0 MPI=1 make testslow
   needs: [Build_MPI]
   dependencies:
     - Build_MPI
@@ -396,7 +393,7 @@ IntTest_MPI_GPU:
   stage: test2
   script:
     - if ! nvidia-smi ; then printf "No usable GPU found, skipping GPU tests!\n"; exit 0; fi
-    - sudo -E -u ibi AUTOCLEAN=0 CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" MPI=1 make gputest
+    - AUTOCLEAN=0 CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" MPI=1 make gputest
   needs: [Build_MPI_GPU]
   dependencies:
     - Build_MPI_GPU
