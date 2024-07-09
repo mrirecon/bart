@@ -1277,22 +1277,22 @@ void unmap_multi_cfl(int N, int D[N], const long* dimensions[N], _Complex float*
 	error("multi cfl not supported with USE_MEM_CFL\n");
 #endif
 
-	long T = 0;
+	size_t T = 0;
 
 	for (int i = 0; i < N; i++) {
 
-		if (args[i] != args[0] + T)
+		if (args[i] != args[0] + (T / (long)sizeof(complex float)))
 			error("unmap multi cfl 1 %ld\n", T);
 
-		long isize = md_calc_size(D[i], dimensions[i]);
+		long isize = io_calc_size(D[i], dimensions[i], sizeof(complex float));
 
 		if (-1 == isize)
 			error("unmap multi cfl 2\n");
 
-		T += isize;
+		T += (size_t)isize;
 	}
 
-	if (-1 == munmap(args[0], T * (long)sizeof(complex float)))
+	if (-1 == munmap(args[0], T))
 		io_error("unmap multi cfl 3\n");
 #endif
 }
