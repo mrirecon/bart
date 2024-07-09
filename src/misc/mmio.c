@@ -64,7 +64,7 @@
 // https://github.com/emscripten-core/emscripten/issues/15140
 // https://github.com/emscripten-core/emscripten/issues/17801
 
-#define WASM_MAX_FDS 100
+#define WASM_MAX_FDS 1024
 int wasm_fds[WASM_MAX_FDS] = { };
 int wasm_fd_offset = 0;
 
