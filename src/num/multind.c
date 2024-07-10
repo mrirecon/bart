@@ -150,28 +150,10 @@ void md_parallel_nary(int C, int D, const long dim[D], unsigned long flags, cons
 	md_select_dims(D, ~flags, dimc, dim);
 
 	// Collect all parallel dimensions
-	int nparallel = 0;
-	int parallel_b[D];
 
 	long parallel_dim[D];
-	long total_iterations = 1L;
-
-	while (0 != flags) {
-
-		int b = ffsl((long)(flags & -flags)) - 1;
-
-		assert(MD_IS_SET(flags, b));
-
-		flags = MD_CLEAR(flags, b);
-
-		debug_printf(DP_DEBUG4, "Parallelize: %d\n", dim[b]);
-
-		parallel_b[nparallel] = b;
-		parallel_dim[nparallel] = dim[b];
-
-		total_iterations *= parallel_dim[nparallel];
-		nparallel++;
-	}
+	md_select_dims(D, flags, parallel_dim, dim);
+	long total_iterations = md_calc_size(D, parallel_dim);
 
 #ifdef _OPENMP
 	int old_threads = omp_get_max_threads();
@@ -190,23 +172,12 @@ void md_parallel_nary(int C, int D, const long dim[D], unsigned long flags, cons
 
 		// Recover place in parallel iteration space
 		long iter_i[D];
-		long ii = i;
-
-		for (int p = nparallel - 1; p >= 0; p--) {
-
-			iter_i[p] = ii % parallel_dim[p];
-			ii /= parallel_dim[p];
-		}
+		md_unravel_index(D, iter_i, ~0UL, parallel_dim, i);
 
 		void* moving_ptr[C];
 
-		for (int j = 0; j < C; j++) {
-
-			moving_ptr[j] = ptr[j];
-
-			for(int p = 0; p < nparallel; p++)
-				moving_ptr[j] += iter_i[p] * str[j][parallel_b[p]];
-		}
+		for (int j = 0; j < C; j++)
+			moving_ptr[j] = ptr[j] + md_calc_offset(D, str[j], iter_i);
 
 		md_nary(C, D, dimc, str, moving_ptr, fun);
 	}
