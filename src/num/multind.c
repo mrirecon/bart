@@ -258,15 +258,7 @@ void md_parallel_loop(int D, const long dim[static D], unsigned long flags, md_l
 
 		// Recover place in parallel iteration space
 		long pos[D];
-
-		long ii = i;
-
-		for (int j = 0; j < D; j++) {
-
-			pos[j] = ii % pdims[j];
-			ii /= pdims[j];
-		}
-
+		md_unravel_index(D, pos, ~0UL, pdims, i);
 		md_loop_r(D, dim, flags, pos, fun);
 	}
 }
