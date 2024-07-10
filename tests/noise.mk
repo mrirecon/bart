@@ -47,6 +47,15 @@ tests/test-noise-loop: bart
 	rm *.cfl ; rm *.hdr ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-noise-loop2: bart
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(ROOTDIR)/bart zeros 4 128 128 1 12 x						;\
+	OMP_NUM_THREADS=2 $(ROOTDIR)/bart -p 2 -e 128 noise x x_p1			;\
+	OMP_NUM_THREADS=4 $(ROOTDIR)/bart -p 2 -e 128 noise x x_p2			;\
+	$(ROOTDIR)/bart nrmse -t 0. x_p1 x_p2						;\
+	rm *.cfl ; rm *.hdr ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 tests/test-noise-random-dims: bart
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(ROOTDIR)/bart zeros 4 128 16 1 12 x						;\
@@ -69,13 +78,11 @@ tests/test-noise-mpi: bart
 
 
 
-TESTS += tests/test-noise-loop tests/test-noise-random-dims
+TESTS += tests/test-noise-loop  tests/test-noise-loop2 tests/test-noise-random-dims
 
 ifeq ($(MPI),1)
 TESTS_SLOW += tests/test-noise-mpi
 endif
-
-
 
 
 
