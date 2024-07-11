@@ -8,6 +8,8 @@ variables:
   DEBUG_DWARF: "1"
 # utests give a backtrace + abort on the first error
   BART_UTEST_ABORT: "1"
+# For gitlab-runner using docker: create diretories as the USER in the docker image, not as root
+  FF_DISABLE_UMASK_FOR_DOCKER_EXECUTOR: "true"
 
 image: registry.gitlab.tugraz.at/ibi/reproducibility/reproducibility_testing/ibi_cuda_bart
 
