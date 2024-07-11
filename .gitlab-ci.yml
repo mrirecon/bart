@@ -1,3 +1,17 @@
+workflow:
+  rules:
+    # always run on master
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    # always run for merge requests
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    # always run if triggered by "run pipleline" in gitlab
+    - if: $CI_PIPELINE_SOURCE == "web"
+    # always run if the ci variable CI_FORCE is 1.
+    # for example by pushing with: git push -o ci.variable=CI_FORCE=1
+    - if: $CI_FORCE == "1"
+    # do not run for anything else
+
+
 variables:
   OMP_NUM_THREADS: "1"
 # mpirun in docker has a problem with its default transfer mechanism,
