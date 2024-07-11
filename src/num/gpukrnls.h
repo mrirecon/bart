@@ -81,8 +81,8 @@ extern void cuda_zcmpl_imag(long N, _Complex float* dst, const float* src);
 extern void cuda_zcmpl(long N, _Complex float* dst, const float* real_src, const float* imag_src);
 extern void cuda_zfill(long N, _Complex float val, _Complex float* dst);
 
-extern void cuda_compress(long N, uint32_t* dst, const float* src);
-extern void cuda_decompress(long N, float* dst, const uint32_t* src);
+extern void cuda_mask_compress(long N, uint32_t* dst, const float* src);
+extern void cuda_mask_decompress(long N, float* dst, const uint32_t* src);
 
 extern void cuda_zfmac_strided(long N, long dims[3], unsigned long oflags, unsigned long iflags1, unsigned long iflags2, _Complex float* dst, const _Complex float* src1, const _Complex float* src2);
 extern void cuda_zfmacc_strided(long N, long dims[3], unsigned long oflags, unsigned long iflags1, unsigned long iflags2, _Complex float* dst, const _Complex float* src1, const _Complex float* src2);

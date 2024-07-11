@@ -1,6 +1,6 @@
 /* Copyright 2013-2018. The Regents of the University of California.
  * Copyright 2017-2022. Uecker Lab. University Medical Center Göttingen.
- * Copryight 2023. Institute of Biomedical Imaging. TU Graz.
+ * Copryight 2023-2024. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -1457,7 +1457,7 @@ extern "C" void cuda_zfill(long N, _Complex float val, _Complex float* dst)
 }
 
 
-__global__ static void kern_compress(long N, uint32_t* dst, const float* src)
+__global__ static void kern_mask_compress(long N, uint32_t* dst, const float* src)
 {
 	long idx;
 	long idx_init;
@@ -1492,7 +1492,7 @@ __global__ static void kern_compress(long N, uint32_t* dst, const float* src)
 	}
 }
 
-__global__ static void kern_decompress(long N, float* dst, const uint32_t* src)
+__global__ static void kern_mask_decompress(long N, float* dst, const uint32_t* src)
 {
 	long idx;
 	long idx_init;
@@ -1520,14 +1520,14 @@ __global__ static void kern_decompress(long N, float* dst, const uint32_t* src)
 	}
 }
 
-extern "C" void cuda_compress(long N, uint32_t* dst, const float* src)
+extern "C" void cuda_mask_compress(long N, uint32_t* dst, const float* src)
 {
-	kern_compress<<<gridsize(N), blocksize(N), blocksize(N) * sizeof(float), cuda_get_stream()>>>(N, dst, src);
+	kern_mask_compress<<<gridsize(N), blocksize(N), blocksize(N) * sizeof(float), cuda_get_stream()>>>(N, dst, src);
 }
 
-extern "C" void cuda_decompress(long N, float* dst, const uint32_t* src)
+extern "C" void cuda_mask_decompress(long N, float* dst, const uint32_t* src)
 {
-	kern_decompress<<<gridsize(N), blocksize(N), blocksize(N), cuda_get_stream()>>>(N, dst, src);
+	kern_mask_decompress<<<gridsize(N), blocksize(N), blocksize(N), cuda_get_stream()>>>(N, dst, src);
 }
 
 __global__ static void kern_reduce_zsumD(long N, cuDoubleComplex* dst, const cuDoubleComplex* src)

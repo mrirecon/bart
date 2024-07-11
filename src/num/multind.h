@@ -1,6 +1,6 @@
 /* Copyright 2013-2014. The Regents of the University of California.
  * Copyright 2016-2021. Uecker Lab. University Medical Center Göttingen.
- * Copyright 2022. Insitute of Biomedical Imaging. Graz University of Technology.
+ * Copyright 2022-2024. Insitute of Biomedical Imaging. Graz University of Technology.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
@@ -10,13 +10,13 @@
 
 #include <string.h>
 #include <assert.h>
+#include <stdint.h>
+#include <stdbool.h>
 #ifdef _WIN32
 #include <malloc.h>
 #else
 #include <alloca.h>
 #endif
-
-#include <stdbool.h>
 
 #include "misc/cppwrap.h"
 #include "misc/nested.h"
@@ -136,8 +136,8 @@ extern void md_permute_dims(int D, const int order[__VLA(D)], long odims[__VLA(D
 extern void md_transpose_dims(int D, int dim1, int dim2, long odims[__VLA(D)], const long idims[__VLA(D)]);
 extern bool md_next(int D, const long dims[__VLA(D)], unsigned long flags, long pos[__VLA(D)]);
 
-extern void* md_compress(int D, const long dims[__VLA(D)], const float* src);
-extern void md_decompress(int D, const long dims[__VLA(D)], float* dst, const void* src);
+extern void md_mask_compress(int D, const long dims[__VLA(D)], long M, uint32_t dst[__VLA(M)], const float* src);
+extern void md_mask_decompress(int D, const long dims[__VLA(D)], float* dst, long M, const uint32_t src[__VLA(M)]);
 
 extern unsigned long md_nontriv_dims(int D, const long dims[__VLA(D)]);
 extern unsigned long md_nontriv_strides(int D, const long dims[__VLA(D)]);

@@ -1,12 +1,12 @@
 /* Copyright 2013-2015. The Regents of the University of California.
  * Copyright 2016-2020. Uecker Lab. University Medical Center Göttingen.
- * Copyright 2022-2023. TU Graz. Institute of Biomedical Imaging.
+ * Copyright 2022-2024. Graz University of Technology.
  * Copyright 2017. Intel Corporation.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2020 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2020 Martin Uecker
  * 2019-2020 Sebastian Rosenzweig
  * 2013      Frank Ong <frankong@berkeley.edu>
  * 2017      Michael J. Anderson <michael.j.anderson@intel.com>
@@ -2191,57 +2191,62 @@ void md_periodic(int D, const long dims1[D], void* dst, const long dims2[D], con
 }
 
 
-void* md_compress(int D, const long dims[D], const float* src)
+void md_mask_compress(int D, const long dims[D], long M, uint32_t dst[static M], const float* src)
 {
 	long N = md_calc_size(D, dims);
-	uint32_t* dst = md_alloc_sameplace(1, MD_DIMS(N / 32 + 1), sizeof(uint32_t), src);
+
+	assert(M == (N + 31) / 32);
 
 #ifdef USE_CUDA
 	if (cuda_ondevice(src)) {
 
-		cuda_compress(N, dst, src);
-		return dst;
-	}
-#endif 
-
-#pragma omp parallel for
-	for (long i = 0; i < N / 32 + 1; i++) {
-
-		uint32_t result = 0;
-
-		for (long j = 0; j < 32; j++) {
-
-			if (((32 * i + j) < N) && 0. != src[(32 * i + j)])
-				result = MD_SET(result, j);
-		}
-
-		dst[i] = result;
-	}
-
-	return dst;
-}
-
-
-void md_decompress(int D, const long dims[D], float* dst, const void* _src)
-{
-	const uint32_t* src = _src;
-	long N = md_calc_size(D, dims);
-
-#ifdef USE_CUDA
-	if (cuda_ondevice(src)) {
-
-		cuda_decompress(N, dst, src);
+		cuda_mask_compress(N, dst, src);
 		return;
 	}
 #endif 
 
 #pragma omp parallel for
-	for (long i = 0; i < N / 32 + ((0 == N % 32) ? 0 : 1); i++) {
+	for (long i = 0; i < M; i++) {
+
+		uint32_t result = 0;
 
 		for (long j = 0; j < 32; j++) {
 
-			if (((32 * i + j) < N))
-				dst[32 * i + j] = MD_IS_SET(src[i], j) ? 1. : 0.;
+			if ((32 * i + j) >= N)
+				continue;
+
+			if (0. != src[(32 * i + j)])
+				result = MD_SET(result, j);
+		}
+
+		dst[i] = result;
+	}
+}
+
+
+void md_mask_decompress(int D, const long dims[D], float* dst, long M, const uint32_t src[static M])
+{
+	long N = md_calc_size(D, dims);
+
+	assert(M == (N + 31) / 32);
+
+#ifdef USE_CUDA
+	if (cuda_ondevice(src)) {
+
+		cuda_mask_decompress(N, dst, src);
+		return;
+	}
+#endif 
+
+#pragma omp parallel for
+	for (long i = 0; i < M; i++) {
+
+		for (long j = 0; j < 32; j++) {
+
+			if ((32 * i + j) >= N)
+				continue;
+
+			dst[32 * i + j] = MD_IS_SET(src[i], j) ? 1. : 0.;
 		}
 	}
 }

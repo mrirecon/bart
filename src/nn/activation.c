@@ -1,4 +1,5 @@
-/* Copyright 2020. Uecker Lab. University Medical Center Göttingen.
+/* Copyright 2020-2022. Uecker Lab. University Medical Center Göttingen.
+ * Copyright 2023-2024. Graz University of Technology.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -260,7 +261,8 @@ struct relu_s {
 	int N;
 	const long* rdims;
 
-	void* der;
+	int M;
+	uint32_t* der;
 
 	float slope_param;
 };
@@ -287,7 +289,12 @@ static void relu_apply(const nlop_data_t* _data, complex float* _dst, const comp
 
 	md_free(d->der);
 
-	d->der = md_compress(N, dims, der);
+	long M = md_calc_size(N, dims);
+
+	d->M = (M + 31) / 32;
+	d->der = md_alloc_sameplace(1, MD_DIMS(d->M), sizeof(uint32_t), src);
+
+	md_mask_compress(N, dims, d->M, d->der, der);
 
 	md_free(der);
 
@@ -340,7 +347,8 @@ static void relu_deradj(const nlop_data_t* _data, int o, int i, complex float* _
 	const float* src = (float*)_src;
 
 	float* der = md_alloc_sameplace(N, dims, FL_SIZE, d->der);
-	md_decompress(N, dims, der, d->der);
+
+	md_mask_decompress(N, dims, der, d->M, d->der);
 
 	md_mul(N, dims, dst, src, der);
 

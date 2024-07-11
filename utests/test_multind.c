@@ -177,17 +177,19 @@ static bool test_compress(void)
 	float* ptr1 = (float*)_ptr1;
 	md_sgreatequal(N, dims, ptr1, ptr1, 0.);
 
-	void* compress = md_compress(N, dims, ptr1);
+	long M = (dims[0] + 31) / 32;
+	uint32_t (*compress)[M] = xmalloc(sizeof *compress);
+
+	md_mask_compress(N, dims, M, *compress, ptr1);
 
 	float* ptr2 = md_alloc(N, dims, FL_SIZE);
-	md_decompress(N, dims, ptr2, compress);
+	md_mask_decompress(N, dims, ptr2, M, *compress);
 
 	float err = md_nrmse(N, dims, ptr2, ptr1);
 
 	md_free(ptr1);
 	md_free(ptr2);
-	md_free(compress);
-
+	xfree(compress);
 	
 	UT_RETURN_ASSERT(err < UT_TOL);
 }
