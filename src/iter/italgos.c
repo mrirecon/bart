@@ -68,6 +68,10 @@ extern inline void iter_op_arr_call(struct iter_op_arr_s op, int NO, unsigned lo
 struct ravine_conf ravine_mod = { 1.f / 20.f, 1.f / 2.f, 4.f };
 struct ravine_conf ravine_classical = { 1.f, 1.f, 4.f };
 
+static float fista_formula(const struct ravine_conf conf, float ft)
+{
+	return (conf.p + sqrtf(conf.q + conf.r * ft * ft)) / 2.f;
+}
 
 /**
  * ravine step
@@ -79,7 +83,7 @@ static void ravine(const struct vec_iter_s* vops, const struct ravine_conf conf,
 	float ft = *ftp;
 	float tfo = ft;
 
-	ft = (conf.p + sqrtf(conf.q + conf.r * ft * ft)) / 2.f;
+	ft = fista_formula(conf, ft);
 	*ftp = ft;
 
 	vops->swap(N, xa, xb);
@@ -88,6 +92,29 @@ static void ravine(const struct vec_iter_s* vops, const struct ravine_conf conf,
 }
 
 
+#if 0
+/**
+ * OptISTA
+ */
+static void optista_theta(int N, float theta[N + 1])
+{
+	struct ravine_conf conf = ravine_classical;
+
+	theta[0] = 1.;
+
+	for (int i = 1; i < N; i++)
+		theta[i] = fista_formula(conf, theta[i - 1]);
+
+	conf.r = 8.;
+	theta[N] = fista_formula(conf, theta[N - 1]);
+}
+
+static float optista_gamma(int i, int N, const float theta[N + 1])
+{
+	float thnsq = powf(theta[N], 2.);
+	return 2. * theta[i] / thnsq * (thnsq - 2. * powf(theta[i], 2.) + theta[i]);
+}
+#endif
 
 
 void landweber_sym(int maxiter, float epsilon, float alpha, long N,
@@ -195,7 +222,6 @@ void ist(int maxiter, float epsilon, float tau, long N,
 
 	vops->del(r);
 }
-
 
 
 /**
