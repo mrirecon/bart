@@ -77,17 +77,15 @@ int stream_decode(struct stream_msg* msg, int l, const char buf[l])
 
 	char* startptr = memchr(buf, '#', (size_t)l);
 
-	int len = -1;
-
 	if (NULL == startptr)
-		goto error;
+		return -1;
 
 	char* endptr = memchr(startptr, '\n', (size_t)(l - (startptr - buf)));
 
 	if (NULL == endptr)
-		goto error;
+		return -1;
 
-	len = (endptr - buf) + 1;
+	int len = (endptr - buf) + 1;
 
 	int match = STREAM_MSG_INVALID + 1;
 	int keylen = 0;
@@ -109,13 +107,14 @@ int stream_decode(struct stream_msg* msg, int l, const char buf[l])
 	}
 
 	if (match == ARRAY_SIZE(keywords))
-		goto error;
+		return -1;
 
 	msg->type = match;
 
 	// parameter parsing
 	char* valptr = startptr + keylen + 1;
 	char* endptr2 = NULL;
+
 
 	switch (match) {
 
@@ -159,6 +158,6 @@ int stream_decode(struct stream_msg* msg, int l, const char buf[l])
 	default:
 	}
 
-error:
 	return len;
 }
+
