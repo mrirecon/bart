@@ -532,6 +532,10 @@ static int check_dot(int N, long ndims[N], long nostrs[N], long nistrs1[N], long
 			|| (0 != tistrs1[0] % (long)size) || (0 >= tistrs1[0])
 			|| (0 != tistrs2[0] % (long)size) || (0 >= tistrs2[0]) ))
 		return -1;
+	
+	//FIXME: due to bug in openBLAS
+	if ((long)size != tistrs1[0] || (long)size != tistrs2[0])
+		return -1;
 
 	md_copy_dims(N, ndims, tdims);
 	md_copy_strides(N, nostrs, tostrs);
