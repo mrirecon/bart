@@ -1,0 +1,52 @@
+Bootstrap: docker
+From: debian:12
+
+%labels
+	Author Nick Scholand
+	Version debian-v1.0
+
+%help
+	This is a container running debian bookworm (12) with the Berkeley Advanced Reconstruction Toolbox (BART) and its viewer tool.
+	It deploys the code of a specified version and compiles it with GPU support using CUDA.
+	Ensure to select the same CUDA version as installed on your host.
+	To compile the specified BART version without CUDA support remove `CUDA=1` from the `printf` string below.
+
+%environment
+	export BART_TOOLBOX_PATH=/bart
+	export TOOLBOX_PATH=/bart
+	export LD_LIBRARY_PATH=/bart/lib:$LD_LIBRARY_PATH
+	export PATH=/bart:$PATH
+	export PATH=/view:$PATH
+
+%post
+	# Allow non-free packages
+	sed -i -e 's/Components: main/Components: main contrib non-free non-free-firmware/g' /etc/apt/sources.list.d/debian.sources
+	apt-get update
+
+	# Install general libraries for BART and BART's viewer tool
+	apt-get install -y libfftw3-dev liblapacke-dev libpng-dev libopenblas-dev libgtk-3-dev
+
+	# Install useful tools for the installation process and workflows
+	apt-get install -y make gcc git wget vim dpkg unzip screen time bc
+
+	# Install CUDA
+	CUDA_VERSION=12-3
+	wget https://developer.download.nvidia.com/compute/cuda/repos/debian12/x86_64/cuda-keyring_1.1-1_all.deb
+	dpkg -i cuda-keyring_1.1-1_all.deb
+	apt-get update
+	DEBIAN_FRONTEND=noninteractive apt-get -y install cuda-${CUDA_VERSION} # `DEBIAN_FRONTEND=noninteractive` avoids keyboard pop-up
+
+	# Install BART and compile it with GPU support
+	BART_VERSION=0.9.00
+	wget https://github.com/mrirecon/bart/archive/v${BART_VERSION}.zip
+	unzip v${BART_VERSION}.zip
+	mv bart-${BART_VERSION} bart
+	rm v${BART_VERSION}.zip
+	cd bart
+	touch Makefiles/Makefile.local
+	printf "PARALLEL=1\nCUDA=1\nCUDA_BASE=/usr/local/cuda\nCUDA_LIB=lib64\n" > Makefiles/Makefile.local
+	make
+	cd ..
+
+	# Install BART's viewer tool
+	apt-get -y install bart-view
