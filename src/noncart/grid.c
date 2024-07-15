@@ -43,7 +43,7 @@ void kb_init(double beta)
 #pragma	omp critical
 	if (-1 == kb_beta) {
 
-		bessel_kb_beta = bessel_i0(beta);
+		bessel_kb_beta = (use_compat_to_version("v0.8.00") ? bessel_i0_compat : bessel_i0)(beta);
 
 		kb_size = use_compat_to_version("v0.8.00") ? 100 : kb_size_max;
 
@@ -71,10 +71,25 @@ static double kb(double beta, double x)
 	return bessel_i0(beta * sqrt(1. - pow(2. * x, 2.))) / bessel_kb_beta;
 }
 
+static double kb_compat(double beta, double x)
+{
+	if (fabs(x) >= 0.5)
+		return 0.;
+
+	return bessel_i0_compat(beta * sqrt(1. - pow(2. * x, 2.))) / bessel_kb_beta;
+}
+
 void kb_precompute(double beta, int n, float table[n + 1])
 {
-	for (int i = 0; i < n + 1; i++)
-		table[i] = kb(beta, (double)(i) / (double)(n - 1) / 2.);
+	if (use_compat_to_version("v0.8.00")) {
+
+		for (int i = 0; i < n + 1; i++)
+			table[i] = kb_compat(beta, (double)(i) / (double)(n - 1) / 2.);
+	} else  {
+
+		for (int i = 0; i < n + 1; i++)
+			table[i] = kb(beta, (double)(i) / (double)(n - 1) / 2.);
+	}
 }
 
 

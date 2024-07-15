@@ -19,7 +19,6 @@
 
 #include "specfun.h"
 
-#if 0
 /* FIXME: improve precision
  * (but should be good enough for our purposes...)
  */
@@ -46,10 +45,10 @@ static const float coeff_8toinf[] = {
 /*
  * modified bessel function
  */
-double bessel_i0(double x)
+double bessel_i0_compat(double x)
 {
 	if (x < 0.)
-		return bessel_i0(-x);
+		return bessel_i0_compat(-x);
 
 	if (x < 8.)
 		return exp(x) * chebeval(x  / 4. - 1., ARRAY_SIZE(coeff_0to8), coeff_0to8);
@@ -57,7 +56,6 @@ double bessel_i0(double x)
 	return exp(x) * chebeval(16. / x - 1., ARRAY_SIZE(coeff_8toinf), coeff_8toinf) / sqrt(x);
 }
 
-#else
 
 //https://www.advanpix.com/2015/11/11/rational-approximations-for-the-modified-bessel-function-of-the-first-kind-i0-computations-double-precision/
 
@@ -132,7 +130,6 @@ double bessel_i0(double x)
 	return exp(x) /sqrt(x) *  poly(1. / x, ARRAY_SIZE(coeff_775toinf), coeff_775toinf);
 }
 
-#endif
 
 
 static double factorial(int k)
