@@ -10,9 +10,9 @@ VCS:            {{{ git_repo_vcs }}}
 Source0:        {{{ git_archive path=. source_name=bart dir_name=bart }}}
 
 %if 0%{?rhel} == 07
-BuildRequires:  fftw-devel, lapack-devel, openblas-devel, atlas-devel, libpng-devel, devtoolset-7-toolchain, devtoolset-7-libatomic-devel
+BuildRequires:  fftw-devel, lapack-devel, openblas-devel, atlas-devel, libpng-devel, devtoolset-7-toolchain, devtoolset-7-libatomic-devel, chrpath
 %else
-BuildRequires:  gcc, make, fftw-devel, lapack-devel, openblas-devel, atlas-devel, libpng-devel
+BuildRequires:  gcc, make, fftw-devel, lapack-devel, openblas-devel, atlas-devel, libpng-devel, chrpath
 %endif
 
 Requires:       fftw, lapack, openblas, atlas, libpng
@@ -39,6 +39,8 @@ echo {{{ bart_git_version }}} > version.txt
 export LDFLAGS="$LDFLAGS -Wl,--no-as-needed"
 make PARALLEL=1
 make doc/commands.txt
+# strip rpath from bart exe, as Fedora dislikes it
+chrpath -d bart
 
 %install
 rm -rf $RPM_BUILD_ROOT
