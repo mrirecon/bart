@@ -7,6 +7,7 @@
 #include <complex.h>
 #include <float.h>
 #include <math.h>
+#include <string.h>
 
 #include "num/fft.h"
 #include "num/flpmath.h"
@@ -127,6 +128,8 @@ void chebmul(int A, int B, float dst[A + B], const float src1[A], const float sr
 
 	float tmp1[N];
 	float tmp2[N];
+
+	memset(tmp2, 0, sizeof tmp1);	// maybe-uninitialized
 
 	resample(N, A, tmp1, src1);
 	resample(N, B, tmp2, src2);

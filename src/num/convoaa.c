@@ -484,6 +484,7 @@ void overlapandsave2NE(int N, unsigned int flags, const long blk[N], const long 
 void overlapandsave2NEB(int N, unsigned int flags, const long blk[N], const long odims[N], complex float* dst, const long dims1[N], const complex float* src1, const long dims2[N], const complex float* src2, const long mdims[N], const complex float* msk)
 {
 	long dims1B[N];
+	memset(dims1B, 0, sizeof dims1B);;	// maybe-uninitialized
 
 	long tdims[2 * N];
 	long nodims[2 * N];
@@ -654,6 +655,7 @@ void overlapandsave2NEB(int N, unsigned int flags, const long blk[N], const long
 void overlapandsave2HB(int N, unsigned int flags, const long blk[N], const long dims1[N], complex float* dst, const long odims[N], const complex float* src1, const long dims2[N], const complex float* src2, const long mdims[N], const complex float* msk)
 {
 	long dims1B[N];
+	memset(dims1B, 0, sizeof dims1B);	// maybe-uninitialized
 
 	long tdims[2 * N];
 	long nodims[2 * N];

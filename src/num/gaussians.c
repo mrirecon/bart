@@ -50,6 +50,7 @@ void gaussian_sample(int N, const complex float m[N],
 		const complex float sqr_cov[N][N], complex float x[N])
 {
 	complex float u[N];
+	memset(u, 0, sizeof u); // maybe-uninitialized
        
 	for (int i = 0; i < N; i++)
 		u[i] = gaussian_rand() / sqrtf(2.);
