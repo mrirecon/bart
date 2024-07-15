@@ -224,7 +224,7 @@ void nn_clone_args(nn_t dst, nn_t src)
 static int get_index_from_name(int N, const char* names[N], const char* name)
 {
 	for (int i = 0; i < N; i++)
-		if ((names[i] != NULL) && (names[i] != NULL) && ((0 == strcmp(name, names[i]))))
+		if ((names[i] != NULL) && ((0 == strcmp(name, names[i]))))
 			return i;
 	return -1;
 }
