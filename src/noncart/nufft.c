@@ -483,7 +483,7 @@ static complex float* compute_psf2(int N, const long psf_dims[N + 1], unsigned l
 				bool periodic, bool lowmem,
 				struct linop_s** lop_nufft, struct linop_s** lop_fftuc)
 {
-	
+
 #ifdef USE_CUDA
 	bool gpu = cuda_ondevice(traj);
 #else
@@ -626,6 +626,14 @@ static struct nufft_data* nufft_create_data(int N,
 
 	data->width = conf.width;
 	data->beta = calc_beta(conf.os, data->width);
+	
+	// For reproducibility (deep-deep-learning paper, v0.8.00, Figure_06):
+	// kb_init needs to be called with double precision beta.
+	// Initializing by calling "rolloff_correction" would initialize with float precision.
+	// Hence, we need to call kb_init here. Later (v0.9.00) may init via "rolloff_correction",
+	// hence we only init in v0.8.00.
+	if (use_compat_to_version("v0.8.00"))
+		kb_init(data->beta);
 
 	// dim 0 must be transformed (we treat this special in the trajectory)
 	assert(MD_IS_SET(data->flags, 0));
@@ -1237,7 +1245,7 @@ static void nufft_apply_adjoint(const linop_data_t* _data, complex float* dst, c
 
 	complex float* grid = md_alloc_sameplace(ND, data->cml_dims, CFL_SIZE, dst);
 
-	if (data->conf.decomp) {
+	if (data->conf.decomp && !use_compat_to_version("v0.8.00")) {
 
 		md_clear(ND, data->cml_dims, grid, CFL_SIZE);
 

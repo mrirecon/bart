@@ -38,7 +38,7 @@ double bessel_kb_beta = -1.; // = bessel_i0(beta);
 static float kb_table[kb_size_max + 1];
 static double kb_beta = -1.;
 
-static void kb_init(double beta)
+void kb_init(double beta)
 {
 #pragma	omp critical
 	if (-1 == kb_beta) {
@@ -566,6 +566,11 @@ void rolloff_correction(float os, float width, float beta, const long dimensions
 	// precompute kaiser bessel table
 	kb_init(beta);
 
+	double scale = 1.;
+	
+	if (use_compat_to_version("v0.8.00"))
+		scale = pow(ftkb(beta, 0.) * width / 2, bitcount(md_nontriv_dims(3, dimensions)));
+
 #pragma omp parallel for collapse(3)
 	for (int z = 0; z < dimensions[2]; z++) 
 		for (int y = 0; y < dimensions[1]; y++) 
@@ -573,13 +578,8 @@ void rolloff_correction(float os, float width, float beta, const long dimensions
 				dst[x + dimensions[0] * (y + z * dimensions[1])] 
 					= (dimensions[0] > 1 ? rolloff(pos(dimensions[0], x) / os, beta, width) : 1.)
 					* (dimensions[1] > 1 ? rolloff(pos(dimensions[1], y) / os, beta, width) : 1.)
-					* (dimensions[2] > 1 ? rolloff(pos(dimensions[2], z) / os, beta, width) : 1.);
-
-	if (use_compat_to_version("v0.8.00")) {
-
-		float scale = powf(ftkb(beta, 0) * width / 2, bitcount(md_nontriv_dims(3, dimensions)));
-		md_zsmul(3, dimensions, dst, dst, scale);
-	}
+					* (dimensions[2] > 1 ? rolloff(pos(dimensions[2], z) / os, beta, width) : 1.)
+					* scale;
 }
 
 void apply_rolloff_correction2(float os, float width, float beta, int N, const long dims[N], const long ostrs[N], complex float* dst, const long istrs[N], const complex float* src)

@@ -36,6 +36,7 @@ extern void grid2H(const struct grid_conf_s* conf, int D, const long trj_dims[__
 extern void grid_pointH(int ch, int N, const long dims[__VLA(N)], const long strs[__VLA(N)], const float pos[__VLA(N)], _Complex float val[__VLA(ch)], const _Complex float* src, _Bool periodic, float width, int kb_size, const float kb_table[__VLA(kb_size + 1)]);
 extern void grid_point(int ch, int N, const long dims[__VLA(N)], const long strs[__VLA(N)], const float pos[__VLA(N)], _Complex float* dst, const _Complex float val[__VLA(ch)], _Bool periodic, float width, int kb_size, const float kb_table[__VLA(kb_size + 1)]);
 
+extern void kb_init(double beta);
 extern double calc_beta(float os, float width);
 extern void kb_precompute(double beta, int n, float table[__VLA(n + 1)]);
 
