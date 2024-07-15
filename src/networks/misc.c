@@ -11,6 +11,7 @@
 #include "misc/mmio.h"
 #include "misc/mri.h"
 
+#include "misc/version.h"
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/fft.h"
@@ -224,7 +225,7 @@ static void compute_adjoint_noncart(struct network_data_s* nd)
 	md_select_dims(DIMS, ~nd->batch_flags, col_dims_s, nd->col_dims);
 
 	struct nufft_conf_s nufft_conf = *(nd->nufft_conf);
-	nufft_conf.cache_psf_grdding = true;
+	nufft_conf.cache_psf_grdding = !use_compat_to_version("v0.8.00");
 
 	auto model = sense_noncart_create(nd->N, trj_dims_s, pat_dims_s, ksp_dims_s, cim_dims_s, img_dims_s, col_dims_s, nd->bas_dims, nd->basis, nufft_conf);
 	auto sense_adjoint = nlop_sense_adjoint_create(1, &model, true);
@@ -246,7 +247,7 @@ static void compute_adjoint_noncart(struct network_data_s* nd)
 	complex float* ref = NULL;
 
 #ifdef USE_CUDA
-	if (nd->gpu)
+	if (nd->gpu && !use_compat_to_version("v0.8.00"))
 		ref = md_alloc_gpu(1, MD_DIMS(1), CFL_SIZE);
 #endif
 
@@ -410,7 +411,7 @@ void network_data_compute_init(struct network_data_s* nd, complex float lambda, 
 	complex float* ref = NULL;
 
 #ifdef USE_CUDA
-	if (nd->gpu)
+	if (nd->gpu && !use_compat_to_version("v0.8.00"))
 		ref = md_alloc_gpu(1, MD_DIMS(1), CFL_SIZE);
 #endif
 
