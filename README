@@ -108,18 +108,27 @@ To install the required libraries on Debian and Ubuntu run:
     install version 0.5.2 of the ISMRMRD library
 
 
-To install the required libraries on Redhat / Centos run:
+To install the required libraries on Redhat / Centos / RockyLinux / AlmaLinux 8 run:
 
-    $ sudo yum install atlas-devel fftw3-devel libpng-devel lapack-devel
+    $ sudo dnf --enablerepo=powertools install fftw-devel atlas-devel libpng-devel lapack-devel gcc-toolset-11
 
-It may be required to install support for software collections (for Centos):
+To activate gcc-11 in the current shell:
 
-    $ sudo yum install centos-release-scl devtoolset-8
+    $ source scl_source enable gcc-toolset-11
 
-To enable gcc 8 and start a bash shell run:
+or to start a new shell with gcc-11 enabled:
 
-    $ scl enable devtoolset-8 bash
+    $ scl enable gcc-toolset-11 bash
 
+To install the required libraries on Redhat / Centos / RockyLinux / AlmaLinux 9 run:
+
+    $ sudo dnf --enablerepo=crb install  fftw-devel atlas-devel libpng-devel lapack-devel gcc-toolset-12
+
+Note that crb (CodeReady Builder) is the new name of powertools from RedHat 9, which contains additional development packages.
+
+To install the required libraries on  Fedora 39/40 run:
+
+    $ sudo dnf install gcc make fftw-devel lapack-devel openblas-devel atlas-devel libpng-devel
 
 ### 2.1.2. Mac OS X
 
