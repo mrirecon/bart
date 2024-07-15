@@ -54,7 +54,7 @@ extern void blas_csyrk(char uplow, char trans, long N, long K, _Complex float al
 
 extern void blas_matrix_multiply(long M, long N, long K, _Complex float C[N][M], const _Complex float A[K][M], const _Complex float B[N][K]);
 
-extern void blas_matrix_zfmac(long M, long K, long N, _Complex float* C, const _Complex float* A, char transa, const _Complex float* B, char transb);
+extern void blas_matrix_zfmac(long M, long N, long K, _Complex float* C, const _Complex float* A, char transa, const _Complex float* B, char transb);
 extern void blas_gemv_zfmac(long M, long N, _Complex float* y, const _Complex float* A, char trans, const _Complex float* x);
 extern void blas_gemv_fmac(long M, long N, float* y, const float* A, char trans, const float* x);
 extern void blas_sger_fmac(long M, long N, float* A, const float* x, const float* y);
