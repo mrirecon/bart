@@ -104,7 +104,7 @@ void lapack_trimat_inverse_lower(long N, complex float A[N][N])
 }
 
 // Solve A x = B for x
-void lapack_trimat_solve(long N, long M, complex float A[N][N], complex float B[N][M], bool upper)
+void lapack_trimat_solve(long N, long M, complex float A[N][N], complex float B[M][N], bool upper)
 {
 	// for non-unit ('N') triangular matrix A
 	// on output: B overwritten by solution matrix X
@@ -129,7 +129,7 @@ void lapack_schur_double(long N, complex double W[N], complex double VS[N][N], c
 
 // Solves the complex Sylvester matrix equation
 // op(A)*X + X*op(B) = scale*C
-void lapack_sylvester(long N, long M, float* scale, complex float A[N][N], complex float B[M][M], complex float C[N][M])
+void lapack_sylvester(long N, long M, float* scale, complex float A[N][N], complex float B[M][M], complex float C[M][N])
 {
 	// A -> triangluar
 	// On output: C overwritten by X
