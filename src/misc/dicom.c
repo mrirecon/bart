@@ -38,6 +38,7 @@
 #include "dicom.h"
 
 
+#define _S2(x) { x[0], x[1] }
 
 // US unsigned short
 // LS unsigned long
@@ -110,19 +111,19 @@ struct element {
 
 struct element dicom_elements_default[EOFF_END] = {
 
-	{ ITAG_META_SIZE, DGRP_FILE, DTAG_META_SIZE, "UL", 4, &(uint32_t){ 28 } },
-	{ ITAG_TRANSFER_SYNTAX, DGRP_FILE, DTAG_TRANSFER_SYNTAX, "UI", sizeof(LITTLE_ENDIAN_EXPLICIT), LITTLE_ENDIAN_EXPLICIT },
-	{ ITAG_IMAGE_INSTANCE_NUM, DGRP_IMAGE2, DTAG_IMAGE_INSTANCE_NUM, "IS", 0, NULL },
-	{ ITAG_COMMENT, DGRP_IMAGE2, DTAG_COMMENT, "LT", 22, "NOT FOR DIAGNOSTIC USE\0\0" },
-	{ ITAG_IMAGE_SAMPLES_PER_PIXEL, DGRP_IMAGE, DTAG_IMAGE_SAMPLES_PER_PIXEL, "US", 2, &(uint16_t){ 1 } }, 		// gray scale
-	{ ITAG_IMAGE_PHOTOM_INTER, DGRP_IMAGE, DTAG_IMAGE_PHOTOM_INTER, "CS", sizeof(MONOCHROME2) - 1, MONOCHROME2 },	// 0 is black
-	{ ITAG_IMAGE_ROWS, DGRP_IMAGE, DTAG_IMAGE_ROWS, "US", 2, &(uint16_t){ 0 } },
-	{ ITAG_IMAGE_COLS, DGRP_IMAGE, DTAG_IMAGE_COLS, "US", 2, &(uint16_t){ 0 } },
-	{ ITAG_IMAGE_BITS_ALLOC, DGRP_IMAGE, DTAG_IMAGE_BITS_ALLOC, "US", 2, &(uint16_t){ 16 } },			//
-	{ ITAG_IMAGE_BITS_STORED, DGRP_IMAGE, DTAG_IMAGE_BITS_STORED, "US", 2, &(uint16_t){ 16 } },			// 12 for CT
-	{ ITAG_IMAGE_PIXEL_HIGH_BIT, DGRP_IMAGE, DTAG_IMAGE_PIXEL_HIGH_BIT, "US", 2, &(uint16_t){ 15 } },
-	{ ITAG_IMAGE_PIXEL_REP, DGRP_IMAGE, DTAG_IMAGE_PIXEL_REP, "US", 2, &(uint16_t){ 0 } },			// unsigned
-	{ ITAG_PIXEL_DATA, DGRP_PIXEL, DTAG_PIXEL_DATA, "OW", 0, NULL },
+	{ ITAG_META_SIZE, DGRP_FILE, DTAG_META_SIZE, _S2("UL"), 4, &(uint32_t){ 28 } },
+	{ ITAG_TRANSFER_SYNTAX, DGRP_FILE, DTAG_TRANSFER_SYNTAX, _S2("UI"), sizeof(LITTLE_ENDIAN_EXPLICIT), LITTLE_ENDIAN_EXPLICIT },
+	{ ITAG_IMAGE_INSTANCE_NUM, DGRP_IMAGE2, DTAG_IMAGE_INSTANCE_NUM, _S2("IS"), 0, NULL },
+	{ ITAG_COMMENT, DGRP_IMAGE2, DTAG_COMMENT, _S2("LT"), 22, "NOT FOR DIAGNOSTIC USE\0\0" },
+	{ ITAG_IMAGE_SAMPLES_PER_PIXEL, DGRP_IMAGE, DTAG_IMAGE_SAMPLES_PER_PIXEL, _S2("US"), 2, &(uint16_t){ 1 } }, 		// gray scale
+	{ ITAG_IMAGE_PHOTOM_INTER, DGRP_IMAGE, DTAG_IMAGE_PHOTOM_INTER, _S2("CS"), sizeof(MONOCHROME2) - 1, MONOCHROME2 },	// 0 is black
+	{ ITAG_IMAGE_ROWS, DGRP_IMAGE, DTAG_IMAGE_ROWS, _S2("US"), 2, &(uint16_t){ 0 } },
+	{ ITAG_IMAGE_COLS, DGRP_IMAGE, DTAG_IMAGE_COLS, _S2("US"), 2, &(uint16_t){ 0 } },
+	{ ITAG_IMAGE_BITS_ALLOC, DGRP_IMAGE, DTAG_IMAGE_BITS_ALLOC, _S2("US"), 2, &(uint16_t){ 16 } },			//
+	{ ITAG_IMAGE_BITS_STORED, DGRP_IMAGE, DTAG_IMAGE_BITS_STORED, _S2("US"), 2, &(uint16_t){ 16 } },			// 12 for CT
+	{ ITAG_IMAGE_PIXEL_HIGH_BIT, DGRP_IMAGE, DTAG_IMAGE_PIXEL_HIGH_BIT, _S2("US"), 2, &(uint16_t){ 15 } },
+	{ ITAG_IMAGE_PIXEL_REP, DGRP_IMAGE, DTAG_IMAGE_PIXEL_REP, _S2("US"), 2, &(uint16_t){ 0 } },			// unsigned
+	{ ITAG_PIXEL_DATA, DGRP_PIXEL, DTAG_PIXEL_DATA, _S2("OW"), 0, NULL },
 };
 
 
@@ -155,7 +156,8 @@ static int dicom_write_element(int len, char buf[static 8 + len], struct element
  	buf[o++] = e.vr[0];
 	buf[o++] = e.vr[1];
 
-	if (!vr_oneof(e.vr, 5, (const char[5][2]){ "OB", "OW", "SQ", "UN", "UT" })) {
+
+	if (!vr_oneof(e.vr, 5, (const char[5][2]){ _S2("OB"), _S2("OW"), _S2("SQ"), _S2("UN"), _S2("UT") })) {
 
 		buf[o++] = ((len >> 0) & 0xFF);
 		buf[o++] = ((len >> 8) & 0xFF);
