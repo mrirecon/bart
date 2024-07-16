@@ -95,9 +95,6 @@ int main_nlinv(int argc, char* argv[argc])
 	bool pattern_for_each_coil = false;
 	float oversampling_coils = -1.;
 
-	if (use_compat_to_version("v0.9.00"))
-		psf_based_reco = true;
-
 	const struct opt_s opts[] = {
 
 		OPT_UINT('i', &conf.iter, "iter", "Number of Newton steps"),
