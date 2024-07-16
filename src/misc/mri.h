@@ -59,7 +59,8 @@ enum mri_dims {
 #define AVG_FLAG (1u << AVG_DIM)
 #define BATCH_FLAG (1u << BATCH_DIM)
 
-
+#define MOTION_DIM ITER_DIM
+#define MOTION_FLAG ITER_FLAG
 
 extern void estimate_pattern(int D, const long dims[__VLA(D)], unsigned long flags, _Complex float* pattern, const _Complex float* kspace_data);
 extern _Complex float* extract_calib(long caldims[DIMS], const long calsize[3], const long in_dims[DIMS], const _Complex float* in_data, _Bool fixed);
