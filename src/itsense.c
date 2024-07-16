@@ -26,7 +26,6 @@
 #include "iter/iter.h"
 
 #include "misc/misc.h"
-#include "misc/types.h"
 #include "misc/mmio.h"
 #include "misc/mri.h"
 #include "misc/opts.h"
