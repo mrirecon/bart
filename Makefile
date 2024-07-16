@@ -28,9 +28,6 @@ endef
 
 $(eval $(foreach VAR,CC CXX CPP LD ARFLAGS ,$(eval $(call undef_builtin,$(VAR)))))
 
-# use for parallel make
-AR=./ar_lock.sh
-
 # Paths
 
 here  = $(realpath $(dir $(lastword $(MAKEFILE_LIST))))
@@ -84,6 +81,14 @@ LOG_BACKEND?=0
 LOG_SIEMENS_BACKEND?=0
 LOG_ORCHESTRA_BACKEND?=0
 LOG_GADGETRON_BACKEND?=0
+
+
+ifeq (4.4,$(firstword $(sort $(MAKE_VERSION) 4.4)))
+AR_LOCK_NEEDED?=0
+else
+AR_LOCK_NEEDED?=1
+endif
+
 
 
 DESTDIR ?= /
@@ -831,14 +836,25 @@ mat2cfl: $(srcdir)/mat2cfl.c -lnum -lmisc
 %.o: %.cc
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
-ifeq ($(PARALLEL),1)
+
+
+# since GNU Make 4.4, archive members can be built separately from
+# compilation, which means we do not need the special support for parallel
+# building of archive members anymore
+# see: https://www.gnu.org/software/make/manual/html_node/Archive-Pitfalls.html
+ifeq ($(AR_LOCK_NEEDED),1)
+
+# use for parallel make
+AR=./ar_lock.sh
 (%): %
 	$(AR) $(ARFLAGS) $@ $%
 else
-(%): %
-	$(AR) $(ARFLAGS) $@ $%
-endif
 
+# clear default archive member rule:
+(%) : % ;
+# when building .a files: run AR with all new .o files ($?)
+%.a : ; $(AR) $(ARFLAGS) $@ $?
+endif
 
 
 
