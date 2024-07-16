@@ -4091,6 +4091,20 @@ void md_zsmax(int D, const long dim[D], complex float* optr, const complex float
 	md_zsmax2(D, dim, str, optr, str, iptr, val);
 }
 
+/**
+ * Elementwise maximum of input and scalar (without strides)
+ *
+ * optr = min(val, real(iptr))
+ */
+void md_zsmin(int D, const long dim[D], complex float* optr, const complex float* iptr, float val)
+{
+	long str[D];
+	md_calc_strides(D, str, dim, CFL_SIZE);
+
+	md_zsmin2(D, dim, str, optr, str, iptr, val);
+}
+
+
 
 /**
  * Elementwise minimum of input and scalar (without strides)
