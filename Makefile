@@ -10,6 +10,12 @@
 # auto clean on makefile updates
 AUTOCLEAN?=1
 
+# How it works: older versions of Make will be sorted before 4.0, making the comparison fail
+ifneq (4.0,$(firstword $(sort $(MAKE_VERSION) 4.0)))
+$(error bart requires version 4.0 of GNU make or newer!)
+endif
+
+
 # clear out all implicit rules
 MAKEFLAGS += --no-builtin-rules
 # clear out some variables by hand, as we cannot use -R, --no-builtin-variables without recursive make
