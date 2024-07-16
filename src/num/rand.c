@@ -159,6 +159,14 @@ double uniform_rand(void)
 }
 
 
+unsigned long long rand_ull_state(struct bart_rand_state* state)
+{
+	if (use_obsolete_rng())
+		return (unsigned long long) rand_r(&state->num_rand_seed);
+	else
+		return rand64_state(state);
+}
+
 
 
 unsigned int rand_range_state(struct bart_rand_state* state, unsigned int range)

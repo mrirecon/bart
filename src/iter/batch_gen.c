@@ -17,6 +17,7 @@
 #include "misc/misc.h"
 #include "misc/types.h"
 #include "misc/debug.h"
+#include "misc/version.h"
 
 #include "iter/iter6.h"
 
@@ -34,8 +35,16 @@ static void rand_draw_data(struct bart_rand_state* rand_state, long N, long perm
 {
 	for (long i = 0; i < N; i++) {
 
-#pragma 	omp critical
-		perm[i] = rand_range_state(rand_state, N);
+		if (use_compat_to_version("v0.9.00")) {
+
+#pragma 		omp critical
+			perm[i] = (long) rand_ull_state(rand_state) % N;
+
+		} else {
+
+#pragma 		omp critical
+			perm[i] = rand_range_state(rand_state, N);
+		}
 	}
 }
 
@@ -48,8 +57,16 @@ static void rand_perm_data(struct bart_rand_state* rand_state, long N, long perm
 
 	for (int i = 0; i < N; i++) {
 
-#pragma 	omp critical
-		perm[i] = rand_range_state(rand_state, N - i);
+		if (use_compat_to_version("v0.9.00")) {
+
+#pragma 		omp critical
+			perm[i] = (long) rand_ull_state(rand_state) % (N - i);
+
+		} else {
+
+#pragma 		omp critical
+			perm[i] = rand_range_state(rand_state, N - i);
+		}
 
 		for (int j = 0; j < N; j++)
 			if (drawn[j] && perm[i] >= j)

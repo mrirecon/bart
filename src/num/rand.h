@@ -21,5 +21,7 @@ extern void rand_state_update(struct bart_rand_state* state, unsigned long long 
 extern unsigned int rand_range(unsigned int range);
 extern unsigned int rand_range_state(struct bart_rand_state* state, unsigned int range);
 
+extern unsigned long long rand_ull_state(struct bart_rand_state* state);
+
 #include "misc/cppwrap.h"
 #endif // RAND_H
