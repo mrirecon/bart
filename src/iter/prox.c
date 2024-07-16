@@ -248,34 +248,17 @@ struct prox_l2ball_data {
 
 	INTERFACE(operator_data_t);
 
-	float* y;
+	struct multiplace_array_s* y;
 	float eps;
 
-	long size;
-#ifdef USE_CUDA
-	const float* gpu_y;
-#endif
+	int N;
+	unsigned long flags;
+	const long* dims;
+
 };
 
 static DEF_TYPEID(prox_l2ball_data);
 
-
-#ifdef USE_CUDA
-static const float* get_y(const struct prox_l2ball_data* data, bool gpu)
-{
-	const float* y = data->y;
-
-	if (gpu) {
-
-		if (NULL == data->gpu_y)
-			((struct prox_l2ball_data*)data)->gpu_y = md_gpu_move(1, MD_DIMS(data->size), data->y, FL_SIZE);
-
-		y = data->gpu_y;
-	}
-
-	return y;
-}
-#endif
 
 /**
  * Proximal function for f(z) = Ind{ || y - z ||_2 < eps }
@@ -288,26 +271,35 @@ static const float* get_y(const struct prox_l2ball_data* data, bool gpu)
  */
 static void prox_l2ball_fun(const operator_data_t* prox_data, float /*mu*/, float* z, const float* x_plus_u)
 {
-	auto pdata = CAST_DOWN(prox_l2ball_data, prox_data);
+	auto d = CAST_DOWN(prox_l2ball_data, prox_data);
 
-#ifdef USE_CUDA
-	const float* y = get_y(pdata, cuda_ondevice(x_plus_u));
-#else
-	const float* y = pdata->y;
-#endif
-
-	if (NULL != y)
-		md_sub(1, MD_DIMS(pdata->size), z, x_plus_u, y);
+	if (NULL != d->y)
+		md_zsub(d->N, d->dims, (complex float*)z, (const complex float*)x_plus_u, multiplace_read(d->y, z));
 	else
-		md_copy(1, MD_DIMS(pdata->size), z, x_plus_u, FL_SIZE);
+		md_copy(d->N, d->dims, z, x_plus_u, CFL_SIZE);
 
-	float q1 = md_norm(1, MD_DIMS(pdata->size), z);
+	long rdims[d->N];
+	md_select_dims(d->N, d->flags, rdims, d->dims);
+	complex float* q1 = md_alloc_sameplace(d->N, rdims, CFL_SIZE, z);
+	complex float* q2 = md_alloc_sameplace(d->N, rdims, CFL_SIZE, z);
 
-	if (q1 > pdata->eps)
-		md_smul(1, MD_DIMS(pdata->size), z, z, pdata->eps / q1);
+	md_ztenmulc(d->N, rdims, q1, d->dims, (complex float*)z, d->dims, (complex float*)z);
+	md_zreal(d->N, rdims, q1, q1);
+	md_zsqrt(d->N, rdims, q1, q1);
+	md_zreal(d->N, rdims, q1, q1);
 
-	if (NULL != y)
-		md_add(1, MD_DIMS(pdata->size), z, z, y);
+	md_zfill(d->N, rdims, q2, d->eps);
+	md_zdiv(d->N, rdims, q2, q2, q1);
+	md_zsmin(d->N, rdims, q2, q2, 1.);
+	md_zreal(d->N, rdims, q2, q2);
+
+	md_zmul2(d->N, d->dims, MD_STRIDES(d->N, d->dims, CFL_SIZE), (complex float*)z, MD_STRIDES(d->N, d->dims, CFL_SIZE), (complex float*)z, MD_STRIDES(d->N, rdims, CFL_SIZE), q2);
+
+	md_free(q1);
+	md_free(q2);
+
+	if (NULL != d->y)
+		md_zadd(d->N, d->dims, (complex float*)z, (complex float*)z, multiplace_read(d->y, z));
 }
 
 static void prox_l2ball_apply(const operator_data_t* _data, float mu, complex float* dst, const complex float* src)
@@ -318,29 +310,32 @@ static void prox_l2ball_apply(const operator_data_t* _data, float mu, complex fl
 static void prox_l2ball_del(const operator_data_t* _data)
 {
 	auto data = CAST_DOWN(prox_l2ball_data, _data);
-#ifdef USE_CUDA
-	if (NULL != data->gpu_y)
-		md_free(data->gpu_y);
-#endif
+
+	multiplace_free(data->y);
+	xfree(data->dims);
+
 	xfree(data);
 }
 
-const struct operator_p_s* prox_l2ball_create(int N, const long dims[N], float eps, const complex float* y)
+const struct operator_p_s* prox_l2ball2_create(int N, unsigned long flags, const long dims[N], float eps, const complex float* y)
 {
 	PTR_ALLOC(struct prox_l2ball_data, pdata);
 	SET_TYPEID(prox_l2ball_data, pdata);
 
-	pdata->y = (float*)y;
+	pdata->y = (NULL == y) ? NULL : multiplace_move(N, dims, CFL_SIZE, y);
 	pdata->eps = eps;
-	pdata->size = md_calc_size(N, dims) * 2;
-
-#ifdef USE_CUDA
-	pdata->gpu_y = NULL;
-#endif
+	pdata->N = N;
+	pdata->flags = flags;
+	pdata->dims = ARR_CLONE(long[N], dims);
+	
 
 	return operator_p_create(N, dims, N, dims, CAST_UP(PTR_PASS(pdata)), prox_l2ball_apply, prox_l2ball_del);
 }
 
+const struct operator_p_s* prox_l2ball_create(int N, const long dims[N], float eps, const complex float* y)
+{
+	return prox_l2ball2_create(N, 0, dims, eps, y);
+}
 
 
 
