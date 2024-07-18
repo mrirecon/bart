@@ -29,7 +29,6 @@
  *
  * Chambolle A, Pock, T. A First-Order Primal-Dual Algorithm for Convex Problems
  * with Applications to Imaging. J. Math. Imaging Vis. 2011; 40, 120-145.
- *
  */
 
 #include <math.h>
@@ -367,6 +366,10 @@ void eulermaruyama(int maxiter, float alpha,
 	for (int i = 0; i < maxiter; i++) {
 
 		iter_monitor(monitor, vops, x);
+
+		// the gradients are scaled so that with unitary operators the
+		// data is assumed to have complex Gaussian noise with s = 1
+		// (which cancels the 1/2 in the algorithm)
 
 		iter_op_call(op, r, x);		// r = A x
 		vops->xpay(N, -1., r, b);	// r = b - r = b - A x
