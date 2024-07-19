@@ -8,6 +8,7 @@
 
 #include "moba/meco.h"
 #include "moba/ir_meco.h"
+
 #include "misc/debug.h"
 
 #include "moba.h"
@@ -34,7 +35,7 @@ struct moba_conf moba_defaults = {
         .k_filter = false,
 	.k_filter_type = EF1,
 	.auto_norm = false,
-	.algo = 3,
+	.algo = ALGO_FISTA,
 	.rho = 0.01,
 	.stack_frames = false,
 	.not_wav_maps = 0,

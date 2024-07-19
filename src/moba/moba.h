@@ -5,6 +5,9 @@
 #include "simu/pulse.h"
 #include "simu/simulation.h"
 
+#include "grecon/italgo.h"
+
+
 struct opt_reg_s;
 
 enum mdb_t { MDB_T1, MDB_T2, MDB_MGRE, MDB_T1_PHY, MDB_BLOCH, MDB_IR_MGRE };
@@ -62,12 +65,12 @@ struct moba_conf {
 
 	bool auto_norm;
 	bool stack_frames;
-	int algo;	// enum algo_t
+	enum algo_t algo;
 	float rho;
 	struct opt_reg_s* ropts;
 
 	// MECO
-	enum meco_model mgre_model;	// enum
+	enum meco_model mgre_model;
 	enum fat_spec fat_spec;
 	float scale_fB0[2]; // { spatial smoothness, scaling }
 	bool out_origin_maps;

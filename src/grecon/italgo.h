@@ -1,5 +1,14 @@
 
-enum algo_t { ALGO_DEFAULT, ALGO_CG, ALGO_IST, ALGO_FISTA, ALGO_ADMM, ALGO_NIHT, ALGO_PRIDU };
+#ifndef __ITALGO_H
+#define __ITALGO_H
+
+// italgo_fun2_t
+#include "iter/iter2.h"
+
+// struct reg_s
+#include "grecon/optreg.h"
+
+enum algo_t { ALGO_DEFAULT, ALGO_CG, ALGO_IST, ALGO_EULERMARUYAMA, ALGO_FISTA, ALGO_ADMM, ALGO_NIHT, ALGO_PRIDU };
 
 struct admm_conf {
 
@@ -27,7 +36,7 @@ struct iter {
 struct reg_s;
 enum algo_t;
 
-extern enum algo_t italgo_choose(int nr_penalties, const struct reg_s regs[nr_penalties]);
+extern enum algo_t italgo_choose(int nr_penalties, const struct reg_s regs [nr_penalties]);
 
 extern struct iter italgo_config(enum algo_t algo, int nr_penalties, const struct reg_s* regs,
 		int maxiter, float step, bool hogwild, const struct admm_conf admm,
@@ -35,4 +44,5 @@ extern struct iter italgo_config(enum algo_t algo, int nr_penalties, const struc
 
 extern void italgo_config_free(struct iter it);
 
+#endif	// __ITALGO_H
 
