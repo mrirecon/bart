@@ -316,7 +316,7 @@ complex double gaussian_rand(void)
 
 void gaussian_rand_vec(long N, float* dst)
 {
-	complex float* tmp = md_alloc(1, MD_DIMS((N + 1) / 2), sizeof(complex float));
+	complex float* tmp = md_alloc_sameplace(1, MD_DIMS((N + 1) / 2), sizeof(complex float), dst);
 	md_gaussian_rand(1, MD_DIMS((N + 1) / 2), tmp);
 	md_copy(1, MD_DIMS(N), dst, tmp, sizeof(float));
 	md_free(tmp);
