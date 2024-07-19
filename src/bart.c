@@ -279,6 +279,7 @@ static int batch_wrapper(main_fun_t* dispatch_func, int argc, char *argv[argc], 
 	thread_argv[argc] = NULL;
 
 	set_cfl_loop_index(pos);
+	num_rand_init(0ULL);
 	int ret = (*dispatch_func)(argc, thread_argv);
 
 	io_memory_cleanup();
