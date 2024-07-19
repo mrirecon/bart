@@ -83,11 +83,17 @@ LOG_ORCHESTRA_BACKEND?=0
 LOG_GADGETRON_BACKEND?=0
 
 
-ifeq (4.4,$(firstword $(sort $(MAKE_VERSION) 4.4)))
-AR_LOCK_NEEDED?=0
-else
+# The fix that makes AR_LOCK unnecessary is in GNU Make version 4.4.1
+# Since MAKE_VERSION only shows the first two version numbers, we need this test
+# to be for 4.5 instead of 4.4.
+# But we will just comment it out for now, since GNU Make 4.5 does not exist yet,
+# and we do not want any surprises if this happesn to break anything
+#ifeq (4.5,$(firstword $(sort $(MAKE_VERSION) 4.5)))
+#AR_LOCK_NEEDED?=0
+#else
 AR_LOCK_NEEDED?=1
-endif
+#endif
+
 
 
 
