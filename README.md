@@ -13,7 +13,10 @@ The software is intended for research use only and
 NOT FOR DIAGNOSTIC USE. It comes without any warranty
 (see LICENSE for details).
 
-For more information: https://mrirecon.github.io/bart/
+For more information:
+
+* Basics: [README](./README)
+* Website: https://mrirecon.github.io/bart/
 
 
 Information for Contributors
