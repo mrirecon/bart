@@ -321,6 +321,28 @@ static void md_gaussian_obsolete_rand(int D, const long dims[D], complex float* 
 		dst[i] = (complex float)gaussian_rand_obsolete();
 }
 
+static void vec_gaussian_philox_rand(struct bart_rand_state state, long offset, long N, complex float* dst)
+{
+
+#ifdef  USE_CUDA
+	if (cuda_ondevice(dst)) {
+
+		cuda_gaussian_rand(N, dst, state.state, state.ctr1, (uint64_t)offset);
+	} else
+#endif
+	{
+
+#pragma 	omp parallel for
+		for (long i = 0; i < N; i++) {
+
+			struct bart_rand_state state_loc = state;
+			state_loc.ctr2 = (uint64_t) (i + offset);
+			dst[i] = gaussian_rand_state(&state_loc);
+		}
+	}
+}
+
+
 static void md_gaussian_philox_rand(int D, const long dims[D], complex float* dst)
 {
 	struct bart_rand_state worker_state;
@@ -331,23 +353,7 @@ static void md_gaussian_philox_rand(int D, const long dims[D], complex float* ds
 		global_rand_state[cfl_loop_worker_id()].ctr1++;
 	}
 
-#ifdef  USE_CUDA
-	if (cuda_ondevice(dst)) {
-
-		cuda_gaussian_rand(md_calc_size(D, dims), dst, worker_state.state, worker_state.ctr1);
-
-	} else
-#endif
-	{
-
-#pragma 	omp parallel for
-		for (long i = 0; i < md_calc_size(D, dims); i++) {
-
-			struct bart_rand_state state = worker_state;
-			state.ctr2 = (uint64_t) i;
-			dst[i] = gaussian_rand_state(&state);
-		}
-	}
+	vec_gaussian_philox_rand(worker_state, 0, md_calc_size(D, dims), dst);
 }
 
 
@@ -377,6 +383,27 @@ static void md_uniform_obsolete_rand(int D, const long dims[D], complex float* d
 		dst[i] = (complex float)uniform_rand_obsolete();
 }
 
+static void vec_uniform_philox_rand(struct bart_rand_state state, long offset, long N, complex float* dst)
+{
+
+#ifdef  USE_CUDA
+	if (cuda_ondevice(dst)) {
+
+		cuda_uniform_rand(N, dst, state.state, state.ctr1, (uint64_t)offset);
+	} else
+#endif
+	{
+
+#pragma 	omp parallel for
+		for (long i = 0; i < N; i++) {
+
+			struct bart_rand_state state_loc = state;
+			state_loc.ctr2 = (uint64_t) (i + offset);
+			dst[i] = uniform_rand_state(&state_loc);
+		}
+	}
+}
+
 static void md_uniform_philox_rand(int D, const long dims[D], complex float* dst)
 {
 	struct bart_rand_state worker_state;
@@ -387,21 +414,7 @@ static void md_uniform_philox_rand(int D, const long dims[D], complex float* dst
 		global_rand_state[cfl_loop_worker_id()].ctr1++;
 	}
 
-#ifdef  USE_CUDA
-	if (cuda_ondevice(dst)) {
-
-		cuda_uniform_rand(md_calc_size(D, dims), dst, worker_state.state, worker_state.ctr1);
-	} else
-#endif
-	{
-#pragma 	omp parallel for
-		for (long i = 0; i < md_calc_size(D, dims); i++) {
-
-			struct bart_rand_state state = worker_state;
-			state.ctr2 = (uint64_t) i;
-			dst[i] = (complex float)(uniform_rand_state(&state));
-		}
-	}
+	vec_uniform_philox_rand(worker_state, 0, md_calc_size(D, dims), dst);
 }
 
 void md_uniform_rand(int D, const long dims[D], complex float* dst)
@@ -429,6 +442,27 @@ static void md_obsolete_rand_one(int D, const long dims[D], complex float* dst, 
 		dst[i] = (complex float)(uniform_rand_obsolete() < p);
 }
 
+static void vec_philox_rand_one(struct bart_rand_state state, long offset, long N, complex float* dst, double p)
+{
+
+#ifdef  USE_CUDA
+	if (cuda_ondevice(dst)) {
+
+		cuda_rand_one(N, dst, p, state.state, state.ctr1, (uint64_t) offset);
+	} else
+#endif
+	{
+
+#pragma 	omp parallel for
+		for (long i = 0; i < N; i++) {
+
+			struct bart_rand_state state_loc = state;
+			state_loc.ctr2 = (uint64_t) (i + offset);
+			dst[i] = (complex float)(uniform_rand_state(&state_loc) < p);
+		}
+	}
+}
+
 static void md_philox_rand_one(int D, const long dims[D], complex float* dst, double p)
 {
 	struct bart_rand_state worker_state;
@@ -439,23 +473,7 @@ static void md_philox_rand_one(int D, const long dims[D], complex float* dst, do
 		global_rand_state[cfl_loop_worker_id()].ctr1++;
 	}
 
-#ifdef  USE_CUDA
-	if (cuda_ondevice(dst)) {
-
-		cuda_rand_one(md_calc_size(D, dims), dst, p, worker_state.state, worker_state.ctr1);
-	} else
-#endif
-	{
-
-#pragma 	omp parallel for
-		for (long i = 0; i < md_calc_size(D, dims); i++) {
-
-			struct bart_rand_state state = worker_state;
-
-			state.ctr2 = (uint64_t)i;
-			dst[i] = (complex float)(uniform_rand_state(&state) < p);
-		}
-	}
+	vec_philox_rand_one(worker_state, 0, md_calc_size(D, dims), dst, p);
 }
 
 void md_rand_one(int D, const long dims[D], complex float* dst, double p)
