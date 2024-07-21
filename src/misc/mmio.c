@@ -275,6 +275,27 @@ bool cfl_loop_desc_active(void)
 	return cfl_loop_desc.flags > 0;
 }
 
+unsigned long cfl_loop_get_flags(void)
+{
+	return cfl_loop_desc.flags;
+}
+
+void cfl_loop_get_dims(int D, long dims[D])
+{
+	assert(DIMS == D);
+	md_copy_dims(DIMS, dims, cfl_loop_desc.loop_dims);
+}
+
+void cfl_loop_get_pos(int D, long pos[D])
+{
+	assert(DIMS == D);
+	md_set_dims(DIMS, pos, 0);
+	md_unravel_index(DIMS, pos, cfl_loop_desc.flags, cfl_loop_desc.loop_dims, cfl_loop_index[cfl_loop_worker_id()]);
+
+	for (int i = 0; i < DIMS; i++)
+		pos[i] += cfl_loop_desc.offs_dims[i];
+}
+
 
 struct cfl_file_desc_s {
 	
