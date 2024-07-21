@@ -89,6 +89,18 @@ struct bart_rand_state* rand_state_create(unsigned long long seed)
 	return state;
 }
 
+static struct bart_rand_state get_worker_state(void)
+{ 
+	struct bart_rand_state worker_state;
+
+	#pragma omp critical(global_rand_state)
+	{
+		worker_state = global_rand_state[cfl_loop_worker_id()];
+		global_rand_state[cfl_loop_worker_id()].ctr1++;
+	}
+
+	return worker_state;
+}
 
 
 void num_rand_init(unsigned long long seed)
@@ -143,8 +155,8 @@ double uniform_rand(void)
 
 	} else {
 
-#pragma 	omp critical(global_rand_state)
-		r = uniform_rand_state(&global_rand_state[cfl_loop_worker_id()]);
+		struct bart_rand_state worker_state = get_worker_state();
+		r = uniform_rand_state(&worker_state);
 	}
 
 	return r;
@@ -208,8 +220,8 @@ unsigned int rand_range(unsigned int range)
 {
 	unsigned int r;
 
-#pragma omp critical(global_rand_state)
-	r = rand_range_state(&global_rand_state[cfl_loop_worker_id()], range);
+	struct bart_rand_state worker_state = get_worker_state();
+	r = rand_range_state(&worker_state, range);
 
 	return r;
 }
@@ -274,8 +286,8 @@ complex double gaussian_rand(void)
 
 	} else {
 
-#pragma 	omp critical(global_rand_state)
-		r = gaussian_rand_state(&global_rand_state[cfl_loop_worker_id()]);
+		struct bart_rand_state worker_state = get_worker_state();
+		r = gaussian_rand_state(&worker_state);
 	}
 
 	return r;
@@ -380,13 +392,7 @@ static long get_cfl_loop_offset(int D, const long dims[D], long strs_offset[D])
 
 static void md_gaussian_philox_rand(int D, const long dims[D], complex float* dst)
 {
-	struct bart_rand_state worker_state;
-
-#pragma omp critical(global_rand_state)
-	{
-		worker_state = global_rand_state[cfl_loop_worker_id()];
-		global_rand_state[cfl_loop_worker_id()].ctr1++;
-	}
+	struct bart_rand_state worker_state = get_worker_state();
 
 	long strs_offset[D];
 	md_calc_strides(D, strs_offset, dims, 1);
@@ -471,13 +477,7 @@ static void vec_uniform_philox_rand(struct bart_rand_state state, long offset, l
 
 static void md_uniform_philox_rand(int D, const long dims[D], complex float* dst)
 {
-	struct bart_rand_state worker_state;
-
-#pragma omp critical(global_rand_state)
-	{
-		worker_state = global_rand_state[cfl_loop_worker_id()];
-		global_rand_state[cfl_loop_worker_id()].ctr1++;
-	}
+	struct bart_rand_state worker_state = get_worker_state();
 
 	long strs_offset[D];
 	md_calc_strides(D, strs_offset, dims, 1);
@@ -560,13 +560,7 @@ static void vec_philox_rand_one(struct bart_rand_state state, long offset, long 
 
 static void md_philox_rand_one(int D, const long dims[D], complex float* dst, double p)
 {
-	struct bart_rand_state worker_state;
-
-#pragma omp critical(global_rand_state)
-	{
-		worker_state = global_rand_state[cfl_loop_worker_id()];
-		global_rand_state[cfl_loop_worker_id()].ctr1++;
-	}
+	struct bart_rand_state worker_state = get_worker_state();
 
 	long strs_offset[D];
 	md_calc_strides(D, strs_offset, dims, 1);
