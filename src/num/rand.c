@@ -23,6 +23,7 @@
 #include "misc/mmio.h"
 
 #include "num/multind.h"
+#include "num/vptr.h"
 
 #ifdef USE_CUDA
 #include "num/gpuops.h"
@@ -353,7 +354,28 @@ static void md_gaussian_philox_rand(int D, const long dims[D], complex float* ds
 		global_rand_state[cfl_loop_worker_id()].ctr1++;
 	}
 
-	vec_gaussian_philox_rand(worker_state, 0, md_calc_size(D, dims), dst);
+	unsigned long loop_flags = vptr_block_loop_flags(D, dims, MD_STRIDES(D, dims, sizeof(complex float)), dst, sizeof(complex float));
+
+	long strs[D];
+	long ldims[D];
+	long bdims[D];
+
+	md_calc_strides(D, strs, dims, 1);
+	md_select_dims(D,  loop_flags, ldims, dims);
+	md_select_dims(D, ~loop_flags, bdims, dims);
+
+	long N = md_calc_size(D, bdims);
+	long* strs_p = strs; 
+
+	NESTED(void, rand_loop, (const long pos[]))
+	{
+		long offset = md_calc_offset(D, strs_p, pos);
+
+		if (mpi_accessible(dst + offset))
+			vec_gaussian_philox_rand(worker_state, offset, N, vptr_resolve(dst + offset));
+	};
+
+	md_loop(D, ldims, rand_loop);
 }
 
 
@@ -414,7 +436,28 @@ static void md_uniform_philox_rand(int D, const long dims[D], complex float* dst
 		global_rand_state[cfl_loop_worker_id()].ctr1++;
 	}
 
-	vec_uniform_philox_rand(worker_state, 0, md_calc_size(D, dims), dst);
+	unsigned long loop_flags = vptr_block_loop_flags(D, dims, MD_STRIDES(D, dims, sizeof(complex float)), dst, sizeof(complex float));
+
+	long strs[D];
+	long ldims[D];
+	long bdims[D];
+
+	md_calc_strides(D, strs, dims, 1);
+	md_select_dims(D,  loop_flags, ldims, dims);
+	md_select_dims(D, ~loop_flags, bdims, dims);
+
+	long N = md_calc_size(D, bdims);
+	long* strs_p = strs; 
+
+	NESTED(void, rand_loop, (const long pos[]))
+	{
+		long offset = md_calc_offset(D, strs_p, pos);
+
+		if (mpi_accessible(dst + offset))
+			vec_uniform_philox_rand(worker_state, offset, N, vptr_resolve(dst + offset));
+	};
+
+	md_loop(D, ldims, rand_loop);
 }
 
 void md_uniform_rand(int D, const long dims[D], complex float* dst)
@@ -473,7 +516,28 @@ static void md_philox_rand_one(int D, const long dims[D], complex float* dst, do
 		global_rand_state[cfl_loop_worker_id()].ctr1++;
 	}
 
-	vec_philox_rand_one(worker_state, 0, md_calc_size(D, dims), dst, p);
+	unsigned long loop_flags = vptr_block_loop_flags(D, dims, MD_STRIDES(D, dims, sizeof(complex float)), dst, sizeof(complex float));
+
+	long strs[D];
+	long ldims[D];
+	long bdims[D];
+
+	md_calc_strides(D, strs, dims, 1);
+	md_select_dims(D,  loop_flags, ldims, dims);
+	md_select_dims(D, ~loop_flags, bdims, dims);
+
+	long N = md_calc_size(D, bdims);
+	long* strs_p = strs; 
+
+	NESTED(void, rand_loop, (const long pos[]))
+	{
+		long offset = md_calc_offset(D, strs_p, pos);
+
+		if (mpi_accessible(dst + offset))
+			vec_philox_rand_one(worker_state, offset, N, vptr_resolve(dst + offset), p);
+	};
+
+	md_loop(D, ldims, rand_loop);
 }
 
 void md_rand_one(int D, const long dims[D], complex float* dst, double p)

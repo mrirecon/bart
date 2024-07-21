@@ -300,3 +300,35 @@ static bool test_var(void)
 
 UT_REGISTER_TEST(test_rand_range);
 UT_REGISTER_TEST(test_var);
+
+
+static bool test_mpi(void)
+{
+	enum { N = 3};
+	const long dims[N] = { 16, 4, 7 };
+
+	complex float* data1 = md_alloc(N, dims, CFL_SIZE);
+	complex float* data2 = md_alloc_mpi(N, 2, dims, CFL_SIZE);
+	complex float* data3 = md_alloc(N, dims, CFL_SIZE);
+
+	num_rand_init(0xDEADBEEF);
+	md_gaussian_rand(N, dims, data1);
+
+	num_rand_init(0xDEADBEEF);
+	md_gaussian_rand(N, dims, data2);
+
+	md_copy(N, dims, data3, data2, CFL_SIZE);
+
+	float err = md_znrmse(N, dims, data1, data3);
+
+	md_free(data1);
+	md_free(data2);
+	md_free(data3);
+
+	UT_RETURN_ASSERT(UT_TOL > err);
+}
+
+UT_REGISTER_TEST(test_mpi);
+
+
+
