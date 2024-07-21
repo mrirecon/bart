@@ -102,6 +102,24 @@ static struct bart_rand_state get_worker_state(void)
 	return worker_state;
 }
 
+static struct bart_rand_state get_worker_state_cfl_loop(void)
+{ 
+	struct bart_rand_state worker_state = get_worker_state();
+
+	if (cfl_loop_desc_active()) {
+
+		long dims[16];
+		long pos[16];
+
+		cfl_loop_get_dims(16, dims);
+		cfl_loop_get_pos(16, pos);
+
+		worker_state.ctr2 = md_ravel_index(16, pos, cfl_loop_rand_flags, dims);
+	}
+
+	return worker_state;
+}
+
 
 void num_rand_init(unsigned long long seed)
 {
@@ -155,7 +173,7 @@ double uniform_rand(void)
 
 	} else {
 
-		struct bart_rand_state worker_state = get_worker_state();
+		struct bart_rand_state worker_state = get_worker_state_cfl_loop();
 		r = uniform_rand_state(&worker_state);
 	}
 
@@ -220,7 +238,7 @@ unsigned int rand_range(unsigned int range)
 {
 	unsigned int r;
 
-	struct bart_rand_state worker_state = get_worker_state();
+	struct bart_rand_state worker_state = get_worker_state_cfl_loop();
 	r = rand_range_state(&worker_state, range);
 
 	return r;
@@ -286,7 +304,7 @@ complex double gaussian_rand(void)
 
 	} else {
 
-		struct bart_rand_state worker_state = get_worker_state();
+		struct bart_rand_state worker_state = get_worker_state_cfl_loop();
 		r = gaussian_rand_state(&worker_state);
 	}
 
