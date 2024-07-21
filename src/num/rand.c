@@ -32,20 +32,11 @@
 
 #include "rand.h"
 
-
-static bool warned_about_parallel_rng = false;
+unsigned long cfl_loop_rand_flags = ~0ul;
 
 
 static bool use_obsolete_rng()
 {
-	if (!warned_about_parallel_rng) {
-
-		if (cfl_loop_desc_active())
-			debug_printf(DP_WARN, "Random numbers will be same in each parallel process / thread (exactly as if calling the tools sequentially)!\n");
-
-		warned_about_parallel_rng = true;
-	}
-
 	return use_compat_to_version("v0.9.00");
 }
 
@@ -343,6 +334,49 @@ static void vec_gaussian_philox_rand(struct bart_rand_state state, long offset, 
 	}
 }
 
+static long get_cfl_loop_offset(int D, const long dims[D], long strs_offset[D])
+{
+	if (0 != (cfl_loop_rand_flags & cfl_loop_get_flags())) {
+
+		int DIMS = 16;
+		long cdims[DIMS];
+		cfl_loop_get_dims(DIMS, cdims);
+		md_select_dims(DIMS, cfl_loop_rand_flags, cdims, cdims);
+
+		bool mergeable = true;
+		for (int i = 0; i < MIN(D, DIMS); i++)
+			if ((1 != dims[i]) && (1 != cdims[i]))
+				mergeable = false;
+
+		if (mergeable) {
+
+			long mdims[MAX(D, DIMS)];
+			md_singleton_dims(MAX(D, DIMS), mdims);
+			md_copy_dims(D, mdims, dims);
+
+			md_max_dims(DIMS, ~0ul, mdims, mdims, cdims);
+
+			long strs_offset_merged[MAX(D, DIMS)];
+			md_calc_strides(MAX(D, DIMS), strs_offset_merged, mdims, 1);
+
+			long cpos[DIMS];
+			cfl_loop_get_pos(DIMS, cpos);
+
+			md_copy_strides(D, strs_offset, strs_offset_merged);
+
+			return md_calc_offset(DIMS, strs_offset_merged, cpos);
+		} else {
+
+			long cpos[DIMS];
+			cfl_loop_get_pos(DIMS, cpos);
+
+			return md_calc_size(D, dims) * md_ravel_index(DIMS, cpos, (cfl_loop_rand_flags & cfl_loop_get_flags()), cdims);
+		}
+	}
+
+	return 0;
+}
+
 
 static void md_gaussian_philox_rand(int D, const long dims[D], complex float* dst)
 {
@@ -354,7 +388,14 @@ static void md_gaussian_philox_rand(int D, const long dims[D], complex float* ds
 		global_rand_state[cfl_loop_worker_id()].ctr1++;
 	}
 
+	long strs_offset[D];
+	md_calc_strides(D, strs_offset, dims, 1);
+
+	long offset_cfl = get_cfl_loop_offset(D, dims, strs_offset);
+
 	unsigned long loop_flags = vptr_block_loop_flags(D, dims, MD_STRIDES(D, dims, sizeof(complex float)), dst, sizeof(complex float));
+	if (D != md_calc_blockdim(D, dims, strs_offset, 1))
+		loop_flags |= ~(MD_BIT(md_calc_blockdim(D, dims, strs_offset, 1)) - 1);
 
 	long strs[D];
 	long ldims[D];
@@ -365,14 +406,16 @@ static void md_gaussian_philox_rand(int D, const long dims[D], complex float* ds
 	md_select_dims(D, ~loop_flags, bdims, dims);
 
 	long N = md_calc_size(D, bdims);
-	long* strs_p = strs; 
+	long* strs_p = strs;
+	long* strs_offset_p = strs_offset;
 
 	NESTED(void, rand_loop, (const long pos[]))
 	{
-		long offset = md_calc_offset(D, strs_p, pos);
+		long offset_data = md_calc_offset(D, strs_p, pos);
+		long offset_rand = md_calc_offset(D, strs_offset_p, pos) + offset_cfl;
 
-		if (mpi_accessible(dst + offset))
-			vec_gaussian_philox_rand(worker_state, offset, N, vptr_resolve(dst + offset));
+		if (mpi_accessible(dst + offset_data))
+			vec_gaussian_philox_rand(worker_state, offset_rand, N, vptr_resolve(dst + offset_data));
 	};
 
 	md_loop(D, ldims, rand_loop);
@@ -436,7 +479,14 @@ static void md_uniform_philox_rand(int D, const long dims[D], complex float* dst
 		global_rand_state[cfl_loop_worker_id()].ctr1++;
 	}
 
+	long strs_offset[D];
+	md_calc_strides(D, strs_offset, dims, 1);
+
+	long offset_cfl = get_cfl_loop_offset(D, dims, strs_offset);
+
 	unsigned long loop_flags = vptr_block_loop_flags(D, dims, MD_STRIDES(D, dims, sizeof(complex float)), dst, sizeof(complex float));
+	if (D != md_calc_blockdim(D, dims, strs_offset, 1))
+		loop_flags |= ~(MD_BIT(md_calc_blockdim(D, dims, strs_offset, 1)) - 1);
 
 	long strs[D];
 	long ldims[D];
@@ -447,14 +497,16 @@ static void md_uniform_philox_rand(int D, const long dims[D], complex float* dst
 	md_select_dims(D, ~loop_flags, bdims, dims);
 
 	long N = md_calc_size(D, bdims);
-	long* strs_p = strs; 
+	long* strs_p = strs;
+	long* strs_offset_p = strs_offset;
 
 	NESTED(void, rand_loop, (const long pos[]))
 	{
-		long offset = md_calc_offset(D, strs_p, pos);
+		long offset_data = md_calc_offset(D, strs_p, pos);
+		long offset_rand = md_calc_offset(D, strs_offset_p, pos) + offset_cfl;
 
-		if (mpi_accessible(dst + offset))
-			vec_uniform_philox_rand(worker_state, offset, N, vptr_resolve(dst + offset));
+		if (mpi_accessible(dst + offset_data))
+			vec_uniform_philox_rand(worker_state, offset_rand, N, vptr_resolve(dst + offset_data));
 	};
 
 	md_loop(D, ldims, rand_loop);
@@ -516,7 +568,14 @@ static void md_philox_rand_one(int D, const long dims[D], complex float* dst, do
 		global_rand_state[cfl_loop_worker_id()].ctr1++;
 	}
 
+	long strs_offset[D];
+	md_calc_strides(D, strs_offset, dims, 1);
+
+	long offset_cfl = get_cfl_loop_offset(D, dims, strs_offset);
+
 	unsigned long loop_flags = vptr_block_loop_flags(D, dims, MD_STRIDES(D, dims, sizeof(complex float)), dst, sizeof(complex float));
+	if (D != md_calc_blockdim(D, dims, strs_offset, 1))
+		loop_flags |= ~(MD_BIT(md_calc_blockdim(D, dims, strs_offset, 1)) - 1);
 
 	long strs[D];
 	long ldims[D];
@@ -527,14 +586,16 @@ static void md_philox_rand_one(int D, const long dims[D], complex float* dst, do
 	md_select_dims(D, ~loop_flags, bdims, dims);
 
 	long N = md_calc_size(D, bdims);
-	long* strs_p = strs; 
+	long* strs_p = strs;
+	long* strs_offset_p = strs_offset;
 
 	NESTED(void, rand_loop, (const long pos[]))
 	{
-		long offset = md_calc_offset(D, strs_p, pos);
+		long offset_data = md_calc_offset(D, strs_p, pos);
+		long offset_rand = md_calc_offset(D, strs_offset_p, pos) + offset_cfl;
 
-		if (mpi_accessible(dst + offset))
-			vec_philox_rand_one(worker_state, offset, N, vptr_resolve(dst + offset), p);
+		if (mpi_accessible(dst + offset_data))
+			vec_philox_rand_one(worker_state, offset_rand, N, vptr_resolve(dst + offset_data), p);
 	};
 
 	md_loop(D, ldims, rand_loop);

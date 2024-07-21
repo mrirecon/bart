@@ -159,6 +159,7 @@ static void parse_bart_opts(int* argcp, char*** argvp)
 		OPTL_SET('M', "mpi", &use_mpi, "Initialize MPI"),
 		OPT_SET('S', &mpi_shared_files, "Maps files from each rank (requires shared files system)"),
 		OPTL_SET(0, "version", &version, "print version"),
+		OPTL_ULONG(0, "random-dims", &cfl_loop_rand_flags, "flags", "vary random numbers along selected dimensions (default: all)"),
 		OPT_SET('d', &attach, "(Wait for debugger)"),
 	};
 

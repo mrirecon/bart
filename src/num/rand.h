@@ -3,6 +3,8 @@
 
 #include "misc/cppwrap.h"
 
+extern unsigned long cfl_loop_rand_flags;
+
 extern double uniform_rand(void);
 extern _Complex double gaussian_rand(void);
 extern void md_gaussian_rand(int D, const long dims[__VLA(D)], _Complex float* dst);
