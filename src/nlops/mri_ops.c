@@ -22,6 +22,11 @@
 #include "num/ops.h"
 #include "num/rand.h"
 #include "num/fft.h"
+#include "num/vptr.h"
+#include "num/init.h"
+#ifdef USE_CUDA
+#include "num/gpuops.h"
+#endif
 
 #include "iter/misc.h"
 #include "iter/iter.h"
@@ -37,7 +42,6 @@
 #include "nlops/chain.h"
 #include "nlops/tenmul.h"
 #include "nlops/someops.h"
-#include "nlops/checkpointing.h"
 #include "nlops/norm_inv.h"
 
 #include "mri_ops.h"
@@ -292,6 +296,8 @@ struct sense_model_s {
 	const struct linop_s* pattern;
 	const struct linop_s* nufft;
 
+	const struct linop_s* nufft_loss;
+
 	struct shared_obj_s sptr;
 };
 
@@ -304,6 +310,7 @@ static void sense_model_del(const struct shared_obj_s* sptr)
 	linop_free(x->coils);
 	linop_free(x->pattern);
 	linop_free(x->nufft);
+	linop_free(x->nufft_loss);
 
 	sense_model_config_free(x->config);
 
@@ -338,6 +345,7 @@ static struct sense_model_s* mri_sense_init(void)
 		.coils = NULL,
 		.pattern = NULL,
 		.nufft = NULL,
+		.nufft_loss = NULL,
 	};
 
 	shared_obj_init(&(result->sptr), sense_model_del);
@@ -359,13 +367,6 @@ struct sense_model_s* sense_model_create(const struct config_nlop_mri_s* config)
 
 		result->sense = linop_chain(result->coils, result->nufft);
 
-		if (config->nufft_conf.toeplitz) {
-
-			long psf_dims[config->ND];
-			nufft_get_psf_dims(result->nufft, config->ND, psf_dims);
-			assert(md_check_equal_dims(config->ND, psf_dims, config->psf_dims, ~0ul));
-		}
-
 	} else {
 
 		debug_print_dims(DP_INFO, config->N, config->cim_dims);
@@ -383,6 +384,15 @@ struct sense_model_s* sense_model_create(const struct config_nlop_mri_s* config)
 
 		result->sense = linop_chain_FF(result->sense, linop_fft_create(config->N, config->ksp_dims, FFT_FLAGS));
 		result->sense = linop_chain_FF(result->sense, linop_clone(result->pattern));
+	}
+
+	if (0 != bart_delayed_loop_flags) {
+
+		const struct linop_s* tmp = result->sense;
+		struct vptr_hint_s* hint = hint_delayed_create(bart_delayed_loop_flags);
+		result->sense = linop_vptr_wrapper(hint, (struct linop_s*)tmp);
+		vptr_hint_free(hint);
+		linop_free(tmp);
 	}
 
 	return result;
@@ -415,6 +425,15 @@ struct sense_model_s* sense_model_normal_create(const struct config_nlop_mri_s* 
 		result->sense = linop_chain_FF(result->sense, linop_clone(result->pattern));
 	}
 
+	if (0 != bart_delayed_loop_flags) {
+
+		const struct linop_s* tmp = result->sense;
+		struct vptr_hint_s* hint = hint_delayed_create(bart_delayed_loop_flags);
+		result->sense = linop_vptr_wrapper(hint, (struct linop_s*)tmp);
+		vptr_hint_free(hint);
+		linop_free(tmp);
+	}
+
 	return result;
 }
 
@@ -440,6 +459,18 @@ void sense_model_get_cim_dims(struct config_nlop_mri_s* model, int N, long cim_d
 {
 	assert(N == model->N);
 	md_copy_dims(N, cim_dims, model->cim_dims);
+}
+
+void sense_model_get_ksp_dims(struct config_nlop_mri_s* model, int N, long ksp_dims[N])
+{
+	assert(N == model->N);
+	md_copy_dims(N, ksp_dims, model->ksp_dims);
+}
+
+_Bool sense_model_get_noncart(struct config_nlop_mri_s* model)
+{
+	assert(NULL != model);
+	return model->noncart;
 }
 
 
@@ -498,6 +529,8 @@ static void sense_model_set_data_fun(const nlop_data_t* _data, int Narg, complex
 
 		nufft_update_psf(d->model->nufft, d->model->config->ND, d->model->config->psf_dims, pattern);
 	}
+
+	assert(NULL == d->model->nufft_loss);
 }
 
 static void sense_model_set_data_der(const nlop_data_t* _data, int o, int i, complex float* dst, const complex float* src)
@@ -652,7 +685,25 @@ static void sense_model_set_data_noncart_fun(const nlop_data_t* _data, int Narg,
 
 	assert(NULL != d->model->nufft);
 
-	nufft_update_traj(d->model->nufft, d->N, d->model->config->trj_dims, traj, d->model->config->pat_dims, pattern, d->model->config->bas_dims, d->model->config->basis);
+	complex float* vtraj = NULL;
+
+	if (0 != bart_delayed_loop_flags) {
+
+		struct vptr_hint_s* hint = hint_delayed_create(bart_delayed_loop_flags);
+		vtraj = vptr_alloc(d->N, d->model->config->trj_dims, CFL_SIZE, hint);
+#ifdef USE_CUDA
+		vptr_set_gpu(vtraj, cuda_ondevice(traj));
+#endif
+		md_copy(d->N, d->model->config->trj_dims, vtraj, traj, CFL_SIZE);
+		vptr_hint_free(hint);
+	}
+
+	nufft_update_traj(d->model->nufft, d->N, d->model->config->trj_dims, vtraj ?: traj, d->model->config->pat_dims, pattern, d->model->config->bas_dims, d->model->config->basis);
+
+	if (NULL != d->model->nufft_loss)
+		nufft_update_traj(d->model->nufft_loss, d->N, d->model->config->trj_dims, vtraj ?: traj, MD_SINGLETON_DIMS(d->N), NULL, d->model->config->bas_dims, d->model->config->basis);
+
+	md_free(vtraj);
 
 	if (NULL != dst_psf)
 		nufft_get_psf(d->model->nufft, d->model->config->ND, d->model->config->psf_dims, dst_psf);
@@ -900,6 +951,70 @@ static const struct nlop_s* nlop_mri_normal_slice_create(const struct config_nlo
 	sense_model_free(model);
 
 	return result;
+}
+
+
+static const struct nlop_s* nlop_mri_loss_create_s(bool fft, struct sense_model_s* model)
+{
+	const struct linop_s* lop_sense = linop_clone(model->coils);
+
+	if (fft) {
+
+		if (model->config->noncart && NULL == model->nufft_loss) {
+
+			struct nufft_conf_s conf = model->config->nufft_conf;
+			conf.toeplitz = false;
+			model->nufft_loss = nufft_create2(model->config->N, model->config->ksp_dims, model->config->cim_dims, model->config->trj_dims, NULL, MD_SINGLETON_DIMS(model->config->N), NULL, model->config->bas_dims, model->config->basis, conf);
+		}
+
+		if (model->config->noncart)
+			lop_sense = linop_chain_FF(lop_sense, linop_clone(model->nufft_loss));
+		else
+			lop_sense = linop_chain_FF(linop_chain_FF(lop_sense, linop_fft_create(model->config->N, model->config->ksp_dims, FFT_FLAGS)),
+							linop_cdiag_create(model->config->N, model->config->ksp_dims, md_nontriv_dims(model->config->N, model->config->fftmod_precomp_ksp_dims), multiplace_read(model->config->fftmod_precomp_ksp, NULL)));
+	} else {
+
+		if (!model->config->noncart) {
+
+			const struct linop_s* lop_fftmod = linop_cdiag_create(model->config->N, model->config->cim_dims, md_nontriv_dims(model->config->N, model->config->fftmod_precomp_img_dims), multiplace_read(model->config->fftmod_precomp_img, NULL));
+
+			lop_sense = linop_chain_FF(lop_sense, linop_get_adjoint(lop_fftmod));
+			lop_sense = linop_chain_FF(lop_sense, linop_scale_create(model->config->N, model->config->cim_dims, sqrtf(md_calc_size(3, model->config->cim_dims))));
+
+			linop_free(lop_fftmod);
+		}
+
+	}
+
+	const struct nlop_s* ret;
+
+	if (0 != bart_delayed_loop_flags) {
+
+		struct vptr_hint_s* hint = hint_delayed_create(bart_delayed_loop_flags);
+		ret = nlop_from_linop_F(linop_vptr_wrapper(hint, (struct linop_s*)lop_sense));
+		vptr_hint_free(hint);
+		linop_free(lop_sense);
+	} else {
+
+		ret = nlop_from_linop_F(lop_sense);
+	}
+
+	return ret;
+}
+
+const struct nlop_s* nlop_mri_loss_create(bool fft, int Nb, struct sense_model_s* model[Nb])
+{
+	const struct nlop_s* nlops[Nb];
+
+	for (int i = 0; i < Nb; i++)
+		nlops[i] = nlop_mri_loss_create_s(fft, model[i]);
+
+	int istack_dims[1] = { BATCH_DIM };
+	int ostack_dims[1] = { BATCH_DIM };
+
+	const struct nlop_s* ret = nlop_stack_multiple_F(Nb, nlops, 1, istack_dims, 1, ostack_dims, true, multigpu);
+
+	return ret;
 }
 
 
