@@ -103,6 +103,8 @@ struct reconet_s reconet_config_opts = {
 	.coil_image = false,
 
 	.normalize_rss = false,
+
+	.ksp_training = false,
 };
 
 static void reconet_init_default(struct reconet_s* reconet) {
@@ -258,7 +260,7 @@ static nn_t reconet_sort_args(nn_t reconet)
 	return reconet;
 }
 
-//add "scale" input for normlization
+//add "scale" input for normalization
 static nn_t reconet_normalization(nn_t network)
 {
 	const char* norm_names_in[] = {
@@ -825,7 +827,7 @@ static nn_t reconet_train_create(const struct reconet_s* config, int Nb, bool va
 	sense_model_get_img_dims(config->sense_config, N, out_dims);
 	out_dims[BATCH_DIM] = Nb;
 
-	if (config->coil_image) {
+	if (config->coil_image || config->ksp_training) {
 
 		long cim_dims[N];
 		long img_dims[N];
@@ -844,6 +846,24 @@ static nn_t reconet_train_create(const struct reconet_s* config, int Nb, bool va
 		train_op = nn_set_output_name_F(train_op, 0, "reconstruction");
 
 		md_copy_dims(N, out_dims, cim_dims);
+	}
+
+	if (config->ksp_training) {
+
+		nn_t fft_op;
+		if (sense_model_get_noncart(config->sense_config))
+			fft_op = nn_from_nlop_F(nlop_mri_nufft_create(Nb, config->sense_config));
+		else
+			fft_op = nn_from_nlop_F(nlop_mri_fft_create(Nb, config->sense_config));
+
+		if (sense_model_get_noncart(config->sense_config))
+			fft_op = nn_set_input_name_F(fft_op, 1, "trajectory");
+
+		train_op = nn_chain2_FF(train_op, 0, "reconstruction", fft_op, 0, NULL);
+		train_op = nn_set_output_name_F(train_op, 0, "reconstruction");
+
+		sense_model_get_ksp_dims(config->sense_config, N, out_dims);
+		out_dims[BATCH_DIM] = Nb;
 	}
 
 	long scl_dims[N];

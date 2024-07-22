@@ -362,11 +362,13 @@ void load_network_data(struct network_data_s* nd)
 	if (nd->create_out) {
 
 		md_copy_dims(DIMS, nd->out_dims, nd->img_dims);
-		nd->out = create_cfl(nd->filename_out, DIMS, nd->img_dims);
+		nd->out = create_cfl(nd->filename_out, DIMS, nd->out_dims);
 
 	} else {
 
 		nd->out = load_cfl(nd->filename_out, DIMS, nd->out_dims);
+
+		if (! sense_model_get_noncart(nd->conf))
 		assert(    md_check_equal_dims(DIMS, nd->img_dims, nd->out_dims, ~0UL)
 			|| md_check_equal_dims(DIMS, nd->cim_dims, nd->out_dims, ~0UL) );
 	}

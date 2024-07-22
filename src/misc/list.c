@@ -292,7 +292,7 @@ static inline bool cmp_wrapper(list_cmp_t cmp, const void* item, const void* ref
 
 /**
  * Find first index for which cmp(item, ref) evaluates true
- * If (cmp == NULL) the first index with item==ref is retruned
+ * If (cmp == NULL) the first index with item==ref is returned
  * If no index is found, -1 is returned
  *
  * @param list

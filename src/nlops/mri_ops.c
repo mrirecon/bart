@@ -439,6 +439,18 @@ void sense_model_get_cim_dims(struct config_nlop_mri_s* model, int N, long cim_d
 	md_copy_dims(N, cim_dims, model->cim_dims);
 }
 
+void sense_model_get_ksp_dims(struct config_nlop_mri_s* model, int N, long ksp_dims[N])
+{
+	assert(N == model->N);
+	md_copy_dims(N, ksp_dims, model->ksp_dims);
+}
+
+_Bool sense_model_get_noncart(struct config_nlop_mri_s* model)
+{
+	assert(NULL != model);
+	return model->noncart;
+}
+
 
 
 struct sense_model_set_data_s {
@@ -897,6 +909,118 @@ static const struct nlop_s* nlop_mri_normal_slice_create(const struct config_nlo
 	sense_model_free(model);
 
 	return result;
+}
+
+
+static const struct nlop_s* nlop_mri_fft_create_s(struct config_nlop_mri_s* model)
+{
+	return nlop_from_linop_F(linop_fftc_create(model->N, model->cim_dims, FFT_FLAGS));
+}
+
+const struct nlop_s* nlop_mri_fft_create(int Nb, struct config_nlop_mri_s* model)
+{
+	const struct nlop_s* nlops[Nb];
+
+	for (int i = 0; i < Nb; i++)
+		nlops[i] = nlop_mri_fft_create_s(model);
+
+	int istack_dims[1] = { BATCH_DIM };
+	int ostack_dims[1] = { BATCH_DIM };
+
+	const struct nlop_s* ret = nlop_stack_multiple_F(Nb, nlops, 1, istack_dims, 1, ostack_dims, true, multigpu);
+
+	return ret;
+}
+
+struct nlop_mri_nufft_s {
+
+	INTERFACE(nlop_data_t);
+	const struct linop_s* nufft;
+
+	struct config_nlop_mri_s* model;
+};
+
+DEF_TYPEID(nlop_mri_nufft_s);
+
+static void nlop_mri_nufft_fun(const nlop_data_t* _data, int N, complex float* args[N])
+{
+	const auto data = CAST_DOWN(nlop_mri_nufft_s, _data);
+	assert(3 == N);
+
+	complex float* dst = args[0];
+	const complex float* src = args[1];
+	const complex float* trj = args[2];
+
+	nufft_update_traj(data->nufft, data->model->N, data->model->trj_dims, trj, data->model->pat_dims, NULL, data->model->bas_dims, data->model->basis); // No pattern here (NULL == weights)
+	linop_forward_unchecked(data->nufft, dst, src);
+}
+
+static void nlop_mri_nufft_der(const nlop_data_t* _data, int o, int i, complex float* dst, const complex float* src)
+{
+	assert(0 == o);
+	assert(0 == i);
+	const auto data = CAST_DOWN(nlop_mri_nufft_s, _data);
+	linop_forward_unchecked(data->nufft, dst, src);
+}
+
+static void nlop_mri_nufft_adj(const nlop_data_t* _data, int o, int i, complex float* dst, const complex float* src)
+{
+	assert(0 == o);
+	assert(0 == i);
+	const auto data = CAST_DOWN(nlop_mri_nufft_s, _data);
+	linop_adjoint_unchecked(data->nufft, dst, src);
+}
+
+static void nlop_mri_nufft_del(const nlop_data_t* _data)
+{
+	const auto data = CAST_DOWN(nlop_mri_nufft_s, _data);
+
+	linop_free(data->nufft);
+
+	xfree(_data);
+}
+
+static const struct nlop_s* nlop_mri_nufft_create_s(struct config_nlop_mri_s* model)
+{
+
+	PTR_ALLOC(struct nlop_mri_nufft_s, data);
+	SET_TYPEID(nlop_mri_nufft_s, data);
+
+	auto conf = model->nufft_conf;
+	conf.toeplitz = false;
+
+	data->nufft = nufft_create2(model->N, model->ksp_dims, model->cim_dims, model->trj_dims, NULL, model->pat_dims, NULL, model->bas_dims, model->basis, conf);
+	data->model = model;
+
+	int N = model->N;
+	long nl_odims[1][N];
+	md_copy_dims(N, nl_odims[0], model->ksp_dims);
+
+	long nl_idims[2][N];
+	md_copy_dims(N, nl_idims[0], model->cim_dims);
+	md_copy_dims(N, nl_idims[1], model->trj_dims);
+
+
+	return nlop_generic_create(1, N, nl_odims, 2, N, nl_idims, CAST_UP(PTR_PASS(data)),
+					nlop_mri_nufft_fun,
+					(nlop_der_fun_t[2][1]){ { nlop_mri_nufft_der }, { NULL } },
+					(nlop_der_fun_t[2][1]){ { nlop_mri_nufft_adj }, { NULL } },
+					NULL, NULL, nlop_mri_nufft_del);
+}
+
+const struct nlop_s* nlop_mri_nufft_create(int Nb, struct config_nlop_mri_s* model)
+{
+	const struct nlop_s* nlops[Nb];
+
+	for (int i = 0; i < Nb; i++)
+		nlops[i] = nlop_mri_nufft_create_s(model);
+
+	int istack_dims[] = { BATCH_DIM, BATCH_DIM };
+	int ostack_dims[] = { BATCH_DIM };
+
+	const struct nlop_s* ret = nlop_stack_multiple_F(Nb, nlops, 2, istack_dims, 1, ostack_dims, true, multigpu);
+
+	return ret;
 }
 
 

@@ -67,6 +67,20 @@ $(TESTS_OUT)/train_ref.ra: phantom join scale rss fmac
 	$(TOOLDIR)/fmac phan.ra scale.ra $@						;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)						;\
 
+$(TESTS_OUT)/train_ref_ksp.ra: phantom join scale rss fmac
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/phantom -x 32 -N5 -s4 -r1 -k phan1.ra					;\
+	$(TOOLDIR)/phantom -x 32 -N5 -s4 -r2 -k phan2.ra					;\
+	$(TOOLDIR)/phantom -x 32 -N5 -s4 -r3 -k phan3.ra					;\
+	$(TOOLDIR)/phantom -x 32 -N5 -s4 -r4 -k phan4.ra					;\
+	$(TOOLDIR)/phantom -x 32 -N5 -s4 -r5 -k phan5.ra					;\
+	$(TOOLDIR)/join 15 phan1.ra phan2.ra phan3.ra phan4.ra phan5.ra phan.ra		;\
+	$(TOOLDIR)/phantom -x32 -S4 sens.ra						;\
+	$(TOOLDIR)/rss 8 sens.ra scale.ra						;\
+	$(TOOLDIR)/fmac phan.ra scale.ra kphan.ra					;\
+	$(TOOLDIR)/scale 32 kphan.ra $@							;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)	
+
 $(TESTS_OUT)/train_sens.ra: phantom rss invert fmac repmat
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/phantom -x32 -S4 sens.ra						;\
@@ -95,6 +109,17 @@ $(TESTS_OUT)/test_ref.ra: phantom join scale rss fmac
 	$(TOOLDIR)/fmac phan.ra scale.ra $@						;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 
+$(TESTS_OUT)/test_ref_ksp.ra: phantom join scale rss fmac
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/phantom -x 32 -N5 -r5 -k phan5.ra					;\
+	$(TOOLDIR)/phantom -x 32 -N5 -r6 -k phan6.ra					;\
+	$(TOOLDIR)/join 15 phan5.ra phan6.ra phan.ra					;\
+	$(TOOLDIR)/phantom -x32 -S4 sens.ra						;\
+	$(TOOLDIR)/rss 8 sens.ra scale.ra						;\
+	$(TOOLDIR)/fmac phan.ra scale.ra kphan.ra					;\
+	$(TOOLDIR)/scale 32 kphan.ra $@							;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+
 $(TESTS_OUT)/test_sens.ra: phantom rss invert fmac repmat
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/phantom -x32 -S4 sens.ra						;\
@@ -115,6 +140,10 @@ $(TESTS_OUT)/test_kspace_noncart.ra: reshape $(TESTS_OUT)/test_kspace.ra
 $(TESTS_OUT)/train_kspace_noncart.ra: reshape $(TESTS_OUT)/train_kspace.ra
 	set -e										;\
 	$(TOOLDIR)/reshape 7 1 32 32 $(TESTS_OUT)/train_kspace.ra $@
+
+$(TESTS_OUT)/train_ref_ksp_noncart.ra: reshape $(TESTS_OUT)/train_ref_ksp.ra
+	set -e										;\
+	$(TOOLDIR)/reshape 7 1 32 32 $(TESTS_OUT)/train_ref_ksp.ra $@
 
 tests/test-reconet-nnvn-train: nrmse $(TESTS_OUT)/pattern.ra reconet \
 	$(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_ref.ra $(TESTS_OUT)/train_sens.ra \
@@ -149,6 +178,23 @@ tests/test-reconet-nnmodl-train: nrmse $(TESTS_OUT)/pattern.ra reconet \
 	rm *.ra ; rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-reconet-nnmodl-train-ksp: nrmse $(TESTS_OUT)/pattern.ra reconet \
+	$(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_ref_ksp.ra $(TESTS_OUT)/train_sens.ra \
+	$(TESTS_OUT)/test_kspace.ra $(TESTS_OUT)/test_ref_ksp.ra $(TESTS_OUT)/test_sens.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP); export OMP_NUM_THREADS=2 													;\
+	$(TOOLDIR)/reconet --network modl --test -t -n --train-algo e=1 -b2 --ksp-training --pattern=$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_sens.ra weights0 $(TESTS_OUT)/train_ref_ksp.ra		;\
+	$(TOOLDIR)/reconet --network modl --test -t -n --train-algo e=30 -b2 -I1 --ksp-training --valid-data=pattern=$(TESTS_OUT)/pattern.ra,kspace=$(TESTS_OUT)/test_kspace.ra,coil=$(TESTS_OUT)/test_sens.ra,ref=$(TESTS_OUT)/test_ref_ksp.ra --pattern=$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_sens.ra weights01 $(TESTS_OUT)/train_ref_ksp.ra	;\
+	$(TOOLDIR)/reconet --network modl --test -lweights01 -n -t --train-algo e=30 -b2 --ksp-training --pattern=$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_sens.ra weights1 $(TESTS_OUT)/train_ref_ksp.ra	;\
+	$(TOOLDIR)/reconet --network modl --test -a -n --pattern=$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/test_kspace.ra $(TESTS_OUT)/test_sens.ra weights0 out0.ra					;\
+	$(TOOLDIR)/reconet --network modl --test -a -n --pattern=$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/test_kspace.ra $(TESTS_OUT)/test_sens.ra weights1 out1.ra					;\
+	if [ 1 == $$( echo "`$(TOOLDIR)/nrmse out0.ra $(TESTS_OUT)/test_ref_ksp.ra` <= 1.05 * `$(TOOLDIR)/nrmse out1.ra $(TESTS_OUT)/test_ref_ksp.ra`" | bc ) ] ; then \
+		echo "untrained error: `$(TOOLDIR)/nrmse out0.ra $(TESTS_OUT)/test_ref_ksp.ra`"		;\
+		echo   "trained error: `$(TOOLDIR)/nrmse out1.ra $(TESTS_OUT)/test_ref_ksp.ra`"		;\
+		false									;\
+	fi							;\
+	rm *.ra ; rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 tests/test-reconet-nnmodl-train-noncart: nrmse $(TESTS_OUT)/weights.ra reconet \
 	$(TESTS_OUT)/train_kspace_noncart.ra $(TESTS_OUT)/train_ref.ra $(TESTS_OUT)/train_sens.ra \
 	$(TESTS_OUT)/test_kspace_noncart.ra $(TESTS_OUT)/test_ref.ra $(TESTS_OUT)/test_sens.ra \
@@ -164,6 +210,24 @@ tests/test-reconet-nnmodl-train-noncart: nrmse $(TESTS_OUT)/weights.ra reconet \
 		echo   "trained error: `$(TOOLDIR)/nrmse out1.ra $(TESTS_OUT)/test_ref.ra`"		;\
 		false									;\
 	fi							;\
+	rm *.ra ; rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-reconet-nnmodl-train-noncart-ksp: nrmse $(TESTS_OUT)/weights.ra reconet \
+	$(TESTS_OUT)/train_kspace_noncart.ra $(TESTS_OUT)/train_ref_ksp_noncart.ra $(TESTS_OUT)/train_sens.ra \
+	$(TESTS_OUT)/test_kspace_noncart.ra $(TESTS_OUT)/test_ref_ksp.ra $(TESTS_OUT)/test_sens.ra \
+	$(TESTS_OUT)/traj_net.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP); export OMP_NUM_THREADS=2	;\
+	$(TOOLDIR)/reconet --network modl --test -t -n --train-algo e=1 -b2 --ksp-training --pattern=$(TESTS_OUT)/weights.ra --trajectory=$(TESTS_OUT)/traj_net.ra $(TESTS_OUT)/train_kspace_noncart.ra $(TESTS_OUT)/train_sens.ra weights0 $(TESTS_OUT)/train_ref_ksp_noncart.ra ;\
+	$(TOOLDIR)/reconet --network modl --test -t -n --train-algo e=40 -b2 -I1 --ksp-training --valid-data=trajectory=$(TESTS_OUT)/traj_net.ra,pattern=$(TESTS_OUT)/weights.ra,kspace=$(TESTS_OUT)/test_kspace_noncart.ra,coil=$(TESTS_OUT)/test_sens.ra,ref=$(TESTS_OUT)/test_ref_ksp_noncart.ra --trajectory=$(TESTS_OUT)/traj_net.ra --pattern=$(TESTS_OUT)/weights.ra $(TESTS_OUT)/train_kspace_noncart.ra $(TESTS_OUT)/train_sens.ra weights01 $(TESTS_OUT)/train_ref_ksp_noncart.ra	;\
+	$(TOOLDIR)/reconet --network modl --test -lweights01 -n -t --train-algo e=40 -b2 --ksp-training --trajectory=$(TESTS_OUT)/traj_net.ra --pattern=$(TESTS_OUT)/weights.ra $(TESTS_OUT)/train_kspace_noncart.ra $(TESTS_OUT)/train_sens.ra weights1 $(TESTS_OUT)/train_ref_ksp_noncart.ra	;\
+	$(TOOLDIR)/reconet --network modl --test -a -n --trajectory=$(TESTS_OUT)/traj_net.ra --pattern=$(TESTS_OUT)/weights.ra $(TESTS_OUT)/test_kspace_noncart.ra $(TESTS_OUT)/test_sens.ra weights0 out0.ra	;\
+	$(TOOLDIR)/reconet --network modl --test -a -n --trajectory=$(TESTS_OUT)/traj_net.ra --pattern=$(TESTS_OUT)/weights.ra $(TESTS_OUT)/test_kspace_noncart.ra $(TESTS_OUT)/test_sens.ra weights1 out1.ra	;\
+	if [ 1 == $$( echo "`$(TOOLDIR)/nrmse out0.ra $(TESTS_OUT)/test_ref_ksp.ra` <= 1.05 * `$(TOOLDIR)/nrmse out1.ra $(TESTS_OUT)/test_ref_ksp.ra`" | bc ) ] ; then \
+		echo "untrained error: `$(TOOLDIR)/nrmse out0.ra $(TESTS_OUT)/test_ref_ksp.ra`"	;\
+		echo   "trained error: `$(TOOLDIR)/nrmse out1.ra $(TESTS_OUT)/test_ref_ksp.ra`"	;\
+		false	;\
+	fi ;\
 	rm *.ra ; rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
@@ -425,7 +489,9 @@ tests/test-reconet-nnmodl-train-tensorflow2-gpu: nrmse $(TESTS_OUT)/pattern.ra r
 TESTS += tests/test-reconet-nnvn-train
 TESTS += tests/test-reconet-nnvn-train-max-eigen
 TESTS += tests/test-reconet-nnmodl-train
+TESTS += tests/test-reconet-nnmodl-train-ksp
 TESTS += tests/test-reconet-nnmodl-train-noncart
+TESTS += tests/test-reconet-nnmodl-train-noncart-ksp
 TESTS += tests/test-reconet-nnmodl-train-noncart-init
 TESTS += tests/test-reconet-nnvn-train-noncart-init
 TESTS += tests/test-reconet-nnmodl-train-basis

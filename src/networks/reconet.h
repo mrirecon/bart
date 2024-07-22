@@ -49,6 +49,8 @@ struct reconet_s {
 	_Bool coil_image;
 
 	_Bool normalize_rss;
+
+	_Bool ksp_training;
 };
 
 extern struct reconet_s reconet_config_opts;

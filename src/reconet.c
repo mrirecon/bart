@@ -175,6 +175,8 @@ int main_reconet(int argc, char* argv[argc])
 		OPTL_STRING(0, "export-graph", &graph_filename, "<file.dot>", "export graph for visualization"),
 
 		OPT_INFILE('B', &(data.filename_basis), "file", "(temporal (or other) basis)"),
+
+		OPTL_SET(0, "ksp-training", &(config.ksp_training), "Train network on k-space data"),
 	};
 
 	const char* filename_weights;
