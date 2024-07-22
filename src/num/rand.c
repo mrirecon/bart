@@ -93,7 +93,7 @@ static struct bart_rand_state get_worker_state(void)
 { 
 	struct bart_rand_state worker_state;
 
-	#pragma omp critical(global_rand_state)
+#pragma omp critical(global_rand_state)
 	{
 		worker_state = global_rand_state[cfl_loop_worker_id()];
 		global_rand_state[cfl_loop_worker_id()].ctr1++;
