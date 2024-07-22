@@ -227,15 +227,13 @@ unsigned int rand_range(unsigned int range)
  * Box-Muller
  */
 
-typedef double CLOSURE_TYPE(uniform_rand_t)(void);
-
-static complex double gaussian_rand_func(uniform_rand_t func)
+static complex double gaussian_rand_obsolete(void)
 {
 	double u1, u2, s;
 
 	do {
-		u1 = 2. * NESTED_CALL(func, ()) - 1.;
-		u2 = 2. * NESTED_CALL(func, ()) - 1.;
+		u1 = 2. * uniform_rand_obsolete() - 1.;
+		u2 = 2. * uniform_rand_obsolete() - 1.;
 		s = u1 * u1 + u2 * u2;
 
 	} while (s > 1.);
@@ -246,30 +244,8 @@ static complex double gaussian_rand_func(uniform_rand_t func)
 	return re + 1.i * im;
 }
 
-static complex double gaussian_rand_obsolete(void)
-{
-	NESTED(double, uniform_rand_obsolete_wrapper, (void))
-	{
-		double r;
-#pragma 	omp critical(global_rand_state)
-		r = uniform_rand_obsolete();
-		return r;
-	};
-
-	return gaussian_rand_func(uniform_rand_obsolete_wrapper);
-}
-
 static complex double gaussian_rand_state(struct bart_rand_state* state)
 {
-#if 0
-	NESTED(double, uniform_rand_state_closure, (void))
-	{
-		return uniform_rand_state(state);
-	};
-
-	return gaussian_rand_func(uniform_rand_state_closure);
-#else
-
 	double u1, u2, s;
 	uint64_t out[2];
 
@@ -294,7 +270,6 @@ static complex double gaussian_rand_state(struct bart_rand_state* state)
 	double im = sqrt(-2. * log(s) / s) * u2;
 
 	return re + 1.i * im;
-#endif
 }
 
 complex double gaussian_rand(void)
