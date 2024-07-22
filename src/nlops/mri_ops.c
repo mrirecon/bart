@@ -54,22 +54,7 @@ void mri_ops_deactivate_multigpu(void)
 	multigpu = false;
 }
 
-
-struct config_nlop_mri_s conf_nlop_mri_simple = {
-
-	.coil_flags = FFT_FLAGS | COIL_FLAG | MAPS_FLAG | BATCH_FLAG,
-	.image_flags = FFT_FLAGS | MAPS_FLAG | COEFF_FLAG | BATCH_FLAG,
-	.pattern_flags = FFT_FLAGS | BATCH_FLAG,
-	.batch_flags = BATCH_FLAG,
-	.fft_flags = FFT_FLAGS,
-	.coil_image_flags = FFT_FLAGS | COIL_FLAG | COEFF_FLAG | BATCH_FLAG,
-	.basis_flags = 0,
-
-	.noncart = false,
-	.nufft_conf = NULL,
-};
-
-struct sense_model_s {
+struct config_nlop_mri_s {
 
 	int N;
 	int ND;
@@ -89,20 +74,17 @@ struct sense_model_s {
 	struct multiplace_array_s* fftmod_precomp_img;
 	struct multiplace_array_s* fftmod_precomp_ksp;
 
-	const struct linop_s* sense;
-
-	const struct linop_s* coils;
-	const struct linop_s* pattern;
-	const struct linop_s* nufft;
-
 	const complex float* basis;
+
+	_Bool noncart;
+	struct nufft_conf_s nufft_conf;
 
 	struct shared_obj_s sptr;
 };
 
-static void sense_model_del(const struct shared_obj_s* sptr)
+static void sense_config_del(const struct shared_obj_s* sptr)
 {
-	const struct sense_model_s* x = CONTAINER_OF(sptr, const struct sense_model_s, sptr);
+	const struct config_nlop_mri_s* x = CONTAINER_OF(sptr, const struct config_nlop_mri_s, sptr);
 
 	xfree(x->img_dims);
 	xfree(x->col_dims);
@@ -122,19 +104,13 @@ static void sense_model_del(const struct shared_obj_s* sptr)
 	xfree(x->fftmod_precomp_img_dims);
 	xfree(x->fftmod_precomp_ksp_dims);
 
-	linop_free(x->sense);
-
-	linop_free(x->coils);
-	linop_free(x->pattern);
-	linop_free(x->nufft);
-
 	//only save reference
 	//md_free(x->basis);
 
 	xfree(x);
 }
 
-void sense_model_free(const struct sense_model_s* x)
+void sense_model_config_free(const struct config_nlop_mri_s* x)
 {
 	if (NULL == x)
 		return;
@@ -142,7 +118,7 @@ void sense_model_free(const struct sense_model_s* x)
 	shared_obj_destroy(&x->sptr);
 }
 
-const struct sense_model_s* sense_model_ref(const struct sense_model_s* x)
+static const struct config_nlop_mri_s* sense_model_config_ref(const struct config_nlop_mri_s* x)
 {
 	if (NULL != x)
 		shared_obj_ref(&x->sptr);
@@ -150,11 +126,11 @@ const struct sense_model_s* sense_model_ref(const struct sense_model_s* x)
 	return x;
 }
 
-static struct sense_model_s* mri_sense_init(int N, int ND)
+static struct config_nlop_mri_s* sense_model_config_init(int N, int ND)
 {
-	PTR_ALLOC(struct sense_model_s, result);
+	PTR_ALLOC(struct config_nlop_mri_s, result);
 
-	*result = (struct sense_model_s) {
+	*result = (struct config_nlop_mri_s) {
 
 		.N = N,
 		.ND = ND,
@@ -175,15 +151,10 @@ static struct sense_model_s* mri_sense_init(int N, int ND)
 		.fftmod_precomp_img = NULL,
 		.fftmod_precomp_ksp = NULL,
 
-		.sense = NULL,
-		.coils = NULL,
-		.pattern = NULL,
-		.nufft = NULL,
-
 		.basis = NULL,
 	};
 
-	shared_obj_init(&(result->sptr), sense_model_del);
+	shared_obj_init(&(result->sptr), sense_config_del);
 
 	md_singleton_dims(N, result->img_dims);
 	md_singleton_dims(N, result->col_dims);
@@ -197,10 +168,12 @@ static struct sense_model_s* mri_sense_init(int N, int ND)
 	return PTR_PASS(result);
 }
 
-struct sense_model_s* sense_cart_create(int N, const long ksp_dims[N], const long img_dims[N], const long col_dims[N], const long pat_dims[N])
+struct config_nlop_mri_s* sense_model_config_cart_create(int N, const long ksp_dims[N], const long img_dims[N], const long col_dims[N], const long pat_dims[N])
 {
 	assert(N == DIMS);
-	struct sense_model_s* result = mri_sense_init(N, N);
+	struct config_nlop_mri_s* result = sense_model_config_init(N, N);
+
+	result->noncart = false;
 
 	md_copy_dims(N, result->ksp_dims, ksp_dims);
 	md_copy_dims(N, result->img_dims, img_dims);
@@ -219,6 +192,7 @@ struct sense_model_s* sense_cart_create(int N, const long ksp_dims[N], const lon
 	md_max_dims(N, ~0UL, max_dims, img_dims, max_dims);
 	md_max_dims(N, ~0UL, max_dims, col_dims, max_dims);
 
+	md_select_dims(N, ~MAPS_FLAG, result->cim_dims, max_dims);
 
 	md_select_dims(N, FFT_FLAGS, result->fftmod_precomp_ksp_dims, result->ksp_dims);
 
@@ -255,32 +229,18 @@ struct sense_model_s* sense_cart_create(int N, const long ksp_dims[N], const lon
 
 	}
 
-	result->coils = linop_fmac_create(N, max_dims, ~(md_nontriv_dims(N, ksp_dims2)), ~(md_nontriv_dims(N, img_dims)), ~(md_nontriv_dims(N, col_dims)), NULL);
-
-	assert(md_check_equal_dims(N, ksp_dims, pat_dims, md_nontriv_dims(N, pat_dims)));
-
-	result->pattern = linop_cdiag_create(N, ksp_dims, md_nontriv_dims(N, result->pat_dims) | md_nontriv_dims(N, result->fftmod_precomp_ksp_dims), NULL);
-
-	result->sense = linop_clone(result->coils);
-
-	if (!md_check_equal_dims(N, ksp_dims, ksp_dims2, ~0UL))
-		result->sense = linop_chain_FF(result->sense, linop_resize_center_create(N, ksp_dims, ksp_dims2));
-
-	result->sense = linop_chain_FF(result->sense, linop_fft_create(N, ksp_dims, FFT_FLAGS));
-	result->sense = linop_chain_FF(result->sense, linop_clone(result->pattern));
-
 	return result;
 }
 
 
-struct sense_model_s* sense_noncart_create(int N,
+struct config_nlop_mri_s* sense_model_config_noncart_create(int N,
 	const long trj_dims[N], const long wgh_dims[N], const long ksp_dims[N],
 	const long cim_dims[N],	const long img_dims[N], const long col_dims[N],
 	const long bas_dims[N], const complex float* basis,
 	struct nufft_conf_s conf)
 {
 	assert(N == DIMS);
-	struct sense_model_s* result = mri_sense_init(N, N + 1);
+	struct config_nlop_mri_s* result = sense_model_config_init(N, N + 1);
 
 	md_copy_dims(N, result->ksp_dims, ksp_dims);
 	md_copy_dims(N, result->img_dims, img_dims);
@@ -288,6 +248,7 @@ struct sense_model_s* sense_noncart_create(int N,
 	md_copy_dims(N, result->col_dims, col_dims);
 	md_copy_dims(N, result->bas_dims, bas_dims);
 	md_copy_dims(N, result->trj_dims, trj_dims);
+	md_copy_dims(N, result->cim_dims, cim_dims);
 
 	long max_dims[N];
 	md_singleton_dims(N, max_dims);
@@ -296,107 +257,186 @@ struct sense_model_s* sense_noncart_create(int N,
 	md_max_dims(N, ~0UL, max_dims, img_dims, max_dims);
 	md_max_dims(N, ~0UL, max_dims, col_dims, max_dims);
 
-	result->coils = linop_fmac_create(N, max_dims, ~(md_nontriv_dims(N, cim_dims)), ~(md_nontriv_dims(N, img_dims)), ~(md_nontriv_dims(N, col_dims)), NULL);
+	md_select_dims(N, 7, result->psf_dims, max_dims);
+	result->psf_dims[N] = 1;
+	for (int i = 0; i < 3; i++)
+		if (1 != result->psf_dims[i])
+			result->psf_dims[N] *= 2;
 
-	result->nufft = nufft_create2(DIMS, ksp_dims, cim_dims, trj_dims, NULL, wgh_dims, NULL, bas_dims, basis, conf);
+	for (int i = 3; i < N; i++)
+		result->psf_dims[i] = MAX(result->trj_dims[i], result->pat_dims[i]);
 
-	result->sense = linop_chain(result->coils, result->nufft);
+	if (NULL != basis) {
 
-	nufft_get_psf_dims(result->nufft, result->ND, result->psf_dims);
+		result->psf_dims[6] = result->bas_dims[6];
+		result->psf_dims[5] = result->bas_dims[6];
+	}
 
 	result->basis = basis;
+	result->nufft_conf = conf;
+	result->noncart = true;
 
 	return result;
 }
 
-struct sense_model_s* sense_cart_normal_create(int N, const long max_dims[N], const struct config_nlop_mri_s* conf)
+
+
+
+
+struct sense_model_s {
+
+	const struct config_nlop_mri_s* config;
+
+	const struct linop_s* sense;
+	const struct linop_s* coils;
+	const struct linop_s* pattern;
+	const struct linop_s* nufft;
+
+	struct shared_obj_s sptr;
+};
+
+static void sense_model_del(const struct shared_obj_s* sptr)
 {
-	if (0 != conf->basis_flags)
-		error("Basis for Cartesian Sense not supported\n");
+	const struct sense_model_s* x = CONTAINER_OF(sptr, const struct sense_model_s, sptr);
 
-	assert(!conf->noncart);
+	linop_free(x->sense);
 
-	struct sense_model_s* result = mri_sense_init(N, N);
+	linop_free(x->coils);
+	linop_free(x->pattern);
+	linop_free(x->nufft);
 
-	md_select_dims(N, conf->image_flags, result->img_dims, max_dims);
-	md_select_dims(N, conf->coil_flags, result->col_dims, max_dims);
-	md_select_dims(N, conf->coil_image_flags, result->cim_dims, max_dims);
-	md_select_dims(N, conf->coil_image_flags, result->ksp_dims, max_dims);
-	md_select_dims(N, conf->pattern_flags, result->pat_dims, max_dims);
-	md_select_dims(N, conf->pattern_flags, result->psf_dims, max_dims);
+	sense_model_config_free(x->config);
 
-	long max_dims2[N];
-	md_select_dims(N, conf->image_flags| conf->coil_flags | conf->coil_image_flags, max_dims2, max_dims);
-
-	md_select_dims(N, FFT_FLAGS, result->fftmod_precomp_ksp_dims, result->ksp_dims);
-
-	complex float* tmp = md_alloc(N, result->fftmod_precomp_ksp_dims, CFL_SIZE);
-
-	md_zfill(N, result->fftmod_precomp_ksp_dims, tmp, 1. / sqrt(sqrt(md_calc_size(N, result->fftmod_precomp_ksp_dims))));
-
-	fftmod(N, result->fftmod_precomp_ksp_dims, FFT_FLAGS, tmp, tmp);
-
-	result->fftmod_precomp_ksp = multiplace_move(N, result->fftmod_precomp_ksp_dims, CFL_SIZE, tmp);
-
-	md_free(tmp);
-
-	md_select_dims(N, md_nontriv_dims(N, result->fftmod_precomp_ksp_dims) | md_nontriv_dims(N, result->pat_dims),result->pat_dims_merged, result->ksp_dims);
-
-	md_copy_dims(N, result->fftmod_precomp_img_dims, result->fftmod_precomp_ksp_dims);
-
-	result->fftmod_precomp_img = result->fftmod_precomp_ksp;
-
-	result->coils = linop_fmac_create(N, max_dims2, ~(conf->coil_image_flags), ~(conf->image_flags), ~(conf->coil_flags), NULL);
-	result->pattern = linop_cdiag_create(N, result->cim_dims, md_nontriv_dims(N, result->pat_dims) | md_nontriv_dims(N, result->fftmod_precomp_ksp_dims), NULL);
-
-	result->sense = linop_chain_FF(linop_clone(result->coils), linop_fft_create(N, result->cim_dims, conf->fft_flags));
-	result->sense = linop_chain_FF(result->sense, linop_clone(result->pattern));
-
-	return result;
+	xfree(x);
 }
 
-struct sense_model_s* sense_noncart_normal_create(int N, const long max_dims[N], int ND, const long psf_dims[ND], const struct config_nlop_mri_s* conf)
+void sense_model_free(const struct sense_model_s* x)
 {
-	struct sense_model_s* result = mri_sense_init(N, N + 1);
+	if (NULL == x)
+		return;
 
-	md_select_dims(N, conf->image_flags, result->img_dims, max_dims);
-	md_select_dims(N, conf->coil_flags, result->col_dims, max_dims);
-	md_select_dims(N, conf->coil_image_flags, result->cim_dims, max_dims);
-	md_select_dims(N, conf->basis_flags, result->bas_dims, max_dims);
+	shared_obj_destroy(&x->sptr);
+}
 
-	long max_dims2[N];
-	md_select_dims(N, conf->image_flags| conf->coil_flags | conf->coil_image_flags, max_dims2, max_dims);
+static const struct sense_model_s* sense_model_ref(const struct sense_model_s* x)
+{
+	if (NULL != x)
+		shared_obj_ref(&x->sptr);
 
-	result->coils = linop_fmac_create(N, max_dims2, ~(conf->coil_image_flags), ~(conf->image_flags), ~(conf->coil_flags), NULL);
+	return x;
+}
 
-	result->nufft = nufft_create_normal(N, result->cim_dims, ND, psf_dims, NULL, 0 != conf->basis_flags, *(conf->nufft_conf));
+static struct sense_model_s* mri_sense_init(void)
+{
+	PTR_ALLOC(struct sense_model_s, result);
 
-	nufft_get_psf_dims(result->nufft, result->ND, result->psf_dims);
+	*result = (struct sense_model_s) {
 
-	result->sense = linop_chain(result->coils, result->nufft);
+		.config = NULL,
+
+		.sense = NULL,
+		.coils = NULL,
+		.pattern = NULL,
+		.nufft = NULL,
+	};
+
+	shared_obj_init(&(result->sptr), sense_model_del);
+
+	return PTR_PASS(result);
+}
+
+struct sense_model_s* sense_model_create(const struct config_nlop_mri_s* config)
+{
+	struct sense_model_s* result = mri_sense_init();
+
+	result->config = sense_model_config_ref(config);
+
+	if (config->noncart) {
+
+		result->coils = linop_fmac_dims_create(config->N, config->cim_dims, config->img_dims, config->col_dims, NULL);
+
+		result->nufft = nufft_create2(DIMS, config->ksp_dims, config->cim_dims, config->trj_dims, NULL, config->pat_dims, NULL, config->bas_dims, config->basis, config->nufft_conf);
+
+		result->sense = linop_chain(result->coils, result->nufft);
+
+		if (config->nufft_conf.toeplitz) {
+
+			long psf_dims[config->ND];
+			nufft_get_psf_dims(result->nufft, config->ND, psf_dims);
+			assert(md_check_equal_dims(config->ND, psf_dims, config->psf_dims, ~0ul));
+		}
+
+	} else {
+
+		debug_print_dims(DP_INFO, config->N, config->cim_dims);
+		debug_print_dims(DP_INFO, config->N, config->col_dims);
+		debug_print_dims(DP_INFO, config->N, config->img_dims);
+
+		result->coils = linop_fmac_dims_create(config->N, config->cim_dims, config->img_dims, config->col_dims, NULL);
+
+		result->pattern = linop_cdiag_create(config->N, config->ksp_dims, md_nontriv_dims(config->N, config->pat_dims) | md_nontriv_dims(config->N, config->fftmod_precomp_ksp_dims), NULL);
+
+		result->sense = linop_clone(result->coils);
+
+		if (!md_check_equal_dims(config->N, config->cim_dims, config->ksp_dims, ~0UL))
+			result->sense = linop_chain_FF(result->sense, linop_resize_center_create(config->N, config->ksp_dims, config->cim_dims));
+
+		result->sense = linop_chain_FF(result->sense, linop_fft_create(config->N, config->ksp_dims, FFT_FLAGS));
+		result->sense = linop_chain_FF(result->sense, linop_clone(result->pattern));
+	}
 
 	return result;
 }
 
 
-int sense_model_get_N(struct sense_model_s* model)
+struct sense_model_s* sense_model_normal_create(const struct config_nlop_mri_s* config)
+{
+	assert(NULL != config);
+	struct sense_model_s* result = mri_sense_init();
+
+	result->config = sense_model_config_ref(config);
+
+	if (config->noncart) {
+
+		result->coils = linop_fmac_dims_create(config->N, config->cim_dims, config->img_dims, config->col_dims, NULL);
+
+		result->nufft = nufft_create_normal(config->N, config->cim_dims, config->ND, config->psf_dims, NULL, NULL != config->basis, config->nufft_conf);
+
+		nufft_get_psf_dims(result->nufft, config->ND, config->psf_dims);
+
+		result->sense = linop_chain(result->coils, result->nufft);
+
+	} else {
+
+		result->coils = linop_fmac_dims_create(config->N, config->cim_dims, config->img_dims, config->col_dims, NULL);
+		result->pattern = linop_cdiag_create(config->N, config->cim_dims, md_nontriv_dims(config->N, config->pat_dims) | md_nontriv_dims(config->N, config->fftmod_precomp_ksp_dims), NULL);
+
+		result->sense = linop_chain_FF(linop_clone(result->coils), linop_fft_create(config->N, config->cim_dims, FFT_FLAGS));
+		result->sense = linop_chain_FF(result->sense, linop_clone(result->pattern));
+	}
+
+	return result;
+}
+
+
+int sense_model_get_N(struct config_nlop_mri_s* model)
 {
 	return model->N;
 }
 
-void sense_model_get_img_dims(struct sense_model_s* model, int N, long img_dims[N])
+void sense_model_get_img_dims(struct config_nlop_mri_s* model, int N, long img_dims[N])
 {
 	assert(N == model->N);
 	md_copy_dims(N, img_dims, model->img_dims);
 }
 
-void sense_model_get_col_dims(struct sense_model_s* model, int N, long col_dims[N])
+void sense_model_get_col_dims(struct config_nlop_mri_s* model, int N, long col_dims[N])
 {
 	assert(N == model->N);
 	md_copy_dims(N, col_dims, model->col_dims);
 }
 
-void sense_model_get_cim_dims(struct sense_model_s* model, int N, long cim_dims[N])
+void sense_model_get_cim_dims(struct config_nlop_mri_s* model, int N, long cim_dims[N])
 {
 	assert(N == model->N);
 	md_copy_dims(N, cim_dims, model->cim_dims);
@@ -433,20 +473,20 @@ static void sense_model_set_data_fun(const nlop_data_t* _data, int Narg, complex
 	md_copy(d->N, d->dims, dst, src, CFL_SIZE);
 
 	if (NULL != dst_psf)
-		md_copy(d->model->ND, d->model->psf_dims, dst_psf, pattern, CFL_SIZE);
+		md_copy(d->model->config->ND, d->model->config->psf_dims, dst_psf, pattern, CFL_SIZE);
 
 	if (NULL != d->model->pattern) {
 
 		auto m = d->model;
 
-		complex float* tmp_coil = md_alloc_sameplace(m->N, m->col_dims, CFL_SIZE, coil);
-		complex float* tmp_pattern = md_alloc_sameplace(m->N, m->pat_dims_merged, CFL_SIZE, coil);
+		complex float* tmp_coil = md_alloc_sameplace(m->config->N, m->config->col_dims, CFL_SIZE, coil);
+		complex float* tmp_pattern = md_alloc_sameplace(m->config->N, m->config->pat_dims_merged, CFL_SIZE, coil);
 
-		md_ztenmul(m->N, m->col_dims, tmp_coil, m->col_dims, coil, m->fftmod_precomp_img_dims, multiplace_read(m->fftmod_precomp_img, coil));
-		md_ztenmul(m->N, m->pat_dims_merged, tmp_pattern, m->pat_dims, pattern, m->fftmod_precomp_ksp_dims, multiplace_read(m->fftmod_precomp_ksp, pattern));
+		md_ztenmul(m->config->N, m->config->col_dims, tmp_coil, m->config->col_dims, coil, m->config->fftmod_precomp_img_dims, multiplace_read(m->config->fftmod_precomp_img, coil));
+		md_ztenmul(m->config->N, m->config->pat_dims_merged, tmp_pattern, m->config->pat_dims, pattern, m->config->fftmod_precomp_ksp_dims, multiplace_read(m->config->fftmod_precomp_ksp, pattern));
 
-		linop_fmac_set_tensor(m->coils, m->N, m->col_dims, tmp_coil);
-		linop_gdiag_set_diag(m->pattern, m->ND, m->pat_dims_merged, tmp_pattern);
+		linop_fmac_set_tensor(m->coils, m->config->N, m->config->col_dims, tmp_coil);
+		linop_gdiag_set_diag(m->pattern, m->config->ND, m->config->pat_dims_merged, tmp_pattern);
 
 		md_free(tmp_coil);
 		md_free(tmp_pattern);
@@ -454,9 +494,9 @@ static void sense_model_set_data_fun(const nlop_data_t* _data, int Narg, complex
 
 	if (NULL != d->model->nufft) {
 
-		linop_fmac_set_tensor(d->model->coils, d->model->N, d->model->col_dims, coil);
+		linop_fmac_set_tensor(d->model->coils, d->model->config->N, d->model->config->col_dims, coil);
 
-		nufft_update_psf(d->model->nufft, d->model->ND, d->model->psf_dims, pattern);
+		nufft_update_psf(d->model->nufft, d->model->config->ND, d->model->config->psf_dims, pattern);
 	}
 }
 
@@ -510,14 +550,14 @@ static const struct nlop_s* nlop_sense_model_set_data_create(int N, const long d
 
 	data->output_psf = output_psf;
 
-	int NM = MAX(N, model->ND);
+	int NM = MAX(N, model->config->ND);
 
 	long nl_odims[2][NM];
 	md_singleton_dims(NM, nl_odims[0]);
 	md_singleton_dims(NM, nl_odims[1]);
 
 	md_copy_dims(N, nl_odims[0], data->dims);
-	md_copy_dims(model->ND, nl_odims[1], model->psf_dims);
+	md_copy_dims(model->config->ND, nl_odims[1], model->config->psf_dims);
 
 	long nl_idims[3][NM];
 	md_singleton_dims(NM, nl_idims[0]);
@@ -525,8 +565,8 @@ static const struct nlop_s* nlop_sense_model_set_data_create(int N, const long d
 	md_singleton_dims(NM, nl_idims[2]);
 
 	md_copy_dims(N, nl_idims[0], dims);
-	md_copy_dims(model->N, nl_idims[1], model->col_dims);
-	md_copy_dims(model->ND, nl_idims[2], model->psf_dims);
+	md_copy_dims(model->config->N, nl_idims[1], model->config->col_dims);
+	md_copy_dims(model->config->ND, nl_idims[2], model->config->psf_dims);
 
 	nlop_der_fun_t der[3][output_psf ? 2 : 1];
 
@@ -544,11 +584,11 @@ static const struct nlop_s* nlop_sense_model_set_data_create(int N, const long d
 	result = nlop_reshape_out_F(result, 0, N, nl_odims[0]);
 
 	if (output_psf)
-		result = nlop_reshape_out_F(result, 1, model->ND, nl_odims[0]);
+		result = nlop_reshape_out_F(result, 1, model->config->ND, nl_odims[0]);
 
 	result = nlop_reshape_in_F(result, 0, N, nl_idims[0]);
-	result = nlop_reshape_in_F(result, 1, model->N, nl_idims[1]);
-	result = nlop_reshape_in_F(result, 2, model->ND, nl_idims[2]);
+	result = nlop_reshape_in_F(result, 1, model->config->N, nl_idims[1]);
+	result = nlop_reshape_in_F(result, 2, model->config->ND, nl_idims[2]);
 
 	return result;
 }
@@ -571,7 +611,7 @@ static const struct nlop_s* nlop_sense_model_set_data_create(int N, const long d
  */
 const struct nlop_s* nlop_sense_model_set_data_batch_create(int N, const long dims[N], int Nb, struct sense_model_s* models[Nb])
 {
-	assert(N >= models[0]->N);
+	assert(N >= models[0]->config->N);
 	assert(dims[BATCH_DIM] == Nb);
 
 	long dims2[N];
@@ -608,14 +648,14 @@ static void sense_model_set_data_noncart_fun(const nlop_data_t* _data, int Narg,
 
 	md_copy(d->N, d->dims, dst, src, CFL_SIZE);
 
-	linop_fmac_set_tensor(d->model->coils, d->model->N, d->model->col_dims, coil);
+	linop_fmac_set_tensor(d->model->coils, d->model->config->N, d->model->config->col_dims, coil);
 
 	assert(NULL != d->model->nufft);
 
-	nufft_update_traj(d->model->nufft, d->N, d->model->trj_dims, traj, d->model->pat_dims, pattern, d->model->bas_dims, d->model->basis);
+	nufft_update_traj(d->model->nufft, d->N, d->model->config->trj_dims, traj, d->model->config->pat_dims, pattern, d->model->config->bas_dims, d->model->config->basis);
 
 	if (NULL != dst_psf)
-		nufft_get_psf(d->model->nufft, d->model->ND, d->model->psf_dims, dst_psf);
+		nufft_get_psf(d->model->nufft, d->model->config->ND, d->model->config->psf_dims, dst_psf);
 }
 
 
@@ -649,14 +689,14 @@ static const struct nlop_s* nlop_sense_model_set_data_noncart_create(int N, cons
 
 	data->output_psf = output_psf;
 
-	int NM = MAX(N, model->ND);
+	int NM = MAX(N, model->config->ND);
 
 	long nl_odims[2][NM];
 	md_singleton_dims(NM, nl_odims[0]);
 	md_singleton_dims(NM, nl_odims[1]);
 
 	md_copy_dims(N, nl_odims[0], data->dims);
-	md_copy_dims(model->ND, nl_odims[1], model->psf_dims);
+	md_copy_dims(model->config->ND, nl_odims[1], model->config->psf_dims);
 
 	long nl_idims[4][NM];
 	md_singleton_dims(NM, nl_idims[0]);
@@ -665,9 +705,9 @@ static const struct nlop_s* nlop_sense_model_set_data_noncart_create(int N, cons
 	md_singleton_dims(NM, nl_idims[3]);
 
 	md_copy_dims(N, nl_idims[0], dims);
-	md_copy_dims(model->N, nl_idims[1], model->col_dims);
-	md_copy_dims(model->N, nl_idims[2], model->pat_dims);
-	md_copy_dims(model->N, nl_idims[3], model->trj_dims);
+	md_copy_dims(model->config->N, nl_idims[1], model->config->col_dims);
+	md_copy_dims(model->config->N, nl_idims[2], model->config->pat_dims);
+	md_copy_dims(model->config->N, nl_idims[3], model->config->trj_dims);
 
 	nlop_der_fun_t der[4][output_psf ? 2 : 1];
 
@@ -686,12 +726,12 @@ static const struct nlop_s* nlop_sense_model_set_data_noncart_create(int N, cons
 	result = nlop_reshape_out_F(result, 0, N, nl_odims[0]);
 
 	if (output_psf)
-		result = nlop_reshape_out_F(result, 1, model->ND, nl_odims[1]);
+		result = nlop_reshape_out_F(result, 1, model->config->ND, nl_odims[1]);
 
 	result = nlop_reshape_in_F(result, 0, N, nl_idims[0]);
-	result = nlop_reshape_in_F(result, 1, model->N, nl_idims[1]);
-	result = nlop_reshape_in_F(result, 2, model->N, nl_idims[2]);
-	result = nlop_reshape_in_F(result, 3, model->N, nl_idims[3]);
+	result = nlop_reshape_in_F(result, 1, model->config->N, nl_idims[1]);
+	result = nlop_reshape_in_F(result, 2, model->config->N, nl_idims[2]);
+	result = nlop_reshape_in_F(result, 3, model->config->N, nl_idims[3]);
 
 	return result;
 }
@@ -720,18 +760,18 @@ const struct nlop_s* nlop_sense_adjoint_create(int Nb, struct sense_model_s* mod
 		nlops[i] = nlop_from_linop_F(linop_get_adjoint(models[i]->sense));
 
 		if (NULL == models[i]->nufft)
-			nlops[i] = nlop_chain2_FF(nlop_sense_model_set_data_create(models[i]->N, models[i]->ksp_dims, models[i], output_psf), 0, nlops[i], 0);
+			nlops[i] = nlop_chain2_FF(nlop_sense_model_set_data_create(models[i]->config->N, models[i]->config->ksp_dims, models[i], output_psf), 0, nlops[i], 0);
 		else
-			nlops[i] = nlop_chain2_FF(nlop_sense_model_set_data_noncart_create(models[i]->N, models[i]->ksp_dims, models[i], output_psf), 0, nlops[i], 0);
+			nlops[i] = nlop_chain2_FF(nlop_sense_model_set_data_noncart_create(models[i]->config->N, models[i]->config->ksp_dims, models[i], output_psf), 0, nlops[i], 0);
 	}
 
 	if (1 == Nb)
 		return nlops[0];
 
 	int ostack_dim[] = { BATCH_DIM, BATCH_DIM };
-	int istack_dim[] = { BATCH_DIM, BATCH_DIM, BATCH_DIM };
+	int istack_dim[] = { BATCH_DIM, BATCH_DIM, BATCH_DIM, BATCH_DIM };
 
-	return nlop_stack_multiple_F(Nb, nlops, (NULL == models[0]->nufft) ? 2 : 3, istack_dim, output_psf ? 2 : 1, ostack_dim, true , multigpu);
+	return nlop_stack_multiple_F(Nb, nlops, (NULL == models[0]->nufft) ? 3 : 4, istack_dim, output_psf ? 2 : 1, ostack_dim, true , multigpu);
 }
 
 const struct nlop_s* nlop_sense_normal_create(int Nb, struct sense_model_s* models[Nb])
@@ -776,7 +816,7 @@ const struct nlop_s* nlop_sense_dc_prox_create(int Nb, struct sense_model_s* mod
 {
 	auto result = nlop_sense_normal_inv_create(Nb, models, iter_conf, lambda_flags);
 
-	int N = models[0]->N;
+	int N = models[0]->config->N;
 	long img_dims[N];
 	long lam_dims[N];
 
@@ -795,7 +835,7 @@ const struct nlop_s* nlop_sense_dc_grad_create(int Nb, struct sense_model_s* mod
 {
 	auto result = nlop_sense_normal_create(Nb, models);
 
-	int N = models[0]->N;
+	int N = models[0]->config->N;
 	long img_dims[N];
 	long lam_dims[N];
 
@@ -810,7 +850,7 @@ const struct nlop_s* nlop_sense_dc_grad_create(int Nb, struct sense_model_s* mod
 
 const struct nlop_s* nlop_sense_scale_maxeigen_create(int Nb, struct sense_model_s* models[Nb], int N, const long dims[N])
 {
-	assert(N >= models[0]->N);
+	assert(N >= models[0]->config->N);
 
 	long dims_scl[N];
 	md_select_dims(N, ~BATCH_FLAG, dims_scl, dims);
@@ -848,23 +888,13 @@ const struct nlop_s* nlop_sense_scale_maxeigen_create(int Nb, struct sense_model
 }
 
 
-static const struct nlop_s* nlop_mri_normal_slice_create(int N, const long max_dims[N], int ND, const long psf_dims[ND], const struct config_nlop_mri_s* conf)
+static const struct nlop_s* nlop_mri_normal_slice_create(const struct config_nlop_mri_s* conf)
 {
 	assert(NULL != conf);
 
-	struct sense_model_s* model = NULL;
-	struct config_nlop_mri_s conf2 = *conf;
+	struct sense_model_s* model = sense_model_normal_create(conf);
 
-	conf2.pattern_flags = md_nontriv_dims(ND, psf_dims);
-
-	if (conf->noncart)
-		model = sense_noncart_normal_create(N, max_dims, ND, psf_dims, &conf2);
-	else
-		model = sense_cart_normal_create(N, max_dims, &conf2);
-
-	assert(md_check_equal_dims(ND, psf_dims, model->psf_dims, ~0UL));
-
-	auto result = nlop_sense_model_set_data_create(N, model->img_dims, model, false);
+	auto result = nlop_sense_model_set_data_create(conf->N, conf->img_dims, model, false);
 
 	result = nlop_chain2_FF(result, 0, nlop_from_linop_F(linop_get_normal(model->sense)), 0);
 
@@ -877,11 +907,7 @@ static const struct nlop_s* nlop_mri_normal_slice_create(int N, const long max_d
 /**
  * Returns: MRI normal operator
  *
- * @param N
- * @param max_dims
- * @param ND
- * @param psf_dims pattern (Cartesian) or psf (Non-Cartesian)
- * @param conf can be NULL to fallback on nlop_mri_simple
+ * @param conf
  *
  *
  * for default dims:
@@ -895,42 +921,18 @@ static const struct nlop_s* nlop_mri_normal_slice_create(int N, const long max_d
  * image:	img_dims: 	(Nx, Ny, Nz, 1,  ..., Nb )
  */
 
-const struct nlop_s* nlop_mri_normal_create(int N, const long max_dims[N], int ND, const long psf_dims[ND], const struct config_nlop_mri_s* conf)
+const struct nlop_s* nlop_mri_normal_create(int Nb, const struct config_nlop_mri_s* conf)
 {
-	conf = conf ? conf : &conf_nlop_mri_simple;
-
-	if (0 == bitcount(conf->batch_flags))
-		return nlop_mri_normal_slice_create(N, max_dims, ND, psf_dims, conf);
-
-	struct config_nlop_mri_s tconf = *conf;
-
-	tconf.coil_flags &= ~tconf.batch_flags;
-	tconf.image_flags &= ~tconf.batch_flags;
-	tconf.coil_image_flags &= ~tconf.batch_flags;
-	tconf.pattern_flags &= ~tconf.batch_flags;
-
-	assert(1 == bitcount(tconf.batch_flags));
-
-	int batch_dim = 0;
-
-	while (tconf.batch_flags != MD_BIT(batch_dim))
-		batch_dim++;
-
-	int Nb = max_dims[batch_dim];
-
-	long max_dims2[N];
-	long psf_dims2[ND];
-
-	md_select_dims(N, ~tconf.batch_flags, max_dims2, max_dims);
-	md_select_dims(ND, ~tconf.batch_flags, psf_dims2, psf_dims);
+	if (1 == Nb)
+		return nlop_mri_normal_slice_create(conf);
 
 	const struct nlop_s* nlops[Nb];
 
 	for (int i = 0; i < Nb; i++)
-		nlops[i] = nlop_mri_normal_slice_create(N, max_dims2, ND, psf_dims2, &tconf);
+		nlops[i] = nlop_mri_normal_slice_create(conf);
 
-	int ostack_dim[] = { batch_dim };
-	int istack_dim[] = { batch_dim, batch_dim, (1 == psf_dims[batch_dim]) ? -1 : batch_dim };
+	int ostack_dim[] = { BATCH_DIM };
+	int istack_dim[] = { BATCH_DIM, BATCH_DIM, BATCH_DIM };
 
 	return nlop_stack_multiple_F(Nb, nlops, 3, istack_dim, 1, ostack_dim, true , multigpu);
 }
@@ -938,24 +940,14 @@ const struct nlop_s* nlop_mri_normal_create(int N, const long max_dims[N], int N
 
 
 
-static const struct nlop_s* nlop_mri_normal_inv_slice_create(int N, const long max_dims[N], const long lam_dims[N], int ND, const long psf_dims[ND], const struct config_nlop_mri_s* conf, struct iter_conjgrad_conf* iter_conf)
+static const struct nlop_s* nlop_mri_normal_inv_slice_create(int N, const long lam_dims[N], const struct config_nlop_mri_s* conf, struct iter_conjgrad_conf* iter_conf)
 {
 	assert(NULL != conf);
 
-	struct sense_model_s* model = NULL;
+	struct sense_model_s* model = sense_model_normal_create(conf);
 
-	struct config_nlop_mri_s conf2 = *conf;
-	conf2.pattern_flags = md_nontriv_dims(ND, psf_dims);
-
-	if (conf->noncart)
-		model = sense_noncart_normal_create(N, max_dims, ND, psf_dims, &conf2);
-	else
-		model = sense_cart_normal_create(N, max_dims, &conf2);
-
-
-	assert(md_check_equal_dims(ND, psf_dims, model->psf_dims, ~0UL));
-
-	auto result = nlop_sense_model_set_data_create(N, model->img_dims, model, false);
+	assert(N == conf->N);
+	auto result = nlop_sense_model_set_data_create(N, conf->img_dims, model, false);
 
 	struct nlop_norm_inv_conf norm_inv_conf = {
 
@@ -980,11 +972,8 @@ static const struct nlop_s* nlop_mri_normal_inv_slice_create(int N, const long m
  * A = Pattern FFT Coils
  *
  * @param N
- * @param max_dims
  * @param lam_dims
- * @param ND
- * @param psf_dims
- * @param conf can be NULL to fallback on nlop_mri_simple
+ * @param conf
  * @param iter_conf configuration for conjugate gradient
  *
  * for default dims:
@@ -998,44 +987,18 @@ static const struct nlop_s* nlop_mri_normal_inv_slice_create(int N, const long m
  * Output tensors:
  * image:	img_dims: 	(Nx, Ny, Nz, 1,  ..., Nb )
  */
-const struct nlop_s* nlop_mri_normal_inv_create(int N, const long max_dims[N], const long lam_dims[N], int ND, const long psf_dims[ND], const struct config_nlop_mri_s* conf, struct iter_conjgrad_conf* iter_conf)
+const struct nlop_s* nlop_mri_normal_inv_create(int N, const long lam_dims[N], int Nb, const struct config_nlop_mri_s* conf, struct iter_conjgrad_conf* iter_conf)
 {
-	conf = conf ? conf : &conf_nlop_mri_simple;
-
-	if (0 == bitcount(conf->batch_flags))
-		return nlop_mri_normal_inv_slice_create(N, max_dims, lam_dims, ND, psf_dims, conf, iter_conf);
-
-	struct config_nlop_mri_s tconf = *conf;
-
-	tconf.coil_flags &= ~tconf.batch_flags;
-	tconf.image_flags &= ~tconf.batch_flags;
-	tconf.coil_image_flags &= ~tconf.batch_flags;
-	tconf.pattern_flags &= ~tconf.batch_flags;
-
-	assert(1 == bitcount(tconf.batch_flags));
-
-	int batch_dim = 0;
-
-	while (tconf.batch_flags != MD_BIT(batch_dim))
-		batch_dim++;
-
-	int Nb = max_dims[batch_dim];
-
-	long max_dims2[N];
-	long lam_dims2[N];
-	long psf_dims2[ND];
-
-	md_select_dims(N, ~tconf.batch_flags, max_dims2, max_dims);
-	md_select_dims(N, ~tconf.batch_flags, lam_dims2, lam_dims);
-	md_select_dims(ND, ~tconf.batch_flags, psf_dims2, psf_dims);
+	if (1 == Nb)
+		return nlop_mri_normal_inv_slice_create(N, lam_dims, conf, iter_conf);
 
 	const struct nlop_s* nlops[Nb];
 
 	for (int i = 0; i < Nb; i++)
-		nlops[i] = nlop_mri_normal_inv_slice_create(N, max_dims2, lam_dims2, ND, psf_dims2, &tconf, iter_conf);
+		nlops[i] = nlop_mri_normal_inv_slice_create(N, lam_dims, conf, iter_conf);
 
-	int ostack_dim[] = { batch_dim };
-	int istack_dim[] = { batch_dim, batch_dim, (1 == psf_dims[batch_dim]) ? -1 : batch_dim, (1 == lam_dims[batch_dim]) ? -1 : batch_dim };
+	int ostack_dim[] = { BATCH_DIM };
+	int istack_dim[] = { BATCH_DIM, BATCH_DIM, BATCH_DIM, (1 == lam_dims[BATCH_DIM]) ? -1 : BATCH_DIM };
 
 	return nlop_stack_multiple_F(Nb, nlops, 4, istack_dim, 1, ostack_dim, true , multigpu);
 }
@@ -1066,9 +1029,9 @@ const struct nlop_s* nlop_mri_normal_inv_create(int N, const long max_dims[N], c
  * Output tensors:
  * image:	idims: 	(Nx, Ny, Nz, 1, ..., Nb)
  */
-const struct nlop_s* nlop_mri_dc_prox_create(int N, const long max_dims[N], const long lam_dims[N], int ND, const long psf_dims[ND], const struct config_nlop_mri_s* conf, struct iter_conjgrad_conf* iter_conf)
+const struct nlop_s* nlop_mri_dc_prox_create(int N, const long lam_dims[N], int Nb, const struct config_nlop_mri_s* conf, struct iter_conjgrad_conf* iter_conf)
 {
-	auto result = nlop_mri_normal_inv_create(N, max_dims, lam_dims, ND, psf_dims, conf, iter_conf);
+	auto result = nlop_mri_normal_inv_create(N, lam_dims, Nb, conf, iter_conf);
 
 	long img_dims[N];
 	md_copy_dims(N, img_dims, nlop_generic_codomain(result, 0)->dims);
@@ -1084,21 +1047,11 @@ const struct nlop_s* nlop_mri_dc_prox_create(int N, const long max_dims[N], cons
 
 
 
-static const struct nlop_s* nlop_mri_normal_max_eigen_slice_create(int N, const long max_dims[N], int ND, const long psf_dims[ND], const struct config_nlop_mri_s* conf)
+static const struct nlop_s* nlop_mri_normal_max_eigen_slice_create(const struct config_nlop_mri_s* conf)
 {
 	assert(NULL != conf);
 
-	struct sense_model_s* model = NULL;
-
-	struct config_nlop_mri_s conf2 = *conf;
-	conf2.pattern_flags = md_nontriv_dims(ND, psf_dims);
-
-	if (conf->noncart)
-		model = sense_noncart_normal_create(N, max_dims, ND, psf_dims, &conf2);
-	else
-		model = sense_cart_normal_create(N, max_dims, &conf2);
-
-	assert(md_check_equal_dims(ND, psf_dims, model->psf_dims, ~0UL));
+	struct sense_model_s* model = sense_model_normal_create(conf);
 
 	complex float zero = 0;
 
@@ -1138,42 +1091,18 @@ static const struct nlop_s* nlop_mri_normal_max_eigen_slice_create(int N, const 
  * max eigen:	ldims: 	( 1,  1,  1,  1, ..., Nb)
  */
 
-const struct nlop_s* nlop_mri_normal_max_eigen_create(int N, const long max_dims[N], int ND, const long psf_dims[ND], const struct config_nlop_mri_s* conf)
+const struct nlop_s* nlop_mri_normal_max_eigen_create(int Nb, const struct config_nlop_mri_s* conf)
 {
-	conf = conf ? conf : &conf_nlop_mri_simple;
-
-	if (0 == bitcount(conf->batch_flags))
-		return nlop_mri_normal_max_eigen_slice_create(N, max_dims, ND, psf_dims, conf);
-
-	struct config_nlop_mri_s tconf = *conf;
-
-	tconf.coil_flags &= ~tconf.batch_flags;
-	tconf.image_flags &= ~tconf.batch_flags;
-	tconf.coil_image_flags &= ~tconf.batch_flags;
-	tconf.pattern_flags &= ~tconf.batch_flags;
-
-	assert(1 == bitcount(tconf.batch_flags));
-
-	int batch_dim = 0;
-
-	while (tconf.batch_flags != MD_BIT(batch_dim))
-		batch_dim++;
-
-	int Nb = max_dims[batch_dim];
-
-	long max_dims2[N];
-	long psf_dims2[ND];
-
-	md_select_dims(N, ~tconf.batch_flags, max_dims2, max_dims);
-	md_select_dims(ND, ~tconf.batch_flags, psf_dims2, psf_dims);
+	if (1 == Nb)
+		return nlop_mri_normal_max_eigen_slice_create(conf);
 
 	const struct nlop_s* nlops[Nb];
 
 	for (int i = 0; i < Nb; i++)
-		nlops[i] = nlop_mri_normal_max_eigen_slice_create(N, max_dims2, ND, psf_dims2, &tconf);
+		nlops[i] = nlop_mri_normal_max_eigen_slice_create(conf);
 
-	int ostack_dim[] = { batch_dim };
-	int istack_dim[] = { batch_dim, (1 == psf_dims[batch_dim]) ? -1 : batch_dim };
+	int ostack_dim[] = { BATCH_DIM };
+	int istack_dim[] = { BATCH_DIM, BATCH_DIM, BATCH_DIM };
 
 	return nlop_stack_multiple_F(Nb, nlops, 2, istack_dim, 1, ostack_dim, true , multigpu);
 }
@@ -1235,27 +1164,32 @@ static void mri_scale_rss_del(const nlop_data_t* _data)
 	xfree(d);
 }
 
-const struct nlop_s* nlop_mri_scale_rss_create(int N, const long max_dims[N], const struct config_nlop_mri_s* conf)
+const struct nlop_s* nlop_mri_scale_rss_create(int Nb, const struct config_nlop_mri_s* conf)
 {
 	PTR_ALLOC(struct mri_scale_rss_s, data);
 	SET_TYPEID(mri_scale_rss_s, data);
 
-	PTR_ALLOC(long[N], col_dims);
+	PTR_ALLOC(long[conf->N], col_dims);
 
-	md_select_dims(N, conf->coil_flags, *col_dims, max_dims);
+	int N = conf->N;
+	assert(DIMS == N);
+
+	md_copy_dims(conf->N, *col_dims, conf->col_dims);
 
 	data->col_dims = *PTR_PASS(col_dims);
 
-	data->N = N;
-	data->bat_flag = conf->batch_flags;
-	data->rss_flag = ~conf->image_flags & conf->coil_flags;
+	data->N = conf->N;
+	data->bat_flag = BATCH_FLAG;
+	data->rss_flag = (~md_nontriv_dims(conf->N, conf->img_dims)) & (md_nontriv_dims(conf->N, conf->col_dims));
 	data->mean = true;
 
 	long odims[N];
 	long idims[N];
-	md_select_dims(N, conf->coil_flags, idims, max_dims);
-	md_select_dims(N, conf->image_flags, odims, idims);
+	md_copy_dims(N, idims, conf->cim_dims);
+	md_copy_dims(N, odims, conf->img_dims);
 
+	odims[BATCH_DIM] = Nb;
+	idims[BATCH_DIM] = Nb;
 
 	return nlop_create(N, odims, N, idims, CAST_UP(PTR_PASS(data)), mri_scale_rss_fun, NULL, NULL, NULL, NULL, mri_scale_rss_del);
 }

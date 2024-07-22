@@ -15,7 +15,7 @@ struct reconet_s {
 	_Bool share_weights;
 	_Bool share_lambda;
 
-	struct config_nlop_mri_s* mri_config;
+	struct config_nlop_mri_s* sense_config;
 	_Bool one_channel_per_map;
 
 	_Bool external_initialization;	//initialize network with precomputed reconstruction
@@ -64,17 +64,11 @@ extern void reconet_init_varnet_test_default(struct reconet_s* reconet);
 extern void reconet_init_unet_test_default(struct reconet_s* reconet);
 
 extern void apply_reconet(	struct reconet_s* config,
-				int N, const long max_dims[N],
-				int ND, const long psf_dims[ND],
 				struct named_data_list_s* data);
 
 extern void train_reconet(	struct reconet_s* config,
-				int N, const long max_dims[N],
-				int ND, const long psf_dims[ND],
 				long Nb_train, struct named_data_list_s* train_data,
 				long Nb_valid, struct named_data_list_s* valid_data);
 
 extern void eval_reconet(	struct reconet_s* config,
-				int N, const long max_dims[N],
-				int ND, const long psf_dims[ND],
 				struct named_data_list_s* data);

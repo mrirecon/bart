@@ -3,6 +3,8 @@
 
 struct network_data_s {
 
+	struct config_nlop_mri_s* conf;
+
 	int N;
 	int ND;
 
