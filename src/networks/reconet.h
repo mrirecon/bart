@@ -47,8 +47,13 @@ struct reconet_s {
 	const char* graph_file;
 
 	_Bool coil_image;
+	_Bool ref_is_kspace;
 
 	_Bool normalize_rss;
+
+	_Bool ksp_training;
+
+	_Bool precomp;
 };
 
 extern struct reconet_s reconet_config_opts;

@@ -176,6 +176,9 @@ int main_reconet(int argc, char* argv[argc])
 		OPTL_STRING(0, "export-graph", &graph_filename, "<file.dot>", "export graph for visualization"),
 
 		OPT_INFILE('B', &(data.filename_basis), "file", "(temporal (or other) basis)"),
+
+		OPTL_SET(0, "ksp-training", &(config.ksp_training), "Train network on k-space data"),
+		OPTL_CLEAR(0, "no-precomp", &(config.precomp), "Don't precompute adjoint and psf"),
 	};
 
 	const char* filename_weights;
@@ -270,10 +273,11 @@ int main_reconet(int argc, char* argv[argc])
 	data.gpu = config.gpu;
 	load_network_data(&data);
 	config.sense_config = data.conf;
+	config.ref_is_kspace = (0 == strcmp(data.filename_kspace, data.filename_out));
 
 	Nb = MIN(Nb, network_data_get_tot(&data));
 
-	if (config.sense_init && (-1. != config.init_lambda_fixed)) {
+	if (config.sense_init && (-1. != config.init_lambda_fixed) && config.precomp) {
 
 		network_data_compute_init(&data, config.init_lambda_fixed, config.init_max_iter);
 		config.external_initialization = true;
@@ -281,7 +285,7 @@ int main_reconet(int argc, char* argv[argc])
 
 	if (config.normalize)
 		network_data_normalize(&data);
-	
+
 	network_data_slice_dim_to_batch_dim(&data);
 
 
@@ -296,11 +300,11 @@ int main_reconet(int argc, char* argv[argc])
 
 		use_valid_data = true;
 		valid_data.filename_basis = data.filename_basis;
-		
+
 		load_network_data(&valid_data);
 		valid_data.gpu = config.gpu;
 		network_data_slice_dim_to_batch_dim(&valid_data);
-		
+
 		if (config.sense_init && (-1. != config.init_lambda_fixed))
 			network_data_compute_init(&valid_data, config.init_lambda_fixed, config.init_max_iter);
 
@@ -372,7 +376,7 @@ int main_reconet(int argc, char* argv[argc])
 			config.weights = load_nn_weights(filename_weights);
 
 		eval_reconet(&config, eval_data_list);
-	
+
 		named_data_list_free(eval_data_list);
 	}
 
