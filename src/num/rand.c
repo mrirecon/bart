@@ -341,7 +341,8 @@ static void md_gaussian_obsolete_rand(int D, const long dims[D], complex float* 
 		return;
 	}
 #endif
-	for (long i = 0; i < md_calc_size(D, dims); i++)
+	long N = md_calc_size(D, dims);
+	for (long i = 0; i < N; i++)
 		dst[i] = (complex float)gaussian_rand_obsolete();
 }
 
@@ -396,7 +397,8 @@ static void md_uniform_obsolete_rand(int D, const long dims[D], complex float* d
 		return;
 	}
 #endif
-	for (long i = 0; i < md_calc_size(D, dims); i++)
+	long N = md_calc_size(D, dims);
+	for (long i = 0; i < N; i++)
 		dst[i] = (complex float)uniform_rand_obsolete();
 }
 
@@ -447,7 +449,8 @@ static void md_obsolete_rand_one(int D, const long dims[D], complex float* dst, 
 		return;
 	}
 #endif
-	for (long i = 0; i < md_calc_size(D, dims); i++)
+	long N = md_calc_size(D, dims);
+	for (long i = 0; i < N; i++)
 		dst[i] = (complex float)(uniform_rand_obsolete() < p);
 }
 
