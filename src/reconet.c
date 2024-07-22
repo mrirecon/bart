@@ -22,12 +22,10 @@
 #include "num/rand.h"
 
 #include "iter/iter6.h"
-#include "iter/iter.h"
 
 #include "nn/data_list.h"
 #include "nn/weights.h"
 
-#include "networks/cnn.h"
 #include "networks/unet.h"
 #include "networks/tf.h"
 #include "networks/reconet.h"
@@ -271,6 +269,7 @@ int main_reconet(int argc, char* argv[argc])
 	data.load_mem = load_mem;
 	data.gpu = config.gpu;
 	load_network_data(&data);
+	config.sense_config = data.conf;
 
 	Nb = MIN(Nb, network_data_get_tot(&data));
 
@@ -316,15 +315,6 @@ int main_reconet(int argc, char* argv[argc])
 	if (NULL != filename_weights_load)
 		config.weights = load_nn_weights(filename_weights_load);
 
-	if (NULL != data.filename_trajectory) {
-
-		config.mri_config->noncart = true;
-		config.mri_config->nufft_conf = data.nufft_conf;
-	}
-
-	if (NULL != data.filename_basis)
-		config.mri_config->basis_flags = TE_FLAG | COEFF_FLAG;
-
 	if (train) {
 
 		auto train_data_list = network_data_get_named_list(&data);
@@ -356,7 +346,7 @@ int main_reconet(int argc, char* argv[argc])
 			}
 		}
 
-		train_reconet(&config, data.N, data.max_dims, data.ND, data.psf_dims, Nb, train_data_list, Nt_val, valid_data_list);
+		train_reconet(&config, Nb, train_data_list, Nt_val, valid_data_list);
 		dump_nn_weights(filename_weights, config.weights);
 
 		named_data_list_free(train_data_list);
@@ -369,6 +359,9 @@ int main_reconet(int argc, char* argv[argc])
 
 		if (NULL != mask_val)
 			unmap_cfl(DIMS, mask_dims_val, mask_val);
+
+		if (use_valid_data)
+			free_network_data(&valid_data);
 	}
 
 	if (eval) {
@@ -378,7 +371,7 @@ int main_reconet(int argc, char* argv[argc])
 		if (NULL == config.weights)
 			config.weights = load_nn_weights(filename_weights);
 
-		eval_reconet(&config, data.N, data.max_dims, data.ND, data.psf_dims, eval_data_list);
+		eval_reconet(&config, eval_data_list);
 	
 		named_data_list_free(eval_data_list);
 	}
@@ -388,7 +381,7 @@ int main_reconet(int argc, char* argv[argc])
 		auto apply_data_list = network_data_get_named_list(&data);
 
 		config.weights = load_nn_weights(filename_weights);
-		apply_reconet(&config, data.N, data.max_dims, data.ND, data.psf_dims, apply_data_list);
+		apply_reconet(&config, apply_data_list);
 
 		named_data_list_free(apply_data_list);
 	}
