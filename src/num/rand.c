@@ -114,7 +114,9 @@ static struct bart_rand_state get_worker_state_cfl_loop(void)
 		cfl_loop_get_dims(16, dims);
 		cfl_loop_get_pos(16, pos);
 
-		worker_state.ctr2 = md_ravel_index(16, pos, cfl_loop_rand_flags, dims);
+		long ind = md_ravel_index(16, pos, cfl_loop_rand_flags, dims);
+		assert(0 <= ind);
+		worker_state.ctr2 = (uint64_t) ind;
 	}
 
 	return worker_state;
