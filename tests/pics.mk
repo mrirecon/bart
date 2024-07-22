@@ -602,7 +602,7 @@ tests/test-pics-eulermaruyama4: bart
 	$(ROOTDIR)/bart ones 6 128 128 1 1 1 4 s.ra						;\
 	$(ROOTDIR)/bart zeros 6 128 128 1 1 1 4 z.ra						;\
 	$(ROOTDIR)/bart 				      pics --eulermaruyama -S -w1. -s0.01 -i10 -l2 -r1. -p s.ra z.ra s.ra x1.ra	;\
-	$(ROOTDIR)/bart -p $$($(ROOTDIR)/bart bitmask 5) -e 4 pics --eulermaruyama -S -w1. -s0.01 -i10 -l2 -r1. -p s.ra z.ra s.ra x2.ra	;\
+	OMP_NUM_THREADS=4 $(ROOTDIR)/bart -p $$($(ROOTDIR)/bart bitmask 5) -e 4 pics --eulermaruyama -S -w1. -s0.01 -i10 -l2 -r1. -p s.ra z.ra s.ra x2.ra	;\
 	$(ROOTDIR)/bart nrmse -t 0.0 x1.ra x2.ra						;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
