@@ -537,3 +537,16 @@ Kingma DP and Ba J.
 Adam: A Method for Stochastic Optimization.
 arXiv preprint 2014, arXiv:1412.6980
 
+
+
+- random numbers -
+(command: noise) and internally in others
+
+Salmon JK, Moraes MA, Dror RO, Shaw DE.
+Parallel random numbers: as easy as 1, 2, 3.
+SC '11: Proceedings of 2011 International Conference for High Performance
+Computing, Networking, Storage and Analysis; DOI: 10.1145/2063384.2063405
+
+Lemire D.
+Fast Random Integer Generation in an Interval
+arXiv preprint 2018, arXiv:1805.10941
