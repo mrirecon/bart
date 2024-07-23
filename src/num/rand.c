@@ -84,6 +84,19 @@ void rand_state_update(struct bart_rand_state* state, unsigned long long seed)
 
 struct bart_rand_state* rand_state_create(unsigned long long seed)
 {
+	if (cfl_loop_desc_active()) {
+
+		static bool warned = false;
+
+#pragma		omp critical
+		if (!warned) {
+
+			warned = true;
+			if (0 != (cfl_loop_rand_flags & cfl_loop_get_flags()))			
+				debug_printf(DP_WARN, "rand_state_create provides identical random numbers for each cfl loop iteration.\n");
+		}
+	}
+
 	struct bart_rand_state* state = xmalloc(sizeof *state);
 	rand_state_update(state, seed);
 	return state;
