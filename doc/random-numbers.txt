@@ -1,0 +1,23 @@
+1. Generator
+
+	Since commit 697e84f2d9 (April 2024), bart uses the Philox-4x32-10
+	pseudo-random number generator (PRNG) by default.
+
+2. Interaction with the bart looping interface and MPI
+
+	Care has to be taken when using random numbers in a parallel context
+	(e.g. by using bart -l, bart -p, or mpi with bart):
+
+	By default, bart will produce reproducible random numbers regardless of
+	number of threads or MPI processes used. This means that the output is
+	as if the bart command had been called on the entire input, without
+	using the loop interface.
+
+	If this behavior is undesirable, it can be changed or even deactivated
+	for the loop interface by specifying '--random-dims flags', which will
+	vary the random numbers over the dimensions selected by the flags
+	argument.
+
+	Note also that reproducibility of random numbers cannot be guaranteed if
+	the loop dimensions specified with 'bart -l/-p'	are not the last
+	dimensions!
