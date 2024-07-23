@@ -6,8 +6,6 @@
  * 2014 Martin Uecker <uecker@eecs.berkeley.edu>
  */
 
-#include <complex.h>
-#include <assert.h>
 #include <stdbool.h>
 
 #include <cuda.h>
