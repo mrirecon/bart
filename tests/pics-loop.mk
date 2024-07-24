@@ -70,9 +70,41 @@ tests/test-pics-cart-loop_range-omp:  bart $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_O
 	touch $@
 
 
-TESTS += tests/test-pics-cart-loop tests/test-pics-cart-loop_range tests/test-pics-cart-slice
+tests/test-pics-eulermaruyama-loop-omp: bart
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(ROOTDIR)/bart ones 6 128 128 1 1 1 4 s.ra						;\
+	$(ROOTDIR)/bart zeros 6 128 128 1 1 1 4 z.ra						;\
+	$(ROOTDIR)/bart 				      pics --eulermaruyama -S -w1. -s0.01 -i10 -l2 -r1. -p s.ra z.ra s.ra x1.ra	;\
+	OMP_NUM_THREADS=4 $(ROOTDIR)/bart -p $$($(ROOTDIR)/bart bitmask 5) -e 4 pics --eulermaruyama -S -w1. -s0.01 -i10 -l2 -r1. -p s.ra z.ra s.ra x2.ra	;\
+	$(ROOTDIR)/bart nrmse -t 0.0 x1.ra x2.ra						;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-pics-eulermaruyama-loop: bart
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(ROOTDIR)/bart ones 6 128 128 1 1 1 4 s.ra						;\
+	$(ROOTDIR)/bart zeros 6 128 128 1 1 1 4 z.ra						;\
+	$(ROOTDIR)/bart 				      pics --eulermaruyama -S -w1. -s0.01 -i10 -l2 -r1. -p s.ra z.ra s.ra x1.ra	;\
+	$(ROOTDIR)/bart -l $$($(ROOTDIR)/bart bitmask 5) -e 4 pics --eulermaruyama -S -w1. -s0.01 -i10 -l2 -r1. -p s.ra z.ra s.ra x2.ra	;\
+	$(ROOTDIR)/bart nrmse -t 0.0 x1.ra x2.ra						;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+# This bart nrmse should fail, since the loop dimension is not the last dimension
+tests/test-pics-eulermaruyama-loop-fail: bart
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(ROOTDIR)/bart ones 8 128 128 1 1 1 4 1 8 s.ra						;\
+	$(ROOTDIR)/bart zeros 8 128 128 1 1 1 4 1 8 z.ra						;\
+	$(ROOTDIR)/bart 				      pics --eulermaruyama -S -w1. -s0.01 -i10 -l2 -r1. -p s.ra z.ra s.ra x1.ra	;\
+	$(ROOTDIR)/bart -l $$($(ROOTDIR)/bart bitmask 5) -e 4 pics --eulermaruyama -S -w1. -s0.01 -i10 -l2 -r1. -p s.ra z.ra s.ra x2.ra	;\
+	! $(ROOTDIR)/bart nrmse -t 1.0 x1.ra x2.ra 2>/dev/null 								;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+TESTS += tests/test-pics-cart-loop tests/test-pics-cart-loop_range tests/test-pics-cart-slice tests/test-pics-eulermaruyama-loop tests/test-pics-eulermaruyama-loop-fail
 
 ifeq ($(OMP),1)
-TESTS_SLOW += tests/test-pics-cart-loop_range-omp
+TESTS_SLOW += tests/test-pics-cart-loop_range-omp tests/test-pics-eulermaruyama-loop-omp
 endif
 

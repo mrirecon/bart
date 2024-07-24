@@ -597,37 +597,6 @@ tests/test-pics-eulermaruyama3: ones scale zeros pics var nrmse
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-tests/test-pics-eulermaruyama4: bart
-	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
-	$(ROOTDIR)/bart ones 6 128 128 1 1 1 4 s.ra						;\
-	$(ROOTDIR)/bart zeros 6 128 128 1 1 1 4 z.ra						;\
-	$(ROOTDIR)/bart 				      pics --eulermaruyama -S -w1. -s0.01 -i10 -l2 -r1. -p s.ra z.ra s.ra x1.ra	;\
-	OMP_NUM_THREADS=4 $(ROOTDIR)/bart -p $$($(ROOTDIR)/bart bitmask 5) -e 4 pics --eulermaruyama -S -w1. -s0.01 -i10 -l2 -r1. -p s.ra z.ra s.ra x2.ra	;\
-	$(ROOTDIR)/bart nrmse -t 0.0 x1.ra x2.ra						;\
-	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
-	touch $@
-
-tests/test-pics-eulermaruyama5: bart
-	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
-	$(ROOTDIR)/bart ones 6 128 128 1 1 1 4 s.ra						;\
-	$(ROOTDIR)/bart zeros 6 128 128 1 1 1 4 z.ra						;\
-	$(ROOTDIR)/bart 				      pics --eulermaruyama -S -w1. -s0.01 -i10 -l2 -r1. -p s.ra z.ra s.ra x1.ra	;\
-	$(ROOTDIR)/bart -l $$($(ROOTDIR)/bart bitmask 5) -e 4 pics --eulermaruyama -S -w1. -s0.01 -i10 -l2 -r1. -p s.ra z.ra s.ra x2.ra	;\
-	$(ROOTDIR)/bart nrmse -t 0.0 x1.ra x2.ra						;\
-	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
-	touch $@
-
-# This bart nrmse should fail, since the loop dimension is not the last dimension
-tests/test-pics-eulermaruyama-fail: bart
-	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
-	$(ROOTDIR)/bart ones 8 128 128 1 1 1 4 1 8 s.ra						;\
-	$(ROOTDIR)/bart zeros 8 128 128 1 1 1 4 1 8 z.ra						;\
-	$(ROOTDIR)/bart 				      pics --eulermaruyama -S -w1. -s0.01 -i10 -l2 -r1. -p s.ra z.ra s.ra x1.ra	;\
-	$(ROOTDIR)/bart -l $$($(ROOTDIR)/bart bitmask 5) -e 4 pics --eulermaruyama -S -w1. -s0.01 -i10 -l2 -r1. -p s.ra z.ra s.ra x2.ra	;\
-	! $(ROOTDIR)/bart nrmse -t 1.0 x1.ra x2.ra 2>/dev/null 								;\
-	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
-	touch $@
-
 TESTS += tests/test-pics-pi tests/test-pics-noncart tests/test-pics-cs tests/test-pics-pics
 TESTS += tests/test-pics-poisson-wavl1 tests/test-pics-joint-wavl1 tests/test-pics-bpwavl1
 TESTS += tests/test-pics-weights tests/test-pics-noncart-weights
@@ -639,6 +608,6 @@ TESTS += tests/test-pics-noncart-sms tests/test-pics-psf tests/test-pics-tgv tes
 TESTS += tests/test-pics-wavl1-dau2 tests/test-pics-wavl1-cdf44 tests/test-pics-wavl1-haar
 TESTS += tests/test-pics-noncart-lowmem tests/test-pics-noncart-lowmem-stack0 tests/test-pics-noncart-lowmem-stack1 tests/test-pics-noncart-lowmem-stack2 tests/test-pics-noncart-lowmem-no-toeplitz
 TESTS += tests/test-pics-phase
-TESTS += tests/test-pics-eulermaruyama tests/test-pics-eulermaruyama2 tests/test-pics-eulermaruyama3 tests/test-pics-eulermaruyama4 tests/test-pics-eulermaruyama5 tests/test-pics-eulermaruyama-fail
+TESTS += tests/test-pics-eulermaruyama tests/test-pics-eulermaruyama2 tests/test-pics-eulermaruyama3
 
 
