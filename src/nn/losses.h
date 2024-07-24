@@ -8,6 +8,7 @@ extern const struct nlop_s* nlop_z1norm_create(int N, const long dims[__VLA(N)],
 extern const struct nlop_s* nlop_mad_create(int N, const long dims[__VLA(N)], unsigned long mean_dims);
 extern const struct nlop_s* nlop_mpsnr_create(int N, const long dims[__VLA(N)], unsigned long mean_dims);
 extern const struct nlop_s* nlop_mssim_create(int N, const long dims[__VLA(N)], const long kdims[__VLA(N)], unsigned long conv_dims);
+extern const struct nlop_s* nlop_patched_cross_correlation_create(int N, const long dims[__VLA(N)], const long kdims[__VLA(N)], unsigned long conv_dims, float epsilon);
 extern const struct nlop_s* nlop_cce_create(int N, const long dims[__VLA(N)], unsigned long batch_flag);
 extern const struct nlop_s* nlop_weighted_cce_create(int N, const long dims[__VLA(N)], unsigned long batch_flag);
 extern const struct nlop_s* nlop_accuracy_create(int N, const long dims[__VLA(N)], int class_index);

@@ -401,7 +401,7 @@ static const struct nlop_s* get_mean_op(int N, const long dims[N], long const kd
 
 static const struct nlop_s* get_square_op(int N, const long dims[N])
 {
-	return nlop_dup_F(nlop_tenmul_create(N, dims, dims, dims), 0, 1);
+	return nlop_chain_FF(nlop_dup_F(nlop_tenmul_create(N, dims, dims, dims), 0, 1), nlop_from_linop_F(linop_zreal_create(N, dims)));
 }
 
 const struct nlop_s* nlop_mssim_create(int N, const long dims[N], const long wdims[N], unsigned long flags)
@@ -1247,3 +1247,82 @@ const struct nlop_s* nlop_dice_create(int N, const long dims[N], unsigned long l
 
 	return nlop_reshape_out_F(dice, 0, 1, MD_DIMS(1));
 }
+
+
+static const struct nlop_s* nlop_avg_window_create(int N, const long dims[N], const long _kdims[N], unsigned long flags)
+{
+	long kdims[N];
+	md_select_dims(N, flags, kdims, _kdims);
+
+	complex float one = 1.;
+	const struct nlop_s* ret = nlop_convcorr_geom_create(N, flags, dims, dims, kdims, PAD_SAME, false, NULL, NULL, 'N');
+	ret = nlop_set_input_const_F2(ret, 1, N, kdims, MD_SINGLETON_STRS(N), true, &one);
+
+	return ret;
+}
+
+const struct nlop_s* nlop_patched_cross_correlation_create(int N, const long dims[N], const long kdims[N], unsigned long flags, float epsilon)
+{
+	long cdims[N];
+	md_select_dims(N, flags, cdims, dims);
+
+	complex float* one = md_alloc(N, cdims, CFL_SIZE);
+	complex float* nrm = md_alloc(N, cdims, CFL_SIZE);
+
+	md_zfill(N, cdims, one, 1.);
+	
+	const struct nlop_s* nlop_avg = nlop_avg_window_create(N, cdims, kdims, flags);
+	nlop_apply(nlop_avg, N, cdims, nrm, N, cdims, one);
+	nlop_free(nlop_avg);
+
+	md_zdiv(N, cdims, nrm, one, nrm);
+	md_free(one);
+
+	const struct linop_s* lop_nrm = linop_cdiag_create(N, dims, flags, nrm);
+	md_free(nrm);
+
+	const struct nlop_s* avg_window1 = nlop_chain_FF(nlop_avg_window_create(N, dims, kdims, flags), nlop_from_linop(lop_nrm));
+	const struct nlop_s* avg_window2 = nlop_chain_FF(nlop_avg_window_create(N, dims, kdims, flags), nlop_from_linop(lop_nrm));
+	const struct nlop_s* avg_window3 = nlop_chain_FF(nlop_avg_window_create(N, dims, kdims, flags), nlop_from_linop(lop_nrm));
+
+	const struct nlop_s* nrm_window1 = nlop_chain_FF(nlop_avg_window_create(N, dims, kdims, flags), nlop_from_linop(lop_nrm));
+	nrm_window1 = nlop_dup_F(nlop_prepend_FF(nrm_window1, nlop_zaxpbz_create(N, dims, 1., -1.), 1), 0, 1);
+
+	const struct nlop_s* nrm_window2 = nlop_chain_FF(nlop_avg_window_create(N, dims, kdims, flags), nlop_from_linop(lop_nrm));
+	nrm_window2 = nlop_dup_F(nlop_prepend_FF(nrm_window2, nlop_zaxpbz_create(N, dims, 1., -1.), 1), 0, 1);
+
+	linop_free(lop_nrm);
+
+	const struct nlop_s* ret = nlop_zdiv_reg_create(N, dims, epsilon);
+	
+	ret = nlop_prepend_FF(nlop_dup_F(nlop_tenmul_create(N, dims, dims, dims),0, 1), ret, 0);	// in: A, B * C
+	ret = nlop_prepend_FF(avg_window1, ret, 0);							// in: I * J, B * C
+	ret = nlop_chain2_swap_FF(nlop_tenmul_create(N, dims, dims, dims), 0, ret, 0);			// in: I, J, B * C
+	ret = nlop_chain2_swap_FF(nlop_tenmul_create(N, dims, dims, dims), 0, ret, 2);			// in: B, C, I, J
+	ret = nlop_prepend_FF(avg_window2, ret, 0);							// in: I^2, C, I, J
+	ret = nlop_prepend_FF(avg_window3, ret, 1);							// in: I^2, J^2, I, J
+	ret = nlop_prepend_FF(nlop_dup_F(nlop_tenmul_create(N, dims, dims, dims),0, 1), ret, 0);	// in: I, J^2, I, J
+	ret = nlop_prepend_FF(nlop_dup_F(nlop_tenmul_create(N, dims, dims, dims),0, 1), ret, 1);	// in: I, J, I, J
+	ret = nlop_dup_F(ret, 0, 2);
+	ret = nlop_dup_F(ret, 1, 2);
+
+	ret = nlop_append_FF(ret, 0, nlop_from_linop_F(linop_sum_create(N, dims, ~0ul)));
+	ret = nlop_append_FF(ret, 0, nlop_from_linop_F(linop_scale_create(N, MD_SINGLETON_DIMS(N), -1.)));
+
+	ret = nlop_prepend_FF(nrm_window1, ret , 0);
+	ret = nlop_prepend_FF(nrm_window2, ret , 1);
+ 
+	return ret;
+}
+
+
+
+
+
+
+
+
+
+
+
+
