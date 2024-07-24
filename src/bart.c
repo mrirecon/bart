@@ -31,6 +31,7 @@
 
 #include "num/mpi_ops.h"
 #include "num/multind.h"
+#include "num/rand.h"
 
 #ifdef USE_MPI
 #include <mpi.h>
