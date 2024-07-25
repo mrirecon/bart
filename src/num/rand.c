@@ -381,45 +381,44 @@ static void vec_gaussian_philox_rand(struct bart_rand_state state, long offset, 
 
 static long get_cfl_loop_offset(int D, const long dims[D], long strs_offset[D])
 {
-	if (0 != (cfl_loop_rand_flags & cfl_loop_get_flags())) {
+	if (0 == (cfl_loop_rand_flags & cfl_loop_get_flags()))
+		return 0;
 
-		int DIMS = 16;
-		long cdims[DIMS];
-		cfl_loop_get_dims(DIMS, cdims);
-		md_select_dims(DIMS, cfl_loop_rand_flags, cdims, cdims);
+	int DIMS = 16;
+	long cdims[DIMS];
+	cfl_loop_get_dims(DIMS, cdims);
+	md_select_dims(DIMS, cfl_loop_rand_flags, cdims, cdims);
 
-		bool mergeable = true;
-		for (int i = 0; i < MIN(D, DIMS); i++)
-			if ((1 != dims[i]) && (1 != cdims[i]))
-				mergeable = false;
+	bool mergeable = true;
+	for (int i = 0; i < MIN(D, DIMS); i++)
+		if ((1 != dims[i]) && (1 != cdims[i]))
+			mergeable = false;
 
-		if (mergeable) {
+	if (mergeable) {
 
-			long mdims[MAX(D, DIMS)];
-			md_singleton_dims(MAX(D, DIMS), mdims);
-			md_copy_dims(D, mdims, dims);
+		long mdims[MAX(D, DIMS)];
+		md_singleton_dims(MAX(D, DIMS), mdims);
+		md_copy_dims(D, mdims, dims);
 
-			md_max_dims(DIMS, ~0ul, mdims, mdims, cdims);
+		md_max_dims(DIMS, ~0ul, mdims, mdims, cdims);
 
-			long strs_offset_merged[MAX(D, DIMS)];
-			md_calc_strides(MAX(D, DIMS), strs_offset_merged, mdims, 1);
+		long strs_offset_merged[MAX(D, DIMS)];
+		md_calc_strides(MAX(D, DIMS), strs_offset_merged, mdims, 1);
 
-			long cpos[DIMS];
-			cfl_loop_get_pos(DIMS, cpos);
+		long cpos[DIMS];
+		cfl_loop_get_pos(DIMS, cpos);
 
-			md_copy_strides(D, strs_offset, strs_offset_merged);
+		md_copy_strides(D, strs_offset, strs_offset_merged);
 
-			return md_calc_offset(DIMS, strs_offset_merged, cpos);
-		} else {
+		return md_calc_offset(DIMS, strs_offset_merged, cpos);
 
-			long cpos[DIMS];
-			cfl_loop_get_pos(DIMS, cpos);
+	} else {
 
-			return md_calc_size(D, dims) * md_ravel_index(DIMS, cpos, (cfl_loop_rand_flags & cfl_loop_get_flags()), cdims);
-		}
+		long cpos[DIMS];
+		cfl_loop_get_pos(DIMS, cpos);
+
+		return md_calc_size(D, dims) * md_ravel_index(DIMS, cpos, (cfl_loop_rand_flags & cfl_loop_get_flags()), cdims);
 	}
-
-	return 0;
 }
 
 
