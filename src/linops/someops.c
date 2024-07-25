@@ -2076,3 +2076,58 @@ struct linop_s* linop_conv_create(int N, unsigned long flags, enum conv_type cty
 
 	return linop_create(N, odims, N, idims, CAST_UP(PTR_PASS(data)), linop_conv_forward, linop_conv_adjoint, NULL, NULL, linop_conv_free);
 }
+
+
+struct linop_s* linop_conv_gaussian_create(int N, enum conv_type ctype, const long dims[N], const float sigma[N])
+{
+	unsigned long flags = 0;
+
+	long kdims[N];
+	md_singleton_dims(N, kdims);
+
+	for (int i = 0; i < N; i++) {
+
+		if (0. == sigma[i])
+			continue;
+
+		flags |= MD_BIT(i);
+
+		kdims[i] = MIN(8. * sigma[i] + 1, dims[i]);
+	}
+
+	complex float* krn = md_alloc(N, kdims, CFL_SIZE);
+	md_zfill(N, kdims, krn, 1.);
+
+	for (int i = 0; i < N; i++) {
+
+		if (0. == sigma[i])
+			continue;
+
+		complex float filter[kdims[i]];
+
+		float tot = 0;
+
+		for (int j = 0; j < kdims[i]; j++) {
+
+			float x = (j - (kdims[i] / 2)) / sigma[i];
+			filter[j] = expf(-0.5 * x * x);
+			tot += expf(-0.5 * x * x);
+		}
+
+		for (int j = 0; j < kdims[i]; j++)
+			filter[j] /= tot;
+
+		long fdims[N];
+		md_select_dims(N, MD_BIT(i), fdims, kdims);
+
+		md_zmul2(N, kdims, MD_STRIDES(N, kdims, CFL_SIZE), krn, MD_STRIDES(N, kdims, CFL_SIZE), krn, MD_STRIDES(N, fdims, CFL_SIZE), filter);
+	}
+
+	auto ret = linop_conv_create(N, flags, ctype, CONV_SYMMETRIC, dims, dims, kdims, krn);
+
+	md_free(krn);
+
+	return ret;
+}
+
+

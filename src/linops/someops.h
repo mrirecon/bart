@@ -66,6 +66,8 @@ enum conv_type { CONV_CYCLIC, CONV_TRUNCATED, CONV_VALID, CONV_EXTENDED };
 extern struct linop_s* linop_conv_create(int N, unsigned long flags, enum conv_type ctype, enum conv_mode cmode, const long odims[__VLA(N)],
                 const long idims1[__VLA(N)], const long idims2[__VLA(N)], const _Complex float* src2);
 
+extern struct linop_s* linop_conv_gaussian_create(int N, enum conv_type ctype, const long dims[__VLA(N)], const float sigma[__VLA(N)]);
+
 extern struct linop_s* linop_matrix_create(int N, const long out_dims[__VLA(N)], const long in_dims[__VLA(N)], const long matrix_dims[__VLA(N)], const _Complex float* matrix);
 extern struct linop_s* linop_matrix_altcreate(int N, const long out_dims[__VLA(N)], const long in_dims[__VLA(N)], int T_dim, int K_dim, const _Complex float* matrix);
 
