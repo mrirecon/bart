@@ -14,6 +14,7 @@
 #include "num/fft.h"
 #include "num/multind.h"
 #include "num/flpmath.h"
+#include "num/multiplace.h"
 
 #include "misc/misc.h"
 
@@ -47,7 +48,7 @@ struct conv_plan {
 	long* kdims;
 	long* kstr;
 
-	complex float* kernel;
+	struct multiplace_array_s* kernel;
 };
 
 
@@ -183,12 +184,13 @@ struct conv_plan* conv_plan(int N, unsigned long flags, enum conv_type ctype, en
 	for (int i = 0; i < N; i++)
 		shift[i] = (plan->kdims[i] + shift[i]) % plan->kdims[i];
 
-	plan->kernel = md_alloc_sameplace(N, plan->kdims, CFL_SIZE, src2);
+	complex float* kernel = md_alloc_sameplace(N, plan->kdims, CFL_SIZE, src2);
 
-	md_resize(N, plan->kdims, plan->kernel, idims2, src2, CFL_SIZE);
-	md_circ_shift(N, plan->kdims, shift, plan->kernel, plan->kernel, CFL_SIZE);
-	ifft(N, plan->kdims, flags, plan->kernel, plan->kernel);
-        md_zsmul(N, plan->kdims, plan->kernel, plan->kernel, 1. / U);
+	md_resize(N, plan->kdims, kernel, idims2, src2, CFL_SIZE);
+	md_circ_shift(N, plan->kdims, shift, kernel, kernel, CFL_SIZE);
+	ifft(N, plan->kdims, flags, kernel, kernel);
+        md_zsmul(N, plan->kdims, kernel, kernel, 1. / U);
+	plan->kernel = multiplace_move_F(N, plan->kdims, CFL_SIZE, kernel);
 
 	plan->fft1 = fft_create(N, plan->dims1, plan->flags, NULL, NULL, false);
 	plan->ifft1 = fft_create(N, plan->dims1, plan->flags, NULL, NULL, true);
@@ -208,7 +210,7 @@ void conv_free(struct conv_plan* plan)
 	fft_free(plan->fft2);
 	fft_free(plan->ifft2);
 
-	md_free(plan->kernel);
+	multiplace_free(plan->kernel);
 
 	xfree(plan->dims);
 	xfree(plan->dims1);
@@ -228,12 +230,12 @@ void conv_free(struct conv_plan* plan)
 static void conv_cyclic(struct conv_plan* plan, complex float* dst, const complex float* src)
 {
 	// FIXME: optimize tmp away when possible
-	complex float* tmp = md_alloc_sameplace(plan->N, plan->dims1, CFL_SIZE, plan->kernel);
+	complex float* tmp = md_alloc_sameplace(plan->N, plan->dims1, CFL_SIZE, dst);
 
 	fft_exec(plan->ifft1, tmp, src);
 
 	md_clear(plan->N, plan->dims2, dst, CFL_SIZE);
-        md_zfmac2(plan->N, plan->dims, plan->str2, dst, plan->str1, tmp, plan->kstr, plan->kernel);
+        md_zfmac2(plan->N, plan->dims, plan->str2, dst, plan->str1, tmp, plan->kstr, multiplace_read(plan->kernel, dst));
 
 	fft_exec(plan->fft2, dst, dst);
 
@@ -242,12 +244,12 @@ static void conv_cyclic(struct conv_plan* plan, complex float* dst, const comple
 
 static void conv_cyclicH(struct conv_plan* plan, complex float* dst, const complex float* src)
 {
-	complex float* tmp = md_alloc_sameplace(plan->N, plan->dims2, CFL_SIZE, plan->kernel);
+	complex float* tmp = md_alloc_sameplace(plan->N, plan->dims2, CFL_SIZE, dst);
 
 	fft_exec(plan->ifft2, tmp, src);
 
 	md_clear(plan->N, plan->dims1, dst, CFL_SIZE);
-        md_zfmacc2(plan->N, plan->dims, plan->str1, dst, plan->str2, tmp, plan->kstr, plan->kernel);
+        md_zfmacc2(plan->N, plan->dims, plan->str1, dst, plan->str2, tmp, plan->kstr, multiplace_read(plan->kernel, dst));
 
 	fft_exec(plan->fft1, dst, dst);
 
@@ -257,7 +259,7 @@ static void conv_cyclicH(struct conv_plan* plan, complex float* dst, const compl
 
 void conv_exec(struct conv_plan* plan, complex float* dst, const complex float* src)
 {
-	complex float* tmp = md_alloc_sameplace(plan->N, plan->dims, CFL_SIZE, plan->kernel);
+	complex float* tmp = md_alloc_sameplace(plan->N, plan->dims, CFL_SIZE, dst);
 
 	md_resize(plan->N, plan->dims1, tmp, plan->idims, src, CFL_SIZE);
 
@@ -271,7 +273,7 @@ void conv_exec(struct conv_plan* plan, complex float* dst, const complex float* 
 
 void conv_adjoint(struct conv_plan* plan, complex float* dst, const complex float* src)
 {
-	complex float* tmp = md_alloc_sameplace(plan->N, plan->dims, CFL_SIZE, plan->kernel);
+	complex float* tmp = md_alloc_sameplace(plan->N, plan->dims, CFL_SIZE, dst);
 
 	md_resize(plan->N, plan->dims2, tmp, plan->odims, src, CFL_SIZE);
 
