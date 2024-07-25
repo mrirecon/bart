@@ -380,8 +380,8 @@ static void* create_worker_buffer(int D, long dims[D], void* addr, bool output)
 		if ( !warned_about_random_numbers && (cfl_loop_rand_flags >= cfl_loop_desc.flags)) {
 
 			warned_about_random_numbers = true;
-			debug_printf(DP_WARN, "Loop dimensions are not the last dimensions, and we arevarying random numbers of those dimensions!\n");
-			debug_printf(DP_WARN, "We cannot guarantee consistent random numbers in this case!\n");
+			debug_printf(DP_WARN, "Loop dimensions are not the last dimensions, and varying random numbers in those dimensions are selected!\n");
+			debug_printf(DP_WARN, "Cannot guarantee consistent random numbers in this case!\n");
 		}
 
 		buf = md_alloc(D, slc_dims, sizeof(complex float));
