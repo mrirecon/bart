@@ -422,7 +422,9 @@ static long get_cfl_loop_offset(int D, const long dims[D], long strs_offset[D])
 }
 
 
-static void md_gaussian_philox_rand(int D, const long dims[D], complex float* dst)
+typedef void CLOSURE_TYPE(vec_philox_rand)(struct bart_rand_state worker_state, long offset_rand, long N, complex float* dst);
+
+static void md_loop_mpi(int D, const long dims[D], complex float* dst, vec_philox_rand vec_fun)
 {
 	struct bart_rand_state worker_state = get_worker_state();
 
@@ -453,10 +455,23 @@ static void md_gaussian_philox_rand(int D, const long dims[D], complex float* ds
 		long offset_rand = md_calc_offset(D, strs_offset_p, pos) + offset_cfl;
 
 		if (mpi_accessible(dst + offset_data))
-			vec_gaussian_philox_rand(worker_state, offset_rand, N, vptr_resolve(dst + offset_data));
+			vec_fun(worker_state, offset_rand, N, vptr_resolve(dst + offset_data));
 	};
 
 	md_loop(D, ldims, rand_loop);
+}
+
+
+
+
+static void md_gaussian_philox_rand(int D, const long dims[D], complex float* dst)
+{
+	NESTED(void, vec_fun, (struct bart_rand_state state, long offset, long N, complex float* dst))
+	{
+		 vec_gaussian_philox_rand(state, offset, N, dst);
+	};
+
+	md_loop_mpi(D, dims, dst, vec_fun);
 }
 
 
@@ -509,39 +524,12 @@ static void vec_uniform_philox_rand(struct bart_rand_state state, long offset, l
 
 static void md_uniform_philox_rand(int D, const long dims[D], complex float* dst)
 {
-	struct bart_rand_state worker_state = get_worker_state();
-
-	long strs_offset[D];
-	md_calc_strides(D, strs_offset, dims, 1);
-
-	long offset_cfl = get_cfl_loop_offset(D, dims, strs_offset);
-
-	unsigned long loop_flags = vptr_block_loop_flags(D, dims, MD_STRIDES(D, dims, sizeof(complex float)), dst, sizeof(complex float));
-	if (D != md_calc_blockdim(D, dims, strs_offset, 1))
-		loop_flags |= ~(MD_BIT(md_calc_blockdim(D, dims, strs_offset, 1)) - 1);
-
-	long strs[D];
-	long ldims[D];
-	long bdims[D];
-
-	md_calc_strides(D, strs, dims, 1);
-	md_select_dims(D,  loop_flags, ldims, dims);
-	md_select_dims(D, ~loop_flags, bdims, dims);
-
-	long N = md_calc_size(D, bdims);
-	long* strs_p = strs;
-	long* strs_offset_p = strs_offset;
-
-	NESTED(void, rand_loop, (const long pos[]))
+	NESTED(void, vec_fun, (struct bart_rand_state state, long offset, long N, complex float* dst))
 	{
-		long offset_data = md_calc_offset(D, strs_p, pos);
-		long offset_rand = md_calc_offset(D, strs_offset_p, pos) + offset_cfl;
-
-		if (mpi_accessible(dst + offset_data))
-			vec_uniform_philox_rand(worker_state, offset_rand, N, vptr_resolve(dst + offset_data));
+		vec_uniform_philox_rand(state, offset, N, dst);
 	};
 
-	md_loop(D, ldims, rand_loop);
+	md_loop_mpi(D, dims, dst, vec_fun);
 }
 
 void md_uniform_rand(int D, const long dims[D], complex float* dst)
@@ -592,39 +580,12 @@ static void vec_philox_rand_one(struct bart_rand_state state, long offset, long 
 
 static void md_philox_rand_one(int D, const long dims[D], complex float* dst, double p)
 {
-	struct bart_rand_state worker_state = get_worker_state();
-
-	long strs_offset[D];
-	md_calc_strides(D, strs_offset, dims, 1);
-
-	long offset_cfl = get_cfl_loop_offset(D, dims, strs_offset);
-
-	unsigned long loop_flags = vptr_block_loop_flags(D, dims, MD_STRIDES(D, dims, sizeof(complex float)), dst, sizeof(complex float));
-	if (D != md_calc_blockdim(D, dims, strs_offset, 1))
-		loop_flags |= ~(MD_BIT(md_calc_blockdim(D, dims, strs_offset, 1)) - 1);
-
-	long strs[D];
-	long ldims[D];
-	long bdims[D];
-
-	md_calc_strides(D, strs, dims, 1);
-	md_select_dims(D,  loop_flags, ldims, dims);
-	md_select_dims(D, ~loop_flags, bdims, dims);
-
-	long N = md_calc_size(D, bdims);
-	long* strs_p = strs;
-	long* strs_offset_p = strs_offset;
-
-	NESTED(void, rand_loop, (const long pos[]))
+	NESTED(void, vec_fun, (struct bart_rand_state state, long offset, long N, complex float* dst))
 	{
-		long offset_data = md_calc_offset(D, strs_p, pos);
-		long offset_rand = md_calc_offset(D, strs_offset_p, pos) + offset_cfl;
-
-		if (mpi_accessible(dst + offset_data))
-			vec_philox_rand_one(worker_state, offset_rand, N, vptr_resolve(dst + offset_data), p);
+		vec_philox_rand_one(state, offset, N, dst, p);
 	};
 
-	md_loop(D, ldims, rand_loop);
+	md_loop_mpi(D, dims, dst, vec_fun);
 }
 
 void md_rand_one(int D, const long dims[D], complex float* dst, double p)
