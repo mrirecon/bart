@@ -219,6 +219,23 @@ void md_parallel_loop(int D, const long dim[static D], unsigned long flags, md_l
 {
 	flags &= md_nontriv_dims(D, dim);
 
+	long psize = 1;
+	long rsize = 1;
+
+#ifdef _OPENMP
+	rsize = 4 * omp_get_max_threads();
+#endif
+	// reduce overhead by parallelizing less dims
+
+	for (int i = D - 1; i >= 0; i--) {
+
+		if (psize >= rsize)
+			flags = MD_CLEAR(flags, i);
+
+		if (MD_IS_SET(flags, i))
+			psize *= dim[i];
+	}
+
 	long pdims[D];
 	md_select_dims(D, flags, pdims, dim);
 
