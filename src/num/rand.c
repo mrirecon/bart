@@ -32,8 +32,6 @@
 
 #include "rand.h"
 
-unsigned long cfl_loop_rand_flags = ~0ul;
-
 
 static bool use_obsolete_rng()
 {

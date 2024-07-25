@@ -124,6 +124,8 @@ static void io_error(const char* fmt, ...)
 
 bool mpi_shared_files = false;
 
+unsigned long cfl_loop_rand_flags = ~0ul;
+
 struct cfl_loop_desc_s {
 
 	int omp_threads;
