@@ -50,6 +50,7 @@ int main_noise(int argc, char* argv[argc])
 	float var = 1.f;
 	float spike = 1.f;
 	bool rvc = false;
+	bool uniform = false;
 	unsigned long long randseed = 0;
 
 	const struct opt_s opts[] = {
@@ -58,6 +59,7 @@ int main_noise(int argc, char* argv[argc])
 		OPT_FLOAT('S', &spike, "", "()"),
 		OPT_SET('r', &rvc, "real-valued input"),
 		OPT_FLOAT('n', &var, "variance", "DEFAULT: 1.0"),
+		OPTL_SET(0, "uniform", &uniform, "select uniform noise distribution"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -77,7 +79,7 @@ int main_noise(int argc, char* argv[argc])
 	if (!rvc)
 		var = var / 2.f;
 
-	float stdev = sqrtf(var);
+	float stdev = (uniform) ? 1. : sqrtf(var);
 
 	if (use_compat_to_version("v0.9.00")) {
 
@@ -100,7 +102,10 @@ int main_noise(int argc, char* argv[argc])
 
 		complex float* noise = md_alloc(N, dims, CFL_SIZE);
 
-		md_gaussian_rand(N, dims, noise);
+		if (uniform) // FIXME: uniform noise \in [0,0.7]?
+			md_uniform_rand(N, dims, noise);
+		else
+			md_gaussian_rand(N, dims, noise);
 
 
 		if (1.f != spike) {
