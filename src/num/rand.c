@@ -168,9 +168,12 @@ static double uniform_rand_state(struct bart_rand_state* state)
 
 static double uniform_rand_obsolete()
 {
-	struct bart_rand_state* state = &global_rand_state[cfl_loop_worker_id()];
+	double r;
 
-	return rand_r(&state->num_rand_seed) / (double)RAND_MAX;
+#pragma omp critical(global_rand_state)
+	r = rand_r(&global_rand_state[cfl_loop_worker_id()].num_rand_seed);
+
+	return r / (double)RAND_MAX;
 }
 
 
@@ -181,7 +184,6 @@ double uniform_rand(void)
 
 	if (use_obsolete_rng()) {
 
-#pragma 	omp critical(global_rand_state)
 		r = uniform_rand_obsolete();
 
 	} else {
@@ -251,8 +253,15 @@ unsigned int rand_range(unsigned int range)
 {
 	unsigned int r;
 
-	struct bart_rand_state worker_state = get_worker_state_cfl_loop();
-	r = rand_range_state(&worker_state, range);
+	if (use_obsolete_rng()) {
+
+#pragma 	omp critical(global_rand_state)
+		r = rand_range_state(&global_rand_state[cfl_loop_worker_id()], range);
+	} else {
+
+		struct bart_rand_state worker_state = get_worker_state_cfl_loop();
+		r = rand_range_state(&worker_state, range);
+	}
 
 	return r;
 }
