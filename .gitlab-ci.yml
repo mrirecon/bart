@@ -489,126 +489,126 @@ IntTest_wasm:
 
 
 Debian_Bookworm:
-    variables:
-        DEBUG: "0"
-        DEBUG_DWARF: "0"
-    rules:
-        - if: $CI_DISTRO_TESTS == "1"
-    stage: distro_build
-    image: debian:bookworm
-    script:
-        - apt-get update
-        - apt-get install -y gcc make libfftw3-dev liblapacke-dev libpng-dev libopenblas-dev gfortran
-        - make all -j8
-        - make utest -j8
+  variables:
+      DEBUG: "0"
+      DEBUG_DWARF: "0"
+  rules:
+      - if: $CI_DISTRO_TESTS == "1"
+  stage: distro_build
+  image: debian:bookworm
+  script:
+      - apt-get update
+      - apt-get install -y gcc make libfftw3-dev liblapacke-dev libpng-dev libopenblas-dev gfortran
+      - make all -j8
+      - make utest -j8
 
 Debian_Trixie:
-    variables:
-        DEBUG: "0"
-        DEBUG_DWARF: "0"
-    rules:
-        - if: $CI_DISTRO_TESTS == "1"
-    stage: distro_build
-    image: debian:trixie
-    script:
-        - apt-get update
-        - apt-get install -y gcc make libfftw3-dev liblapacke-dev libpng-dev libopenblas-dev gfortran
-        - make all -j8
-        - make utest -j8
+  variables:
+    DEBUG: "0"
+    DEBUG_DWARF: "0"
+  rules:
+    - if: $CI_DISTRO_TESTS == "1"
+  stage: distro_build
+  image: debian:trixie
+  script:
+    - apt-get update
+    - apt-get install -y gcc make libfftw3-dev liblapacke-dev libpng-dev libopenblas-dev gfortran
+    - make all -j8
+    - make utest -j8
 
 Fedora_39:
-    variables:
-        DEBUG: "0"
-        DEBUG_DWARF: "0"
-    rules:
-        - if: $CI_DISTRO_TESTS == "1"
-    stage: distro_build
-    image: fedora:39
-    script:
-        - dnf install -y gcc make fftw-devel lapack-devel openblas-devel atlas-devel libpng-devel
-        - make all -j8
-        - make utest -j8
+  variables:
+    DEBUG: "0"
+    DEBUG_DWARF: "0"
+  rules:
+    - if: $CI_DISTRO_TESTS == "1"
+  stage: distro_build
+  image: fedora:39
+  script:
+    - dnf install -y gcc make fftw-devel lapack-devel openblas-devel atlas-devel libpng-devel
+    - make all -j8
+    - make utest -j8
 
 Fedora_40:
-    variables:
-        DEBUG: "0"
-        DEBUG_DWARF: "0"
-    rules:
-        - if: $CI_DISTRO_TESTS == "1"
-    stage: distro_build
-    image: fedora:40
-    script:
-        - dnf install -y gcc make fftw-devel lapack-devel openblas-devel atlas-devel libpng-devel util-linux-core
-        - make all -j8
-        - make utest -j8
+  variables:
+    DEBUG: "0"
+    DEBUG_DWARF: "0"
+  rules:
+    - if: $CI_DISTRO_TESTS == "1"
+  stage: distro_build
+  image: fedora:40
+  script:
+    - dnf install -y gcc make fftw-devel lapack-devel openblas-devel atlas-devel libpng-devel util-linux-core
+    - make all -j8
+    - make utest -j8
 
 RockyLinux_8:
-    variables:
-        DEBUG: "0"
-        DEBUG_DWARF: "0"
-    rules:
-        - if: $CI_DISTRO_TESTS == "1"
-    stage: distro_build
-    image: docker.io/rockylinux:8
-    script:
-        - dnf --enablerepo=powertools install -y fftw-devel atlas-devel libpng-devel lapack-devel gcc-toolset-11
-        - source scl_source enable gcc-toolset-11 # redhat magic for enabling gcc-11
-        - make all -j8
-        - make utest -j8
+  variables:
+    DEBUG: "0"
+    DEBUG_DWARF: "0"
+  rules:
+      - if: $CI_DISTRO_TESTS == "1"
+  stage: distro_build
+  image: docker.io/rockylinux:8
+  script:
+    - dnf --enablerepo=powertools install -y fftw-devel atlas-devel libpng-devel lapack-devel gcc-toolset-11
+    - source scl_source enable gcc-toolset-11 # redhat magic for enabling gcc-11
+    - make all -j8
+    - make utest -j8
 
 RockyLinux_9:
-    variables:
-        DEBUG: "0"
-        DEBUG_DWARF: "0"
-    rules:
-        - if: $CI_DISTRO_TESTS == "1"
-    stage: distro_build
-    image: docker.io/rockylinux:9
-    script:
-        - dnf --enablerepo=crb install -y fftw-devel atlas-devel libpng-devel lapack-devel gcc-toolset-12
-        - make all -j8
-        - make utest -j8
+  variables:
+    DEBUG: "0"
+    DEBUG_DWARF: "0"
+  rules:
+    - if: $CI_DISTRO_TESTS == "1"
+  stage: distro_build
+  image: docker.io/rockylinux:9
+  script:
+    - dnf --enablerepo=crb install -y fftw-devel atlas-devel libpng-devel lapack-devel gcc-toolset-12
+    - make all -j8
+    - make utest -j8
 
 Ubuntu_22.04:
-    variables:
-        DEBUG: "0"
-        DEBUG_DWARF: "0"
-    rules:
-        - if: $CI_DISTRO_TESTS == "1"
-    stage: distro_build
-    image: docker.io/ubuntu:22.04
-    script:
-        - apt-get update
-        - apt-get install -y gcc make libfftw3-dev liblapacke-dev libpng-dev libopenblas-dev gfortran
-        - make all -j8
-        - make utest -j8
+  variables:
+    DEBUG: "0"
+    DEBUG_DWARF: "0"
+  rules:
+    - if: $CI_DISTRO_TESTS == "1"
+  stage: distro_build
+  image: docker.io/ubuntu:22.04
+  script:
+    - apt-get update
+    - apt-get install -y gcc make libfftw3-dev liblapacke-dev libpng-dev libopenblas-dev gfortran
+    - make all -j8
+    - make utest -j8
 
 Ubuntu_24.04:
-    variables:
-        DEBUG: "0"
-        DEBUG_DWARF: "0"
-    rules:
-        - if: $CI_DISTRO_TESTS == "1"
-    stage: distro_build
-    image: docker.io/ubuntu:24.04
-    script:
-        - apt-get update
-        - apt-get install -y gcc make libfftw3-dev liblapacke-dev libpng-dev libopenblas-dev gfortran
-        - make all -j8
-        - make utest -j8
+  variables:
+    DEBUG: "0"
+    DEBUG_DWARF: "0"
+  rules:
+    - if: $CI_DISTRO_TESTS == "1"
+  stage: distro_build
+  image: docker.io/ubuntu:24.04
+  script:
+    - apt-get update
+    - apt-get install -y gcc make libfftw3-dev liblapacke-dev libpng-dev libopenblas-dev gfortran
+    - make all -j8
+    - make utest -j8
 
 
 Arch_Latest:
-    variables:
-        DEBUG: "0"
-        DEBUG_DWARF: "0"
-    rules:
-        - if: $CI_DISTRO_TESTS == "1"
-    stage: distro_build
-    image: docker.io/archlinux:base-devel
-    script:
-        - pacman -Sy --noconfirm blas-openblas fftw libpng
-        - echo -e -n "CPPFLAGS+=-I/usr/include/openblas\nAR_LOCK_NEEDED=0\n" > Makefiles/Makefile.local
-        - make all -j8
-        - make utest -j8
-    allow_failure: true
+  variables:
+    DEBUG: "0"
+    DEBUG_DWARF: "0"
+  rules:
+    - if: $CI_DISTRO_TESTS == "1"
+  stage: distro_build
+  image: docker.io/archlinux:base-devel
+  script:
+    - pacman -Sy --noconfirm blas-openblas fftw libpng
+    - echo -e -n "CPPFLAGS+=-I/usr/include/openblas\nAR_LOCK_NEEDED=0\n" > Makefiles/Makefile.local
+    - make all -j8
+    - make utest -j8
+  allow_failure: true
