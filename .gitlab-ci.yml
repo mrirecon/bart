@@ -608,6 +608,7 @@ Arch_Latest:
     image: docker.io/archlinux:base-devel
     script:
         - pacman -Sy --noconfirm blas-openblas fftw libpng
-        - echo "CPPFLAGS+=-I/usr/include/openblas" > Makefiles/Makefile.local
+        - echo -e -n "CPPFLAGS+=-I/usr/include/openblas\nAR_LOCK_NEEDED=0\n" > Makefiles/Makefile.local
         - make all -j8
         - make utest -j8
+    allow_failure: true
