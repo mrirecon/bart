@@ -18,7 +18,7 @@
  * ENLIVE: An Efficient Nonlinear Method for Calibrationless and
  * Robust Parallel Imaging. Sci Rep 2019; 9:3034.
  *
- * Rosenzweig S, Holme HMC, Wilke RN, Voit D, Frahm J, Uecker M.
+ * Rosenzweig S, Holme HCM, Wilke RN, Voit D, Frahm J, Uecker M.
  * Simultaneous multi-slice MRI using cartesian and radial FLASH and
  * regularized nonlinear inversion: SMS-NLINV.
  * Magn Reson Med 2018; 79:2057--2066.

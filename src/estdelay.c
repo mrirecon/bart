@@ -15,7 +15,7 @@
  * Correction of gradient-induced phase errors in radial MRI,
  * Magnetic Resonance in Medicine, 71:308-312 (2014)
  *
- * Sebastian Rosenzweig, Hans Christian Holme, Martin Uecker,
+ * Sebastian Rosenzweig, H. Christian M. Holme, Martin Uecker,
  * Simple Auto-Calibrated Gradient Delay Estimation From Few Spokes Using Radial
  * Intersections (RING), Magnetic Resonance in Medicine 81:1898-1906 (2019)
  */
