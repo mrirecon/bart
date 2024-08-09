@@ -80,7 +80,6 @@ unsigned int requested_compat_version[5] = { UINT_MAX, 0, 0, 0, 0 };
 
 bool use_compat_to_version(const char* check_version)
 {
-
 	if (UINT_MAX == requested_compat_version[0]) {
 
 		char* str = getenv("BART_COMPAT_VERSION");
@@ -94,15 +93,13 @@ bool use_compat_to_version(const char* check_version)
 			return false;
 		}
 
-		debug_printf(DP_INFO, "Setting compatibility version to: %s\n", str);
+//		debug_printf(DP_DEBUG1, "Setting compatibility version to: %s\n", str);
 	}
-
 
 	unsigned int check_compat_version[5];
 
 	if (!version_parse(check_compat_version, check_version))
 		assert(0);
-
 
 	return (version_compare(check_compat_version, requested_compat_version) >= 0);
 }
