@@ -12,6 +12,7 @@
 #include <complex.h>
 #include <limits.h>
 #include <stdint.h>
+#include <assert.h>
 
 #ifdef _WIN32
 #include "win/rand_r.h"
