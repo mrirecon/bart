@@ -9,7 +9,9 @@
 #define __MULTIND_H	1
 
 #include <string.h>
+#ifndef assert
 #include <assert.h>
+#endif
 #include <stdint.h>
 #include <stdbool.h>
 #ifdef _WIN32
