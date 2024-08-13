@@ -24,6 +24,57 @@
 #define ffs __builtin_ffs
 #endif
 
+typedef void (*md_zfdiff_core_t)(int D, const long dims[D], int d, bool adj, const long ostr[D], complex float* out, const long istr[D], const complex float* in);
+
+static void md_zfdiff_core2(int D, const long dims[D], int d, bool dir, bool adj, const long ostr[D], complex float* out, const long istr[D], const complex float* in)
+{
+	long pos[D];
+	md_set_dims(D, pos, 0);
+
+	if (adj)
+		pos[d] = dir ? 1 : -1;
+	else
+		pos[d] = dir ? -1 : 1;
+
+	md_circ_shift2(D, dims, pos, ostr, out, istr, in, CFL_SIZE);
+
+	if (dir)
+		md_zsub2(D, dims, ostr, out, ostr, out, istr, in);
+	else
+		md_zsub2(D, dims, ostr, out, istr, in, ostr, out);
+}
+
+static void md_zfdiff_f_core2(int D, const long dims[D], int d, bool adj, const long ostr[D], complex float* out, const long istr[D], const complex float* in)
+{
+	md_zfdiff_core2(D, dims, d, true, adj, ostr, out, istr, in);
+}
+
+static void md_zfdiff_b_core2(int D, const long dims[D], int d, bool adj, const long ostr[D], complex float* out, const long istr[D], const complex float* in)
+{
+	md_zfdiff_core2(D, dims, d, true, adj, ostr, out, istr, in);
+}
+
+
+static void md_zfdiff_z_core2(int D, const long dims[D], int d, bool adj, const long ostr[D], complex float* out, const long istr[D], const complex float* in)
+{
+	long pos[D];
+	md_set_dims(D, pos, 0);
+
+	pos[d] = -1;
+	md_circ_shift2(D, dims, pos, ostr, out, istr, in, CFL_SIZE);
+
+	complex float* tmp = md_alloc_sameplace(D, dims, CFL_SIZE, out);
+
+	pos[d] = 1;
+	md_circ_shift2(D, dims, pos, MD_STRIDES(D, dims, CFL_SIZE), tmp, istr, in, CFL_SIZE);
+
+	md_zsub2(D, dims, ostr, out, ostr, out, MD_STRIDES(D, dims, CFL_SIZE), tmp);
+
+	md_free(tmp);
+
+	md_zsmul2(D, dims, ostr, out, ostr, out, adj ? -0.5 : 0.5);
+}
+
 static void grad_dims(int D, long dims2[D], int d, unsigned long flags, const long dims[D])
 {
 	md_copy_dims(D, dims2, dims);
@@ -35,7 +86,7 @@ static void grad_dims(int D, long dims2[D], int d, unsigned long flags, const lo
 }
 
 
-static void grad_op(int D, const long dims[D], int d, unsigned long flags, complex float* out, const complex float* in)
+static void grad_op(md_zfdiff_core_t grad, int D, const long dims[D], int d, unsigned long flags, complex float* out, const complex float* in)
 {
 	int N = bitcount(flags);
 
@@ -58,14 +109,14 @@ static void grad_op(int D, const long dims[D], int d, unsigned long flags, compl
 		int lsb = ffsl((long)flags2) - 1;
 		flags2 = MD_CLEAR(flags2, lsb);
 
-		md_zfdiff2(D, dims1, lsb, strs, (void*)out + i * strs[d], strs1, in);
+		grad(D, dims1, lsb, false, strs, (void*)out + i * strs[d], strs1, in);
 	}
 
 	assert(0 == flags2);
 }
 
 
-static void grad_adjoint(int D, const long dims[D], int d, unsigned long flags, complex float* out, const complex float* in)
+static void grad_adjoint(md_zfdiff_core_t grad, int D, const long dims[D], int d, unsigned long flags, complex float* out, const complex float* in)
 {
 	int N = bitcount(flags);
 
@@ -93,7 +144,7 @@ static void grad_adjoint(int D, const long dims[D], int d, unsigned long flags, 
 		int lsb = ffsl((long)flags2) - 1;
 		flags2 = MD_CLEAR(flags2, lsb);
 
-		md_zfdiff_backwards2(D, dims1, lsb, strs1, tmp, strs, (void*)in + i * strs[d]);
+		grad(D, dims1, lsb, true, strs1, tmp, strs, (void*)in + i * strs[d]);
 		md_zadd(D, dims1, out, out, tmp);
 	}
 
@@ -109,6 +160,8 @@ struct grad_s {
 
 	INTERFACE(linop_data_t);
 
+	md_zfdiff_core_t grad;
+
 	int N;
 	int d;
 	long* dims;
@@ -121,28 +174,16 @@ static void grad_op_apply(const linop_data_t* _data, complex float* dst, const c
 {
 	const auto data = CAST_DOWN(grad_s, _data);
 
-	grad_op(data->N, data->dims, data->d, data->flags, dst, src);
+	grad_op(data->grad, data->N, data->dims, data->d, data->flags, dst, src);
 }
 	
 static void grad_op_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
 	const auto data = CAST_DOWN(grad_s, _data);
 
-	grad_adjoint(data->N, data->dims, data->d, data->flags, dst, src);
+	grad_adjoint(data->grad, data->N, data->dims, data->d, data->flags, dst, src);
 }
 
-static void grad_op_normal(const linop_data_t* _data, complex float* dst, const complex float* src)
-{
-	const auto data = CAST_DOWN(grad_s, _data);
-
-	complex float* tmp = md_alloc_sameplace(data->N, data->dims, CFL_SIZE, dst);
-
-	// this could be implemented more efficiently
-	grad_op(data->N, data->dims, data->d, data->flags, tmp, src);
-	grad_adjoint(data->N, data->dims, data->d, data->flags, dst, tmp);
-
-	md_free(tmp);
-}
 
 static void grad_op_free(const linop_data_t* _data)
 {
@@ -152,10 +193,12 @@ static void grad_op_free(const linop_data_t* _data)
 	xfree(data);
 }
 
-struct linop_s* linop_grad_create(long N, const long dims[N], int d, unsigned long flags)
+static struct linop_s* linop_grad_internal_create(md_zfdiff_core_t grad, long N, const long dims[N], int d, unsigned long flags)
 {
 	PTR_ALLOC(struct grad_s, data);
 	SET_TYPEID(grad_s, data);
+
+	data->grad = grad;
 
 	int NO = N;
 
@@ -185,6 +228,26 @@ struct linop_s* linop_grad_create(long N, const long dims[N], int d, unsigned lo
 
 	md_copy_dims(NO, data->dims, dims2);
 
-	return linop_create(NO, dims2, N, dims, CAST_UP(PTR_PASS(data)), grad_op_apply, grad_op_adjoint, grad_op_normal, NULL, grad_op_free);
+	return linop_create(NO, dims2, N, dims, CAST_UP(PTR_PASS(data)), grad_op_apply, grad_op_adjoint, NULL, NULL, grad_op_free);
+}
+
+struct linop_s* linop_grad_forward_create(long N, const long dims[N], int d, unsigned long flags)
+{
+	return linop_grad_internal_create(md_zfdiff_f_core2, N, dims, d, flags);
+}
+
+struct linop_s* linop_grad_backward_create(long N, const long dims[N], int d, unsigned long flags)
+{
+	return linop_grad_internal_create(md_zfdiff_b_core2, N, dims, d, flags);
+}
+
+struct linop_s* linop_grad_zentral_create(long N, const long dims[N], int d, unsigned long flags)
+{
+	return linop_grad_internal_create(md_zfdiff_z_core2, N, dims, d, flags);
+}
+
+struct linop_s* linop_grad_create(long N, const long dims[N], int d, unsigned long flags)
+{
+	return linop_grad_backward_create(N, dims, d, flags);
 }
 
