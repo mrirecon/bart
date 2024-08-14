@@ -112,7 +112,7 @@ static void num_init_internal(void)
 
 	p = omp_get_max_threads();
 
-	int running_thr = omp_get_team_size(1); //get number of running top level threads
+	int running_thr = omp_get_num_threads(); //get number of running top level threads
 	p = MAX(1, p / running_thr);
 #endif
 
