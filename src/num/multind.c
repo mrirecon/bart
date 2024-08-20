@@ -1262,7 +1262,7 @@ void md_resize_front(int D, const long odim[D], void* optr, const long idim[D], 
 {
 	long pos[D];
 	for (int i = 0; i < D; i++)
-		pos[i] = odim[i] - idim[i];
+		pos[i] = labs(odim[i] - idim[i]);
 
 	for (int i = 0; i < D; i++) {
 
