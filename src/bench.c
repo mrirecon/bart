@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <complex.h>
+#include <math.h>
 #include <string.h>
 #include <stdbool.h>
 
@@ -21,6 +22,7 @@
 #include "num/ops_p.h"
 #include "num/mdfft.h"
 #include "num/fft.h"
+#include "num/ode.h"
 
 #include "wavelet/wavthresh.h"
 
@@ -576,6 +578,25 @@ static double bench_zsmul(long scale)
 }
 
 
+static double bench_ode(long scale)
+{
+	float mat[2][2] = { { 0., +1. }, { -1., 0. } };
+
+	float x[2] = { 1., 0. };
+	float h = 10.;
+	float tol = 1.E-6;
+
+	double tic = timestamp();
+
+	ode_matrix_interval(h, tol, 2, x, 0., scale * 10001. * M_PI, mat);
+
+	double err = pow(fabs(x[0] + 1.), 2.) + pow(fabs(x[1] - 0.), 2.);
+	assert(err < 1.E-2);
+
+	double toc = timestamp();
+
+	return toc - tic;
+}
 
 
 enum bench_indices { REPETITION_IND, SCALE_IND, THREADS_IND, TESTS_IND, BENCH_DIMS };
@@ -642,6 +663,7 @@ const struct benchmark_s {
 	{ bench_mdfft,		"(MD-)FFT" },
 	{ bench_fft,		"FFT" },
 	{ bench_fftmod,		"fftmod" },
+	{ bench_ode,		"ODE" },
 };
 
 
