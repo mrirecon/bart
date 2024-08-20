@@ -208,15 +208,15 @@ static const struct operator_p_s* stack_flatten_prox(const struct operator_p_s* 
 void help_reg_moba(void)
 {
 	printf( "Generalized regularization options for model-based reconstructions (experimental)\n\n"
-			"-R <T>:A:B:C\t<T> is regularization type (single letter),\n"
+			"-r <T>:A:B:C\t<T> is regularization type (single letter),\n"
 			"\t\tA is transform flags,\n"
 			"\t\tB is joint threshold flags,\n"
 			"\t\tC is regularization value.\n"
 			"\t\tSpecify any number of regularization terms.\n\n"
-			"-R W:A:B:C\tl1-wavelet\n"
-			"-R Q:C\tl2 regularization\n"
-			"-R S:C\tnon-negative constraint\n"
-			"-R T:A:B:C\ttotal variation\n");
+			"-r W:A:B:C\tl1-wavelet\n"
+			"-r Q:C\tl2 regularization\n"
+			"-r S:C\tnon-negative constraint\n"
+			"-r T:A:B:C\ttotal variation\n");
 }
 
 bool opt_reg_moba(void* ptr, char c, const char* optarg)
