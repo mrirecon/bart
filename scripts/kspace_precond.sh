@@ -7,6 +7,7 @@
 # IEEE TMI, 2020 39:1646-1654
 #
 
+set -eu
 
 helpstr=$(cat <<- EOF
 Compute k-space preconditioner P such that ||P^2 AA^H - 1|| is minimal
@@ -21,18 +22,21 @@ EOF
 )
 
 
-usage="Usage: $0 [-h] [-g] [-B <basis>] <ones> <trajectory> <output>"
+usage="Usage: $0 [-h] [-g] [-B <basis>] [-p <pattern>] <ones> <trajectory> <output>"
 
 GPU=""
 BASIS=""
 
-while getopts "hgB:" opt; do
+while getopts "hgB:p:" opt; do
         case $opt in
         g)
 		GPU="-g"
         ;;
         B)
 		BASIS=$(readlink -f "$OPTARG")
+	;;
+        p)
+		PATTERN="-p $(readlink -f "$OPTARG")"
         ;;
 	h)
 		echo "$usage"
@@ -97,6 +101,8 @@ for i in $(seq 15); do
 	ksp_dims+=" $(bart show -d$i $traj)"
 done
 
+LOOPFLAGS=$(bart bitmask 5 6 7 8 9 10 11 12 13 14 15)
+
 if [[ "$BASIS" != "" ]] ; then
 
 	bart fmac -C -s$(bart bitmask 6) $BASIS $BASIS bas_scale
@@ -109,12 +115,14 @@ if [[ "$BASIS" != "" ]] ; then
 	bart fmac -C $BASIS basis_r basis_2
 	bart reshape $(bart bitmask 6 7) $((COE*COE)) 1 basis_2 basis
 	BASIS="-B basis"
+
+	LOOPFLAGS=$(bart bitmask 7 8 9 10 11 12 13 14 15)
 fi
 
 bart ones 16 $ksp_dims ksp
 bart scale 2 $traj traj2
 
-bart nufft $BASIS -P --lowmem --no-precomp -a $GPU -x$X:$Y:$Z traj2 ksp psf
+bart -l$LOOPFLAGS -r ksp nufft $BASIS $PATTERN -P --lowmem --no-precomp -a $GPU -x$X:$Y:$Z traj2 ksp psf
 
 bart resize -c 0 $X 1 $Y 2 $Z $ones ones_os
 bart fft -u 7 ones_os ones_ksp1
@@ -123,7 +131,7 @@ bart fft -u -i 7 ones_ksp ones_img
 
 bart fmac psf ones_img psf_mul
 
-bart nufft $BASIS -P --lowmem --no-precomp $GPU traj2 psf_mul pre_inv
+bart -l$LOOPFLAGS -r psf_mul nufft $BASIS $PATTERN -P --lowmem --no-precomp $GPU traj2 psf_mul pre_inv
 
 bart creal pre_inv pre_inv_real
 bart invert pre_inv_real pre_real
