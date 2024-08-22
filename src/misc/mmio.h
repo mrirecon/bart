@@ -8,6 +8,7 @@
 #include <stddef.h>
 extern _Bool mpi_shared_files;
 extern unsigned long cfl_loop_rand_flags;
+extern _Bool strided_cfl_loop;
 extern void init_cfl_loop_desc(int D, const long loop_dims[__VLA(D)], long start_dims[__VLA(D)], unsigned long flags, int omp_threads, int index);
 extern void set_cfl_loop_index(long index);
 extern long get_cfl_loop_index(void);

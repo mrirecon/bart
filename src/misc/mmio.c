@@ -125,6 +125,7 @@ static void io_error(const char* fmt, ...)
 bool mpi_shared_files = false;
 
 unsigned long cfl_loop_rand_flags = ~0ul;
+bool strided_cfl_loop = false;
 
 struct cfl_loop_desc_s {
 
@@ -375,15 +376,7 @@ static void* create_worker_buffer(int D, long dims[D], void* addr, bool output)
 			output = false;
 	} else {
 
-		static bool warned_about_random_numbers = false;
-#pragma 	omp single nowait
-		if ( !warned_about_random_numbers && (cfl_loop_rand_flags >= cfl_loop_desc.flags)) {
-
-			warned_about_random_numbers = true;
-			debug_printf(DP_WARN, "Loop dimensions are not the last dimensions, and varying random numbers in those dimensions are selected!\n");
-			debug_printf(DP_WARN, "Cannot guarantee consistent random numbers in this case!\n");
-		}
-
+		strided_cfl_loop = true;
 		buf = md_alloc(D, slc_dims, sizeof(complex float));
 
 		md_slice(D, cfl_loop_desc.flags, pos, dims, buf, addr, sizeof(complex float));

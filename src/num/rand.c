@@ -421,6 +421,20 @@ static long get_cfl_loop_offset(int D, const long dims[D], long strs_offset[D])
 
 	} else {
 
+		if (strided_cfl_loop) {
+
+			// CAVEAT: strided_cfl_loop may be set true after random numbers are drawn
+			static bool warned_about_random_numbers = false;
+
+#pragma 		omp single
+			if ( !warned_about_random_numbers) {
+
+				warned_about_random_numbers = true;
+				debug_printf(DP_WARN, "Loop dimensions are not the last dimensions, and varying random numbers in those dimensions are selected!\n");
+				debug_printf(DP_WARN, "Cannot guarantee consistent random numbers in this case!\n");
+			}
+		}
+
 		long cpos[DIMS];
 		cfl_loop_get_pos(DIMS, cpos);
 
