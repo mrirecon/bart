@@ -114,6 +114,15 @@ static void hard_thresh(int D, const long dims[D], float lambda, complex float* 
 		out[i] = (cabsf(in[i]) > lambda) ? in[i] : 0.;
 }
 
+static void hard_thresh_max(int D, const long dims[D], float lambda, complex float* out, const complex float* in)
+{
+	long size = md_calc_size(DIMS, dims);
+
+#pragma omp parallel for
+	for (long i = 0; i < size; i++)
+		out[i] = (cabsf(in[i]) < lambda) ? in[i] : 0.;
+}
+
 static void binary_thresh(int D, const long dims[D], float lambda, complex float* out, const complex float* in)
 {
 	long size = md_calc_size(DIMS, dims);
@@ -153,13 +162,14 @@ int main_threshold(int argc, char* argv[argc])
 
 	unsigned long flags = 0;
         
-	enum th_type { NONE, WAV, LLR, DFW, MPDFW, HARD, BINARY, BINARY_MAX } th_type = NONE;
+	enum th_type { NONE, WAV, LLR, DFW, MPDFW, HARD, HARD_MAX, BINARY, BINARY_MAX } th_type = NONE;
 	int llrblk = 8;
 
 
 	const struct opt_s opts[] = {
 
 		OPT_SELECT('H', enum th_type, &th_type, HARD, "hard thresholding"),
+		OPT_SELECT('N', enum th_type, &th_type, HARD_MAX, "hard thresholding (val<lambda)"),
 		OPT_SELECT('W', enum th_type, &th_type, WAV, "daubechies wavelet soft-thresholding"),
 		OPT_SELECT('L', enum th_type, &th_type, LLR, "locally low rank soft-thresholding"),
 		OPT_SELECT('D', enum th_type, &th_type, DFW, "divergence-free wavelet soft-thresholding"),
@@ -194,6 +204,10 @@ int main_threshold(int argc, char* argv[argc])
 
 	case HARD:
 		hard_thresh(N, dims, lambda, odata, idata);
+		break;
+
+	case HARD_MAX:
+		hard_thresh_max(N, dims, lambda, odata, idata);
 		break;
 
 	case BINARY:
