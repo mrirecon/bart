@@ -26,7 +26,6 @@
 #include "misc/mri.h"
 #include "misc/opts.h"
 #include "misc/debug.h"
-#include "misc/version.h"
 
 #include "noncart/traj.h"
 
@@ -75,7 +74,7 @@ int main_traj(int argc, char* argv[argc])
 		OPT_INT('t', &turns, "t", "turns"),
 		OPT_INT('m', &mb, "mb", "SMS multiband factor"),
 		OPT_SET('l', &conf.aligned, "aligned partition angle"),
-		OPT_SET('g', &conf.golden_partition, "golden angle in partition direction"),
+		OPT_SET('g', &conf.golden_partition, "(golden angle in partition direction)"),
 		OPT_SET('r', &conf.radial, "radial"),
 		OPT_SET('G', &conf.golden, "golden-ratio sampling"),
 		OPT_SET('H', &conf.half_circle_gold, "halfCircle golden-ratio sampling"),
@@ -234,6 +233,9 @@ int main_traj(int argc, char* argv[argc])
 			error("Turns or partitions not allowed/implemented for Cartesian trajectories!\n");
 	}
 
+	if (conf.golden_partition)
+		debug_printf(DP_WARN, "The golden partition option is deprecated!\n");
+
 
 	long gdims[DIMS];
 	long gstrs[DIMS];
@@ -284,13 +286,12 @@ int main_traj(int argc, char* argv[argc])
 			double read = (float)sample + (conf.asym_traj ? 0 : 0.5) - (float)D / 2.;
 
 			// Used, for example, in the SMS-NLINV paper
-			if (conf.golden_partition && use_compat_to_version("v0.9.00")) {
+			if (conf.golden_partition) {
 
 				double golden_ratio = (sqrtf(5.) + 1.) / 2;
 				double angle_atom = M_PI / Y;
 
-				if (conf.golden_partition)
-					base_angle[SLICE_DIM] = (m > 0) ? (fmod(angle_atom * m / golden_ratio, angle_atom) / m) : 0;
+				base_angle[SLICE_DIM] = (m > 0) ? (fmod(angle_atom * m / golden_ratio, angle_atom) / m) : 0;
 			}
 
 			double angle = 0.;
