@@ -119,13 +119,15 @@ static struct bart_rand_state get_worker_state_cfl_loop(void)
 
 	if (cfl_loop_desc_active()) {
 
-		long dims[16];
-		long pos[16];
+		int D = cfl_loop_get_rank();
 
-		cfl_loop_get_dims(16, dims);
-		cfl_loop_get_pos(16, pos);
+		long dims[D ?:1];
+		long pos[D ?:1];
 
-		long ind = md_ravel_index(16, pos, cfl_loop_rand_flags, dims);
+		cfl_loop_get_dims(D, dims);
+		cfl_loop_get_pos(D, pos);
+
+		long ind = md_ravel_index(D, pos, cfl_loop_rand_flags, dims);
 		assert(0 <= ind);
 		worker_state.ctr2 = (uint64_t) ind;
 	}
@@ -391,33 +393,33 @@ static long get_cfl_loop_offset(int D, const long dims[D], long strs_offset[D])
 	if (0 == (cfl_loop_rand_flags & cfl_loop_get_flags()))
 		return 0;
 
-	int DIMS = 16;
-	long cdims[DIMS];
-	cfl_loop_get_dims(DIMS, cdims);
-	md_select_dims(DIMS, cfl_loop_rand_flags, cdims, cdims);
+	int C = cfl_loop_get_rank();
+	long cdims[C ? C : 1];
+	cfl_loop_get_dims(C, cdims);
+	md_select_dims(C, cfl_loop_rand_flags, cdims, cdims);
 
 	bool mergeable = true;
-	for (int i = 0; i < MIN(D, DIMS); i++)
+	for (int i = 0; i < MIN(D, C); i++)
 		if ((1 != dims[i]) && (1 != cdims[i]))
 			mergeable = false;
 
 	if (mergeable) {
 
-		long mdims[MAX(D, DIMS)];
-		md_singleton_dims(MAX(D, DIMS), mdims);
+		long mdims[MAX(D, C) ?: 1];
+		md_singleton_dims(MAX(D, C), mdims);
 		md_copy_dims(D, mdims, dims);
 
-		md_max_dims(DIMS, ~0ul, mdims, mdims, cdims);
+		md_max_dims(C, ~0ul, mdims, mdims, cdims);
 
-		long strs_offset_merged[MAX(D, DIMS)];
-		md_calc_strides(MAX(D, DIMS), strs_offset_merged, mdims, 1);
+		long strs_offset_merged[MAX(D, C) ?: 1];
+		md_calc_strides(MAX(D, C), strs_offset_merged, mdims, 1);
 
-		long cpos[DIMS];
-		cfl_loop_get_pos(DIMS, cpos);
+		long cpos[C ?: 1];
+		cfl_loop_get_pos(C, cpos);
 
 		md_copy_strides(D, strs_offset, strs_offset_merged);
 
-		return md_calc_offset(DIMS, strs_offset_merged, cpos);
+		return md_calc_offset(C, strs_offset_merged, cpos);
 
 	} else {
 
@@ -435,10 +437,10 @@ static long get_cfl_loop_offset(int D, const long dims[D], long strs_offset[D])
 			}
 		}
 
-		long cpos[DIMS];
-		cfl_loop_get_pos(DIMS, cpos);
+		long cpos[C ?: 1];
+		cfl_loop_get_pos(C, cpos);
 
-		return md_calc_size(D, dims) * md_ravel_index(DIMS, cpos, (cfl_loop_rand_flags & cfl_loop_get_flags()), cdims);
+		return md_calc_size(D, dims) * md_ravel_index(C, cpos, (cfl_loop_rand_flags & cfl_loop_get_flags()), cdims);
 	}
 }
 

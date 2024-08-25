@@ -129,6 +129,7 @@ bool strided_cfl_loop = false;
 
 struct cfl_loop_desc_s {
 
+	int D;
 	int omp_threads;
 	unsigned long flags;
 	long loop_dims[DIMS];
@@ -137,6 +138,7 @@ struct cfl_loop_desc_s {
 
 static struct cfl_loop_desc_s cfl_loop_desc = {
 
+	.D = 0,
 	.omp_threads = 1,
 	.flags = 0UL,
 	.loop_dims =  { [0 ... DIMS - 1] = 1 },
@@ -227,9 +229,12 @@ void init_cfl_loop_desc(int D, const long loop_dims[__VLA(D)], long start_dims[_
 	if (MAX_WORKER < omp_threads)
 		error("Maximum supported number of OMP workers exceeded!\n");
 
+	assert(DIMS >= D);
+
 	cfl_loop_desc.omp_threads = omp_threads;
 	cfl_loop_desc.flags = flags;
 
+	cfl_loop_desc.D = D;
 	md_copy_dims(D, cfl_loop_desc.loop_dims, loop_dims);
 	md_copy_dims(D, cfl_loop_desc.offs_dims, start_dims);
 
@@ -243,7 +248,7 @@ void init_cfl_loop_desc(int D, const long loop_dims[__VLA(D)], long start_dims[_
 
 long cfl_loop_desc_total(void)
 {
-	return md_calc_size(DIMS, cfl_loop_desc.loop_dims);
+	return md_calc_size(cfl_loop_desc.D, cfl_loop_desc.loop_dims);
 }
 
 
@@ -283,19 +288,24 @@ unsigned long cfl_loop_get_flags(void)
 	return cfl_loop_desc.flags;
 }
 
+int cfl_loop_get_rank(void)
+{
+	return cfl_loop_desc.D;
+}
+
 void cfl_loop_get_dims(int D, long dims[D])
 {
-	assert(DIMS == D);
+	assert(cfl_loop_desc.D == D);
 	md_copy_dims(DIMS, dims, cfl_loop_desc.loop_dims);
 }
 
 void cfl_loop_get_pos(int D, long pos[D])
 {
-	assert(DIMS == D);
-	md_set_dims(DIMS, pos, 0);
+	assert(cfl_loop_desc.D == D);
+	md_set_dims(cfl_loop_desc.D , pos, 0);
 	md_unravel_index(DIMS, pos, cfl_loop_desc.flags, cfl_loop_desc.loop_dims, cfl_loop_index[cfl_loop_worker_id()]);
 
-	for (int i = 0; i < DIMS; i++)
+	for (int i = 0; i < cfl_loop_desc.D ; i++)
 		pos[i] += cfl_loop_desc.offs_dims[i];
 }
 
@@ -324,12 +334,12 @@ static bool cmp_addr(const void* _item, const void* _ref)
 static void work_buffer_get_pos(int D, const long dims[D], long pos[D], bool output, long index)
 {
 	md_set_dims(D, pos, 0);
-	md_unravel_index(MIN(D, DIMS), pos, cfl_loop_desc.flags, cfl_loop_desc.loop_dims, index);
+	md_unravel_index(MIN(D, cfl_loop_desc.D), pos, cfl_loop_desc.flags, cfl_loop_desc.loop_dims, index);
 
 	if (output)
 		return;
 
-	for (int i = 0; i < MIN(D, DIMS); i++) {
+	for (int i = 0; i < MIN(D, cfl_loop_desc.D); i++) {
 
 		if (1 == dims[i])
 			pos[i] = 0;
@@ -733,10 +743,10 @@ complex float* create_cfl(const char* name, int D, const long dimensions[D])
 	
 	if (cfl_loop_desc_active()) {
 
-		if (!md_check_equal_dims(MIN(DIMS, D), dimensions, MD_SINGLETON_DIMS(DIMS), cfl_loop_desc.flags))
+		if (!md_check_equal_dims(MIN(cfl_loop_desc.D, D), dimensions, MD_SINGLETON_DIMS(cfl_loop_desc.D), cfl_loop_desc.flags))
 			io_error("Loop over altered dimensions!\n");
 		
-		for (int i = 0; i < MIN(D, DIMS); ++i)
+		for (int i = 0; i < MIN(D, cfl_loop_desc.D); ++i)
 			dims[i] = MD_IS_SET(cfl_loop_desc.flags, i) ? cfl_loop_desc.loop_dims[i] : dimensions[i];
 
 	} else {

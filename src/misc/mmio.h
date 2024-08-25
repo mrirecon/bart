@@ -19,6 +19,7 @@ extern int cfl_loop_num_workers(void);
 extern long cfl_loop_desc_total(void);
 extern long calc_size_cfl_loop(int D, const long dims[__VLA(D)], size_t size);
 extern unsigned long cfl_loop_get_flags(void);
+extern int cfl_loop_get_rank(void);
 extern void cfl_loop_get_dims(int D, long dims[__VLA(D)]);
 extern void cfl_loop_get_pos(int D, long pos[__VLA(D)]);
 
