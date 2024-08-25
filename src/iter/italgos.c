@@ -797,22 +797,21 @@ double power(int maxiter,
 	long N,
 	const struct vec_iter_s* vops,
 	struct iter_op_s op,
-	float* u)
+	float* u, float* b)
 {
 	double s = vops->norm(N, u);
 	vops->smul(N, 1. / s, u, u);
 
-	float * t = vops->allocate(N);
+	if (NULL == b)
+		b = u;
 
 	for (int i = 0; i < maxiter; i++) {
 
-		iter_op_call(op, t, u);		// r = A x
+		iter_op_call(op, b, u);		// r = A x
 
-		s = vops->norm(N, t);
-		vops->smul(N, 1. / s, u, t);
+		s = vops->norm(N, b);
+		vops->smul(N, 1. / s, u, b);
 	}
-
-	vops->del(t);
 
 	return s;
 }

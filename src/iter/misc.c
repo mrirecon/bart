@@ -14,6 +14,7 @@
 #include "num/vptr.h"
 
 #include "misc/misc.h"
+#include "misc/debug.h"
 
 #include "iter/italgos.h"
 #include "iter/iter2.h"
@@ -29,7 +30,7 @@ double iter_power(int maxiter,
 		const struct operator_s* normaleq_op,
 		long size, float* u)
 {
-	return power(maxiter, size, select_vecops(u), OPERATOR2ITOP(normaleq_op), u);
+	return power(maxiter, size, select_vecops(u), OPERATOR2ITOP(normaleq_op), u, NULL);
 }
 
 double estimate_maxeigenval_sameplace(const struct operator_s* op, int iterations, const void *ref)
@@ -38,20 +39,27 @@ double estimate_maxeigenval_sameplace(const struct operator_s* op, int iteration
 	long size = md_calc_size(io->N, io->dims);
 
 	void* x;
+	void* b;
 
 	if (is_vptr(ref)) {
 
 		x = vptr_alloc_same(ref);
-		vptr_set_gpu(x, is_vptr_gpu(ref));
+		b = vptr_alloc_same(ref);
 
-	} else
+	} else {
+
 		x = md_alloc_sameplace(io->N, io->dims, io->size, ref);
+		b = md_alloc_sameplace(io->N, io->dims, io->size, ref);
+	}
 
 	select_vecops(ref)->rand(2 * size, x);
 
-	double max_eval = iter_power(iterations, op, 2 * size, x);
+	double max_eval = power(iterations, 2 * size, select_vecops(x), OPERATOR2ITOP(op), x, b);
+
+	debug_printf(DP_DEBUG1, "Maximum eigenvalue: %e\n", max_eval);
 
 	md_free(x);
+	md_free(b);
 
 	return max_eval;
 }
@@ -59,33 +67,17 @@ double estimate_maxeigenval_sameplace(const struct operator_s* op, int iteration
 
 double estimate_maxeigenval(const struct operator_s* op)
 {
-	const struct iovec_s* io = operator_domain(op);
-	long size = md_calc_size(io->N, io->dims);
-
-	void* x = md_alloc(io->N, io->dims, io->size);
-
-	md_gaussian_rand(io->N, io->dims, x);
-
-	double max_eval = iter_power(30, op, 2 * size, x);
-
-	md_free(x);
-
-	return max_eval;
+	return estimate_maxeigenval_sameplace(op, 30, NULL);
 }
 
 #ifdef USE_CUDA
 double estimate_maxeigenval_gpu(const struct operator_s* op)
 {
-	const struct iovec_s* io = operator_domain(op);
-	long size = md_calc_size(io->N, io->dims);
+	void* ref = md_alloc_gpu(1, MD_DIMS(1), 1);
 
-	void* x = md_alloc_gpu(io->N, io->dims, io->size);
+	double max_eval = estimate_maxeigenval_sameplace(op, 30, ref);
 
-	md_gaussian_rand(io->N, io->dims, x);
-
-	double max_eval = iter_power(30, op, 2 * size, x);
-
-	md_free(x);
+	md_free(ref);
 
 	return max_eval;
 }

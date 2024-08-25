@@ -209,7 +209,7 @@ static void inverse_fista(iter_op_data* _data, float alpha, float* dst, const fl
 	void* x = vops->allocate(data->size_x);
 	vops->rand(data->size_x, x);
 
-	maxeigen += power(20, data->size_x, vops, (struct iter_op_s){ normal, CAST_UP(data) }, x);
+	maxeigen += power(20, data->size_x, vops, (struct iter_op_s){ normal, CAST_UP(data) }, x, NULL);
 
 	vops->del(x);
 
