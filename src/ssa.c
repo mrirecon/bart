@@ -151,7 +151,9 @@ int main_ssa(int argc, char* argv[argc])
 
 	long N = A_dims[0];
 
-	long U_dims[2] = { N, N };
+	bool econ = A_dims[0] > A_dims[1];
+
+	long U_dims[2] = { N, econ ? MIN(A_dims[1], N) : N };
 	complex float* U = create_cfl(EOF_file, 2, U_dims);
 
 	complex float* back = NULL;
@@ -166,7 +168,10 @@ int main_ssa(int argc, char* argv[argc])
 
 	float* S_square = xmalloc((unsigned long)N * sizeof(float));
 
-	ssa_fary(kernel_dims, cal_dims, A_dims, A, U, S_square, back, rank, group);
+	if (econ)
+		ssa_fary_econ(kernel_dims, cal_dims, A_dims, A, U, S_square, back, rank, group);
+	else
+		ssa_fary(kernel_dims, cal_dims, A_dims, A, U, S_square, back, rank, group);
 
 	if (NULL != S_file) {
 
