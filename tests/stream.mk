@@ -61,8 +61,27 @@ tests/test-stream-loop-ref: bart
 	rm *.ra	; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-stream-binary: phantom copy nrmse trx
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	;\
+	$(TOOLDIR)/phantom -s3 phantom.ra 		;\
+	$(TOOLDIR)/copy --stream 9 -- phantom.ra - | \
+	$(TOOLDIR)/trx | $(TOOLDIR)/trx | \
+	$(TOOLDIR)/nrmse -t 0 -- - phantom.ra 	;\
+	rm *.ra	; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-stream-binary2: phantom copy nrmse trx
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	;\
+	$(TOOLDIR)/phantom -s3 phantom.ra 		;\
+	$(TOOLDIR)/trx -i phantom.ra > phantom.bstrm;\
+	$(TOOLDIR)/trx < phantom.bstrm | \
+	$(TOOLDIR)/nrmse -t 0 -- - phantom.ra ;\
+	rm *.ra	; rm phantom.bstrm; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
 .PHONY: tests/test-stream
-tests/test-stream: tests/test-pipe tests/test-stream1 tests/test-stream2 tests/test-stream3 tests/test-stream-loop tests/test-stream-loop-ref
+tests/test-stream: tests/test-pipe tests/test-stream1 tests/test-stream2 tests/test-stream3 tests/test-stream-loop tests/test-stream-loop-ref tests/test-stream-binary tests/test-stream-binary2
 
 
 TESTS += tests/test-stream
