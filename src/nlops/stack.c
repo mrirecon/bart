@@ -993,7 +993,7 @@ static struct nlop_s* nlop_flatten_stacked_transform_output_create(int N, const 
 	long (*ioff)[OO][N] = (void*)d->ioff;
 
 	long* st_dims[OO];
-	
+	memset(st_dims, 0, sizeof st_dims);	// -fanalyzer uninitialized
 	for (int i = 0; i < OO; i++) {
 
 		for (int j = 0; j < N; j++) {

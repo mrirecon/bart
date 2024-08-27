@@ -914,6 +914,10 @@ static bool simple_z3op(int N_checks, struct simple_z3op_check strided_calls[N_c
 	long nostrs[N];
 	long nistrs1[N];
 	long nistrs2[N];
+	memset(ndims, 0, sizeof ndims);		// -fanalyzer uninitialized
+	memset(nostrs, 0, sizeof nostrs);	// -fanalyzer uninitialized
+	memset(nistrs1, 0, sizeof nistrs1);	// -fanalyzer uninitialized
+	memset(nistrs2, 0, sizeof nistrs2);	// -fanalyzer uninitialized
 
 	const complex float* tin1 = NULL;
 	const complex float* tin2 = NULL;

@@ -672,6 +672,7 @@ static nn_t reconet_create(const struct reconet_s* config, int N, const long max
 
 
 	struct sense_model_s* models[Nb];
+	memset(models, 0, sizeof models);	// -fanalyzer uninitialized
 
 	for (int i = 0; i < Nb; i++) {
 

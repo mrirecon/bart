@@ -490,6 +490,9 @@ void overlapandsave2NEB(int N, unsigned int flags, const long blk[N], const long
 	long nodims[2 * N];
 	long ndims2[2 * N];
 	long nmdims[2 * N];
+	memset(tdims, 0, sizeof tdims);		// -fanalyzer uninitialized
+	memset(nodims, 0, sizeof nodims);	// -fanalyzer uninitialized
+	memset(ndims2, 0, sizeof ndims2);	// -fanalyzer uninitialized
 
 
 	int e = N;
@@ -661,7 +664,9 @@ void overlapandsave2HB(int N, unsigned int flags, const long blk[N], const long 
 	long nodims[2 * N];
 	long ndims2[2 * N];
 	long nmdims[2 * N];
-
+	memset(tdims, 0, sizeof tdims);		// -fanalyzer uninitialized
+	memset(nodims, 0, sizeof nodims);	// -fanalyzer uninitialized
+	memset(ndims2, 0, sizeof ndims2);	// -fanalyzer uninitialized
 
 	int e = N;
 

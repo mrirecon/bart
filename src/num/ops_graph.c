@@ -638,6 +638,8 @@ static void graph_apply(const operator_data_t* _data, int _N, void* _args[_N])
 
 	void** arg_lists[N];
 	int* ref_counts[N];
+	memset(arg_lists, 0, sizeof arg_lists);		// -fanalyzer uninitialized
+	memset(ref_counts, 0, sizeof ref_counts);	// -fanalyzer uninitialized
 
 	for (int i = 0; i < N; i++) {
 
@@ -646,6 +648,8 @@ static void graph_apply(const operator_data_t* _data, int _N, void* _args[_N])
 
 		void* args[Nv];
 		int ref_count[Nv];
+		memset(args, 0, sizeof args);		// -fanalyzer uninitialized
+		memset(ref_count, 0, sizeof ref_count);	// -fanalyzer uninitialized
 
 		for (int i = 0; i < Nv; i++) {
 

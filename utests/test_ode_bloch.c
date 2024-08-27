@@ -6,6 +6,7 @@
 
 
 #include <math.h>
+#include <string.h>
 
 #include "misc/mri.h"
 
@@ -256,6 +257,7 @@ static bool test_ode_sa2(void)
 	ode_direct_sa_wrap(h, tol, N, N, xp, 0., end, &data, sa_der, sa_pdy, sa_pdp);
 
 	float x[N];
+	memset(x, 0, sizeof x);		// -fanalyzer uninitialized
 	sa_fun(&data, x, end);
 
 	for (int i = 0; i < N; i++) {

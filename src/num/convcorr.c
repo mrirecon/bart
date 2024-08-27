@@ -378,6 +378,7 @@ static bool simple_zconvcorr_bwd_in(	int N, const long dims[N],
 	long nodims[N];
 	long nidims[N];
 	long nkdims[N];
+	memset(nidims, 0, sizeof nidims);	// -fanalyzer uninitialized
 
 	long nostrs[N];
 	long nistrs[N];
@@ -481,6 +482,7 @@ static bool simple_zconvcorr_bwd_krn(	int N, const long dims[N],
 	long nodims[N];
 	long nidims[N];
 	long nkdims[N];
+	memset(nidims, 0, sizeof nidims);	// -fanalyzer uninitialized
 
 	long nostrs[N];
 	long nistrs[N];

@@ -8,6 +8,7 @@
 
 #include <math.h>
 #include <assert.h>
+#include <string.h>
 
 #include "splines.h"
 
@@ -240,6 +241,7 @@ static double cox_deboor_i(double x, int N, int p, const double tau[static N + 1
                 return coeff[0];
 
         double coeff2[N];
+	memset(coeff2, 0, sizeof coeff2);	// -fanalyzer uninitialized
         cox_deboor_step(N, coeff2, x, p, tau, coeff);
 
         return cox_deboor_i(x, N - 1, p, tau, coeff2);
