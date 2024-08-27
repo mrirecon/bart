@@ -98,7 +98,7 @@ int main_trx(int argc, char* argv[argc])
 
 	} else {
 
-		strm_out = stream_create_file(outfile, N, dims, stream_flags, NULL);
+		strm_out = stream_create_file(outfile, N, dims, stream_flags, NULL, false);
 
 		stream_attach(strm_out, data, false);
 	}

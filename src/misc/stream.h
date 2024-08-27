@@ -29,7 +29,7 @@ extern stream_t stream_lookup_name(const char* name);
 extern _Bool* stream_get_synced(stream_t s);
 
 
-extern stream_t stream_create(int N, const long dims[__VLA(N)], _Complex float* data, int pipefd, _Bool input, _Bool regist, _Bool binary, unsigned long flags, const char* name);
+extern stream_t stream_create(int N, const long dims[__VLA(N)], _Complex float* data, int pipefd, _Bool input, _Bool regist, _Bool binary, unsigned long flags, const char* name, _Bool call_msync);
 extern stream_t stream_clone(stream_t s);
 
 extern void stream_free(stream_t s);
@@ -38,7 +38,7 @@ extern void stream_unmap_all(void);
 
 void stream_attach(stream_t s, _Complex float* x, _Bool unmap);
 extern stream_t stream_load_file(const char* name, int D, long dims[__VLA(D)], char **datname);
-extern stream_t stream_create_file(const char* name, int D, long dims[__VLA(D)], unsigned long stream_flags, char* dataname);
+extern stream_t stream_create_file(const char* name, int D, long dims[__VLA(D)], unsigned long stream_flags, char* dataname, _Bool call_msync);
 
 extern void stream_sync(stream_t s, int N, long pos[__VLA(N)]);
 extern _Bool stream_sync_try(stream_t s, int N, long pos[__VLA(N)]);

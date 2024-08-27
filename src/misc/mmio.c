@@ -708,7 +708,7 @@ static complex float* create_pipe(const char* name, int D, long dimensions[D], u
 	const char* dir = get_current_dir_name();
 	char* abs_filename = (char*)ptr_printf("%s/%s", dir, filename);
 
-	strm = stream_create_file(name, D, dimensions, stream_flags, abs_filename);
+	strm = stream_create_file(name, D, dimensions, stream_flags, abs_filename, true);
 
 	xfree(dir);
 	xfree(abs_filename);

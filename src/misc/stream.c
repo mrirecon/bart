@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <limits.h>
+#include <sys/mman.h>
 
 #include "num/multind.h"
 #include "num/optimize.h"
@@ -55,6 +56,7 @@ struct stream {
 
 	int D;
 	struct pcfl* data;
+	bool call_msync;
 
 	int pipefd;
 
@@ -319,7 +321,7 @@ static void stream_del(const struct shared_obj_s* sptr);
  * Complex float memory shared between processes,
  * associated with a file descriptor used for synchronization and metainformation.
  */
-stream_t stream_create(int N, const long dims[N], complex float* data, int pipefd, bool input, bool regist, bool binary, unsigned long flags, const char* name)
+stream_t stream_create(int N, const long dims[N], complex float* data, int pipefd, bool input, bool regist, bool binary, unsigned long flags, const char* name, bool call_msync)
 {
 	PTR_ALLOC(struct stream, ret);
 
@@ -327,6 +329,9 @@ stream_t stream_create(int N, const long dims[N], complex float* data, int pipef
 	ret->pipefd = pipefd;
 	ret->input = input;
 	ret->binary = binary;
+	ret->call_msync = call_msync;
+	// msync only makes sense for output streams that are not binary.
+	assert(!call_msync || !(input || binary));
 	ret->data = NULL;
 	ret->unmap = false;
 	ret->events =  NULL;
@@ -465,7 +470,7 @@ stream_t stream_load_file(const char* name, int D, long dims[D], char **datname)
 
 	const char* stream_name = ptr_printf("in_%s", name);
 
-	stream_t strm = stream_create(D, dims, NULL, fd, true, false, binary, 0, stream_name);
+	stream_t strm = stream_create(D, dims, NULL, fd, true, false, binary, 0, stream_name, false);
 
 	xfree(stream_name);
 
@@ -475,11 +480,30 @@ stream_t stream_load_file(const char* name, int D, long dims[D], char **datname)
 	if (!is_stdin && (0 != unlink(name)))
 		error("Unlinking temporary FIFO header %s\n", name);
 
+#ifdef __EMSCRIPTEN__
+	if (!binary) {
+
+		// mmap in emscripten is basically a read() of the whole file.
+		// Thus, stream synchronization with shared files won't work.
+		// Workaround: sync the whole file in the beginning, before the mmap in misc/mmio.c
+		// happens.
+		//
+		// https://github.com/emscripten-core/emscripten/issues/17801
+		// https://github.com/emscripten-core/emscripten/issues/21706
+
+		debug_printf(DP_WARN, "WARNING: synchronous stream_load_file on EMSCRIPTEN.\n");
+
+		long pos[strm->data->D];
+		md_set_dims(strm->data->D, pos, 0);
+		stream_sync_slice(strm, strm->data->D, strm->data->dims, 0, pos);
+	}
+#endif
+
 	return strm;
 }
 
 
-stream_t stream_create_file(const char* name, int D, long dims[D], unsigned long stream_flags, char* dataname)
+stream_t stream_create_file(const char* name, int D, long dims[D], unsigned long stream_flags, char* dataname, bool call_msync)
 {
 	int fd = 1;
 	bool is_stdout = (0 == strcmp(name, "-"));
@@ -515,7 +539,7 @@ stream_t stream_create_file(const char* name, int D, long dims[D], unsigned long
 
 	const char* stream_name = ptr_printf("out_%s", name);
 
-	stream_t strm = stream_create(D, dims, NULL, fd, false, false, binary, stream_flags, stream_name);
+	stream_t strm = stream_create(D, dims, NULL, fd, false, false, binary, stream_flags, stream_name, call_msync);
 
 	xfree(stream_name);
 
@@ -774,6 +798,10 @@ static bool stream_send_index_locked(stream_t s, long index)
 		};
 
 		if (!stream_send_msg2(s->pipefd, &msg, ND, xdims, xstr, size, ptr))
+			return false;
+	} else if (s->call_msync) {
+
+		if (0 != msync(s->data->ptr, (size_t)md_calc_size(s->data->D, s->data->dims) * sizeof(complex float), MS_SYNC))
 			return false;
 	}
 

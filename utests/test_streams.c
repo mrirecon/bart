@@ -190,9 +190,9 @@ static bool test_stream_registry(void)
 	stream_t s[6];
 
 	for (int i = 0; i < 5; i++)
-		s[i] = stream_create(N, dims, a + i, -1, true, true, false, 1, NULL);
+		s[i] = stream_create(N, dims, a + i, -1, true, true, false, 1, NULL, false);
 
-	s[5] = stream_create(N, dims, a + 5, -1, true, false, false, 1, NULL);
+	s[5] = stream_create(N, dims, a + 5, -1, true, false, false, 1, NULL, false);
 
 
 	for (int i = 0; i < 5; i++)
@@ -220,10 +220,10 @@ static bool test_stream_sync(void)
 	complex float in[1];
 	complex float out[1];
 
-	if (NULL == stream_create(1, (long[1]){ 1 }, out, pipefds[1], false, true, false, 1, NULL))
+	if (NULL == stream_create(1, (long[1]){ 1 }, out, pipefds[1], false, true, false, 1, NULL, false))
 		UTEST_ERR;
 
-	if (NULL == stream_create(1, (long[1]){ 1 }, in, pipefds[0], true, true, false, 1, NULL))
+	if (NULL == stream_create(1, (long[1]){ 1 }, in, pipefds[0], true, true, false, 1, NULL, false))
 		UTEST_ERR;
 
 	stream_t strm_out = stream_lookup(out);
@@ -265,10 +265,10 @@ static bool test_binary_stream(void)
 
 	stream_t s0, s1;
 	//write end of the pipe
-	if (NULL == (s1 = stream_create(2, dims, out, pipefds[1], false, false, true, 2, NULL)))
+	if (NULL == (s1 = stream_create(2, dims, out, pipefds[1], false, false, true, 2, NULL, false)))
 		UTEST_ERR;
 	// read end
-	if (NULL == (s0 = stream_create(2, dims, in, pipefds[0], true, false, true, 2, NULL)))
+	if (NULL == (s0 = stream_create(2, dims, in, pipefds[0], true, false, true, 2, NULL, false)))
 		UTEST_ERR;
 
 	bool *s0_synced = stream_get_synced(s0);
@@ -310,10 +310,10 @@ static bool test_stream_events(void)
 	complex float in[2];
 	complex float out[2];
 
-	if (NULL == stream_create(1, (long[1]){ ARRAY_SIZE(out) }, out, pipefds[1], false, true, false, 1, NULL))
+	if (NULL == stream_create(1, (long[1]){ ARRAY_SIZE(out) }, out, pipefds[1], false, true, false, 1, NULL, false))
 		UTEST_ERR;
 
-	if (NULL == stream_create(1, (long[1]){ ARRAY_SIZE(in) }, in, pipefds[0], true, true, false, 1, NULL))
+	if (NULL == stream_create(1, (long[1]){ ARRAY_SIZE(in) }, in, pipefds[0], true, true, false, 1, NULL, false))
 		UTEST_ERR;
 
 	stream_t strm_out = stream_lookup(out);
