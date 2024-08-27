@@ -1024,7 +1024,7 @@ static bool simple_z3op(int N_checks, struct simple_z3op_check strided_calls[N_c
 			continue;
 
 		int j = N_in;
-		while (1 != ndims[j])
+		while ((1 != ndims[j]) && (N > j))
 			j++;
 
 		ndims[j] = dims[i];
@@ -1170,7 +1170,7 @@ static bool simple_3op(int N_checks, struct simple_3op_check strided_calls[N_che
 			continue;
 
 		int j = N_in;
-		while (1 != ndims[j])
+		while ((1 != ndims[j]) && (N > j))
 			j++;
 
 		ndims[j] = dims[i];

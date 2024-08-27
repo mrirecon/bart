@@ -843,6 +843,8 @@ static nn_t nlinvnet_train_loss_create(const struct nlinvnet_s* nlinvnet, int Nb
 		nn_train = nn_set_output_name_F(nn_train, 0, loss_name);
 	}
 
+	free((void*) loss_name);
+
 	nn_train = nlinvnet_sort_args_F(nn_train);
 
 	return nn_train;

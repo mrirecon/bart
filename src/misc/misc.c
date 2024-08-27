@@ -547,6 +547,7 @@ void* save_command_line(int argc, char* argv[static argc])
 	for (int i = 0; i < argc; i++) {
 
 		qargv[i] = quote(argv[i]);
+		assert(NULL != qargv[i]);
 		len += strlen(qargv[i]) + 1;
 	}
 

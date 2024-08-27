@@ -474,6 +474,8 @@ void* vptr_wrap_sameplace(int N, const long dims[N], size_t size, const void* pt
 
 	struct mem_s* mem = search(ref, false);
 
+	assert(NULL != mem);
+
 	return vptr_wrap(N, dims, size, ptr, mem->hint, free, writeback);
 }
 

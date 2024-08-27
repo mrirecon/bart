@@ -272,14 +272,14 @@ nn_t nn_get_wo_weights(nn_t op, nn_weights_t weights, bool copy)
 
 	for (int i = 0, j = 0; i < nn_get_nr_in_args(result); i++, j++) {
 
-		while ((IN_OPTIMIZE == op->in_types[i]) || (IN_BATCHNORM == op->in_types[i]))
+		while ((IN_OPTIMIZE == op->in_types[j]) || (IN_BATCHNORM == op->in_types[j]))
 			j++;
 		nn_clone_arg_i_from_i(result, i, op, j);
 	}
 
 	for (int i = 0, j = 0; i < nn_get_nr_out_args(result); i++, j++) {
 
-		while (OUT_BATCHNORM == op->out_types[i])
+		while (OUT_BATCHNORM == op->out_types[j])
 			j++;
 		nn_clone_arg_o_from_o(result, i, op, j);
 	}

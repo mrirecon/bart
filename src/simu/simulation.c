@@ -853,6 +853,7 @@ static void run_sim(struct sim_data* data, int pools,
 
                 // Evolution: 0 -> TE
 		//assert(xstm != mte);
+		assert(NULL != xstm);
                 apply_sim_matrix(N * P + 1, xstm, mte);
 
                 // Save data
