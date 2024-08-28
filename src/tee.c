@@ -67,6 +67,11 @@ int main_tee(int argc, char* argv[argc])
 
 	num_init();
 
+	if (cfl_loop_desc_active())
+		error("Currently, bart loop is not compatible with tee.\n");
+
+	mmio_file_locking = false;
+
 	if (keep_going) {
 
 		// sigpipe can occur when a receiving program closes a pipe early.

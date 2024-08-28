@@ -5,6 +5,8 @@
 
 #include "misc/cppwrap.h"
 
+extern _Bool mmio_file_locking;
+
 #include <stddef.h>
 extern _Bool mpi_shared_files;
 extern unsigned long cfl_loop_rand_flags;

@@ -60,6 +60,8 @@
 #endif
 
 
+bool mmio_file_locking = true;
+
 #ifdef __EMSCRIPTEN__
 // FIXME: This is a workaround for a bug in emscripten.
 // https://github.com/emscripten-core/emscripten/issues/15140
@@ -765,33 +767,9 @@ static complex float* create_cfl_internal2(const char* name, int D, const long d
 }
 
 
-
-static complex float* create_cfl_internal(const char* name, int D, const long dimensions[D], unsigned long stream_flags)
+static complex float* create_cfl_typed(enum file_types_e type, const char* name, int D, long dims[D], unsigned long stream_flags)
 {
-	long dims[D];
-	md_copy_dims(D, dims, dimensions);
-	
-	if (cfl_loop_desc_active()) {
-
-		if (!md_check_equal_dims(MIN(cfl_loop_desc.D, D), dimensions, MD_SINGLETON_DIMS(cfl_loop_desc.D), cfl_loop_desc.flags))
-			io_error("Loop over altered dimensions!\n");
-		
-		for (int i = 0; i < MIN(D, cfl_loop_desc.D); ++i)
-			dims[i] = MD_IS_SET(cfl_loop_desc.flags, i) ? cfl_loop_desc.loop_dims[i] : dimensions[i];
-
-	} else {
-
-		io_unlink_if_opened(name);
-	}
-
-	enum file_types_e type = file_type(name);
-
 	complex float* addr = NULL;
-
-	if (FILE_TYPE_PIPE != type)	// FIXME: Why?
-		io_register_output(name);
-
-#pragma omp critical (bart_file_access)
 	if (mpi_is_main_proc()) {
 
 		switch (type) {
@@ -818,16 +796,72 @@ static complex float* create_cfl_internal(const char* name, int D, const long di
 			break;
 
 		case FILE_TYPE_CFL:
-	
+
 			addr = create_cfl_internal2(name, D, dims);
 			break;
-		
+
 		default:
 			error("Unknown filetype!\n");
 		}
 	} else {
 
 		addr = anon_cfl(NULL, D, dims);
+	}
+
+	return addr;
+}
+
+static complex float* create_cfl_internal(const char* name, int D, const long dimensions[D], unsigned long stream_flags)
+{
+	long dims[D];
+	md_copy_dims(D, dims, dimensions);
+
+	if (cfl_loop_desc_active()) {
+
+		if (!md_check_equal_dims(MIN(cfl_loop_desc.D, D), dimensions, MD_SINGLETON_DIMS(cfl_loop_desc.D), cfl_loop_desc.flags))
+			io_error("Loop over altered dimensions!\n");
+
+		for (int i = 0; i < MIN(D, cfl_loop_desc.D); ++i)
+			dims[i] = MD_IS_SET(cfl_loop_desc.flags, i) ? cfl_loop_desc.loop_dims[i] : dimensions[i];
+
+	} else {
+
+		io_unlink_if_opened(name);
+	}
+
+	enum file_types_e type = file_type(name);
+
+	complex float* addr = NULL;
+
+	if (FILE_TYPE_PIPE != type)	// FIXME: Why?
+		io_register_output(name);
+
+	// FIXME:
+	// bart_file_access mutex prevents multiple threads (when using bart -p)
+	// from simultaneously creating the same file.
+	// Required because we do not 'cache'.
+	// Unfortunately, it also prevents multiple threads from simultaneously creating *different* files.
+	//
+	// When using bart streams with multiple FIFO outputs, this causes deadlock:
+	// - open() on file A is called , blocks until a fifo has a reader (thread blocks on open).
+	// - this prevents open() of file B (thread blocks on mutex).
+	// - reading process tries to open B first, then A.
+	// - Nothing ever happens.
+	// Example:
+	// bart phantom | bart tee 1.fifo 2.fifo > /dev/null & cat 2.fifo; cat 1.fifo
+	// Possible solutions:
+	// - per file mtx?
+	// - improve looping framework, e.g.:
+	//	- don't create/open same file twice in the first place. (address<->name lookup table)
+
+	if (mmio_file_locking) {
+
+		#pragma omp critical (bart_file_access)
+		addr = create_cfl_typed(type, name, D, dims, stream_flags);
+	} else {
+
+		assert(!cfl_loop_desc_active());
+		addr = create_cfl_typed(type, name, D, dims, stream_flags);
 	}
 
 	return create_worker_buffer(D, dims, addr, true);
