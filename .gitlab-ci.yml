@@ -209,6 +209,7 @@ Build_Analyzer:
   stage: build
   image: registry.gitlab.tugraz.at/ibi/reproducibility/reproducibility_testing/ibi_gcc-git_bart
   script:
+    - gcc-git --version
     - CC=gcc-git CFLAGS="-fanalyzer -Werror" DEBUG=0 DEBUG_DWARF=0 make all
   artifacts:
     paths:
