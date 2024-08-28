@@ -207,8 +207,9 @@ Build_LTO:
 
 Build_Analyzer:
   stage: build
+  image: registry.gitlab.tugraz.at/ibi/reproducibility/reproducibility_testing/ibi_gcc-git_bart
   script:
-    - CFLAGS="-fanalyzer -Werror" DEBUG=0 DEBUG_DWARF=0 make all
+    - CC=gcc-git CFLAGS="-fanalyzer -Werror" DEBUG=0 DEBUG_DWARF=0 make all
   artifacts:
     paths:
       - bart
