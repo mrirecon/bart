@@ -61,11 +61,13 @@ int main_fovshift(int argc, char* argv[argc])
 
 	float shift[3] = { 0., 0., 0. };
 	const char* traj_file = NULL;
+	bool pixel = false;
 
 	const struct opt_s opts[] = {
 
 		OPT_INFILE('t', &traj_file, "file", "k-space trajectory"),
 		OPT_FLVEC3('s', &shift, "X:Y:Z", "FOV shift"),
+		OPT_SET('p', &pixel, "interpret FOV shift in units of pixel instead of units of FoV")
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -75,6 +77,15 @@ int main_fovshift(int argc, char* argv[argc])
 
 	long idims[DIMS];
 	complex float* idata = load_cfl(in_file, DIMS, idims);
+
+	if (pixel) {
+
+		if (NULL != traj_file)
+			error("Shift in units of pixel only possible for Cartesian k-space!\n");
+
+		for (int i = 0; i < 3; i++)
+			shift[i] *= idims[i];
+	}
 
 	long pdims[DIMS];
 	complex float* phase;
