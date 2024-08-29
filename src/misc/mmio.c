@@ -687,6 +687,10 @@ static complex float* create_pipe(const char* name, int D, long dimensions[D], u
 	stream_t strm = stream_lookup_name(stream_name);
 
 	complex float* ptr;
+	char filename[] = "bart-XXXXXX";
+	int fd;
+	const char* dir;
+	char* abs_filename;
 
 	if (NULL != strm) {
 
@@ -699,14 +703,12 @@ static complex float* create_pipe(const char* name, int D, long dimensions[D], u
 
 	io_register_output(name);
 
-	char filename[] = "bart-XXXXXX";
-
-	int fd = mkstemp(filename);
+	fd = mkstemp(filename);
 
 	debug_printf(DP_DEBUG1, "Temp file for pipe: %s\n", filename);
 
-	const char* dir = get_current_dir_name();
-	char* abs_filename = (char*)ptr_printf("%s/%s", dir, filename);
+	dir = get_current_dir_name();
+	abs_filename = (char*)ptr_printf("%s/%s", dir, filename);
 
 	strm = stream_create_file(name, D, dimensions, stream_flags, abs_filename, true);
 
@@ -949,6 +951,8 @@ static complex float* load_cfl_internal(const char* name, int D, long dimensions
 
 	complex float* addr = NULL;
 	char* filename = NULL;
+	const char* stream_name;
+	stream_t strm;
 
 #pragma omp critical (bart_file_access2)	// FIXME. this critical section is too big
 	if (mpi_is_main_proc() || mpi_shared_files) {
@@ -961,9 +965,9 @@ static complex float* load_cfl_internal(const char* name, int D, long dimensions
 
 			assert(1 == mpi_get_num_procs());
 
-			const char* stream_name = ptr_printf("in_%s", name);
+			stream_name = ptr_printf("in_%s", name);
 
-			stream_t strm = stream_lookup_name(stream_name);
+			strm = stream_lookup_name(stream_name);
 
 			if (NULL != strm) {
 
