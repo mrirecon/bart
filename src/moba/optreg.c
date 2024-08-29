@@ -101,7 +101,7 @@ static const struct operator_p_s* moba_joint_wavthresh_prox_create(int N, const 
 			higher_flag = MD_SET(higher_flag, d);
 
 	long maps_j_dims[N];
-	md_select_dims(N, ~(MD_BIT(coeff_dim)|higher_flag), maps_j_dims, maps_dims);
+	md_select_dims(N, ~(MD_BIT(coeff_dim) | higher_flag), maps_j_dims, maps_dims);
 	maps_j_dims[coeff_dim] = nr_joint_maps;
 
 	auto prox_j = create_wav_prox(maps_j_dims, x_flags, jflag, lambda);
@@ -131,15 +131,13 @@ const struct operator_p_s* moba_nonneg_prox_create(int N, const long maps_dims[N
 	// higher dimensions
 	unsigned long higher_flag = 0;
 
-	for (int d = coeff_dim + 1; d < N; d++) {
-
+	for (int d = coeff_dim + 1; d < N; d++)
 		if (1 < maps_dims[d])
 			higher_flag = MD_SET(higher_flag, d);
-	}
 
 	// single map dimensions
 	long map_dims[N];
-	md_select_dims(N, ~(MD_BIT(coeff_dim)|higher_flag), map_dims, maps_dims);
+	md_select_dims(N, ~(MD_BIT(coeff_dim) | higher_flag), map_dims, maps_dims);
 
 	const struct operator_p_s* p1 = prox_zsmax_create(N, map_dims, lambda);
 	const struct operator_p_s* p2 = prox_zero_create(N, map_dims);
@@ -184,8 +182,9 @@ static const struct operator_p_s* moba_sens_prox_create(int N, const long sens_d
 
 static const struct operator_p_s* flatten_prox(const struct operator_p_s* src)
 {
-	const struct operator_p_s* dst = operator_p_reshape_in_F(src, 1, MD_DIMS(md_calc_size(operator_p_domain(src)->N, operator_p_domain(src)->dims)));
+	const struct operator_p_s* dst = src;
 
+	dst = operator_p_reshape_in_F(src, 1, MD_DIMS(md_calc_size(operator_p_domain(src)->N, operator_p_domain(src)->dims)));
 	dst = operator_p_reshape_out_F(dst, 1, MD_DIMS(md_calc_size(operator_p_codomain(dst)->N, operator_p_codomain(dst)->dims)));
 
 	return dst;
@@ -289,7 +288,8 @@ bool opt_reg_moba(void* ptr, char c, const char* optarg)
 }
 
 
-static void opt_reg_meco_configure(int N, const long dims[N], struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], struct optreg_conf* optreg_conf)
+static void opt_reg_meco_configure(int N, const long dims[N], const struct opt_reg_s* ropts,
+		const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], struct optreg_conf* optreg_conf)
 {
 	long maps_dims[N];
 	md_select_dims(N, ~COIL_FLAG, maps_dims, dims);
@@ -315,12 +315,11 @@ static void opt_reg_meco_configure(int N, const long dims[N], struct opt_reg_s* 
 	unsigned long nonneg_flag = get_R2S_flag(optreg_conf->moba_model);
 
 
-	struct reg_s* regs = ropts->regs;
-	int nr_penalties = ropts->r;
+	const struct reg_s* regs = ropts->regs;
 
-	debug_printf(DP_INFO, " >> in total %1d regularizations:\n", nr_penalties);
+	debug_printf(DP_INFO, " >> in total %1d regularizations:\n", ropts->r);
 
-	for (int nr = 0; nr < nr_penalties; nr++) {
+	for (int nr = 0; nr < ropts->r; nr++) {
 
 		switch (regs[nr].xform) {
 
@@ -329,7 +328,6 @@ static void opt_reg_meco_configure(int N, const long dims[N], struct opt_reg_s* 
 			debug_printf(DP_INFO, "  > l1-wavelet regularization with parameters %lu:%lu:%.3f\n", regs[nr].xflags, regs[nr].jflags, regs[nr].lambda);
 
 			auto prox_maps = moba_joint_wavthresh_prox_create(N, maps_dims, COEFF_DIM, regs[nr].xflags, regs[nr].jflags, regs[nr].lambda, nr_joint_coeff);
-
 			auto prox_sens = moba_sens_prox_create(N, sens_dims);
 
 			prox_ops[nr] = stack_flatten_prox(prox_maps, prox_sens);
@@ -437,15 +435,7 @@ static void opt_reg_IRLL_configure(int N, const long dims[N], struct opt_reg_s* 
 		ropts->r = 1;
 	}
 
-
-	int nr_penalties = ropts->r;
-#if 0
-	long blkdims[MAX_LEV][DIMS];
-	int levels;
-#endif
-
-
-	for (int nr = 0; nr < nr_penalties; nr++) {
+	for (int nr = 0; nr < ropts->r; nr++) {
 
 		// fix up regularization parameter
 		if (-1. == regs[nr].lambda)
@@ -518,8 +508,9 @@ static void opt_reg_IRLL_configure(int N, const long dims[N], struct opt_reg_s* 
 			debug_printf(DP_INFO, "l2 regularization: %f\n", regs[nr].lambda);
 
 			trafos[nr] = linop_identity_create(DIMS, x_dims);;
-			prox_ops[nr] = operator_p_stack_FF(0, 0, operator_p_flatten_F(prox_zero_create(DIMS, img_dims)), 
-							operator_p_flatten_F(prox_l2norm_create(DIMS, coil_dims, regs[nr].lambda)));
+			prox_ops[nr] = operator_p_stack_FF(0, 0,
+						operator_p_flatten_F(prox_zero_create(DIMS, img_dims)),
+						operator_p_flatten_F(prox_l2norm_create(DIMS, coil_dims, regs[nr].lambda)));
 
 			break;
 		}
