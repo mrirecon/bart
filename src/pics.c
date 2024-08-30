@@ -43,6 +43,8 @@
 #include "misc/misc.h"
 #include "misc/opts.h"
 
+#include "motion/displacement.h"
+
 #include "grecon/optreg.h"
 #include "grecon/italgo.h"
 
@@ -235,6 +237,7 @@ int main_pics(int argc, char* argv[argc])
 
 	const char* pat_file = NULL;
 	const char* traj_file = NULL;
+	const char* motion_file = NULL;
 	const char* psf_ifile = NULL;
 	const char* psf_ofile = NULL;
 
@@ -325,6 +328,7 @@ int main_pics(int argc, char* argv[argc])
 		OPTL_ULONG(0, "mpi", &mpi_flags, "flags", "distribute over this dimensions with use of MPI"),
 		OPTL_FLVEC3(0, "fista_pqr", &fista.params, "p:q:r", "parameters for FISTA acceleration"),
 		OPTL_SET(0, "fista_last", &fista.last, "end iteration with call to proximal op"),
+		OPTL_INFILE(0, "motion-field", &motion_file, "file", "motion field"),
 	};
 
 
@@ -405,6 +409,17 @@ int main_pics(int argc, char* argv[argc])
 		assert(!md_check_dimensions(DIMS, basis_dims, COEFF_FLAG | TE_FLAG));
 	}
 
+	long motion_dims[DIMS] = { 0 };
+	complex float* motion = NULL;
+	unsigned long motion_flags = 0;
+
+	if (NULL != motion_file) {
+
+		motion = load_cfl(motion_file, DIMS, motion_dims);
+		assert(1 < motion_dims[MOTION_DIM]);
+		motion_flags = md_nontriv_dims(DIMS, motion_dims) & ~MOTION_FLAG;
+	}
+
 
 	complex float* traj = NULL;
 
@@ -468,8 +483,8 @@ int main_pics(int argc, char* argv[argc])
 
 	assert(1 == ksp_dims[MAPS_DIM]);
 
-	conf.gpu = bart_use_gpu;
 	num_init_gpu_support();
+	conf.gpu = bart_use_gpu;
 
 	// print options
 
@@ -571,7 +586,7 @@ int main_pics(int argc, char* argv[argc])
 
 	if (NULL == traj_file) {
 
-		forward_op = sense_init(shared_img_flags, max_dims, map_flags, maps_p);
+		forward_op = sense_init(shared_img_flags & ~motion_flags, max_dims, map_flags, maps_p);
 
 		// apply temporal basis
 
@@ -607,19 +622,11 @@ int main_pics(int argc, char* argv[argc])
 		forward_op = sense_nc_init(max_dims, map_dims, maps, ksp_dims,
 				traj_dims, traj_tmp, nuconf,
 				pat_dims, pattern,
-				basis_dims, basis, &nufft_op, shared_img_flags, lowmem_flags);
+				basis_dims, basis, &nufft_op, shared_img_flags & ~motion_flags, lowmem_flags);
 
 #ifdef USE_CUDA
-		if (gpu_gridding) {
-
+		if (gpu_gridding)
 			md_free(traj_tmp);
-
-			auto tmp = linop_gpu_wrapper((struct linop_s*)forward_op);
-
-			linop_free(forward_op);
-
-			forward_op = tmp;
-		} 
 #endif
 
 		if (NULL != psf_ofile) {
@@ -651,6 +658,26 @@ int main_pics(int argc, char* argv[argc])
 
 		linop_free(nufft_op);
 	}
+
+	if (NULL != motion) {
+
+		long img_motion_dims[DIMS];
+		md_copy_dims(DIMS, img_motion_dims, img_dims);
+		md_max_dims(DIMS, ~MOTION_FLAG, img_motion_dims, img_motion_dims, motion_dims);
+
+		const struct linop_s* motion_op = linop_interpolate_displacement_create(MOTION_DIM, (1 == img_dims[2]) ? 3 : 7, 1, DIMS, img_motion_dims, motion_dims, motion, img_dims);
+
+		forward_op = linop_chain_FF(motion_op, forward_op);
+	}
+
+#ifdef USE_CUDA
+		if (conf.gpu && (gpu_gridding || NULL == traj)) {
+
+			auto tmp = linop_gpu_wrapper((struct linop_s*)forward_op);
+			linop_free(forward_op);
+			forward_op = tmp;
+		} 
+#endif
 
 	if (NULL != hint) {
 

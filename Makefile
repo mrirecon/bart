@@ -275,6 +275,7 @@ TMRI=homodyne poisson twixread fakeksp looklocker upat fovshift
 TSIM=phantom traj signal epg sim
 TIO=toimg
 TNN=reconet nnet onehotenc measure mnist tensorflow nlinvnet
+TMOTION=affinereg interpolate estmotion
 
 
 
@@ -283,7 +284,7 @@ ifeq ($(BUILDTYPE), MSYS)
 MODULES += -lwin
 endif
 
-MODULES_pics = -lgrecon -lsense -liter -llinops -lwavelet -llowrank -lnoncart -lnn -lnlops 
+MODULES_pics = -lgrecon -lsense -lmotion -liter -llinops -lwavelet -llowrank -lnoncart -lnn -lnlops
 MODULES_sqpics = -lsense -liter -llinops -lwavelet -llowrank -lnoncart -llinops
 MODULES_pocsense = -lsense -liter -llinops -lwavelet
 MODULES_nlinv = -lnoir -liter -lnlops -llinops -lnoncart
@@ -308,7 +309,7 @@ MODULES_tgv = -liter -llinops
 MODULES_ictv = -liter -llinops
 MODULES_bench = -lwavelet -llinops
 MODULES_phantom = -lsimu -lgeom
-MODULES_bart = -lbox -lgrecon -lsense -lnoir -liter -llinops -lwavelet -llowrank -lnoncart -lcalib -lsimu -lsake -lnlops -lnetworks -lnoir -lnn -liter -lmoba -lgeom -lnn  -lnlops
+MODULES_bart = -lbox -lgrecon -lsense -lnoir -liter -llinops -lwavelet -llowrank -lnoncart -lcalib -lsimu -lsake -lnlops -lnetworks -lnoir -lnn -liter -lmoba -lgeom -lnn  -lmotion -lnlops
 MODULES_sake = -lsake
 MODULES_traj = -lnoncart
 MODULES_wave = -liter -lwavelet -llinops -llowrank
@@ -335,6 +336,9 @@ MODULES_morphop = -lnlops -llinops -lgeom
 MODULES_psf = -lnoncart -llinops
 MODULES_nlinvnet = -lnetworks -lnoir -liter -lnn -lnlops -llinops -lnoncart -lgrecon -lnetworks -lsense -liter -llinops -lwavelet -llowrank -lnoncart -lnlops -lnn
 MODULES_grog = -lcalib
+MODULES_affinereg = -lmotion -liter -lnlops -llinops
+MODULES_estmotion = -lmotion -lnn -liter -lnlops -llinops
+MODULES_interpolate = -lmotion -liter -lnlops -llinops
 
 
 
@@ -389,7 +393,7 @@ endif
 
 
 
-XTARGETS += $(TBASE) $(TFLP) $(TNUM) $(TIO) $(TRECO) $(TCALIB) $(TMRI) $(TSIM) $(TNN)
+XTARGETS += $(TBASE) $(TFLP) $(TNUM) $(TIO) $(TRECO) $(TCALIB) $(TMRI) $(TSIM) $(TNN) $(TMOTION)
 XTARGETS:=$(sort $(XTARGETS))
 
 # CTARGETS: command targets, that are in the commands/ subdir
@@ -703,7 +707,7 @@ lib/lib$(1).a: lib$(1).a($$($(1)objs))
 
 endef
 
-ALIBS = misc num grecon sense noir iter linops wavelet lowrank noncart calib simu sake nlops moba lapacke box geom networks nn
+ALIBS = misc num grecon sense noir iter linops wavelet lowrank noncart calib simu sake nlops moba lapacke box geom networks nn motion
 
 ifeq ($(ISMRMRD),1)
 ALIBS += ismrm
@@ -794,8 +798,11 @@ UTARGETS += test_nn_ops test_nn
 MODULES_test_nn_ops += -lnn -lnlops -llinops -liter
 MODULES_test_nn += -lnn -lnlops -llinops -liter
 
+UTARGETS += test_affine
+MODULES_test_affine+= -lmotion -lnlops -llinops -liter
 
-
+UTARGETS_GPU += test_cuda_affine
+MODULES_test_cuda_affine+= -lmotion -lnlops -llinops -liter
 
 
 .gitignore: .gitignore.main Makefile*
