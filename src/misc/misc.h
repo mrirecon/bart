@@ -32,7 +32,15 @@
 
 #include "misc/cppwrap.h"
 
-extern void* xmalloc(size_t s);
+#ifndef alloc_size
+#ifndef __clang__
+#define alloc_size(x) [[gnu::alloc_size(x)]]
+#else
+#define alloc_size(x)
+#endif
+#endif
+
+extern void* xmalloc(size_t s) alloc_size(1);
 extern void xfree(const void*);
 extern void warn_nonnull_ptr(void*);
 
