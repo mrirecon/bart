@@ -305,6 +305,25 @@ bool md_next(int D, const long dims[D], unsigned long flags, long pos[D])
 }
 
 
+/**
+ * Computes the next position after permuting the dims according to order.
+ * Returns true until last index.
+ */
+bool md_next_order(int D, const int order[D], const long dims[D], unsigned long flags, long pos[D])
+{
+	long dims2[D];
+	md_permute_dims(D, order, dims2, dims);
+
+	long pos2[D];
+	md_permute_dims(D, order, pos2, pos);
+
+	bool next = md_next(D, dims2, flags, pos2);
+
+	md_permute_dims_inverse(D, order, pos, pos2);
+
+	return next;
+}
+
 
 /**
  * Returns offset for position in a multidimensional array
@@ -420,6 +439,15 @@ void md_copy_dims(int D, long odims[D], const long idims[D])
 	memcpy(odims, idims, (size_t)(D * (long)sizeof(long)));
 }
 
+/**
+ * Copy dimensions
+ *
+ * odims[i] = idims[i]
+ */
+void md_copy_order(int D, int odims[D], const int idims[D])
+{
+	memcpy(odims, idims, (size_t)(D * (int)sizeof(int)));
+}
 
 
 /**
@@ -1494,6 +1522,19 @@ void md_permute_dims(int D, const int order[D], long odims[D], const long idims[
 		odims[i] = idims[order[i]];
 }
 
+/**
+ * Inverse permute dimensions
+ *
+ *
+ */
+void md_permute_dims_inverse(int D, const int order[D], long odims[D], const long idims[D])
+{
+	int inv_order[D];
+	for (int i = 0; i < D; i++)
+		inv_order[order[i]] = i;
+
+	md_permute_dims(D, inv_order, odims, idims);
+}
 
 
 static void md_transpose_order(int D, int order[D], int dim1, int dim2)
