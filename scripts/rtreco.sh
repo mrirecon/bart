@@ -200,8 +200,8 @@ filter () (
 		bart -l1024 -s $((i-1)) -e $((TOT-WIN+i)) flip 0 fil_0_$i.fifo fil_1_$i.fifo &
 	done
 
-	bart -R fil_1_1.fifo		join -- 11 $JOIN -					| \
-	bart -R -			filter -m11 -l5 -- - $DST
+	bart -r fil_1_1.fifo		join -- 11 $JOIN -					| \
+	bart -r -			filter -m11 -l5 -- - $DST
 )
 
 
@@ -246,11 +246,11 @@ trajectory () (
 	mkfifo postdelay.fifo
 
 	bart 		reshape -s 2048 -- $(bart bitmask 2 10 11) $((PHS1*TURNS)) 1 $((TOT/TURNS)) ksp_tmp.fifo -				| \
-	bart -t4 -R - 	estdelay -p10 -R -r2 -- trj_gd - predelay.fifo										| \
+	bart -t4 -r - 	estdelay -p10 -R -r2 -- trj_gd - predelay.fifo										| \
 
 	delay 11 $DELAY $DELAY predelay.fifo postdelay.fifo &
 	
-	bart -t4 -R postdelay.fifo 	traj "${topts[@]}" -V postdelay.fifo -- -								| \
+	bart -t4 -r postdelay.fifo 	traj "${topts[@]}" -V postdelay.fifo -- -								| \
 	bart 				reshape -s 1024 -- $(bart bitmask 2 10 11) $PHS1 $TOT 1 - $DST
 )
 
@@ -288,13 +288,13 @@ coilcompression_svd () (
 	cat ksp_tmp.fifo										| \
 	bart		tee tmp.fifo									| \
 	bart 		reshape -s1024 -- $(bart bitmask 2 10) $((PHS*TURNS)) $((TOT/TURNS)) - -	| \
-	bart -R -	cc -M -- - predelay.fifo							&
+	bart -r -	cc -M -- - predelay.fifo							&
 	
 	delay 10 $DELAY $DELAY predelay.fifo cc.fifo							&
 	
-	bart -R cc.fifo	repmat -- 9 $TURNS cc.fifo -							| \
+	bart -r cc.fifo	repmat -- 9 $TURNS cc.fifo -							| \
 	bart		reshape -s1024 -- $(bart bitmask 9 10) 1 $TOT - - 				| \
-	bart -R -	ccapply -p$CHANNELS -- tmp.fifo - $DST
+	bart -r -	ccapply -p$CHANNELS -- tmp.fifo - $DST
 )
 
 coilcompression_svd_first () (
@@ -332,11 +332,11 @@ coilcompression_svd_first () (
 	cat ksp_tmp.fifo										| \
 	bart		tee tmp.fifo									| \
 	bart 		reshape -s1024 -- $(bart bitmask 2 10) $((PHS*TURNS)) $((TOT/TURNS)) - -	| \
-	bart -R -	cc -M -- - - | bart tee -n cc.fifo						&
+	bart -r -	cc -M -- - - | bart tee -n cc.fifo						&
 
 	bart -l 1024	copy -- cc.fifo cc2	
 
-	bart -R tmp.fifo	ccapply -p$CHANNELS -- tmp.fifo cc2 $DST
+	bart -r tmp.fifo	ccapply -p$CHANNELS -- tmp.fifo cc2 $DST
 )
 
 
@@ -402,25 +402,25 @@ coilcompression_rovir () (
 	bart 		reshape -s1024 -- $(bart bitmask 2 10) $((PHS*TURNS)) $((TOT/TURNS)) - ksp_rovir.fifo	&
 	
 	cat $TRJ												| \
-	bart -t4 -R -	scale -- 2 - - 										| \
+	bart -t4 -r -	scale -- 2 - - 										| \
 	bart 		reshape -s1024 -- $(bart bitmask 2 10) $((PHS*TURNS)) $((TOT/TURNS)) - -		| \
 	bart 		tee trj_rovir1.fifo trj_rovir2.fifo							| \
-	bart -R - 	nufft -g -p pat -i -x$DIMS -- - ksp_rovir.fifo -			 		| \
+	bart -r - 	nufft -g -p pat -i -x$DIMS -- - ksp_rovir.fifo -			 		| \
 	bart 		tee cim1.fifo > cim2.fifo								&
 
-	bart -R cim1.fifo	fmac -- cim1.fifo pos ipos.fifo							&
-	bart -R cim2.fifo	fmac -- cim2.fifo neg ineg.fifo							&
+	bart -r cim1.fifo	fmac -- cim1.fifo pos ipos.fifo							&
+	bart -r cim2.fifo	fmac -- cim2.fifo neg ineg.fifo							&
 
-	bart -t4 -R trj_rovir1.fifo	nufft -p pat -- trj_rovir1.fifo ipos.fifo pos.fifo			&
-	bart -t4 -R trj_rovir2.fifo	nufft -p pat -- trj_rovir2.fifo ineg.fifo neg.fifo			&
+	bart -t4 -r trj_rovir1.fifo	nufft -p pat -- trj_rovir1.fifo ipos.fifo pos.fifo			&
+	bart -t4 -r trj_rovir2.fifo	nufft -p pat -- trj_rovir2.fifo ineg.fifo neg.fifo			&
 
-	bart -t4 -R pos.fifo		rovir -- pos.fifo neg.fifo predelay.fifo				&
+	bart -t4 -r pos.fifo		rovir -- pos.fifo neg.fifo predelay.fifo				&
 	
 	delay 10 $DELAY $DELAY predelay.fifo cc.fifo 								&
 	
-	bart -R cc.fifo			repmat -- 9 $TURNS cc.fifo -						| \
+	bart -r cc.fifo			repmat -- 9 $TURNS cc.fifo -						| \
 	bart				reshape -s1024 -- $(bart bitmask 9 10) 1 $TOT - - 			| \
-	bart -R -			ccapply -p$CHANNELS -- tmp.fifo - $DST
+	bart -r -			ccapply -p$CHANNELS -- tmp.fifo - $DST
 )
 
 coilcompression_geom () (
@@ -456,11 +456,11 @@ coilcompression_geom () (
 	cat ksp_tmp.fifo										| \
 	bart		tee tmp.fifo									| \
 	bart 		reshape -s1024 -- $(bart bitmask 2 10) $((PHS*TURNS)) $((TOT/TURNS)) - -	| \
-	bart -R -	cc -M -- - predelay.fifo							&
+	bart -r -	cc -M -- - predelay.fifo							&
 
 	delay 10 $DELAY $DELAY predelay.fifo cc.fifo							&
 
-	bart -R cc.fifo	repmat -- 9 $TURNS cc.fifo -							| \
+	bart -r cc.fifo	repmat -- 9 $TURNS cc.fifo -							| \
 	bart		reshape -s1024 -- $(bart bitmask 9 10) 1 $TOT - - 				| \
 	bart		ccapply -A10 -p$CHANNELS -- tmp.fifo - $DST
 )
@@ -475,7 +475,7 @@ mkfifo ksp.fifo
 mkfifo meta0.fifo
 mkfifo meta1.fifo
 
-bart -R $KSP copy -- $KSP - | bart tee --out0 meta0.fifo | bart tee --out0 meta1.fifo -n ksp.fifo &
+bart -r $KSP copy -- $KSP - | bart tee --out0 meta0.fifo | bart tee --out0 meta1.fifo -n ksp.fifo &
 
 echo "WORKING_DIR:    $WORKDIR" >> $LOGFILE
 echo "k-Space:        $KSP" 	>> $LOGFILE
@@ -512,22 +512,22 @@ else
 	coilcompression_svd		ksp_cc.fifo trj_cc.fifo ksp_reco.fifo &
 fi
 
-cat trj.fifo | bart tee trj_cc.fifo | bart -R - scale -- $OVERGRIDDING - trj_reco.fifo &
+cat trj.fifo | bart tee trj_cc.fifo | bart -r - scale -- $OVERGRIDDING - trj_reco.fifo &
 cat ksp.fifo | bart tee -n ksp_gd.fifo ksp_cc.fifo &
 
 bart 		nlinv --cgiter=10 -S --real-time --fast -g --sens-os=1.25 -i6 -x$GDIMS:$GDIMS:1 -ppat -t trj_reco.fifo -- ksp_reco.fifo - $COILS	| \
 bart		tee $TIME																| \
-bart -R - 	flip -- 3 - -																| \
-bart -R - 	resize -c -- 0 $RDIMS 1 $RDIMS - reco.fifo												&
+bart -r - 	flip -- 3 - -																| \
+bart -r - 	resize -c -- 0 $RDIMS 1 $RDIMS - reco.fifo												&
 
 if $FILTER ; then 
 
 	mkfifo reco_fil.fifo
 
 	filter 5 reco.fifo reco_fil.fifo &
-	bart -R reco_fil.fifo copy -- reco_fil.fifo $REC &
+	bart -r reco_fil.fifo copy -- reco_fil.fifo $REC &
 else
-	bart -R reco.fifo copy -- reco.fifo $REC &
+	bart -r reco.fifo copy -- reco.fifo $REC &
 fi
 
 } 2>>$LOGFILE

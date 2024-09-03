@@ -53,7 +53,7 @@ tests/test-stream-loop: bart
 
 tests/test-stream-loop-ref: bart
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)									;\
-	$(ROOTDIR)/bart mandelbrot -s 64 -n8 -I -- - | $(ROOTDIR)/bart -t3 -R - resize -c -- 0 32 - - | 		\
+	$(ROOTDIR)/bart mandelbrot -s 64 -n8 -I -- - | $(ROOTDIR)/bart -t3 -r - resize -c -- 0 32 - - | 		\
 	$(ROOTDIR)/bart copy -- - ret1.ra										;\
 	$(ROOTDIR)/bart mandelbrot -s 64 -n8 -I tmp.ra								;\
 	$(ROOTDIR)/bart resize -c 0 32 tmp.ra ret2.ra									;\

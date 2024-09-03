@@ -80,7 +80,7 @@ tests/test-ccapply-rgc-forward: bart cc ccapply copy nrmse fft transpose traj ph
 	$(TOOLDIR)/join -- 11 phantom_1.ra phantom_2.ra -					|\
 	$(TOOLDIR)/reshape -- $$($(TOOLDIR)/bitmask 10 11) 10 1 - phantom.ra			;\
 	$(TOOLDIR)/copy --stream 1024 -- phantom.ra -						|\
-	$(ROOTDIR)/bart -R - cc -A -M -- - $(TESTS_OUT)/ccmat.ra				;\
+	$(ROOTDIR)/bart -r - cc -A -M -- - $(TESTS_OUT)/ccmat.ra				;\
 	$(TOOLDIR)/ccapply -p4 -A10 phantom.ra $(TESTS_OUT)/ccmat.ra $(TESTS_OUT)/ksp-cc.ra	;\
 	$(TOOLDIR)/transpose -- 10 0 phantom.ra -						|\
 	$(TOOLDIR)/fft -u -- 1  - -								|\
