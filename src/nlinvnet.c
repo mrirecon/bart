@@ -182,7 +182,7 @@ int main_nlinvnet(int argc, char* argv[argc])
 
 		OPTL_INFILE('l', "load", (const char**)(&(filename_weights_load)), "<weights-init>", "load weights for continuing training"),
 
-		OPTL_SUBOPT('T', "train-algo", "...", "configure general training parmeters", N_iter6_opts, iter6_opts),
+		OPTL_SUBOPT('T', "train-algo", "...", "configure general training parameters", N_iter6_opts, iter6_opts),
 		OPTL_SUBOPT(0, "adam", "...", "configure adam optimizer", N_iter6_adam_opts, iter6_adam_opts),
 		OPTL_SUBOPT(0, "train-loss", "...", "configure the training loss", N_loss_opts, loss_opts),
 		OPTL_INFILE(0, "mask", &(filename_mask), "<mask>", "mask for computation of loss"),

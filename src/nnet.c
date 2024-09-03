@@ -121,7 +121,7 @@ int main_nnet(int argc, char* argv[argc])
 		OPTL_SUBOPT(0, "valid-loss", "...", "configure the validation loss", N_val_loss_opts, val_loss_opts),
 		OPTL_SUBOPT(0, "valid-data", "...", "provide validation data", ARRAY_SIZE(validation_opts), validation_opts),
 
-		OPTL_SUBOPT('T', "train-algo", "...", "configure general training parmeters", N_iter6_opts, iter6_opts),
+		OPTL_SUBOPT('T', "train-algo", "...", "configure general training parameters", N_iter6_opts, iter6_opts),
 		OPTL_SUBOPT(0, "adam", "...", "configure Adam", N_iter6_adam_opts, iter6_adam_opts),
 		//OPTL_SUBOPT(0, "iPALM", "...", "configure iPALM", N_iter6_ipalm_opts, iter6_ipalm_opts),
 
