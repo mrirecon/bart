@@ -121,15 +121,22 @@ static void get_odims_segm(const struct nnet_s* config, int NO, long odims[NO], 
 	odims[0] = config->N_segm_labels;
 }
 
-void nnet_init_unet_segm_default(struct nnet_s* nnet, long N_segm_labels)
+void nnet_init_unet_segm_default(struct nnet_s* nnet, long N_unet_segm_labels, long N_nnunet_segm_labels)
 {
+	if (   ((-1 == N_unet_segm_labels) && (-1 == N_nnunet_segm_labels))
+	    || ((-1 != N_unet_segm_labels) && (-1 != N_nnunet_segm_labels)))
+		error("Either U-Net or nnU-Net for segmentation has to be selected!\n");	
+
 	PTR_ALLOC(struct iter6_adam_conf, train_conf);
 	*train_conf = iter6_adam_conf_defaults;
 
 	nnet->train_conf = CAST_UP(PTR_PASS(train_conf));
 
 	PTR_ALLOC(struct network_unet_s, network);
-	*network = network_unet_default_segm;
+	if (-1 != N_nnunet_segm_labels)
+		*network = network_nnunet_default_segm;
+	else
+		*network = network_unet_default_segm;
 
 	nnet->network = CAST_UP(PTR_PASS(network));
 
@@ -145,7 +152,7 @@ void nnet_init_unet_segm_default(struct nnet_s* nnet, long N_segm_labels)
 	if (NULL == nnet->valid_loss)
 		nnet->valid_loss =  &loss_classification_valid;
 
-	nnet->N_segm_labels = N_segm_labels;
+	nnet->N_segm_labels =MAX(N_unet_segm_labels, N_nnunet_segm_labels);
 }
 
 

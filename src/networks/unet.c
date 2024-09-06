@@ -84,6 +84,8 @@ struct network_unet_s network_unet_default_reco = {
 	.channel_factor = 1.,	//number channels on lower level
 	.reduce_factor = 2.,	//reduce resolution of lower level
 
+	.max_channels = 512,
+
 	.Nl_before = 2,
 	.Nl_after = 2,
 	.Nl_lowest = 4,
@@ -94,6 +96,8 @@ struct network_unet_s network_unet_default_reco = {
 	.init_zeros_residual = false,
 
 	.use_bn = false,
+	.use_instnorm = false,
+	.use_nnunet_last = false,
 	.use_bias = true,
 
 	.activation = ACT_RELU,
@@ -142,6 +146,10 @@ struct network_unet_s network_unet_default_segm = {
 	.channel_factor = 1.,	//number channels on lower level
 	.reduce_factor = 2.,	//reduce resolution of lower level
 
+	.max_channels = 512,
+
+	.Nl_highest_before = 1,
+	.Nl_highest_after = 1,
 	.Nl_before = 1,
 	.Nl_after = 1,
 	.Nl_lowest = 2,
@@ -149,6 +157,8 @@ struct network_unet_s network_unet_default_segm = {
 	.real_constraint = true,
 
 	.use_bn = false,
+	.use_instnorm = false,
+	.use_nnunet_last = false,
 	.use_bias = true,
 
 	.activation = ACT_RELU,
@@ -159,7 +169,71 @@ struct network_unet_s network_unet_default_segm = {
 	.ds_method = UNET_DS_STRIDED_CONV,
 	.us_method = UNET_US_STRIDED_CONV,
 
-	.combine_method = UNET_COMBINE_ADD,
+	.combine_method = UNET_COMBINE_STACK,
+
+	.INTERFACE.residual = false,
+
+	.adjoint = false,
+
+	.init_real = false,
+	.init_zeros_residual = false,
+};
+
+struct network_unet_s network_nnunet_default_segm = {
+
+	.INTERFACE.TYPEID = &TYPEID2(network_unet_s),
+	.INTERFACE.create = network_unet_create,
+	.INTERFACE.low_mem = false,
+
+	.INTERFACE.debug = false,
+	.INTERFACE.bart_to_channel_first = false,
+	.INTERFACE.loopdim = -1,
+
+	.N = 5,
+
+	.kdims = {[0 ... DIMS -1] = 0},
+	.dilations = {[0 ... DIMS -1] = 1},
+
+	.Nf = 32,
+	.Kx = 3,
+	.Ky = 3,
+	.Kz = 1,
+	.Ng = 1,
+
+	.conv_flag = 14,
+	.channel_flag = 1,
+	.group_flag = 0,
+	.batch_flag = 16,
+
+	.N_level = 6,
+
+	.channel_factor = 2.,	//number channels on lower level
+	.reduce_factor = 2.,	//reduce resolution of lower level
+
+	.max_channels = 480,
+
+	.Nl_highest_before = 2,
+	.Nl_highest_after = 3,
+	.Nl_before = 1,
+	.Nl_after = 2,
+	.Nl_lowest = 2,
+
+	.real_constraint = true,
+
+	.use_bn = false,
+	.use_instnorm = true,
+	.use_nnunet_last = true,
+	.use_bias = true,
+
+	.activation = ACT_LRELU,
+	.activation_output = ACT_SOFTMAX,
+
+	.padding = PAD_SAME,
+
+	.ds_method = UNET_DS_STRIDED_CONV,
+	.us_method = UNET_US_STRIDED_CONV,
+
+	.combine_method = UNET_COMBINE_STACK,
 
 	.INTERFACE.residual = false,
 
@@ -171,8 +245,8 @@ struct network_unet_s network_unet_default_segm = {
 
 static nn_t unet_sort_names(nn_t network, struct network_unet_s* unet)
 {
-	const char* prefixes[] = { "_init", "_before", "_down", "", "_up", "_after", "_last" };
-	const char* weights[] = { "conv", "corr", "conv_adj", "corr_adj", "bn", "bn_gamma", "bias" };
+	const char* prefixes[] = { "_init", "_before", "_down", "", "_up", "_stack", "_after", "_last" };
+	const char* weights[] = { "conv", "corr", "conv_adj", "corr_adj", "bn", "bn_gamma", "inorm", "bias" };
 
 	const char* names[unet->N_level][ARRAY_SIZE(prefixes)][ARRAY_SIZE(weights)];
 
@@ -212,7 +286,9 @@ struct nn_conv_block_s {
 	enum ACTIVATION activation;
 
 	bool use_bias;
+	bool use_nnunet_last;
 	bool use_bn;
+	bool use_instnorm;
 	bool use_bn_gamma;
 
 	bool stack;
@@ -249,7 +325,7 @@ static nn_t nn_unet_append_conv_block(	nn_t network, int o, const char* oname,
 
 	const struct initializer_s* init_conv = NULL;
 
-	if (config->init_zero && !config->use_bn)
+	if (config->init_zero && !config->use_bn && !config->use_instnorm)
 		init_conv = init_const_create(0);
 	else
 		init_conv = init_kaiming_create(in_flag, config->init_real, false, 0);
@@ -331,6 +407,43 @@ static nn_t nn_unet_append_conv_block(	nn_t network, int o, const char* oname,
 		}
 	}
 
+	if (config->use_instnorm) {
+
+		network = nn_append_normalize_layer(network, o, config->conv_flag, 1.e-5);
+
+		const char* name = ptr_printf("%sinorm%s", name_prefix, name_postfix);
+		const char* name_tmp = ptr_printf("%sinorm_tmp", name_prefix);
+
+		stack = config->stack && nn_is_name_in_in_args(network, name);
+		name_working = stack ? name_tmp : name;
+
+		//append weights for instance norm
+		auto iov = nn_generic_codomain(network, 0, NULL);
+		long gdims [iov->N];
+		md_select_dims(iov->N, config->channel_flag | config->group_flag, gdims, iov->dims);
+
+		auto nn_scale_gamma = nn_from_nlop_F(nlop_tenmul_create(iov->N, iov->dims, iov->dims, gdims));
+		network = nn_chain2_swap_FF(network, o, oname, nn_scale_gamma, 0, NULL);
+		network = nn_set_input_name_F(network, -1, name_working);
+		network = nn_set_initializer_F(network, 0, name_working, init_const_create(config->init_zero ? 0 : 1));
+		network = nn_set_in_type_F(network, 0, name_working, IN_OPTIMIZE);
+		network = nn_set_dup_F(network, 0, name_working, false);
+
+		if (NULL == oname)
+			network = nn_shift_output_F(network, o, NULL, 0, NULL);
+		else
+			network = nn_set_output_name_F(network, 0, oname);
+
+		if (config->stack)
+			network = nn_append_singleton_dim_in_F(network, 0, name_working);
+
+		if (stack)
+			network = nn_stack_inputs_F(network, 0, name, 0, name_tmp, -1);
+
+		xfree(name);
+		xfree(name_tmp);
+	}
+
 	if (config->use_bias) {
 
 		const char* name = ptr_printf("%sbias%s", name_prefix, name_postfix);
@@ -392,15 +505,29 @@ static nn_t unet_append_conv_block(	nn_t network, struct network_unet_s* unet,
 
 	config.use_bias = unet->use_bias;
 	config.use_bn = unet->use_bn;
+	config.use_instnorm = unet->use_instnorm;
 	config.use_bn_gamma = unet->use_bn && last_layer;
 
 	config.stack = true;
 	config.name_prefix = name_prefix;
 
+	long kdims_a[N];
+	md_copy_dims(N, kdims_a, kdims);
+	if (last_layer && unet->use_nnunet_last) {
+
+		for (int i = 0; i < N; i++) {
+			if (MD_IS_SET(unet->conv_flag, i))
+				kdims_a[i] = 1;
+		}
+
+		config.use_bias = false;
+		config.use_instnorm = false;
+	}
+
 	config.init_real = unet->init_real || unet->real_constraint;
 	config.init_zero = get_init_zero(unet, level, last_layer && after);
 
-	return nn_unet_append_conv_block(network, 0, NULL, &config, N, kdims, MD_SINGLETON_DIMS(N), unet->dilations, status);
+	return nn_unet_append_conv_block(network, 0, NULL, &config, N, kdims_a, MD_SINGLETON_DIMS(N), unet->dilations, status);
 }
 
 
@@ -454,13 +581,18 @@ static nn_t unet_sample_conv_strided_create(struct network_unet_s* unet, int N, 
 			assert(0 == dims[i] % stride);
 			down_dims[i] = dims[i] / stride;
 			strides[i] = stride;
-			kdims[i] = 3;
+			if (up) {
+				kdims[i] = 2;
+			} else {
+				kdims[i] = 3;
+			}
 		}
 
 		if (MD_IS_SET(unet->channel_flag, i)) {
 
-			kdims[i] = up ? dims[i] : dims[i] * unet->channel_factor;
-			down_dims[i] = dims[i] * unet->channel_factor;
+			kdims[i] = up ? dims[i] : (dims[i] * unet->channel_factor > unet->max_channels ? unet->max_channels : dims[i] * unet->channel_factor);
+			down_dims[i] = dims[i] * unet->channel_factor > unet->max_channels ? unet->max_channels : dims[i] * unet->channel_factor;
+
 		}
 
 		if (MD_IS_SET(unet->group_flag, i))
@@ -477,10 +609,85 @@ static nn_t unet_sample_conv_strided_create(struct network_unet_s* unet, int N, 
 	config.conv = false;
 
 	config.padding = PAD_SAME;
-	config.activation = ACT_LIN;
+	config.activation = up ? ACT_LIN : unet->activation;
 
-	config.use_bias = unet->use_bias;
+	config.use_bias = up ? false : unet->use_bias;
 	config.use_bn = unet->use_bn;
+	config.use_instnorm = up ? false : unet->use_instnorm;
+	config.use_bn_gamma = unet->use_bn && up;
+
+	config.stack = true;
+	config.name_prefix = ptr_printf("level_%u_%s_", level, up ? "up" : "down");
+
+	config.init_real = unet->init_real || unet->real_constraint;
+	config.init_zero = get_init_zero(unet, level, up);
+
+	auto result = nn_from_nlop_F(nlop_from_linop_F(linop_identity_create(N, up ? down_dims : dims)));
+	result = nn_unet_append_conv_block(result, 0, NULL, &config, N, kdims, strides, dilations, status);
+
+	xfree(config.name_prefix);
+
+	return result;
+}
+
+static nn_t nnunet_sample_conv_strided_create(struct network_unet_s* unet, int N, const long dims[N], long down_dims[N], bool up, int level, enum NETWORK_STATUS status)
+{
+	long kdims[N];
+	long strides[N];
+	long dilations[N];
+
+	md_singleton_dims(N, kdims);
+	md_singleton_dims(N, strides);
+	md_singleton_dims(N, dilations);
+
+	md_copy_dims(N, down_dims, dims);
+
+	if (unet->reduce_factor != roundf(unet->reduce_factor))
+		error("Convolution can only be used for integer downsampling\n");
+
+	long stride = lroundf(unet->reduce_factor);
+
+	for (int i = 0; i < N; i++) {
+
+		if (MD_IS_SET(unet->conv_flag, i) && (1 < dims[i])) {
+
+			assert(0 == dims[i] % stride);
+			down_dims[i] = dims[i] / stride;
+			strides[i] = stride;
+			if (up) {
+				kdims[i] = 2;
+			} else {
+				kdims[i] = 3;
+			}
+		}
+
+		if (MD_IS_SET(unet->channel_flag, i)) {
+
+			kdims[i] = up ? dims[i] : (dims[i] * unet->channel_factor > unet->max_channels ? unet->max_channels : dims[i] * unet->channel_factor);
+			down_dims[i] = dims[i] * unet->channel_factor > unet->max_channels ? unet->max_channels : dims[i] * unet->channel_factor;
+		}
+
+		if (MD_IS_SET(unet->group_flag, i)) {
+
+			kdims[i] = dims[i];
+		}
+	}
+
+	struct nn_conv_block_s config;
+
+	config.conv_flag = unet->conv_flag;
+	config.channel_flag = unet->channel_flag;
+	config.group_flag = unet->group_flag;
+
+	config.adjoint = up;
+	config.conv = false;
+
+	config.padding = PAD_SAME;
+	config.activation = up ? ACT_LIN : unet->activation;
+
+	config.use_bias = up ? false : unet->use_bias;
+	config.use_bn = unet->use_bn;
+	config.use_instnorm = up ? false : unet->use_instnorm;
 	config.use_bn_gamma = unet->use_bn && up;
 
 	config.stack = true;
@@ -506,6 +713,9 @@ static nn_t unet_downsample_create(struct network_unet_s* unet, int N, const lon
 
 	case UNET_DS_STRIDED_CONV:
 		return unet_sample_conv_strided_create(unet, N, dims, down_dims, false, level, status);
+
+	case NNUNET_DS_STRIDED_CONV:
+		return nnunet_sample_conv_strided_create(unet, N, dims, down_dims, false, level, status);
 	}
 
 	assert(0);
@@ -520,6 +730,9 @@ static nn_t unet_upsample_create(struct network_unet_s* unet, int N, const long 
 
 	case UNET_US_STRIDED_CONV:
 		return unet_sample_conv_strided_create(unet, N, dims, down_dims, true, level, status);
+
+	case NNUNET_US_STRIDED_CONV:
+		return nnunet_sample_conv_strided_create(unet, N, dims, down_dims, true, level, status);
 	}
 
 	assert(0);
@@ -563,7 +776,7 @@ static void unet_get_kdims(const struct network_unet_s* config, int N, long kdim
 			continue;
 
 		for (int j = 0; j < level; j++)
-			kdims[i] = lroundf(kdims[i] * config->channel_factor);
+			kdims[i] = lroundf(kdims[i] * config->channel_factor > config->max_channels ? config->max_channels : kdims[i] * config->channel_factor);
 	}
 }
 
@@ -645,7 +858,7 @@ static nn_t unet_lowest_level_create(struct network_unet_s* unet, int N, const l
 		char prefix[prefix_len + 1];
 		sprintf(prefix, "level_%u_", level);
 
-		bool last_layer = (unet->us_method != UNET_US_STRIDED_CONV) && last_same && (i + 1 == Nl);
+		bool last_layer = (unet->us_method != UNET_US_STRIDED_CONV) && (unet->us_method != NNUNET_US_STRIDED_CONV) && last_same && (i + 1 == Nl);
 		result = unet_append_conv_block(result, unet, N, kdims, last_layer ? ACT_LIN : unet->activation, level, 2 * (init_same ? i : i + 1) >= unet->Nl_lowest, last_layer, prefix, status);
 	}
 
@@ -656,7 +869,7 @@ static nn_t unet_lowest_level_create(struct network_unet_s* unet, int N, const l
 		char prefix[prefix_len + 1];
 		sprintf(prefix, "level_%u_last_", level);
 
-		bool last_layer = (unet->us_method != UNET_US_STRIDED_CONV);
+		bool last_layer = (unet->us_method != UNET_US_STRIDED_CONV) && (unet->us_method != NNUNET_US_STRIDED_CONV);
 
 		result = unet_append_conv_block(result, unet, N, okdims, last_layer ? ACT_LIN : unet->activation, level, true, last_layer, prefix, status);
 	}
@@ -725,6 +938,12 @@ static nn_t unet_level_create(struct network_unet_s* unet, int N, const long odi
 	long Nl_before = init_same ? unet->Nl_before : unet->Nl_before - 1;
 	long Nl_after = last_same ? unet->Nl_after : unet->Nl_after - 1;
 
+	if (0 == level) {
+		Nl_before = init_same ? unet->Nl_highest_before : unet->Nl_highest_before - 1;
+		Nl_after = last_same ? unet->Nl_highest_after : unet->Nl_highest_after - 1;
+	}
+
+	//debug_printf(DP_INFO, "NL_before%ld\n", Nl_before);
 
 	// create first block of convolution
 	auto result = nn_from_nlop_F(nlop_from_linop_F(linop_identity_create(N, idims)));
@@ -763,6 +982,10 @@ static nn_t unet_level_create(struct network_unet_s* unet, int N, const long odi
 	long tdims[N];
 	md_copy_dims(N, tdims, nn_generic_codomain(result, 0, NULL)->dims);
 
+	long stack_dims[N];
+	md_copy_dims(N, stack_dims, nn_generic_codomain(result, 0, NULL)->dims);
+	stack_dims[0] = tdims[0] * 2;
+
 	const struct nlop_s* nlop_join = NULL;
 
 	if (UNET_COMBINE_ATTENTION_SIGMOID == unet->combine_method)
@@ -770,6 +993,9 @@ static nn_t unet_level_create(struct network_unet_s* unet, int N, const long odi
 
 	if (UNET_COMBINE_ADD == unet->combine_method)
 		nlop_join = nlop_zaxpbz_create(N, nn_generic_codomain(result, 0, NULL)->dims, 1, 1);
+
+	if (UNET_COMBINE_STACK == unet->combine_method)
+		nlop_join = nlop_stack_create(N, stack_dims, tdims, tdims, 0);
 
 	lower_level = nn_chain2_swap_FF(lower_level, 0, NULL, nn_from_nlop_F(nlop_join), 0, NULL);
 	lower_level = nn_dup_F(lower_level, 0, NULL, 1, NULL);
@@ -791,9 +1017,14 @@ static nn_t unet_level_create(struct network_unet_s* unet, int N, const long odi
 
 		int prefix_len = snprintf(NULL, 0, "level_%u_after_", level);
 		char prefix[prefix_len + 1];
-		sprintf(prefix, "level_%u_after_", level);
 
-		bool last_layer = ((unet->us_method != UNET_US_STRIDED_CONV) || (0 == level)) && last_same && (i + 1 == Nl_after);
+		if (UNET_COMBINE_STACK == unet->combine_method &&  0 == i) {
+			sprintf(prefix, "level_%u_stack_", level);
+		} else {
+			sprintf(prefix, "level_%u_after_", level);
+		}
+
+		bool last_layer = (((unet->us_method != UNET_US_STRIDED_CONV) && (unet->us_method != NNUNET_US_STRIDED_CONV)) || (0 == level)) && last_same && (i + 1 == Nl_after);
 		result = unet_append_conv_block(result, unet, N, kdims, last_layer ? activation_last_layer : unet->activation, level, true, last_layer, prefix, status);
 	}
 
@@ -803,7 +1034,7 @@ static nn_t unet_level_create(struct network_unet_s* unet, int N, const long odi
 		char prefix[prefix_len + 1];
 		sprintf(prefix, "level_%u_last_", level);
 
-		bool last_layer = ((unet->us_method != UNET_US_STRIDED_CONV) || (0 == level));
+		bool last_layer = (((unet->us_method != UNET_US_STRIDED_CONV) && (unet->us_method != NNUNET_US_STRIDED_CONV)) || (0 == level));
 		result = unet_append_conv_block(result, unet, N, okdims, last_layer ? activation_last_layer : unet->activation, level, true, last_layer, prefix, status);
 	}
 

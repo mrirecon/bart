@@ -4,6 +4,7 @@
 enum UNET_DOWNSAMPLING_METHOD {
 	UNET_DS_STRIDED_CONV,
 	UNET_DS_FFT,
+	NNUNET_DS_STRIDED_CONV,
 	//UNET_DS_MAX_POOL,
 	//UNET_DS_AVERAGE_POOL
 	};
@@ -11,11 +12,13 @@ enum UNET_DOWNSAMPLING_METHOD {
 enum UNET_UPSAMPLING_METHOD {
 	UNET_US_STRIDED_CONV,
 	UNET_US_FFT,
+	NNUNET_US_STRIDED_CONV
 	//UNET_US_AVERAGE_POOL,
 	};
 
 enum UNET_COMBINE_METHOD {
 	UNET_COMBINE_ADD,
+	UNET_COMBINE_STACK,
 	UNET_COMBINE_ATTENTION_SIGMOID,
 };
 
@@ -43,6 +46,10 @@ struct network_unet_s {
 	float channel_factor; //number channels on lower level
 	float reduce_factor; //reduce resolution of lower level
 
+	long max_channels; //maximum number of channels
+
+	long Nl_highest_before; //number of layers in highest level
+	long Nl_highest_after; //number of layers in highest level
 	long Nl_before; //number of layers per level
 	long Nl_after; //number of layers per level
 	long Nl_lowest; //number of layers per level
@@ -53,6 +60,8 @@ struct network_unet_s {
 	_Bool init_zeros_residual;	//initialize weights such that output of each level is initialized with zeros
 
 	_Bool use_bn;
+	_Bool use_instnorm;
+	_Bool use_nnunet_last;
 	_Bool use_bias;
 
 	enum ACTIVATION activation;
@@ -71,6 +80,7 @@ struct network_unet_s {
 
 extern struct network_unet_s network_unet_default_reco;
 extern struct network_unet_s network_unet_default_segm;
+extern struct network_unet_s network_nnunet_default_segm;
 
 extern nn_t network_unet_create(const struct network_s* config, int NO, const long odims[NO], int NI, const long idims[NI], enum NETWORK_STATUS status);
 extern _Bool unet_is_diagonal(const struct network_s* config);

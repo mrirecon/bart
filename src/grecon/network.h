@@ -24,6 +24,9 @@ extern struct opt_s unet_reco_opts[];
 extern const int N_unet_segm_opts;
 extern struct opt_s unet_segm_opts[];
 
+extern const int N_nnunet_segm_opts;
+extern struct opt_s nnunet_segm_opts[];
+
 extern const int N_tensorflow_opts;
 extern struct opt_s network_tensorflow_opts[];
 

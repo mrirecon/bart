@@ -35,7 +35,7 @@ extern struct nnet_s nnet_init;
 struct network_data_s;
 
 extern void nnet_init_mnist_default(struct nnet_s* nnet);
-extern void nnet_init_unet_segm_default(struct nnet_s* nnet, long N_segm_labels);
+extern void nnet_init_unet_segm_default(struct nnet_s* nnet, long N_unet_segm_labels, long N_nnunet_segm_labels);
 
 extern void apply_nnet(	const struct nnet_s* nnet,
 			int NO, const long odims[NO], _Complex float* out,
