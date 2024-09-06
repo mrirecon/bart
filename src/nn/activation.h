@@ -2,7 +2,7 @@
 #ifndef _ACTIVATION_H
 #define _ACTIVATION_H
 
-enum ACTIVATION { ACT_LIN, ACT_RELU, ACT_SOFTMAX, ACT_SIGMOID, ACT_CARDIOID, ACT_SIGLOG, ACT_IGAUSSIAN };
+enum ACTIVATION {ACT_LIN, ACT_RELU, ACT_LRELU, ACT_SOFTMAX, ACT_SIGMOID, ACT_CARDIOID, ACT_SIGLOG, ACT_IGAUSSIAN};
 
 extern const struct nlop_s* append_activation(const struct nlop_s* network, int o, enum ACTIVATION activation);
 extern const struct nlop_s* append_activation_bias(const struct nlop_s* network, int o, enum ACTIVATION activation, unsigned long bias_flags);

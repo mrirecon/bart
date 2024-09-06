@@ -96,6 +96,11 @@ static const struct nlop_s* append_activation_bias_internal(const struct nlop_s*
 		nlop_act = nlop_relu_create(N, dims);
 		break;
 
+	case ACT_LRELU:
+
+		nlop_act = nlop_leaky_relu_create(N, dims, 0.01);
+		break;
+
 	case ACT_SOFTMAX:
 
 		nlop_act = nlop_softmax_create(N, dims, ~bflags);
@@ -276,7 +281,7 @@ static void relu_apply(const nlop_data_t* _data, complex float* _dst, const comp
 
 	int N = d->N;
 	const long* dims = d->rdims;
-	
+
 	float* dst = (float*)_dst;
 	const float* src = (float*)_src;
 
@@ -339,10 +344,10 @@ static void relu_deradj(const nlop_data_t* _data, int o, int i, complex float* _
 
 	assert(0 == i);
 	assert(0 == o);
-	
+
 	int N = d->N;
 	const long* dims = d->rdims;
-	
+
 	float* dst = (float*)_dst;
 	const float* src = (float*)_src;
 
@@ -355,7 +360,7 @@ static void relu_deradj(const nlop_data_t* _data, int o, int i, complex float* _
 	if (0 != d->slope_param) {
 
 		md_smul(N, dims, dst, dst, 1. - d->slope_param);
-		md_axpy(N, dims, dst, d->slope_param, src);	
+		md_axpy(N, dims, dst, d->slope_param, src);
 	}
 
 	md_free(der);
@@ -571,7 +576,7 @@ const struct nlop_s* nlop_sigmoid_create(int N, const long dims[N])
 
 
 /**
- * Create Cardioid nlop 
+ * Create Cardioid nlop
  * f(z) = 0.5(1+cos(arg(z)))z = (|z|+z)^2/(4|z|)
  * PHD thesis Patrick Virtue : https://www2.eecs.berkeley.edu/Pubs/TechRpts/2019/EECS-2019-126.pdf
  */
@@ -581,7 +586,7 @@ const struct nlop_s* nlop_cardioid_create(int N, const long dims[N])
 
 	result = nlop_chain2_FF(result, 0, nlop_zaxpbz_create(N, dims, 1., 1.), 0);
 	result = nlop_dup_F(result, 0, 1);
-	
+
 	auto square = nlop_tenmul_create(N, dims, dims, dims);
 
 	square = nlop_dup_F(square, 0, 1);
@@ -597,7 +602,7 @@ const struct nlop_s* nlop_cardioid_create(int N, const long dims[N])
 
 
 /**
- * Create siglog nlop 
+ * Create siglog nlop
  * f(z) = z / (c + |z| / r)
  * PHD thesis Patrick Virtue : https://www2.eecs.berkeley.edu/Pubs/TechRpts/2019/EECS-2019-126.pdf
  */
@@ -613,7 +618,7 @@ const struct nlop_s* nlop_siglog_create(int N, const long dims[N], float c, floa
 
 
 /**
- * Create iGaussian nlop 
+ * Create iGaussian nlop
  * f(z) = (1 - exp(-|z|^2/(2s^2)))*z/|z|
  * PHD thesis Patrick Virtue : https://www2.eecs.berkeley.edu/Pubs/TechRpts/2019/EECS-2019-126.pdf
  */
