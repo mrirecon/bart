@@ -25,7 +25,6 @@
  * specifies the strides for each argument.
  *
  * All functions should work on CPU and GPU.
- *
  */
 
 #include <stddef.h>
