@@ -224,7 +224,7 @@ static void normalize_fun(const nlop_data_t* _data, int N, complex float* args[N
 	} else
 #endif
 	{
-		md_zsub2(data->dom->N, data->dom->dims, data->dom->strs, data->tmp, data->dom->strs, src, data->statdom->strs, mean);	
+		md_zsub2(data->dom->N, data->dom->dims, data->dom->strs, data->tmp, data->dom->strs, src, data->statdom->strs, mean);
 	}
 
 	md_zmul2(data->dom->N, data->dom->dims, data->dom->strs, dst, data->dom->strs, data->tmp, data->statdom->strs, data->scale);
@@ -335,7 +335,7 @@ static void normalize_del(const struct nlop_data_s* _data)
  * Out 0:	Normalized input (x - mu) / sqrt(sigma^2 + epsilon)
  *
  **/
-const struct nlop_s* nlop_normalize_create(int N, const long dims[N], unsigned long flags, float epsilon)
+const struct nlop_s* nlop_normalize_stats_create(int N, const long dims[N], unsigned long flags, float epsilon)
 {
 	PTR_ALLOC(struct normalize_s, data);
 	SET_TYPEID(normalize_s, data);
@@ -620,7 +620,7 @@ const struct nlop_s* nlop_batchnorm_create(int N, const long dims[N], unsigned l
 
 	case STAT_TEST:
 
-		result = nlop_normalize_create(N, dims, flags, epsilon);
+		result = nlop_normalize_stats_create(N, dims, flags, epsilon);
 		result = nlop_append_singleton_dim_in_F(result, 1);
 		result = nlop_append_singleton_dim_in_F(result, 2);
 		result = nlop_stack_inputs_F(result, 1, 2, N);
@@ -633,4 +633,28 @@ const struct nlop_s* nlop_batchnorm_create(int N, const long dims[N], unsigned l
 
 	assert(0);
 	return NULL;
+}
+
+/**
+ * Nlop to normalize input
+ *
+ * @param dims dims of input tensor
+ * @param flags dims to compute mean/var over, i.e. dimensions that are not present in Mean/Var
+ * @param epsilon small factor for numerical stability
+ *
+ * In 0:	Input			dims: {n1, n2, ..., nN}
+ *
+ * Out 0:	Normalized Input	dims: {n1, n2, ..., nN}
+ **/
+const struct nlop_s* nlop_normalize_create(int N, const long dims[N], unsigned long flags, float epsilon)
+{
+
+	const struct nlop_s* result = NULL;
+
+	result = nlop_combine_FF(nlop_normalize_stats_create(N, dims, flags, epsilon), nlop_stats_create(N, dims, flags));
+	result = nlop_dup_F(result, 0, 3);
+	result = nlop_link_F(result, 1, 1);
+	result = nlop_link_F(result, 1, 1);
+
+	return result;
 }

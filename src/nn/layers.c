@@ -732,3 +732,24 @@ const struct nlop_s* append_batchnorm_layer(const struct nlop_s* network, int o,
 
 	return network;
 }
+
+/**
+ * Append normalization
+ *
+ * @param network operator to append the layer (the operator is freed)
+ * @param o output index of network, the layer is appended
+ * @param norm_flags select dimension over which we normalize
+ * @param epsilon small factor for numerical stability
+ */
+const struct nlop_s* append_normalize_layer(const struct nlop_s* network, int o, unsigned long norm_flags, float epsilon)
+{
+	int NO = nlop_get_nr_out_args(network);
+
+	assert(o < NO);
+
+	auto normalize = nlop_normalize_create(nlop_generic_codomain(network, o)->N, nlop_generic_codomain(network, o)->dims, norm_flags, epsilon);
+
+	network = nlop_append_FF(network, o, normalize);
+
+	return network;
+}

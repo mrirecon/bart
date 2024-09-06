@@ -23,6 +23,7 @@ extern const struct nlop_s* append_dropout_layer(const struct nlop_s* network, i
 extern const struct nlop_s* append_flatten_layer(const struct nlop_s* network, int o);
 
 extern const struct nlop_s* append_batchnorm_layer(const struct nlop_s* network, int o, unsigned long norm_flags, enum NETWORK_STATUS status);
+extern const struct nlop_s* append_normalize_layer(const struct nlop_s* network, int o, unsigned long norm_flags, float epsilon);
 
 #include "misc/cppwrap.h"
 

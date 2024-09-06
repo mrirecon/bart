@@ -229,7 +229,7 @@ static bool test_nlop_normalize(void)
 	auto nlop_stats = nlop_stats_create(N, idims, MD_BIT(0));
 	nlop_generic_apply_unchecked(nlop_stats, 3, MAKE_ARRAY((void*)mean, (void*)var, (void*)src));
 
-	auto nlop_normalize = nlop_normalize_create(N, idims, MD_BIT(0), 0.);
+	auto nlop_normalize = nlop_normalize_stats_create(N, idims, MD_BIT(0), 0.);
 	nlop_generic_apply_unchecked(nlop_normalize, 4, MAKE_ARRAY((void*)dst, (void*)src, (void*)mean, (void*)var));
 
 	//test mean / var after normalization

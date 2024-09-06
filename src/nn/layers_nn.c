@@ -250,6 +250,27 @@ nn_t nn_append_batchnorm_layer(nn_t network, int o, const char* oname, const cha
 }
 
 /**
+ * Append normalization
+ *
+ * @param network operator to append the layer (the operator is freed)
+ * @param o output index of network, the layer is appended
+ * @param oname
+ * @param norm_flags select dimension over which we normalize
+ * @param initializer (NULL falls back to default)
+ * @param epsilon small factor for numerical stability
+ */
+nn_t nn_append_normalize_layer(nn_t network, int o, unsigned long norm_flags, float epsilon)
+{
+	auto nlop = append_normalize_layer(nlop_clone(nn_get_nlop(network)), o, norm_flags, epsilon);
+	auto result = nn_from_nlop_F(nlop);
+	nn_clone_args(result, network);
+
+	nn_free(network);
+
+	return result;
+}
+
+/**
  * Append max-pooling layer
  *
  * @param network operator to append the layer (the operator is freed)

@@ -14,6 +14,7 @@ extern nn_t nn_append_convcorr_layer(nn_t network, int o, const char* oname, con
 extern nn_t nn_append_transposed_convcorr_layer(nn_t network, int o, const char* oname, const char* ker_name, int channels, long const kernel_size[3], _Bool conv, _Bool adjoint, enum PADDING conv_pad, _Bool channel_first, const long strides[3], const long dilations[3], const struct initializer_s* init);
 extern nn_t nn_append_dense_layer(nn_t network, int o, const char* oname, const char* weights_name, int out_neurons, const struct initializer_s* init);
 extern nn_t nn_append_batchnorm_layer(nn_t network, int o, const char* oname, const char* stat_name, unsigned long norm_flags, enum NETWORK_STATUS status, const struct initializer_s* init);
+extern nn_t nn_append_normalize_layer(nn_t network, int o, unsigned long norm_flags, float epsilon);
 
 extern nn_t nn_append_maxpool_layer(nn_t network, int o, const char* oname, const long pool_size[3], enum PADDING conv_pad, _Bool channel_first);
 extern nn_t nn_append_blurpool_layer(nn_t network, int o, const char* oname, const long pool_size[3], enum PADDING conv_pad, _Bool channel_first);
