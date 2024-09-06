@@ -204,8 +204,6 @@ static bool test_affine_nlop_interpolate_cood_points_keys(void)
 
 	nlop_free(nlop_interp);
 
-	debug_printf(DP_WARN, "%e\n", err);
-
 	UT_RETURN_ASSERT(0.1 > err);
 }
 
