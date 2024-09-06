@@ -502,7 +502,7 @@ const struct nlop_s* nlop_optimize_graph(const struct nlop_s* op)
 			(*nder)[i][o] = graph_optimize_linop((*der)[i][o]);
 
 	n->derivative = &(*PTR_PASS(nder))[0][0];
-	
+
 	return PTR_PASS(n);
 }
 
@@ -594,6 +594,30 @@ void nlop_generic_apply_select_derivative_unchecked(const struct nlop_s* op, int
 		for(int i = 0; i < II; i++) {
 
 			select_der[i][o] = MD_IS_SET(out_der_flag, o) && MD_IS_SET(in_der_flag, i);
+			select_all[i][o] = true;
+		}
+	}
+
+	nlop_clear_derivatives(op);
+	nlop_unset_derivatives(op);
+	nlop_set_derivatives(op, II, OO, select_der);
+
+	nlop_generic_apply_unchecked(op, N, args);
+
+	nlop_set_derivatives(op, II, OO, select_all);
+}
+
+void nlop_generic_apply_no_derivative_unchecked(const struct nlop_s* op, int N, void* args[N])
+{
+	int II = nlop_get_nr_in_args(op);
+	int OO = nlop_get_nr_out_args(op);
+
+	bool select_der[II?:1][OO?:1];
+	bool select_all[II?:1][OO?:1];
+
+	for(int o = 0; o < OO; o++) {
+		for(int i = 0; i < II; i++) {
+			select_der[i][o] = false;
 			select_all[i][o] = true;
 		}
 	}
@@ -1029,7 +1053,7 @@ static void flatten_der(const nlop_data_t* _data, int /*o*/, int /*i*/, complex 
 				iov->N, iov->dims, tmp,
 				iov2->N, iov2->dims,
 				(void*)src + data->off[OO + i]);
-			
+
 			if (0 != i) {
 
 				md_zadd(iov->N, iov->dims, (void*)dst + data->off[o], (void*)dst + data->off[o], tmp);
@@ -1108,7 +1132,7 @@ struct nlop_s* nlop_flatten(const struct nlop_s* op)
 
 		for (int i = 1; i < II; i++)
 			op = nlop_stack_inputs_F(op, 0, 1, 0);
-		
+
 		return nlop_flatten_F(op);
 	}
 
@@ -1260,7 +1284,7 @@ const struct nlop_s* nlop_reshape_out_F(const struct nlop_s* op, int o, int NO, 
 const struct nlop_s* nlop_reshape2_in_F(const struct nlop_s* op, int i, int NI, unsigned long flags, const long idims[NI])
 {
 	auto iov = nlop_generic_domain(op, i);
-	
+
 	assert(NI == iov->N);
 
 	if (md_check_equal_dims(NI, MD_STRIDES(iov->N, iov->dims, CFL_SIZE), MD_STRIDES(iov->N, idims, CFL_SIZE), ~flags))
@@ -1272,7 +1296,7 @@ const struct nlop_s* nlop_reshape2_in_F(const struct nlop_s* op, int i, int NI, 
 const struct nlop_s* nlop_reshape2_out_F(const struct nlop_s* op, int o, int NO, unsigned long flags, const long odims[NO])
 {
 	auto iov = nlop_generic_codomain(op, o);
-	
+
 	assert(NO == iov->N);
 
 	if (md_check_equal_dims(NO, MD_STRIDES(iov->N, iov->dims, CFL_SIZE), MD_STRIDES(iov->N, odims, CFL_SIZE), ~flags))
@@ -1581,7 +1605,7 @@ const struct nlop_s* nlop_copy_wrapper(int OO, const long* ostrs[OO], int II, co
 		for (int oo = 0; oo < OO; oo++) {
 
 			auto lop = (struct linop_s*)((*der)[ii][oo]);
-			
+
 			int DO = linop_codomain(lop)->N;
 			int DI = linop_domain(lop)->N;
 
@@ -1600,7 +1624,7 @@ const struct nlop_s* nlop_copy_wrapper_F(int OO, const long* ostrs[OO], int II, 
 	return result;
 }
 
-const struct nlop_s* nlop_cpu_wrapper(const struct nlop_s* op) 
+const struct nlop_s* nlop_cpu_wrapper(const struct nlop_s* op)
 {
 	PTR_ALLOC(struct nlop_s, n);
 
@@ -1622,7 +1646,7 @@ const struct nlop_s* nlop_cpu_wrapper(const struct nlop_s* op)
 	return PTR_PASS(n);
 }
 
-const struct nlop_s* nlop_cpu_wrapper_F(const struct nlop_s* op) 
+const struct nlop_s* nlop_cpu_wrapper_F(const struct nlop_s* op)
 {
 	auto result = nlop_cpu_wrapper(op);
 	nlop_free(op);
@@ -1630,7 +1654,7 @@ const struct nlop_s* nlop_cpu_wrapper_F(const struct nlop_s* op)
 }
 
 
-const struct nlop_s* nlop_gpu_wrapper(const struct nlop_s* op) 
+const struct nlop_s* nlop_gpu_wrapper(const struct nlop_s* op)
 {
 #ifdef USE_CUDA
 	PTR_ALLOC(struct nlop_s, n);
@@ -1656,7 +1680,7 @@ const struct nlop_s* nlop_gpu_wrapper(const struct nlop_s* op)
 #endif
 }
 
-const struct nlop_s* nlop_gpu_wrapper_F(const struct nlop_s* op) 
+const struct nlop_s* nlop_gpu_wrapper_F(const struct nlop_s* op)
 {
 	auto result = nlop_gpu_wrapper(op);
 	nlop_free(op);
@@ -1681,7 +1705,7 @@ static void op_p_nlop_fun(const operator_data_t* data, float _par, complex float
 	complex float* par = md_alloc_sameplace(1, MD_DIMS(1), CFL_SIZE, src);
 	md_clear(1, MD_DIMS(1), par, CFL_SIZE);
 	md_copy(1, MD_DIMS(1), par, &_par, FL_SIZE);
-	
+
 	void* args[3] = { dst, (void*)src, par};
 	nlop_generic_apply_select_derivative_unchecked(d->nlop, 3, args, 0, 0);
 }

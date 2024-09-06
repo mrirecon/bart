@@ -83,8 +83,8 @@ nn_weights_t nn_weights_create(int N, const struct iovec_s* iovs[N])
  */
 nn_weights_t load_nn_weights(const char *name)
 {
-	int N_max = 64;
-	int D_max = 64;
+	int N_max = 128;
+	int D_max = 128;
 	int D[N_max];
 	long dimensions[N_max][D_max];
 	complex float* args[N_max];

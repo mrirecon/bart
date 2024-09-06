@@ -320,7 +320,7 @@ void apply_nnet(	const struct nnet_s* config,
 	args[0] = out_tmp;
 	args[1] = in_tmp;
 
-	nlop_generic_apply_select_derivative_unchecked(nn_get_nlop(nnet), 2, (void**)args, 0, 0);
+	nlop_generic_apply_no_derivative_unchecked(nn_get_nlop(nnet), 2, (void**)args);
 
 	md_copy(NO, odims, out, out_tmp, CFL_SIZE);
 
@@ -385,7 +385,7 @@ extern void eval_nnet(	struct nnet_s* nnet,
 	args[N] = tmp_out;
 	args[N + 1] = (complex float*)out;
 
-	nlop_generic_apply_select_derivative_unchecked(nn_get_nlop(loss), N + 2, (void**)args, 0, 0);
+	nlop_generic_apply_no_derivative_unchecked(nn_get_nlop(loss), N + 2, (void**)args);
 
 	for (int i = 0; i < N ; i++)
 		debug_printf(DP_INFO, "%s: %e\n", nn_get_out_name_from_arg_index(loss, i, false), crealf(losses[i]));
