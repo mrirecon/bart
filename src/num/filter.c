@@ -1,5 +1,6 @@
 /* Copyright 2015-2017. The Regents of the University of California.
  * Copyright 2016-2017. Martin Uecker.
+ * Copyright 2023-2024. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -242,12 +243,6 @@ void centered_gradient(int N, const long dims[N], const complex float grad[N], c
 {
 	md_zgradient(N, dims, out, grad);
 
-	long dims0[N];
-	md_singleton_dims(N, dims0);
-
-	long strs0[N];
-	md_calc_strides(N, strs0, dims0, CFL_SIZE);
-
 	complex float cn = 0.;
 
 	for (int n = 0; n < N; n++)
@@ -256,7 +251,7 @@ void centered_gradient(int N, const long dims[N], const complex float grad[N], c
 	long strs[N];
 	md_calc_strides(N, strs, dims, CFL_SIZE);
 
-	md_zadd2(N, dims, strs, out, strs, out, strs0, &cn);
+	md_zsadd2(N, dims, strs, out, strs, out, cn);
 }
 
 void linear_phase(int N, const long dims[N], const float pos[N], complex float* out)
