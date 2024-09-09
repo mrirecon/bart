@@ -217,6 +217,17 @@ static void md_loop_r(int D, const long dim[D], unsigned long flags, long pos[D]
  */
 void md_parallel_loop(int D, const long dim[static D], unsigned long flags, md_loop_fun_t fun)
 {
+	NESTED(void, fun2, (unsigned long flags2, long *pos))
+	{
+		md_loop_r(D, dim, flags2, pos, fun);
+	};
+
+	md_parallel_loop_split(D, dim, flags, fun2);
+}
+
+
+void md_parallel_loop_split(int D, const long dim[static D], unsigned long flags, md_loop_fun2_t fun)
+{
 	flags &= md_nontriv_dims(D, dim);
 
 	long psize = 1;
@@ -247,9 +258,10 @@ void md_parallel_loop(int D, const long dim[static D], unsigned long flags, md_l
 		// Recover place in parallel iteration space
 		long pos[D];
 		md_unravel_index(D, pos, ~0UL, pdims, i);
-		md_loop_r(D, dim, flags, pos, fun);
+		fun(flags, pos);
 	}
 }
+
 
 /**
  * Generic function which loops over all dimensions and calls a given

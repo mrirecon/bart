@@ -27,6 +27,7 @@
 typedef void CLOSURE_TYPE(md_nary_fun_t)(void* ptr[]);
 typedef void CLOSURE_TYPE(md_trafo_fun_t)(long N, long str, void* ptr);
 typedef void CLOSURE_TYPE(md_loop_fun_t)(const long* pos);
+typedef void CLOSURE_TYPE(md_loop_fun2_t)(unsigned long flags, long* pos);
 
 extern void md_unravel_index(int D, long pos[__VLA(D)], unsigned long flags, const long dims[__VLA(D)], long index);
 extern long md_ravel_index(int D, const long pos[__VLA(D)], unsigned long flags, const long dims[__VLA(D)]);
@@ -35,6 +36,7 @@ extern void md_nary(int C, int D, const long dim[__VLA(D)], const long* str[__VL
 
 extern void md_parallel_nary(int C, int D, const long dim[__VLA(D)], unsigned long flags, const long* str[__VLA(C)], void* ptr[__VLA(C)], md_nary_fun_t fun);
 extern void md_parallel_loop(int D, const long dim[__VLA(D)], unsigned long flags, md_loop_fun_t fun);
+extern void md_parallel_loop_split(int D, const long dim[__VLA(D)], unsigned long flags, md_loop_fun2_t fun);
 
 extern void md_loop(int D, const long dim[__VLA(D)], md_loop_fun_t fun);
 
