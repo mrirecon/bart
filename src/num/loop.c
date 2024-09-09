@@ -3,10 +3,6 @@
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * Authors:
- * 2013-2020 Martin Uecker <martin.uecker@med.uni-goettingen.de>
- *
- *
  * various functions built around md_loop
  * No GPU support at the moment!
  */
@@ -15,17 +11,34 @@
 
 #include "misc/debug.h"
 #include "misc/misc.h"
+#include "misc/nested.h"
+
+#ifdef USE_CUDA
+#include "num/gpuops.h"
+#endif
 #include "num/multind.h"
 
-#include "misc/nested.h"
 
 #include "loop.h"
 
 
 // typedef complex float (*sample_fun_t)(const long pos[]);
 
-void md_zsample(int N, const long dims[N], complex float* out, zsample_fun_t fun)
+static void md_zsample2(int N, const long dims[N], unsigned long flags, complex float* out, zsample_fun_t fun)
 {
+#ifdef USE_CUDA
+	if (cuda_ondevice(out)) {
+
+		complex float *out2 = md_alloc(N, dims, sizeof *out2);
+
+		md_zsample2(N, dims, flags, out2, fun);
+		md_copy(N, dims, out, out2, sizeof *out2);
+
+		md_free(out2);
+		return;
+	}
+#endif
+
 	long strs[N];
 	md_calc_strides(N, strs, dims, 1);	// we use size = 1 here
 
@@ -36,12 +49,22 @@ void md_zsample(int N, const long dims[N], complex float* out, zsample_fun_t fun
 		out[md_calc_offset(N, strsp, pos)] = fun(pos);
 	};
 
-	md_loop(N, dims, sample_kernel);
+	md_parallel_loop(N, dims, flags, sample_kernel);
 }
 
+void md_zsample(int N, const long dims[N], complex float* out, zsample_fun_t fun)
+{
+	md_zsample2(N, dims, 0U, out, fun);
+}
 
 void md_parallel_zsample(int N, const long dims[N], complex float* out, zsample_fun_t fun)
 {
+	md_zsample2(N, dims, ~0U, out, fun);
+}
+
+
+static void md_sample2(int N, const long dims[N], unsigned long flags, float* out, sample_fun_t fun)
+{
 	long strs[N];
 	md_calc_strides(N, strs, dims, 1);	// we use size = 1 here
 
@@ -52,41 +75,18 @@ void md_parallel_zsample(int N, const long dims[N], complex float* out, zsample_
 		out[md_calc_offset(N, strsp, pos)] = fun(pos);
 	};
 
-	md_parallel_loop(N, dims, ~0u, sample_kernel);
+	md_parallel_loop(N, dims, flags, sample_kernel);
 }
 
 void md_sample(int N, const long dims[N], float* out, sample_fun_t fun)
 {
-	long strs[N];
-	md_calc_strides(N, strs, dims, 1);	// we use size = 1 here
-
-	long* strsp = strs;	// because of clang
-
-	NESTED(void, sample_kernel, (const long pos[]))
-	{
-		out[md_calc_offset(N, strsp, pos)] = fun(pos);
-	};
-
-	md_loop(N, dims, sample_kernel);
+	md_sample2(N, dims, 0U, out, fun);
 }
-
 
 void md_parallel_sample(int N, const long dims[N], float* out, sample_fun_t fun)
 {
-	long strs[N];
-	md_calc_strides(N, strs, dims, 1);	// we use size = 1 here
-
-	long* strsp = strs;	// because of clang
-
-	NESTED(void, sample_kernel, (const long pos[]))
-	{
-		out[md_calc_offset(N, strsp, pos)] = fun(pos);
-	};
-
-	md_parallel_loop(N, dims, ~0u, sample_kernel);
+	md_sample2(N, dims, ~0U, out, fun);
 }
-
-
 
 
 void md_zmap(int N, const long dims[N], complex float* out, const complex float* in, map_fun_t fun)
@@ -105,54 +105,22 @@ void md_zmap(int N, const long dims[N], complex float* out, const complex float*
 }
 
 
-
-
-
-
-
 void md_zgradient(int N, const long dims[N], complex float* out, const complex float grad[N])
 {
-#if 1
-	long strs[N];
-	md_calc_strides(N, strs, dims, 1);	// we use size = 1 here
-
-	const long* strsp = strs;		// because of clang
-	const long* dimsp = dims;		// because of clang
-	const complex float* gradp = grad;	// because of clang
-
-	NESTED(void, gradient_kernel, (const long pos[]))
-	{
-		long offset = md_calc_offset(N - 1, strsp + 1, pos);
-		complex float val = 0;
-
-		for (int i = 0; i < N - 1; i++)
-			val += (float)pos[i] * gradp[i + 1];
-
-		for (long i = 0; i < dimsp[0]; i++)
-			out[offset + i] = val + gradp[0] * (float)i;
-	};
-
-	md_parallel_loop(N - 1, dims + 1, ~0UL, gradient_kernel);
-
-#else
-
 	// clang
 	const complex float* grad2 = grad;
 
-	NESTED(void, gradient_kernel, (const long pos[]))
+	NESTED(complex float, gradient_kernel, (const long pos[]))
 	{
 		complex float val = 0.;
 
-		for (int i = 0; i < (int)N; i++)
+		for (int i = 0; i < N; i++)
 			val += pos[i] * grad2[i];
 
 		return val;
 	};
 
-	md_zsample(N, dims, out, gradient_kernel);
-#endif
+	md_parallel_zsample(N, dims, out, gradient_kernel);
 }
-
-
 
 
