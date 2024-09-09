@@ -3,9 +3,7 @@
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: Moritz Blumenthal
- *
  */
-
 
 #include <cuda_runtime_api.h>
 #include <cuda.h>
@@ -56,9 +54,7 @@ __global__ void kern_positions(const struct pos_data pd, long N, cuFloatComplex*
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
 	int stride = blockDim.x * gridDim.x;
 
-	long pos[MAXPOS];
-	for (int i = 0; i < MAXPOS; i++)
-		pos[i] = 0;
+	long pos[MAXPOS] = { 0 };
 
 	for (long i = start; i < N; i += stride) {
 
@@ -147,7 +143,6 @@ __device__ static float dspline_keys(float x)
 	float a = -0.5;
 	float s = x < 0. ? -1. : 1.;
 	x = fabsf(x);
-
 
 	if (x < 1)
 		return s * ((a + 2.) * 3. * x * x - (a + 3.) * 2. * x );
@@ -242,6 +237,7 @@ __device__ static inline struct intp_data_device get_intp_data_device(const stru
 	for (int j = 0; j < conf->N; j++) {
 	
 		idd.coor[j] = coor[conf->coor_dir_dim_str * j].x;
+
 		if (NULL != dcoor)
 			idd.dcoor[j] = dcoor[conf->coor_dir_dim_str * j].x;
 

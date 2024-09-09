@@ -14,7 +14,6 @@
  * Avants BB, Tustison NJ, Song G, Cook PA, Klein A, Gee JC. 
  * A reproducible evaluation of ANTs similarity metric performance in 
  * brain image registration. Neuroimage. 2011;54(3):2033-2044.
- *
  */
 
 #include <complex.h>
@@ -128,6 +127,7 @@ static void _iterate(int d, unsigned long flags, int N, const long dims[N],
 
 	long rdims[N];
 	md_copy_dims(N, rdims, dims);
+
 	for (int i = 0; i < N; i++)
 		if (MD_IS_SET(flags, i))
 			rdims[i] -= 2;
@@ -190,7 +190,6 @@ void syn(int levels, float sigma[levels], float factors[levels], int nwarps[leve
 	complex float* disp, complex float* idisp,
 	const complex float* static_img, const complex float* moving_img)
 {
-
 	assert(_dims[d] == bitcount(flags));
 	
 	long tdims[N];

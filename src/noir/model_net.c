@@ -334,7 +334,6 @@ static const struct nlop_s* noir_get_normal(struct noir2_s* model)
 
 static const struct nlop_s* noir_normal_inversion_create(struct noir2_s* model, const struct iter_conjgrad_conf* iter_conf)
 {
-
 	struct iter_conjgrad_conf cgconf = iter_conjgrad_defaults;
 
 	if (NULL == iter_conf) {
@@ -342,6 +341,7 @@ static const struct nlop_s* noir_normal_inversion_create(struct noir2_s* model, 
 		cgconf.l2lambda = 0.;
 		cgconf.maxiter = 30;
 		cgconf.tol = 0;
+
 	} else {
 
 		cgconf = *iter_conf;
@@ -352,7 +352,9 @@ static const struct nlop_s* noir_normal_inversion_create(struct noir2_s* model, 
 
 	auto normal_op = noir_get_normal(model);
 	auto result = norm_inv_lambda_create(&conf, normal_op, ~0UL);
+
 	nlop_free(normal_op);
+
 	return result;
 }
 
@@ -440,6 +442,7 @@ const struct nlop_s* noir_gauss_newton_step_create(struct noir2_net_s* model, co
 	int ostack_dims[] = { 1 };
 
 	const struct nlop_s* ret = nlop_stack_multiple_F(model->Nb, nlops, 4, istack_dims, 1, ostack_dims, true, multigpu);
+
 	return nlop_reshape2_in_F(ret, 0, model->config->N, model->config->batch_flag, model->config->cim_dims);
 }
 
@@ -460,13 +463,14 @@ const struct nlop_s* noir_gauss_newton_iter_create_create(struct noir2_net_s* mo
 	int ostack_dims[] = { 1 };
 
 	const struct nlop_s* ret = nlop_stack_multiple_F(model->Nb, nlops, 4, istack_dims, 1, ostack_dims, true, multigpu);
+
 	return nlop_reshape2_in_F(ret, 0, model->config->N, model->config->batch_flag, model->config->cim_dims);
 }
 
 static const struct nlop_s* noir_rtnlinv_iter_s_create(int T, struct noir2_s* models[T], const struct iter_conjgrad_conf* iter_conf, int iter, int iter_skip, float redu, float alpha_min, float temp_damp)
 {
-
 	const struct nlop_s* ret = noir_gauss_newton_iter_create_s(models[0], iter_conf, iter, redu, alpha_min);
+
 	ret = nlop_no_der_F(ret, 0, 0);
 	ret = nlop_no_der_F(ret, 0, 1);
 	ret = nlop_no_der_F(ret, 0, 2);
@@ -558,6 +562,7 @@ const struct nlop_s* noir_rtnlinv_iter_create(struct noir2_net_s* model, const s
 	int ostack_dims[] = { 1 };
 
 	const struct nlop_s* ret = nlop_stack_multiple_F(B, nlops, 4, istack_dims, 1, ostack_dims, true, multigpu);
+
 	return nlop_reshape2_in_F(ret, 0, model->config->N, model->config->batch_flag & ~TIME_FLAG, model->config->cim_dims);
 }
 
@@ -585,13 +590,16 @@ const struct nlop_s* noir_decomp_create(struct noir2_net_s* model)
 	int N = model->config->N;
 	long col_dims[N];
 	md_copy_dims(N, col_dims, model->models[0].col_ten_dims);
+
 	for (int i = 0; i < N; i++)
 		if (MD_IS_SET(model->config->batch_flag, i))
 			col_dims[i] = model->config->col_dims[i];
 
 	const struct nlop_s* ret = nlop_stack_multiple_F(model->Nb, nlops, 1, istack_dims, 2, ostack_dims, true, false);
+
 	ret = nlop_reshape2_out_F(ret, 0, model->config->N, model->config->batch_flag, model->config->img_dims);
 	ret = nlop_reshape2_out_F(ret, 1, model->config->N, model->config->batch_flag, col_dims);
+
 	return ret;
 }
 
@@ -619,8 +627,10 @@ const struct nlop_s* noir_split_create(struct noir2_net_s* model)
 	int ostack_dims[] = { BATCH_DIM, BATCH_DIM };
 
 	const struct nlop_s* ret = nlop_stack_multiple_F(model->Nb, nlops, 1, istack_dims, 2, ostack_dims, true, false);
+
 	ret = nlop_reshape2_out_F(ret, 0, model->config->N, model->config->batch_flag, model->config->img_dims);
 	ret = nlop_reshape2_out_F(ret, 1, model->config->N, model->config->batch_flag, model->config->col_dims);
+
 	return ret;
 }
 
@@ -664,8 +674,10 @@ const struct nlop_s* noir_join_create(struct noir2_net_s* model)
 	int istack_dims[] = { BATCH_DIM, BATCH_DIM };
 
 	const struct nlop_s* ret = nlop_stack_multiple_F(model->Nb, nlops, 2, istack_dims, 1, ostack_dims, true, false);
+
 	ret = nlop_reshape2_in_F(ret, 0, model->config->N, model->config->batch_flag, model->config->img_dims);
 	ret = nlop_reshape2_in_F(ret, 1, model->config->N, model->config->batch_flag, model->config->col_dims);
+
 	return ret;
 }
 
@@ -679,7 +691,9 @@ const struct nlop_s* noir_set_img_create(struct noir2_net_s* model)
 {
 	auto result = noir_join_create(model);
 	auto dom = nlop_generic_domain(result, 1);
+
 	complex float zero = 0;
+
 	return nlop_set_input_const_F2(result, 1, dom->N, dom->dims, MD_SINGLETON_STRS(dom->N), true, &zero);
 }
 
@@ -687,7 +701,9 @@ const struct nlop_s* noir_set_col_create(struct noir2_net_s* model)
 {
 	auto result = noir_join_create(model);
 	auto dom = nlop_generic_domain(result, 0);
+
 	complex float zero = 0;
+
 	return nlop_set_input_const_F2(result, 0, dom->N, dom->dims, MD_SINGLETON_STRS(dom->N), true, &zero);
 }
 
@@ -754,7 +770,6 @@ static void noir_adjoint_fft_del(const nlop_data_t* _data)
 
 const struct nlop_s* noir_adjoint_fft_create_s(struct noir2_s* model)
 {
-
 	PTR_ALLOC(struct noir_adjoint_fft_s, data);
 	SET_TYPEID(noir_adjoint_fft_s, data);
 
@@ -800,7 +815,6 @@ const struct nlop_s* noir_adjoint_fft_create(struct noir2_net_s* model)
 
 const struct nlop_s* noir_adjoint_nufft_create_s(struct noir2_s* model)
 {
-
 	PTR_ALLOC(struct noir_adjoint_fft_s, data);
 	SET_TYPEID(noir_adjoint_fft_s, data);
 
@@ -838,6 +852,7 @@ const struct nlop_s* noir_adjoint_nufft_create(struct noir2_net_s* model)
 	int ostack_dims[] = { BATCH_DIM };
 
 	const struct nlop_s* ret = nlop_stack_multiple_F(model->Nb, nlops, 3, istack_dims, 1, ostack_dims, true, multigpu);
+
 	ret = nlop_reshape2_in_F(ret, 0, model->config->N, model->config->batch_flag, model->config->ksp_dims);
 	ret = nlop_reshape2_in_F(ret, 1, model->config->N, model->config->batch_flag, model->config->wgh_dims);
 	ret = nlop_reshape2_in_F(ret, 2, model->config->N, model->config->batch_flag, model->config->trj_dims);
@@ -904,7 +919,9 @@ static void noir_nufft_adj(const nlop_data_t* _data, int o, int i, complex float
 {
 	assert(0 == o);
 	assert(0 == i);
+
 	const auto data = CAST_DOWN(noir_nufft_s, _data);
+
 	linop_adjoint_unchecked(data->nufft, dst, src);
 }
 
@@ -919,7 +936,6 @@ static void noir_nufft_del(const nlop_data_t* _data)
 
 const struct nlop_s* noir_nufft_create_s(struct noir2_s* model)
 {
-
 	PTR_ALLOC(struct noir_nufft_s, data);
 	SET_TYPEID(noir_nufft_s, data);
 
@@ -1000,7 +1016,6 @@ static const struct nlop_s* noir_sense_normal(struct noir2_s* model)
 
 static const struct nlop_s* noir_sense_normal_inversion_create(struct noir2_s* model, const struct iter_conjgrad_conf* iter_conf)
 {
-
 	struct iter_conjgrad_conf cgconf = iter_conjgrad_defaults;
 
 	if (NULL == iter_conf) {
@@ -1008,6 +1023,7 @@ static const struct nlop_s* noir_sense_normal_inversion_create(struct noir2_s* m
 		cgconf.l2lambda = 0.;
 		cgconf.maxiter = 30;
 		cgconf.tol = 0;
+
 	} else {
 
 		cgconf = *iter_conf;
@@ -1018,7 +1034,9 @@ static const struct nlop_s* noir_sense_normal_inversion_create(struct noir2_s* m
 
 	auto normal_op = noir_sense_normal(model);
 	auto result = norm_inv_lambda_create(&conf, normal_op, ~0UL);
+
 	nlop_free(normal_op);
+
 	return result;
 }
 
@@ -1062,6 +1080,7 @@ const struct nlop_s* noir_sense_recon_create(struct noir2_net_s* model, const st
 	int ostack_dims[] = { 1 };
 
 	const struct nlop_s* ret = nlop_stack_multiple_F(model->Nb, nlops, 4, istack_dims, 1, ostack_dims, true, multigpu);
+
 	return nlop_reshape2_in_F(ret, 0, model->config->N, model->config->batch_flag, model->config->cim_dims);
 }
 

@@ -29,6 +29,7 @@ static void compose_displacement_internal(int N, int d, unsigned long flags, con
 
 		md_positions(N, d, flags, dims, dims, tmp);
 		md_zadd(N, dims, tmp, tmp, d1);
+
 	} else {
 
 		md_zadd(N, dims, tmp, pos, d1);
@@ -62,6 +63,7 @@ void invert_displacement(int N, int d, unsigned long flags, const long dims[N], 
 	assert(1 == dims[d + 1]);
 
 	complex float* pos = md_alloc_sameplace(N, dims, CFL_SIZE, disp);
+
 	md_positions(N, d, flags, dims, dims, pos);
 
 	long img_dims[N];
@@ -99,6 +101,7 @@ const struct linop_s* linop_interpolate_displacement_create(int d, unsigned long
 {
 	long sdims[N];
 	md_select_dims(N, MD_BIT(d), sdims, mdims);
+
 	complex float* scale = md_alloc_sameplace(N, sdims, CFL_SIZE, motion);
 
 	for (int i = 0, ip = 0; i < N; i++)
@@ -106,7 +109,9 @@ const struct linop_s* linop_interpolate_displacement_create(int d, unsigned long
 			md_zfill(N, MD_SINGLETON_DIMS(N), scale + (ip++), (float)gdims[i] / idims[i]);
 
 	complex float* pos = md_alloc_sameplace(N, mdims, CFL_SIZE, motion);
+
 	md_positions(N, d, flags, gdims, mdims, pos);
+
 	md_zfmac2(N, mdims, MD_STRIDES(N, mdims, CFL_SIZE), pos, MD_STRIDES(N, mdims, CFL_SIZE), motion, MD_STRIDES(N, sdims, CFL_SIZE), scale);
 
 	const struct linop_s* ret = linop_interpolate_create(d, MD_BIT(mdims[d]) - 1, ord, N, idims, mdims, pos, gdims);

@@ -9,7 +9,6 @@
  * Mattes, D., Haynor, D. R., Vesselle, H., Lewellen, T. K., & Eubank, W.
  * PET-CT image registration in the chest using free-form deformations.
  * IEEE TMI, 22(1), 120-8, 2003.
- *
  */
 
 #include <assert.h>
@@ -74,6 +73,7 @@ const struct nlop_s* nlop_affine_chain_FF(const struct nlop_s* A, const struct n
 	B = nlop_reshape_out_F(B, 0, 3, MD_DIMS(1, 4, 4));
 
 	const struct nlop_s* C = nlop_tenmul_create(3, MD_DIMS(3, 1, 4), MD_DIMS(3, 4, 1), MD_DIMS(1, 4, 4));
+
 	C = nlop_chain2_FF(A, 0, C, 0);
 	C = nlop_chain2_FF(B, 0, C, 0);
 
@@ -110,6 +110,7 @@ static float affine_get(int i, int j, const complex float* src)
 void affine_debug(int dl, const complex float* A)
 {
 	debug_printf(dl, "Affine Transform Matrix:\n");
+
 	for (int i = 0; i < 3; i++) {
 
 		for (int j = 0; j < 4; j++)
@@ -121,7 +122,6 @@ void affine_debug(int dl, const complex float* A)
 
 static void affine_chain_complex(complex float* C, const complex float* A, const complex float* B)
 {
-
 	for (int i = 0; i < 3; i++) {
 
 		for (int j = 0; j < 4; j++) {
@@ -251,6 +251,7 @@ static void affine_translation_fun(const nlop_data_t* _data, complex float* dst,
 		d->pars[i] = crealf(src[i]);
 
 	affine_init_id(dst);
+
 	for (int i = 0; i < d->Npars; i++)
 		affine_set(i, 3, dst, d->pars[i]);
 }
@@ -351,6 +352,7 @@ const struct nlop_s* nlop_affine_rotation_3D(void)
 	const struct nlop_s* ret = nlop_affine_create(1, 2, affine_rot_fun, affine_rot_der, affine_rot_adj);
 	ret = nlop_affine_chain_FF(nlop_affine_create(1, 0, affine_rot_fun, affine_rot_der, affine_rot_adj), ret);
 	ret = nlop_affine_chain_FF(nlop_affine_create(1, 2, affine_rot_fun, affine_rot_der, affine_rot_adj), ret);
+
 	return ret;
 }
 
@@ -372,12 +374,12 @@ static void affine_affine_fun(const nlop_data_t* _data, complex float* dst, cons
 {
 	const auto d = CAST_DOWN(affine_s, _data);
 	
-	int dims = 12 == d->Npars ? 3 : 2;
+	int dims = (12 == d->Npars) ? 3 : 2;
 	affine_init_id(dst);
 
 	for (int i = 0; i < dims; i++)
 		for (int j = 0; j < dims; j++)
-			affine_set(i, j, dst, i == j ? src[i + dims * j] + 1 : src[i + dims * j]); // plus one to have identity for pars=0
+			affine_set(i, j, dst, (i == j) ? src[i + dims * j] + 1 : src[i + dims * j]); // plus one to have identity for pars=0
 
 	for (int i = 0; i < dims; i++)
 		affine_set(i, 3, dst, src[i + dims * dims]);
@@ -387,7 +389,7 @@ static void affine_affine_der(const nlop_data_t* _data, int /*o*/, int /*i*/, co
 {
 	const auto d = CAST_DOWN(affine_s, _data);
 	
-	int dims = 12 == d->Npars ? 3 : 2;
+	int dims = (12 == d->Npars) ? 3 : 2;
 	affine_init_zero(dst);
 
 	for (int i = 0; i < dims; i++)
@@ -402,7 +404,7 @@ static void affine_affine_adj(const nlop_data_t* _data, int /*o*/, int /*i*/, co
 {
 	const auto d = CAST_DOWN(affine_s, _data);
 	
-	int dims = 12 == d->Npars ? 3 : 2;
+	int dims = (12 == d->Npars) ? 3 : 2;
 
 	for (int i = 0; i < dims; i++)
 		for (int j = 0; j < dims; j++)
@@ -628,7 +630,7 @@ static void gaussian_filter_3D(float sigma, const long dims[3], complex float* d
 		for (int i = 0; i < fsize; i++)
 			filter[i] /= tot;
 
-		long fdims[3] = {1, 1, 1 };
+		long fdims[3] = { 1, 1, 1 };
 		fdims[i] = fsize;
 
 		lop_conv = linop_chain_FF(linop_conv_create(3, MD_BIT(i), CONV_TRUNCATED, CONV_SYMMETRIC, dims, dims, fdims, filter), lop_conv);
@@ -699,6 +701,7 @@ void affine_reg(bool gpu, bool cubic, complex float* affine, const struct nlop_s
 		md_clear(1, MD_DIMS(npars), pars, CFL_SIZE);
 
 		iter4_lbfgs(CAST_UP(&conf), (struct nlop_s*)nlop, 2 * npars, (float*)pars, NULL, 2, NULL, NULL, (struct iter_op_s){ NULL, NULL });
+
 		nlop_free(nlop);
 
 		if (0. != sigma[i]) {
@@ -714,26 +717,5 @@ void affine_reg(bool gpu, bool cubic, complex float* affine, const struct nlop_s
 
 		nlop_free(trafo);
 	}
-
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

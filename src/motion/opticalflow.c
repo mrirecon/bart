@@ -255,6 +255,7 @@ void optical_flow(bool l1_reg, unsigned long reg_flags, float lambda, float maxn
 	prox_ops[0] = prox_img;
 
 	trafos[1] = linop_grad_create(N, dims, N, reg_flags);
+
 	if (l1_reg) 
 		prox_ops[1] = prox_thresh_create(N + 1,	linop_codomain(trafos[1])->dims, lambda, 0);
 	else
@@ -265,6 +266,7 @@ void optical_flow(bool l1_reg, unsigned long reg_flags, float lambda, float maxn
 
 	struct iter_chambolle_pock_conf iconf = iter_chambolle_pock_defaults;
 	float scale = 4 * bitcount(reg_flags);
+
 	if (0 < maxnorm)
 		scale += 1.;
 
@@ -328,8 +330,11 @@ void optical_flow_multiscale(bool l1_reg, unsigned long reg_flags, float lambda,
 		nudims[d] = _dims[d];
 
 		complex float* u2 = md_alloc_sameplace(N, nudims, CFL_SIZE, u);
+
 		md_resample(flags, 3, N, nudims, u2, udims, u);
+
 		md_free(u);
+
 		u = u2;
 		md_copy_dims(N, udims, nudims);
 
