@@ -630,7 +630,7 @@ void blas2_sdot(float* result, long N, long incx, const float* x, long incy, con
 
 
 
-void blas_cdgmm(long M, long N, _Bool left_mul, const complex float* A, long lda, const complex float* x, long incx, complex float* C, long ldc)
+void blas_cdgmm(long M, long N, bool left_mul, const complex float* A, long lda, const complex float* x, long incx, complex float* C, long ldc)
 {
 #ifdef USE_CUDA
 	if (cuda_ondevice(A)) {
@@ -648,7 +648,7 @@ void blas_cdgmm(long M, long N, _Bool left_mul, const complex float* A, long lda
 
 
 
-void blas_sdgmm(long M, long N, _Bool left_mul, const float* A, long lda, const float* x, long incx, float* C, long ldc)
+void blas_sdgmm(long M, long N, bool left_mul, const float* A, long lda, const float* x, long incx, float* C, long ldc)
 {
 #ifdef USE_CUDA
 	if (cuda_ondevice(A)) {

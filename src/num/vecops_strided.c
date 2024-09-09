@@ -189,9 +189,9 @@ struct simple_s2op_check {
 
 	md_check_2op_t check_fun;
 	md_s2op_t strided_kernel;
-	_Bool on_gpu;
-	_Bool on_cpu;
-	_Bool in_place;
+	bool on_gpu;
+	bool on_cpu;
+	bool in_place;
 };
 #endif
 

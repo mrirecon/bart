@@ -133,7 +133,7 @@ int main_nlinvnet(int argc, char* argv[argc])
 		OPTL_SET(0, "unet", &(unet), "use U-Net"),
 	};
 
-	_Bool norm_max = true;
+	bool norm_max = true;
 
 	const struct opt_s opts[] = {
 

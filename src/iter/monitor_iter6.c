@@ -539,7 +539,7 @@ static void monitor_iter6_function_free(const monitor_iter6_value_data_t* _data)
 }
 
 
-struct monitor_value_s* monitor_iter6_function_create(monitor_iter6_value_by_function_t fun, _Bool eval_each_batch, const char* print_name)
+struct monitor_value_s* monitor_iter6_function_create(monitor_iter6_value_by_function_t fun, bool eval_each_batch, const char* print_name)
 {
 	PTR_ALLOC(struct monitor_iter6_function_s, data);
 	SET_TYPEID(monitor_iter6_function_s, data);

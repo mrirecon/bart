@@ -559,14 +559,14 @@ void nn_get_out_names_copy(int N, const char* names[N], nn_t op)
 
 }
 
-void nn_get_in_args_names(nn_t op, int II, const char* names[II], _Bool copy)
+void nn_get_in_args_names(nn_t op, int II, const char* names[II], bool copy)
 {
 	assert(II == nn_get_nr_in_args(op));
 	for (int i = 0; i < II; i++)
 		names[i] = (NULL != op->in_names[i]) && copy ? strdup(op->in_names[i]) : op->in_names[i];
 }
 
-void nn_get_out_args_names(nn_t op, int OO, const char* names[OO], _Bool copy)
+void nn_get_out_args_names(nn_t op, int OO, const char* names[OO], bool copy)
 {
 	assert(OO == nn_get_nr_out_args(op));
 	for (int i = 0; i < OO; i++)

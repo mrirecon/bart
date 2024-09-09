@@ -619,7 +619,7 @@ static const struct nlop_s* nlop_stack_container_internal_create(int N, const st
 	d->N = II + OO;
 
 
-	d->dup = *TYPE_ALLOC(_Bool[II]);
+	d->dup = *TYPE_ALLOC(bool[II]);
 
 	for (int i = 0; i < II; i++)
 		d->dup[i] = (-1 == in_stack_dim[i]);

@@ -102,7 +102,7 @@ const struct operator_s* operator_generic_create2(int N, const bool io_flags[N],
 		(*dom)[i] = iovec_create2(D[i], dims[i], strs[i], CFL_SIZE);
 
 	op->N = N;
-	op->io_flags = ARR_CLONE(_Bool[N], io_flags);
+	op->io_flags = ARR_CLONE(bool[N], io_flags);
 	op->domain = *PTR_PASS(dom);
 	op->data = data;
 	op->apply = apply;
@@ -1013,7 +1013,7 @@ struct copy_data_s {
 	
 	enum COPY_LOCATION* loc;
 
-	_Bool copy_output;
+	bool copy_output;
 	// select if operator reads data from output
 };
 

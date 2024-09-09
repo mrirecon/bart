@@ -89,7 +89,7 @@ static struct node_s* node_clone(const struct node_s* node)
 	return node->node_clone(node);
 }
 
-static _Bool node_io_flag(const struct node_s* node, int i)
+static bool node_io_flag(const struct node_s* node, int i)
 {
 	return node->is_output(node, i);
 }

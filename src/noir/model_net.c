@@ -72,7 +72,7 @@ struct noir2_net_config_s {
 	unsigned long batch_flag;
 	struct noir2_model_conf_s mconf;
 
-	_Bool noncart;
+	bool noncart;
 
 	const complex float* mask;
 	const complex float* basis;

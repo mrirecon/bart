@@ -284,7 +284,7 @@ struct tf_arg_map_s {
 	const char* tf_name;
 	int tf_index;
 
-	_Bool real;
+	bool real;
 };
 
 static struct tf_arg_map_s* tf_arg_map_create(const char* bname, const char* tname, int index, bool real)
