@@ -410,7 +410,6 @@ void md_zhamming(int D, const long dims[D], const unsigned long flags, complex f
 void md_zhamming2(int D, const long dims[D], const unsigned long flags, const long ostrs[D], complex float* optr, const long istrs[D], const complex float* iptr)
 {
 	return md_zwindow2(D, dims, flags, ostrs, optr, istrs, iptr, WINDOW_HAMMING);
-	
 }
 
 

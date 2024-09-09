@@ -458,6 +458,7 @@ void blas_fmac_sdot(int N, const long dims[N], const long ostr[N], float* optr, 
 	float* tmp = md_alloc_sameplace(1, MAKE_ARRAY(1l), (size_t)size, optr);
 
 	long S = dims[0];
+
 	while (S > 0) {
 
 		blas2_sdot(tmp, MIN(S, INT_MAX / 4), incx, iptr1, incy, iptr2);
@@ -637,6 +638,7 @@ void blas_zmul_cscal(int N, const long dims[N], const long ostr[N], complex floa
 
 		for (long i = 0; i < dims[0]; i++)
 			optr[i] = iptr1[i] * val;
+
 	} else {
 
 		long ostride = ostr[0] / size;
@@ -803,7 +805,7 @@ void blas_mul_sscal(int N, const long dims[N], const long ostr[N], float* optr, 
 
 		blas2_sscal(dims[0], iptr2, ostr[0] / size, optr);
 
-	return;
+		return;
 	}
 #endif
 
@@ -813,6 +815,7 @@ void blas_mul_sscal(int N, const long dims[N], const long ostr[N], float* optr, 
 
 		for (long i = 0; i < dims[0]; i++)
 			optr[i] = iptr1[i] * val;
+
 	} else {
 
 		long ostride = ostr[0] / size;
@@ -822,3 +825,4 @@ void blas_mul_sscal(int N, const long dims[N], const long ostr[N], float* optr, 
 			optr[i * ostride] = iptr1[i * istride] * val;
 	}
 }
+

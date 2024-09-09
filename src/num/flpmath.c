@@ -682,7 +682,6 @@ void md_zsmul2(int D, const long dims[D], const long ostr[D], complex float* opt
 		return;
 	}
 
-
 	make_z3op_scalar_direct(md_zmul2, D, dims, ostr, optr, istr, iptr, val);
 }
 

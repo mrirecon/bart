@@ -26,7 +26,6 @@
  *
  * All functions should work on CPU and GPU and md_copy can be used
  * to copy between CPU and GPU.
- *
  */
 
 #define _GNU_SOURCE
@@ -202,6 +201,7 @@ static void md_loop_r(int D, const long dim[D], unsigned long flags, long pos[D]
 
 		for (pos[D] = 0; pos[D] < dim[D]; pos[D]++)
 			md_loop_r(D, dim, flags, pos, fun);
+
 	} else {
 
 		md_loop_r(D, dim, flags, pos, fun);

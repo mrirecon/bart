@@ -892,7 +892,11 @@ static long get_block_size(int N, const long dims[N], const long strs[N], size_t
 }
 
 
-static bool simple_z3op(int N_checks, struct simple_z3op_check strided_calls[N_checks], const char* fun_name, int N, const long dims[N], const long ostrs[N], complex float* out, const long istrs1[N], const complex float* in1, const long istrs2[N], const complex float* in2, bool symmetric, bool conj)
+static bool simple_z3op(int N_checks, struct simple_z3op_check strided_calls[N_checks], const char* fun_name,
+		int N, const long dims[N],
+		const long ostrs[N], complex float* out, const long istrs1[N], const complex float* in1,
+		const long istrs2[N], const complex float* in2,
+		bool symmetric, bool conj)
 {
 	if (!use_strided_vecops)
 		return false;
@@ -928,7 +932,7 @@ static bool simple_z3op(int N_checks, struct simple_z3op_check strided_calls[N_c
 
 	bool on_gpu = false;
 #ifdef USE_CUDA
-	on_gpu = (cuda_ondevice(out));
+	on_gpu = cuda_ondevice(out);
 #endif
 
 	long bdims[N];
@@ -963,16 +967,16 @@ static bool simple_z3op(int N_checks, struct simple_z3op_check strided_calls[N_c
 
 			if (conj) {
 
-				long size_tmp = get_block_size(N, dims, istrs2, CFL_SIZE);
-				size_tmp /= (long)CFL_SIZE;
+				long size_tmp = get_block_size(N, dims, istrs2, CFL_SIZE) / (long)CFL_SIZE;
+
 				conj_in = md_alloc_sameplace(1, &size_tmp, CFL_SIZE, in2);
+
 				md_zconj(1, &size_tmp, conj_in, in2);
+
 				tin2 = conj_in;
 			}
 
 			break;
-
-			
 		}
 
 		if (!symmetric)
@@ -991,10 +995,12 @@ static bool simple_z3op(int N_checks, struct simple_z3op_check strided_calls[N_c
 
 			if (conj) {
 
-				long size_tmp = get_block_size(N, dims, istrs2, CFL_SIZE);
-				size_tmp /= (long)CFL_SIZE;
+				long size_tmp = get_block_size(N, dims, istrs2, CFL_SIZE) / (long)CFL_SIZE;
+
 				conj_in = md_alloc_sameplace(1, &size_tmp, CFL_SIZE, in2);
+
 				md_zconj(1, &size_tmp, conj_in, in2);
+
 				tin1 = conj_in;
 			}
 
@@ -1016,8 +1022,8 @@ static bool simple_z3op(int N_checks, struct simple_z3op_check strided_calls[N_c
 	long isize1 = get_block_size(N_in, ndims, nistrs1, CFL_SIZE);
 	long isize2 = get_block_size(N_in, ndims, nistrs2, CFL_SIZE);
 
-	if ((0 == osize) || (0 == isize1) || (0 == isize2))
-	{
+	if ((0 == osize) || (0 == isize1) || (0 == isize2)) {
+
 		md_free(conj_in);
 		return false; //cross check: data for inner kernel is contiguous in memory
 	}
@@ -1107,7 +1113,7 @@ static bool simple_3op(int N_checks, struct simple_3op_check strided_calls[N_che
 
 	bool on_gpu = false;
 #ifdef USE_CUDA
-	on_gpu = (cuda_ondevice(out));
+	on_gpu = cuda_ondevice(out);
 #endif
 
 	struct simple_3op_check strided_call;
