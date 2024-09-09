@@ -95,19 +95,7 @@ int main_nufft(int argc, char* argv[argc])
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
-	if (dft) {
-
-		if (bart_use_gpu)
-			error("DFT not supported on GPU.\n");
-
-		num_init();
-
-		bart_use_gpu = false;
-
-	} else {
-
-		num_init_gpu_support();
-	}
+	num_init_gpu_support();
 
 	if (adjoint && inverse)
 		error("Adjoint and inverse requested at the same time.\n");

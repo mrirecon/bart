@@ -57,7 +57,7 @@ void nudft_forward2(int N, unsigned long flags,
 	md_select_dims(N, flags, tmp_dims, idims);
 	md_calc_strides(N, tmp_strs, tmp_dims, CFL_SIZE);
 
-	complex float* tmp = md_alloc(N, tmp_dims, CFL_SIZE);
+	complex float* tmp = md_alloc_sameplace(N, tmp_dims, CFL_SIZE, ksp);
 
 	long kstrs2[N];
 	for (int i = 0; i < N; i++)
@@ -100,7 +100,7 @@ void nudft_adjoint2(int N, unsigned long flags,
 	md_select_dims(N, flags, tmp_dims, idims);
 	md_calc_strides(N, tmp_strs, tmp_dims, CFL_SIZE);
 
-	complex float* tmp = md_alloc(N, tmp_dims, CFL_SIZE);
+	complex float* tmp = md_alloc_sameplace(N, tmp_dims, CFL_SIZE, img);
 
 	long kstrs2[N];
 	for (int i = 0; i < N; i++)
