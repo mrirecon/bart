@@ -1640,7 +1640,7 @@ void md_zfmacc2(int D, const long dims[D], const long ostr[D], complex float* op
 					  & mpi_parallel_flags(D, dims, istr1, CFL_SIZE, iptr1)
 					  & mpi_parallel_flags(D, dims, istr2, CFL_SIZE, iptr2);
 
-		unsigned long reduce_flag = (~batch_flags);		
+		unsigned long reduce_flag = ~batch_flags;
 
 		mpi_reduce_zsum(D, reduce_flag, dims2, optr);
 	}
