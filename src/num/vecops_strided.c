@@ -933,6 +933,12 @@ static bool simple_z3op(int N_checks, struct simple_z3op_check strided_calls[N_c
 	bool on_gpu = false;
 #ifdef USE_CUDA
 	on_gpu = cuda_ondevice(out);
+
+	if (on_gpu) {
+
+		assert(cuda_ondevice(in1));
+		assert(cuda_ondevice(in2));
+	}
 #endif
 
 	long bdims[N];
@@ -1086,7 +1092,13 @@ static bool simple_z3op(int N_checks, struct simple_z3op_check strided_calls[N_c
 	return true;
 }
 
-static bool simple_3op(int N_checks, struct simple_3op_check strided_calls[N_checks], const char* fun_name, int N, const long dims[N], const long ostrs[N], float* out, const long istrs1[N], const float* in1, const long istrs2[N], const float* in2, bool symmetric)
+
+static bool simple_3op(int N_checks, struct simple_3op_check strided_calls[N_checks], const char* fun_name,
+		int N, const long dims[N],
+		const long ostrs[N], float* out,
+		const long istrs1[N], const float* in1,
+		const long istrs2[N], const float* in2,
+		bool symmetric)
 {
 	if (!use_strided_vecops)
 		return false;
@@ -1114,6 +1126,12 @@ static bool simple_3op(int N_checks, struct simple_3op_check strided_calls[N_che
 	bool on_gpu = false;
 #ifdef USE_CUDA
 	on_gpu = cuda_ondevice(out);
+
+	if (on_gpu) {
+
+		assert(cuda_ondevice(in1));
+		assert(cuda_ondevice(in2));
+	}
 #endif
 
 	struct simple_3op_check strided_call;
