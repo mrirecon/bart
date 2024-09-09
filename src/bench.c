@@ -23,6 +23,7 @@
 #include "num/mdfft.h"
 #include "num/fft.h"
 #include "num/ode.h"
+#include "num/filter.h"
 
 #include "wavelet/wavthresh.h"
 
@@ -538,8 +539,9 @@ static double bench_fftmod(long scale)
 }
 
 
+enum bench_typ { BENCH_ZFILL, BENCH_ZSMUL, BENCH_LINPHASE };
 
-static double bench_generic_expand(int typ, long scale)
+static double bench_generic_expand(enum bench_typ typ, long scale)
 {
 	long dims[DIMS] = { 1, 256 * scale, 256 * scale, 1, 1, 16, 1, 16 };
 
@@ -549,14 +551,22 @@ static double bench_generic_expand(int typ, long scale)
 
 	switch (typ) {
 
-		case 0:
-			md_zfill(DIMS, dims, x, 1.);
-			break;
-		case 1:
-			md_zsmul(DIMS, dims, x, x, 1.);
-			break;
-		default:
-			assert(0);
+	case BENCH_ZFILL:
+		md_zfill(DIMS, dims, x, 1.);
+		break;
+
+	case BENCH_ZSMUL:
+		md_zsmul(DIMS, dims, x, x, 1.);
+		break;
+
+	case BENCH_LINPHASE:
+
+		float pos[DIMS] = { 0.5, 0.1 };
+		linear_phase(DIMS, dims, pos, x);
+		break;
+
+	default:
+		assert(0);
 	}
 
 	double toc = timestamp();
@@ -569,13 +579,19 @@ static double bench_generic_expand(int typ, long scale)
 
 static double bench_zfill(long scale)
 {
-	return bench_generic_expand(0, scale);
+	return bench_generic_expand(BENCH_ZFILL, scale);
 }
 
 static double bench_zsmul(long scale)
 {
-	return bench_generic_expand(1, scale);
+	return bench_generic_expand(BENCH_ZSMUL, scale);
 }
+
+static double bench_linphase(long scale)
+{
+	return bench_generic_expand(BENCH_LINPHASE, scale);
+}
+
 
 
 static double bench_ode(long scale)
@@ -597,6 +613,7 @@ static double bench_ode(long scale)
 
 	return toc - tic;
 }
+
 
 
 enum bench_indices { REPETITION_IND, SCALE_IND, THREADS_IND, TESTS_IND, BENCH_DIMS };
@@ -659,6 +676,7 @@ const struct benchmark_s {
 	{ bench_copy2,		"copy 2" },
 	{ bench_zfill,		"complex fill" },
 	{ bench_zsmul,		"complex scalar multiplication" },
+	{ bench_linphase,	"linear phase" },
 	{ bench_wavelet,	"wavelet soft thresh" },
 	{ bench_mdfft,		"(MD-)FFT" },
 	{ bench_fft,		"FFT" },
