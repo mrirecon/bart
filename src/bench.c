@@ -545,6 +545,8 @@ static double bench_generic_expand(enum bench_typ typ, long scale)
 {
 	long dims[DIMS] = { 1, 256 * scale, 256 * scale, 1, 1, 16, 1, 16 };
 
+	float linphase_pos[DIMS] = { 0.5, 0.1 };
+
 	complex float* x = md_alloc(DIMS, dims, CFL_SIZE);
 
 	double tic = timestamp();
@@ -561,8 +563,7 @@ static double bench_generic_expand(enum bench_typ typ, long scale)
 
 	case BENCH_LINPHASE:
 
-		float pos[DIMS] = { 0.5, 0.1 };
-		linear_phase(DIMS, dims, pos, x);
+		linear_phase(DIMS, dims, linphase_pos, x);
 		break;
 
 	default:
