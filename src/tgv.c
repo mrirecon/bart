@@ -3,9 +3,7 @@
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * Authors:
- * 2014,2019,2022 Martin Uecker.
- *
+ * References:
  *
  * Rudin LI, Osher S, Fatemi E. Nonlinear total variation based
  * noise removal algorithms, Physica D: Nonlinear Phenomena

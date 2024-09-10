@@ -1,7 +1,7 @@
 /* Copyright 2015. The Regents of the University of California.
  * Copyright 2015-2021. Martin Uecker.
  * Copyright 2018. Damien Nguyen.
- * Copyright 2023. Institute of Biomedical Imaging. TU Graz.
+ * Copyright 2023-2024. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */

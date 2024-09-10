@@ -4,7 +4,7 @@
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * Publications:
+ * References:
  *
  * Uecker M, Hohage T, Block KT, Frahm J. Image reconstruction
  * by regularized nonlinear inversion-joint estimation of coil

@@ -3,7 +3,7 @@
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2016-2017	Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2016-2017 Jonathan Tamir
  */
 
 #include <complex.h>

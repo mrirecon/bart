@@ -5,9 +5,10 @@
  * Authors: Nick Scholand
  *
  * Reference:
- * 	Seiberlich, N., Breuer, F., Blaimer, M., Jakob, P. and Griswold, M. (2008),
- * 	Self-calibrating GRAPPA operator gridding for radial and spiral trajectories.
- * 	Magn. Reson. Med., 59: 930-935. https://doi.org/10.1002/mrm.21565
+ *
+ * Seiberlich N, Breuer F, Blaimer M, Jakob P, and Griswold M.
+ * Self-calibrating GRAPPA operator gridding for radial and spiral trajectories.
+ * Magn Reson Med 2007;59:930-935. https://doi.org/10.1002/mrm.21565
  *
  * Notes:
  * Implemented following the code in the MRFingerprintingRecon.jl julia package. Release ????.

@@ -2,21 +2,19 @@
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * Authors: Moritz Blumenthal
+ * Authors:
+ * 2024 Moritz Blumenthal
  *
- * Publications:
+ * References:
  *
- * Zach, C., Pock, T., Bischof, H. (2007). A Duality Based
- * Approach for Realtime TV-L 1 Optical Flow. In: Hamprecht, F.A., 
- * Schnörr, C., Jähne, B. (eds) Pattern Recognition. DAGM 2007.
- * Lecture Notes in Computer Science, vol 4713. Springer, Berlin, Heidelberg.
+ * Zach C, Pock T, Bischof H. A Duality Based Approach for Realtime TV-L 1 Optical Flow.
+ * In: Hamprecht FA, Schnörr C, Jähne B. (eds) Pattern Recognition. DAGM 2007.
+ * Lecture Notes in Computer Science 2007;4713. Springer, Berlin, Heidelberg.
  *
  * Avants BB, Epstein CL, Grossman M, Gee JC.
  * Symmetric diffeomorphic image registration with cross-correlation: 
  * evaluating automated labeling of elderly and neurodegenerative brain.
- * Med Image Anal. 2008;12(1):26-41.
- *
- *
+ * Med Image Anal 2008;12:26-41.
  */
 
 #include <stdlib.h>
@@ -25,11 +23,11 @@
 #include <stdio.h>
 #include <strings.h>
 
-#include "misc/mri.h"
 #include "num/multind.h"
 #include "num/init.h"
 #include "num/flpmath.h"
 
+#include "misc/mri.h"
 #include "misc/mmio.h"
 #include "misc/misc.h"
 #include "misc/opts.h"

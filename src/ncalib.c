@@ -3,7 +3,6 @@
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: Moritz Blumenthal
- *
  */
 
 #include <assert.h>

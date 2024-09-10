@@ -5,7 +5,7 @@
  *
  * Authors: 
  * 2015 Siddharth Iyer <sid8795@gmail.com>
- * 2015-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2015-2016 Martin Uecker
  */
 
 #include <complex.h>
@@ -16,12 +16,11 @@
 #include "misc/misc.h"
 #include "misc/debug.h"
 #include "misc/opts.h"
+#include "misc/debug.h"
 
 #include "num/flpmath.h"
 #include "num/multind.h"
 #include "num/init.h"
-
-#include "misc/debug.h"
 
 #include "calib/estvar.h"
 

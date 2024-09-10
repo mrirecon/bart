@@ -5,6 +5,7 @@
  * Authors: 
  * 2018-2019 Siddharth Iyer <ssi@mit.edu>
  *
+ * References:
  * Tamir J, Uecker M, Chen W, Lai P, Alley MT, Vasanawala SS, Lustig M. 
  * T2 shuffling: Sharp, multicontrast, volumetric fast spin‐echo imaging. 
  * Magnetic resonance in medicine. 2017 Jan 1;77(1):180-95.

@@ -3,9 +3,7 @@
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * Authors: 
- * 2013, 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
- *
+ * References:
  *
  * Peter J. Shin, Peder E.Z. Larson, Michael A. Ohliger, Michael Elad,
  * John M. Pauly, Daniel B. Vigneron and Michael Lustig, Calibrationless

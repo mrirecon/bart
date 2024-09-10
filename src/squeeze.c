@@ -3,7 +3,7 @@
  * a BSD-style license which can be found in the LICENSE file.
  * 
  * Authors:
- * 2016 Jon Tamir <jtamir@eecs.berkeley.edu>
+ * 2016 Jon Tamir
  */
 
 #include <stdlib.h>

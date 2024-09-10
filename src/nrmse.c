@@ -5,9 +5,9 @@
  *
  * Authors:
  * 2013 Dara Bahri <dbahri123@gmail.com>
- * 2014 Frank Ong <frankong@berkeley.edu>
- * 2014 Jonathan Tamir <jtamir@eecs.berkeley.edu>
- * 2015-2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2014 Frank Ong
+ * 2014 Jonathan Tamir
+ * 2015-2016 Martin Uecker
  */
 
 #include <complex.h>

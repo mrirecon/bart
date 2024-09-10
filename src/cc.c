@@ -4,8 +4,8 @@
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2017	Martin Uecker <martin.uecker@med.uni-goettingen.de.
- * 2013		Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2012-2017	Martin Uecker
+ * 2013		Jonathan Tamir
  */
 
 #include <complex.h>

@@ -4,8 +4,8 @@
  * a BSD-style license which can be found in the LICENSE file.
  * 
  * Authors: 
- * 2015-2020 Martin Uecker <uecker@med.uni-goettingen.de>
- * 2016 Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2015-2020 Martin Uecker
+ * 2016 Jonathan Tamir
  */
 
 #include <stdbool.h>

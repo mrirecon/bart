@@ -5,6 +5,8 @@
  * Authors:
  * 2017-2018 Siddharth Iyer <ssi@mit.edu>
  *
+ * Reference:
+ *
  * Bilgic B, Gagoski BA, Cauley SF, Fan AP, Polimeni JR, Grant PE, Wald LL, Setsompop K. 
  * Wave‐CAIPI for highly accelerated 3D imaging. Magnetic resonance in medicine. 
  * 2015 Jun 1;73(6):2152-62.

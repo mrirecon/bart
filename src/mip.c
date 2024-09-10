@@ -3,7 +3,7 @@
  * a BSD-style license which can be found in the LICENSE file.
  * 
  * Authors:
- * 2014-2016 Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2014-2016 Jonathan Tamir
  */
 
 #define _GNU_SOURCE

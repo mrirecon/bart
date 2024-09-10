@@ -4,16 +4,15 @@
  *
  * Authors: Moritz Blumenthal
  *
- * Publications:
+ * References:
  *
- * E. Parzen. On the estimation of a probability density
- * function and the mode. Annals of Mathematical Statistics,
- * 33(3), 1065-1076, 1962.
+ * Parzen E. On the estimation of a probability density
+ * function and the mode. Annals of Mathematical Statistics
+ * 1962;33:1065-1076.
  *
- * Mattes, D., Haynor, D. R., Vesselle, H., Lewellen, T. K., & Eubank, W.
+ * Mattes D, Haynor DR, Vesselle H, Lewellen TK, Eubank W.
  * PET-CT image registration in the chest using free-form deformations.
- * IEEE TMI, 22(1), 120-8, 2003.
- *
+ * IEEE TMI 2023;22:120-8.
  */
 
 #include <stdlib.h>

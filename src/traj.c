@@ -5,10 +5,10 @@
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2020 Martin Uecker <martin.uecker@med.uni-goettingen.de>
- * 2018-2019 Sebastian Rosenzweig <sebastian.rosenzweig@med.uni-goettingen.de>
+ * 2012-2020 Martin Uecker
+ * 2018-2019 Sebastian Rosenzweig
  * 2019 Aurélien Trotier <a.trotier@gmail.com>
- * 2019-2020 Zhengguo Tan <zhengguo.tan@med.uni-goettingen.de>
+ * 2019-2020 Zhengguo Tan
  */
 
 #include <stdbool.h>

@@ -4,12 +4,12 @@
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2020 Martin Uecker <martin.uecker@med.uni-goettingen.de>
- * 2018-2020 Christian Holme, <christian.holme@med.uni-goettingen.de>
- * 2018-2020 Sebastian Rosenzweig <sebastian.rosenzweig@med.uni-goettingen.de>
- * 2020 Zhengguo Tan <zhengguo.tan@med.uni-goettingen.de>
+ * 2012-2020 Martin Uecker
+ * 2018-2020 Christian Holme
+ * 2018-2020 Sebastian Rosenzweig
+ * 2020 Zhengguo Tan
  *
- * Publications:
+ * References:
  *
  * Uecker M, Hohage T, Block KT, Frahm J. Image reconstruction
  * by regularized nonlinear inversion-joint estimation of coil

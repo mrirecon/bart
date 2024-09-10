@@ -1,6 +1,8 @@
 /* Copyright 2024. Institute for Biomedical Imaging. TU Graz.
+ * All rights reserved. Use of this source code is governed by
+ * a BSD-style license which can be found in the LICENSE file.
  *
- * Authors:	Nick Scholand
+ * Authors: Nick Scholand
  */
 
 #include <stdbool.h>

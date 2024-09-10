@@ -3,10 +3,9 @@
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
- * 2012-2013 Martin Uecker <uecker@eecs.berkeley.edu>
- * 2016 Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2012-2013 Martin Uecker
+ * 2016 Jonathan Tamir
  */
-
 
 #include <stdlib.h>
 #include <assert.h>

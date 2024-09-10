@@ -4,10 +4,9 @@
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
- * 2014-2016 Frank Ong <frankong@berkeley.edu>
- * 2014-2015 Jonathan Tamir <jtamir@eecs.berkeley.edu>
- *
+ * 2012-2015 Martin Uecker
+ * 2014-2016 Frank Ong
+ * 2014-2015 Jonathan Tamir
  */
 
 #include <assert.h>

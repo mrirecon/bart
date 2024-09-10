@@ -4,7 +4,7 @@
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
- * 2015 Frank Ong <frankong@berkeley.edu>
+ * 2015 Frank Ong
  */
 
 #include <complex.h>

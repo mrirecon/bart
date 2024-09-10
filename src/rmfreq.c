@@ -5,6 +5,8 @@
  * Authors:
  * 2018-2020 Sebastian Rosenzweig
  *
+ * Reference:
+ *
  * Sebastian Rosenzweig, Nick Scholand, H. Christian M. Holme, Martin Uecker.
  * Cardiac and Respiratory Self-Gating in Radial MRI using an Adapted Singular
  * Spectrum Analysis (SSA-FARY), IEEE Trans. Magn. Imag. (2020), in press.

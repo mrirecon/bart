@@ -4,8 +4,8 @@
  * a BSD-style license which can be found in the LICENSE file.
  * 
  * Authors:
- * 2016 Jon Tamir <jtamir@eecs.berkeley.edu>
- * 2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2016 Jon Tamir
+ * 2018 Martin Uecker
  */
 
 #include <stdlib.h>

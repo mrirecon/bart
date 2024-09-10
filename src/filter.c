@@ -3,8 +3,8 @@
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2015-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
- * 2020 Sebastian Rosenzweig <sebastian.rosenzweig@med.uni-goettingen.de>
+ * 2015-2017 Martin Uecker
+ * 2020 Sebastian Rosenzweig
  */
 
 #include <stdbool.h>

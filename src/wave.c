@@ -7,9 +7,10 @@
  *
  * Authors: 
  * 2015 Berkin Bilgic <berkin@nmr.mgh.harvard.edu>
- * 2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2015 Martin Uecker
  * 2018-2019 Siddharth Iyer <ssi@mit.edu>
  *
+ * Reference:
  * B Bilgic, BA Gagoski, SF Cauley, AP Fan, JR Polimeni, PE Grant,
  * LL Wald, and K Setsompop, Wave-CAIPI for highly accelerated 3D
  * imaging. Magn Reson Med (2014) doi: 10.1002/mrm.25347
