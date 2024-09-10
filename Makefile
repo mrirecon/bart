@@ -958,9 +958,7 @@ UTEST_RUN=mpirun -n 3
 endif
 
 ifeq ($(UTESTLEAK),1)
-# we blacklist some targets because valgrind crashes (blas related)
-UTARGETS:=$(filter-out test_flpmath test_blas,$(UTARGETS))
-UTEST_RUN=valgrind --quiet --leak-check=full --error-exitcode=1 valgrind --suppressions=./valgrind.supp --log-file=/dev/null
+UTEST_RUN=valgrind --quiet --leak-check=full --error-exitcode=1 valgrind --log-file=/dev/null
 endif
 
 ifeq ($(BUILDTYPE), WASM)
