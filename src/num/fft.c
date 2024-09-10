@@ -5,8 +5,8 @@
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2011-2022 Martin Uecker <martin.uecker@med.uni-goettingen.de>
- * 2014 Frank Ong <frankong@berkeley.edu>
+ * 2011-2022 Martin Uecker
+ * 2014 Frank Ong
  * 2018 Siddharth Iyer <ssi@mit.edu>
  *
  * 

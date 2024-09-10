@@ -7,10 +7,10 @@
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2011-2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
- * 2017 Sofia Dimoudi <sofia.dimoudi@cardiov.ox.ac.uk>
+ * 2011-2018 Martin Uecker
+ * 2017 Sofia Dimoudi
  * 2017-2018 Damien Nguyen <damien.nguyen@alumni.epfl.ch>
- * Christian Holme <christian.holme@med.uni-goettingen.de>
+ * Christian Holme
  */
 
 #define _GNU_SOURCE

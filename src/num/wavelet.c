@@ -3,15 +3,13 @@
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012, 2013 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2012, 2013 Martin Uecker
  *
  * 
  * Implementation of CDF97 wavelets.
  *
  * Ingrid Daubechies and Wil Sweldens, Factoring wavelet transforms into
- * lifting steps. Journal of Fourier Analysis and Applications 1998,
- * Volume 4, Issue 3, pp 247-269
- *
+ * lifting steps. Journal of Fourier Analysis and Applications 1998;4:247-269.
  */
 
 #include <stdbool.h>

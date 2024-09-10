@@ -5,10 +5,10 @@
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2011-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
- * 2014 Frank Ong <frankong@berkeley.edu>
- * 2014-2018 Jon Tamir <jtamir@eecs.berkeley.edu>
- * 2017 Sofia Dimoudi <sofia.dimoudi@cardiov.ox.ac.uk>
+ * 2011-2017 Martin Uecker
+ * 2014 Frank Ong
+ * 2014-2018 Jon Tamir
+ * 2017 Sofia Dimoudi
  *
  *
  * This file defines basic operations on vectors of floats/complex floats
@@ -17,7 +17,6 @@
  * operations. The functions are exported by pointers stored in the
  * global variable cpu_ops of type struct vec_ops. Identical functions
  * are implemented for the GPU in gpukrnls.cu.
- *
  */
 
 #include <assert.h>

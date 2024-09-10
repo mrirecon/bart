@@ -3,7 +3,7 @@
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Author:
- *	2015 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2015 Martin Uecker
  */
 
 #define _GNU_SOURCE

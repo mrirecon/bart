@@ -6,7 +6,7 @@
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2015-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2015-2017 Martin Uecker
  * 2017-2018 Nguyen Damien <damien.nguyen@alumni.epfl.ch>
  * 2017-2018 Francesco Santini <francesco.santini@unibas.ch>
  */

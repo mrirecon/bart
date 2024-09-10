@@ -4,8 +4,8 @@
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2019 Martin Uecker <martin.uecker@med.uni-goettingen.de>
- * Christian Holme <christian.holme@med.uni-goettingen.de>
+ * 2012-2019 Martin Uecker
+ * Christian Holme
  *
  *
  * Internal interface to the CUFFT library used in fft.c.

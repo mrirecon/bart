@@ -2,8 +2,8 @@
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * 2015 Martin Uecker <uecker@eecs.berkeley.edu>
- * 2015 Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2015 Martin Uecker
+ * 2015 Jonathan Tamir
  */
 
 /* NOTE: This code packs pixel data into very simple dicom images

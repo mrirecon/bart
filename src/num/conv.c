@@ -4,7 +4,7 @@
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2021 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2012-2021 Martin Uecker
  */
 
 #include <complex.h>

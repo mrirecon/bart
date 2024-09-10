@@ -3,10 +3,9 @@
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: 
- * 2013 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2013 Martin Uecker
  *
- * Wei, L. Multi-Class Blue Noise Sampling. ACM Trans. Graph. 29:79 (2010)
- *
+ * Wei, L. Multi-Class Blue Noise Sampling. ACM Trans. Graph. 2010;29:79.
  */ 
 
 #include <math.h>

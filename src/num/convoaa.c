@@ -3,7 +3,7 @@
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012 Martin Uecker uecker@eecs.berkeley.edu
+ * 2012 Martin Uecker
  */
 
 #include <assert.h>

@@ -2,9 +2,7 @@
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  * 
- * Authors:
- *	Martin Uecker <martin.uecker@med.uni-goettingen.de> 
- *	Nick Scholand
+ * Authors: Martin Uecker, Nick Scholand
  */
 
 #include <math.h>

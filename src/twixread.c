@@ -3,8 +3,8 @@
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * Authors: 
- * 2014-2019 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * Authors:
+ * 2014-2019 Martin Uecker
  */
 
 #include <sys/types.h>

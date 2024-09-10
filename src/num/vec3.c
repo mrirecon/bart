@@ -3,7 +3,7 @@
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2017 Martin Uecker
  */
 
 

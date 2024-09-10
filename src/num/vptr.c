@@ -2,8 +2,7 @@
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * Authors: Moritz Blumenthal
- *          Bernhard Rapp
+ * Authors: Moritz Blumenthal, Bernhard Rapp
  */
 
 #include <assert.h>

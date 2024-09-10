@@ -3,7 +3,7 @@
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2020-2022 Martin Uecker <uecker@tugraz.at>
+ * 2020-2022 Martin Uecker
  */
 
 #include <stdbool.h>

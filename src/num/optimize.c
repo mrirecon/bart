@@ -5,7 +5,6 @@
  *
  *
  * Optimization framework for operations on multi-dimensional arrays.
- *
  */
 
 #include <assert.h>
