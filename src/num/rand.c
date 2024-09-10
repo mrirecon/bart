@@ -66,7 +66,6 @@ void rand_state_update(struct bart_rand_state* state, unsigned long long seed)
 	else
 		state->num_rand_seed = (unsigned int)seed; // truncate here, as rand_r cannot use 64 bits of state
 
-
 	// For Philox:
 	// Idea: use seed as philox state with random counters, then run philox to generate a random state from that
 	uint64_t init_state = seed;
@@ -91,13 +90,16 @@ struct bart_rand_state* rand_state_create(unsigned long long seed)
 		if (!warned) {
 
 			warned = true;
+
 			if (0 != (cfl_loop_rand_flags & cfl_loop_get_flags()))			
 				debug_printf(DP_WARN, "rand_state_create provides identical random numbers for each cfl loop iteration.\n");
 		}
 	}
 
 	struct bart_rand_state* state = xmalloc(sizeof *state);
+
 	rand_state_update(state, seed);
+
 	return state;
 }
 
@@ -129,6 +131,7 @@ static struct bart_rand_state get_worker_state_cfl_loop(void)
 		cfl_loop_get_pos(D, pos);
 
 		long ind = md_ravel_index(D, pos, cfl_loop_rand_flags, dims);
+
 		assert(0 <= ind);
 		worker_state.ctr2 = (uint64_t) ind;
 	}
@@ -228,8 +231,8 @@ unsigned int rand_range_state(struct bart_rand_state* state, unsigned int range)
 
 		do {
 			uint32_t x = rand64_state(state);
-			m = (uint64_t) x * (uint64_t) range;
-			l = (uint32_t) m;
+			m = (uint64_t)x * (uint64_t)range;
+			l = (uint32_t)m;
 
 		} while (l < t);
 
@@ -260,6 +263,7 @@ unsigned int rand_range(unsigned int range)
 
 #pragma 	omp critical(global_rand_state)
 		r = rand_range_state(&global_rand_state[cfl_loop_worker_id()], range);
+
 	} else {
 
 		struct bart_rand_state worker_state = get_worker_state_cfl_loop();
@@ -342,8 +346,10 @@ complex double gaussian_rand(void)
 void gaussian_rand_vec(long N, float* dst)
 {
 	complex float* tmp = md_alloc_sameplace(1, MD_DIMS((N + 1) / 2), sizeof(complex float), dst);
+
 	md_gaussian_rand(1, MD_DIMS((N + 1) / 2), tmp);
 	md_copy(1, MD_DIMS(N), dst, tmp, sizeof(float));
+
 	md_free(tmp);
 	//This does not need to be scaled as md_gaussian_rand has (complex) variance 2!
 }
@@ -364,13 +370,13 @@ static void md_gaussian_obsolete_rand(int D, const long dims[D], complex float* 
 	}
 #endif
 	long N = md_calc_size(D, dims);
+
 	for (long i = 0; i < N; i++)
 		dst[i] = (complex float)gaussian_rand_obsolete();
 }
 
 static void vec_gaussian_philox_rand(struct bart_rand_state state, long offset, long N, complex float* dst)
 {
-
 #ifdef  USE_CUDA
 	if (cuda_ondevice(dst)) {
 
@@ -378,12 +384,12 @@ static void vec_gaussian_philox_rand(struct bart_rand_state state, long offset, 
 	} else
 #endif
 	{
-
 #pragma 	omp parallel for
 		for (long i = 0; i < N; i++) {
 
 			struct bart_rand_state state_loc = state;
 			state_loc.ctr2 = (uint64_t) (i + offset);
+
 			dst[i] = gaussian_rand_state(&state_loc);
 		}
 	}
@@ -395,11 +401,13 @@ static long get_cfl_loop_offset(int D, const long dims[D], long strs_offset[D])
 		return 0;
 
 	int C = cfl_loop_get_rank();
-	long cdims[C ? C : 1];
+	long cdims[C ?: 1];
+
 	cfl_loop_get_dims(C, cdims);
 	md_select_dims(C, cfl_loop_rand_flags, cdims, cdims);
 
 	bool mergeable = true;
+
 	for (int i = 0; i < MIN(D, C); i++)
 		if ((1 != dims[i]) && (1 != cdims[i]))
 			mergeable = false;
@@ -430,9 +438,10 @@ static long get_cfl_loop_offset(int D, const long dims[D], long strs_offset[D])
 			static bool warned_about_random_numbers = false;
 
 #pragma 		omp single
-			if ( !warned_about_random_numbers) {
+			if (!warned_about_random_numbers) {
 
 				warned_about_random_numbers = true;
+
 				debug_printf(DP_WARN, "Loop dimensions are not the last dimensions, and varying random numbers in those dimensions are selected!\n");
 				debug_printf(DP_WARN, "Cannot guarantee consistent random numbers in this case!\n");
 			}
@@ -458,6 +467,7 @@ static void md_loop_mpi(int D, const long dims[D], complex float* dst, vec_philo
 	long offset_cfl = get_cfl_loop_offset(D, dims, strs_offset);
 
 	unsigned long loop_flags = vptr_block_loop_flags(D, dims, MD_STRIDES(D, dims, sizeof(complex float)), dst, sizeof(complex float));
+
 	if (D != md_calc_blockdim(D, dims, strs_offset, 1))
 		loop_flags |= ~(MD_BIT(md_calc_blockdim(D, dims, strs_offset, 1)) - 1);
 
@@ -514,8 +524,10 @@ static void md_uniform_obsolete_rand(int D, const long dims[D], complex float* d
 	if (cuda_ondevice(dst)) {
 
 		complex float* tmp = md_alloc(D, dims, sizeof(complex float));
+
 		md_uniform_obsolete_rand(D, dims, tmp);
 		md_copy(D, dims, dst, tmp, sizeof(complex float));
+
 		md_free(tmp);
 		return;
 	}
@@ -527,7 +539,6 @@ static void md_uniform_obsolete_rand(int D, const long dims[D], complex float* d
 
 static void vec_uniform_philox_rand(struct bart_rand_state state, long offset, long N, complex float* dst)
 {
-
 #ifdef  USE_CUDA
 	if (cuda_ondevice(dst)) {
 
@@ -535,12 +546,12 @@ static void vec_uniform_philox_rand(struct bart_rand_state state, long offset, l
 	} else
 #endif
 	{
-
 #pragma 	omp parallel for
 		for (long i = 0; i < N; i++) {
 
 			struct bart_rand_state state_loc = state;
-			state_loc.ctr2 = (uint64_t) (i + offset);
+			state_loc.ctr2 = (uint64_t)(i + offset);
+
 			dst[i] = uniform_rand_state(&state_loc);
 		}
 	}
@@ -570,20 +581,22 @@ static void md_obsolete_rand_one(int D, const long dims[D], complex float* dst, 
 	if (cuda_ondevice(dst)) {
 
 		complex float* tmp = md_alloc(D, dims, sizeof(complex float));
+
 		md_obsolete_rand_one(D, dims, tmp, p);
 		md_copy(D, dims, dst, tmp, sizeof(complex float));
+
 		md_free(tmp);
 		return;
 	}
 #endif
 	long N = md_calc_size(D, dims);
+
 	for (long i = 0; i < N; i++)
-		dst[i] = (complex float)(uniform_rand_obsolete() < p);
+		dst[i] = (uniform_rand_obsolete() < p) ? 1. : 0.;
 }
 
 static void vec_philox_rand_one(struct bart_rand_state state, long offset, long N, complex float* dst, double p)
 {
-
 #ifdef  USE_CUDA
 	if (cuda_ondevice(dst)) {
 
@@ -591,13 +604,13 @@ static void vec_philox_rand_one(struct bart_rand_state state, long offset, long 
 	} else
 #endif
 	{
-
 #pragma 	omp parallel for
 		for (long i = 0; i < N; i++) {
 
 			struct bart_rand_state state_loc = state;
-			state_loc.ctr2 = (uint64_t) (i + offset);
-			dst[i] = (complex float)(uniform_rand_state(&state_loc) < p);
+			state_loc.ctr2 = (uint64_t)(i + offset);
+
+			dst[i] = (uniform_rand_state(&state_loc) < p) ? 1. : 0.;
 		}
 	}
 }
