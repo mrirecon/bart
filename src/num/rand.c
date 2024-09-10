@@ -172,6 +172,15 @@ static double uniform_rand_state(struct bart_rand_state* state)
 	return ull2double(rand64_state(state));
 }
 
+static double uniform_rand_offset(struct bart_rand_state state, long offset)
+{
+	struct bart_rand_state state_loc = state;
+	state_loc.ctr2 = (uint64_t)offset;
+
+	return uniform_rand_state(&state_loc);
+}
+
+
 static double uniform_rand_obsolete()
 {
 	double r;
@@ -205,7 +214,7 @@ double uniform_rand(void)
 unsigned long long rand_ull_state(struct bart_rand_state* state)
 {
 	if (use_obsolete_rng())
-		return (unsigned long long) rand_r(&state->num_rand_seed);
+		return (unsigned long long)rand_r(&state->num_rand_seed);
 	else
 		return rand64_state(state);
 }
@@ -549,17 +558,13 @@ static void vec_uniform_philox_rand(struct bart_rand_state state, long offset, l
 	if (cuda_ondevice(dst)) {
 
 		cuda_uniform_rand(N, dst, state.state, state.ctr1, (uint64_t)offset);
+
 	} else
 #endif
 	{
 #pragma 	omp parallel for
-		for (long i = 0; i < N; i++) {
-
-			struct bart_rand_state state_loc = state;
-			state_loc.ctr2 = (uint64_t)(i + offset);
-
-			dst[i] = uniform_rand_state(&state_loc);
-		}
+		for (long i = 0; i < N; i++)
+			dst[i] = uniform_rand_offset(state, i + offset);
 	}
 }
 
@@ -609,17 +614,13 @@ static void vec_philox_rand_one(struct bart_rand_state state, long offset, long 
 	if (cuda_ondevice(dst)) {
 
 		cuda_rand_one(N, dst, p, state.state, state.ctr1, (uint64_t) offset);
+
 	} else
 #endif
 	{
 #pragma 	omp parallel for
-		for (long i = 0; i < N; i++) {
-
-			struct bart_rand_state state_loc = state;
-			state_loc.ctr2 = (uint64_t)(i + offset);
-
-			dst[i] = (uniform_rand_state(&state_loc) < p) ? 1. : 0.;
-		}
+		for (long i = 0; i < N; i++)
+			dst[i] = (uniform_rand_offset(state, i + offset) < p) ? 1. : 0.;
 	}
 }
 
