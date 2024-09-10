@@ -215,8 +215,10 @@ static void md_loop_r(int D, const long dim[D], unsigned long flags, long pos[D]
  * Runs fun(data, position) for all position in dim
  *
  */
-void md_parallel_loop(int D, const long dim[static D], unsigned long flags, md_loop_fun_t fun)
+void md_parallel_loop(int D, const long _dim[static D], unsigned long flags, md_loop_fun_t fun)
 {
+	const long *dim = _dim;	// clang
+
 	NESTED(void, fun2, (unsigned long flags2, long *pos))
 	{
 		md_loop_r(D, dim, flags2, pos, fun);
