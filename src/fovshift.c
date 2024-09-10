@@ -84,7 +84,7 @@ int main_fovshift(int argc, char* argv[argc])
 			error("Shift in units of pixel only possible for Cartesian k-space!\n");
 
 		for (int i = 0; i < 3; i++)
-			shift[i] *= idims[i];
+			shift[i] /= idims[i];
 	}
 
 	long pdims[DIMS];
