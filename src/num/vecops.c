@@ -16,7 +16,7 @@
  * (mainly num/flpmath.c and num/italgos.c) to implement more complex
  * operations. The functions are exported by pointers stored in the
  * global variable cpu_ops of type struct vec_ops. Identical functions
- * are implemented for the GPU in gpukrnls.c.
+ * are implemented for the GPU in gpukrnls.cu.
  *
  */
 

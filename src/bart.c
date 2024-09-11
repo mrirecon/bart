@@ -401,7 +401,7 @@ int main_bart(int argc, char* argv[argc])
 		debug_printf(DP_DEBUG3, "No builtin found: %s\n", argv[0]);
 
 #ifdef CHECK_EXE_COMMANDS
-		// also check PATH_TO_BART/../commands/:
+		// also check dirname(PATH_TO_BART)/commands/:
 		char exe_loc[1024] = {0};
 		ssize_t exe_loc_size = ARRAY_SIZE(exe_loc);
 		ssize_t rl = readlink("/proc/self/exe", exe_loc, (size_t)exe_loc_size);
