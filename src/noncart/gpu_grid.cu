@@ -147,9 +147,15 @@ static __device__ double rolloff(double x, double beta, double width)
 	return 1. / ftkb(beta, x * width) / width;
 }
 
-static __device__ float posf(int d, int i)
+static __device__ float posf(int d, int i, float os)
 {
-	return (1 == d) ? 0. : (((float)i - (float)d / 2.) / (float)d);
+	if (1 == d)
+		return 0.;
+
+	int od = os * d;
+	int oi = i + (od / 2 - d / 2);
+
+	return (((float)oi - (float)(od / 2)) / (float)od);
 }
 
 struct rolloff_conf {
@@ -181,9 +187,9 @@ __global__ void kern_apply_rolloff_correction(struct rolloff_conf c, cuFloatComp
 				long iidx = x * c.istrs[0] + y * c.istrs[1] + z * c.istrs[2];
 				long oidx = x * c.ostrs[0] + y * c.ostrs[1] + z * c.ostrs[2];
 
-				float val = ((c.dims[0] > 1) ? rolloff(posf(c.dims[0], x) / c.os, c.beta, c.width) * c.bessel_beta : 1)
-					  * ((c.dims[1] > 1) ? rolloff(posf(c.dims[1], y) / c.os, c.beta, c.width) * c.bessel_beta : 1)
-					  * ((c.dims[2] > 1) ? rolloff(posf(c.dims[2], z) / c.os, c.beta, c.width) * c.bessel_beta : 1);
+				float val = ((c.dims[0] > 1) ? rolloff(posf(c.dims[0], x, c.os), c.beta, c.width) * c.bessel_beta : 1)
+					  * ((c.dims[1] > 1) ? rolloff(posf(c.dims[1], y, c.os), c.beta, c.width) * c.bessel_beta : 1)
+					  * ((c.dims[2] > 1) ? rolloff(posf(c.dims[2], z, c.os), c.beta, c.width) * c.bessel_beta : 1);
 
 				for (long i = 0; i < c.dims[3]; i++) {
 
@@ -807,7 +813,7 @@ __device__ static void grid_point_r(const struct grid_plan_s* plan, cuFloatCompl
 	for (int j = 0; j < 3; j++) {
 
 		float pos = plan->conf.os * (traj[j] + plan->conf.shift[j]);
-		pos += (plan->grd_dims[j] > 1) ? ((float) plan->grd_dims[j] / 2.) : 0.;
+		pos += (plan->grd_dims[j] > 1) ? (float)(plan->grd_dims[j] / 2) : 0.;
 
 		int sti = (int)ceil(pos - 0.5 * plan->conf.width);
 		int eni = (int)floor(pos + 0.5 * plan->conf.width);

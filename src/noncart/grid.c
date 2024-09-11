@@ -178,9 +178,9 @@ void gridH(const struct grid_conf_s* conf, const long ksp_dims[4], const long tr
 			pos[1] = conf->os * (creal(traj[it + 1]) + conf->shift[1]);
 			pos[2] = conf->os * (creal(traj[it + 2]) + conf->shift[2]);
 
-			pos[0] += (grid_dims[0] > 1) ? ((float) grid_dims[0] / 2.) : 0.;
-			pos[1] += (grid_dims[1] > 1) ? ((float) grid_dims[1] / 2.) : 0.;
-			pos[2] += (grid_dims[2] > 1) ? ((float) grid_dims[2] / 2.) : 0.;
+			pos[0] += (grid_dims[0] > 1) ? ((float) (grid_dims[0] / 2)) : 0.;
+			pos[1] += (grid_dims[1] > 1) ? ((float) (grid_dims[1] / 2)) : 0.;
+			pos[2] += (grid_dims[2] > 1) ? ((float) (grid_dims[2] / 2)) : 0.;
 
 			complex float val[C];
 			for (int j = 0; j < C; j++)
@@ -228,9 +228,9 @@ void grid(const struct grid_conf_s* conf, const long ksp_dims[4], const long trj
 			pos[1] = conf->os * (creal(traj[it + 1]) + conf->shift[1]);
 			pos[2] = conf->os * (creal(traj[it + 2]) + conf->shift[2]);
 
-			pos[0] += (grid_dims[0] > 1) ? ((float) grid_dims[0] / 2.) : 0.;
-			pos[1] += (grid_dims[1] > 1) ? ((float) grid_dims[1] / 2.) : 0.;
-			pos[2] += (grid_dims[2] > 1) ? ((float) grid_dims[2] / 2.) : 0.;
+			pos[0] += (grid_dims[0] > 1) ? ((float) (grid_dims[0] / 2)) : 0.;
+			pos[1] += (grid_dims[1] > 1) ? ((float) (grid_dims[1] / 2)) : 0.;
+			pos[2] += (grid_dims[2] > 1) ? ((float) (grid_dims[2] / 2)) : 0.;
 
 			complex float val[C];
 		
@@ -579,9 +579,15 @@ double calc_beta(float os, float width)
 }
 
 
-static float pos(int d, int i)
+static float pos(int d, int i, float os)
 {
-	return (1 == d) ? 0. : (((float)i - (float)d / 2.) / (float)d);
+	if (1 == d)
+		return 0.;
+
+	int od = os * d;
+	int oi = i + (od / 2 - d / 2);
+
+	return (1 == d) ? 0. : (((float)oi - (float)(od / 2)) / (float)od);
 }
 
 
@@ -603,9 +609,9 @@ void rolloff_correction(float os, float width, float beta, const long dimensions
 		for (int y = 0; y < dimensions[1]; y++) 
 			for (int x = 0; x < dimensions[0]; x++)
 				dst[x + dimensions[0] * (y + z * dimensions[1])] 
-					= (dimensions[0] > 1 ? rolloff(pos(dimensions[0], x) / os, beta, width) : 1.)
-					* (dimensions[1] > 1 ? rolloff(pos(dimensions[1], y) / os, beta, width) : 1.)
-					* (dimensions[2] > 1 ? rolloff(pos(dimensions[2], z) / os, beta, width) : 1.)
+					= (dimensions[0] > 1 ? rolloff(pos(dimensions[0], x, os), beta, width) : 1.)
+					* (dimensions[1] > 1 ? rolloff(pos(dimensions[1], y, os), beta, width) : 1.)
+					* (dimensions[2] > 1 ? rolloff(pos(dimensions[2], z, os), beta, width) : 1.)
 					* scale;
 }
 
@@ -667,9 +673,9 @@ void apply_rolloff_correction2(float os, float width, float beta, int N, const l
 				long oidx = (x * ostrs[0] + y * ostrs[1] + z * ostrs[2]) / (long)CFL_SIZE;
 				long iidx = (x * istrs[0] + y * istrs[1] + z * istrs[2]) / (long)CFL_SIZE;
 
-				float val = (dims[0] > 1 ? rolloff(pos(dims[0], x) / os, beta, width) : 1)
-					  * (dims[1] > 1 ? rolloff(pos(dims[1], y) / os, beta, width) : 1)
-					  * (dims[2] > 1 ? rolloff(pos(dims[2], z) / os, beta, width) : 1);
+				float val = (dims[0] > 1 ? rolloff(pos(dims[0], x, os), beta, width) : 1)
+					  * (dims[1] > 1 ? rolloff(pos(dims[1], y, os), beta, width) : 1)
+					  * (dims[2] > 1 ? rolloff(pos(dims[2], z, os), beta, width) : 1);
 
 				for (long i = 0; i < size_bat; i++)
 					dst[oidx + i * obstr] = val * src[iidx + i * ibstr];
