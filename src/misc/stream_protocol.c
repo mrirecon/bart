@@ -11,153 +11,81 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "misc/misc.h"
-
 #include "stream_protocol.h"
 
+enum stream_param { NO_PARAMS = 0, LONG_PARAM };
 
-static char* keywords[] = {
-	[STREAM_MSG_INVALID] = NULL,
-	[STREAM_MSG_BEGINGROUP] = "# {",
-	[STREAM_MSG_ENDGROUP] = "# }",
-	[STREAM_MSG_FLAGS] = "# flags",
-	[STREAM_MSG_SERIAL] = "# serial",
-	[STREAM_MSG_BINARY] = "# binary",
-	[STREAM_MSG_INDEX] = "# index",
-	[STREAM_MSG_RAW] = "# raw",
-	[STREAM_MSG_BLOCK] = "# block",
+struct typeinfo {
+	char* keyword;
+	unsigned int keylen;
+	bool ext;
+	enum stream_param param;
 };
 
+#define TOKEN "\n# "
+const int token_len = strlen(TOKEN);
+#define KW_PADDED(x) x "\n"
+#define KW(x) .keyword = KW_PADDED(x), .keylen = (unsigned int)strlen(KW_PADDED(x))
 
-int stream_encode(int l, char buf[l], const struct stream_msg* msg)
+// Max keyword len: MSG_HDR_SIZE - 1 - token_len
+static const struct typeinfo types[] = {
+	[STREAM_MSG_INVALID] = { .keyword = NULL, .keylen = 0 },
+	[STREAM_MSG_BREAK] = { KW("---") },
+	[STREAM_MSG_FLAGS] = { KW("flags"), .param = LONG_PARAM },
+	[STREAM_MSG_BINARY] = { KW("binary") },
+	[STREAM_MSG_INDEX] = { KW("index"), .param = LONG_PARAM },
+	[STREAM_MSG_RAW] = { KW("raw"), .ext = true, .param = LONG_PARAM },
+	[STREAM_MSG_BLOCK] = { KW("block"), .ext = true, .param = LONG_PARAM },
+};
+
+bool stream_encode(int l, char buf[l], const struct stream_msg* msg)
 {
 	if (STREAM_MSG_INVALID == msg->type)
-		return -1;
+		return false;
 
-	int written = snprintf(buf, (size_t)l, "%s ", keywords[msg->type]);
+	if (l < MSG_HDR_SIZE)
+		return false;
 
-	switch (msg->type) {
+	memset(buf, MSG_PADDING, MSG_HDR_SIZE);
 
-	// stream syntax msg, long parameter
-	case STREAM_MSG_RAW:
-	case STREAM_MSG_INDEX:
-	case STREAM_MSG_BLOCK:
+	int w = 0;
+	if (types[msg->type].param)
+		w = snprintf(buf, MSG_HDR_SIZE, "%s%s%ld",
+				TOKEN, types[msg->type].keyword, msg->data.data_long);
+	else
+		w = snprintf(buf, MSG_HDR_SIZE, "%s%s", TOKEN, types[msg->type].keyword);
 
-		written += snprintf(buf + written, (size_t)(l - written), "%ld", msg->data.data_long);
-		break;
+	if (w >= MSG_HDR_SIZE)
+		return false;
 
-	// stream syntax msg, unsigned long parameter
-	case STREAM_MSG_FLAGS:
+	// replace final null byte & make binary data start on a new line.
+	buf[MSG_HDR_SIZE - 1] = types[msg->type].ext ? '\n' : MSG_PADDING;
 
-		written += snprintf(buf + written, (size_t)(l - written), "%lu", msg->data.data_unsigned_long);
-		break;
-
-	// stream syntax msg, no parameters
-	case STREAM_MSG_BINARY:
-	case STREAM_MSG_BEGINGROUP:
-	case STREAM_MSG_ENDGROUP:
-	case STREAM_MSG_SERIAL:
-		break;
-
-	default:
-		return -1;
-	}
-
-	written += snprintf(buf + written, (size_t)(l - written), "\n");
-
-	return written;
+	return true;
 }
 
-
-int stream_decode(struct stream_msg* msg, int l, const char buf[l])
+bool stream_decode(struct stream_msg* msg, int l, const char buf[l])
 {
-	msg->type = STREAM_MSG_INVALID;
-	msg->ext = false;
-	msg->data.extsize = 0;
+	// strncmp to check for equality in the token_len bytes.
+	if (MSG_HDR_SIZE > l || 0 != strncmp(buf, TOKEN, token_len))
+		return false;
 
-	char* startptr = memchr(buf, '#', (size_t)l);
+	// copy to null-terminated buffer to secure strtol call.
+	char str[MSG_HDR_SIZE] = { '\0' };
+	memcpy(str, buf + token_len, MSG_HDR_SIZE - token_len - 1);
 
-	if (NULL == startptr)
-		return -1;
-
-	char* endptr = memchr(startptr, '\n', (size_t)(l - (startptr - buf)));
-
-	if (NULL == endptr)
-		return -1;
-
-	int len = (endptr - buf) + 1;
-
-	int match = STREAM_MSG_INVALID + 1;
-	int keylen = 0;
-
-	for (; match < (int)ARRAY_SIZE(keywords); match++) {
-
-		keylen = strlen(keywords[match]);
-
-		if (keylen > endptr - startptr)
-			continue;
-
-		// use strncmp to just compare the initial keylen bytes of
-		// startptr; string behind startptr may be longer!
-
-		if (   (0 == strncmp(startptr, keywords[match], (size_t)keylen))
-		    && (   (' ' == startptr[keylen])
-			|| ('\n' == startptr[keylen])))
+	for (msg->type = sizeof(types) / sizeof(types[0]) - 1; msg->type > STREAM_MSG_INVALID; msg->type--)
+		if (0 == strncmp(types[msg->type].keyword, str, types[msg->type].keylen))
 			break;
-	}
 
-	if (match == ARRAY_SIZE(keywords))
-		return -1;
+	if (STREAM_MSG_INVALID == msg->type)
+		return false;
 
-	msg->type = match;
+	msg->ext = types[msg->type].ext;
 
-	// parameter parsing
-	char* valptr = startptr + keylen + 1;
-	char* endptr2 = NULL;
+	if (types[msg->type].param)
+		msg->data.data_long = strtol(str + types[msg->type].keylen, NULL, 10);
 
-
-	switch (match) {
-
-	// stream syntax msg, one parameter
-	case STREAM_MSG_RAW:
-	case STREAM_MSG_BLOCK:
-
-		msg->ext = true;
-		msg->data.extsize = strtol(valptr, &endptr2, 10);
-		/* FALLTHRU */
-
-	case STREAM_MSG_INDEX:
-
-		msg->data.data_long = strtol(valptr, &endptr2, 10);
-
-		if (endptr2 != endptr)
-			msg->type = STREAM_MSG_INVALID;
-
-		break;
-
-	case STREAM_MSG_FLAGS:
-
-		msg->data.data_unsigned_long = strtoul(valptr, &endptr2, 10);
-
-		if (endptr2 != endptr)
-			msg->type = STREAM_MSG_INVALID;
-
-		break;
-
-	// stream syntax msg, no parameters
-	case STREAM_MSG_BINARY:
-	case STREAM_MSG_BEGINGROUP:
-	case STREAM_MSG_ENDGROUP:
-	case STREAM_MSG_SERIAL:
-
-		if (valptr != endptr)
-			msg->type = STREAM_MSG_INVALID;
-
-		break;
-
-	default:
-	}
-
-	return len;
+	return true;
 }
 
