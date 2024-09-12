@@ -252,12 +252,8 @@ rt_loop:
 		if (md_next(DIMS, in_dims_t, TIME_FLAG, pos))
 			goto rt_loop;
 
-		unmap_cfl(DIMS, cc2_dims, rt_cc2_data);
+		unmap_cfl(DIMS, cc2_dims_t, rt_cc2_data);
 		md_free(rt_tmp);
-
-		cc_data = cc_data_t;
-		in_data = in_data_t;
-		out_data = out_data_t;
 	}
 
 	if (SCC != cc_type) {
@@ -265,15 +261,28 @@ rt_loop:
 		if (do_fft)
 			fftuc(DIMS, out_dims, READ_FLAG, out_data, out_data);
 
-		unmap_cfl(DIMS, cc2_dims, cc_data);
+		if (-1 != aligned)
+			unmap_cfl(DIMS, cc_dims_t, cc_data_t);
+		else
+			unmap_cfl(DIMS, cc2_dims, cc_data);
 
 	} else {
 
-		unmap_cfl(DIMS, cc_dims, cc_data);
+		if (-1 != aligned)
+			unmap_cfl(DIMS, cc_dims_t, cc_data_t);
+		else
+			unmap_cfl(DIMS, cc_dims, cc_data);
 	}
 
-	unmap_cfl(DIMS, in_dims, in_data);
-	unmap_cfl(DIMS, out_dims, out_data);
+	if (-1 != aligned) {
+
+		unmap_cfl(DIMS, in_dims_t, in_data_t);
+		unmap_cfl(DIMS, out_dims_t, out_data_t);
+	} else {
+
+		unmap_cfl(DIMS, in_dims, in_data);
+		unmap_cfl(DIMS, out_dims, out_data);
+	}
 
 	debug_printf(DP_DEBUG1, "Done.\n");
 
