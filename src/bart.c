@@ -180,6 +180,14 @@ static void parse_bart_opts(int* argcp, char*** argvp)
 		raise(SIGSTOP);
 	}
 
+#ifndef _OPENMP
+	if (omp_threads > 1) {
+
+		debug_printf(DP_WARN, "WARN: Multiple threads requested, but BART compiled without OPENMP support! Ignoring...\n");
+		omp_threads = 1;
+	}
+#endif
+
 	if (0 != flags && 0 != pflags && flags != pflags)
 		error("Inconsistent use of -p and -l!\n");
 
