@@ -13,8 +13,8 @@ A = (- R - | a )
     (/ | \ | | )
     (0 0 0 | 1 )
 
-The tranform needs to be defined following the usual convention:
-1.) Shifts are measured in uints of FOV as the trajectoy measures k-space coordinates in units 1/FOV
+The transform needs to be defined following the usual convention:
+1.) Shifts are measured in units of FOV as the trajectory measures k-space coordinates in units 1/FOV
 2.) The image origin (x=0) is at grid position N//2 (interger devision for odd numbers)
 
 The transformed k-space is given by
@@ -82,7 +82,7 @@ WORKDIR=`mktemp -d 2>/dev/null || mktemp -d -t 'mytmpdir'`
 trap 'rm -rf "$WORKDIR"' EXIT
 cd $WORKDIR
 
-bart extract 0 0 3  1 0 3 $AFFINE rot		# rotatin of affine transform
+bart extract 0 0 3  1 0 3 $AFFINE rot		# rotation of affine transform
 bart extract 0 0 3  1 3 4 $AFFINE shift		# shift of affine transform
 
 bart transpose 0 1 rot rott
@@ -100,3 +100,4 @@ bart reshape 6 $READ $PHS1 trj2 $TRJ_OUT
 #bart fmac idet $KSP_IN ksp
 
 bart fovshift -s$(bart show -R -s: shift) -t$TRJ_IN $KSP_IN $KSP_OUT
+
