@@ -86,8 +86,9 @@ int main_affinereg(int argc, char* argv[argc])
 	complex float* ref_ptr = load_cfl(ref_file, DIMS, rdims);
 	complex float* mov_ptr = load_cfl(mov_file, DIMS, mdims);
 
-	assert(0 == (~7ul & md_nontriv_dims(DIMS, rdims)));
-	assert(0 == (~7ul & md_nontriv_dims(DIMS, mdims)));
+	if (   (0 != (~7ul & md_nontriv_dims(DIMS, rdims)))
+	    || (0 != (~7ul & md_nontriv_dims(DIMS, mdims))))
+			error("Affine registration only supports the first three dimensions.\nUse bart looping for higher dimensions.\n");
 
 	md_zabs(DIMS, mdims, mov_ptr, mov_ptr);
 	md_zabs(DIMS, rdims, ref_ptr, ref_ptr);
@@ -129,8 +130,8 @@ int main_affinereg(int argc, char* argv[argc])
 		assert(0);
 	}
 
-	long aff_dims[2] = { 3, 4 };
-	complex float* affine = create_cfl(affine_file, 2, aff_dims);
+	long aff_dims[DIMS] = { 3, 4, [ 2 ... DIMS - 1 ] = 1 };
+	complex float* affine = create_cfl(affine_file, DIMS, aff_dims);
 
 	affine_init_id(affine);
 
@@ -141,7 +142,7 @@ int main_affinereg(int argc, char* argv[argc])
 
 	unmap_cfl(DIMS, mdims, mov_ptr);
 	unmap_cfl(DIMS, rdims, ref_ptr);
-	unmap_cfl(2, aff_dims, affine);	
+	unmap_cfl(DIMS, aff_dims, affine);	
 
 	if (NULL != msk_mov_file) {
 
