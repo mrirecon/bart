@@ -22,20 +22,18 @@
 
 
 
-static complex float* noncart_shift(const float shift[3], const long tdims[DIMS], const complex float* tdata)
+static complex float* noncart_shift(const long sdims[DIMS], const complex float* shift, const long tdims[DIMS], const complex float* tdata)
 {
 	long odims[DIMS];
 	md_select_dims(DIMS, ~1u, odims, tdims);
 
+	assert(0 == (md_nontriv_dims(DIMS, sdims) & ~md_nontriv_dims(DIMS, tdims)));
+
 	complex float* odata = md_alloc(DIMS, odims, CFL_SIZE);
-
-	complex float cshift[3] = { shift[0], shift[1], shift[2] };
-
-	long shift_dims[DIMS] = { 3, [1 ... DIMS - 1] = 1 };
 
 	md_ztenmul2(DIMS, tdims, MD_STRIDES(DIMS, odims, CFL_SIZE), odata,
 				MD_STRIDES(DIMS, tdims, CFL_SIZE), tdata,
-				MD_STRIDES(DIMS, shift_dims, CFL_SIZE), cshift);
+				MD_STRIDES(DIMS, sdims, CFL_SIZE), shift);
 
 
 	md_zsmul(DIMS, odims, odata, odata, +2.i * M_PI);
@@ -60,12 +58,14 @@ int main_fovshift(int argc, char* argv[argc])
 	};
 
 	float shift[3] = { 0., 0., 0. };
+	const char* shift_file = NULL;
 	const char* traj_file = NULL;
 	bool pixel = false;
 
 	const struct opt_s opts[] = {
 
 		OPT_INFILE('t', &traj_file, "file", "k-space trajectory"),
+		OPT_INFILE('S', &shift_file, "file", "FOV shift"),
 		OPT_FLVEC3('s', &shift, "X:Y:Z", "FOV shift"),
 		OPT_SET('p', &pixel, "interpret FOV shift in units of pixel instead of units of FoV")
 	};
@@ -74,6 +74,20 @@ int main_fovshift(int argc, char* argv[argc])
 
 	num_init();
 
+	long sdims[DIMS] = {3, [ 1 ... DIMS - 1 ] = 1 };
+
+	complex float* cshift;;
+
+	if (NULL == shift_file) {
+
+		cshift = anon_cfl(NULL, DIMS, sdims);
+
+		for (int i = 0; i < 3; i++)
+			cshift[i] = shift[i];
+	} else {
+
+		cshift = load_cfl(shift_file, DIMS, sdims);
+	}
 
 	long idims[DIMS];
 	complex float* idata = load_cfl(in_file, DIMS, idims);
@@ -83,8 +97,16 @@ int main_fovshift(int argc, char* argv[argc])
 		if (NULL != traj_file)
 			error("Shift in units of pixel only possible for Cartesian k-space!\n");
 
+		complex float scale[3];
+
 		for (int i = 0; i < 3; i++)
-			shift[i] /= idims[i];
+			scale[i] /= idims[i];
+
+		long scl_strs[DIMS] = { CFL_SIZE, [ 1 ... DIMS - 1 ] = 0 };
+
+		md_zmul2(DIMS, sdims, MD_STRIDES(DIMS, sdims, CFL_SIZE), cshift,
+				MD_STRIDES(DIMS, sdims, CFL_SIZE), cshift,
+				scl_strs, scale);
 	}
 
 	long pdims[DIMS];
@@ -97,18 +119,21 @@ int main_fovshift(int argc, char* argv[argc])
 
 		md_select_dims(DIMS, ~1u, pdims, tdims);
 
-		phase = noncart_shift(shift, tdims, tdata);
+		phase = noncart_shift(sdims, cshift, tdims, tdata);
 
 		unmap_cfl(DIMS, tdims, tdata);
 
 	} else {
+
+		if (1 != md_nontriv_dims(DIMS, sdims))
+			error("Cartesian fovshift only supports the first three dimensions.\nUse bart looping for higher dimensions.\n");
 
 		md_select_dims(DIMS, FFT_FLAGS, pdims, idims);
 
 		phase = md_alloc(DIMS, pdims, CFL_SIZE);
 
 		for (int i = 0; i < 3; i++)
-			shift[i] *= (float)idims[i];
+			shift[i] = (float)idims[i] * cshift[i];
 
 		linear_phase(3, pdims, shift, phase);
 	}
@@ -123,6 +148,7 @@ int main_fovshift(int argc, char* argv[argc])
 
 	unmap_cfl(DIMS, idims, idata);
 	unmap_cfl(DIMS, idims, odata);
+	unmap_cfl(DIMS, sdims, cshift);
 
 	return 0;
 }
