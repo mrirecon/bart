@@ -22,19 +22,15 @@
 
 
 
-static complex float* noncart_shift(const long sdims[DIMS], const complex float* shift, const long tdims[DIMS], const complex float* tdata)
+static complex float* noncart_shift(long odims[DIMS], const long sdims[DIMS], const complex float* shift, const long tdims[DIMS], const complex float* tdata)
 {
-	long odims[DIMS];
-	md_select_dims(DIMS, ~1u, odims, tdims);
+	md_max_dims(DIMS, ~0ul, odims, tdims, sdims);
+	md_select_dims(DIMS, ~1u, odims, odims);
 
-	assert(0 == (md_nontriv_dims(DIMS, sdims) & ~md_nontriv_dims(DIMS, tdims)));
 
 	complex float* odata = md_alloc(DIMS, odims, CFL_SIZE);
 
-	md_ztenmul2(DIMS, tdims, MD_STRIDES(DIMS, odims, CFL_SIZE), odata,
-				MD_STRIDES(DIMS, tdims, CFL_SIZE), tdata,
-				MD_STRIDES(DIMS, sdims, CFL_SIZE), shift);
-
+	md_ztenmul(DIMS, odims, odata, tdims, tdata, sdims, shift);
 
 	md_zsmul(DIMS, odims, odata, odata, +2.i * M_PI);
 	md_zexp(DIMS, odims, odata, odata);
@@ -117,9 +113,7 @@ int main_fovshift(int argc, char* argv[argc])
 		long tdims[DIMS];
 		complex float* tdata = load_cfl(traj_file, DIMS, tdims);
 
-		md_select_dims(DIMS, ~1u, pdims, tdims);
-
-		phase = noncart_shift(sdims, cshift, tdims, tdata);
+		phase = noncart_shift(pdims, sdims, cshift, tdims, tdata);
 
 		unmap_cfl(DIMS, tdims, tdata);
 
