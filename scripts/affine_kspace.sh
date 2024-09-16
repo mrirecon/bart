@@ -86,18 +86,18 @@ bart extract 0 0 3  1 0 3 $AFFINE rot		# rotation of affine transform
 bart extract 0 0 3  1 3 4 $AFFINE shift		# shift of affine transform
 
 bart transpose 0 1 rot rott
+bart transpose 1 3 rott rot
 
 READ=$(bart show -d1 $TRJ_IN)
 PHS1=$(bart show -d2 $TRJ_IN)
 
-bart reshape 7 1 3 $((READ*PHS1)) $TRJ_IN trj1
-bart fmac -s2 rott trj1 trj2
-bart reshape 6 $READ $PHS1 trj2 $TRJ_OUT
+bart transpose 0 3 $TRJ_IN trjt
+bart fmac -s8 rot trjt $TRJ_OUT
 
 #FIXME: TEST and add scaling by determinant.
 #bart determinant rott det
 #bart invert det idet
 #bart fmac idet $KSP_IN ksp
 
-bart fovshift -s$(bart show -R -s: shift) -t$TRJ_IN $KSP_IN $KSP_OUT
+bart fovshift -Sshift -t$TRJ_IN $KSP_IN $KSP_OUT
 
