@@ -4,7 +4,7 @@
 
 enum ACTIVATION {ACT_LIN, ACT_RELU, ACT_LRELU, ACT_SOFTMAX, ACT_SIGMOID, ACT_CARDIOID, ACT_SIGLOG, ACT_IGAUSSIAN};
 
-extern const struct nlop_s* append_activation(const struct nlop_s* network, int o, enum ACTIVATION activation);
+extern const struct nlop_s* append_activation(const struct nlop_s* network, int o, enum ACTIVATION activation, unsigned long bflags);
 extern const struct nlop_s* append_activation_bias(const struct nlop_s* network, int o, enum ACTIVATION activation, unsigned long bias_flags);
 
 extern const struct nlop_s* nlop_bias_create(int N, const long dims[__VLA(N)], const long bdims[__VLA(N)]);

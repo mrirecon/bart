@@ -44,10 +44,11 @@ static const struct nlop_s* append_activation_bias_internal(const struct nlop_s*
  * @param network operator to append the activation (this operator is freed)
  * @param o output index of network, the layer is appended
  * @param activation type of activation
+ * @param bflags (bias flags) In case of ACT_SOFTMAX, ~bflags is interpreted as batchflags.
  */
-const struct nlop_s* append_activation(const struct nlop_s* network, int o, enum ACTIVATION activation)
+const struct nlop_s* append_activation(const struct nlop_s* network, int o, enum ACTIVATION activation, unsigned long bflags)
 {
-	return append_activation_bias_internal(network, o, activation, 0, false);
+	return append_activation_bias_internal(network, o, activation, bflags, false);
 }
 
 

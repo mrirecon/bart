@@ -297,7 +297,7 @@ static nn_t network_resnet_create(const struct network_s* _config, int NO, const
 	if (config->bias)
 		result = nn_append_activation_bias(result, 0, NULL, wnames[3], config->activation, MD_BIT(0));
 	else
-		result = nn_append_activation(result, 0, NULL, config->activation);
+		result = nn_append_activation(result, 0, NULL, config->activation, MD_BIT(0));
 
 
 	for (int i = 0; i < config->Nl - 2; i++) {
@@ -319,7 +319,7 @@ static nn_t network_resnet_create(const struct network_s* _config, int NO, const
 		if (config->bias)
 			result = nn_append_activation_bias(result, 0, NULL, wnames[4], config->activation, MD_BIT(0));
 		else
-			result = nn_append_activation(result, 0, NULL, config->activation);
+			result = nn_append_activation(result, 0, NULL, config->activation, MD_BIT(0));
 
 		result = nn_append_singleton_dim_in_if_exists_F(result, wnames[1]);
 		result = nn_append_singleton_dim_in_if_exists_F(result, wnames[4]);
@@ -380,7 +380,7 @@ static nn_t network_resnet_create(const struct network_s* _config, int NO, const
 	if (config->bias)
 		result = nn_append_activation_bias(result, 0, NULL, wnames[5], config->last_activation, MD_BIT(0));
 	else
-		result = nn_append_activation(result, 0, NULL, config->last_activation);
+		result = nn_append_activation(result, 0, NULL, config->last_activation, MD_BIT(0));
 
 	//this scale is for compatibility as resdidual should sum for resnet but -1 is used above
 	result = nn_chain2_FF(result, 0, NULL, nn_from_nlop_F(nlop_from_linop_F(linop_scale_create(N, odims, -1))), 0, NULL);

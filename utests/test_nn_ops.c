@@ -572,7 +572,7 @@ static bool test_sigmoid_der(void)
 	const struct nlop_s* network = nlop_from_linop(id);
 	linop_free(id);
 
-	network = append_activation(network, 0, ACT_SIGMOID);
+	network = append_activation(network, 0, ACT_SIGMOID, 0UL);
 
 	float err_adj = nlop_test_adj_derivatives(network, true);
 	float err_der = nlop_test_derivatives(network);

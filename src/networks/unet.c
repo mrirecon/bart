@@ -353,7 +353,7 @@ static nn_t nn_unet_append_conv_block(	nn_t network, int o, const char* oname,
 
 	} else {
 
-		network = nn_append_activation(network, o, oname, config->activation);
+		network = nn_append_activation(network, o, oname, config->activation, (config->channel_flag | config->group_flag));
 	}
 
 	return network;

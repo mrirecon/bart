@@ -16,11 +16,11 @@
 #include "activation_nn.h"
 
 
-nn_t nn_append_activation(nn_t network, int o, const char* oname, enum ACTIVATION activation)
+nn_t nn_append_activation(nn_t network, int o, const char* oname, enum ACTIVATION activation, unsigned long bflags)
 {
 	o = nn_get_out_arg_index(network, o, oname);
 
-	auto nlop = append_activation(nlop_clone(nn_get_nlop(network)), o, activation);
+	auto nlop = append_activation(nlop_clone(nn_get_nlop(network)), o, activation, bflags);
 	auto result = nn_from_nlop_F(nlop);
 
 	nn_clone_args(result, network);
