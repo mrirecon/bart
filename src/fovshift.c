@@ -96,7 +96,7 @@ int main_fovshift(int argc, char* argv[argc])
 		complex float scale[3];
 
 		for (int i = 0; i < 3; i++)
-			scale[i] /= idims[i];
+			scale[i] = 1. / idims[i];
 
 		long scl_strs[DIMS] = { CFL_SIZE, [ 1 ... DIMS - 1 ] = 0 };
 
