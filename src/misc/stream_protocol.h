@@ -4,7 +4,7 @@
 
 #include "misc/cppwrap.h"
 
-#define MSG_HDR_SIZE 16
+#define MSG_HDR_SIZE 24
 #define MSG_PADDING ' '
 
 enum stream_msg_type {
