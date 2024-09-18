@@ -29,7 +29,7 @@ variables:
 # For gitlab-runner using docker: create diretories as the USER in the docker image, not as root
   FF_DISABLE_UMASK_FOR_DOCKER_EXECUTOR: "true"
 
-image: registry.gitlab.tugraz.at/ibi/reproducibility/reproducibility_testing/ibi_cuda_bart
+image: registry.gitlab.tugraz.at/ibi/reproducibility/gitlab-ci-containers/ibi_cuda_bart
 
 
 default:
@@ -70,7 +70,7 @@ Build_riscv:
   stage: build
   tags:
     - riscv
-  image: registry.gitlab.tugraz.at/ibi/reproducibility/reproducibility_testing/ibi_riscv_noroot
+  image: registry.gitlab.tugraz.at/ibi/reproducibility/gitlab-ci-containers/ibi_riscv_noroot
   script:
     - make -j 4 all
   artifacts:
@@ -207,7 +207,7 @@ Build_LTO:
 
 Build_Analyzer:
   stage: build
-  image: registry.gitlab.tugraz.at/ibi/reproducibility/reproducibility_testing/ibi_gcc-git_bart
+  image: registry.gitlab.tugraz.at/ibi/reproducibility/gitlab-ci-containers/ibi_gcc-git_bart
   script:
     - gcc-git --version
     - CC=gcc-git CFLAGS="-fanalyzer -Werror" DEBUG=0 DEBUG_DWARF=0 make all
@@ -240,7 +240,7 @@ Build_Tensorflow:
 
 Build_wasm:
   stage: build
-  image: registry.gitlab.tugraz.at/ibi/reproducibility/reproducibility_testing/ibi_wasm_bart
+  image: registry.gitlab.tugraz.at/ibi/reproducibility/gitlab-ci-containers/ibi_wasm_bart
   variables:
     DEPS_FOLDER: /wasm_libs
   script:
@@ -289,7 +289,7 @@ UTest_riscv:
   stage: test1
   tags:
     - riscv
-  image: registry.gitlab.tugraz.at/ibi/reproducibility/reproducibility_testing/ibi_riscv_noroot
+  image: registry.gitlab.tugraz.at/ibi/reproducibility/gitlab-ci-containers/ibi_riscv_noroot
   script:
     - AUTOCLEAN=0 make -j 4 utest
   needs: [Build_riscv]
@@ -375,7 +375,7 @@ UTest_LTO:
 
 UTest_wasm:
   stage: test1
-  image: registry.gitlab.tugraz.at/ibi/reproducibility/reproducibility_testing/ibi_wasm_bart
+  image: registry.gitlab.tugraz.at/ibi/reproducibility/gitlab-ci-containers/ibi_wasm_bart
   script:
     - bash -c "source /emsdk/emsdk_env.sh && AUTOCLEAN=0 DEBUG=0 DEBUG_DWARF=0 make utest"
   needs: [Build_wasm]
@@ -397,7 +397,7 @@ IntTest_riscv:
   stage: test2
   tags:
     - riscv
-  image: registry.gitlab.tugraz.at/ibi/reproducibility/reproducibility_testing/ibi_riscv_noroot
+  image: registry.gitlab.tugraz.at/ibi/reproducibility/gitlab-ci-containers/ibi_riscv_noroot
   script:
     - AUTOCLEAN=0 AGUE_REF=/reference_data/ make -j 4 test testague
   needs: [Build_riscv]
@@ -482,7 +482,7 @@ IntTest_MPI_GPU:
 
 IntTest_wasm:
   stage: test2
-  image: registry.gitlab.tugraz.at/ibi/reproducibility/reproducibility_testing/ibi_wasm_bart
+  image: registry.gitlab.tugraz.at/ibi/reproducibility/gitlab-ci-containers/ibi_wasm_bart
   script:
     - bash -c "source /emsdk/emsdk_env.sh && AUTOCLEAN=0 DEBUG=0 DEBUG_DWARF=0 make test"
   needs: [Build_wasm]
