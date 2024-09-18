@@ -110,7 +110,7 @@ int main_show(int argc, char* argv[argc])
 		OPT_SET('R', &real, "print only real part"),
 		OPT_SET('N', &index, "print index"),
 		OPT_STRING('s', &sep, "sep", "use <sep> as the separator"),
-		OPT_STRING('f', &fmt, "format", "use <format> as the format. Default: \"%%+.6e%%+.6ei\""),
+		OPT_STRING('f', &fmt, "format", "use <format> as the format. Default: \"%+.6e%+.6ei\""),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
