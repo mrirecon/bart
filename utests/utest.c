@@ -48,9 +48,7 @@ int abort_on_error = -1;
 
 void abort_or_print(const char* testname)
 {
-
 	if (-1 == abort_on_error) {
-
 
 		char* str = getenv("BART_UTEST_ABORT");
 
@@ -107,5 +105,4 @@ int main(int argc, char* argv[])
 
 	exit(good ? 0 : 1);
 }
-
 

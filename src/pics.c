@@ -671,12 +671,12 @@ int main_pics(int argc, char* argv[argc])
 	}
 
 #ifdef USE_CUDA
-		if (conf.gpu && (gpu_gridding || NULL == traj)) {
+	if (conf.gpu && (gpu_gridding || NULL == traj)) {
 
-			auto tmp = linop_gpu_wrapper((struct linop_s*)forward_op);
-			linop_free(forward_op);
-			forward_op = tmp;
-		} 
+		auto tmp = linop_gpu_wrapper((struct linop_s*)forward_op);
+		linop_free(forward_op);
+		forward_op = tmp;
+	}
 #endif
 
 	if (NULL != hint) {

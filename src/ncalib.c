@@ -129,6 +129,7 @@ int main_ncalib(int argc, char* argv[argc])
 	if (NULL != pat_file) {
 
 		pattern = load_cfl(pat_file, DIMS, pat_dims);
+
 	} else {
 
 		md_select_dims(DIMS, ~COIL_FLAG, pat_dims, ksp_dims);
@@ -142,6 +143,7 @@ int main_ncalib(int argc, char* argv[argc])
 	if (NULL != bas_file) {
 
 		basis = load_cfl(bas_file, DIMS, bas_dims);
+
 	} else {
 
 		md_singleton_dims(DIMS, bas_dims);
@@ -226,6 +228,7 @@ int main_ncalib(int argc, char* argv[argc])
 		md_resize_center(DIMS, nksp_dims, nksp, tdims, tmp, CFL_SIZE);
 
 		md_copy_dims(DIMS, tdims, npat_dims);
+
 		for (int i = 0; i < 3; i++) {
 
 			tdims[i] -= ksenssize[i];
