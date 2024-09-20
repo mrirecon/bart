@@ -195,13 +195,16 @@ int main_moba(int argc, char* argv[argc])
 
 	opt_reg_init(&ropts);
 
+	bool t2_old_flag = false;
+
 	const struct opt_s opts[] = {
 
                 //FIXME: Sort options into optimization and others interface
 		{ 'r', NULL, true, OPT_SPECIAL, opt_reg_moba, &ropts, "<T>:A:B:C", "generalized regularization options (-rh for help)" },
 		OPT_SELECT('L', enum mdb_t, &conf.mode, MDB_T1, "T1 mapping using model-based look-locker"),
                 OPT_SELECT('P', enum mdb_t, &conf.mode, MDB_T1_PHY, "T1 mapping using reparameterized (M0, R1, alpha) model-based look-locker (TR required!)"),
-		OPT_SELECT('F', enum mdb_t, &conf.mode, MDB_T2, "T2 mapping using model-based Fast Spin Echo"),
+		OPT_SET('F', &t2_old_flag, "(T2 mapping using model-based Fast Spin Echo)"),
+		OPT_SELECT('T', enum mdb_t, &conf.mode, MDB_T2, "T2 mapping using model-based Fast Spin Echo"),
 		OPT_SELECT('G', enum mdb_t, &conf.mode, MDB_MGRE, "T2* mapping using model-based multiple gradient echo"),
 		OPT_SELECT('D', enum mdb_t, &conf.mode, MDB_IR_MGRE, "Joint T1 and T2* mapping using model-based IR multiple gradient echo"),
                 OPTL_SELECT(0, "bloch", enum mdb_t, &conf.mode, MDB_BLOCH, "Bloch model-based reconstruction"),
@@ -209,7 +212,6 @@ int main_moba(int argc, char* argv[argc])
 		OPT_PINT('l', &conf.opt_reg, "\b1/-l2", "  toggle l1-wavelet or l2 regularization."), // extra spaces needed because of backsapce \b earlier
 		OPT_PINT('i', &conf.iter, "iter", "Number of Newton steps"),
 		OPTL_FLOAT('R', "reduction", &conf.redu, "redu", "reduction factor"),
-		OPT_FLOAT('T', &conf.damping, "damp", "damping on temporal frames"),
 		OPT_FLOAT('j', &conf.alpha_min, "minreg", "Minimum regularization parameter"),
 		OPT_FLOAT('u', &conf.rho, "rho", "ADMM rho [default: 0.01]"),
 		OPT_PINT('C', &conf.inner_iter, "iter", "inner iterations"),
@@ -230,6 +232,7 @@ int main_moba(int argc, char* argv[argc])
 		OPTL_PINT(0, "pusteps", &conf.pusteps, "ud", "Number of partial update steps for IRGNM"),
 		OPTL_FLOAT(0, "ratio", &conf.ratio, "f:[0;1]", "Ratio of partial updates: ratio*<updated-map> + (1-ratio)*<previous-map>"),
 		OPTL_FLOAT(0, "l1val", &conf.l1val, "f", "Regularization scaling of l1 wavelet (default: 1.)"),
+		OPTL_FLOAT(0, "temporal_damping", &conf.damping, "f", "Temporal damping factor."),
 		OPTL_INT(0, "multi-gpu", &(conf.num_gpu), "num", "(number of gpus to use)"),
 		OPT_INFILE('I', &init_file, "init", "File for initialization"),
 		OPT_INFILE('t', &traj_file, "traj", "K-space trajectory"),
@@ -269,6 +272,8 @@ int main_moba(int argc, char* argv[argc])
 	if (use_compat_to_version("v0.6.00"))
 		conf.scaling_M0 = 2.;
 
+	if (t2_old_flag)
+		conf.mode = MDB_T2;
 
 	if (conf.ropts->r > 0)
 		conf.algo = ALGO_ADMM;
@@ -287,7 +292,10 @@ int main_moba(int argc, char* argv[argc])
 	complex float* kspace_data = load_cfl(ksp_file, DIMS, ksp_dims);
 
 	long TI_dims[DIMS];
-	const complex float* TI = load_cfl(TI_file, DIMS, TI_dims);
+	complex float* TI = load_cfl(TI_file, DIMS, TI_dims);
+
+	if (t2_old_flag)
+		md_zsmul(DIMS, TI_dims, TI, TI, 10.);
 
 	assert(TI_dims[TE_DIM] == ksp_dims[TE_DIM]);
 	assert(1 == ksp_dims[MAPS_DIM]);
@@ -405,7 +413,7 @@ int main_moba(int argc, char* argv[argc])
 		md_clear(DIMS, coil_dims, sens, CFL_SIZE);
 	}
 
-	md_zfill(DIMS, img_dims, img, 1.0);
+	md_zfill(DIMS, img_dims, img, 1.);
 
 	complex float* k_grid_data = anon_cfl("", DIMS, grid_dims);
 

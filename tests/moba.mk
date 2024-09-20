@@ -167,13 +167,13 @@ tests/test-moba-t2: phantom signal fmac fft ones index scale moba slice invert n
 	$(TOOLDIR)/ones 6 16 16 1 1 1 16 psf.ra						;\
 	$(TOOLDIR)/index 5 16 tmp1.ra   						;\
 	$(TOOLDIR)/scale 0.01 tmp1.ra TE.ra                  	       			;\
-	$(TOOLDIR)/moba -F -i10 -f1 -C30 --scale_data=5000. --scale_psf=1000. --normalize_scaling -d4 -p psf.ra k_space.ra TE.ra reco.ra	;\
+	$(TOOLDIR)/moba -T -i10 -f1 -C50 --scale_data=5000. --scale_psf=1000. --normalize_scaling -d4 -p psf.ra k_space.ra TE.ra reco.ra	;\
 	$(TOOLDIR)/slice 6 1 reco.ra R2.ra						;\
 	$(TOOLDIR)/invert R2.ra T2.ra							;\
 	$(TOOLDIR)/phantom -x16 -c circ.ra						;\
 	$(TOOLDIR)/fmac T2.ra circ.ra masked.ra						;\
-	$(TOOLDIR)/scale -- 0.9 circ.ra ref.ra						;\
-	$(TOOLDIR)/nrmse -t 0.0008 masked.ra ref.ra					;\
+	$(TOOLDIR)/scale -- 0.09 circ.ra ref.ra						;\
+	$(TOOLDIR)/nrmse -t 0.002 ref.ra masked.ra					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
@@ -189,7 +189,7 @@ tests/test-moba-meco-noncart-r2s: traj scale phantom signal fmac index extract m
 	$(TOOLDIR)/index 5 8 tmp1.ra                                      ;\
 	$(TOOLDIR)/scale 1.6 tmp1.ra tmp2.ra                              ;\
 	$(TOOLDIR)/extract 5 1 8 tmp2.ra TE.ra                            ;\
-	$(TOOLDIR)/moba -G -m3 -rQ:1 -rS:0 -rW:3:64:1 -i10 -C100 -u0.0001 -R3 -T 0.9 -o1.5 -k --kfilter-2 -t traj.ra data.ra TE.ra reco.ra   ;\
+	$(TOOLDIR)/moba -G -m3 -rQ:1 -rS:0 -rW:3:64:1 -i10 -C100 -u0.0001 -R3 --temporal_damping 0.9 -o1.5 -k --kfilter-2 -t traj.ra data.ra TE.ra reco.ra   ;\
 	$(TOOLDIR)/slice 6 1 reco.ra R2S.ra                               ;\
 	$(TOOLDIR)/resize -c 0 8 1 8 R2S.ra R2S_crop.ra                   ;\
 	$(TOOLDIR)/phantom -x8 -c circ.ra                                 ;\
@@ -211,7 +211,7 @@ tests/test-moba-meco-noncart-wfr2s: traj scale phantom signal fmac index extract
 	$(TOOLDIR)/index 5 8 tmp1.ra                                      ;\
 	$(TOOLDIR)/scale 1.6 tmp1.ra tmp2.ra                              ;\
 	$(TOOLDIR)/extract 5 1 8 tmp2.ra TE.ra                            ;\
-	$(TOOLDIR)/moba -G -m1 -rQ:1 -rS:0 -rW:3:64:1 -i10 -C100 -u0.0001 -R3 -T0.9 -o1.5 -k --kfilter-2 -t traj.ra data.ra TE.ra reco.ra   ;\
+	$(TOOLDIR)/moba -G -m1 -rQ:1 -rS:0 -rW:3:64:1 -i10 -C100 -u0.0001 -R3 --temporal_damping 0.9 -o1.5 -k --kfilter-2 -t traj.ra data.ra TE.ra reco.ra   ;\
 	$(TOOLDIR)/resize -c 0 8 1 8 reco.ra reco_crop.ra                 ;\
 	$(TOOLDIR)/slice 6 0 reco_crop.ra W.ra                            ;\
 	$(TOOLDIR)/slice 6 1 reco_crop.ra F.ra                            ;\

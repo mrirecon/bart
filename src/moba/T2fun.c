@@ -49,13 +49,11 @@ struct T2_s {
 	complex float* dz;
 
 	struct multiplace_array_s* TE;
-
-	float scaling_z;
 };
 
 DEF_TYPEID(T2_s);
 
-// Calculate Model: rho .*exp(-scaling_z.*z.*TE)
+// Calculate Model: rho .*exp(-z.*TE)
 static void T2_fun(const nlop_data_t* _data, complex float* dst, const complex float* src)
 {
 	struct T2_s* data = CAST_DOWN(T2_s, _data);
@@ -83,11 +81,11 @@ static void T2_fun(const nlop_data_t* _data, complex float* dst, const complex f
 
 	complex float* tmp_map = md_alloc_sameplace(data->N, data->map_dims, CFL_SIZE, dst);
 
-	// -1*scaling_z.*z
-	md_zsmul(data->N, data->map_dims, tmp_map, data->z, -1. * data->scaling_z);
+	// -1*z
+	md_zsmul(data->N, data->map_dims, tmp_map, data->z, -1.);
 
 	complex float* tmp_exp = md_alloc_sameplace(data->N, data->out_dims, CFL_SIZE, dst);
-	// exp(-TE.*scaling_z.*z)
+	// exp(-TE.*z)
 	md_zmul2(data->N, data->out_dims, data->out_strs, tmp_exp, data->map_strs, tmp_map, data->TE_strs, multiplace_read(data->TE, dst));
 
 	md_free(tmp_map);
@@ -99,13 +97,13 @@ static void T2_fun(const nlop_data_t* _data, complex float* dst, const complex f
 	md_zsmul(data->N, data->out_dims, data->drho, tmp_exp, 1.0);
 
 	// model:
-	// rho.*exp(-TE.*scaling_z.*z)
+	// rho.*exp(-TE.*z)
 	md_zmul2(data->N, data->out_dims, data->out_strs, dst, data->map_strs, data->rho, data->out_strs, tmp_exp);
 
-	// dz: z' = -rho.*scaling_z.*TE.*exp(-TE.*scaling_z.*z)
-	// TE.*exp(-TE.*scaling_z.*z), 
+	// dz: z' = -rho.*TE.*exp(-TE.*z)
+	// TE.*exp(-TE.*z),
 	md_zmul2(data->N, data->out_dims, data->out_strs, tmp_exp, data->out_strs, tmp_exp, data->TE_strs, multiplace_read(data->TE, dst));
-	md_zsmul(data->N, data->out_dims, tmp_exp, tmp_exp, -1. * data->scaling_z);
+	md_zsmul(data->N, data->out_dims, tmp_exp, tmp_exp, -1.);
 	md_zmul2(data->N, data->out_dims, data->out_strs, data->dz, data->map_strs, data->rho, data->out_strs, tmp_exp);
 
 	md_free(tmp_exp);
@@ -240,8 +238,6 @@ struct nlop_s* nlop_T2_create(int N, const long map_dims[N], const long out_dims
 	data->drho = NULL;
 	data->dz = NULL;
 	data->TE = multiplace_move(N, TE_dims, CFL_SIZE, TE);
-
-	data->scaling_z = 10.;
 
 	return nlop_create(N, out_dims, N, in_dims, CAST_UP(PTR_PASS(data)), T2_fun, T2_der, T2_adj, NULL, NULL, T2_del);
 }

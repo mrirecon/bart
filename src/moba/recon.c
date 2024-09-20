@@ -242,7 +242,7 @@ static struct mobamod exp_create(const long dims[DIMS], const complex float* mas
 
 	complex float* TE2 = md_alloc(DIMS, edims, CFL_SIZE);
 
-	md_zsmul(DIMS, edims, TE2, TE, -10.);
+	md_zsmul(DIMS, edims, TE2, TE, -1.);
 
 
 	// chain T2 model
