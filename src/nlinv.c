@@ -168,15 +168,14 @@ int main_nlinv(int argc, char* argv[argc])
 	if (NULL != psf_file) {
 
 		pattern = load_cfl(psf_file, DIMS, pat_dims);
-
 	} else {
-
-		if (real_time_stream)
-			error("Streaming requires pattern!\n");
 
 		md_select_dims(DIMS, ~COIL_FLAG, pat_dims, ksp_dims);
 		pattern = anon_cfl("", DIMS, pat_dims);
-		estimate_pattern(DIMS, ksp_dims, COIL_FLAG, pattern, kspace);
+		if (real_time_stream)
+			md_zfill(DIMS, pat_dims, pattern, 1);
+		else
+			estimate_pattern(DIMS, ksp_dims, COIL_FLAG, pattern, kspace);
 	}
 
 	psf_based_reco = psf_based_reco || (-1 != restrict_fov) || (NULL != init_file);
