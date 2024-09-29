@@ -722,7 +722,7 @@ static bool stream_receive_idx_locked(stream_t s)
 			if (msg.data.extsize == 0)
 				break;
 
-			void* mem = malloc((size_t)msg.data.extsize);
+			void* mem = xmalloc((size_t)msg.data.extsize);
 
 			xread(s->pipefd, msg.data.extsize, mem);
 
