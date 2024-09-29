@@ -380,7 +380,7 @@ stream_t stream_create(int N, const long dims[N], complex float* data, int pipef
 	return PTR_PASS(ret);
 
 cleanup:
-	stream_free(ret);
+	stream_free(PTR_PASS(ret));
 	return NULL;
 }
 
