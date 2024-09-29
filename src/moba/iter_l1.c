@@ -180,7 +180,7 @@ static void combined_prox(iter_op_data* _data, float rho, float* dst, const floa
 	}
 
 	if (1 == data->conf->opt_reg)
-		operator_p_apply_unchecked(data->prox2, rho, (_Complex float*)dst, (const _Complex float*)dst);
+		operator_p_apply_unchecked(data->prox2, rho, (complex float*)dst, (const complex float*)dst);
 
 	pos_value(_data, dst, dst);
 }

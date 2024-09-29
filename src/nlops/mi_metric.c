@@ -13,9 +13,7 @@
  * Mattes, D., Haynor, D. R., Vesselle, H., Lewellen, T. K., & Eubank, W.
  * PET-CT image registration in the chest using free-form deformations.
  * IEEE TMI, 22(1), 120-8, 2003.
- *
  */
-
 
 #include <math.h>
 #include <complex.h>
@@ -29,11 +27,6 @@
 #include "nlops/nlop.h"
 
 #include "mi_metric.h"
-
-#define CFL_SIZE	sizeof(_Complex float)
-#define  FL_SIZE	sizeof(float)
-#define CDL_SIZE	sizeof(_Complex double)
-#define  DL_SIZE	sizeof(double)
 
 
 static float bin_normalize(float x, float mval, float delta);
@@ -352,11 +345,6 @@ struct nlop_s* nlop_mi_metric_create(int N, const long dims[N], int nbins, float
 
 	return ret;
 }
-
-
-
-
-
 
 
 

@@ -598,7 +598,7 @@ bool nlop_block_diag_der_available(const struct nlop_s* op, int o, int i)
 }
 
 
-static void zrdiag_fun(const nlop_data_t* _data, int N, int OO, const long odims[OO][N], _Complex float* dst[OO], int II, const long idims[II][N], const _Complex float* src[II], const long ddims[OO][II][N], _Complex float* jac[OO][II], _Complex float* jacc[OO][II])
+static void zrdiag_fun(const nlop_data_t* _data, int N, int OO, const long odims[OO][N], complex float* dst[OO], int II, const long idims[II][N], const complex float* src[II], const long ddims[OO][II][N], complex float* jac[OO][II], complex float* jacc[OO][II])
 {
 	auto data = CAST_DOWN(diag_s, _data);
 
@@ -657,7 +657,7 @@ struct nlop_s* nlop_zrdiag_create(int N, const long dims[N], nlop_data_t* data, 
 
 
 
-static void zdiag_fun(const nlop_data_t* _data, int N, int OO, const long odims[OO][N], _Complex float* dst[OO], int II, const long idims[II][N], const _Complex float* src[II], const long ddims[OO][II][N], _Complex float* jac[OO][II])
+static void zdiag_fun(const nlop_data_t* _data, int N, int OO, const long odims[OO][N], complex float* dst[OO], int II, const long idims[II][N], const complex float* src[II], const long ddims[OO][II][N], complex float* jac[OO][II])
 {
 	auto data = CAST_DOWN(diag_s, _data);
 
@@ -745,7 +745,7 @@ struct nlop_s* nlop_rdiag_create(int N, const long dims[N], nlop_data_t* data, n
 
 
 
-static void zblock_diag_simple_fun(const nlop_data_t* _data, int N, int OO, const long odims[OO][N], _Complex float* dst[OO], int II, const long idims[II][N], const _Complex float* src[II], const long ddims[OO][II][N], _Complex float* jac[OO][II])
+static void zblock_diag_simple_fun(const nlop_data_t* _data, int N, int OO, const long odims[OO][N], complex float* dst[OO], int II, const long idims[II][N], const complex float* src[II], const long ddims[OO][II][N], complex float* jac[OO][II])
 {
 	auto data = CAST_DOWN(block_diag_simple_s, _data);
 
@@ -804,7 +804,7 @@ static void rblock_diag_simple_fun(const nlop_data_t* _data, int N, int OO, cons
 	data->rblock_diag_fun(data->data, N, odims[0], dst[0], idims[0], src[0], ddims[0][0], jac[0][0]);
 }
 
-static void zrblock_diag_simple_fun(const nlop_data_t* _data, int N, int OO, const long odims[OO][N], _Complex float* dst[OO], int II, const long idims[II][N], const _Complex float* src[II], const long ddims[OO][II][N], _Complex float* jac[OO][II], _Complex float* jacc[OO][II])
+static void zrblock_diag_simple_fun(const nlop_data_t* _data, int N, int OO, const long odims[OO][N], complex float* dst[OO], int II, const long idims[II][N], const complex float* src[II], const long ddims[OO][II][N], complex float* jac[OO][II], complex float* jacc[OO][II])
 {
 	auto data = CAST_DOWN(block_diag_simple_s, _data);
 
@@ -1205,7 +1205,7 @@ static void precomp_jacobian_del(const nlop_data_t* _data)
 }
 
 
-static void zprecomp_jacobian_fun(const nlop_data_t* _data, int N, int OO, const long /*odims*/[OO][N], _Complex float* dst[OO], int II, const long /*idims*/[II][N], const _Complex float* src[II], const long ddims[OO][II][N], _Complex float* jac[OO][II])
+static void zprecomp_jacobian_fun(const nlop_data_t* _data, int N, int OO, const long /*odims*/[OO][N], complex float* dst[OO], int II, const long /*idims*/[II][N], const complex float* src[II], const long ddims[OO][II][N], complex float* jac[OO][II])
 {
 	auto data = CAST_DOWN(precomp_jacobian_s, _data);
 	auto op = data->nlop;
@@ -1216,7 +1216,7 @@ static void zprecomp_jacobian_fun(const nlop_data_t* _data, int N, int OO, const
 	unsigned long out_der_flag = 0;
 	unsigned long in_der_flag = 0;
 
-	for (int i = 0; i < II; i++) {
+	for (int i = 0; i < II; i++) { 
 		for (int o = 0; o < OO; o++) {
 			if (NULL != jac[o][i]) {
 

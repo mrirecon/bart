@@ -1180,7 +1180,7 @@ static void tf_jac_del(const nlop_data_t* _data)
 };
 
 
-static void tf_zjac(const nlop_data_t* _data, int N, const long odims[N], _Complex float* dst, const long idims[N], const _Complex float* src, const long ddims[N], _Complex float* jac)
+static void tf_zjac(const nlop_data_t* _data, int N, const long odims[N], complex float* dst, const long idims[N], const complex float* src, const long ddims[N], complex float* jac)
 {
 	auto data = CAST_DOWN(tf_jac_s, _data);
 

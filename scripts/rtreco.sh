@@ -6,7 +6,7 @@
 # Authors:
 # 2024 Moritz Blumenthal <blumenthal@tugraz.at>
 # 2024 Philip Schaten <philip.schaten@tugraz.at>
- 
+
 set -e
 
 LOGFILE=/dev/stderr
@@ -73,7 +73,7 @@ while getopts "hl:t:fRTp:SG" opt; do
 		GEOM=true
 	;;
         \?)
-        	echo "$usage" >&2
+		echo "$usage" >&2
 		exit 1
         ;;
         esac
@@ -230,11 +230,11 @@ trajectory () (
 
 	#FIXME DEADLOCK:
 	#> ksp_tmp.fifo	&
-	
+
 	READ=$(($(bart show -d 1 meta0.fifo)/2))
 	PHS1=$(bart show -d 2 meta1.fifo)
 	TOT=$(bart show -d 10 meta2.fifo)
-	
+
 	topts=(-o2 -r -D -l -x"$READ" -y"$PHS1" -t"$TURNS" -O)
 
 	bart traj "${topts[@]}" trj_tmp
@@ -249,7 +249,7 @@ trajectory () (
 	bart -t4 -r - 	estdelay -p10 -R -r2 -- trj_gd - predelay.fifo										| \
 
 	delay 11 $DELAY $DELAY predelay.fifo postdelay.fifo &
-	
+
 	bart -t4 -r postdelay.fifo 	traj "${topts[@]}" -V postdelay.fifo -- -								| \
 	bart 				reshape -s 1024 -- $(bart bitmask 2 10 11) $PHS1 $TOT 1 - $DST
 )
@@ -289,9 +289,9 @@ coilcompression_svd () (
 	bart		tee tmp.fifo									| \
 	bart 		reshape -s1024 -- $(bart bitmask 2 10) $((PHS*TURNS)) $((TOT/TURNS)) - -	| \
 	bart -r -	cc -M -- - predelay.fifo							&
-	
+
 	delay 10 $DELAY $DELAY predelay.fifo cc.fifo							&
-	
+
 	bart -r cc.fifo	repmat -- 9 $TURNS cc.fifo -							| \
 	bart		reshape -s1024 -- $(bart bitmask 9 10) 1 $TOT - - 				| \
 	bart -r -	ccapply -p$CHANNELS -- tmp.fifo - $DST
@@ -334,7 +334,7 @@ coilcompression_svd_first () (
 	bart 		reshape -s1024 -- $(bart bitmask 2 10) $((PHS*TURNS)) $((TOT/TURNS)) - -	| \
 	bart -r -	cc -M -- - - | bart tee -n cc.fifo						&
 
-	bart -l 1024	copy -- cc.fifo cc2	
+	bart -l 1024	copy -- cc.fifo cc2
 
 	bart -r tmp.fifo	ccapply -p$CHANNELS -- tmp.fifo cc2 $DST
 )
@@ -400,7 +400,7 @@ coilcompression_rovir () (
 	cat ksp_tmp.fifo											| \
 	bart		tee tmp.fifo										| \
 	bart 		reshape -s1024 -- $(bart bitmask 2 10) $((PHS*TURNS)) $((TOT/TURNS)) - ksp_rovir.fifo	&
-	
+
 	cat $TRJ												| \
 	bart -t4 -r -	scale -- 2 - - 										| \
 	bart 		reshape -s1024 -- $(bart bitmask 2 10) $((PHS*TURNS)) $((TOT/TURNS)) - -		| \
@@ -415,9 +415,9 @@ coilcompression_rovir () (
 	bart -t4 -r trj_rovir2.fifo	nufft -p pat -- trj_rovir2.fifo ineg.fifo neg.fifo			&
 
 	bart -t4 -r pos.fifo		rovir -- pos.fifo neg.fifo predelay.fifo				&
-	
+
 	delay 10 $DELAY $DELAY predelay.fifo cc.fifo 								&
-	
+
 	bart -r cc.fifo			repmat -- 9 $TURNS cc.fifo -						| \
 	bart				reshape -s1024 -- $(bart bitmask 9 10) 1 $TOT - - 			| \
 	bart -r -			ccapply -p$CHANNELS -- tmp.fifo - $DST
@@ -520,7 +520,7 @@ bart		tee $TIME																| \
 bart -r - 	flip -- 3 - -																| \
 bart -r - 	resize -c -- 0 $RDIMS 1 $RDIMS - reco.fifo												&
 
-if $FILTER ; then 
+if $FILTER ; then
 
 	mkfifo reco_fil.fifo
 

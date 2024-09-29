@@ -97,6 +97,7 @@ int main_tee(int argc, char* argv[argc])
 
 		complex float* out0_addr = create_async_cfl(out0, stream_flags, DIMS, dims);
 		stream_t strm = stream_lookup(out0_addr);
+
 		if (strm) {
 
 			stream_sync_try(strm, DIMS, dims);
@@ -116,8 +117,8 @@ int main_tee(int argc, char* argv[argc])
 #pragma omp parallel for
 	for (int i = 0; i < count; i++) {
 
-		const char* name = (0 == i && !no_stdout) ? "-" : out_files[i - files_offset];
-		
+		const char* name = ((0 == i) && !no_stdout) ? "-" : out_files[i - files_offset];
+
 		if (0 != strcmp(name, "-"))
 			io_reserve_output(name);
 
@@ -149,6 +150,7 @@ int main_tee(int argc, char* argv[argc])
 
 			if (timer)
 				fprintf(stderr, "frame %ld: %fs\n", counter++, timestamp() - time);
+
 			time = timestamp();
 
 		} while (md_next(DIMS, dims, stream_flags, pos));

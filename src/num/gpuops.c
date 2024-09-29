@@ -555,8 +555,8 @@ struct vec_iter_s {
 	void (*sdiv)(long N, float* a, float x, const float* y);
 	void (*le)(long N, float* a, const float* x, const float* y);
 
-	void (*zmul)(long N, _Complex float* dst, const _Complex float* src1, const _Complex float* src2);
-	void (*zsmax)(long N, float val, _Complex float* dst, const _Complex float* src1);
+	void (*zmul)(long N, complex float* dst, const complex float* src1, const complex float* src2);
+	void (*zsmax)(long N, float val, complex float* dst, const complex float* src1);
 
 	void (*rand)(long N, float* dst);
 

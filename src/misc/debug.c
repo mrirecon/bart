@@ -66,7 +66,7 @@ void dump_cfl(const char* name, int D, const long dimensions[D], const complex f
 	unmap_cfl(D, dimensions, out);
 }
 
-void dump_multi_cfl(const char* name, int N, int D[N], const long* dimensions[N], const _Complex float* x[N])
+void dump_multi_cfl(const char* name, int N, int D[N], const long* dimensions[N], const complex float* x[N])
 {
 	complex float* args[N];
 	create_multi_cfl(name, N, D, dimensions, args);

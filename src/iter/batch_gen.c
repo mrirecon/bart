@@ -244,7 +244,7 @@ static void batch_gen_del(const nlop_data_t* _data)
  * @param type methode to compose new batches
  * @param seed seed for random reshuffeling of batches
  */
-const struct nlop_s* batch_gen_create(int D, const int Ns[D], const long* bat_dims[D], const long* tot_dims[D], const _Complex float* data[D], long Nc, enum BATCH_GEN_TYPE type, unsigned long long seed)
+const struct nlop_s* batch_gen_create(int D, const int Ns[D], const long* bat_dims[D], const long* tot_dims[D], const complex float* data[D], long Nc, enum BATCH_GEN_TYPE type, unsigned long long seed)
 {
 	int N = 0;
 
@@ -317,7 +317,7 @@ const struct nlop_s* batch_gen_create(int D, const int Ns[D], const long* bat_di
 
 }
 
-const struct nlop_s* batch_gen_create_from_iter(struct iter6_conf_s* iter_conf, int D, const int Ns[D], const long* bat_dims[D], const long* tot_dims[D], const _Complex float* data[D], long Nc)
+const struct nlop_s* batch_gen_create_from_iter(struct iter6_conf_s* iter_conf, int D, const int Ns[D], const long* bat_dims[D], const long* tot_dims[D], const complex float* data[D], long Nc)
 {
 	return batch_gen_create(D, Ns, bat_dims, tot_dims, data, Nc, iter_conf->batchgen_type, iter_conf->batch_seed);
 }

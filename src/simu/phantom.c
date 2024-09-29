@@ -371,7 +371,7 @@ void calc_ellipsoid(int D, long dims[D], complex float* optr, bool d3, bool kspa
 }
 
 
-void calc_phantom(const long dims[DIMS], complex float* out, bool d3, bool kspace, const long tstrs[DIMS], const _Complex float* traj, struct pha_opts* popts)
+void calc_phantom(const long dims[DIMS], complex float* out, bool d3, bool kspace, const long tstrs[DIMS], const complex float* traj, struct pha_opts* popts)
 {
 	bool coeff = (dims[COEFF_DIM] > 1);
 
@@ -382,7 +382,7 @@ void calc_phantom(const long dims[DIMS], complex float* out, bool d3, bool kspac
 }
 
 
-void calc_geo_phantom(const long dims[DIMS], complex float* out, bool kspace, int phtype, const long tstrs[DIMS], const _Complex float* traj, struct pha_opts* popts)
+void calc_geo_phantom(const long dims[DIMS], complex float* out, bool kspace, int phtype, const long tstrs[DIMS], const complex float* traj, struct pha_opts* popts)
 {
 	bool coeff = (dims[COEFF_DIM] > 1);
 

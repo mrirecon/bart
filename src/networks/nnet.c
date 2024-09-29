@@ -5,6 +5,7 @@
 
 #include <assert.h>
 #include <stdbool.h>
+#include <complex.h>
 #include <math.h>
 
 #include "misc/debug.h"
@@ -361,8 +362,8 @@ void apply_nnet_batchwise(	const struct nnet_s* config,
 
 
 extern void eval_nnet(	struct nnet_s* nnet,
-			int NO, const long odims[NO], const _Complex float* out,
-			int NI, const long idims[NI], const _Complex float* in,
+			int NO, const long odims[NO], const complex float* out,
+			int NI, const long idims[NI], const complex float* in,
 			long Nb)
 {
 	complex float* tmp_out = md_alloc(NO, odims, CFL_SIZE);

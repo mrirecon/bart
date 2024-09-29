@@ -162,7 +162,7 @@ int main_join(int argc, char* argv[argc])
 	}
 
 	complex float* out_data = NULL;
-	
+
 	if (stream)
 		out_data = create_async_cfl(out_file, MD_BIT(dim), N, out_dims);
 	else
@@ -196,7 +196,7 @@ int main_join(int argc, char* argv[argc])
 
 		long opos[N];
 		long ipos[N];
-		
+
 		md_singleton_strides(N, opos);
 		md_singleton_strides(N, ipos);
 

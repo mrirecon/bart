@@ -92,25 +92,28 @@ int main_reshape(int argc, char* argv[argc])
 
 	complex float* out_data = NULL;
 	
-	if (0 != stream_flags)
-		out_data = create_async_cfl(out_file, stream_flags, DIMS, out_dims);
-	else
+	if (0 == stream_flags) {
+
 		out_data = create_cfl(out_file, DIMS, out_dims);
 
-	if (0 != stream_flags) {
+		md_reshape(DIMS, flags, out_dims, out_data, in_dims, in_data, CFL_SIZE);
+
+	} else {
+
+		out_data = create_async_cfl(out_file, stream_flags, DIMS, out_dims);
 
 		stream_t strm_in = stream_lookup(in_data);
 		stream_t strm_out = stream_lookup(out_data);
 
 		unsigned long iflags = 0;
 		unsigned long oflags = 0;
-		
+
 		if (NULL != strm_in)
 			iflags = stream_get_flags(strm_in);
 
 		oflags = stream_get_flags(strm_out);
 
-		if (0 != ((~flags) & (iflags | oflags)))
+		if (0 != (~flags & (iflags | oflags)))
 			error("All streamd dimensions must be reshaped!");
 
 		long slc_dims[DIMS];
@@ -126,12 +129,11 @@ int main_reshape(int argc, char* argv[argc])
 				stream_sync(strm_in, DIMS, ipos);
 
 			do {
-
 				long index = md_ravel_index(DIMS, ipos, flags, in_dims);
 				md_unravel_index(DIMS, opos, flags, out_dims, index);
 
 				md_slice(DIMS, flags, ipos, in_dims, buf, in_data, CFL_SIZE);
-			
+
 				long zpos[DIMS] = { 0 };
 				md_move_block(DIMS, slc_dims, opos, out_dims, out_data, zpos, slc_dims, buf, CFL_SIZE);
 
@@ -145,26 +147,21 @@ int main_reshape(int argc, char* argv[argc])
 					if (!MD_IS_SET(oflags, i) && (1 + opos[i] != out_dims[i]))
 						cont = true;
 				}
-				
+
 				if (cont)
 					continue;
 
-
 				stream_sync(strm_out, DIMS, opos);
-			
-			} while (md_next(DIMS, in_dims, flags & (~iflags), ipos));
+
+			} while (md_next(DIMS, in_dims, flags & ~iflags, ipos));
 
 			for (int i = 0; i < DIMS; i++)
-				if (MD_IS_SET(flags & (~iflags), i))
+				if (MD_IS_SET(flags & ~iflags, i))
 					ipos[i] = 0;
 
 		} while (md_next(DIMS, in_dims, iflags, ipos));
 
 		md_free(buf);
-
-	} else {
-
-		md_reshape(DIMS, flags, out_dims, out_data, in_dims, in_data, CFL_SIZE);
 	}
 
 	unmap_cfl(DIMS, in_dims, in_data);
@@ -173,5 +170,4 @@ int main_reshape(int argc, char* argv[argc])
 
 	return 0;
 }
-
 

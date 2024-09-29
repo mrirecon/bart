@@ -163,7 +163,7 @@ static void init_const_fun(const init_t* conf_, int N, const long dims[N], compl
  *
  * @returns Constant initializer
  */
-const struct initializer_s* init_const_create(_Complex float val)
+const struct initializer_s* init_const_create(complex float val)
 {
 	PTR_ALLOC(struct initializer_const_s, data);
 	SET_TYPEID(initializer_const_s, data);

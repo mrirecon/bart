@@ -633,7 +633,7 @@ void md_interpolate_der_coor2(int d, unsigned long flags, int ord, int N, const 
 
 
 
-void md_interpolate(int d, unsigned long flags, int ord, int N, const long idims[N], _Complex float* intp, const long cdims[N], const _Complex float* coor, const long gdims[N], const _Complex float* grid)
+void md_interpolate(int d, unsigned long flags, int ord, int N, const long idims[N], complex float* intp, const long cdims[N], const complex float* coor, const long gdims[N], const complex float* grid)
 {
 	assert(md_check_compat(N, ~0ul, idims, cdims));
 	
@@ -644,7 +644,7 @@ void md_interpolate(int d, unsigned long flags, int ord, int N, const long idims
 	md_interpolate2(d, flags, ord, N, dims, MD_STRIDES(N, idims, CFL_SIZE), intp, MD_STRIDES(N, cdims, CFL_SIZE), coor, gdims, MD_STRIDES(N, gdims, CFL_SIZE), grid);
 }
 
-void md_interpolateH(int d, unsigned long flags, int ord, int N, const long gdims[N], _Complex float* grid, const long idims[N], const _Complex float* intp, const long cdims[N], const _Complex float* coor)
+void md_interpolateH(int d, unsigned long flags, int ord, int N, const long gdims[N], complex float* grid, const long idims[N], const complex float* intp, const long cdims[N], const complex float* coor)
 {
 	assert(md_check_compat(N, ~0ul, idims, cdims));
 	
@@ -655,7 +655,7 @@ void md_interpolateH(int d, unsigned long flags, int ord, int N, const long gdim
 	md_interpolateH2(d, flags, ord, N, gdims, MD_STRIDES(N, gdims, CFL_SIZE), grid, dims, MD_STRIDES(N, idims, CFL_SIZE), intp, MD_STRIDES(N, cdims, CFL_SIZE), coor);
 }
 
-void md_interpolate_adj_coor(int d, unsigned long flags, int ord, int N, const long cdims[N], const _Complex float* coor, _Complex float* dcoor, const long idims[N], const _Complex float* dintp, const long gdims[N], const _Complex float* grid)
+void md_interpolate_adj_coor(int d, unsigned long flags, int ord, int N, const long cdims[N], const complex float* coor, complex float* dcoor, const long idims[N], const complex float* dintp, const long gdims[N], const complex float* grid)
 {
 	assert(md_check_compat(N, ~0ul, idims, cdims));
 	
@@ -666,7 +666,7 @@ void md_interpolate_adj_coor(int d, unsigned long flags, int ord, int N, const l
 	md_interpolate_adj_coor2(d, flags, ord, N, dims, MD_STRIDES(N, cdims, CFL_SIZE), coor, dcoor, MD_STRIDES(N, idims, CFL_SIZE), dintp, gdims, MD_STRIDES(N, gdims, CFL_SIZE), grid);
 }
 
-static void md_interpolate_adj_coor_shifted(int d, unsigned long flags, int ord, int N, const long cdims[N], const _Complex float* coor, _Complex float* dcoor, const long idims[N], const _Complex float* dintp, const long gdims[N], const _Complex float* grid)
+static void md_interpolate_adj_coor_shifted(int d, unsigned long flags, int ord, int N, const long cdims[N], const complex float* coor, complex float* dcoor, const long idims[N], const complex float* dintp, const long gdims[N], const complex float* grid)
 {
 	assert(md_check_compat(N, ~0ul, idims, cdims));
 	
@@ -699,7 +699,7 @@ static void md_interpolate_adj_coor_shifted(int d, unsigned long flags, int ord,
 	md_zmulc2(N, dims, MD_STRIDES(N, cdims, CFL_SIZE), dcoor, MD_STRIDES(N, idims, CFL_SIZE), dintp, MD_STRIDES(N, cdims, CFL_SIZE), dcoor);
 }
 
-void md_interpolate_der_coor(int d, unsigned long flags, int ord, int N, const long idims[N], _Complex float* dintp, const long cdims[N], const _Complex float* coor, const _Complex float* dcoor, const long gdims[N], const _Complex float* grid)
+void md_interpolate_der_coor(int d, unsigned long flags, int ord, int N, const long idims[N], complex float* dintp, const long cdims[N], const complex float* coor, const complex float* dcoor, const long gdims[N], const complex float* grid)
 {
 	assert(md_check_compat(N, ~0ul, idims, cdims));
 	
@@ -710,7 +710,7 @@ void md_interpolate_der_coor(int d, unsigned long flags, int ord, int N, const l
 	md_interpolate_der_coor2(d, flags, ord, N, dims, MD_STRIDES(N, idims, CFL_SIZE), dintp, MD_STRIDES(N, cdims, CFL_SIZE), coor, dcoor, gdims, MD_STRIDES(N, gdims, CFL_SIZE), grid);
 }
 
-void md_resample(unsigned long flags, int ord, int N, const long _odims[N], _Complex float* dst, const long _idims[N], const _Complex float* src)
+void md_resample(unsigned long flags, int ord, int N, const long _odims[N], complex float* dst, const long _idims[N], const complex float* src)
 {
 	assert(md_check_equal_dims(N, _odims, _idims, ~flags));
 

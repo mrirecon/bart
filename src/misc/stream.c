@@ -95,8 +95,7 @@ struct stream_settings {
  * checked/written using various pcfl_* functions.
  * Necessary state is kept in the struct returned from this function
  */
-static
-struct pcfl* pcfl_create(complex float* x, int D, const long dims[D], unsigned long flags)
+static struct pcfl* pcfl_create(complex float* x, int D, const long dims[D], unsigned long flags)
 {
 	assert(bitcount(flags) <= D);
 
@@ -120,8 +119,7 @@ struct pcfl* pcfl_create(complex float* x, int D, const long dims[D], unsigned l
 	return PTR_PASS(ret);
 }
 
-static
-void pcfl_free(struct pcfl* p)
+static void pcfl_free(struct pcfl* p)
 {
 	if (NULL != p->dims)
 		xfree(p->dims);
@@ -181,9 +179,7 @@ complex float* pcfl_get_data(struct pcfl* p)
 }
 
 
-
-static
-void pcfl_get_dimensions(struct pcfl* p, int N, long dims[N])
+static void pcfl_get_dimensions(struct pcfl* p, int N, long dims[N])
 {
 	assert(N == p->D);
 
@@ -330,8 +326,10 @@ stream_t stream_create(int N, const long dims[N], complex float* data, int pipef
 	ret->input = input;
 	ret->binary = binary;
 	ret->call_msync = call_msync;
+
 	// msync only makes sense for output streams that are not binary.
 	assert(!call_msync || !(input || binary));
+
 	ret->data = NULL;
 	ret->unmap = false;
 	ret->events =  NULL;
@@ -381,6 +379,7 @@ stream_t stream_create(int N, const long dims[N], complex float* data, int pipef
 
 cleanup:
 	stream_free(PTR_PASS(ret));
+
 	return NULL;
 }
 
@@ -594,6 +593,7 @@ bool stream_send_msg2(int pipefd, const struct stream_msg* msg, long n, const lo
 		error("Stream_encode: Message failed to encode.\n");
 
 	int w = xwrite(pipefd, MSG_HDR_SIZE, buffer);
+
 	if (0 >= w)
 		return false;
 
@@ -606,10 +606,11 @@ bool stream_send_msg2(int pipefd, const struct stream_msg* msg, long n, const lo
 			const void *ptr = ext + md_calc_offset(n, str, pos);
 
 			int w = xwrite(pipefd, el, ptr);
+
 			if (0 >= w)
 				return false;
 
-		} while (md_next(n, dims, ~(0UL), pos));
+		} while (md_next(n, dims, ~0UL, pos));
 	}
 
 	return true;
@@ -633,6 +634,7 @@ static long get_transport_layout(int D, const long dims[D], long size, int index
 	long pos[D];
 	md_set_dims(D, pos, 0);
 	md_unravel_index(D, pos, flags, dims, MAX(0, index));
+
 	md_calc_strides(D, nstr, dims, (size_t)size);
 
 	*nptr = &MD_ACCESS(D, nstr, pos, ptr);
@@ -749,6 +751,7 @@ static bool stream_receive_idx_locked(stream_t s)
 	bart_cond_notify_all(s->cond);
 
 	debug_printf(DP_DEBUG3, "data offset rcvd: %ld\n", s->data->index);
+
 	return true;
 }
 
@@ -788,7 +791,8 @@ static bool stream_send_index_locked(stream_t s, long index)
 		long xstr[ND];
 		long size = sizeof(complex float);
 
-		long tx_size = get_transport_layout(ND, s->data->dims, size, index, s->data->stream_flags, ptr, &ND, xdims, xstr, &size, &ptr);
+		long tx_size = get_transport_layout(ND, s->data->dims, size, index, s->data->stream_flags,
+						    ptr, &ND, xdims, xstr, &size, &ptr);
 
 		struct stream_msg msg = {
 
@@ -799,9 +803,11 @@ static bool stream_send_index_locked(stream_t s, long index)
 
 		if (!stream_send_msg2(s->pipefd, &msg, ND, xdims, xstr, size, ptr))
 			return false;
+
 	} else if (s->call_msync) {
 
-		if (0 != msync(s->data->ptr, (size_t)md_calc_size(s->data->D, s->data->dims) * sizeof(complex float), MS_SYNC))
+		if (0 != msync(s->data->ptr,
+			       (size_t)(md_calc_size(s->data->D, s->data->dims) * (long)sizeof(complex float)), MS_SYNC))
 			return false;
 	}
 
@@ -873,10 +879,10 @@ bool stream_sync_slice_try(stream_t s, int N, const long dims[N], unsigned long 
 	for (int i = 0; i < MIN(N, s->data->D); i++) {
 
 		assert(MD_IS_SET(flags, i) || (0 == pos[i]));
-		assert(!MD_IS_SET(flags, i) || (dims[i] ==  s->data->dims[i]));
+		assert(!MD_IS_SET(flags, i) || (dims[i] == s->data->dims[i]));
 	}
 
-	unsigned long loop_flags = s->data->stream_flags & (~flags);
+	unsigned long loop_flags = s->data->stream_flags & ~flags;
 
 	do {
 		if (!stream_sync_index(s, pcfl_pos2offset(s->data, N, pos), false))
@@ -998,12 +1004,12 @@ unsigned long stream_get_flags(stream_t s)
 	return s->data->stream_flags;
 }
 
-extern _Bool stream_is_binary(stream_t s)
+extern bool stream_is_binary(stream_t s)
 {
 	return s->binary;
 }
 
-_Complex float* stream_get_data(stream_t s)
+complex float* stream_get_data(stream_t s)
 {
 	return pcfl_get_data(s->data);
 }
@@ -1049,17 +1055,20 @@ static bool stream_event_id_eq(const void *item, const void* ref);
  */
 bool stream_add_event(stream_t s, int N, long pos[N], int type, long size, const char* data)
 {
+	bool ret = false;
+
 	// only output streams can transmit events.
 	// checking that here because stream_add_event_intern
 	// should add events to an input stream.
 	if (s->input)
-		return false;
+		return ret;
 
 	int index = pcfl_pos2offset(stream_get_pcfl(s), N, pos);
 
 	bart_lock(s->data->sync_lock);
 
 	struct stream_event* item = stream_event_create(index, type, size, data);
+
 	if (NULL == item)
 		goto fail;
 
@@ -1069,13 +1078,11 @@ bool stream_add_event(stream_t s, int N, long pos[N], int type, long size, const
 		goto fail;
 	}
 
-	bart_unlock(s->data->sync_lock);
-
-	return true;
-
+	ret = true;
 fail:
 	bart_unlock(s->data->sync_lock);
-	return false;
+
+	return ret;
 }
 
 struct list_s* stream_get_events(struct stream* s, int N, long pos[N])
@@ -1088,7 +1095,7 @@ static bool stream_event_id_eq(const void *item, const void* ref)
 	const struct stream_event* ev = item;
 	long index = *((long*)ref);
 
-	return (ev->index == index) ? true : false;
+	return (ev->index == index);
 }
 
 static struct list_s* stream_get_events_at_index(struct stream* s, long index)

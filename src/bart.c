@@ -218,8 +218,8 @@ static void parse_bart_opts(int* argcp, char*** argvp)
 		if (NULL == s) {
 
 			// normal reference file:
-
 			unmap_cfl(DIMS, ref_dims, tmp);
+
 		} else {
 
 			// reference stream:
@@ -299,7 +299,7 @@ static int batch_wrapper(main_fun_t* dispatch_func, int argc, char *argv[argc], 
 	char* thread_argv[argc + 1];
 	char* thread_argv_save[argc];
 
-	for(int m = 0; m < argc; m++) {
+	for (int m = 0; m < argc; m++) {
 
 		thread_argv[m] = strdup(argv[m]);
 		thread_argv_save[m] = thread_argv[m];
@@ -309,11 +309,12 @@ static int batch_wrapper(main_fun_t* dispatch_func, int argc, char *argv[argc], 
 
 	set_cfl_loop_index(pos);
 	num_rand_init(0ULL);
+
 	int ret = (*dispatch_func)(argc, thread_argv);
 
 	io_memory_cleanup();
 
-	for(int m = 0; m < argc; ++m)
+	for (int m = 0; m < argc; ++m)
 		free(thread_argv_save[m]);
 
 	return ret;
@@ -393,6 +394,7 @@ int main_bart(int argc, char* argv[argc])
 					}
 				}
 			}
+
 		} else {
 
 			long start = cfl_loop_worker_id();

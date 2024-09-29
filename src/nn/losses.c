@@ -1008,8 +1008,8 @@ static void dice_fun(const nlop_data_t* _data, int D, complex float* args[D])
 	//debug_print_dims(DP_INFO, data->N, data->rdims);
 
 	complex float* dst = args[0];
-	const _Complex float* src_pred = args[1];
-	const _Complex float* src_true = args[2];
+	const complex float* src_pred = args[1];
+	const complex float* src_true = args[2];
 
 #ifdef USE_CUDA
 	assert((cuda_ondevice(dst) == cuda_ondevice(src_pred)) && (cuda_ondevice(src_pred) == cuda_ondevice(src_true)));

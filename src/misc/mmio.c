@@ -858,8 +858,9 @@ static complex float* create_cfl_internal(const char* name, int D, const long di
 
 	if (mmio_file_locking) {
 
-		#pragma omp critical (bart_file_access)
+#pragma 	omp critical (bart_file_access)
 		addr = create_cfl_typed(type, name, D, dims, stream_flags);
+
 	} else {
 
 		assert(!cfl_loop_desc_active());
@@ -1289,7 +1290,7 @@ void unmap_shared_cfl(int D, const long dims[D], const complex float* x)
  * @param dimensions[N] pointer to dimensions of each array
  * @param args[N] pointer to the first element of each memory mapped array
  */
-void create_multi_cfl(const char* name, int N, int D[N], const long* dimensions[N], _Complex float* args[N])
+void create_multi_cfl(const char* name, int N, int D[N], const long* dimensions[N], complex float* args[N])
 {
 	io_register_output(name);
 
@@ -1347,7 +1348,7 @@ void create_multi_cfl(const char* name, int N, int D[N], const long* dimensions[
 }
 
 
-static int load_multi_cfl_internal(const char* name, int N_max, int D_max, int D[N_max], long dimensions[N_max][D_max], _Complex float* args[N_max], bool priv)
+static int load_multi_cfl_internal(const char* name, int N_max, int D_max, int D[N_max], long dimensions[N_max][D_max], complex float* args[N_max], bool priv)
 {
 	io_register_input(name);
 
@@ -1441,7 +1442,7 @@ static int load_multi_cfl_internal(const char* name, int N_max, int D_max, int D
  * @param dimensions[N_max][D_max] dimensions read from header
  * @param args[N] returned pointer to the first element of each memory mapped array
  */
-int load_multi_cfl(const char* name, int N_max, int D_max, int D[N_max], long dimensions[N_max][D_max], _Complex float* args[N_max])
+int load_multi_cfl(const char* name, int N_max, int D_max, int D[N_max], long dimensions[N_max][D_max], complex float* args[N_max])
 {
 	return load_multi_cfl_internal(name, N_max, D_max, D, dimensions, args, true);
 }
@@ -1454,7 +1455,7 @@ int load_multi_cfl(const char* name, int N_max, int D_max, int D[N_max], long di
  * @param dimensions[N] pointer to dimensions of each array
  * @param args[N] pointer to the first element of each memory mapped array
  */
-void unmap_multi_cfl(int N, int D[N], const long* dimensions[N], _Complex float* args[N])
+void unmap_multi_cfl(int N, int D[N], const long* dimensions[N], complex float* args[N])
 {
 #ifdef MEMONLY_CFL
 	error("multi cfl not supported with MEMONLY_CFL\n");

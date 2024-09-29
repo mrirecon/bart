@@ -227,7 +227,7 @@ struct tenmul_block_diag_s {
 
 DEF_TYPEID(tenmul_block_diag_s);
 
-static void tenmul_block_diag_fun(const nlop_data_t* /*_data*/, int N, int OO, const long odims[OO][N], _Complex float* dst[OO], int II, const long idims[II][N], const _Complex float* src[II], const long ddims[OO][II][N], _Complex float* jac[OO][II])
+static void tenmul_block_diag_fun(const nlop_data_t* /*_data*/, int N, int OO, const long odims[OO][N], complex float* dst[OO], int II, const long idims[II][N], const complex float* src[II], const long ddims[OO][II][N], complex float* jac[OO][II])
 {
 	assert(1 == OO);
 	assert(2 == II);

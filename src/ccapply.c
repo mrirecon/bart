@@ -73,6 +73,7 @@ int main_ccapply(int argc, char* argv[argc])
 
 	long in_dims_t[DIMS];
 	md_set_dims(DIMS, in_dims_t, 0);
+
 	long cc_dims_t[DIMS];
 
 	complex float* in_data_t = NULL;
@@ -98,6 +99,7 @@ int main_ccapply(int argc, char* argv[argc])
 
 		strm_in = stream_lookup(in_data_t);
 		strm_cc = stream_lookup(cc_data_t);
+
 	} else {
 
 		in_data = load_cfl(ksp_file, DIMS, in_dims);
@@ -138,6 +140,7 @@ int main_ccapply(int argc, char* argv[argc])
 
 		out_data_t = create_async_cfl(out_file, rtflags, DIMS, out_dims_t);
 		strm_out = stream_lookup(out_data_t);
+
 	} else {
 
 		out_data = create_cfl(out_file, DIMS, out_dims);
@@ -278,6 +281,7 @@ rt_loop:
 
 		unmap_cfl(DIMS, in_dims_t, in_data_t);
 		unmap_cfl(DIMS, out_dims_t, out_data_t);
+
 	} else {
 
 		unmap_cfl(DIMS, in_dims, in_data);

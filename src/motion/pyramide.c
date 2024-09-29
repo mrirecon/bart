@@ -102,8 +102,8 @@ void debug_gaussian_pyramide(int levels, float factors[levels], float sigma[leve
 
 
 void upscale_displacement(int N, int d, unsigned long flags,
-			  const long odims[N], _Complex float* out,
-			  const long idims[N], const _Complex float* in)
+			  const long odims[N], complex float* out,
+			  const long idims[N], const complex float* in)
 {
 	md_resample(flags, 3, N, odims, out, idims, in);
 

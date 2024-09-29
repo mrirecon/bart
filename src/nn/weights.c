@@ -30,7 +30,7 @@
 
 #include "weights.h"
 
-const struct nn_weights_s* create_multi_md_array(int N, int D[N], const long* dimensions[N], const _Complex float* x[N], size_t sizes[N])
+const struct nn_weights_s* create_multi_md_array(int N, int D[N], const long* dimensions[N], const complex float* x[N], size_t sizes[N])
 {
 	const struct iovec_s* iovs[N];
 	for (int i = 0; i < N; i++)
@@ -60,7 +60,7 @@ nn_weights_t nn_weights_create(int N, const struct iovec_s* iovs[N])
 	result->N = N;
 
 	PTR_ALLOC(const struct iovec_s*[N], niov);
-	PTR_ALLOC(_Complex float*[N], ntensors);
+	PTR_ALLOC(complex float*[N], ntensors);
 
 	for (int i = 0; i < N; i++) {
 
@@ -95,15 +95,16 @@ nn_weights_t load_nn_weights(const char *name)
 	result->N = N;
 
 	PTR_ALLOC(const struct iovec_s*[N], niov);
-	PTR_ALLOC(_Complex float*[N], ntensors);
+	PTR_ALLOC(complex float*[N], ntensors);
 
 	const long* dimensions_unmap[N];
 
 	for (int i = 0; i < N; i++) {
 
-		(*niov)[i] = iovec_create(D[i], dimensions[i], sizeof(_Complex float));
-		(*ntensors)[i] = md_alloc(D[i], dimensions[i], sizeof(_Complex float));
-		md_copy(D[i], dimensions[i], (*ntensors)[i], args[i], sizeof(_Complex float));
+		(*niov)[i] = iovec_create(D[i], dimensions[i], sizeof(complex float));
+		(*ntensors)[i] = md_alloc(D[i], dimensions[i], sizeof(complex float));
+
+		md_copy(D[i], dimensions[i], (*ntensors)[i], args[i], sizeof(complex float));
 
 		dimensions_unmap[i] = dimensions[i];
 	}

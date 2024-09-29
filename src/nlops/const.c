@@ -218,7 +218,7 @@ struct nlop_s* nlop_set_input_const_F(const struct nlop_s* a, int i, int N, cons
 	return result;
 }
 
-struct nlop_s* nlop_set_input_scalar_F(const struct nlop_s* a, int i, _Complex float val)
+struct nlop_s* nlop_set_input_scalar_F(const struct nlop_s* a, int i, complex float val)
 {
 	auto iov = nlop_generic_domain(a, i);
 	return nlop_set_input_const_F2(a, i, iov->N, iov->dims, MD_SINGLETON_STRS(iov->N), true, &val);
