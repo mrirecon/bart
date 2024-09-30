@@ -4464,4 +4464,17 @@ float md_zmaxnorm(int D, const long dims[D], const complex float* ptr)
 	return md_zmaxnorm2(D, dims, MD_STRIDES(D, dims, CFL_SIZE), ptr);
 }
 
+/**
+ * Set NaN values to zero.
+ *
+ */
+void md_zsetnanzero(int D, const long dims[D], complex float* optr, const complex float* iptr)
+{
+	make_z2op_simple(md_zsetnanzero2, D, dims, optr, iptr);
+}
 
+void md_zsetnanzero2(int D, const long dims[D], const long ostr[D], complex float* optr,
+		const long istr[D], const complex float* iptr)
+{
+	MAKE_Z2OP(zsetnanzero, D, dims, ostr, optr, istr, iptr);
+}

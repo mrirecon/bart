@@ -101,6 +101,9 @@ struct vec_ops {
 	void (*zcmpl)(long N, _Complex float* dst, const float* real_src, const float* imag_src);
 
 	void (*zfill)(long N, _Complex float val, _Complex float* dst);
+
+	void (*zsetnanzero)(long N, _Complex float* dst, const _Complex float* src);
+
 };
 
 

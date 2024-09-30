@@ -410,6 +410,9 @@ extern void md_zgausspdf(int D, const long dims[__VLA(D)], _Complex float *optr,
 extern float md_zmaxnorm2(int D, const long dims[__VLA(D)], const long strs[__VLA(D)], const _Complex float* ptr);
 extern float md_zmaxnorm(int D, const long dims[__VLA(D)], const _Complex float* ptr);
 
+extern void md_zsetnanzero(int D, const long dim[__VLA(D)], _Complex float* optr, const _Complex float* iptr);
+extern void md_zsetnanzero2(int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], _Complex float* optr, const long istr[__VLA(D)], const _Complex float* iptr);
+
 #include "misc/cppwrap.h"
 
 #endif

@@ -25,7 +25,7 @@
 #define DIMS 16
 #endif
 
-#define FUNC_LIST zabs, zacosr, zarg, zatanr, zconj, zcos, zcosh, zexp, zimag, zlog, zphsr, zreal, zround, zsin, zsinh, zsqrt, ()
+#define FUNC_LIST zabs, zacosr, zarg, zatanr, zconj, zcos, zcosh, zexp, zimag, zlog, zphsr, zreal, zround, zsin, zsinh, zsqrt, zsetnanzero, ()
 
 static const char help_str[] = "Perform function evaluation on array.";
 
