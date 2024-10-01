@@ -396,7 +396,6 @@ int main_rtnlinv(int argc, char* argv[argc])
 	}
 
 	struct linop_s* nufft_ops[turns];
-	const struct operator_s* fftc = NULL;
 
 	// analyzer false positiv
 	for (int i = 0; i < turns; ++i)
@@ -424,7 +423,6 @@ int main_rtnlinv(int argc, char* argv[argc])
 
 		kgrid1 = md_alloc(DIMS, kgrid1_dims, CFL_SIZE);
 
-		fftc = fft_measure_create(DIMS, kgrid1_dims, FFT_FLAGS, true, false);
 		fftc_mod = md_alloc(DIMS, kgrid1_dims, CFL_SIZE);
 
 		md_zfill(DIMS, kgrid1_dims, fftc_mod, 1.);
@@ -464,7 +462,7 @@ int main_rtnlinv(int argc, char* argv[argc])
 			linop_adjoint(nufft_ops[frame % turns], DIMS, kgrid1_dims, kgrid1, DIMS, ksp1_dims, kspace1);
 #if 1
 			md_zmul(DIMS, kgrid1_dims, kgrid1, kgrid1, fftc_mod);
-			fft_exec(fftc, kgrid1, kgrid1);
+			fft(DIMS, kgrid1_dims, FFT_FLAGS, kgrid1, kgrid1);
 			md_zmul(DIMS, kgrid1_dims, kgrid1, kgrid1, fftc_mod);
 			fftscale(DIMS, kgrid1_dims, FFT_FLAGS, kgrid1, kgrid1);
 #else
@@ -557,8 +555,6 @@ int main_rtnlinv(int argc, char* argv[argc])
 		md_free(fftc_mod);
 
 		unmap_cfl(DIMS, trj_dims, traj);
-
-		operator_free(fftc);
 
 		for (int i = 0; i < turns; ++i)
 			linop_free(nufft_ops[i]);
