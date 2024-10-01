@@ -697,6 +697,31 @@ const char* ptr_printf(const char* fmt, ...)
 	return result;
 }
 
+const char* ptr_append_printf(const char* prefix, const char* fmt, ...)
+{
+	prefix = NULL == prefix ? strdup("") : prefix;
+
+	va_list ap;
+	va_start(ap, fmt);
+
+	auto tmp = ptr_vprintf(fmt, ap);
+
+	va_end(ap);
+
+	size_t l1 = strlen(prefix);
+	size_t l2 = strlen(tmp);
+
+	PTR_ALLOC(char[l1 + l2 + 1], result);
+
+	memcpy(*result, prefix, l1);
+	memcpy(*result + l1, tmp, l2 + 1);
+
+	xfree(prefix);
+	xfree(tmp);
+
+	return *PTR_PASS(result);
+}
+
 const char* ptr_print_dims(int D, const long dims[D])
 {
 	const char* result = ptr_printf("[");
@@ -715,6 +740,18 @@ const char* ptr_print_dims(int D, const long dims[D])
 	xfree(result);
 
 	return tmp;
+}
+
+const char* ptr_append_print_dims(const char* prefix, int D, const long dims[D])
+{
+	prefix = ptr_append_printf(prefix, "[");
+
+	for (int i = 0; i < D; i++)
+		prefix = ptr_append_printf(prefix, "%3ld ", dims[i]);
+
+	prefix = ptr_append_printf(prefix, "]"); 
+
+	return prefix;
 }
 
 
