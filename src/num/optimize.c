@@ -114,71 +114,88 @@ static long memory_footprint(int N, const long dims[N], const long strs[N])
  */
 
 
-
-void merge_dims(int D, int N, long dims[N], long (*ostrs[D])[N])
+int simplify_dims(int D, int N, long dims[N], long (*strs[D])[N])
 {
-	for (int i = N - 2; i >= 0; i--) {
+	long ndims[N];
+	long nstrs[D][N];
+
+	memcpy(ndims, dims, (size_t)(N * (long)sizeof(long)));
+
+	for (int i = 0; i < D; i++)
+		memcpy(nstrs[i], *strs[i], (size_t)(N * (long)sizeof(long)));
+
+	int i = 0;
+	int ip = 0;
+
+	for (; i < N; i++) {
+
+		if (1 != ndims[i]) {
+
+			dims[0] = ndims[i];
+			for(int j = 0; j < D; j++)
+				(*strs[j])[0] = nstrs[j][i];
+
+			break;
+		}
+	}
+
+	if (i == N) {
+
+		dims[0] = 1;
+		for(int j = 0; j < D; j++)
+			(*strs[j])[0] = 0;
+
+		goto out;
+	}
+
+	i++;
+
+	for (; i < N; i++) {
+
+		if (1 == dims[i])
+			continue;
 
 		bool domerge = true;
 
-		for (int j = 0; j < D; j++) // mergeable
-			domerge = domerge && ((*ostrs[j])[i + 1] == dims[i] * (*ostrs[j])[i]);
+		for (int j = 0; j < D && domerge; j++) // mergeable
+			if (nstrs[j][i] != dims[ip] * (*strs[j])[ip])
+				domerge = false;
 
 		if (domerge) {
 
-			for (int j = 0; j < D; j++)
-				(*ostrs[j])[i + 1] = 0;
+			dims[ip] *= dims[i];
 
-			dims[i + 0] *= dims[i + 1];
-			dims[i + 1] = 1;
-		}
+		} else {
 
-		if (1 == dims[i + 0]) { //everything can be merged with an empty dimension
+			ip++;
+			dims[ip] = ndims[i];
 
-			dims[i + 0] = dims[i + 1];
-			dims[i + 1] = 1;
-
-			for (int j = 0; j < D; j++) {
-
-				(*ostrs[j])[i + 0] = (*ostrs[j])[i + 1];
-				(*ostrs[j])[i + 1] = 0;
-			}
-		}
-	}
-}
-
-
-int remove_empty_dims(int D, int N, long dims[N], long (*ostrs[D])[N])
-{
-	int o = 0;
-
-	for (int i = 0; i < N; i++) {
-
-		if (1 != dims[i]) {
-
-			dims[o] = dims[i];
-
-			for (int j = 0; j < D; j++)
-				(*ostrs[j])[o] = (*ostrs[j])[i];
-			o++;
+			for(int j = 0; j < D; j++)
+				(*strs[j])[ip] = nstrs[j][i];
 		}
 	}
 
-	for (int i = o; i < N; i++) {
+out:
 
-		for (int j = 0; j < D; j++)
-			(*ostrs[j])[i] = 0;
+	ip++;
 
-		dims[i] = 1;
+	int ret = ip;
+
+	for (; ip < N; ip++) {
+
+		dims[ip] = 1;
+
+		for(int j = 0; j < D; j++)
+			(*strs[j])[ip] = 0;
 	}
 
-	return o;
+	return ret;
 }
 
 
 
 
-static void compute_permutation(int N, int ord[N], const long strs[N])
+void compute_permutation(int N, int ord[N], const long strs[N])
 {
 	__block const long* strsp = strs; // clang workaround
 
@@ -289,25 +306,6 @@ static bool split_dims(int D, int N, long dims[N + 1], long (*ostrs[D])[N + 1], 
 
 
 
-int simplify_dims(int D, int N, long dims[N], long (*strs[D])[N])
-{
-	merge_dims(D, N, dims, strs);
-
-	int ND = remove_empty_dims(D, N, dims, strs);
-
-	if (0 == ND) { // at least return a single dimension
-
-		dims[0] = 1;
-
-		for (int j = 0; j < D; j++)
-			(*strs[j])[0] = 0;
-
-		ND = 1;
-	}
-
-	return ND;
-}
-
 
 int optimize_dims(int D, int N, long dims[N], long (*strs[D])[N])
 {
@@ -414,7 +412,7 @@ int optimize_dims_gpu(int D, int N, long dims[N], long (*strs[D])[N])
 #endif
 
 	ND = simplify_dims(D, N, dims, strs);
-	
+
 	return ND;
 }
 
