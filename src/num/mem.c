@@ -221,16 +221,21 @@ void memcache_clear(void (*device_free)(const void*x))
 		return;
 
 	struct mem_s* nptr = find_free(0, cuda_get_stream_id());
+
+	long freed = 0;
 	
 	while (NULL != nptr) {
 
 		debug_printf(DP_DEBUG3, "Freeing %ld bytes.\n", nptr->len);
+		freed += nptr->len;
 
 		device_free(nptr->ptr);
 		xfree(nptr);
 
 		nptr = find_free(0, cuda_get_stream_id());
 	}
+
+	debug_printf(DP_DEBUG2, "Freed %ld bytes.\n", freed);
 }
 
 
