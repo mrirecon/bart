@@ -33,6 +33,7 @@
 #include "num/mpi_ops.h"
 #include "num/multind.h"
 #include "num/rand.h"
+#include "num/fft_plan.h"
 
 #ifdef USE_MPI
 #include <mpi.h>
@@ -76,6 +77,8 @@ static void bart_exit_cleanup(void)
 	opt_free_strdup();
 
 	stream_unmap_all();
+
+	fft_cache_free();
 
 #ifdef FFTWTHREADS
 	MANGLE(fftwf_cleanup_threads)();

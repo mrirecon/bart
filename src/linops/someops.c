@@ -1710,12 +1710,10 @@ struct fft_linop_s {
 
 	INTERFACE(linop_data_t);
 
-	const struct operator_s* frw;
-	const struct operator_s* adj;
-
 	float nscale;
 
 	int N;
+	unsigned long flags;
 	long* dims;
 	long* strs;
 };
@@ -1725,45 +1723,18 @@ static DEF_TYPEID(fft_linop_s);
 static void fft_linop_apply(const linop_data_t* _data, complex float* out, const complex float* in)
 {
 	const auto data = CAST_DOWN(fft_linop_s, _data);
-
-#ifdef USE_CUDA
-	if (cuda_ondevice(out)) {
-
-		operator_apply(data->frw, data->N, data->dims, out, data->N, data->dims, in);
-		return;
-	}
-#endif
-
-	if (in != out)
-		md_copy2(data->N, data->dims, data->strs, out, data->strs, in, CFL_SIZE);
-
-	operator_apply(data->frw, data->N, data->dims, out, data->N, data->dims, out);
+	fft(data->N, data->dims, data->flags, out, in);
 }
 
 static void fft_linop_adjoint(const linop_data_t* _data, complex float* out, const complex float* in)
 {
 	const auto data = CAST_DOWN(fft_linop_s, _data);
-
-#ifdef USE_CUDA
-	if (cuda_ondevice(out)) {
-
-		operator_apply(data->adj, data->N, data->dims, out, data->N, data->dims, in);
-		return;
-	}
-#endif
-
-	if (in != out)
-		md_copy2(data->N, data->dims, data->strs, out, data->strs, in, CFL_SIZE);
-
-	operator_apply(data->adj, data->N, data->dims, out, data->N, data->dims, out);
+	ifft(data->N, data->dims, data->flags, out, in);
 }
 
 static void fft_linop_free(const linop_data_t* _data)
 {
 	const auto data = CAST_DOWN(fft_linop_s, _data);
-
-	fft_free(data->frw);
-	fft_free(data->adj);
 
 	xfree(data->dims);
 	xfree(data->strs);
@@ -1787,30 +1758,12 @@ static void fft_linop_normal(const linop_data_t* _data, complex float* out, cons
  */
 struct linop_s* linop_fft_create(int N, const long dims[N], unsigned long flags)
 {
-	const struct operator_s* plan = NULL;
-	const struct operator_s* iplan = NULL;
-
-	if (use_fftw_wisdom) {
-
-		plan = fft_measure_create(N, dims, flags, true, false);
-		iplan = fft_measure_create(N, dims, flags, true, true);
-
-	} else {
-
-		complex float* tmp1 = md_alloc(N, dims, CFL_SIZE);
-
-		plan = fft_create(N, dims, flags, tmp1, tmp1, false);
-		iplan = fft_create(N, dims, flags, tmp1, tmp1, true);
-
-		md_free(tmp1);
-	}
 
 	PTR_ALLOC(struct fft_linop_s, data);
 	SET_TYPEID(fft_linop_s, data);
 
-	data->frw = plan;
-	data->adj = iplan;
 	data->N = N;
+	data->flags = flags;
 
 	data->dims = *TYPE_ALLOC(long[N]);
 	md_copy_dims(N, data->dims, dims);
