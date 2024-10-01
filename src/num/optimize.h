@@ -5,13 +5,11 @@
 
 #include <stdlib.h>
 
-extern void merge_dims(int D, int N, long dims[N], long (*ostrs[D])[N]);
-extern int remove_empty_dims(int D, int N, long dims[N], long (*ostrs[D])[N]);
-
 extern int simplify_dims(int D, int N, long dims[N], long (*strs[D])[N]);
 extern int optimize_dims(int D, int N, long dims[N], long (*strs[D])[N]);
 extern int optimize_dims_gpu(int D, int N, long dims[N], long (*strs[D])[N]);
 extern int min_blockdim(int D, int N, const long dims[N], long (*strs[D])[N], size_t size[D]);
+extern void compute_permutation(int N, int ord[N], const long strs[N]);
 extern unsigned long dims_parallel(int D, unsigned long io, int N, const long dims[N], long (*strs[D])[N], size_t size[D]);
 extern unsigned long parallelizable(int D, unsigned int io, int N, const long dims[N], const long (*strs[D])[N], size_t size[D]);
 
