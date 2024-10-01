@@ -114,19 +114,19 @@ int main_affinereg(int argc, char* argv[argc])
 
 	switch (aff) {
 
-		case AFFINE_ALL:
-			trafo = (1 == rdims[2]) ? nlop_affine_2D() : nlop_affine_3D();
-			break;
+	case AFFINE_ALL:
+		trafo = (1 == rdims[2]) ? nlop_affine_2D() : nlop_affine_3D();
+		break;
 
-		case AFFINE_RIGID:
-			trafo = (1 == rdims[2]) ? nlop_affine_rigid_2D() : nlop_affine_rigid_3D();
-			break;
+	case AFFINE_RIGID:
+		trafo = (1 == rdims[2]) ? nlop_affine_rigid_2D() : nlop_affine_rigid_3D();
+		break;
 
-		case AFFINE_TRANS:
-			trafo = (1 == rdims[2]) ? nlop_affine_translation_2D() : nlop_affine_translation_3D();
-			break;
+	case AFFINE_TRANS:
+		trafo = (1 == rdims[2]) ? nlop_affine_translation_2D() : nlop_affine_translation_3D();
+		break;
 
-		assert(0);
+	assert(0);
 	}
 
 	long aff_dims[DIMS] = { 3, 4, [ 2 ... DIMS - 1 ] = 1 };
