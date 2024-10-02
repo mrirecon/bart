@@ -59,6 +59,14 @@ tests/test-signal-se: signal ones scale slice nrmse
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-signal-fse: signal nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/signal -S -n 8 -e 0.01 -r 100 -1 1:3:10 -2 0.01:0.3:10 sig.ra	;\
+	$(TOOLDIR)/signal -Z -n 8 -e 0.01 -r 100 -f 180 -1 1:3:10 -2 0.01:0.3:10 sig2.ra	;\
+	$(TOOLDIR)/nrmse -t 0.00001 sig.ra sig2.ra			    	;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 tests/test-signal-ir-se: signal ones scale slice nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
 	$(TOOLDIR)/signal -S -I -i 0.5 -n 3 -e 0.0001 -r 100 -1 3:3:1 -2 1000:1000:1 sig.ra	;\
@@ -110,5 +118,6 @@ tests/test-signal-LL-short-TR-approx: signal slice nrmse
 
 TESTS += tests/test-signal-spoke-averaging-2 tests/test-signal-spoke-averaging-3
 TESTS += tests/test-signal-se tests/test-signal-ir-se
+TESTS += tests/test-signal-fse
 TESTS += tests/test-signal-se-single tests/test-signal-ir-se-single
 TESTS += tests/test-signal-LL-short-TR-approx

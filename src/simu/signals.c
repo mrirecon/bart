@@ -11,6 +11,8 @@
 #include "misc/mri.h"
 #include "misc/debug.h"
 
+#include "simu/tsegf.h"
+
 #include "signals.h"
 
 
@@ -39,6 +41,28 @@ void TSE_model(const struct signal_model* data, int N, complex float out[N])
 
 	for (int ind = 0; ind < N; ind++)
 		out[ind] = signal_TSE(data, ind);
+}
+
+
+// TSE model using generating function formalism
+// following Petrovic, Signal modeling for quantitative magnetic resonance imaging, Dissertation, 2020  and Sumpf et al., IEEE Trans Med Imaging, 2014
+
+const struct signal_model signal_TSE_GEN_defaults = {
+
+	.t1 = 0.781,
+	.t2 = 0.1,
+	.m0 = 1.,
+	.fa = M_PI,
+	.te = 0.01,
+	.freq_samples = 4086,
+};
+
+
+void TSE_GEN_model(const struct signal_model* data, int N, complex float out[N])
+{
+	float para[4] = { data->m0, expf(-data->te / data->t1), expf(-data->te / data->t2), cosf(data->fa) };
+
+	tse(N, out, data->freq_samples, para);	
 }
 
 

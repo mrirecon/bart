@@ -58,7 +58,7 @@ int main_signal(int argc, char* argv[argc])
 	long dims[DIMS] = { [0 ... DIMS - 1] = 1 };
 	dims[TE_DIM] = 100;
 
-	enum seq_type { BSSFP, FLASH, TSE, SE, MOLLI, MGRE, IR_MGRE };
+	enum seq_type { BSSFP, FLASH, TSE, TSE_GEN, SE, MOLLI, MGRE, IR_MGRE };
 	enum seq_type seq = FLASH;
 
 	bool IR = false;
@@ -83,6 +83,7 @@ int main_signal(int argc, char* argv[argc])
         float time_T1relax = -1.; // second
         long Hbeats = -1;
         int averaged_spokes = 1;
+	int freq_samples = -1;
 	int NE = -1;
 
 	const struct opt_s opts[] = {
@@ -90,6 +91,7 @@ int main_signal(int argc, char* argv[argc])
 		OPT_SELECT('F', enum seq_type, &seq, FLASH, "FLASH"),
 		OPT_SELECT('B', enum seq_type, &seq, BSSFP, "bSSFP"),
 		OPT_SELECT('T', enum seq_type, &seq, TSE, "TSE"),
+		OPT_SELECT('Z', enum seq_type, &seq, TSE_GEN, "TSE_GEN"),
 		OPT_SELECT('S', enum seq_type, &seq, SE, "SE"),
 		OPT_SELECT('M', enum seq_type, &seq, MOLLI, "MOLLI"),
 		OPT_SELECT('G', enum seq_type, &seq, MGRE, "MGRE"),
@@ -114,6 +116,7 @@ int main_signal(int argc, char* argv[argc])
 		OPT_LONG('b', &Hbeats, "heart beats", "number of heart beats for MOLLI"),
                 OPTL_INT(0, "av-spokes", &averaged_spokes, "", "Number of averaged consecutive spokes"),
 		OPT_INT('m', &NE, "multi echos", "number of multi gradient echos"),
+		OPTL_INT(0, "freq-samples", &freq_samples, "", "Samples in frequency-/z-domain for FSE model based on generating function formalism"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -127,6 +130,7 @@ int main_signal(int argc, char* argv[argc])
 	case MGRE:  parm = fat ? signal_multi_grad_echo_fat : signal_multi_grad_echo_defaults; break;
 	case BSSFP: parm = signal_IR_bSSFP_defaults; break;
 	case TSE:   parm = signal_TSE_defaults; break;
+	case TSE_GEN:   parm = signal_TSE_GEN_defaults; break;
 	case SE:    parm = signal_SE_defaults; break;
 	case MOLLI: parm = signal_looklocker_defaults; break;
 	case IR_MGRE: parm = signal_ir_multi_grad_echo_fat_defaults; break;
@@ -163,6 +167,9 @@ int main_signal(int argc, char* argv[argc])
 
 	if (-1 != TI)
 		parm.ti = TI;
+
+	if (-1 != freq_samples)
+		parm.freq_samples = freq_samples;
 
 	dims[COEFF_DIM] = truncf(T1[2]);
 	dims[COEFF2_DIM] = (1 != Ms[2]) ? truncf(Ms[2]) : truncf(T2[2]);
@@ -208,6 +215,7 @@ int main_signal(int argc, char* argv[argc])
 		case MGRE:  multi_grad_echo_model(&parm, N_all, mxy); break;
 		case BSSFP: IR_bSSFP_model(&parm, N_all, mxy); break;
 		case TSE:   TSE_model(&parm, N_all, mxy); break;
+		case TSE_GEN:   TSE_GEN_model(&parm, N_all, mxy); break;
 		case SE:    SE_model(&parm, N_all, mxy); break;
 		case MOLLI: MOLLI_model(&parm, N_all, mxy); break;
 		case IR_MGRE: ir_multi_grad_echo_model(&parm, NE, N_all, mxy); break;

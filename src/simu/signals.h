@@ -36,6 +36,7 @@ struct signal_model {
         long Hbeats;
 	bool single_repetition;
 	bool short_tr_LL_approx;
+	int freq_samples;
 
         int averaged_spokes;
 };
@@ -44,6 +45,10 @@ struct signal_model {
 extern const struct signal_model signal_TSE_defaults;
 
 extern void TSE_model(const struct signal_model* data, int N, complex float out[N]);
+
+extern const struct signal_model signal_TSE_GEN_defaults;
+
+extern void TSE_GEN_model(const struct signal_model* data, int N, complex float out[N]);
 
 extern const struct signal_model signal_SE_defaults;
 
