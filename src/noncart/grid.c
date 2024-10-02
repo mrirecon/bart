@@ -12,21 +12,24 @@
 #include <assert.h>
 #include <string.h>
 
+#include "misc/types.h"
+#include "misc/nested.h"
+#include "misc/misc.h"
+#include "misc/version.h"
+
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/specfun.h"
 #include "num/multiplace.h"
+#include "num/vptr.h"
+#include "num/vptr_fun.h"
 
-#include "misc/nested.h"
-#include "misc/misc.h"
-#include "misc/version.h"
 
 #ifdef USE_CUDA
 #include "num/gpuops.h"
 #include "noncart/gpu_grid.h"
 #endif
 
-#include "num/vptr.h"
 
 #include "grid.h"
 
@@ -261,28 +264,35 @@ static void grid2_dims(int D, const long trj_dims[D], const long ksp_dims[D], co
 	assert(1 == ksp_dims[0]);
 }
 
+struct vptr_grid_s {
 
-void grid2(const struct grid_conf_s* conf, int D, const long trj_dims[D], const complex float* traj, const long grid_dims[D], complex float* dst, const long ksp_dims[D], const complex float* src)
+	vptr_fun_data_t super;
+
+	struct grid_conf_s conf;
+	bool backward;
+};
+
+DEF_TYPEID(vptr_grid_s);
+
+static void grid_int(vptr_fun_data_t* _data, int N, int D, const long* dims[N], const long* strs[N], void* args[N])
 {
-	grid2_dims(D, trj_dims, ksp_dims, grid_dims);
+	auto data = CAST_DOWN(vptr_grid_s, _data);
 
+	const long* grd_dims = dims[0];
+	const long* ksp_dims = dims[1];
+	const long* trj_dims = dims[2];
+
+	long grd_strs[D];
 	long ksp_strs[D];
-	md_calc_strides(D, ksp_strs, ksp_dims, CFL_SIZE);
-
 	long trj_strs[D];
-	md_calc_strides(D, trj_strs, trj_dims, CFL_SIZE);
 
-	long grid_strs[D];
-	md_calc_strides(D, grid_strs, grid_dims, CFL_SIZE);
+	md_copy_strides(D, grd_strs, strs[0]);
+	md_copy_strides(D, ksp_strs, strs[1]);
+	md_copy_strides(D, trj_strs, strs[2]);
 
 	long max_dims[D];
 	md_max_dims(D, ~0UL, max_dims, ksp_dims, trj_dims);
-	md_max_dims(D - 3, ~0UL, max_dims + 3, max_dims + 3, grid_dims + 3);
-
-	unsigned long mpi_flags = vptr_block_loop_flags(D - 3, max_dims + 3, trj_strs + 3, traj, (size_t)(md_calc_size(3, trj_dims) * (long)CFL_SIZE), false)
-				| vptr_block_loop_flags(D - 3, max_dims + 3, ksp_strs + 3, src, (size_t)(md_calc_size(3, ksp_dims) * (long)CFL_SIZE), false)
-				| vptr_block_loop_flags(D - 3, max_dims + 3, grid_strs + 3, dst, (size_t)(md_calc_size(3, grid_dims) * (long)CFL_SIZE), false);
-	mpi_flags <<= 3;
+	md_max_dims(D - 3, ~0UL, max_dims + 3, max_dims + 3, grd_dims + 3);
 
 	if ((trj_strs[2] == trj_strs[1] * max_dims[1]) && (ksp_strs[2] == ksp_strs[1] * max_dims[1])) {
 
@@ -292,10 +302,7 @@ void grid2(const struct grid_conf_s* conf, int D, const long trj_dims[D], const 
 
 	for (int i = 4; i < D; i++) {
 
-		if (MD_IS_SET(mpi_flags, i))
-			continue;
-
-		if (0 != grid_strs[i])
+		if (0 != grd_strs[i])
 			continue;
 
 		if ((trj_strs[i] == trj_strs[1] * max_dims[1]) && (ksp_strs[i] == ksp_strs[1] * max_dims[1])) {
@@ -319,39 +326,49 @@ void grid2(const struct grid_conf_s* conf, int D, const long trj_dims[D], const 
 		}
 	}
 
-	long tksp_dims[4];
-	long tgrd_dims[4];
-	md_select_dims(4, ~mpi_flags, tksp_dims, max_dims);
-	md_select_dims(4, ~mpi_flags, tgrd_dims, grid_dims);
-	if (!MD_IS_SET(mpi_flags, 3))
-		max_dims[3] = 1;
-
-	const long* ptr_grid_dims = &(tgrd_dims[0]);
-	const long* ptr_ksp_dims = &(tksp_dims[0]);
-
+	const long* ptr_grd_dims = &(grd_dims[0]);
+	const long* ptr_ksp_dims = &(max_dims[0]);
 	const long* ptr_ksp_strs = &(ksp_strs[0]);
 	const long* ptr_trj_strs = &(trj_strs[0]);
-	const long* ptr_grid_strs = &(grid_strs[0]);
+	const long* ptr_grid_strs = &(grd_strs[0]);
 
 	NESTED(void, nary_grid, (void* ptr[]))
 	{
-		const complex float* _trj = ptr[0];
-		complex float* _grid = ptr[1];
-		const complex float* _ksp = ptr[2];
+		complex float* grd = ptr[0];
+		complex float* ksp = ptr[1];
+		const complex float* trj = ptr[2];
 
-		grid(conf, ptr_ksp_dims, ptr_trj_strs, _trj, ptr_grid_dims, ptr_grid_strs, _grid, ptr_ksp_strs, _ksp);
+		if (data->backward)
+			gridH(&(data->conf), ptr_ksp_dims, ptr_trj_strs, trj, ptr_ksp_strs, ksp, ptr_grd_dims, ptr_grid_strs, grd);
+		else
+			grid(&(data->conf), ptr_ksp_dims, ptr_trj_strs, trj, ptr_grd_dims, ptr_grid_strs, grd, ptr_ksp_strs, ksp);
 	};
 
-	const long* strs[3] = { trj_strs + 3, grid_strs + 3, ksp_strs + 3 };
-	void* ptr[3] = { (void*)traj, (void*)dst, (void*)src };
-	unsigned long pflags = md_nontriv_dims(D - 3, grid_dims + 3);
+	const long* lstrs[3] = { grd_strs + 4, ksp_strs + 4, trj_strs + 4 };
+	unsigned long pflags = md_nontriv_strides(D - 4, (data->backward ? ksp_strs : grd_strs) + 4);
 
 #ifdef USE_CUDA
-	if (cuda_ondevice(traj))
+	if (cuda_ondevice(args[0]))
 		pflags = 0;
 #endif
 
-	md_parallel_nary(3, D - 3, max_dims + 3, pflags, strs, ptr, nary_grid);
+	md_parallel_nary(3, D - 4, max_dims + 4, pflags, lstrs, args, nary_grid);
+}
+
+void grid2(const struct grid_conf_s* conf, int D, const long trj_dims[D], const complex float* traj, const long grid_dims[D], complex float* dst, const long ksp_dims[D], const complex float* src)
+{
+	grid2_dims(D, trj_dims, ksp_dims, grid_dims);
+
+	PTR_ALLOC(struct vptr_grid_s, _d);
+	SET_TYPEID(vptr_grid_s, _d);
+	_d->super.del = NULL;
+	_d->conf = *conf;
+	_d->backward = false;
+
+	exec_vptr_zfun(grid_int, CAST_UP(PTR_PASS(_d)), 3, D, ~7UL, MD_BIT(0), MD_BIT(0) | MD_BIT(1) | MD_BIT(2),
+			(const long*[3]) { grid_dims, ksp_dims, trj_dims },
+			(const long*[3]) { MD_STRIDES(D, grid_dims, CFL_SIZE), MD_STRIDES(D, ksp_dims, CFL_SIZE), MD_STRIDES(D, trj_dims, CFL_SIZE) },
+			(complex float*[3]) { dst, (void*) src, (void*)traj});
 }
 
 
@@ -359,94 +376,16 @@ void grid2H(const struct grid_conf_s* conf, int D, const long trj_dims[D], const
 {
 	grid2_dims(D, trj_dims, ksp_dims, grid_dims);
 
-	long ksp_strs[D];
-	md_calc_strides(D, ksp_strs, ksp_dims, CFL_SIZE);
+	PTR_ALLOC(struct vptr_grid_s, _d);
+	SET_TYPEID(vptr_grid_s, _d);
+	_d->super.del = NULL;
+	_d->conf = *conf;
+	_d->backward = true;
 
-	long trj_strs[D];
-	md_calc_strides(D, trj_strs, trj_dims, CFL_SIZE);
-
-	long grid_strs[D];
-	md_calc_strides(D, grid_strs, grid_dims, CFL_SIZE);
-
-	long max_dims[D];
-	md_max_dims(D, ~0UL, max_dims, ksp_dims, trj_dims);
-	md_max_dims(D - 3, ~0UL, max_dims + 3, max_dims + 3, grid_dims + 3);
-
-	unsigned long mpi_flags = vptr_block_loop_flags(D - 3, max_dims + 3, trj_strs + 3, traj, (size_t)(md_calc_size(3, trj_dims) * (long)CFL_SIZE), false)
-				| vptr_block_loop_flags(D - 3, max_dims + 3, ksp_strs + 3, dst, (size_t)(md_calc_size(3, ksp_dims) * (long)CFL_SIZE), false)
-				| vptr_block_loop_flags(D - 3, max_dims + 3, grid_strs + 3, src, (size_t)(md_calc_size(3, grid_dims) * (long)CFL_SIZE), false);
-
-	mpi_flags <<= 3;
-
-	if ((trj_strs[2] == trj_strs[1] * max_dims[1]) && (ksp_strs[2] == ksp_strs[1] * max_dims[1])) {
-
-		max_dims[1] *= max_dims[2];
-		max_dims[2] = 1;
-	}
-
-	for (int i = 4; i < D; i++) {
-
-		if (MD_IS_SET(mpi_flags, i))
-			continue;
-
-		if (0 != grid_strs[i])
-			continue;
-
-		if ((trj_strs[i] == trj_strs[1] * max_dims[1]) && (ksp_strs[i] == ksp_strs[1] * max_dims[1])) {
-
-			max_dims[1] *= max_dims[i];
-			max_dims[i] = 1;
-		}
-
-		if (1 == max_dims[2]) {
-
-			max_dims[2] = max_dims[i];
-			trj_strs[2] = trj_strs[i];
-			ksp_strs[2] = ksp_strs[i];
-			max_dims[i] = 1;
-		}
-
-		if ((trj_strs[i] == trj_strs[2] * max_dims[2]) && (ksp_strs[i] == ksp_strs[2] * max_dims[2])) {
-
-			max_dims[2] *= max_dims[i];
-			max_dims[i] = 1;
-		}
-	}
-
-	long tksp_dims[4];
-	long tgrd_dims[4];
-	md_select_dims(4, ~mpi_flags, tksp_dims, max_dims);
-	md_select_dims(4, ~mpi_flags, tgrd_dims, grid_dims);
-	if (!MD_IS_SET(mpi_flags, 3))
-		max_dims[3] = 1;
-
-	const long* ptr_grid_dims = &(tgrd_dims[0]);
-	const long* ptr_ksp_dims = &(tksp_dims[0]);
-
-	const long* ptr_ksp_strs = &(ksp_strs[0]);
-	const long* ptr_trj_strs = &(trj_strs[0]);
-	const long* ptr_grid_strs = &(grid_strs[0]);
-
-
-	NESTED(void, nary_gridH, (void* ptr[]))
-	{
-		const complex float* _trj = ptr[0];
-		const complex float* _grid = ptr[1];
-		complex float* _ksp = ptr[2];
-
-		gridH(conf, ptr_ksp_dims, ptr_trj_strs, _trj, ptr_ksp_strs, _ksp, ptr_grid_dims, ptr_grid_strs, _grid);
-	};
-
-	const long* strs[3] = { trj_strs + 3, grid_strs + 3, ksp_strs + 3 };
-	void* ptr[3] = { (void*)traj, (void*)src, (void*)dst };
-	unsigned long pflags = md_nontriv_dims(D - 3, grid_dims + 3);
-
-#ifdef USE_CUDA
-	if (cuda_ondevice(traj))
-		pflags = 0;
-#endif
-
-	md_parallel_nary(3, D - 3, max_dims + 3, pflags, strs, ptr, nary_gridH);
+	exec_vptr_zfun(grid_int, CAST_UP(PTR_PASS(_d)), 3, D, ~7UL, MD_BIT(1), MD_BIT(0) | MD_BIT(1) | MD_BIT(2),
+			(const long*[3]) { grid_dims, ksp_dims, trj_dims },
+			(const long*[3]) { MD_STRIDES(D, grid_dims, CFL_SIZE), MD_STRIDES(D, ksp_dims, CFL_SIZE), MD_STRIDES(D, trj_dims, CFL_SIZE) },
+			(complex float*[3]) { (void*) src, dst, (void*)traj});
 }
 
 

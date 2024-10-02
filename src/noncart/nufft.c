@@ -1469,7 +1469,7 @@ static void nufft_apply_adjoint(const linop_data_t* _data, complex float* dst, c
 		md_clear(ND, data->cml_dims, grid, CFL_SIZE);
 
 		for (int i = 0; i < md_calc_size(data->N, data->factors); i++)
-			grid2_decomp(&data->grid_conf, i, data->N, data->factors, data->trj_dims, multiplace_read(data->traj, dst), data->cml_dims, grid + i * md_calc_size(data->N, data->cml_dims), data->ksp_dims, src);
+			grid2_decomp(&data->grid_conf, i, data->N + 1, data->factors, data->trj_dims, multiplace_read(data->traj, dst), data->cim_dims, grid + i * md_calc_size(data->N, data->cml_dims), data->ksp_dims, src);
 
 	} else {
 
