@@ -67,6 +67,15 @@ tests/test-signal-fse: signal nrmse
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-signal-fse-epg: signal epg extract nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/signal -Z -n 8 -e 0.01 -r 12 -f 120 -1 1:1:1 -2 0.1:0.1:1 sig.ra	;\
+	$(TOOLDIR)/epg -C -n 7 -e 0.01 -r 12 -f 120 -1 1 -2 0.1 sig2.ra	;\
+	$(TOOLDIR)/extract 5 1 8 sig.ra sig3.ra					;\
+	$(TOOLDIR)/nrmse -t 0.00001 sig2.ra sig3.ra			    	;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 tests/test-signal-ir-se: signal ones scale slice nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
 	$(TOOLDIR)/signal -S -I -i 0.5 -n 3 -e 0.0001 -r 100 -1 3:3:1 -2 1000:1000:1 sig.ra	;\
@@ -118,6 +127,6 @@ tests/test-signal-LL-short-TR-approx: signal slice nrmse
 
 TESTS += tests/test-signal-spoke-averaging-2 tests/test-signal-spoke-averaging-3
 TESTS += tests/test-signal-se tests/test-signal-ir-se
-TESTS += tests/test-signal-fse
+TESTS += tests/test-signal-fse tests/test-signal-fse-epg
 TESTS += tests/test-signal-se-single tests/test-signal-ir-se-single
 TESTS += tests/test-signal-LL-short-TR-approx
