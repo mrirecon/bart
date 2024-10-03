@@ -70,7 +70,7 @@ int main_epg(int argc, char* argv[argc])
 		OPT_FLOAT('o', &offres, "OFF", "off-resonance [units of inverse time]"),
 		OPT_FLOAT('r', &TR, "TR", "repetition time [units of time]"),
 		OPT_FLOAT('e', &TE, "TE", "echo time [units of time]"),
-		OPT_FLOAT('f', &FA, "FA", "flip angle [degrees]"),
+		OPT_FLOAT('f', &FA, "FA", "flip angle [degrees] / refocusing FA for CPMG"),
 		OPT_PINT('s', &SP, "SP", "spoiling (0: ideal, 1: conventional RF, 2: random RF)"),
 		OPT_PINT('n', &N, "N", "number of pulses"),
 		OPT_ULONG('u', &unknowns, "U", "unknowns as bitmask (0: T1, 1: T2, 2: B1, 3: off-res)"),
@@ -134,7 +134,7 @@ int main_epg(int argc, char* argv[argc])
 		cpmg_epg_der(N, M, out_signal, (NULL != states_file) ? out_states : NULL,
 						(NULL != sigder_file) ? out_sigder : NULL,
 						(NULL != statesder_file) ? out_statesder : NULL,
-						90.0, 180.0, TE, T1, T2, B1, offres);
+						90.0, FA, TE, T1, T2, B1, offres);
 		break;
 
 	case FMSSFP:
