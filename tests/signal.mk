@@ -62,14 +62,14 @@ tests/test-signal-se: signal ones scale slice nrmse
 tests/test-signal-fse: signal nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
 	$(TOOLDIR)/signal -S -n 8 -e 0.01 -r 100 -1 1:3:10 -2 0.01:0.3:10 sig.ra	;\
-	$(TOOLDIR)/signal -Z -n 8 -e 0.01 -r 100 -f 180 -1 1:3:10 -2 0.01:0.3:10 sig2.ra	;\
+	$(TOOLDIR)/signal -T -n 8 -e 0.01 -r 100 -f 180 -1 1:3:10 -2 0.01:0.3:10 sig2.ra	;\
 	$(TOOLDIR)/nrmse -t 0.00001 sig.ra sig2.ra			    	;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
 tests/test-signal-fse-epg: signal epg extract nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
-	$(TOOLDIR)/signal -Z -n 8 -e 0.01 -r 12 -f 120 -1 1:1:1 -2 0.1:0.1:1 sig.ra	;\
+	$(TOOLDIR)/signal -T -n 8 -e 0.01 -r 12 -f 120 -1 1:1:1 -2 0.1:0.1:1 sig.ra	;\
 	$(TOOLDIR)/epg -C -n 7 -e 0.01 -r 12 -f 120 -1 1 -2 0.1 sig2.ra	;\
 	$(TOOLDIR)/extract 5 1 8 sig.ra sig3.ra					;\
 	$(TOOLDIR)/nrmse -t 0.00001 sig2.ra sig3.ra			    	;\

@@ -90,8 +90,7 @@ int main_signal(int argc, char* argv[argc])
 
 		OPT_SELECT('F', enum seq_type, &seq, FLASH, "FLASH"),
 		OPT_SELECT('B', enum seq_type, &seq, BSSFP, "bSSFP"),
-		OPT_SELECT('T', enum seq_type, &seq, TSE, "TSE"),
-		OPT_SELECT('Z', enum seq_type, &seq, TSE_GEN, "TSE_GEN"),
+		OPT_SELECT('T', enum seq_type, &seq, TSE_GEN, "TSE"),
 		OPT_SELECT('S', enum seq_type, &seq, SE, "SE"),
 		OPT_SELECT('M', enum seq_type, &seq, MOLLI, "MOLLI"),
 		OPT_SELECT('G', enum seq_type, &seq, MGRE, "MGRE"),
