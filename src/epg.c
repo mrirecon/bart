@@ -223,7 +223,7 @@ int main_epg(int argc, char* argv[argc])
 		}
 	}
 
-	long pos[DIMS] = {0};
+	long pos[DIMS] = { 0 };
 	md_copy_block(DIMS, pos, dims, signals, dims, out_signal, CFL_SIZE);
 
 	if (NULL != states_file)
@@ -239,6 +239,9 @@ int main_epg(int argc, char* argv[argc])
 	unmap_cfl(DIMS, dims_states, states);
 	unmap_cfl(DIMS, dims_sigder, sigder);
 	unmap_cfl(DIMS, dims_statesder, statesder);
+
+	free(out_states);
+	free(out_statesder);
 
 	return 0;
 }
