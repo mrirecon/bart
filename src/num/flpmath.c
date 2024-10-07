@@ -3199,7 +3199,10 @@ void md_zrss(int D, const long dims[D], unsigned long flags, complex float* dst,
 	long dims2R[D + 1];
 	real_from_complex_dims(D, dims2R, dims2);
 
-	md_sqrt(D + 1, dims2R, (float*)dst, (const float*)dst);
+	long strs2R[D + 1];
+	real_from_complex_strides(D, strs2R, MD_STRIDES(D, dims2, CFL_SIZE));
+
+	md_sqrt2(D + 1, dims2R, strs2R, (float*)dst, strs2R, (const float*)dst);
 }
 
 
