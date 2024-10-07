@@ -64,7 +64,7 @@ static void itop_apply(const operator_data_t* _data, float alpha, complex float*
 
 	if (NULL == init) {
 
-		md_clear(1, MD_DIMS(data->size), dst, sizeof(float));
+		md_clear(data->iov->N, data->iov->dims, dst, data->iov->size);
 
 	} else {
 
