@@ -439,7 +439,7 @@ int main_mobafit(int argc, char* argv[argc])
 	}	break;
 
 	case TSE:
-	case DIFF:
+	case DIFF: {
 
 		assert(md_check_equal_dims(DIMS, y_patch_dims, y_patch_sig_dims, ~0UL));
 		md_copy_dims(DIMS, dims, y_patch_dims);
@@ -448,7 +448,7 @@ int main_mobafit(int argc, char* argv[argc])
 		auto nl = nlop_exp_create(DIMS, dims, enc);
 		nlop = nlop_flatten(nl);
 		nlop_free(nl);
-		break;
+	}	break;
 
 	case SIM: {
 
@@ -506,8 +506,8 @@ int main_mobafit(int argc, char* argv[argc])
 	assert(nlop);
 
 
-	complex float init[DIMS];
-	complex float scale[DIMS];
+	complex float init[DIMS] = { [0 ... DIMS - 1] = 1. };
+	complex float scale[DIMS] = { [0 ... DIMS - 1] = 1. };
 
 	for (long i = 0; i < x_dims[COEFF_DIM]; i++) {
 
