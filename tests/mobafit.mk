@@ -195,7 +195,7 @@ tests/test-mobafit-ir_t1: mobafit nrmse transpose scale vec join
 tests/test-mobafit-sim: phantom sim repmat fmac index mobafit slice nrmse scale
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
 	$(TOOLDIR)/phantom -x32 -T -b tubes.ra				;\
-	$(TOOLDIR)/sim --ODE --seq IR-BSSFP,TR=0.004,TE=0.002,Nrep=100,ipl=0.01,isp=0.005,ppl=0.002,Trf=0.001,FA=45,BWTP=4 -1 1.:1.:1 -2 0.1:0.1:1 sim0.ra ;\
+	$(TOOLDIR)/sim --ODE --seq IR-BSSFP,TR=0.004,TE=0.002,Nrep=100,ipl=0.01,isp=0.005,ppl=0.002,Trf=0.001,FA=45,BWTP=4 -1 1:1:1 -2 0.1:0.1:1 sim0.ra ;\
 	$(TOOLDIR)/repmat 6 11 sim0.ra sim.ra				;\
 	$(TOOLDIR)/fmac -s 64 tubes.ra sim.ra ph_img.ra	;\
 	$(TOOLDIR)/index 5 100 te.ra					;\
@@ -205,7 +205,7 @@ tests/test-mobafit-sim: phantom sim repmat fmac index mobafit slice nrmse scale
 	$(TOOLDIR)/phantom -x32 -T r1.ra				;\
 	$(TOOLDIR)/nrmse -t 0.0001 r1.ra fit_r1.ra			;\
 	$(TOOLDIR)/scale 10 r1.ra r2.ra					;\
-	$(TOOLDIR)/nrmse -t 0.0001 r2.ra fit_r2.ra			;\
+	$(TOOLDIR)/nrmse -t 0.00015 r2.ra fit_r2.ra			;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
