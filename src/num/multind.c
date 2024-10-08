@@ -285,20 +285,21 @@ void md_loop(int D, const long dim[D], md_loop_fun_t fun)
  */
 bool md_next(int D, const long dims[D], unsigned long flags, long pos[D])
 {
-	if (0 == D--)
-		return false;
+	for (int i = 0; i < D; i++) {
 
-	if (md_next(D, dims, flags, pos))
-		return true;
+		if (!MD_IS_SET(flags, i))
+			continue;
 
-	if (MD_IS_SET(flags, D)) {
+		if (pos[i] < dims[i] - 1) {
 
-		assert((0 <= pos[D]) && (pos[D] < dims[D]));
+			pos[i]++;
 
-		if (++pos[D] < dims[D])
+			for (int j = 0; j < i; j++)
+				if (MD_IS_SET(flags, j))
+					pos[j] = 0;
+
 			return true;
-
-		pos[D] = 0;
+		}
 	}
 
 	return false;
@@ -344,6 +345,9 @@ static long md_calc_size_r(int D, const long dim[D], size_t size)
  */
 long md_calc_size(int D, const long dim[D])
 {
+	if (0 > D)
+		return 1;
+
 	return md_calc_size_r(D, dim, 1);
 }
 
@@ -403,11 +407,11 @@ void md_select_dims(int D, unsigned long flags, long odims[D], const long idims[
  */
 void md_select_strides(int D, unsigned long flags, long ostrs[D], const long istrs[D])
 {
-       md_copy_dims(D, ostrs, istrs);
-
-       for (int i = 0; i < D; i++)
-               if (!MD_IS_SET(flags, i))
-                       ostrs[i] = 0;
+	for (int i = 0; i < D; i++)
+		if (!MD_IS_SET(flags, i))
+			ostrs[i] = 0;
+		else
+			ostrs[i] = istrs[i]; 
 }
 
 /**
@@ -478,8 +482,11 @@ bool md_check_dimensions(int N, const long dims[N], unsigned long flags)
  */
 bool md_check_equal_dims(int N, const long dims1[N], const long dims2[N], unsigned long flags)
 {
-	return (   md_check_bounds(N, flags, dims1, dims2)
-	        && md_check_bounds(N, flags, dims2, dims1));
+	for (int i = 0; i < N; i++)
+		if (MD_IS_SET(flags, i) && (dims1[i] != dims2[i]))
+			return false;
+	
+	return true;
 }
 
 
@@ -576,13 +583,11 @@ void md_merge_dims(int N, long out_dims[N], const long dims1[N], const long dims
  */
 bool md_check_bounds(int D, unsigned long flags, const long dim1[D], const long dim2[D])
 {
-	if (0 == D--)
-		return true;
-
-	if (!MD_IS_SET(flags, D) || (dim1[D] <= dim2[D]))
-		return md_check_bounds(D, flags, dim1, dim2);
-
-	return false;
+	for (int i = 0; i < D; i++)
+		if (MD_IS_SET(flags, i) && (dim1[i] > dim2[i]))
+			return false;
+	
+	return true;
 }
 
 
@@ -624,6 +629,33 @@ void md_max_dims(int D, unsigned long flags, long odims[D], const long idims1[D]
 }
 
 
+bool md_overlap(int D1, const long dims1[D1], const long strs1[D1], const void* ptr1, size_t size1,
+		int D2, const long dims2[D2], const long strs2[D2], const void* ptr2, size_t size2)
+{
+	long offset1 = 0;
+	long offset2 = 0;
+
+	for (int i = 0; i < D1; i++) {
+
+		size1 += ((size_t)dims1[i] - 1) * (size_t)labs(strs1[i]);
+		offset1 += (dims1[i] - 1) * MAX(-strs1[i], 0);
+	}
+
+	for (int i = 0; i < D2; i++) {
+
+		size2 += ((size_t)dims2[i] - 1) * (size_t)labs(strs2[i]);
+		offset2 += (dims2[i] - 1) * MAX(-strs2[i], 0);
+	}
+
+	const void* ptr1s = ptr1 - offset1;
+	const void* ptr1e = ptr1s + size1;
+
+	const void* ptr2s = ptr2 - offset2;
+	const void* ptr2e = ptr2s + size2;
+
+	return !((ptr1s >= ptr2e) || (ptr2s >= ptr1e));
+}
+
 
 /**
  * Zero out array (with strides)
@@ -663,7 +695,34 @@ void md_clear2(int D, const long dim[D], const long str[D], void* ptr, size_t si
 	optimized_nop(1, MD_BIT(0), D, dim2, nstr, (void*[1]){ ptr }, (size_t[1]){ size }, nary_clear);
 }
 
+/**
+ * Calculate strides in column-major format
+ * (smallest index is sequential)
+ *
+ * @param D number of dimensions
+ * @param flag only calc strides for selected dimensions
+ * @param array of calculates strides
+ * @param dim array of dimensions
+ * @param size of a single element
+ */
+long* md_calc_strides_selected(int D, unsigned long flags, long str[D], const long dim[D], size_t size)
+{
+	long old = (long)size;
 
+	for (int i = 0; i < D; i++) {
+
+		if (!MD_IS_SET(flags, i)) {
+
+			str[i] = 0;
+		} else {
+
+			str[i] = (1 == dim[i]) ? 0 : old;
+			old *= dim[i];
+		}
+	}
+
+	return str;
+}
 
 /**
  * Calculate strides in column-major format
@@ -2434,18 +2493,37 @@ int md_min_idx(unsigned long flags)
  * Convert flat index to pos
  *
  */
+void md_unravel_index2(int D, long pos[D], unsigned long flags, const long dims[D], const long strs[D], long index)
+{
+	for (int d = 0; d < D; ++d)
+		if (MD_IS_SET(flags, d))
+			pos[d] = (0 == strs[d]) ? 0 : (index / strs[d]) % dims[d];
+}
+
+/**
+ * Convert flat index to pos
+ *
+ */
 void md_unravel_index(int D, long pos[D], unsigned long flags, const long dims[D], long index)
 {
-	long ind = index;
+	long strs[D?:1];
+	md_calc_strides_selected(D, flags, strs, dims, 1);
+	md_unravel_index2(D, pos, flags, dims, strs, index);
+}
 
-	for (int d = 0; d < D; ++d) {
+/**
+ * Convert pos to flat index
+ *
+ */
+long md_ravel_index2(int D, const long pos[D], unsigned long flags, const long /*dims*/[D], const long strs[D])
+{
+	long ret = 0;
 
-		if (!MD_IS_SET(flags, d))
-			continue;
+	for (int d = 0; d < D; d++)
+		if (MD_IS_SET(flags, d))
+			ret += pos[d] * strs[d];
 
-		pos[d] = ind % dims[d];
-		ind /= dims[d];
-	}
+	return ret;
 }
 
 /**
@@ -2454,17 +2532,32 @@ void md_unravel_index(int D, long pos[D], unsigned long flags, const long dims[D
  */
 long md_ravel_index(int D, const long pos[D], unsigned long flags, const long dims[D])
 {
-	long ind = 0;
+	long strs[D];
+	md_calc_strides_selected(D, flags, strs, dims, 1);
 
-	for (int d = D; d > 0; --d) {
+	return md_ravel_index2(D, pos, flags, dims, strs);
+}
 
-		if (!MD_IS_SET(flags, d - 1))
-			continue;
-		
-		ind *= dims[d - 1];
-		ind += pos[d - 1];
-	}
+long md_reravel_index2(int D, unsigned long flags, const long dims[D], const long rstrs[D], const long ustrs[D], long index)
+{
+	long ret = 0;
 
-	return ind;
+	for (int i = 0; i < D; i++)
+		if (MD_IS_SET(flags, i))
+			ret += (0 == ustrs[i]) ? 0 : ((index / ustrs[i]) % dims[i]) * rstrs[i];
+
+	return ret;	
+}
+
+
+long md_reravel_index(int D, unsigned long rflags, unsigned long uflags, const long dims[D], long index)
+{
+	long rstrs[D];
+	long ustrs[D];
+
+	md_calc_strides_selected(D, rflags, rstrs, dims, 1);
+	md_calc_strides_selected(D, uflags, ustrs, dims, 1);
+
+	return md_reravel_index2(D, rflags, dims, rstrs, ustrs, index);
 }
 
