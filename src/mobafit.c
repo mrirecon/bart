@@ -119,8 +119,8 @@ int main_mobafit(int argc, char* argv[argc])
 	const char* enc_file = NULL;
 	const char* echo_file = NULL;
 	const char* coeff_file = NULL;
-        const char* b1_file = NULL;
-        const char* b0_file = NULL;
+	const char* b1_file = NULL;
+	const char* b0_file = NULL;
 
 	struct arg_s args[] = {
 
@@ -331,7 +331,7 @@ int main_mobafit(int argc, char* argv[argc])
 
 	switch (seq) {
 
-        case IR:
+	case IR:
 	case IR_LL:
 
 		x_dims[COEFF_DIM] = 3;
@@ -392,7 +392,7 @@ int main_mobafit(int argc, char* argv[argc])
 
 		long dims[DIMS];
 
-        case IR: {
+	case IR: {
 
 		assert(md_check_equal_dims(DIMS, y_patch_dims, y_patch_sig_dims, ~0UL));
 		md_copy_dims(DIMS, dims, y_patch_dims);
@@ -450,7 +450,7 @@ int main_mobafit(int argc, char* argv[argc])
 		nlop_free(nl);
 		break;
 
-        case SIM: {
+	case SIM: {
 
 		long map_dims[DIMS];
 		md_select_dims(DIMS, ~(COEFF_FLAG | TE_FLAG), map_dims, x_patch_dims);
@@ -497,11 +497,11 @@ int main_mobafit(int argc, char* argv[argc])
 	}	break;
 	}
 
-        if (use_magn) {
+	if (use_magn) {
 
-                assert(NULL == basis);
-                nlop = nlop_chain_FF(nlop, nlop_zabs_create(DIMS, y_patch_dims));
-        }
+		assert(NULL == basis);
+		nlop = nlop_chain_FF(nlop, nlop_zabs_create(DIMS, y_patch_dims));
+	}
 
 	assert(nlop);
 
