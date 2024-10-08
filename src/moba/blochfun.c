@@ -283,7 +283,7 @@ static void bloch_fun(const nlop_data_t* _data, complex float* dst, const comple
 				for (int p = 0; p < sim_data.voxel.P - 1; p++) {
 
 					spa_pos_pools[ITER_DIM] = p;
-					spa_ind_pools = md_calc_offset(data->N, pool_strs, spa_pos_pools) / CFL_SIZE;
+					spa_ind_pools = md_calc_offset(data->N, pool_strs, spa_pos_pools) / (long)CFL_SIZE;
 
 					//FIXME: Switch to Boolean?
 					sim_data.voxel.r1[p + 1] = (data->moba_data->other.scale[4 + p]) ?  crealf(r1_poolscale[spa_ind_pools]) : data->moba_data->other.initval[4 + p];
@@ -416,7 +416,7 @@ static void bloch_fun(const nlop_data_t* _data, complex float* dst, const comple
 					for (int p = 0; p < sim_data.voxel.P - 1; p++) {
 
 						curr_pos_pools[ITER_DIM] = p;
-						position = md_calc_offset(data->N, pool_out_strs, curr_pos_pools) / CFL_SIZE;
+						position = md_calc_offset(data->N, pool_out_strs, curr_pos_pools) / (long)CFL_SIZE;
 
 						if (SEQ_CEST == sim_data.seq.seq_type) {
 
