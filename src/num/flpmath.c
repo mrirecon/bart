@@ -43,6 +43,7 @@
 #include "num/loop.h"
 #include "num/mpi_ops.h"
 #include "num/vptr.h"
+#include "num/vptr_fun.h"
 #ifdef NO_BLAS
 #include "num/linalg.h"
 #endif
@@ -3489,10 +3490,42 @@ extern void md_zfill(int D, const long dim[D], complex float* ptr, complex float
 	md_zfill2(D, dim, str, ptr, val);
 }
 
+union par {
+	int par_int;
+	float par_float;
+};
+
+struct vptr_param_md_s {
+
+	vptr_fun_data_t super;
+	union par pars[3];
+};
+
+DEF_TYPEID(vptr_param_md_s);
+
+static vptr_fun_data_t* vptr_param_float(float par)
+{
+	PTR_ALLOC(struct vptr_param_md_s, data);
+	SET_TYPEID(vptr_param_md_s, data);
+	data->super.del = NULL;
+	data->pars[0].par_float = par;
+	return CAST_UP(PTR_PASS(data));
+}
 
 
 
 
+static void md_zsoftthresh_half2_int(vptr_fun_data_t* _data, int N, int D, const long* dims[N], const long* strs[N], void* args[N])
+{
+	float lambda = CAST_DOWN(vptr_param_md_s, _data)->pars[0].par_float;
+
+	NESTED(void, nary_zsoftthresh_half, (struct nary_opt_data_s* data, void* ptr[]))
+	{
+		data->ops->zsoftthresh_half(data->size, lambda, ptr[0], ptr[1]);
+	};
+
+	optimized_twoop_oi(D, dims[0], strs[0], args[0], strs[1], args[1], (size_t[2]){ CFL_SIZE, CFL_SIZE }, nary_zsoftthresh_half);
+}
 
 /**
  * Step (2) of Soft Thresholding multi-dimensional arrays, y = ST(x, lambda)
@@ -3508,15 +3541,21 @@ extern void md_zfill(int D, const long dim[D], complex float* ptr, complex float
  */
 void md_zsoftthresh_half2(int D, const long dim[D], float lambda, const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr)
 {
-	NESTED(void, nary_zsoftthresh_half, (struct nary_opt_data_s* data, void* ptr[]))
-	{
-		data->ops->zsoftthresh_half(data->size, lambda, ptr[0], ptr[1]);
-	};
-
-	optimized_twoop_oi(D, dim, ostr, optr, istr, iptr, (size_t[2]){ CFL_SIZE, CFL_SIZE }, nary_zsoftthresh_half);
+	exec_vptr_zfun(md_zsoftthresh_half2_int, vptr_param_float(lambda), 2, D, ~0UL, MD_BIT(0), MD_BIT(1), (const long*[2]) { dim, dim }, (const long*[2]) { ostr, istr }, (complex float*[2]) { optr, (void*) iptr});
 }
 
 
+static void md_softthresh_half2_int(vptr_fun_data_t* _data, int N, int D, const long* dims[N], const long* strs[N], void* args[N])
+{
+	float lambda = CAST_DOWN(vptr_param_md_s, _data)->pars[0].par_float;
+
+	NESTED(void, nary_softthresh_half, (struct nary_opt_data_s* data, void* ptr[]))
+	{
+		data->ops->softthresh_half(data->size, lambda, ptr[0], ptr[1]);
+	};
+
+	optimized_twoop_oi(D, dims[0], strs[0], args[0], strs[1], args[1], (size_t[2]){ FL_SIZE, FL_SIZE }, nary_softthresh_half);
+}
 
 /**
  * Step (2) of Soft Thresholding multi-dimensional arrays, y = ST(x, lambda)
@@ -3532,12 +3571,7 @@ void md_zsoftthresh_half2(int D, const long dim[D], float lambda, const long ost
  */
 void md_softthresh_half2(int D, const long dim[D], float lambda, const long ostr[D], float* optr, const long istr[D], const float* iptr)
 {
-	NESTED(void, nary_softthresh_half, (struct nary_opt_data_s* data, void* ptr[]))
-	{
-		data->ops->softthresh_half(data->size, lambda, ptr[0], ptr[1]);
-	};
-
-	optimized_twoop_oi(D, dim, ostr, optr, istr, iptr, (size_t[2]){ FL_SIZE, FL_SIZE }, nary_softthresh_half);
+	exec_vptr_fun(md_softthresh_half2_int, vptr_param_float(lambda), 2, D, ~0UL, MD_BIT(0), MD_BIT(1), (const long*[2]) { dim, dim }, (const long*[2]) { ostr, istr }, (float*[2]) { optr, (void*) iptr});
 }
 
 
@@ -3636,6 +3670,18 @@ void md_zsoftthresh_core2(int D, const long dims[D], float lambda, unsigned long
 }
 
 
+static void md_zsoftthresh_int(vptr_fun_data_t* _data, int N, int D, const long* dims[N], const long* strs[N], void* args[N])
+{
+	float lambda = CAST_DOWN(vptr_param_md_s, _data)->pars[0].par_float;
+
+	NESTED(void, nary_zsoftthresh, (struct nary_opt_data_s* data, void* ptr[]))
+	{
+		data->ops->zsoftthresh(data->size, lambda, ptr[0], ptr[1]);
+	};
+
+	optimized_twoop_oi(D, dims[0], strs[0], args[0], strs[1], args[1], (size_t[2]){ CFL_SIZE, CFL_SIZE }, nary_zsoftthresh);
+}
+
 
 
 
@@ -3655,14 +3701,9 @@ void md_zsoftthresh_core2(int D, const long dims[D], float lambda, unsigned long
  */
 void md_zsoftthresh2(int D, const long dims[D], float lambda, unsigned long flags, const long ostrs[D], complex float* optr, const long istrs[D], const complex float* iptr)
 {
-	NESTED(void, nary_zsoftthresh, (struct nary_opt_data_s* data, void* ptr[]))
-	{
-		data->ops->zsoftthresh(data->size, lambda, ptr[0], ptr[1]);
-	};
-
 	if (0 == flags) {
 
-		optimized_twoop_oi(D, dims, ostrs, optr, istrs, iptr, (size_t[2]){ CFL_SIZE, CFL_SIZE }, nary_zsoftthresh);
+		exec_vptr_zfun(md_zsoftthresh_int, vptr_param_float(lambda), 2, D, ~0UL, MD_BIT(0), MD_BIT(1), (const long*[2]) { dims, dims }, (const long*[2]) { ostrs, istrs }, (complex float*[2]) { optr, (void*) iptr});
 		return;
 	}
 
