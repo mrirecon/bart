@@ -3,7 +3,7 @@
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Author:
- *	Nick Scholand
+ *	Nick Scholand, Martin Juschitz
  */
 
 #include <complex.h>
@@ -220,7 +220,7 @@ static void bloch_fun(const nlop_data_t* _data, complex float* dst, const comple
 	// debug_sim(&(data->moba_data.sim));
 
 #pragma omp parallel for collapse(3)
-	for (int x = start[0]; x < end[0]; x++) {	
+	for (int x = start[0]; x < end[0]; x++) {
 		for (int y = start[1]; y < end[1]; y++) {
 			for (int z = start[2]; z < end[2]; z++) {
 
@@ -247,7 +247,7 @@ static void bloch_fun(const nlop_data_t* _data, complex float* dst, const comple
 				// Define simulation parameter
 				//-------------------------------------------------------------------
 
-                                // Extract external B1 value from input
+				// Extract external B1 value from input
 
 				float b1s = 1.;
 
@@ -259,7 +259,7 @@ static void bloch_fun(const nlop_data_t* _data, complex float* dst, const comple
 						b1s = 0.;
 				}
 
-                                // Copy simulation data
+				// Copy simulation data
 
 				struct sim_data sim_data = data->moba_data->sim;
 
@@ -267,12 +267,12 @@ static void bloch_fun(const nlop_data_t* _data, complex float* dst, const comple
 				sim_data.seq.rep_num = data->out_dims[TE_DIM];
 
 				// FIXME: Why set scaling? Maybe change to boolean?
- 				sim_data.voxel.r1[0] = (data->moba_data->other.scale[0]) ?  crealf(r1scale[spa_ind]) : data->moba_data->other.initval[0];
+				sim_data.voxel.r1[0] = (data->moba_data->other.scale[0]) ?  crealf(r1scale[spa_ind]) : data->moba_data->other.initval[0];
 				sim_data.voxel.r2[0] = (data->moba_data->other.scale[2]) ?  crealf(r2scale[spa_ind]) : data->moba_data->other.initval[2];
 				sim_data.voxel.m0[0] = 1.;
 
 				// FIXME: Incompatible with fitting of b1 with mobafit
-				sim_data.voxel.b1 = b1s * (1. + crealf(b1scale[spa_ind])); 
+				sim_data.voxel.b1 = b1s * (1. + crealf(b1scale[spa_ind]));
 
 				if (sim_data.voxel.P > 1) {
 
@@ -286,7 +286,7 @@ static void bloch_fun(const nlop_data_t* _data, complex float* dst, const comple
 					spa_ind_pools = md_calc_offset(data->N, pool_strs, spa_pos_pools) / (long)CFL_SIZE;
 
 					//FIXME: Switch to Boolean?
-					sim_data.voxel.r1[p + 1] = (data->moba_data->other.scale[4 + p]) ?  crealf(r1_poolscale[spa_ind_pools]) : data->moba_data->other.initval[4 + p];
+					sim_data.voxel.r1[p + 1] = (data->moba_data->other.scale[4 + p]) ? crealf(r1_poolscale[spa_ind_pools]) : data->moba_data->other.initval[4 + p];
 					sim_data.voxel.r2[p + 1] = (data->moba_data->other.scale[4 + sim_data.voxel.P - 1 + p]) ? crealf(r2_poolscale[spa_ind_pools]) : data->moba_data->other.initval[4 + sim_data.voxel.P - 1 + p];
 					sim_data.voxel.k[p] = (data->moba_data->other.scale[4 + 2 * (sim_data.voxel.P - 1) + p]) ? crealf(kscale[spa_ind_pools]) : data->moba_data->other.initval[4 + 2 * (sim_data.voxel.P - 1) + p];
 					sim_data.voxel.m0[p + 1] = (data->moba_data->other.scale[4 + 3 * (sim_data.voxel.P - 1) + p]) ? crealf(m0_poolscale[spa_ind_pools]) : data->moba_data->other.initval[4 + 3 * (sim_data.voxel.P - 1) + p];
@@ -307,10 +307,10 @@ static void bloch_fun(const nlop_data_t* _data, complex float* dst, const comple
 
 				sim_data.voxel.w = b0s;
 
-    				//debug_printf(DP_INFO, "\tR1:%f, R1_2:%f, R1_3:%f,R1_4:%f,R1_5:%f \n", sim_data.voxel.r1[0], sim_data.voxel.r1[1], sim_data.voxel.r1[2], sim_data.voxel.r1[3], sim_data.voxel.r1[4]);
-    				//debug_printf(DP_INFO, "\tR2:%f, R2_2:%f, R2_3:%f, R2_4:%f, R2_5:%f \n", sim_data.voxel.r2[0], sim_data.voxel.r2[1], sim_data.voxel.r2[2], sim_data.voxel.r2[3], sim_data.voxel.r2[4]);
-    				//debug_printf(DP_INFO, "\tM0:%f, M0_2:%f, M0_3:%f, M0_4:%f,M0_5:%f\n", sim_data.voxel.m0[0],sim_data.voxel.m0[1],sim_data.voxel.m0[2],sim_data.voxel.m0[3], sim_data.voxel.m0[4]);
-        			//debug_printf(DP_INFO, "\tB1:%f\n", sim_data.voxel.b1); 
+				//debug_printf(DP_INFO, "\tR1:%f, R1_2:%f, R1_3:%f,R1_4:%f,R1_5:%f \n", sim_data.voxel.r1[0], sim_data.voxel.r1[1], sim_data.voxel.r1[2], sim_data.voxel.r1[3], sim_data.voxel.r1[4]);
+				//debug_printf(DP_INFO, "\tR2:%f, R2_2:%f, R2_3:%f, R2_4:%f, R2_5:%f \n", sim_data.voxel.r2[0], sim_data.voxel.r2[1], sim_data.voxel.r2[2], sim_data.voxel.r2[3], sim_data.voxel.r2[4]);
+				//debug_printf(DP_INFO, "\tM0:%f, M0_2:%f, M0_3:%f, M0_4:%f,M0_5:%f\n", sim_data.voxel.m0[0],sim_data.voxel.m0[1],sim_data.voxel.m0[2],sim_data.voxel.m0[3], sim_data.voxel.m0[4]);
+				//debug_printf(DP_INFO, "\tB1:%f\n", sim_data.voxel.b1); 
 				//debug_printf(DP_INFO, "\tk:%f, k2:%f, k3:%f, k4:%f\n", sim_data.voxel.k[0], sim_data.voxel.k[1], sim_data.voxel.k[2],sim_data.voxel.k[3]);
 				//debug_printf(DP_INFO, "\tOm:%f, Om2:%f, Om3:%f, Om4:%f\n\n", sim_data.voxel.Om[1], sim_data.voxel.Om[2], sim_data.voxel.Om[3], sim_data.voxel.Om[4]);
 
@@ -329,8 +329,8 @@ static void bloch_fun(const nlop_data_t* _data, complex float* dst, const comple
 				float sa_r2_p[sim_data.seq.rep_num][sim_data.voxel.P][3];
 				float sa_m0_p[sim_data.seq.rep_num][sim_data.voxel.P][3];
 				float sa_b1_p[sim_data.seq.rep_num][1][3];
-        			float sa_k_p[sim_data.seq.rep_num][sim_data.voxel.P][3];
-        			float sa_om_p[sim_data.seq.rep_num][sim_data.voxel.P][3];
+				float sa_k_p[sim_data.seq.rep_num][sim_data.voxel.P][3];
+				float sa_om_p[sim_data.seq.rep_num][sim_data.voxel.P][3];
 
 				switch (sim_data.seq.model) {
 
@@ -366,20 +366,20 @@ static void bloch_fun(const nlop_data_t* _data, complex float* dst, const comple
 
 					float a = 1.;
 
-                                        assert(0. != CAST_UP(&sim_data.pulse.sinc)->flipangle);
+					assert(0. != CAST_UP(&sim_data.pulse.sinc)->flipangle);
 
 					// Scaling signal close to 1
-                                        //      -> Comparable to Look-Locker model (difference relaxation factor: expf(-sim_data.voxel.r2 * sim_data.seq.te))
+					//	-> Comparable to Look-Locker model (difference relaxation factor: expf(-sim_data.voxel.r2 * sim_data.seq.te))
 					//	-> divided by nom slice thickness to keep multi spin simulation signal around 1
 					// 	-> nom slice thickness [m] * 1000 -> [mm], because relative to default slice thickness of single spin of 0.001 m
 					if ((SEQ_FLASH == sim_data.seq.seq_type) || (SEQ_IRFLASH == sim_data.seq.seq_type))
 						a = 1. / sinf(CAST_UP(&sim_data.pulse.sinc)->flipangle * M_PI / 180.) / (sim_data.seq.nom_slice_thickness * 1000.);
 
-                                	else if ((SEQ_BSSFP == sim_data.seq.seq_type) || (SEQ_IRBSSFP == sim_data.seq.seq_type))
-                                                a = 1. / sinf(CAST_UP(&sim_data.pulse.sinc)->flipangle / 2. * M_PI / 180.) / (sim_data.seq.nom_slice_thickness * 1000.);
+					else if ((SEQ_BSSFP == sim_data.seq.seq_type) || (SEQ_IRBSSFP == sim_data.seq.seq_type))
+						a = 1. / sinf(CAST_UP(&sim_data.pulse.sinc)->flipangle / 2. * M_PI / 180.) / (sim_data.seq.nom_slice_thickness * 1000.);
 
 					const float (*scale2)[24] = &data->moba_data->other.scale;
-					
+
 					// complex m0scale[spa_ind] adds scaling and phase to the signal
 					// M = M_x + i M_y	and S = S_x + i S_y
 					switch (sim_data.seq.model) {
@@ -392,11 +392,11 @@ static void bloch_fun(const nlop_data_t* _data, complex float* dst, const comple
 						db1_cpu[position] = a * (*scale2)[3] * m0scale[spa_ind] * (sa_b1[j][0] + sa_b1[j][1] * 1.i);
 						sig_cpu[position] = a * m0scale[spa_ind] * (m[j][0] + m[j][1] * 1.i);
 						break;
-					
+
 					case MODEL_BMC:
 
 						if (SEQ_CEST == sim_data.seq.seq_type) {
-	
+
 							dr1_cpu[position] = (*scale2)[0] * (sa_r1_p[j][0][2]);
 							dm0_cpu[position] = (*scale2)[1] * (sa_m0_p[j][0][2]);
 							dr2_cpu[position] = (*scale2)[2] * (sa_r2_p[j][0][2]);
@@ -427,7 +427,7 @@ static void bloch_fun(const nlop_data_t* _data, complex float* dst, const comple
 							dom_cpu[position] = (*scale2)[4 + 4 * (sim_data.voxel.P - 1) + p] * sa_om_p[j][p][2];
 						} else {
 
- 							dr1_pools_cpu[position] = (*scale2)[4 + p] * (sa_r1_p[j][p + 1][0] + sa_r1_p[j][p + 1][1] * 1.i);
+							dr1_pools_cpu[position] = (*scale2)[4 + p] * (sa_r1_p[j][p + 1][0] + sa_r1_p[j][p + 1][1] * 1.i);
 							dr2_pools_cpu[position] = (*scale2)[4 + sim_data.voxel.P - 1 + p] * (sa_r2_p[j][p + 1][0] + sa_r2_p[j][p + 1][1] * 1.i);
 							dk_cpu[position] = (*scale2)[4 + 2 * (sim_data.voxel.P - 1) + p]  * (sa_k_p[j][p][0] + sa_k_p[j][p][1] * 1.i);
 							dm0_pools_cpu[position] = (*scale2)[4 + 3 * (sim_data.voxel.P - 1) + p] * (sa_m0_p[j][p + 1][0] + sa_m0_p[j][p + 1][1] * 1.i);
@@ -551,7 +551,7 @@ static void bloch_der(const nlop_data_t* _data, int /*o*/, int /*i*/, complex fl
 	md_zreal(data->N, data->map_dims, tmp_map, tmp_map);
 	md_copy_block(data->N, pos, data->in_dims, tmp, data->map_dims, tmp_map, CFL_SIZE);
 
- 	for (int p = 0; p < data->moba_data->sim.voxel.P - 1; p++) {
+	for (int p = 0; p < data->moba_data->sim.voxel.P - 1; p++) {
 
 		pos[COEFF_DIM] = 4 + p; // R1
 		md_copy_block(data->N, pos, data->map_dims, tmp_map, data->in_dims, src, CFL_SIZE);
@@ -594,7 +594,7 @@ static void bloch_adj(const nlop_data_t* _data, int /*o*/, int /*i*/, complex fl
 
 	long pos[data->N];
 	md_set_dims(data->N, pos, 0);
-	
+
 	complex float* tmp = md_alloc_sameplace(data->N, data->in_dims, CFL_SIZE, dst);
 	complex float* tmp_map = md_alloc_sameplace(data->N, data->in_dims, CFL_SIZE, dst);
 
