@@ -554,16 +554,42 @@ void rolloff_correction(float os, float width, float beta, const long dimensions
 					* scale;
 }
 
-void apply_rolloff_correction2(float os, float width, float beta, int N, const long dims[N], const long ostrs[N], complex float* dst, const long istrs[N], const complex float* src)
+struct vptr_rolloff_s {
+
+	vptr_fun_data_t super;
+	float os;
+	float width;
+	float beta;
+};
+
+DEF_TYPEID(vptr_rolloff_s);
+
+static void apply_rolloff_correction2_int(vptr_fun_data_t* _data, int N, int D, const long* _dims[N], const long* strs[N], void* args[N])
 {
+	auto data = CAST_DOWN(vptr_rolloff_s, _data);
+
+	long dims[D];
+	long ostrs[D];
+	long istrs[D];
+	md_copy_dims(D, dims, _dims[0]);
+	md_copy_strides(D, ostrs, strs[0]);
+	md_copy_strides(D, istrs, strs[1]);
+
+	complex float* dst = args[0];
+	const complex float* src = args[1];
+
+	float os = data->os;
+	float width = data->width;
+	float beta = data->beta;
+
 	// precompute kaiser bessel table
-	kb_init(beta);
+	kb_init(data->beta);
 
 	long size_bat = 1;
 	long obstr = -1;	// batch stride, we support three dims with strides and one batch dim
 	long ibstr = -1;	// batch stride, we support three dims with strides and one batch dim
 
-	for (int i = 3; i < N; i++) {
+	for (int i = 3; i < D; i++) {
 
 		if (1 == dims[i])
 			continue;
@@ -588,16 +614,16 @@ void apply_rolloff_correction2(float os, float width, float beta, int N, const l
 
 	if (cuda_ondevice(dst)) {
 
-		long dims_cuda[4] = { dims[0], dims[1], dims[2], md_calc_size(N - 3, dims + 3) };
+		long dims_cuda[4] = { dims[0], dims[1], dims[2], md_calc_size(D - 3, dims + 3) };
 		long ostrs_cuda[4] = { ostrs[0] / (long)CFL_SIZE, ostrs[1] / (long)CFL_SIZE, ostrs[2] / (long)CFL_SIZE, obstr };
 		long istrs_cuda[4] = { istrs[0] / (long)CFL_SIZE, istrs[1] / (long)CFL_SIZE, istrs[2] / (long)CFL_SIZE, ibstr };
 
-		cuda_apply_rolloff_correction2(os, width, beta, N, dims_cuda, ostrs_cuda, dst, istrs_cuda, src);
+		cuda_apply_rolloff_correction2(os, width, beta, D, dims_cuda, ostrs_cuda, dst, istrs_cuda, src);
 
 		if (use_compat_to_version("v0.8.00")) {
 
 			float scale = powf(ftkb(beta, 0) * width / 2, bitcount(md_nontriv_dims(3, dims)));
-			md_zsmul2(N, dims, ostrs, dst, ostrs, dst, scale);
+			md_zsmul2(D, dims, ostrs, dst, ostrs, dst, scale);
 		}
 
 		return;
@@ -625,8 +651,20 @@ void apply_rolloff_correction2(float os, float width, float beta, int N, const l
 	if (use_compat_to_version("v0.8.00")) {
 
 		float scale = powf(ftkb(beta, 0) * width / 2, bitcount(md_nontriv_dims(3, dims)));
-		md_zsmul2(N, dims, ostrs, dst, ostrs, dst, scale);
+		md_zsmul2(D, dims, ostrs, dst, ostrs, dst, scale);
 	}
+}
+
+void apply_rolloff_correction2(float os, float width, float beta, int N, const long dims[N], const long ostrs[N], complex float* dst, const long istrs[N], const complex float* src)
+{
+	PTR_ALLOC(struct vptr_rolloff_s, _d);
+	SET_TYPEID(vptr_rolloff_s, _d);
+	_d->super.del = NULL;
+	_d->os = os;
+	_d->width = width;
+	_d->beta = beta;
+
+	exec_vptr_zfun(apply_rolloff_correction2_int, CAST_UP(PTR_PASS(_d)), 2, N, ~7UL, MD_BIT(0), MD_BIT(1), (const long*[2]){ dims, dims }, (const long*[2]){ ostrs, istrs }, (complex float*[2]){ dst, (void*)src });
 }
 
 void apply_rolloff_correction(float os, float width, float beta, int N, const long dims[N], complex float* dst, const complex float* src)
