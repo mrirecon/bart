@@ -29,9 +29,10 @@
 #include "num/shuffle.h"
 #include "num/ops.h"
 #include "num/multiplace.h"
-#include "num/vptr.h"
 #include "num/triagmat.h"
 #include "num/compress.h"
+#include "num/vptr.h"
+#include "num/vptr_fun.h"
 
 #ifdef USE_CUDA
 #include "num/gpuops.h"
@@ -245,14 +246,74 @@ static complex float* compute_linphases(int N, long lph_dims[N + 1], unsigned lo
 	return linphase;
 }
 
-static void apply_linphases_3D(int N, const long img_dims[N], const float _shifts[3], complex float* dst, const complex float* src, bool conj, bool fmac, bool fftm, float scale)
+struct vptr_linphase_s {
+
+	INTERFACE(vptr_fun_data_t);
+
+	float shifts[3];
+	bool conj;
+	bool fmac;
+	bool fftm;
+	float scale;
+};
+
+DEF_TYPEID(vptr_linphase_s);
+
+
+static void apply_linphases_3D_int(vptr_fun_data_t* _data, int N, int D, const long* dims[N], const long* strs[N], void* args[N])
 {
+	long img_dims[D];
+	md_copy_dims(D, img_dims, dims[0]);
+
+	long img_strs[D];
+	md_copy_strides(D, img_strs, strs[0]);
+
+	int DC = MIN(md_calc_blockdim(D, dims[0], strs[0], CFL_SIZE), md_calc_blockdim(D, dims[1], strs[1], CFL_SIZE));
+
+	assert(3 <= DC);
+
+	if (D != DC) {
+
+		unsigned long flags = (MD_BIT(D) - 1) & ~(MD_BIT(DC) - 1);
+
+		long tdims[2][D];
+		md_select_dims(D, ~flags, tdims[0], dims[0]);
+		md_select_dims(D, ~flags, tdims[1], dims[1]);
+
+		const long* ndims[2] = { tdims[0], tdims[1] };
+
+		const long** ndims_p = ndims;
+		const long** nstrs_p = strs;
+
+		NESTED(void, nary_loop, (void* ptr[]))
+		{
+			apply_linphases_3D_int(_data, N, D, ndims_p, nstrs_p, ptr);
+		};
+
+		long ldims[D];
+		md_select_dims(D, flags, ldims, dims[0]);
+
+		md_nary(N, D, ldims, strs, args, nary_loop);
+
+		return;
+	}
+
+	auto data = CAST_DOWN(vptr_linphase_s, _data);
+
+	bool conj = data->conj;
+	bool fmac = data->fmac;
+	bool fftm = data->fftm;
+	float scale = data->scale;
+
+	complex float* dst = args[0];
+	const complex float* src = args[1];
+
 #ifdef USE_CUDA
 	assert(cuda_ondevice(dst) == cuda_ondevice(src));
 
 	if (cuda_ondevice(dst)) {
 
-		cuda_apply_linphases_3D(N, img_dims, _shifts, dst, src, conj, fmac, fftm, scale);
+		cuda_apply_linphases_3D(D, img_dims, data->shifts, dst, src, conj, fmac, fftm, scale);
 		return;
 	}
 #endif
@@ -261,7 +322,7 @@ static void apply_linphases_3D(int N, const long img_dims[N], const float _shift
 
 	for (int i = 0; i < 3; i++) {
 
-		shifts[i] = _shifts[i];
+		shifts[i] = data->shifts[i];
 
 		if (1 < img_dims[i])
 			shifts[i] += (img_dims[i] / 2. - img_dims[i] / 2);
@@ -286,7 +347,7 @@ static void apply_linphases_3D(int N, const long img_dims[N], const float _shift
 		shifts2[n] += 2. * M_PI * shift;
 	}
 
-	long tot = md_calc_size(N - 3, img_dims + 3);
+	long tot = md_calc_size(D - 3, img_dims + 3);
 
 #pragma omp parallel for collapse(3)
 	for (long z = 0; z < img_dims[2]; z++) {
@@ -318,6 +379,24 @@ static void apply_linphases_3D(int N, const long img_dims[N], const float _shift
 			}
 		}
 	}
+}
+
+
+static void apply_linphases_3D(int N, const long img_dims[N], const float shifts[3], complex float* dst, const complex float* src, bool conj, bool fmac, bool fftm, float scale)
+{
+	PTR_ALLOC(struct vptr_linphase_s, _d);
+	SET_TYPEID(vptr_linphase_s, _d);
+	_d->super.del = NULL;
+	_d->shifts[0] = shifts[0];
+	_d->shifts[1] = shifts[1];
+	_d->shifts[2] = shifts[2];
+	_d->conj = conj;
+	_d->fmac = fmac;
+	_d->fftm = fftm;
+	_d->scale = scale;
+
+	exec_vptr_zfun(apply_linphases_3D_int, CAST_UP(PTR_PASS(_d)), 2, N, ~7UL, MD_BIT(0), (fmac ? MD_BIT(0) : 0) | MD_BIT(1), (const long*[2]){ img_dims, img_dims },
+			(const long*[2]){ MD_STRIDES(N, img_dims, CFL_SIZE), MD_STRIDES(N, img_dims, CFL_SIZE) }, (complex float*[2]){ dst, (void*)src });
 }
 
 
@@ -534,14 +613,6 @@ complex float* compute_psf2_decomposed(int N, const long psf_dims[N + 1], unsign
 	}
 
 	struct nufft_conf_s conf = compute_psf_nufft_conf(periodic, lowmem, is_vptr(traj));
-
-	//Workaround, will be fixed with vptr_fun
-	if (is_vptr(traj)) {
-
-		conf.precomp_fftmod = true;
-		conf.precomp_linphase = true;
-		conf.precomp_roll = true;
-	}
 
 	long trj_dims2[N + 1];
 	md_copy_dims(N + 1, trj_dims2, trj_dims);
