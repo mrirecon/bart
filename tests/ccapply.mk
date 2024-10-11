@@ -88,11 +88,9 @@ tests/test-ccapply-rgc-forward: bart cc ccapply copy nrmse fft transpose traj ph
 	$(TOOLDIR)/transpose -- 10 0 phantom.ra -						|\
 	$(TOOLDIR)/ccapply -p4 -t -G -- - $(TESTS_OUT)/ccmat_G.ra -				|\
 	$(TOOLDIR)/transpose -- 0 10 - $(TESTS_OUT)/ksp-cc_G.ra					;\
-	$(TOOLDIR)/nrmse -t 1e-4 $(TESTS_OUT)/ksp-cc_G.ra $(TESTS_OUT)/ksp-cc.ra		;\
+	$(TOOLDIR)/nrmse -t 0.0001 $(TESTS_OUT)/ksp-cc_G.ra $(TESTS_OUT)/ksp-cc.ra		;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
-
-
-
+	touch $@
 
 
 
