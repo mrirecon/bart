@@ -65,8 +65,8 @@ struct network_unet_s network_unet_default_reco = {
 	.INTERFACE.loopdim = -1,
 
 	.N = 5,
-	.kdims = {[0 ... DIMS -1] = 0},
-	.dilations = {[0 ... DIMS -1] = 1},
+	.kdims = { [0 ... DIMS - 1] = 0 },
+	.dilations = { [0 ... DIMS - 1] = 1 },
 
 	.Nf = 32,
 	.Kx = 3,
@@ -123,8 +123,8 @@ struct network_unet_s network_unet_default_segm = {
 
 	.N = 5,
 
-	.kdims = {[0 ... DIMS -1] = 0},
-	.dilations = {[0 ... DIMS -1] = 1},
+	.kdims = { [0 ... DIMS -1] = 0 },
+	.dilations = { [0 ... DIMS -1] = 1 },
 
 	.Nf = 64,
 	.Kx = 3,
@@ -171,8 +171,8 @@ struct network_unet_s network_unet_default_segm = {
 
 static nn_t unet_sort_names(nn_t network, struct network_unet_s* unet)
 {
-	const char* prefixes[] = {"_init", "_before", "_down", "", "_up", "_after", "_last"};
-	const char* weights[] = {"conv", "corr", "conv_adj", "corr_adj", "bn", "bn_gamma", "bias"};
+	const char* prefixes[] = { "_init", "_before", "_down", "", "_up", "_after", "_last" };
+	const char* weights[] = { "conv", "corr", "conv_adj", "corr_adj", "bn", "bn_gamma", "bias" };
 
 	const char* names[unet->N_level][ARRAY_SIZE(prefixes)][ARRAY_SIZE(weights)];
 
@@ -463,10 +463,8 @@ static nn_t unet_sample_conv_strided_create(struct network_unet_s* unet, int N, 
 			down_dims[i] = dims[i] * unet->channel_factor;
 		}
 
-		if (MD_IS_SET(unet->group_flag, i)) {
-
+		if (MD_IS_SET(unet->group_flag, i))
 			kdims[i] = dims[i];
-		}
 	}
 
 	struct nn_conv_block_s config;
@@ -580,11 +578,9 @@ static nn_t unet_lowest_level_create(struct network_unet_s* unet, int N, const l
 	long okdims[N];
 	md_copy_dims(N, okdims, kdims);
 
-	for (int i = 0; i < N; i++) {
-
+	for (int i = 0; i < N; i++)
 		if (MD_IS_SET(unet->channel_flag, i) || MD_IS_SET(unet->group_flag, i))
 			okdims[i] = odims[i];
-	}
 
 	//if dim for group index are not equal in the last layer, we make it a channel dim
 	unsigned long ichannel_flag = unet->channel_flag;
@@ -598,14 +594,15 @@ static nn_t unet_lowest_level_create(struct network_unet_s* unet, int N, const l
 	bool init_same = true;
 	bool last_same = true;
 
-	for (int i = 0; i < N; i++){
+	for (int i = 0; i < N; i++) {
 
 		if (MD_IS_SET(igroup_flag, i) && (kdims[i] != idims[i])) {
 
 			igroup_flag = MD_CLEAR(igroup_flag, i);
 			ichannel_flag = MD_SET(ichannel_flag, i);
 			init_same = false;
-			error ("Groups in unet are currently not supported");
+
+			error("Groups in unet are currently not supported");
 		}
 
 		if (MD_IS_SET(ichannel_flag, i) && (kdims[i] != idims[i]))
@@ -615,15 +612,20 @@ static nn_t unet_lowest_level_create(struct network_unet_s* unet, int N, const l
 
 			ogroup_flag = MD_CLEAR(ogroup_flag, i);
 			ochannel_flag = MD_SET(ochannel_flag, i);
-			error ("Groups in unet are currently not supported");
+
+			error("Groups in unet are currently not supported");
 		}
 	}
 
 	last_same = last_same && md_check_equal_dims(N, kdims, okdims, ~0UL);
 	last_same = last_same && (ogroup_flag == unet->group_flag) && (ochannel_flag == unet->channel_flag);
 
-	Nl -= init_same ? 0 : 1;
-	Nl -= last_same ? 0 : 1;
+	if (init_same)
+		Nl--;
+
+	if (last_same)
+		Nl--;
+
 	assert(0 <= Nl);
 
 	auto result = nn_from_nlop_F(nlop_from_linop_F(linop_identity_create(N, idims)));
@@ -637,7 +639,7 @@ static nn_t unet_lowest_level_create(struct network_unet_s* unet, int N, const l
 		result = unet_append_conv_block(result, unet, N, kdims, unet->activation, level, false, false, prefix, status);
 	}
 
-	for (int i = 0; i < Nl; i++){
+	for (int i = 0; i < Nl; i++) {
 
 		int prefix_len = snprintf(NULL, 0, "level_%u_", level);
 		char prefix[prefix_len + 1];
@@ -659,7 +661,6 @@ static nn_t unet_lowest_level_create(struct network_unet_s* unet, int N, const l
 		result = unet_append_conv_block(result, unet, N, okdims, last_layer ? ACT_LIN : unet->activation, level, true, last_layer, prefix, status);
 	}
 
-
 	debug_printf(DP_DEBUG1, "U-Net lowest level (%u) created:\n", level);
 	nn_debug(DP_DEBUG1, result);
 
@@ -679,11 +680,9 @@ static nn_t unet_level_create(struct network_unet_s* unet, int N, const long odi
 	long okdims[N];
 	md_copy_dims(N, okdims, kdims);
 
-	for (int i = 0; i < N; i++) {
-
+	for (int i = 0; i < N; i++)
 		if (MD_IS_SET(unet->channel_flag, i) || MD_IS_SET(unet->group_flag, i))
 			okdims[i] = odims[i];
-	}
 
 	//if dim for group index are not equal in the last layer, we make it a channel dim
 	unsigned long ichannel_flag = unet->channel_flag;
@@ -697,13 +696,14 @@ static nn_t unet_level_create(struct network_unet_s* unet, int N, const long odi
 	bool init_same = true;
 	bool last_same = true;
 
-	for (int i = 0; i < N; i++){
+	for (int i = 0; i < N; i++) {
 
 		if (MD_IS_SET(igroup_flag, i) && (kdims[i] != idims[i])) {
 
 			igroup_flag = MD_CLEAR(igroup_flag, i);
 			ichannel_flag = MD_SET(ichannel_flag, i);
 			init_same = false;
+
 			error ("Groups in unet are currently not supported");
 		}
 
@@ -714,6 +714,7 @@ static nn_t unet_level_create(struct network_unet_s* unet, int N, const long odi
 
 			ogroup_flag = MD_CLEAR(ogroup_flag, i);
 			ochannel_flag = MD_SET(ochannel_flag, i);
+
 			error ("Groups in unet are currently not supported");
 		}
 	}
@@ -737,7 +738,7 @@ static nn_t unet_level_create(struct network_unet_s* unet, int N, const long odi
 		result = unet_append_conv_block(result, unet, N, kdims, unet->activation, level, false, false, prefix, status);
 	}
 
-	for (int i = 0; i < Nl_before; i++){
+	for (int i = 0; i < Nl_before; i++) {
 
 		int prefix_len = snprintf(NULL, 0, "level_%u_before_", level);
 		char prefix[prefix_len + 1];
@@ -785,8 +786,8 @@ static nn_t unet_level_create(struct network_unet_s* unet, int N, const long odi
 			activation_last_layer = ACT_SIGMOID;
 	}
 
-	//create conv blocks after lower level
-	for (int i = 0; i < Nl_after; i++){
+	// create conv blocks after lower level
+	for (int i = 0; i < Nl_after; i++) {
 
 		int prefix_len = snprintf(NULL, 0, "level_%u_after_", level);
 		char prefix[prefix_len + 1];

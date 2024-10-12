@@ -13,7 +13,6 @@
 #include "misc/mri.h"
 #include "misc/misc.h"
 
-#include "nn/nn_ops.h"
 #include "num/multind.h"
 #include "num/iovec.h"
 
@@ -29,6 +28,7 @@
 #include "nlops/someops.h"
 #include "nlops/checkpointing.h"
 
+#include "nn/nn_ops.h"
 #include "nn/activation_nn.h"
 #include "nn/activation.h"
 #include "nn/rbf.h"
@@ -37,8 +37,9 @@
 #include "nn/layers_nn.h"
 #include "nn/init.h"
 
-#include  "networks/unet.h"
-#include  "cnn.h"
+#include "networks/unet.h"
+
+#include "cnn.h"
 
 nn_t network_create(const struct network_s* config, int _NO, const long _odims[_NO], int _NI, const long _idims[_NI], enum NETWORK_STATUS status)
 {
@@ -51,7 +52,7 @@ nn_t network_create(const struct network_s* config, int _NO, const long _odims[_
 	md_copy_dims(NO, odims, _odims);
 	md_copy_dims(NI, idims, _idims);
 
-	if((-1 < config->loopdim) && (1 < odims[config->loopdim]) && network_is_diagonal(config)) {
+	if ((-1 < config->loopdim) && (1 < odims[config->loopdim]) && network_is_diagonal(config)) {
 
 		assert(_odims[config->loopdim] == _odims[config->loopdim]);
 		odims[config->loopdim] = 1;
@@ -152,7 +153,6 @@ const char* resnet_sorted_weight_names[] = {
 	"gamma",
 	"bn_0", "bn_i", "bn_n"
 };
-
 
 struct network_resnet_s network_resnet_default = {
 
@@ -332,7 +332,7 @@ static nn_t network_resnet_create(const struct network_s* _config, int NO, const
 	long ldims[N];
 	md_copy_dims(N, ldims, kdims);
 
-	for(int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 		if (MD_IS_SET(config->channel_flag, i) || MD_IS_SET(config->group_flag, i))
 			ldims[i] = odims[i];
 
@@ -576,6 +576,7 @@ bool network_is_diagonal(const struct network_s* config)
 		return true;
 	
 	auto varnet = CAST_MAYBE(network_varnet_s, config);
+
 	if (NULL != varnet)
 		return true;
 	

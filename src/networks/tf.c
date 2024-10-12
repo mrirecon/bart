@@ -7,20 +7,23 @@
 #include <stdio.h>
 
 #include "iter/italgos.h"
+
 #include "misc/debug.h"
 #include "misc/misc.h"
 #include "misc/io.h"
+
 #include "nn/nn.h"
 #include "nn/weights.h"
+#include "nn/tf_wrapper.h"
+
 #include "num/flpmath.h"
 #include "num/iovec.h"
+#include "num/multind.h"
 
 #include "nlops/nlop.h"
 
-#include "nn/tf_wrapper.h"
-
 #include "networks/cnn.h"
-#include "num/multind.h"
+
 #include "tf.h"
 
 
