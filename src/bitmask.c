@@ -49,7 +49,7 @@ int main_bitmask(int argc, char* argv[argc])
 
 		for (int i = 0; i < count; i++) {
 
-			unsigned long d = dims[i];
+			int d = dims[i];
 
 			flags = MD_SET(flags, d);
 		}

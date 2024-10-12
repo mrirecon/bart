@@ -124,6 +124,7 @@ static void grid2_decomp(struct grid_conf_s* _conf, int idx, int N, const long f
 static complex float* compute_linphases(int N, long lph_dims[N + 1], unsigned long flags, const long img_dims[N + 1])
 {
 	int T = bitcount(flags);
+	assert(0 <= T && T < 31);
 	float shifts[1 << T][T];
 
 	int s = 0;

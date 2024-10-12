@@ -151,7 +151,7 @@ extern unsigned long md_nontriv_strides(int D, const long dims[__VLA(D)]);
 #define MD_MAKE_ARRAY(T, ...) ((T[]){ __VA_ARGS__ })
 #define MD_DIMS(...) MD_MAKE_ARRAY(long, __VA_ARGS__)
 
-#define MD_BIT(x) (1ul << (x))
+#define MD_BIT(x) (1UL << (x))
 #define MD_IS_SET(x, y)	((x) & MD_BIT(y))
 #define MD_CLEAR(x, y) ((x) & ~MD_BIT(y))
 #define MD_SET(x, y)	((x) | MD_BIT(y))

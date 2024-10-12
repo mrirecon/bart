@@ -23,7 +23,7 @@ struct vec_iter_s;
 struct iter_dump_s;
 
 #ifndef MD_IS_SET
-#define MD_BIT(x) (1ul << (x))
+#define MD_BIT(x) (1UL << (x))
 #define MD_IS_SET(x, y)	((x) & MD_BIT(y))
 #define MD_CLEAR(x, y) ((x) & ~MD_BIT(y))
 #define MD_SET(x, y)	((x) | MD_BIT(y))

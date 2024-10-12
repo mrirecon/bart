@@ -65,6 +65,7 @@ static bool check_selection(const long group, const int j)
 	if (j > 30)
 		return false; // group has only 32 bits
 
+	assert(0 <= j);
 	return (labs(group) & (1 << j));
 }
 
