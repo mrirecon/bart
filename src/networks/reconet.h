@@ -51,6 +51,8 @@ struct reconet_s {
 	_Bool normalize_rss;
 
 	_Bool ksp_training;
+
+	_Bool precomp;
 };
 
 extern struct reconet_s reconet_config_opts;

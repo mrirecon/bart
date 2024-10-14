@@ -355,10 +355,6 @@ void load_network_data(struct network_data_s* nd)
 	else
 		compute_adjoint_cart(nd);
 
-	unmap_cfl(DIMS, nd->pat_dims, nd->pattern);
-	md_singleton_dims(DIMS, nd->pat_dims);
-	nd->pattern = NULL;
-
 	if (nd->create_out) {
 
 		md_copy_dims(DIMS, nd->out_dims, nd->img_dims);

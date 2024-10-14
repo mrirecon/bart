@@ -105,6 +105,8 @@ struct reconet_s reconet_config_opts = {
 	.normalize_rss = false,
 
 	.ksp_training = false,
+
+	.precomp = true,
 };
 
 static void reconet_init_default(struct reconet_s* reconet) {
@@ -266,6 +268,7 @@ static nn_t reconet_normalization(nn_t network)
 	const char* norm_names_in[] = {
 		"initialization",
 		"adjoint",
+		"kspace",
 		"reference"
 	};
 
@@ -765,14 +768,29 @@ static nn_t reconet_create(const struct reconet_s* config, int Nb, enum NETWORK_
 	sense_model_get_img_dims(config->sense_config, N, img_dims);
 	img_dims[BATCH_DIM] = Nb;
 
-	auto nn_set_data = nn_from_nlop_F(nlop_sense_model_set_data_batch_create(N, img_dims, Nb, models));
+	if (config->precomp) {
 
-	nn_set_data = nn_set_input_name_F(nn_set_data, 1, "coil");
-	nn_set_data = nn_set_input_name_F(nn_set_data, 1, "psf");
+		auto nn_set_data = nn_from_nlop_F(nlop_sense_model_set_data_batch_create(N, img_dims, Nb, models));
 
-	network = nn_chain2_swap_FF(nn_set_data, 0, NULL, network, 0, "adjoint");
-	network = nn_set_input_name_F(network, 0, "adjoint");
-	network = nn_stack_dup_by_name_F(network);
+		nn_set_data = nn_set_input_name_F(nn_set_data, 1, "coil");
+		nn_set_data = nn_set_input_name_F(nn_set_data, 1, "psf");
+
+		network = nn_chain2_swap_FF(nn_set_data, 0, NULL, network, 0, "adjoint");
+		network = nn_set_input_name_F(network, 0, "adjoint");
+		network = nn_stack_dup_by_name_F(network);
+	} else {
+
+		auto nn_adjoint = nn_from_nlop_F(nlop_sense_adjoint_create(Nb, models, false));
+
+		nn_adjoint = nn_set_input_name_F(nn_adjoint, 0, "kspace");
+		nn_adjoint = nn_set_input_name_F(nn_adjoint, 0, "coil");
+		nn_adjoint = nn_set_input_name_F(nn_adjoint, 0, "pattern");
+
+		if (1 == nn_get_nr_unnamed_in_args(nn_adjoint))
+			nn_adjoint = nn_set_input_name_F(nn_adjoint, 0, "trajectory");
+
+		network = nn_chain2_swap_FF(nn_adjoint, 0, NULL, network, 0, "adjoint");
+	}
 
 	for (int i = 0; i < Nb; i++)
 		sense_model_free(models[i]);
