@@ -269,6 +269,7 @@ int main_reconet(int argc, char* argv[argc])
 
 	data.load_mem = load_mem;
 	data.gpu = config.gpu;
+	data.precomp = config.precomp;
 	load_network_data(&data);
 	config.sense_config = data.conf;
 
@@ -297,9 +298,10 @@ int main_reconet(int argc, char* argv[argc])
 
 		use_valid_data = true;
 		valid_data.filename_basis = data.filename_basis;
+		valid_data.gpu = config.gpu;
+		valid_data.precomp = config.precomp;
 		
 		load_network_data(&valid_data);
-		valid_data.gpu = config.gpu;
 		network_data_slice_dim_to_batch_dim(&valid_data);
 		
 		if (config.sense_init && (-1. != config.init_lambda_fixed))
