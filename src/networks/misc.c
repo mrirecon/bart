@@ -29,6 +29,7 @@
 #include "nlops/nlop.h"
 #include "nlops/mri_ops.h"
 #include "nlops/const.h"
+#include "nlops/chain.h"
 
 #include "nn/data_list.h"
 
@@ -74,6 +75,7 @@ struct network_data_s network_data_empty = {
 	.create_out = false,
 	.load_mem = false,
 	.gpu = false,
+	.precomp = true,
 	.batch_flags = SLICE_FLAG | AVG_FLAG | BATCH_FLAG,
 
 	.nufft_conf = &nufft_conf_defaults,
@@ -153,8 +155,8 @@ static void load_network_data_precomputed(struct network_data_s* nd)
 
 static void compute_adjoint_cart(struct network_data_s* nd)
 {
-	assert(NULL == nd->filename_basis);
-	nd->adjoint = nd->export ? create_cfl(nd->filename_adjoint, DIMS, nd->img_dims) : anon_cfl("", DIMS, nd->img_dims);
+	md_singleton_dims(DIMS, nd->psf_dims);
+	nd->psf  = NULL;
 
 	long ksp_dims_s[DIMS];
 	long img_dims_s[DIMS];
@@ -168,6 +170,9 @@ static void compute_adjoint_cart(struct network_data_s* nd)
 
 	nd->conf = sense_model_config_cart_create(nd->N, ksp_dims_s, img_dims_s, col_dims_s, pat_dims_s);
 
+	if (!nd->precomp)
+		return;
+
 	auto model = sense_model_create(nd->conf);
 	auto sense_adjoint = nlop_sense_adjoint_create(1, &model, false);
 
@@ -176,6 +181,9 @@ static void compute_adjoint_cart(struct network_data_s* nd)
 
 	const long* odims[1] = { nd->img_dims };
 	const long* idims[3] = { nd->ksp_dims, nd->col_dims, nd->pat_dims };
+
+	assert(NULL == nd->filename_basis);
+	nd->adjoint = nd->export ? create_cfl(nd->filename_adjoint, DIMS, nd->img_dims) : anon_cfl("", DIMS, nd->img_dims);
 
 	complex float* dst[1] = { nd->adjoint };
 	const complex float* src[3] = { nd->kspace, nd->coil, nd->pattern };
@@ -213,8 +221,6 @@ static void compute_adjoint_noncart(struct network_data_s* nd)
 		md_singleton_dims(DIMS, nd->bas_dims);
 	}
 
-	nd->adjoint = (nd->export) ? create_cfl(nd->filename_adjoint, DIMS, nd->img_dims) : anon_cfl("", DIMS, nd->img_dims);
-
 	long max_dims_s[DIMS];
 	long ksp_dims_s[DIMS];
 	long img_dims_s[DIMS];
@@ -235,8 +241,20 @@ static void compute_adjoint_noncart(struct network_data_s* nd)
 
 	nd->conf = sense_model_config_noncart_create(nd->N, trj_dims_s, pat_dims_s, ksp_dims_s, cim_dims_s, img_dims_s, col_dims_s, nd->bas_dims, nd->basis, nufft_conf);
 
-	auto model = sense_model_create(nd->conf);
-	auto sense_adjoint = nlop_sense_adjoint_create(1, &model, true);
+	if (!nd->precomp)
+		return;
+
+	// Duplicate to not set false in not precomputed case
+	nufft_conf.toeplitz = nd->precomp;
+	auto grid_conf = sense_model_config_noncart_create(nd->N, trj_dims_s, pat_dims_s, ksp_dims_s, cim_dims_s, img_dims_s, col_dims_s, nd->bas_dims, nd->basis, nufft_conf);
+
+	auto model = sense_model_create(grid_conf);
+
+	sense_model_config_free(grid_conf);
+
+	auto sense_adjoint = nlop_sense_adjoint_create(1, &model, nd->precomp);
+
+	nd->adjoint = (nd->export) ? create_cfl(nd->filename_adjoint, DIMS, nd->img_dims) : anon_cfl("", DIMS, nd->img_dims);
 
 	nd->ND = DIMS + 1;
 	md_copy_dims(DIMS + 1, nd->psf_dims, nlop_generic_codomain(sense_adjoint, 1)->dims);
@@ -261,7 +279,10 @@ static void compute_adjoint_noncart(struct network_data_s* nd)
 #endif
 	nlop_debug(DP_INFO, sense_adjoint);
 
-	nlop_generic_apply_loop_sameplace(sense_adjoint, nd->batch_flags, 2, DO, odims, dst, 4, DI, idims, src, ref);
+	if (nd->precomp)
+		nlop_generic_apply_loop_sameplace(sense_adjoint, nd->batch_flags, 2, DO, odims, dst, 4, DI, idims, src, ref);
+	else
+		nlop_generic_apply_loop_sameplace(sense_adjoint, nd->batch_flags, 1, DO, odims, dst, 4, DI, idims, src, ref);
 
 	md_free(ref);
 
@@ -302,7 +323,7 @@ void load_network_data(struct network_data_s* nd)
 	md_copy_dims(DIMS, pat_dims, nd->pat_dims);
 	md_calc_strides(DIMS, pat_strs, nd->pat_dims, CFL_SIZE);
 
-	for (int i = 0; i < DIMS; i++) {
+	for (int i = 0; i < DIMS && (NULL == nd->filename_pattern); i++) {
 
 		long pat_strs2[DIMS];
 		md_copy_dims(DIMS, pat_strs2, pat_strs);
@@ -378,7 +399,7 @@ void load_network_data(struct network_data_s* nd)
 }
 
 
-void network_data_compute_init(struct network_data_s* nd, complex float lambda, int cg_iter)
+static void network_data_compute_init_precomp(struct network_data_s* nd, complex float lambda, int cg_iter)
 {
 	assert(NULL == nd->initialization);
 	nd->initialization = anon_cfl("", nd->N, nd->img_dims);
@@ -424,8 +445,17 @@ void network_data_compute_init(struct network_data_s* nd, complex float lambda, 
 	nlop_free(nlop_normal_inv);
 }
 
+void network_data_compute_init(struct network_data_s* nd, complex float lambda, int cg_iter)
+{
+	assert(nd->precomp);
+	network_data_compute_init_precomp(nd, lambda, cg_iter);
+}
+
 void network_data_normalize(struct network_data_s* nd)
 {
+	if (!nd->precomp)
+		error("Normalization of data is only supported for precomputed data!\n");
+
 	int N = nd->N;
 
 	long sstrs[N];
@@ -453,10 +483,14 @@ void free_network_data(struct network_data_s* nd)
 {
 	sense_model_config_free(nd->conf);
 
-	unmap_cfl(nd->ND, nd->psf_dims, nd->psf);
-	unmap_cfl(DIMS, nd->img_dims, nd->adjoint);
-	unmap_cfl(DIMS, nd->col_dims, nd->coil);
-	unmap_cfl(DIMS, nd->out_dims, nd->out);
+	if (NULL != nd->psf)
+		unmap_cfl(nd->ND, nd->psf_dims, nd->psf);
+	if (NULL != nd->adjoint)
+		unmap_cfl(DIMS, nd->img_dims, nd->adjoint);
+	if (NULL != nd->coil)
+		unmap_cfl(DIMS, nd->col_dims, nd->coil);
+	if (NULL != nd->out)
+		unmap_cfl(DIMS, nd->out_dims, nd->out);
 	if (NULL != nd->trajectory)
 		unmap_cfl(DIMS, nd->trj_dims, nd->trajectory);
 	if (NULL != nd->pattern)
