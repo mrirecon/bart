@@ -777,9 +777,9 @@ const struct nlop_s* nlop_sense_adjoint_create(int Nb, struct sense_model_s* mod
 		return nlops[0];
 
 	int ostack_dim[] = { BATCH_DIM, BATCH_DIM };
-	int istack_dim[] = { BATCH_DIM, BATCH_DIM, BATCH_DIM };
+	int istack_dim[] = { BATCH_DIM, BATCH_DIM, BATCH_DIM, BATCH_DIM };
 
-	return nlop_stack_multiple_F(Nb, nlops, (NULL == models[0]->nufft) ? 2 : 3, istack_dim, output_psf ? 2 : 1, ostack_dim, true , multigpu);
+	return nlop_stack_multiple_F(Nb, nlops, (NULL == models[0]->nufft) ? 3 : 4, istack_dim, output_psf ? 2 : 1, ostack_dim, true , multigpu);
 }
 
 const struct nlop_s* nlop_sense_normal_create(int Nb, struct sense_model_s* models[Nb])
