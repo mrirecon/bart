@@ -133,6 +133,7 @@ typedef float opt_fvec4_t[4];
 #define OPTL_SELECT(c, s, T, ptr, value, descr)	{ (c), (s), false, OPT_SELECT, NULL, OPT_SEL(T, TYPE_CHECK(T*, ptr), value), "", descr }
 #define OPTL_SELECT_DEF(c, s, T, ptr, value, def, descr)	{ (c), (s), false, OPT_SELECT, NULL, &(struct opt_select_s){ (TYPE_CHECK(T*, ptr)), &(T){ TYPE_CHECK(T, value) }, &(T){ (TYPE_CHECK(T, def)) }, sizeof(T) }, "", descr }
 #define OPTL_SUBOPT(c, s, argname, descr, NR, opts)	OPTL_ARG(c, s, OPT_SUBOPT, struct opt_subopt_s, OPT_SUB(NR, opts, c, s, descr), argname, descr)
+#define OPTL_SUBOPT2(c, s, argname, descr, descr1, NR, opts)	OPTL_ARG(c, s, OPT_SUBOPT, struct opt_subopt_s, OPT_SUB(NR, opts, c, s, descr), argname, descr1)
 
 
 enum ARG_TYPE {
