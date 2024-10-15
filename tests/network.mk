@@ -149,6 +149,10 @@ $(TESTS_OUT)/test_ref_ksp_noncart.ra: reshape $(TESTS_OUT)/test_ref_ksp.ra
 	set -e										;\
 	$(TOOLDIR)/reshape 7 1 32 32 $(TESTS_OUT)/test_ref_ksp.ra $@
 
+$(TESTS_OUT)/mask_loss.ra: ones
+	set -e										;\
+	$(TOOLDIR)/ones 3 1 32 32 $@
+
 tests/test-reconet-nnvn-train: nrmse $(TESTS_OUT)/pattern.ra reconet \
 	$(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_ref.ra $(TESTS_OUT)/train_sens.ra \
 	$(TESTS_OUT)/test_kspace.ra $(TESTS_OUT)/test_ref.ra $(TESTS_OUT)/test_sens.ra
@@ -235,6 +239,108 @@ tests/test-reconet-nnmodl-train-noncart-ksp: nrmse $(TESTS_OUT)/weights.ra recon
 	rm *.ra ; rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-reconet-nnmodl-train-precomp: nrmse reconet \
+	$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_ref.ra $(TESTS_OUT)/train_sens.ra \
+	$(TESTS_OUT)/test_kspace.ra $(TESTS_OUT)/test_sens.ra $(TESTS_OUT)/test_ref.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP); export OMP_NUM_THREADS=2 	;\
+	$(TOOLDIR)/reconet --network modl 		--test -t -n --train-algo e=10 -b2 --valid-data=pattern=$(TESTS_OUT)/pattern.ra,kspace=$(TESTS_OUT)/test_kspace.ra,coil=$(TESTS_OUT)/test_sens.ra,ref=$(TESTS_OUT)/test_ref.ra --pattern=$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_sens.ra weights0 $(TESTS_OUT)/train_ref.ra		;\
+	$(TOOLDIR)/reconet --network modl --no-precomp 	--test -t -n --train-algo e=10 -b2 --valid-data=pattern=$(TESTS_OUT)/pattern.ra,kspace=$(TESTS_OUT)/test_kspace.ra,coil=$(TESTS_OUT)/test_sens.ra,ref=$(TESTS_OUT)/test_ref.ra --pattern=$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_sens.ra weights1 $(TESTS_OUT)/train_ref.ra		;\
+	$(TOOLDIR)/nrmse -t 0.0012 weights1 weights0	;\
+	rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-reconet-nnmodl-train-ksp-precomp: nrmse reconet \
+	$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_ref_ksp.ra $(TESTS_OUT)/train_sens.ra \
+	$(TESTS_OUT)/test_kspace.ra $(TESTS_OUT)/test_sens.ra $(TESTS_OUT)/test_ref_ksp.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP); export OMP_NUM_THREADS=2 	;\
+	$(TOOLDIR)/reconet --network modl 		--ksp-training --test -t -n --train-algo e=10 -b2 --valid-data=pattern=$(TESTS_OUT)/pattern.ra,kspace=$(TESTS_OUT)/test_kspace.ra,coil=$(TESTS_OUT)/test_sens.ra,ref=$(TESTS_OUT)/test_ref_ksp.ra --pattern=$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_sens.ra weights0 $(TESTS_OUT)/train_ref_ksp.ra		;\
+	$(TOOLDIR)/reconet --network modl --no-precomp 	--ksp-training --test -t -n --train-algo e=10 -b2 --valid-data=pattern=$(TESTS_OUT)/pattern.ra,kspace=$(TESTS_OUT)/test_kspace.ra,coil=$(TESTS_OUT)/test_sens.ra,ref=$(TESTS_OUT)/test_ref_ksp.ra --pattern=$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_sens.ra weights1 $(TESTS_OUT)/train_ref_ksp.ra	;\
+	$(TOOLDIR)/nrmse -t 0.0003 weights1 weights0	;\
+	rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-reconet-nnmodl-train-noncart-precomp: nrmse reconet \
+	$(TESTS_OUT)/weights.ra $(TESTS_OUT)/traj_net.ra $(TESTS_OUT)/train_kspace_noncart.ra $(TESTS_OUT)/train_ref.ra $(TESTS_OUT)/train_sens.ra \
+	$(TESTS_OUT)/test_kspace_noncart.ra $(TESTS_OUT)/test_sens.ra $(TESTS_OUT)/test_ref.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP); export OMP_NUM_THREADS=2	;\
+	$(TOOLDIR)/reconet --network modl		--test -t -n --train-algo e=10 -b2 --valid-data=trajectory=$(TESTS_OUT)/traj_net.ra,pattern=$(TESTS_OUT)/weights.ra,kspace=$(TESTS_OUT)/test_kspace_noncart.ra,coil=$(TESTS_OUT)/test_sens.ra,ref=$(TESTS_OUT)/test_ref.ra --pattern=$(TESTS_OUT)/weights.ra --trajectory=$(TESTS_OUT)/traj_net.ra $(TESTS_OUT)/train_kspace_noncart.ra $(TESTS_OUT)/train_sens.ra weights0 $(TESTS_OUT)/train_ref.ra ;\
+	$(TOOLDIR)/reconet --network modl --no-precomp	--test -t -n --train-algo e=10 -b2 --valid-data=trajectory=$(TESTS_OUT)/traj_net.ra,pattern=$(TESTS_OUT)/weights.ra,kspace=$(TESTS_OUT)/test_kspace_noncart.ra,coil=$(TESTS_OUT)/test_sens.ra,ref=$(TESTS_OUT)/test_ref.ra --pattern=$(TESTS_OUT)/weights.ra --trajectory=$(TESTS_OUT)/traj_net.ra $(TESTS_OUT)/train_kspace_noncart.ra $(TESTS_OUT)/train_sens.ra weights1 $(TESTS_OUT)/train_ref.ra ;\
+	$(TOOLDIR)/nrmse -t 0.0003 weights1 weights0	;\
+	rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-reconet-nnmodl-train-noncart-ksp-precomp: nrmse reconet \
+	$(TESTS_OUT)/weights.ra $(TESTS_OUT)/traj_net.ra $(TESTS_OUT)/train_kspace_noncart.ra $(TESTS_OUT)/train_ref_ksp_noncart.ra $(TESTS_OUT)/train_sens.ra \
+	$(TESTS_OUT)/test_kspace_noncart.ra $(TESTS_OUT)/test_sens.ra $(TESTS_OUT)/test_ref_ksp_noncart.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP); export OMP_NUM_THREADS=2	;\
+	$(TOOLDIR)/reconet --network modl 		--ksp-training --test -t -n --train-algo e=10 -b2 --valid-data=trajectory=$(TESTS_OUT)/traj_net.ra,pattern=$(TESTS_OUT)/weights.ra,kspace=$(TESTS_OUT)/test_kspace_noncart.ra,coil=$(TESTS_OUT)/test_sens.ra,ref=$(TESTS_OUT)/test_ref_ksp_noncart.ra --pattern=$(TESTS_OUT)/weights.ra --trajectory=$(TESTS_OUT)/traj_net.ra $(TESTS_OUT)/train_kspace_noncart.ra $(TESTS_OUT)/train_sens.ra weights0 $(TESTS_OUT)/train_ref_ksp_noncart.ra ;\
+	$(TOOLDIR)/reconet --network modl --no-precomp	--ksp-training --test -t -n --train-algo e=10 -b2 --valid-data=trajectory=$(TESTS_OUT)/traj_net.ra,pattern=$(TESTS_OUT)/weights.ra,kspace=$(TESTS_OUT)/test_kspace_noncart.ra,coil=$(TESTS_OUT)/test_sens.ra,ref=$(TESTS_OUT)/test_ref_ksp_noncart.ra --pattern=$(TESTS_OUT)/weights.ra --trajectory=$(TESTS_OUT)/traj_net.ra $(TESTS_OUT)/train_kspace_noncart.ra $(TESTS_OUT)/train_sens.ra weights1 $(TESTS_OUT)/train_ref_ksp_noncart.ra ;\
+	$(TOOLDIR)/nrmse -t 0.0012 weights1 weights0	;\
+	rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-reconet-nnmodl-train-noncart-lowmem-precomp: nrmse reconet \
+	$(TESTS_OUT)/weights.ra $(TESTS_OUT)/traj_net.ra $(TESTS_OUT)/train_kspace_noncart.ra $(TESTS_OUT)/train_ref.ra $(TESTS_OUT)/train_sens.ra \
+	$(TESTS_OUT)/test_kspace_noncart.ra $(TESTS_OUT)/test_sens.ra $(TESTS_OUT)/test_ref.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP); export OMP_NUM_THREADS=2	;\
+	$(TOOLDIR)/reconet --network modl		--lowmem --test -t -n --train-algo e=10 -b2 --valid-data=trajectory=$(TESTS_OUT)/traj_net.ra,pattern=$(TESTS_OUT)/weights.ra,kspace=$(TESTS_OUT)/test_kspace_noncart.ra,coil=$(TESTS_OUT)/test_sens.ra,ref=$(TESTS_OUT)/test_ref.ra --pattern=$(TESTS_OUT)/weights.ra --trajectory=$(TESTS_OUT)/traj_net.ra $(TESTS_OUT)/train_kspace_noncart.ra $(TESTS_OUT)/train_sens.ra weights0 $(TESTS_OUT)/train_ref.ra ;\
+	$(TOOLDIR)/reconet --network modl --no-precomp	--lowmem --test -t -n --train-algo e=10 -b2 --valid-data=trajectory=$(TESTS_OUT)/traj_net.ra,pattern=$(TESTS_OUT)/weights.ra,kspace=$(TESTS_OUT)/test_kspace_noncart.ra,coil=$(TESTS_OUT)/test_sens.ra,ref=$(TESTS_OUT)/test_ref.ra --pattern=$(TESTS_OUT)/weights.ra --trajectory=$(TESTS_OUT)/traj_net.ra $(TESTS_OUT)/train_kspace_noncart.ra $(TESTS_OUT)/train_sens.ra weights1 $(TESTS_OUT)/train_ref.ra ;\
+	$(TOOLDIR)/nrmse -t 0.0003 weights1 weights0	;\
+	rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-reconet-nnmodl-train-noncart-lowmem-ksp-precomp: nrmse reconet \
+	$(TESTS_OUT)/weights.ra $(TESTS_OUT)/traj_net.ra $(TESTS_OUT)/train_kspace_noncart.ra $(TESTS_OUT)/train_ref_ksp_noncart.ra $(TESTS_OUT)/train_sens.ra \
+	$(TESTS_OUT)/test_kspace_noncart.ra $(TESTS_OUT)/test_sens.ra $(TESTS_OUT)/test_ref_ksp_noncart.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP); export OMP_NUM_THREADS=2	;\
+	$(TOOLDIR)/reconet --network modl 		--lowmem --ksp-training --test -t -n --train-algo e=10 -b2 --valid-data=trajectory=$(TESTS_OUT)/traj_net.ra,pattern=$(TESTS_OUT)/weights.ra,kspace=$(TESTS_OUT)/test_kspace_noncart.ra,coil=$(TESTS_OUT)/test_sens.ra,ref=$(TESTS_OUT)/test_ref_ksp_noncart.ra --pattern=$(TESTS_OUT)/weights.ra --trajectory=$(TESTS_OUT)/traj_net.ra $(TESTS_OUT)/train_kspace_noncart.ra $(TESTS_OUT)/train_sens.ra weights0 $(TESTS_OUT)/train_ref_ksp_noncart.ra ;\
+	$(TOOLDIR)/reconet --network modl --no-precomp	--lowmem --ksp-training --test -t -n --train-algo e=10 -b2 --valid-data=trajectory=$(TESTS_OUT)/traj_net.ra,pattern=$(TESTS_OUT)/weights.ra,kspace=$(TESTS_OUT)/test_kspace_noncart.ra,coil=$(TESTS_OUT)/test_sens.ra,ref=$(TESTS_OUT)/test_ref_ksp_noncart.ra --pattern=$(TESTS_OUT)/weights.ra --trajectory=$(TESTS_OUT)/traj_net.ra $(TESTS_OUT)/train_kspace_noncart.ra $(TESTS_OUT)/train_sens.ra weights1 $(TESTS_OUT)/train_ref_ksp_noncart.ra ;\
+	$(TOOLDIR)/nrmse -t 0.0008 weights1 weights0	;\
+	rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-reconet-nnmodl-train-ksp-precomp-inital-reco: nrmse reconet \
+	$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_ref_ksp.ra $(TESTS_OUT)/train_sens.ra \
+	$(TESTS_OUT)/test_kspace.ra $(TESTS_OUT)/test_sens.ra $(TESTS_OUT)/test_ref_ksp.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP); export OMP_NUM_THREADS=2 	;\
+	$(TOOLDIR)/reconet --network modl 		--ksp-training --initial-reco sense,fix-lambda=0.01,max-cg-iter=30 --test -t -n --train-algo e=10 -b2 --valid-data=pattern=$(TESTS_OUT)/pattern.ra,kspace=$(TESTS_OUT)/test_kspace.ra,coil=$(TESTS_OUT)/test_sens.ra,ref=$(TESTS_OUT)/test_ref_ksp.ra --pattern=$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_sens.ra weights0 $(TESTS_OUT)/train_ref_ksp.ra		;\
+	$(TOOLDIR)/reconet --network modl --no-precomp 	--ksp-training --initial-reco sense,fix-lambda=0.01,max-cg-iter=30 --test -t -n --train-algo e=10 -b2 --valid-data=pattern=$(TESTS_OUT)/pattern.ra,kspace=$(TESTS_OUT)/test_kspace.ra,coil=$(TESTS_OUT)/test_sens.ra,ref=$(TESTS_OUT)/test_ref_ksp.ra --pattern=$(TESTS_OUT)/pattern.ra $(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_sens.ra weights1 $(TESTS_OUT)/train_ref_ksp.ra	;\
+	$(TOOLDIR)/nrmse -t 0.0003 weights1 weights0	;\
+	rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+tests/test-reconet-nnmodl-train-noncart-lowmem-ksp-precomp-inital-reco: nrmse reconet \
+	$(TESTS_OUT)/weights.ra $(TESTS_OUT)/traj_net.ra $(TESTS_OUT)/train_kspace_noncart.ra $(TESTS_OUT)/train_ref_ksp_noncart.ra $(TESTS_OUT)/train_sens.ra \
+	$(TESTS_OUT)/test_kspace_noncart.ra $(TESTS_OUT)/test_sens.ra $(TESTS_OUT)/test_ref_ksp_noncart.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP); export OMP_NUM_THREADS=2	;\
+	$(TOOLDIR)/reconet --network modl 		--lowmem --initial-reco sense,fix-lambda=0.01,max-cg-iter=30  --ksp-training --test -t -n --train-algo e=10 -b2 --valid-data=trajectory=$(TESTS_OUT)/traj_net.ra,pattern=$(TESTS_OUT)/weights.ra,kspace=$(TESTS_OUT)/test_kspace_noncart.ra,coil=$(TESTS_OUT)/test_sens.ra,ref=$(TESTS_OUT)/test_ref_ksp_noncart.ra --pattern=$(TESTS_OUT)/weights.ra --trajectory=$(TESTS_OUT)/traj_net.ra $(TESTS_OUT)/train_kspace_noncart.ra $(TESTS_OUT)/train_sens.ra weights0 $(TESTS_OUT)/train_ref_ksp_noncart.ra ;\
+	$(TOOLDIR)/reconet --network modl --no-precomp	--lowmem --initial-reco sense,fix-lambda=0.01,max-cg-iter=30  --ksp-training --test -t -n --train-algo e=10 -b2 --valid-data=trajectory=$(TESTS_OUT)/traj_net.ra,pattern=$(TESTS_OUT)/weights.ra,kspace=$(TESTS_OUT)/test_kspace_noncart.ra,coil=$(TESTS_OUT)/test_sens.ra,ref=$(TESTS_OUT)/test_ref_ksp_noncart.ra --pattern=$(TESTS_OUT)/weights.ra --trajectory=$(TESTS_OUT)/traj_net.ra $(TESTS_OUT)/train_kspace_noncart.ra $(TESTS_OUT)/train_sens.ra weights1 $(TESTS_OUT)/train_ref_ksp_noncart.ra ;\
+	$(TOOLDIR)/nrmse -t 0.0008 weights1 weights0	;\
+	rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+tests/test-reconet-nnmodl-train-noncart-lowmem-ksp-precomp-mask: nrmse reconet \
+	$(TESTS_OUT)/weights.ra $(TESTS_OUT)/traj_net.ra $(TESTS_OUT)/train_kspace_noncart.ra $(TESTS_OUT)/train_ref_ksp_noncart.ra $(TESTS_OUT)/train_sens.ra $(TESTS_OUT)/mask_loss.ra \
+	$(TESTS_OUT)/test_kspace_noncart.ra $(TESTS_OUT)/test_sens.ra $(TESTS_OUT)/test_ref_ksp_noncart.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP); export OMP_NUM_THREADS=2	;\
+	$(TOOLDIR)/reconet --network modl 		--lowmem --ksp-training --mask $(TESTS_OUT)/mask_loss.ra --test -t -n --train-algo e=10 -b2 --valid-data=trajectory=$(TESTS_OUT)/traj_net.ra,pattern=$(TESTS_OUT)/weights.ra,kspace=$(TESTS_OUT)/test_kspace_noncart.ra,coil=$(TESTS_OUT)/test_sens.ra,mask=$(TESTS_OUT)/mask_loss.ra,ref=$(TESTS_OUT)/test_ref_ksp_noncart.ra --pattern=$(TESTS_OUT)/weights.ra --trajectory=$(TESTS_OUT)/traj_net.ra $(TESTS_OUT)/train_kspace_noncart.ra $(TESTS_OUT)/train_sens.ra weights0 $(TESTS_OUT)/train_ref_ksp_noncart.ra ;\
+	$(TOOLDIR)/reconet --network modl --no-precomp	--lowmem --ksp-training --mask $(TESTS_OUT)/mask_loss.ra --test -t -n --train-algo e=10 -b2 --valid-data=trajectory=$(TESTS_OUT)/traj_net.ra,pattern=$(TESTS_OUT)/weights.ra,kspace=$(TESTS_OUT)/test_kspace_noncart.ra,coil=$(TESTS_OUT)/test_sens.ra,mask=$(TESTS_OUT)/mask_loss.ra,ref=$(TESTS_OUT)/test_ref_ksp_noncart.ra --pattern=$(TESTS_OUT)/weights.ra --trajectory=$(TESTS_OUT)/traj_net.ra $(TESTS_OUT)/train_kspace_noncart.ra $(TESTS_OUT)/train_sens.ra weights1 $(TESTS_OUT)/train_ref_ksp_noncart.ra ;\
+	$(TOOLDIR)/nrmse -t 0.0008 weights1 weights0	;\
+	rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-reconet-nnmodl-train-noncart-lowmem-ksp-precomp-inital-reco-gpu: nrmse reconet \
+	$(TESTS_OUT)/weights.ra $(TESTS_OUT)/traj_net.ra $(TESTS_OUT)/train_kspace_noncart.ra $(TESTS_OUT)/train_ref_ksp_noncart.ra $(TESTS_OUT)/train_sens.ra \
+	$(TESTS_OUT)/test_kspace_noncart.ra $(TESTS_OUT)/test_sens.ra $(TESTS_OUT)/test_ref_ksp_noncart.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP); export OMP_NUM_THREADS=2	;\
+	$(TOOLDIR)/reconet --network modl 		-g --lowmem --initial-reco sense,fix-lambda=0.01,max-cg-iter=30  --ksp-training --test -t -n --train-algo e=10 -b2 --valid-data=trajectory=$(TESTS_OUT)/traj_net.ra,pattern=$(TESTS_OUT)/weights.ra,kspace=$(TESTS_OUT)/test_kspace_noncart.ra,coil=$(TESTS_OUT)/test_sens.ra,ref=$(TESTS_OUT)/test_ref_ksp_noncart.ra --pattern=$(TESTS_OUT)/weights.ra --trajectory=$(TESTS_OUT)/traj_net.ra $(TESTS_OUT)/train_kspace_noncart.ra $(TESTS_OUT)/train_sens.ra weights0 $(TESTS_OUT)/train_ref_ksp_noncart.ra ;\
+	$(TOOLDIR)/reconet --network modl --no-precomp	-g --lowmem --initial-reco sense,fix-lambda=0.01,max-cg-iter=30  --ksp-training --test -t -n --train-algo e=10 -b2 --valid-data=trajectory=$(TESTS_OUT)/traj_net.ra,pattern=$(TESTS_OUT)/weights.ra,kspace=$(TESTS_OUT)/test_kspace_noncart.ra,coil=$(TESTS_OUT)/test_sens.ra,ref=$(TESTS_OUT)/test_ref_ksp_noncart.ra --pattern=$(TESTS_OUT)/weights.ra --trajectory=$(TESTS_OUT)/traj_net.ra $(TESTS_OUT)/train_kspace_noncart.ra $(TESTS_OUT)/train_sens.ra weights1 $(TESTS_OUT)/train_ref_ksp_noncart.ra ;\
+	$(TOOLDIR)/nrmse -t 0.0008 weights1 weights0	;\
+	rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 tests/test-reconet-nnmodl-train-noncart-init: nrmse $(TESTS_OUT)/weights.ra reconet			\
 	$(TESTS_OUT)/train_kspace_noncart.ra $(TESTS_OUT)/train_ref.ra $(TESTS_OUT)/train_sens.ra	\
 	$(TESTS_OUT)/test_kspace_noncart.ra $(TESTS_OUT)/test_ref.ra $(TESTS_OUT)/test_sens.ra		\
@@ -291,6 +397,25 @@ tests/test-reconet-nnmodl-train-basis: nrmse $(TESTS_OUT)/weights.ra reconet rep
 		echo   "trained error: `$(TOOLDIR)/nrmse out1.ra tst_ref.ra`"				;\
 		false											;\
 	fi												;\
+	rm *.ra ; rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-reconet-nnmodl-train-basis-precomp-gpu: nrmse $(TESTS_OUT)/weights.ra reconet repmat ones scale resize	\
+	$(TESTS_OUT)/train_kspace_noncart.ra $(TESTS_OUT)/train_ref.ra $(TESTS_OUT)/train_sens.ra	\
+	$(TESTS_OUT)/test_kspace_noncart.ra $(TESTS_OUT)/test_ref.ra $(TESTS_OUT)/test_sens.ra		\
+	$(TESTS_OUT)/traj_net.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP); export OMP_NUM_THREADS=2				;\
+	$(TOOLDIR)/repmat 6 2 $(TESTS_OUT)/train_ref.ra trn_ref.ra					;\
+	$(TOOLDIR)/repmat 6 2 $(TESTS_OUT)/test_ref.ra tst_ref.ra					;\
+	$(TOOLDIR)/resize 5 2 $(TESTS_OUT)/train_kspace_noncart.ra trn_ksp.ra				;\
+	$(TOOLDIR)/resize 5 2 $(TESTS_OUT)/test_kspace_noncart.ra tst_ksp.ra				;\
+	$(TOOLDIR)/resize 5 2 $(TESTS_OUT)/weights.ra pat.ra						;\
+	$(TOOLDIR)/ones 7 1 1 1 1 1 1 2 bas1								;\
+	$(TOOLDIR)/scale 0.70710678118 bas1 bas2							;\
+	$(TOOLDIR)/resize 5 2 bas2 bas									;\
+	$(TOOLDIR)/reconet --network modl -Bbas --normalize --initial-reco sense,fix-lambda=0.01,max-cg-iter=30 --data-consistency max-cg-iter=30 -g --test -t -n --train-algo e=10 -b2 --pattern=pat.ra --trajectory=$(TESTS_OUT)/traj_net.ra trn_ksp.ra $(TESTS_OUT)/train_sens.ra weights0 trn_ref.ra		;\
+	$(TOOLDIR)/reconet --network modl -Bbas --no-precomp --normalize --initial-reco sense,fix-lambda=0.01,max-cg-iter=30 --data-consistency max-cg-iter=30	-g --test -t -n --train-algo e=10 -b2 --pattern=pat.ra --trajectory=$(TESTS_OUT)/traj_net.ra trn_ksp.ra $(TESTS_OUT)/train_sens.ra weights1 trn_ref.ra		;\
+	$(TOOLDIR)/nrmse -t 0.0008 weights1 weights0	;\
 	rm *.ra ; rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
@@ -496,6 +621,11 @@ TESTS += tests/test-reconet-nnmodl-train
 TESTS += tests/test-reconet-nnmodl-train-ksp
 TESTS += tests/test-reconet-nnmodl-train-noncart
 TESTS += tests/test-reconet-nnmodl-train-noncart-ksp
+TESTS += tests/test-reconet-nnmodl-train-precomp tests/test-reconet-nnmodl-train-ksp-precomp
+TESTS += tests/test-reconet-nnmodl-train-noncart-precomp tests/test-reconet-nnmodl-train-noncart-ksp-precomp
+TESTS += tests/test-reconet-nnmodl-train-noncart-lowmem-precomp tests/test-reconet-nnmodl-train-noncart-lowmem-ksp-precomp
+TESTS += tests/test-reconet-nnmodl-train-ksp-precomp-inital-reco tests/test-reconet-nnmodl-train-noncart-lowmem-ksp-precomp-inital-reco
+TESTS += tests/test-reconet-nnmodl-train-noncart-lowmem-ksp-precomp-mask
 TESTS += tests/test-reconet-nnmodl-train-noncart-init
 TESTS += tests/test-reconet-nnvn-train-noncart-init
 TESTS += tests/test-reconet-nnmodl-train-basis
@@ -506,6 +636,8 @@ endif
 
 TESTS_GPU += tests/test-reconet-nnvn-train-gpu
 TESTS_GPU += tests/test-reconet-nnmodl-train-gpu
+TESTS_GPU += tests/test-reconet-nnmodl-train-noncart-lowmem-ksp-precomp-inital-reco-gpu
+TESTS_GPU += tests/test-reconet-nnmodl-train-basis-precomp-gpu
 
 ifeq ($(TENSORFLOW),1)
 TESTS += tests/test-reconet-nnmodl-tensorflow1
