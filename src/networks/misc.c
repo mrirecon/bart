@@ -239,11 +239,17 @@ static void compute_adjoint_noncart(struct network_data_s* nd)
 
 	struct nufft_conf_s nufft_conf = *(nd->nufft_conf);
 	nufft_conf.cache_psf_grdding = !use_compat_to_version("v0.8.00");
-	nufft_conf.toeplitz = nd->precomp;
 
 	nd->conf = sense_model_config_noncart_create(nd->N, trj_dims_s, pat_dims_s, ksp_dims_s, cim_dims_s, img_dims_s, col_dims_s, nd->bas_dims, nd->basis, nufft_conf);
 
-	auto model = sense_model_create(nd->conf);
+	// Duplicate to not set false in not precomputed case
+	nufft_conf.toeplitz = nd->precomp;
+	auto grid_conf = sense_model_config_noncart_create(nd->N, trj_dims_s, pat_dims_s, ksp_dims_s, cim_dims_s, img_dims_s, col_dims_s, nd->bas_dims, nd->basis, nufft_conf);
+
+	auto model = sense_model_create(grid_conf);
+
+	sense_model_config_free(grid_conf);
+
 	auto sense_adjoint = nlop_sense_adjoint_create(1, &model, nd->precomp);
 
 	if (nd->precomp) {

@@ -359,9 +359,12 @@ struct sense_model_s* sense_model_create(const struct config_nlop_mri_s* config)
 
 		result->sense = linop_chain(result->coils, result->nufft);
 
-		long psf_dims[config->ND];
-		nufft_get_psf_dims(result->nufft, config->ND, psf_dims);
-		assert(md_check_equal_dims(config->ND, psf_dims, config->psf_dims, ~0ul));
+		if (config->nufft_conf.toeplitz) {
+
+			long psf_dims[config->ND];
+			nufft_get_psf_dims(result->nufft, config->ND, psf_dims);
+			assert(md_check_equal_dims(config->ND, psf_dims, config->psf_dims, ~0ul));
+		}
 
 	} else {
 
