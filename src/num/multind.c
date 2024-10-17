@@ -107,15 +107,10 @@ void md_nary(int C, int D, const long dim[D], const long* str[C], void* ptr[C], 
 	md_set_dims(D, pos, 0);
 
 	do {
-		bool mpi_acces = true;
-
-		for (int i = 0; i < C; i++) {
-
+		for (int i = 0; i < C; i++)
 			nptr[i] = ptr[i] + md_calc_offset(D, str[i], pos);
-			mpi_acces = mpi_acces && mpi_accessible(nptr[i]);
-		}
 
-		if (!mpi_acces)
+		if (!mpi_accessible_mult(C, (const void**)nptr))
 			continue;
 
 		for (int i = 0; i < C; i++)
@@ -182,6 +177,56 @@ void md_parallel_nary(int C, int D, const long dim[D], unsigned long flags, cons
 #ifdef _OPENMP
 	omp_set_num_threads(old_threads);
 #endif
+}
+
+
+void md_nary_resolve(int C, int D, const long dim[D], const long* str[C], void* ptr[C], md_nary_resolve_fun_t fun)
+{
+	bool vptr = false;
+	for (int i = 0; i < C; i++)
+		vptr = vptr || is_vptr(ptr[i]);
+
+	if (!vptr) {
+
+		NESTED_CALL(fun, (C, ptr, D, dim, str));
+		return;
+	}
+
+	unsigned long loop_flags = 0;
+
+	for (int i = 0; i < C; i++)
+		loop_flags |= vptr_block_loop_flags(D, dim, str[i], ptr[i], 1, true);
+
+	long bdim[D?:1];
+	md_select_dims(D, ~loop_flags, bdim, dim);
+
+	long tstr[C][D?:1];
+	const long* nstr[C];
+
+	for (int i = 0; i < C; i++) {
+
+		vptr_contiguous_strs(D, ptr[i], loop_flags, tstr[i], str[i]);
+		nstr[i] = tstr[i];
+	}
+
+	long pos[D?:1];
+	md_set_dims(D, pos, 0);
+
+	do {
+		void* nptr[C];
+
+		for (int i = 0; i < C; i++)
+			nptr[i] = ptr[i] + md_calc_offset(D, str[i], pos);
+
+		if (!mpi_accessible_mult(C, (const void**)nptr))
+			continue;
+
+		for (int i = 0; i < C; i++)
+			nptr[i] = vptr_resolve(nptr[i]);
+
+		NESTED_CALL(fun, (C, nptr, D, bdim, nstr));
+
+	} while (md_next(D, dim, loop_flags, pos));
 }
 
 

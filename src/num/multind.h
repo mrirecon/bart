@@ -25,6 +25,7 @@
 #define MD_SET(x, y)	((x) | MD_BIT(y))
 
 typedef void CLOSURE_TYPE(md_nary_fun_t)(void* ptr[]);
+typedef void CLOSURE_TYPE(md_nary_resolve_fun_t)(int C, void* ptr[__VLA(C)], int N, const long dim[__VLA(N)], const long* str[__VLA(C)]);
 typedef void CLOSURE_TYPE(md_trafo_fun_t)(long N, long str, void* ptr);
 typedef void CLOSURE_TYPE(md_loop_fun_t)(const long* pos);
 typedef void CLOSURE_TYPE(md_loop_fun2_t)(unsigned long flags, long* pos);
@@ -36,6 +37,7 @@ extern long md_ravel_index_permuted(int D, const long pos[__VLA(D)], unsigned lo
 extern long md_reravel_index(int D, unsigned long rflags, unsigned long uflags, const long dims[__VLA(D)], long index);
 
 extern void md_nary(int C, int D, const long dim[__VLA(D)], const long* str[__VLA(C)], void* ptr[__VLA(C)], md_nary_fun_t fun);
+extern void md_nary_resolve(int C, int D, const long dim[__VLA(D)], const long* str[__VLA(C)], void* ptr[__VLA(C)], md_nary_resolve_fun_t fun);
 
 extern void md_parallel_nary(int C, int D, const long dim[__VLA(D)], unsigned long flags, const long* str[__VLA(C)], void* ptr[__VLA(C)], md_nary_fun_t fun);
 extern void md_parallel_loop(int D, const long dim[__VLA(D)], unsigned long flags, md_loop_fun_t fun);

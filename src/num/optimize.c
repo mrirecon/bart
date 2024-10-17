@@ -623,35 +623,25 @@ void optimized_nop(int N, unsigned long io, int D, const long dim[D], const long
 
 	vptr_assert_sameplace(N, (void**)nptr);
 
-	bool mpi = false;
+	bool vptr = false;
 
 	for (int i = 0; i < N; ++i)
-		mpi = mpi || is_mpi(nptr[i]);
+		vptr = vptr || is_vptr(nptr[i]);
 
-	if (mpi) {
+	if (vptr) {
 
-		unsigned long mpi_flags = 0UL;
+		size_t* sizesp = sizes; // because of clang
 
-		for (int i = 0; i < N; ++i)
-			mpi_flags |= vptr_block_loop_flags(D, dim, (long*)nstr[i], nptr[i], sizes[i], false);
-
-		long ldims[D];
-		long bdims[D];
-
-		md_select_dims(D, ~mpi_flags, bdims, dim);
-		md_select_dims(D, mpi_flags, ldims, dim);
-
-		const long* bdimsp = bdims;
-		size_t* sizesp = sizes;
-		void* nstrp = nstr;
-
-		NESTED(void, nary_mpi_optimize, (void* ptr[]))
+		NESTED(void, nary_loop, (int N, void* ptr[], int D, const long dims[], const long* strs[]))
 		{
-			optimized_nop(N, io, D, bdimsp, nstrp, ptr, sizesp, too);
+			const long (*nstr[N])[D];
+			for (int i = 0; i < N; i++)
+				nstr[i] = (typeof(const long[D])*)strs[i];
+
+			optimized_nop(N, io, D, dims, nstr, ptr, sizesp, too);
 		};
 
-		md_nary(N, D, ldims, (void*)nstr, (void*)nptr, nary_mpi_optimize);
-
+		md_nary_resolve(N, D, dim, (const long **)nstr, (void**)nptr, nary_loop);
 		return;
 	}
 
