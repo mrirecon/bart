@@ -30,6 +30,7 @@
 #include "misc/cppmap.h"
 #include "misc/stream.h"
 
+#include "num/init.h"
 #include "num/mpi_ops.h"
 #include "num/multind.h"
 #include "num/rand.h"
@@ -168,6 +169,7 @@ static void parse_bart_opts(int* argcp, char*** argvp, int order[DIMS], stream_t
 		OPT_SET('S', &mpi_shared_files, "Maps files from each rank (requires shared files system)"),
 		OPTL_SET(0, "version", &version, "print version"),
 		OPTL_ULONG(0, "random-dims", &cfl_loop_rand_flags, "flags", "vary random numbers along selected dimensions (default: all)"),
+		OPTL_ULONG(0, "md-split-mpi-dims", &bart_mpi_split_flags, "flags", "split md-arrays along selected dimensions for MPI parallelization"),
 		OPT_SET('d', &attach, "(Wait for debugger)"),
 	};
 
@@ -184,6 +186,19 @@ static void parse_bart_opts(int* argcp, char*** argvp, int order[DIMS], stream_t
 		fprintf(stderr, "PID: %d", getpid());
 		raise(SIGSTOP);
 	}
+
+	if (0 != bart_mpi_split_flags) {
+
+#ifndef USE_MPI
+		error("Compiled without MPI support\n");
+#endif
+
+		if ((0 != flags) || (0 != pflags))
+			error("--md-split-mpi-dims is incompatible with --loop and --parallel-loop options!\n");
+
+		use_mpi = true;
+	}
+
 
 #ifndef _OPENMP
 	if (omp_threads > 1) {
@@ -216,8 +231,13 @@ static void parse_bart_opts(int* argcp, char*** argvp, int order[DIMS], stream_t
 			use_mpi = true;
 	}
 
-	if (use_mpi)
+	if (use_mpi) {
+
 		init_mpi(argcp, argvp);
+
+		if (1 == mpi_get_num_procs())
+			error("MPI requested but only one rank available!\n");
+	}
 
 	if (NULL != ref_file) {
 
