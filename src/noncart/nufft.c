@@ -56,7 +56,7 @@ struct nufft_conf_s nufft_conf_defaults = {
 	.cfft = 0u,
 	.decomp = true,
 	.nopsf = false,
-	.cache_psf_grdding = false,
+	.cache_psf_gridding = false,
 	.precomp_linphase = true,
 	.precomp_fftmod = true,
 	.precomp_roll = true,
@@ -872,8 +872,8 @@ static void nufft_set_traj(struct nufft_data* data, int N,
 			const complex float* psf = compute_psf2(N, data->psf_dims, data->flags, data->trj_dims, traj,
 						data->bas_dims, multiplace_read(data->basis, traj), data->wgh_dims, multiplace_read(data->weights, traj),
 						true /*conf.periodic*/, data->conf.lowmem,
-						data->conf.cache_psf_grdding ? &data->lop_nufft_psf : NULL,
-						data->conf.cache_psf_grdding ? &data->lop_fftuc_psf : NULL);
+						data->conf.cache_psf_gridding ? &data->lop_nufft_psf : NULL,
+						data->conf.cache_psf_gridding ? &data->lop_fftuc_psf : NULL);
 
 			multiplace_free(data->psf);
 

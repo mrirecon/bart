@@ -21,7 +21,7 @@ struct nufft_conf_s {
 	unsigned long cfft;
 	_Bool decomp;
 	_Bool nopsf;
-	_Bool cache_psf_grdding;
+	_Bool cache_psf_gridding;
 
 	_Bool precomp_linphase;
 	_Bool precomp_fftmod;

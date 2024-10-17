@@ -778,6 +778,7 @@ static nn_t reconet_create(const struct reconet_s* config, int Nb, enum NETWORK_
 		network = nn_chain2_swap_FF(nn_set_data, 0, NULL, network, 0, "adjoint");
 		network = nn_set_input_name_F(network, 0, "adjoint");
 		network = nn_stack_dup_by_name_F(network);
+
 	} else {
 
 		auto nn_adjoint = nn_from_nlop_F(nlop_sense_adjoint_create(Nb, models, false));

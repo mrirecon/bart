@@ -723,7 +723,7 @@ static const struct nlop_s* nlop_sense_model_set_data_noncart_create(int N, cons
 
 	nlop_der_fun_t der[4][output_psf ? 2 : 1];
 
-	for(int i = 0; i< 4; i++)
+	for(int i = 0; i < 4; i++)
 		for (int o = 0; o < (output_psf ? 2 : 1); o++)
 			der[i][o] = NULL;
 
