@@ -302,7 +302,7 @@ void mpi_copy(void* dst, long size, const void* src, int sender_rank, int recv_r
 
 			print_cuda_aware_warning();
 
-			src2 = xmalloc(size);
+			src2 = xmalloc((size_t)size);
 			cuda_memcpy(size, src2, src);
 		}
 
@@ -327,7 +327,7 @@ void mpi_copy(void* dst, long size, const void* src, int sender_rank, int recv_r
 		if (cuda_ondevice(dst) && !cuda_aware_mpi) {
 
 			print_cuda_aware_warning();
-			dst2 = xmalloc(size);
+			dst2 = xmalloc((size_t)size);
 		}
 #endif
 
@@ -448,9 +448,9 @@ static void mpi_reduce_land_gpu(long N, bool vec[N])
 {
 	print_cuda_aware_warning();
 
-	long size = sizeof(bool[N]);
+	long size = (long)sizeof(bool[N]);
 
-	bool* tmp = xmalloc(size);
+	bool* tmp = xmalloc((size_t)size);
 	cuda_memcpy(size, tmp, vec);
 
 	mpi_reduce_land(N, tmp);
@@ -494,9 +494,9 @@ static void mpi_allreduce_sum_gpu(int N, float vec[N], MPI_Comm comm)
 
 		print_cuda_aware_warning();
 
-		long size = sizeof(float[N]);
+		long size = (long)sizeof(float[N]);
 
-		float* tmp = xmalloc(size);
+		float* tmp = xmalloc((size_t)size);
 		cuda_memcpy(size, tmp, vec);
 
 		MPI_Allreduce(MPI_IN_PLACE, tmp, N, MPI_FLOAT, MPI_SUM, comm);
@@ -609,9 +609,9 @@ static void mpi_allreduce_sumD_gpu(int N, double vec[N], MPI_Comm comm)
 
 		print_cuda_aware_warning();
 
-		long size = sizeof(double[N]);
+		long size = (long)sizeof(double[N]);
 
-		float* tmp = xmalloc(size);
+		float* tmp = xmalloc((size_t)size);
 		cuda_memcpy(size, tmp, vec);
 
 		MPI_Allreduce(MPI_IN_PLACE, tmp, N, MPI_DOUBLE, MPI_SUM, comm);
