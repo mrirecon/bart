@@ -875,11 +875,18 @@ static nn_t reconet_train_create(const struct reconet_s* config, int Nb, bool va
 		else
 			fft_op = nn_from_nlop_F(nlop_mri_fft_create(Nb, config->sense_config));
 
-		if (sense_model_get_noncart(config->sense_config))
+		if (sense_model_get_noncart(config->sense_config)) {
+
 			fft_op = nn_set_input_name_F(fft_op, 1, "trajectory");
+
+			if (nn_is_name_in_in_args(train_op, "trajectory"))
+				fft_op = nn_mark_dup_F(fft_op, "trajectory");
+		}
 
 		train_op = nn_chain2_FF(train_op, 0, "reconstruction", fft_op, 0, NULL);
 		train_op = nn_set_output_name_F(train_op, 0, "reconstruction");
+
+		train_op = nn_stack_dup_by_name_F(train_op);
 
 		sense_model_get_ksp_dims(config->sense_config, N, out_dims);
 		out_dims[BATCH_DIM] = Nb;

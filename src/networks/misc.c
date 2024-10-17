@@ -436,7 +436,8 @@ static void network_data_compute_init_precomp(struct network_data_s* nd, complex
 
 	nlop_generic_apply_loop_sameplace(nlop_normal_inv, loop_flags, 1, DO, odims, dst, 3, DI, idims, src, ref);
 
-	md_free(ref);
+	if (NULL != ref)
+		md_free(ref);
 
 	nlop_free(nlop_normal_inv);
 }
@@ -467,7 +468,7 @@ static void network_data_compute_init_noprecomp(struct network_data_s* nd, compl
 	const long* idims[4] = { nd->ksp_dims, nd->col_dims, nd->pat_dims, nd->trj_dims };
 
 	complex float* dst[1] = { nd->initialization };
-	const complex float* src[4] = { nd->adjoint, nd->coil, nd->pattern, nd->trajectory };
+	const complex float* src[4] = { nd->kspace, nd->coil, nd->pattern, nd->trajectory };
 
 	complex float* ref = NULL;
 
@@ -478,7 +479,9 @@ static void network_data_compute_init_noprecomp(struct network_data_s* nd, compl
 
 	nlop_generic_apply_loop_sameplace(nlop_normal_inv, loop_flags, 1, DO, odims, dst, (NULL != nd->trajectory) ? 4 : 3, DI, idims, src, ref);
 
-	md_free(ref);
+	if (NULL != ref)
+		md_free(ref);
+
 	nlop_free(nlop_normal_inv);
 	sense_model_free(model);
 }
