@@ -44,6 +44,10 @@ static void getBlockSize3_internal(int block[3], const long dims[3], int threads
 		block[2] *= 2;
 		threads /= 2;
 	}
+
+	block[0] = MIN(block[0], 1024);
+	block[1] = MIN(block[1], 1024);
+	block[2] = MIN(block[2], 64);
 }
 
 dim3 getBlockSize3(const long dims[3], int threads)
