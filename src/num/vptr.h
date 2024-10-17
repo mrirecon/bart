@@ -79,7 +79,6 @@ extern struct vptr_hint_s* hint_delayed_create(unsigned long delayed_flags);
 extern unsigned long vptr_delayed_loop_flags(const void* ptr);
 
 extern unsigned long mpi_parallel_flags(int N, const long dims[__VLA(N)], const long strs[__VLA(N)], size_t size, const void* ptr);
-extern int mpi_reduce_color(unsigned long reduce_flags, const void* ptr);
 
 extern struct vptr_hint_s* vptr_hint_create(unsigned long mpi_flags, int N, const long dims[__VLA(N)], unsigned long delayed_flags);
 extern _Bool vptr_hint_compat(const struct vptr_hint_s* hint1, const struct vptr_hint_s* hint2);

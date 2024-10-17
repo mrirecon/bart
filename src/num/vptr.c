@@ -1711,40 +1711,6 @@ bool mpi_accessible(const void* ptr)
 }
 
 
-int mpi_reduce_color(unsigned long reduce_flags, const void* ptr)
-{
-	// FIXME: duplicates a lot of code of mpi_accessible_from
-	//
-	struct mem_s* mem = search(ptr, false);
-
-	assert(NULL != mem);
-
-	struct vptr_hint_s* h = mem->hint;
-	int N = MAX(mem->N, h->N);
-
-	long pos[N];
-
-	md_set_dims(N, pos, 0);
-
-	//position in allocation
-	md_unravel_index(mem->N, pos, ~0UL, mem->dims, (ptr - mem->ptr) / (long)mem->size);
-
-
-	unsigned long loop_flags = ~md_nontriv_dims(mem->N, mem->dims);
-
-	loop_flags &= MD_BIT(mem->N) - 1;
-	loop_flags &= h->mpi_flags;
-
-	do {
-		if (hint_get_rank(h->N, pos, h) == mpi_get_rank())
-			return 1 + (int)md_ravel_index(h->N, pos, ~reduce_flags, h->dims);
-
-	} while (md_next(h->N, h->dims, loop_flags, pos));
-
-	return 0;
-}
-
-
 static bool mpi_accessible_from_mult(int N, const struct mem_s* mem[N], const void* ptr[N], int rank)
 {
 
