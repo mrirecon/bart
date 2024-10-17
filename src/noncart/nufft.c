@@ -1254,7 +1254,7 @@ static void nufft_apply_adjoint(const linop_data_t* _data, complex float* dst, c
 
 	} else {
 
-		complex float* gridX = md_alloc_sameplace(ND, data->cml_dims, CFL_SIZE, dst);
+		complex float* gridX = md_alloc_sameplace(ND, data->cm2_dims, CFL_SIZE, dst);
 
 		md_clear(data->N, data->cm2_dims, gridX, CFL_SIZE);
 
