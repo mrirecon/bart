@@ -353,9 +353,9 @@ void cuda_memcache_clear(void)
 }
 
 
-#if CUDART_VERSION >= 10000
-#define CUDA_GET_CUDA_DEVICE_NUM
-#endif
+//#if CUDART_VERSION >= 10000
+//#define CUDA_GET_CUDA_DEVICE_NUM
+//#endif
 
 static bool cuda_ondevice_int(const void* ptr)
 {
@@ -363,6 +363,7 @@ static bool cuda_ondevice_int(const void* ptr)
 // (We still don use this because it is slow. Why? Nivida, why?)
 // Starting with CUDA 10 it has similar speed to the memcache but is 
 // faster if multiple threads access the memcache
+// with our trees it's faster again...
 	if (NULL == ptr)
 		return false;
 
