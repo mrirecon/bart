@@ -270,7 +270,7 @@ void klaplace_scaled(int N, const long dims[N], unsigned long flags, const float
 {
 	unsigned long flags2 = flags;
 
-	complex float* tmp = md_alloc(N, dims, CFL_SIZE);
+	complex float* tmp = md_alloc_sameplace(N, dims, CFL_SIZE, out);
 
 	md_clear(N, dims, out, CFL_SIZE);
 
