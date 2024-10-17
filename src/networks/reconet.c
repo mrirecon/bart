@@ -666,7 +666,7 @@ static nn_t reconet_create(const struct reconet_s* config, int Nb, enum NETWORK_
 	memset(models, 0, sizeof models);	// -fanalyzer uninitialized
 
 	for (int i = 0; i < Nb; i++)
-			models[i] = sense_model_normal_create(config->sense_config);
+			models[i] = sense_model_create(config->sense_config);
 
 	int N = sense_model_get_N(config->sense_config);
 
