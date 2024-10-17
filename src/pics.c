@@ -336,7 +336,7 @@ int main_pics(int argc, char* argv[argc])
 		OPTL_OUTFILE(0, "psf_export", &psf_ofile, "file", "Export PSF to file"),
 		OPTL_INFILE(0, "psf_import", &psf_ifile, "file", "Import PSF from file"),
 		OPTL_STRING(0, "wavelet", &wtype_str, "name", "wavelet type (haar,dau2,cdf44)"),
-		OPTL_ULONG(0, "mpi", &mpi_flags, "flags", "distribute over this dimensions with use of MPI"),
+		OPTL_ULONG(0, "mpi", &mpi_flags, "flags", "(distribute over this dimensions with use of MPI)"),
 		OPTL_FLVEC3(0, "fista_pqr", &fista.params, "p:q:r", "parameters for FISTA acceleration"),
 		OPTL_SET(0, "fista_last", &fista.last, "(end iteration with call to data consistency)"),
 		OPTL_SET(0, "ist_last", &fista.last, "end iteration with call to data consistency"),
@@ -347,19 +347,8 @@ int main_pics(int argc, char* argv[argc])
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
-	bool use_mpi = (0 != mpi_flags);
-
-	if (use_mpi) {
-
-#ifndef USE_MPI
-		error("Compiled without MPI support\n");
-#endif
-		if (1 == mpi_get_num_procs())
-			error("MPI requested but not initialized using bart wrapper!\n");
-
-		if (cfl_loop_desc_active())
-			error("Simultaneous use of BART generic looping interface and --mpi not supported!\n");
-	}
+	if (0 != mpi_flags)
+		error("MPI is now supported via the BART --md-split-mpi-dims option!\n");
 
 	if (0 != loop_flags)
 		error("Looping only supported via BART generic looping interface!\n");
@@ -397,6 +386,10 @@ int main_pics(int argc, char* argv[argc])
 	// load kspace and maps and get dimensions
 
 	complex float* kspace = load_cfl(ksp_file, DIMS, ksp_dims);
+	struct vptr_hint_s* hint = (0 != bart_mpi_split_flags) ? hint_mpi_create(bart_mpi_split_flags, DIMS, ksp_dims) : NULL;
+	if (NULL != hint)
+		kspace = vptr_wrap_cfl(DIMS, ksp_dims, CFL_SIZE, kspace, hint, true, false);
+	vptr_hint_free(hint);
 
 	if (sms) {
 
@@ -414,7 +407,7 @@ int main_pics(int argc, char* argv[argc])
 	if (ropts.asl && 2 != ksp_dims[ITER_DIM])
 		error("ASL reconstruction requires two slices (label and control) along ITER_DIM.\n");
 
-	complex float* maps = load_cfl(sens_file, DIMS, map_dims);
+	complex float* maps = load_cfl_sameplace(sens_file, DIMS, map_dims, kspace);
 
 	unsigned long map_flags = md_nontriv_dims(DIMS, map_dims);
 
@@ -427,8 +420,8 @@ int main_pics(int argc, char* argv[argc])
 
 	if (NULL != basis_file) {
 
-		basis = load_cfl(basis_file, DIMS, basis_dims);
-
+		basis = load_cfl_sameplace(basis_file, DIMS, basis_dims, kspace);
+		assert(!MD_IS_SET(bart_mpi_split_flags, TE_DIM));
 		assert(!md_check_dimensions(DIMS, basis_dims, COEFF_FLAG | TE_FLAG));
 	}
 
@@ -438,7 +431,8 @@ int main_pics(int argc, char* argv[argc])
 
 	if (NULL != motion_file) {
 
-		motion = load_cfl(motion_file, DIMS, motion_dims);
+		motion = load_cfl_sameplace(motion_file, DIMS, motion_dims, kspace);
+		assert(!MD_IS_SET(bart_mpi_split_flags, MOTION_DIM));
 		assert(1 < motion_dims[MOTION_DIM]);
 		motion_flags = md_nontriv_dims(DIMS, motion_dims) & ~MOTION_FLAG;
 	}
@@ -447,26 +441,7 @@ int main_pics(int argc, char* argv[argc])
 	complex float* traj = NULL;
 
 	if (NULL != traj_file)
-		traj = load_cfl(traj_file, DIMS, traj_dims);
-
-	complex float* kspace_p = kspace;
-	complex float* maps_p = maps;
-	complex float* traj_p = traj;
-
-	struct vptr_hint_s* hint = NULL;
-
-	if (use_mpi) {
-
-		hint = hint_mpi_create(mpi_flags, DIMS, ksp_dims);
-
-		kspace_p = vptr_wrap(DIMS, ksp_dims, CFL_SIZE, kspace, hint, false, false);
-
-		if (NULL != traj)
-			traj_p = vptr_wrap(DIMS, traj_dims, CFL_SIZE, traj, hint, false, false);
-
-		maps_p = vptr_wrap(DIMS, map_dims, CFL_SIZE, maps, hint, false, false);
-	}
-
+		traj = load_cfl_sameplace(traj_file, DIMS, traj_dims, kspace);
 
 	md_copy_dims(DIMS, max_dims, ksp_dims);
 	md_copy_dims(5, max_dims, map_dims);
@@ -513,7 +488,7 @@ int main_pics(int argc, char* argv[argc])
 
 	// print options
 
-	if (use_mpi)
+	if (0 != bart_mpi_split_flags)
 		debug_printf(DP_INFO, "MPI reconstruction\n");
 
 	if (conf.gpu)
@@ -558,15 +533,15 @@ int main_pics(int argc, char* argv[argc])
 
 	if (NULL != pat_file) {
 
-		pattern = load_cfl(pat_file, DIMS, pat_dims);
+		pattern = load_cfl_sameplace(pat_file, DIMS, pat_dims, kspace);
 
 		assert(md_check_compat(DIMS, COIL_FLAG, ksp_dims, pat_dims));
 
 	} else {
 
 		md_select_dims(DIMS, ~COIL_FLAG, pat_dims, ksp_dims);
-		pattern = md_alloc_sameplace(DIMS, pat_dims, CFL_SIZE, kspace_p);
-		estimate_pattern(DIMS, ksp_dims, COIL_FLAG, pattern, kspace_p);
+		pattern = md_alloc_sameplace(DIMS, pat_dims, CFL_SIZE, kspace);
+		estimate_pattern(DIMS, ksp_dims, COIL_FLAG, pattern, kspace);
 	}
 
 
@@ -576,7 +551,7 @@ int main_pics(int argc, char* argv[argc])
 	md_calc_strides(DIMS, ksp_strs, ksp_dims, CFL_SIZE);
 	md_calc_strides(DIMS, pat_strs, pat_dims, CFL_SIZE);
 
-	md_zmul2(DIMS, ksp_dims, ksp_strs, kspace_p, ksp_strs, kspace_p, pat_strs, pattern);
+	md_zmul2(DIMS, ksp_dims, ksp_strs, kspace, ksp_strs, kspace, pat_strs, pattern);
 
 
 	if (NULL == traj_file) {
@@ -588,8 +563,8 @@ int main_pics(int argc, char* argv[argc])
 
 		debug_printf(DP_INFO, "Size: %ld Samples: %ld Acc: %.2f\n", T, samples, (float)T / (float)samples);
 
-		ifftmod(DIMS, ksp_dims, FFT_FLAGS, kspace_p, kspace_p);
-		fftmod(DIMS, map_dims, FFT_FLAGS, maps_p, maps_p);
+		ifftmod(DIMS, ksp_dims, FFT_FLAGS, kspace, kspace);
+		fftmod(DIMS, map_dims, FFT_FLAGS, maps, maps);
 	}
 
 	// apply fov mask to sensitivities
@@ -601,7 +576,7 @@ int main_pics(int argc, char* argv[argc])
 		restrict_dims[1] = restrict_fov;
 		restrict_dims[2] = restrict_fov;
 
-		apply_mask(DIMS, map_dims, maps_p, restrict_dims);
+		apply_mask(DIMS, map_dims, maps, restrict_dims);
 	}
 
 
@@ -611,7 +586,7 @@ int main_pics(int argc, char* argv[argc])
 
 	if (NULL == traj_file) {
 
-		forward_op = sense_init(shared_img_flags & ~motion_flags, max_dims, map_flags, maps_p);
+		forward_op = sense_init(shared_img_flags & ~motion_flags, max_dims, map_flags, maps);
 
 		// apply temporal basis
 
@@ -632,7 +607,7 @@ int main_pics(int argc, char* argv[argc])
 		if ((NULL != psf_ifile) && (NULL == psf_ofile))
 			nuconf.nopsf = true;
 
-		const complex float* traj_tmp = traj_p;
+		const complex float* traj_tmp = traj;
 
 		//for computation of psf on GPU
 #ifdef USE_CUDA
@@ -662,7 +637,7 @@ int main_pics(int argc, char* argv[argc])
 
 			nufft_get_psf_dims(nufft_op, D, psf_dims);
 
-			complex float* psf_out = create_cfl(psf_ofile, D, psf_dims);
+			complex float* psf_out = create_cfl_sameplace(psf_ofile, D, psf_dims, kspace);
 
 			nufft_get_psf(nufft_op, D, psf_dims, psf_out);
 
@@ -674,7 +649,7 @@ int main_pics(int argc, char* argv[argc])
 
 			long psf_dims[DIMS + 1];
 
-			complex float* psf_in = load_cfl(psf_ifile, DIMS + 1, psf_dims);
+			complex float* psf_in = load_cfl_sameplace(psf_ifile, DIMS + 1, psf_dims, kspace);
 
 			nufft_update_psf(nufft_op, DIMS + 1, psf_dims, psf_in);
 
@@ -707,28 +682,19 @@ int main_pics(int argc, char* argv[argc])
 	}
 #endif
 
-	if (NULL != hint) {
-
-		auto tmp = linop_vptr_wrapper(hint, forward_op);
-		linop_free(forward_op);
-		forward_op = tmp;
-
-		vptr_hint_free(hint);
-	}
-
 	// apply scaling
 
 	if (0. == scaling) {
 
 		if (NULL == traj_file) {
 
-			scaling = estimate_scaling(ksp_dims, NULL, kspace_p, -1);
+			scaling = estimate_scaling(ksp_dims, NULL, kspace, -1);
 
 		} else {
 
-			complex float* adj = md_alloc(DIMS, img_dims, CFL_SIZE);
+			complex float* adj = md_alloc_sameplace(DIMS, img_dims, CFL_SIZE, kspace);
 
-			linop_adjoint(forward_op, DIMS, img_dims, adj, DIMS, ksp_dims, kspace_p);
+			linop_adjoint(forward_op, DIMS, img_dims, adj, DIMS, ksp_dims, kspace);
 
 			scaling = estimate_scaling_norm(1., md_calc_size(DIMS, img_dims), adj, false, -1);
 
@@ -745,8 +711,7 @@ int main_pics(int argc, char* argv[argc])
 	} else {
 
 		debug_printf(DP_DEBUG1, "Inverse scaling of the data: %f\n", scaling);
-
-		md_zsmul(DIMS, ksp_dims, kspace_p, kspace_p, 1. / scaling);
+		md_zsmul(DIMS, ksp_dims, kspace, kspace, 1. / scaling);
 
 		if (conf.bpsense) {
 
@@ -763,8 +728,7 @@ int main_pics(int argc, char* argv[argc])
 		forward_op = linop_chain_FF(hadamard_op, forward_op);
 	}
 
-	complex float* image = create_cfl(out_file, DIMS, img_dims);
-
+	complex float* image = create_cfl_sameplace(out_file, DIMS, img_dims, kspace);
 	md_clear(DIMS, img_dims, image, CFL_SIZE);
 
 
@@ -775,7 +739,7 @@ int main_pics(int argc, char* argv[argc])
 
 		debug_printf(DP_INFO, "Compare to truth\n");
 
-		image_truth = load_cfl(image_truth_file, DIMS, img_truth_dims);
+		image_truth = load_cfl_sameplace(image_truth_file, DIMS, img_truth_dims, kspace);
 		//md_zsmul(DIMS, img_dims, image_truth, image_truth, 1. / scaling);
 
 #ifdef USE_CUDA
@@ -798,7 +762,7 @@ int main_pics(int argc, char* argv[argc])
 
 		debug_printf(DP_DEBUG1, "Warm start: %s\n", image_start_file);
 
-		image_start = load_cfl(image_start_file, DIMS, img_start_dims);
+		image_start = load_cfl_sameplace(image_start_file, DIMS, img_start_dims, kspace);
 
 		assert(md_check_compat(DIMS, 0u, img_start_dims, img_dims));
 
@@ -812,7 +776,7 @@ int main_pics(int argc, char* argv[argc])
 	if (eigen && (ALGO_PRIDU != algo)) {
 
 		// Maxeigen in PRIDU must include regularizations
-		maxeigen = estimate_maxeigenval(forward_op->normal);
+		maxeigen = estimate_maxeigenval_sameplace(forward_op->normal, 30, kspace);
 
 		debug_printf(DP_INFO, "Maximum eigenvalue: %.2e\n", maxeigen);
 	}
@@ -827,10 +791,10 @@ int main_pics(int argc, char* argv[argc])
 	opt_reg_configure(DIMS, img_dims, &ropts, thresh_ops, trafos, NULL, llr_blk, shift_mode, wtype_str, conf.gpu, ITER_DIM);
 
 	if (conf.bpsense)
-		opt_bpursuit_configure(&ropts, thresh_ops, trafos, forward_op, kspace_p, bpsense_eps);
+		opt_bpursuit_configure(&ropts, thresh_ops, trafos, forward_op, kspace, bpsense_eps);
 
 	if (conf.precond)
-		opt_precond_configure(&ropts, thresh_ops, trafos, forward_op, DIMS, ksp_dims, kspace_p, pat_dims, conf.precond ? pattern : NULL);
+		opt_precond_configure(&ropts, thresh_ops, trafos, forward_op, DIMS, ksp_dims, kspace, pat_dims, conf.precond ? pattern : NULL);
 
 	int nr_penalties = ropts.r + ropts.sr;
 
@@ -919,7 +883,7 @@ int main_pics(int argc, char* argv[argc])
 
 
 	auto iov = operator_domain(op);
-	operator_apply(op, DIMS, img_dims, image, (conf.bpsense || conf.precond) ? iov->N : DIMS, (conf.bpsense || conf.precond) ? iov->dims : ksp_dims, (conf.bpsense || conf.precond) ? NULL : kspace_p);
+	operator_apply(op, DIMS, img_dims, image, (conf.bpsense || conf.precond) ? iov->N : DIMS, (conf.bpsense || conf.precond) ? iov->dims : ksp_dims, (conf.bpsense || conf.precond) ? NULL : kspace);
 
 	operator_free(op);
 
@@ -946,15 +910,6 @@ int main_pics(int argc, char* argv[argc])
 	else
 #endif
 		unmap_cfl(DIMS, img_dims, image_truth);
-
-	if (kspace_p != kspace)
-		md_free(kspace_p);
-
-	if (maps_p != maps)
-		md_free(maps_p);
-
-	if (traj_p != traj)
-		md_free(traj_p);
 
 	unmap_cfl(DIMS, map_dims, maps);
 	unmap_cfl(DIMS, ksp_dims, kspace);

@@ -37,6 +37,7 @@ extern long num_chunk_size;	// num/optimize.c
 
 static bool bart_gpu_support = false;
 bool bart_use_gpu = false;
+unsigned long bart_mpi_split_flags = 0;
 
 static void num_init_internal(void)
 {

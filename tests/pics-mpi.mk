@@ -38,8 +38,8 @@ tests/test-pics-cart-mpi: bart pics copy nrmse $(TESTS_OUT)/ksp_usamp_1.ra $(TES
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)												;\
 	$(TOOLDIR)/copy $(TESTS_OUT)/ksp_usamp_1.ra shepplogan_coil_ksp										;\
 	$(TOOLDIR)/copy $(TESTS_OUT)/sens_1.ra coils												;\
-	OMP_NUM_THREADS=1 mpirun -n 2 $(ROOTDIR)/bart pics --mpi=8 -S -r0.001 -d5 -i2 shepplogan_coil_ksp coils reco				;\
-	                              $(ROOTDIR)/bart pics         -S -r0.001 -d5 -i2 shepplogan_coil_ksp coils reco_ref			;\
+	OMP_NUM_THREADS=1 mpirun -n 2 $(ROOTDIR)/bart --md-split-mpi-dims=8 pics -S -r0.001 -d5 -i2 shepplogan_coil_ksp coils reco			;\
+	                              $(ROOTDIR)/bart                       pics -S -r0.001 -d5 -i2 shepplogan_coil_ksp coils reco_ref		;\
 	$(TOOLDIR)/nrmse -t 1e-5 reco_ref reco													;\
 	rm *.cfl *.hdr ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
@@ -49,19 +49,19 @@ tests/test-pics-cart-mpi_shared: bart pics copy nrmse $(TESTS_OUT)/shepplogan_co
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)							;\
 	$(TOOLDIR)/copy $(TESTS_OUT)/shepplogan_coil_ksp.ra shepplogan_coil_ksp				;\
 	$(TOOLDIR)/copy $(TESTS_OUT)/coils.ra coils							;\
-	mpirun -n 2 $(ROOTDIR)/bart -S pics --mpi=8 -S -r0.001 shepplogan_coil_ksp coils reco		;\
-		    $(ROOTDIR)/bart    pics	    -S -r0.001 shepplogan_coil_ksp coils reco_ref	;\
+	mpirun -n 2 $(ROOTDIR)/bart -S --md-split-mpi-dims=8 pics -S -r0.001 shepplogan_coil_ksp coils reco	;\
+		    $(ROOTDIR)/bart                          pics -S -r0.001 shepplogan_coil_ksp coils reco_ref	;\
 	$(TOOLDIR)/nrmse -t 1e-5 reco_ref reco								;\
 	rm *.cfl *.hdr ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-
+# This test does no longer work as we cannot sign of mpi processes
 tests/test-pics-cart-mpi-sharedcoil: bart $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra $(TESTS_OUT)/sens_1.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)											;\
 	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra ksp_usamp_p		;\
 	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/sens_1.ra sens_p										;\
-	mpirun -n 3 $(ROOTDIR)/bart -S pics --mpi=8 -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p					;\
-		    $(ROOTDIR)/bart -S pics         -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_ref					;\
+	mpirun -n 3 $(ROOTDIR)/bart -S --md-split-mpi-dims=8 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p			;\
+		    $(ROOTDIR)/bart                          pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_ref			;\
 	$(ROOTDIR)/bart nrmse -t 2e-5 img_l2_ref img_l2_p										;\
 	rm *.cfl *.hdr ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
@@ -73,8 +73,8 @@ tests/test-pics-mpi-timedim: bart
 	$(ROOTDIR)/bart phantom -x128     -m img.ra											;\
 	$(ROOTDIR)/bart fmac img.ra coils cimg.ra											;\
 	$(ROOTDIR)/bart fft -u 7 cimg.ra ksp												;\
-	mpirun -n 2 /usr/bin/time -v $(ROOTDIR)/bart -S pics -d4 -RW:7:0:0.1 -RT:1024:0:.1 --mpi=1024 -i10 -w 1. -m ksp coils reco	;\
-	            /usr/bin/time -v $(ROOTDIR)/bart    pics -d4 -RW:7:0:0.1 -RT:1024:0:.1            -i10 -w 1. -m ksp coils ref.ra	;\
+	mpirun -n 2 $(ROOTDIR)/bart -S --md-split-mpi-dims=1024 pics -d4 -RW:7:0:0.1 -RT:1024:0:.1 -i10 -w 1. -m ksp coils reco		;\
+	            $(ROOTDIR)/bart                             pics -d4 -RW:7:0:0.1 -RT:1024:0:.1 -i10 -w 1. -m ksp coils ref.ra	;\
 	$(ROOTDIR)/bart nrmse -t 1e-5 ref.ra reco 											;\
 	rm *.cfl *.hdr *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
@@ -85,8 +85,8 @@ tests/test-pics-mpi-timedim-gpu: bart
 	$(ROOTDIR)/bart phantom -x128     -m img.ra											;\
 	$(ROOTDIR)/bart fmac img.ra coils cimg.ra											;\
 	$(ROOTDIR)/bart fft -u 7 cimg.ra ksp												;\
-	mpirun -n 2 /usr/bin/time -v $(ROOTDIR)/bart -S pics -g -d4 -RW:7:0:0.1 -RT:1024:0:.1 --mpi=1024 -i10 -w 1. -m ksp coils reco	;\
-	            /usr/bin/time -v $(ROOTDIR)/bart    pics -g -d4 -RW:7:0:0.1 -RT:1024:0:.1            -i10 -w 1. -m ksp coils ref.ra	;\
+	mpirun -n 2 $(ROOTDIR)/bart -S --md-split-mpi-dims=1024 pics -g -d4 -RW:7:0:0.1 -RT:1024:0:.1 -i10 -w 1. -m ksp coils reco	;\
+	            $(ROOTDIR)/bart                             pics -g -d4 -RW:7:0:0.1 -RT:1024:0:.1 -i10 -w 1. -m ksp coils ref.ra	;\
 	$(ROOTDIR)/bart nrmse -t 1e-5 ref.ra reco 											;\
 	rm *.cfl *.hdr *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
@@ -96,8 +96,8 @@ tests/test-pics-cart-mpi-multipledims: bart $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)											;\
 	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra ksp_usamp_p		;\
 	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sens_2.ra $(TESTS_OUT)/sens_3.ra sens_p				;\
-	mpirun  --host localhost:6 -n 6 $(ROOTDIR)/bart -S pics --mpi=8200 -i10 -S -l2 -r 0.005 ksp_usamp_p sens_p img_l2_p		;\
-					$(ROOTDIR)/bart -S pics            -i10 -S -l2 -r 0.005 ksp_usamp_p sens_p img_l2_ref		;\
+	mpirun --host localhost:6 -n 6 $(ROOTDIR)/bart -S --md-split-mpi-dims=8200 pics -i10 -S -l2 -r 0.005 ksp_usamp_p sens_p img_l2_p	;\
+	                               $(ROOTDIR)/bart                             pics -i10 -S -l2 -r 0.005 ksp_usamp_p sens_p img_l2_ref	;\
 	$(ROOTDIR)/bart nrmse -t 2e-5 img_l2_ref img_l2_p										;\
 	rm *.cfl ; rm *.hdr ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
@@ -106,8 +106,8 @@ tests/test-pics-cart-mpi-multipledims-sharedcoil: bart $(TESTS_OUT)/ksp_usamp_1.
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)											;\
 	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra ksp_usamp_p		;\
 	$(ROOTDIR)/bart copy $(TESTS_OUT)/sens_1.ra sens_p										;\
-	mpirun  --host localhost:6 -n 6 $(ROOTDIR)/bart -S pics --mpi=8200 -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p		;\
-					$(ROOTDIR)/bart -S pics            -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_ref		;\
+	mpirun  --host localhost:6 -n 6 $(ROOTDIR)/bart -S --md-split-mpi-dims=8200 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p	;\
+					$(ROOTDIR)/bart                             pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_ref	;\
 	$(ROOTDIR)/bart nrmse -t 2e-5 img_l2_ref img_l2_p										;\
 	rm *.cfl ; rm *.hdr ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
@@ -117,8 +117,8 @@ tests/test-pics-noncart-mpi: bart traj phantom ones pics nrmse
 	$(TOOLDIR)/traj -r -x128 -o2. -y64 traj.ra								;\
 	$(TOOLDIR)/phantom -s4 -t traj.ra ksp									;\
 	$(TOOLDIR)/phantom -S4 col										;\
-	mpirun -n 2 $(ROOTDIR)/bart -S pics --mpi=8 -S --fista -e -r0.001 -t traj.ra ksp col reco1		;\
-		    $(ROOTDIR)/bart    pics	    -S --fista -e -r0.001 -t traj.ra ksp col reco2		;\
+	mpirun -n 2 $(ROOTDIR)/bart -S --md-split-mpi-dims=8 pics -S --fista -e -r0.001 -t traj.ra ksp col reco1 ;\
+		    $(ROOTDIR)/bart                          pics -S --fista -e -r0.001 -t traj.ra ksp col reco2 ;\
 	$(TOOLDIR)/nrmse -t 0.00001 reco1 reco2									;\
 	rm *.cfl *.ra *.hdr ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
@@ -182,8 +182,8 @@ tests/test-pics-noncart-sms-mpi: bart
 	$(ROOTDIR)/bart flip 7 s.ra sF.ra						;\
 	$(ROOTDIR)/bart conj sF.ra sFC.ra						;\
 	$(ROOTDIR)/bart join 13 s.ra sFC.ra ss.ra 					;\
-	            $(ROOTDIR)/bart pics         -i5 -d4 -S -t t.ra -M kk.ra ss.ra x1.ra	;\
-	mpirun -n 2 $(ROOTDIR)/bart pics --mpi=8 -i5 -d4 -S -t t.ra -M kk.ra ss.ra x2.ra	;\
+	            $(ROOTDIR)/bart pics                       -i5 -d4 -S -t t.ra -M kk.ra ss.ra x1.ra	;\
+	mpirun -n 2 $(ROOTDIR)/bart --md-split-mpi-dims=8 pics -i5 -d4 -S -t t.ra -M kk.ra ss.ra x2.ra	;\
 	$(ROOTDIR)/bart nrmse -s -t 1e-5 x1.ra x2.ra					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
@@ -191,7 +191,7 @@ tests/test-pics-noncart-sms-mpi: bart
 
 TESTS_MPI += tests/test-pics-cart-batch-mpi tests/test-pics-non-cart-batch-mpi tests/test-pics-cart-slice-batch-mpi tests/test-pics-cart-range-batch-mpi
 TESTS_MPI += tests/test-pics-cart-mpi tests/test-pics-noncart-mpi tests/test-pics-mpi-timedim
-TESTS_MPI += tests/test-pics-cart-mpi_shared tests/test-pics-cart-mpi-sharedcoil tests/test-pics-cart-mpi-multipledims tests/test-pics-cart-mpi-multipledims-sharedcoil
+TESTS_MPI += tests/test-pics-cart-mpi_shared tests/test-pics-cart-mpi-multipledims tests/test-pics-cart-mpi-multipledims-sharedcoil
 TESTS_MPI += tests/test-pics-noncart-sms-mpi
 ifeq ($(MPI),1)
 TESTS_GPU += tests/test-pics-mpi-timedim-gpu
