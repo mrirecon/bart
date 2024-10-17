@@ -262,7 +262,7 @@ int main_moba(int argc, char* argv[argc])
 		error("Multi-GPU only supported by MPI!\n");
 
 	num_init_gpu_support();
-	
+
 	data.model = conf.mode;
 
 	if (MDB_T1_PHY == conf.mode)
@@ -292,7 +292,7 @@ int main_moba(int argc, char* argv[argc])
 	long ksp_dims[DIMS];
 	complex float* kspace_data = load_cfl(ksp_file, DIMS, ksp_dims);
 
-	struct vptr_hint_s* hint = (0 != bart_mpi_split_flags) ? hint_mpi_create(bart_mpi_split_flags, DIMS, ksp_dims) : NULL;
+	struct vptr_hint_s* hint = ((0 != bart_mpi_split_flags) || bart_delayed_computations) ? vptr_hint_create(bart_mpi_split_flags, DIMS, ksp_dims, bart_delayed_loop_flags) : NULL;
 	kspace_data = vptr_wrap_cfl(DIMS, ksp_dims, CFL_SIZE, kspace_data, hint, true, false);
 
 	long TI_dims[DIMS];
@@ -417,7 +417,7 @@ int main_moba(int argc, char* argv[argc])
 
 	complex float* pattern = NULL;
 	long pat_dims[DIMS];
-	
+
 
 	if (NULL != psf_file) {
 
@@ -453,7 +453,7 @@ int main_moba(int argc, char* argv[argc])
 		pattern = md_alloc_sameplace(DIMS, pat_dims, CFL_SIZE, kspace_data);
 
 		// Gridding sampling pattern
-		
+
 		complex float* psf = NULL;
 
 		long wgh_dims[DIMS];
@@ -663,12 +663,12 @@ int main_moba(int argc, char* argv[argc])
 	if (bart_use_gpu) {
 
 		complex float* kspace_gpu = NULL;
-		
+
 		if (is_vptr(k_grid_data)) {
 
 			kspace_gpu = vptr_move_gpu(k_grid_data);
 		} else {
-		
+
 			kspace_gpu = md_alloc_gpu(DIMS, grid_dims, CFL_SIZE);
 			md_copy(DIMS, grid_dims, kspace_gpu, k_grid_data, CFL_SIZE);
 		}
@@ -700,7 +700,7 @@ int main_moba(int argc, char* argv[argc])
 
         md_free(tmp);
 	md_free(mask);
-	
+
 	md_free(k_grid_data);
 	md_free(pattern);
 
