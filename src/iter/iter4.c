@@ -77,8 +77,6 @@ struct irgnm_s {
 	struct iter_op_s adj;
 	struct iter_op_s nrm;
 
-	float* tmp;
-
 	long size;
 
 	int cgiter;
@@ -139,17 +137,13 @@ void iter4_irgnm(const iter3_conf* _conf,
 	struct iter_op_s adj = { nlop_adj_iter, CAST_UP(&data) };
 	struct iter_op_s nrm = { nlop_nrm_iter, CAST_UP(&data) };
 
-	float* tmp = md_alloc_sameplace(1, MD_DIMS(M), FL_SIZE, src);
-
-	struct irgnm_s data2 = { { &TYPEID(irgnm_s) }, der, adj, nrm, tmp, N, conf->cgiter, conf->cgtol, conf->nlinv_legacy };
+	struct irgnm_s data2 = { { &TYPEID(irgnm_s) }, der, adj, nrm, N, conf->cgiter, conf->cgtol, conf->nlinv_legacy };
 
 	struct iter_op_p_s inv = { inverse, CAST_UP(&data2) };
 
 	irgnm(conf->iter, conf->alpha, conf->alpha_min, conf->redu, N, M, select_vecops(src),
 		frw, adj, inv,
 		dst, ref, src, cb, NULL);
-
-	md_free(tmp);
 }
 
 
@@ -215,14 +209,12 @@ void iter4_irgnm2(const iter3_conf* _conf,
 
 	auto conf = CAST_DOWN(iter3_irgnm_conf, _conf);
 
-	float* tmp = md_alloc_sameplace(1, MD_DIMS(M), FL_SIZE, src);
-
 	struct iter_op_s frw = { nlop_for_iter, CAST_UP(&data) };
 	struct iter_op_s der = { nlop_der_iter, CAST_UP(&data) };
 	struct iter_op_s adj = { nlop_adj_iter, CAST_UP(&data) };
 	struct iter_op_s nrm = { nlop_nrm_iter, CAST_UP(&data) };
 
-	struct irgnm_s data2 = { { &TYPEID(irgnm_s) }, der, adj, nrm, tmp, N, conf->cgiter, conf->cgtol, conf->nlinv_legacy };
+	struct irgnm_s data2 = { { &TYPEID(irgnm_s) }, der, adj, nrm, N, conf->cgiter, conf->cgtol, conf->nlinv_legacy };
 
 	// one limitation is that we currently cannot warm start the inner solver
 
@@ -231,8 +223,6 @@ void iter4_irgnm2(const iter3_conf* _conf,
 	irgnm2(conf->iter, conf->alpha, conf->alpha_min, conf->alpha_min0, conf->redu, N, M, select_vecops(src),
 		frw, der, (NULL == lsqr) ? inv2 : OPERATOR_P2ITOP(lsqr),
 		dst, ref, src, cb, NULL);
-
-	md_free(tmp);
 }
 
 void iter4_lbfgs(const iter3_conf* _conf,
