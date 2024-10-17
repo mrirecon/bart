@@ -364,12 +364,6 @@ int main_moba(int argc, char* argv[argc])
 	long img_strs[DIMS];
 	md_calc_strides(DIMS, img_strs, img_dims, CFL_SIZE);
 
-	long single_map_dims[DIMS];
-	md_select_dims(DIMS, FFT_FLAGS|MAPS_FLAG|TIME_FLAG|SLICE_FLAG|TIME2_FLAG, single_map_dims, grid_dims);
-
-	long single_map_strs[DIMS];
-	md_calc_strides(DIMS, single_map_strs, single_map_dims, CFL_SIZE);
-
 	long coil_dims[DIMS];
 	md_select_dims(DIMS, FFT_FLAGS|COIL_FLAG|MAPS_FLAG|TIME_FLAG|SLICE_FLAG|TIME2_FLAG, coil_dims, grid_dims);
 
@@ -377,7 +371,6 @@ int main_moba(int argc, char* argv[argc])
 	md_calc_strides(DIMS, coil_strs, coil_dims, CFL_SIZE);
 
 	complex float* img = create_cfl(out_file, DIMS, img_dims);
-	complex float* single_map = anon_cfl("", DIMS, single_map_dims);
 
 	long dims[DIMS];
 	md_copy_dims(DIMS, dims, grid_dims);
@@ -696,7 +689,6 @@ int main_moba(int argc, char* argv[argc])
 	unmap_cfl(DIMS, pat_dims, pattern);
 	unmap_cfl(DIMS, grid_dims, k_grid_data);
 	unmap_cfl(DIMS, img_dims, img);
-	unmap_cfl(DIMS, single_map_dims, single_map);
 	unmap_cfl(DIMS, TI_dims, TI);
 
 	if (NULL != traj_file)
