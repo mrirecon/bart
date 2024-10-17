@@ -20,6 +20,7 @@
 #include "num/gpuops.h"
 #endif
 #include "num/multind.h"
+#include "num/vptr.h"
 
 
 #include "loop.h"
@@ -29,8 +30,12 @@
 
 static void md_zsample2(int N, const long dims[N], unsigned long flags, complex float* out, zsample_fun_t fun)
 {
+	bool buf = is_vptr(out);
 #ifdef USE_CUDA
-	if (cuda_ondevice(out)) {
+	buf = buf || cuda_ondevice(out);
+#endif
+
+	if (buf) {
 
 		complex float *out2 = md_alloc(N, dims, sizeof *out2);
 
@@ -40,7 +45,6 @@ static void md_zsample2(int N, const long dims[N], unsigned long flags, complex 
 		md_free(out2);
 		return;
 	}
-#endif
 
 	long strs[N];
 	md_calc_strides(N, strs, dims, 1);	// we use size = 1 here
