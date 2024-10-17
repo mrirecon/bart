@@ -520,10 +520,14 @@ void free_network_data(struct network_data_s* nd)
 {
 	sense_model_config_free(nd->conf);
 
-	unmap_cfl(nd->ND, nd->psf_dims, nd->psf);
-	unmap_cfl(DIMS, nd->img_dims, nd->adjoint);
-	unmap_cfl(DIMS, nd->col_dims, nd->coil);
-	unmap_cfl(DIMS, nd->img_dims, nd->out);
+	if (NULL != nd->psf)
+		unmap_cfl(nd->ND, nd->psf_dims, nd->psf);
+	if (NULL != nd->adjoint)
+		unmap_cfl(DIMS, nd->img_dims, nd->adjoint);
+	if (NULL != nd->coil)
+		unmap_cfl(DIMS, nd->col_dims, nd->coil);
+	if (NULL != nd->out)
+		unmap_cfl(DIMS, nd->img_dims, nd->out);
 	if (NULL != nd->trajectory)
 		unmap_cfl(DIMS, nd->trj_dims, nd->trajectory);
 	if (NULL != nd->pattern)
