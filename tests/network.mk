@@ -145,6 +145,10 @@ $(TESTS_OUT)/train_ref_ksp_noncart.ra: reshape $(TESTS_OUT)/train_ref_ksp.ra
 	set -e										;\
 	$(TOOLDIR)/reshape 7 1 32 32 $(TESTS_OUT)/train_ref_ksp.ra $@
 
+$(TESTS_OUT)/test_ref_ksp_noncart.ra: reshape $(TESTS_OUT)/test_ref_ksp.ra
+	set -e										;\
+	$(TOOLDIR)/reshape 7 1 32 32 $(TESTS_OUT)/test_ref_ksp.ra $@
+
 tests/test-reconet-nnvn-train: nrmse $(TESTS_OUT)/pattern.ra reconet \
 	$(TESTS_OUT)/train_kspace.ra $(TESTS_OUT)/train_ref.ra $(TESTS_OUT)/train_sens.ra \
 	$(TESTS_OUT)/test_kspace.ra $(TESTS_OUT)/test_ref.ra $(TESTS_OUT)/test_sens.ra
@@ -215,11 +219,11 @@ tests/test-reconet-nnmodl-train-noncart: nrmse $(TESTS_OUT)/weights.ra reconet \
 
 tests/test-reconet-nnmodl-train-noncart-ksp: nrmse $(TESTS_OUT)/weights.ra reconet \
 	$(TESTS_OUT)/train_kspace_noncart.ra $(TESTS_OUT)/train_ref_ksp_noncart.ra $(TESTS_OUT)/train_sens.ra \
-	$(TESTS_OUT)/test_kspace_noncart.ra $(TESTS_OUT)/test_ref_ksp.ra $(TESTS_OUT)/test_sens.ra \
+	$(TESTS_OUT)/test_kspace_noncart.ra $(TESTS_OUT)/test_ref_ksp_noncart.ra $(TESTS_OUT)/test_sens.ra $(TESTS_OUT)/test_ref_ksp.ra \
 	$(TESTS_OUT)/traj_net.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP); export OMP_NUM_THREADS=2	;\
 	$(TOOLDIR)/reconet --network modl --test -t -n --train-algo e=1 -b2 --ksp-training --pattern=$(TESTS_OUT)/weights.ra --trajectory=$(TESTS_OUT)/traj_net.ra $(TESTS_OUT)/train_kspace_noncart.ra $(TESTS_OUT)/train_sens.ra weights0 $(TESTS_OUT)/train_ref_ksp_noncart.ra ;\
-	$(TOOLDIR)/reconet --network modl --test -t -n --train-algo e=40 -b2 -I1 --ksp-training --trajectory=$(TESTS_OUT)/traj_net.ra --pattern=$(TESTS_OUT)/weights.ra $(TESTS_OUT)/train_kspace_noncart.ra $(TESTS_OUT)/train_sens.ra weights01 $(TESTS_OUT)/train_ref_ksp_noncart.ra	;\
+	$(TOOLDIR)/reconet --network modl --test -t -n --train-algo e=40 -b2 -I1 --ksp-training --valid-data=trajectory=$(TESTS_OUT)/traj_net.ra,pattern=$(TESTS_OUT)/weights.ra,kspace=$(TESTS_OUT)/test_kspace_noncart.ra,coil=$(TESTS_OUT)/test_sens.ra,ref=$(TESTS_OUT)/test_ref_ksp_noncart.ra --trajectory=$(TESTS_OUT)/traj_net.ra --pattern=$(TESTS_OUT)/weights.ra $(TESTS_OUT)/train_kspace_noncart.ra $(TESTS_OUT)/train_sens.ra weights01 $(TESTS_OUT)/train_ref_ksp_noncart.ra	;\
 	$(TOOLDIR)/reconet --network modl --test -lweights01 -n -t --train-algo e=40 -b2 --ksp-training --trajectory=$(TESTS_OUT)/traj_net.ra --pattern=$(TESTS_OUT)/weights.ra $(TESTS_OUT)/train_kspace_noncart.ra $(TESTS_OUT)/train_sens.ra weights1 $(TESTS_OUT)/train_ref_ksp_noncart.ra	;\
 	$(TOOLDIR)/reconet --network modl --test -a -n --trajectory=$(TESTS_OUT)/traj_net.ra --pattern=$(TESTS_OUT)/weights.ra $(TESTS_OUT)/test_kspace_noncart.ra $(TESTS_OUT)/test_sens.ra weights0 out0.ra	;\
 	$(TOOLDIR)/reconet --network modl --test -a -n --trajectory=$(TESTS_OUT)/traj_net.ra --pattern=$(TESTS_OUT)/weights.ra $(TESTS_OUT)/test_kspace_noncart.ra $(TESTS_OUT)/test_sens.ra weights1 out1.ra	;\
