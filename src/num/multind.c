@@ -188,6 +188,73 @@ void md_parallel_nary(int C, int D, const long dim[D], unsigned long flags, cons
 }
 
 
+void md_nary_resolve_flagged(int C, int D, unsigned long loop_flags, const long dim[__VLA(D)], const long* str[__VLA(C)], void* ptr[__VLA(C)], md_nary_resolve_fun_t fun)
+{
+	bool vptr = false;
+	for (int i = 0; i < C; i++)
+		vptr = vptr || is_vptr(ptr[i]);
+
+	if (!vptr) {
+
+		NESTED_CALL(fun, (ptr, dim, str));
+		return;
+	}
+
+	long bdim[D?:1];
+	md_select_dims(D, ~loop_flags, bdim, dim);
+
+	long tstr[C][D?:1];
+	const long* nstr[C];
+
+	for (int i = 0; i < C; i++) {
+
+		vptr_continous_strs(D, ptr[i], loop_flags, tstr[i], str[i]);
+		nstr[i] = tstr[i];
+	}
+
+	long pos[D?:1];
+	md_set_dims(D, pos, 0);
+
+	do {
+		void* nptr[C];
+		
+		for (int i = 0; i < C; i++)
+			nptr[i] = ptr[i] + md_calc_offset(D, str[i], pos);
+
+		if (!mpi_accessible_mult(C, (const void**)nptr))
+			continue;
+
+		for (int i = 0; i < C; i++)
+			nptr[i] = vptr_resolve(nptr[i]);
+
+		NESTED_CALL(fun, (nptr, bdim, nstr));
+
+	} while (md_next(D, dim, loop_flags, pos));
+
+}
+
+
+void md_nary_resolve(int C, int D, const long dim[D], const long* str[C], void* ptr[C], md_nary_resolve_fun_t fun)
+{
+	bool vptr = false;
+	for (int i = 0; i < C; i++)
+		vptr = vptr || is_vptr(ptr[i]);
+
+	if (!vptr) {
+
+		NESTED_CALL(fun, (ptr, dim, str));
+		return;
+	}
+
+	unsigned long loop_flags = 0;
+
+	for (int i = 0; i < C; i++)
+		loop_flags |= vptr_block_loop_flags(D, dim, str[i], ptr[i], 1);
+
+	md_nary_resolve_flagged(C, D, loop_flags, dim, str, ptr, fun);
+}
+
+
 static void md_loop_r(int D, const long dim[D], unsigned long flags, long pos[D], md_loop_fun_t fun)
 {
 	if (0 == D) {
