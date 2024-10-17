@@ -6,6 +6,7 @@
  */
 
 #include <assert.h>
+#include <stdint.h>
 #include <stdbool.h>
 
 #ifdef _OPENMP
@@ -13,12 +14,12 @@
 #endif
 
 #include "misc/misc.h"
-#include "misc/debug.h"
-#include "misc/types.h"
 
 #include "tree.h"
 
 struct node_s {
+
+	bool alloc;
 
 	struct tree_s* tree;
 	struct node_s* parent;
@@ -27,13 +28,25 @@ struct node_s {
 
 	int height;
 
+	const void* key;
+	size_t len;
+
 	void* item;
 };
+
+#define TBITS 8
 
 struct tree_s {
 
 	int N;
 	struct node_s* root;
+
+	size_t node_alloc;
+	long search_pos;
+	struct node_s* node_mem;
+
+	struct node_s* cache[1 << TBITS];
+	int cache_count[1 << TBITS];
 
 	tree_rel_f relation;
 
@@ -54,17 +67,70 @@ typedef struct node_s* node_t;
 typedef struct tree_s* tree_t;
 
 
-static node_t create_node(void* item)
+void* tree_tag_ptr(tree_t tree, void* ptr)
 {
-	PTR_ALLOC(struct node_s, result);
+	uint64_t tag = 1;
+	int min = tree->cache_count[tag];
 
-	result->item = item;
-	result->parent = NULL;
-	result->leafa = NULL;
-	result->leafb = NULL;
-	result->height = 1;
+	for (int j = 2; j < (1 << TBITS); j++) {
 
-	return PTR_PASS(result);
+		if (0 == min)
+			break;
+
+		if (tree->cache_count[j] < min) {
+			min = tree->cache_count[j];
+			tag = (uint64_t)j;
+		}
+	}
+
+	return (void*) ((uint64_t)ptr | (tag << (64 - TBITS)));
+}
+
+void* tree_untag_ptr(tree_t /*tree*/, void* ptr)
+{
+	uint64_t msk = 1;
+	msk = (msk << (64 - TBITS)) - 1;
+	
+	return (void*) ((uint64_t)ptr & msk);
+}
+
+int tree_get_tag(tree_t /*tree*/, const void* ptr)
+{
+	uint64_t msk = 1;
+	msk = (msk << (64 - TBITS)) - 1;
+	
+	return (int) (((uint64_t)ptr & ~msk) >> (64 - TBITS));
+}
+
+
+static struct node_s create_node(void* item)
+{
+	struct node_s result;
+
+	result.alloc = true;
+	result.item = item;
+	result.parent = NULL;
+	result.leafa = NULL;
+	result.leafb = NULL;
+	result.height = 1;
+
+	return result;
+}
+
+static inline int ptr_cmp(const void* a, const void* b)
+{
+	if (a == b)
+		return 0;
+	
+	return (a > b) ? 1 : -1;
+}
+
+static inline int inside_p(node_t node, const void* ptr)
+{
+	if ((ptr >= node->key) && (ptr < node->key + node->len))
+		return 0;
+	
+	return (node->key > ptr) ? 1 : -1;
 }
 
 /**
@@ -78,6 +144,19 @@ tree_t tree_create(tree_rel_f rel)
 	result->root = NULL;
 	result->relation = rel;
 
+	result->node_alloc = 1024;
+	result->search_pos = 0;
+	result->node_mem = xmalloc(result->node_alloc * sizeof(struct node_s));
+
+	for (size_t i = 0; i < result->node_alloc; i++)
+		result->node_mem[i].alloc = false; //mark as free
+
+	for (int i = 0; i < (1 << TBITS); i++) {
+
+		result->cache[i] = NULL;
+		result->cache_count[i] = 0;
+	}
+
 #ifdef _OPENMP
 	omp_init_lock(&(result->lock));
 #endif
@@ -90,7 +169,7 @@ tree_t tree_create(tree_rel_f rel)
  */
 void tree_free(tree_t tree)
 {
-	while (NULL != tree_get_min(tree, true));
+	xfree(tree->node_mem);
 
 #ifdef _OPENMP
 	omp_destroy_lock(&(tree->lock));
@@ -231,12 +310,55 @@ static node_t rebalance(node_t node)
 
 
 
+static void tree_extend(tree_t tree)
+{
+	node_t new_mem = xmalloc(2 * tree->node_alloc * sizeof(struct node_s));
+		
+	for (size_t i = 0; i < tree->node_alloc; i++) {
+
+		new_mem[i] = tree->node_mem[i];
+
+		if (!new_mem[i].alloc)
+			continue;
+
+		new_mem[i].parent = (NULL != new_mem[i].parent) ? new_mem + (new_mem[i].parent - tree->node_mem) : NULL;
+		new_mem[i].leafa = (NULL != new_mem[i].leafa) ? new_mem + (new_mem[i].leafa - tree->node_mem) : NULL;
+		new_mem[i].leafb = (NULL != new_mem[i].leafb) ? new_mem + (new_mem[i].leafb - tree->node_mem) : NULL;
+	}
+
+	for (int i = 0; i < (1 << TBITS); i++)
+		if (NULL != tree->cache[i])
+			tree->cache[i] = new_mem + (tree->cache[i] - tree->node_mem);
+
+	for (size_t  i = 0; i < tree->node_alloc; i++) 
+		new_mem[i + tree->node_alloc].alloc = false;
+
+	tree->root = new_mem + (tree->root - tree->node_mem);
+
+	xfree(tree->node_mem);
+
+	tree->node_alloc *= 2;
+	tree->node_mem = new_mem;
+}
+
+
+
 void tree_insert(tree_t tree, void *item)
 {
 	tree_set_lock(tree);
 	tree->N++;
 
-	node_t node = create_node(item);
+	assert(NULL != tree->relation);
+
+	if ((size_t)tree->N > tree->node_alloc)
+		tree_extend(tree);
+
+	while (tree->node_mem[tree->search_pos].alloc)
+		tree->search_pos++;
+
+	tree->node_mem[tree->search_pos] = create_node(item);
+
+	node_t node = &(tree->node_mem[tree->search_pos]);
 	node->tree = tree;
 
 	if (NULL == tree->root) {
@@ -251,6 +373,73 @@ void tree_insert(tree_t tree, void *item)
 	while (true) {
 
 		if (0 > tree->relation(item, parent->item)) {
+
+			if (NULL == parent->leafa) {
+
+				node->parent = parent;
+				parent->leafa = node;
+				break;
+			}
+
+			parent = parent->leafa;
+
+		} else {
+
+			if (NULL == parent->leafb) {
+
+				node->parent = parent;
+				parent->leafb = node;
+				break;
+			}
+
+			parent = parent->leafb;
+		}
+	}
+
+	update_height(node);
+
+	while (NULL != node->parent)
+		node = rebalance(node->parent);
+
+	tree_unset_lock(tree);
+}
+
+void ptr_tree_insert(tree_t tree, void *item, const void* key, size_t len)
+{
+	tree_set_lock(tree);
+	tree->N++;
+
+	assert(NULL == tree->relation);
+
+	if ((size_t)tree->N > tree->node_alloc)
+		tree_extend(tree);
+
+	while (tree->node_mem[tree->search_pos].alloc)
+		tree->search_pos++;
+
+	tree->node_mem[tree->search_pos] = create_node(item);
+
+	node_t node = &(tree->node_mem[tree->search_pos]);
+	node->tree = tree;
+	node->key = key;
+	node->len = len;
+
+	int tag = tree_get_tag(tree, (void*)key);
+	tree->cache[tag] = node;
+	tree->cache_count[tag]++;
+
+	if (NULL == tree->root) {
+
+		tree->root = node;
+		tree_unset_lock(tree);
+		return;
+	}
+
+	node_t parent = tree->root;
+	
+	while (true) {
+
+		if (0 > ptr_cmp(key, parent->key)) {
 
 			if (NULL == parent->leafa) {
 
@@ -312,6 +501,8 @@ static void remove_node(node_t node)
 
 		node_t tmp = node_get_min(node->leafb);
 		SWAP(node->item, tmp->item);
+		SWAP(node->key, tmp->key);
+		SWAP(node->len, tmp->len);
 		node = tmp;
 	}
 
@@ -333,7 +524,10 @@ static void remove_node(node_t node)
 	
 	node->tree->N--;
 
-	xfree(node);
+	node->tree->search_pos = MIN(node->tree->search_pos, node - node->tree->node_mem);
+	node->alloc = false;
+	if (NULL == node->tree->relation)
+		node->tree->cache_count[tree_get_tag(node->tree, (void*)node->key)]--;
 
 	update_height(parent);
 
@@ -388,15 +582,29 @@ static node_t node_find_max(node_t node, const void* ref, tree_rel_f rel)
 
 static node_t node_find(node_t node, const void* ref, tree_rel_f rel)
 {
-	if ((NULL == node) || (0 == rel(node->item, ref)))
-		return node;
+	while (!((NULL == node) || (0 == rel(node->item, ref)))) {
 
-	if (0 < rel(node->item, ref))
-		return node_find(node->leafa, ref, rel);
-	else
-		return node_find(node->leafb, ref, rel);	
+		if (0 < rel(node->item, ref))
+			node = node->leafa;
+		else
+			node = node->leafb;	
+	}
+
+	return node;
 }
 
+static node_t ptr_node_find(node_t node, const void* ref)
+{
+	while (!(((NULL == node) || (0 == inside_p(node, ref))))) {
+
+		if (0 < inside_p(node, ref))
+			node = node->leafa;
+		else
+			node = node->leafb;	
+	}
+
+	return node;
+}
 
 
 
@@ -432,8 +640,33 @@ void* tree_find_max(tree_t tree, const void* ref, tree_rel_f rel, bool remove)
 
 void* tree_find(tree_t tree, const void* ref, tree_rel_f rel, bool remove)
 {
-	tree_set_lock(tree);
-	void* item = node_return(node_find(tree->root, ref, rel), remove);
+	void* item = NULL;
+	
+	if (NULL == rel) {
+
+		assert(NULL == tree->relation);
+
+		int tag = tree_get_tag(tree, (void*)ref);
+
+		if (NULL == tree->cache[tag])
+			return NULL;
+
+		tree_set_lock(tree);
+
+		node_t node = tree->cache[tag];
+		if (!node->alloc || (0 != inside_p(node, ref)))
+			node = ptr_node_find(tree->root, ref);
+
+		if (!remove && NULL != node)
+			tree->cache[tag] = node;
+
+		item = node_return(node, remove);
+	} else {
+
+		tree_set_lock(tree);
+		item = node_return(node_find(tree->root, ref, rel), remove);
+	}
+
 	tree_unset_lock(tree);
 
 	return item;
