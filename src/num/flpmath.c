@@ -1418,19 +1418,21 @@ void md_zmatmul(int D, const long out_dims[D], complex float* dst, const long ma
  */
 void md_zfmac2(int D, const long dims[D], const long ostr[D], complex float* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)
 {
-	if (!simple_zfmac(D, dims, ostr, optr, istr1, iptr1, istr2, iptr2))
-		MAKE_Z3OP(zfmac, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
+	bool mpi = mpi_is_reduction(D, dims, ostr, optr, CFL_SIZE, istr1, iptr1, CFL_SIZE)
+		|| mpi_is_reduction(D, dims, ostr, optr, CFL_SIZE, istr2, iptr2, CFL_SIZE);
 
-	if (is_mpi(iptr1) || is_mpi(iptr2)) {
+	if (mpi)
+		mpi_set_reduce(optr);
+
+	MAKE_Z3OP(zfmac, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
+
+	if (mpi) {
 
 		long dims2[D];
-		md_select_dims(D, md_nontriv_strides(D, ostr), dims2, dims);
+		md_select_dims(D, md_nontriv_strides(D,ostr), dims2, dims);
 
-		unsigned long batch_flags = mpi_parallel_flags(D, dims, ostr, CFL_SIZE, optr)
-					  & mpi_parallel_flags(D, dims, istr1, CFL_SIZE, iptr1)
-					  & mpi_parallel_flags(D, dims, istr2, CFL_SIZE, iptr2);
-
-		mpi_reduce_zsum(D, ~batch_flags, dims2, optr);
+		mpi_reduce_zsum(D, dims2, optr);
+		mpi_unset_reduce(optr);
 	}
 }
 
@@ -1455,18 +1457,21 @@ void md_zfmac(int D, const long dims[D], complex float* optr, const complex floa
  */
 void md_zfmacD2(int D, const long dims[D], const long ostr[D], complex double* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)
 {
+	bool mpi = mpi_is_reduction(D, dims, ostr, optr, CDL_SIZE, istr1, iptr1, CFL_SIZE)
+		|| mpi_is_reduction(D, dims, ostr, optr, CDL_SIZE, istr2, iptr2, CFL_SIZE);
+
+	if (mpi)
+		mpi_set_reduce(optr);
+
 	MAKE_Z3OPD(zfmacD, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
 
-	if (is_mpi(iptr1) || is_mpi(iptr2)) {
+	if (mpi) {
 
 		long dims2[D];
-		md_select_dims(D, md_nontriv_strides(D, ostr), dims2, dims);
+		md_select_dims(D, md_nontriv_strides(D,ostr), dims2, dims);
 
-		unsigned long batch_flags = mpi_parallel_flags(D, dims, ostr, CDL_SIZE, optr)
-					  & mpi_parallel_flags(D, dims, istr1, CFL_SIZE, iptr1)
-					  & mpi_parallel_flags(D, dims, istr2, CFL_SIZE, iptr2);
-
-		mpi_reduce_zsumD(D, ~batch_flags, dims2, optr);
+		mpi_reduce_zsumD(D, dims2, optr);
+		mpi_unset_reduce(optr);
 	}
 }
 
@@ -1491,19 +1496,21 @@ void md_zfmacD(int D, const long dims[D], complex double* optr, const complex fl
  */
 void md_fmac2(int D, const long dims[D], const long ostr[D], float* optr, const long istr1[D], const float* iptr1, const long istr2[D], const float* iptr2)
 {
-	if (!simple_fmac(D, dims, ostr, optr, istr1, iptr1, istr2, iptr2))
-		MAKE_3OP(fmac, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
+	bool mpi = mpi_is_reduction(D, dims, ostr, optr, FL_SIZE, istr1, iptr1, FL_SIZE)
+		|| mpi_is_reduction(D, dims, ostr, optr, FL_SIZE, istr2, iptr2, FL_SIZE);
 
-	if (is_mpi(iptr1) || is_mpi(iptr2)) {
+	if (mpi)
+		mpi_set_reduce(optr);
+
+	MAKE_3OP(fmac, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
+
+	if (mpi) {
 
 		long dims2[D];
-		md_select_dims(D, md_nontriv_strides(D, ostr), dims2, dims);
+		md_select_dims(D, md_nontriv_strides(D,ostr), dims2, dims);
 
-		unsigned long batch_flags = mpi_parallel_flags(D, dims, ostr, FL_SIZE, optr)
-					  & mpi_parallel_flags(D, dims, istr1, FL_SIZE, iptr1)
-					  & mpi_parallel_flags(D, dims, istr2, FL_SIZE, iptr2);
-
-		mpi_reduce_sum(D, ~batch_flags, dims2, optr);
+		mpi_reduce_sum(D, dims2, optr);
+		mpi_unset_reduce(optr);
 	}
 }
 
@@ -1528,19 +1535,21 @@ void md_fmac(int D, const long dims[D], float* optr, const float* iptr1, const f
  */
 void md_fmacD2(int D, const long dims[D], const long ostr[D], double* optr, const long istr1[D], const float* iptr1, const long istr2[D], const float* iptr2)
 {
-	if (!simple_fmacD(D, dims, ostr, optr, istr1, iptr1, istr2, iptr2))
-		MAKE_3OPD(fmacD, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
+	bool mpi = mpi_is_reduction(D, dims, ostr, optr, DL_SIZE, istr1, iptr1, FL_SIZE)
+		|| mpi_is_reduction(D, dims, ostr, optr, DL_SIZE, istr2, iptr2, FL_SIZE);
 
-	if (is_mpi(iptr1) || is_mpi(iptr2)) {
+	if (mpi)
+		mpi_set_reduce(optr);
+
+	MAKE_3OPD(fmacD, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
+
+	if (mpi) {
 
 		long dims2[D];
-		md_select_dims(D, md_nontriv_strides(D, ostr), dims2, dims);
+		md_select_dims(D, md_nontriv_strides(D,ostr), dims2, dims);
 
-		unsigned long batch_flags = mpi_parallel_flags(D, dims, ostr, DL_SIZE, optr)
-					  & mpi_parallel_flags(D, dims, istr1, FL_SIZE, iptr1)
-					  & mpi_parallel_flags(D, dims, istr2, FL_SIZE, iptr2);
-
-		mpi_reduce_sumD(D, ~batch_flags, dims2, optr);
+		mpi_reduce_sumD(D, dims2, optr);
+		mpi_unset_reduce(optr);
 	}
 }
 
@@ -1565,21 +1574,21 @@ void md_fmacD(int D, const long dims[D], double* optr, const float* iptr1, const
  */
 void md_zfmacc2(int D, const long dims[D], const long ostr[D], complex float* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)
 {
-	if (!simple_zfmacc(D, dims, ostr, optr, istr1, iptr1, istr2, iptr2))
-		MAKE_Z3OP(zfmacc, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
+	bool mpi = mpi_is_reduction(D, dims, ostr, optr, CFL_SIZE, istr1, iptr1, CFL_SIZE)
+		|| mpi_is_reduction(D, dims, ostr, optr, CFL_SIZE, istr2, iptr2, CFL_SIZE);
 
-	if (is_mpi(iptr1) || is_mpi(iptr2)) {
+	if (mpi)
+		mpi_set_reduce(optr);
+
+	MAKE_Z3OP(zfmacc, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
+
+	if (mpi) {
 
 		long dims2[D];
-		md_select_dims(D, md_nontriv_strides(D, ostr), dims2, dims);
+		md_select_dims(D, md_nontriv_strides(D,ostr), dims2, dims);
 
-		unsigned long batch_flags = mpi_parallel_flags(D, dims, ostr, CFL_SIZE, optr)
-					  & mpi_parallel_flags(D, dims, istr1, CFL_SIZE, iptr1)
-					  & mpi_parallel_flags(D, dims, istr2, CFL_SIZE, iptr2);
-
-		unsigned long reduce_flag = ~batch_flags;
-
-		mpi_reduce_zsum(D, reduce_flag, dims2, optr);
+		mpi_unset_reduce(optr);
+		mpi_reduce_zsum(D, dims2, optr);
 	}
 }
 
@@ -1605,19 +1614,21 @@ void md_zfmacc(int D, const long dims[D], complex float* optr, const complex flo
  */
 void md_zfmaccD2(int D, const long dims[D], const long ostr[D], complex double* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)
 {
-	if (!simple_zfmaccD(D, dims, ostr, optr, istr1, iptr1, istr2, iptr2))
-		MAKE_Z3OPD(zfmaccD, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
+	bool mpi = mpi_is_reduction(D, dims, ostr, optr, CDL_SIZE, istr1, iptr1, CFL_SIZE)
+		|| mpi_is_reduction(D, dims, ostr, optr, CDL_SIZE, istr2, iptr2, CFL_SIZE);
 
-	if (is_mpi(iptr1) || is_mpi(iptr2)) {
+	if (mpi)
+		mpi_set_reduce(optr);
+
+	MAKE_Z3OPD(zfmaccD, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
+
+	if (mpi) {
 
 		long dims2[D];
-		md_select_dims(D, md_nontriv_strides(D, ostr), dims2, dims);
+		md_select_dims(D, md_nontriv_strides(D,ostr), dims2, dims);
 
-		unsigned long batch_flags = mpi_parallel_flags(D, dims, ostr, CDL_SIZE, optr)
-					  & mpi_parallel_flags(D, dims, istr1, CFL_SIZE, iptr1)
-					  & mpi_parallel_flags(D, dims, istr2, CFL_SIZE, iptr2);
-
-		mpi_reduce_zsumD(D, ~batch_flags, dims2, optr);
+		mpi_reduce_zsumD(D, dims2, optr);
+		mpi_unset_reduce(optr);
 	}
 }
 
