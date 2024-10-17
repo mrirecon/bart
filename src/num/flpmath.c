@@ -396,58 +396,6 @@ static void* gpu_constant(const void* vp, size_t size)
 
 static void make_z3op_scalar(md_z3op_t fun, int D, const long dims[D], const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr, complex float val)
 {
-	size_t size = CFL_SIZE;
-	unsigned long flags = 0;
-
-	int ND = MIN(md_calc_blockdim(D, dims, istr, size), md_calc_blockdim(D, dims, ostr, size));
-
-	for (int i = 0; i < ND; i++)
-		if (1024 * 1024 >= md_calc_size(i, dims))
-			flags = MD_SET(flags, i);
-
-
-	long tdims[D];
-	long strs1[D];
-
-	md_select_dims(D, flags, tdims, dims);
-	md_calc_strides(D, strs1, tdims, size);
-
-	complex float* valp = md_alloc_sameplace(D, tdims, size, optr);
-	md_zfill(D, tdims, valp, val);
-
-	fun(D, dims, ostr, optr, istr, iptr, strs1, valp);
-
-	md_free(valp);
-}
-
-static void make_3op_scalar(md_3op_t fun, int D, const long dims[D], const long ostr[D], float* optr, const long istr[D], const float* iptr, float val)
-{
-	size_t size = FL_SIZE;
-	unsigned long flags = 0;
-
-	int ND = MIN(md_calc_blockdim(D, dims, istr, size), md_calc_blockdim(D, dims, ostr, size));
-
-	for (int i = 0; i < ND; i++)
-		if (1024 * 1024 >= md_calc_size(i, dims))
-			flags = MD_SET(flags, i);
-
-
-	long tdims[D];
-	long strs1[D];
-
-	md_select_dims(D, flags, tdims, dims);
-	md_calc_strides(D, strs1, tdims, size);
-
-	float* valp = md_alloc_sameplace(D, tdims, size, optr);
-	md_fill(D, tdims, valp, &val, size);
-
-	fun(D, dims, ostr, optr, istr, iptr, strs1, valp);
-
-	md_free(valp);
-}
-
-static void make_z3op_scalar_direct(md_z3op_t fun, int D, const long dims[D], const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr, complex float val)
-{
 	complex float* valp = md_alloc_sameplace(D, MD_SINGLETON_DIMS(D), CFL_SIZE, optr);
 	md_copy(D, MD_SINGLETON_DIMS(D), valp, &val, CFL_SIZE);
 
@@ -460,7 +408,7 @@ static void make_z3op_scalar_direct(md_z3op_t fun, int D, const long dims[D], co
 }
 
 
-static void make_3op_scalar_direct(md_3op_t fun, int D, const long dims[D], const long ostr[D], float* optr, const long istr[D], const float* iptr, float val)
+static void make_3op_scalar(md_3op_t fun, int D, const long dims[D], const long ostr[D], float* optr, const long istr[D], const float* iptr, float val)
 {
 	float* valp = md_alloc_sameplace(D, MD_SINGLETON_DIMS(D), FL_SIZE, optr);
 	md_copy(D, MD_SINGLETON_DIMS(D), valp, &val, FL_SIZE);
@@ -682,7 +630,7 @@ void md_zsmul2(int D, const long dims[D], const long ostr[D], complex float* opt
 		return;
 	}
 
-	make_z3op_scalar_direct(md_zmul2, D, dims, ostr, optr, istr, iptr, val);
+	make_z3op_scalar(md_zmul2, D, dims, ostr, optr, istr, iptr, val);
 }
 
 
@@ -709,7 +657,7 @@ void md_zsmul(int D, const long dims[D], complex float* optr, const complex floa
  */
 void md_smul2(int D, const long dims[D], const long ostr[D], float* optr, const long istr[D], const float* iptr, float var)
 {
-	make_3op_scalar_direct(md_mul2, D, dims, ostr, optr, istr, iptr, var);
+	make_3op_scalar(md_mul2, D, dims, ostr, optr, istr, iptr, var);
 }
 
 
@@ -1719,7 +1667,7 @@ void md_zaxpy2(int D, const long dims[D], const long ostr[D], complex float* opt
 		return;
 	}
 
-	make_z3op_scalar_direct(md_zfmac2, D, dims, ostr, optr, istr, iptr, val);
+	make_z3op_scalar(md_zfmac2, D, dims, ostr, optr, istr, iptr, val);
 }
 
 
@@ -1910,10 +1858,11 @@ void md_zadd(int D, const long dims[D], complex float* optr, const complex float
  */
 void md_zsadd2(int D, const long dims[D], const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr, complex float val)
 {
-#if 0
-	make_z3op_scalar(md_zadd2, D, dims, ostr, optr, istr, iptr, val);
-#else
-	// FIXME: we should rather optimize md_zadd2 for this case
+	if (is_vptr(optr) || is_vptr(iptr)) {
+
+		make_z3op_scalar(md_zadd2, D, dims, ostr, optr, istr, iptr, val);
+		return;
+	}
 
 	NESTED(void, nary_zsadd, (struct nary_opt_data_s* data, void* ptr[]))
 	{
@@ -1922,7 +1871,6 @@ void md_zsadd2(int D, const long dims[D], const long ostr[D], complex float* opt
 
 	optimized_twoop_oi(D, dims, ostr, optr, istr, iptr,
 		(size_t[2]){ CFL_SIZE, CFL_SIZE }, nary_zsadd);
-#endif
 }
 
 
@@ -2000,10 +1948,11 @@ void md_add(int D, const long dims[D], float* optr, const float* iptr1, const fl
  */
 void md_sadd2(int D, const long dims[D], const long ostr[D], float* optr, const long istr[D], const float* iptr, float val)
 {
-#if 0
-	make_3op_scalar(md_add2, D, dims, ostr, optr, istr, iptr, val);
-#else
-	// FIXME: we should rather optimize md_zadd2 for this case
+	if (is_vptr(optr) || is_vptr(iptr)) {
+
+		make_3op_scalar(md_add2, D, dims, ostr, optr, istr, iptr, val);
+		return;
+	}
 
 	NESTED(void, nary_sadd, (struct nary_opt_data_s* data, void* ptr[]))
 	{
@@ -2012,7 +1961,6 @@ void md_sadd2(int D, const long dims[D], const long ostr[D], float* optr, const 
 
 	optimized_twoop_oi(D, dims, ostr, optr, istr, iptr,
 		(size_t[2]){ FL_SIZE, FL_SIZE }, nary_sadd);
-#endif
 }
 
 
@@ -2100,7 +2048,7 @@ void md_zreal2(int D, const long dim[D], const long ostr[D], complex float* optr
 void md_zreal(int D, const long dims[D], complex float* optr, const complex float* iptr)
 {
 #ifdef USE_CUDA
-	if (cuda_ondevice(iptr)) {
+	if (cuda_ondevice(iptr) && !is_vptr(iptr)) {
 
 		assert(cuda_ondevice(optr));
 
