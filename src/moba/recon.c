@@ -13,6 +13,7 @@
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/fft.h"
+#include "num/vptr.h"
 
 #include "iter/iter3.h"
 
@@ -353,14 +354,30 @@ static void recon(const struct moba_conf* conf, struct moba_conf_s* data,
 
 	long d1[1] = { size };
 	// variable which is optimized by the IRGNM
-	complex float* x = md_alloc_sameplace(1, d1, CFL_SIZE, kspace_data);
-	complex float* x_ref = md_alloc_sameplace(1, d1, CFL_SIZE, kspace_data);
+	complex float* x;
+	complex float* x_ref;
 
-	md_copy(DIMS, imgs_dims, x, img, CFL_SIZE);
-	md_copy(DIMS, coil_dims, x + skip, sens, CFL_SIZE);
+	if (is_vptr(img)) {
 
-	//reference
-	md_zsmul(1, MD_DIMS(size), x_ref, x, conf->damping);
+		void* img_ptr = (is_vptr_gpu(kspace_data) ? vptr_move_gpu : vptr_move_cpu)(img);
+		void* sens_ptr = (is_vptr_gpu(kspace_data) ? vptr_move_gpu : vptr_move_cpu)(sens);
+
+		x = vptr_wrap_range(2, (void* [2]){ img_ptr, sens_ptr }, true);
+		x_ref = vptr_alloc_same(x);
+
+		md_zsmul(DIMS, imgs_dims, x_ref, x, conf->damping);
+		md_zsmul(DIMS, coil_dims, x_ref + skip, x + skip, conf->damping);
+	} else {
+
+		x = md_alloc_sameplace(1, d1, CFL_SIZE, kspace_data);
+		x_ref = md_alloc_sameplace(1, d1, CFL_SIZE, kspace_data);
+
+		md_copy(DIMS, imgs_dims, x, img, CFL_SIZE);
+		md_copy(DIMS, coil_dims, x + skip, sens, CFL_SIZE);
+
+		//reference
+		md_zsmul(1, MD_DIMS(size), x_ref, x, conf->damping);
+	}	
 
 	struct iter3_irgnm_conf irgnm_conf = iter3_irgnm_defaults;
 
