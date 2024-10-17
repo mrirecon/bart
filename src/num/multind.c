@@ -109,15 +109,10 @@ void md_nary(int C, int D, const long dim[D], const long* str[C], void* ptr[C], 
 	md_set_dims(D, pos, 0);
 
 	do {
-		bool mpi_acces = true;
-
-		for (int i = 0; i < C; i++) {
-
+		for (int i = 0; i < C; i++)
 			nptr[i] = ptr[i] + md_calc_offset(D, str[i], pos);
-			mpi_acces = mpi_acces && mpi_accessible(nptr[i]);
-		}
 
-		if (!mpi_acces)
+		if (!mpi_accessible_mult(C, (const void**)nptr))
 			continue;
 
 		for (int i = 0; i < C; i++)
