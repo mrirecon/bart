@@ -365,8 +365,12 @@ void gaussian_rand_vec(long N, float* dst)
 
 static void md_gaussian_obsolete_rand(int D, const long dims[D], complex float* dst)
 {
-#ifdef  USE_CUDA
-	if (cuda_ondevice(dst)) {
+	bool buf = is_vptr(dst);
+#ifdef USE_CUDA
+	buf = buf || cuda_ondevice(dst);
+#endif
+
+	if (buf) {
 
 		complex float* tmp = md_alloc(D, dims, sizeof(complex float));
 
@@ -376,7 +380,7 @@ static void md_gaussian_obsolete_rand(int D, const long dims[D], complex float* 
 		md_free(tmp);
 		return;
 	}
-#endif
+
 	long N = md_calc_size(D, dims);
 
 	for (long i = 0; i < N; i++)
@@ -540,8 +544,12 @@ void md_gaussian_rand(int D, const long dims[D], complex float* dst)
 
 static void md_uniform_obsolete_rand(int D, const long dims[D], complex float* dst)
 {
-#ifdef  USE_CUDA
-	if (cuda_ondevice(dst)) {
+	bool buf = is_vptr(dst);
+#ifdef USE_CUDA
+	buf = buf || cuda_ondevice(dst);
+#endif
+
+	if (buf) {
 
 		complex float* tmp = md_alloc(D, dims, sizeof(complex float));
 
@@ -551,7 +559,7 @@ static void md_uniform_obsolete_rand(int D, const long dims[D], complex float* d
 		md_free(tmp);
 		return;
 	}
-#endif
+
 	long N = md_calc_size(D, dims);
 
 	for (long i = 0; i < N; i++)
@@ -596,8 +604,12 @@ void md_uniform_rand(int D, const long dims[D], complex float* dst)
 
 static void md_obsolete_rand_one(int D, const long dims[D], complex float* dst, double p)
 {
-#ifdef  USE_CUDA
-	if (cuda_ondevice(dst)) {
+	bool buf = is_vptr(dst);
+#ifdef USE_CUDA
+	buf = buf || cuda_ondevice(dst);
+#endif
+
+	if (buf) {
 
 		complex float* tmp = md_alloc(D, dims, sizeof(complex float));
 
@@ -607,7 +619,7 @@ static void md_obsolete_rand_one(int D, const long dims[D], complex float* dst, 
 		md_free(tmp);
 		return;
 	}
-#endif
+
 	long N = md_calc_size(D, dims);
 
 	for (long i = 0; i < N; i++)
