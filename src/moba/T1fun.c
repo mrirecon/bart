@@ -45,11 +45,6 @@ struct T1_s {
 	const long* in_strs;
 	const long* out_strs;
 
-	// Parameter maps
-	complex float* Mss;
-	complex float* M0;
-	complex float* R1s;
-
 	complex float* tmp_dMss;
 	complex float* tmp_dM0;
 	complex float* tmp_dR1s;
@@ -64,12 +59,9 @@ DEF_TYPEID(T1_s);
 
 static void T1_init(struct T1_s* data, const void* arg)
 {
-	if (NULL != data->Mss)
+	if (NULL != data->tmp_dMss)
 		return;
 
-	data->Mss = md_alloc_sameplace(data->N, data->map_dims, CFL_SIZE, arg);
-	data->M0 = md_alloc_sameplace(data->N, data->map_dims, CFL_SIZE, arg);
-	data->R1s = md_alloc_sameplace(data->N, data->map_dims, CFL_SIZE, arg);
 	data->tmp_dM0 = md_alloc_sameplace(data->N, data->out_dims, CFL_SIZE, arg);
 	data->tmp_dMss = md_alloc_sameplace(data->N, data->out_dims, CFL_SIZE, arg);
 	data->tmp_dR1s = md_alloc_sameplace(data->N, data->out_dims, CFL_SIZE, arg);
@@ -91,23 +83,27 @@ static void T1_fun(const nlop_data_t* _data, complex float* dst, const complex f
 	complex float* tmp_ones = md_alloc_sameplace(data->N, data->map_dims, CFL_SIZE, dst);
 	complex float* tmp_exp = md_alloc_sameplace(data->N, data->out_dims, CFL_SIZE, dst);
 
+	complex float* Mss = md_alloc_sameplace(data->N, data->map_dims, CFL_SIZE, dst);
+	complex float* M0 = md_alloc_sameplace(data->N, data->map_dims, CFL_SIZE, dst);
+	complex float* R1s = md_alloc_sameplace(data->N, data->map_dims, CFL_SIZE, dst);
+
 	// Mss
 	pos[COEFF_DIM] = 0;
-	md_copy_block(data->N, pos, data->map_dims, data->Mss, data->in_dims, src, CFL_SIZE);
+	md_copy_block(data->N, pos, data->map_dims, Mss, data->in_dims, src, CFL_SIZE);
 
 	// M0
 	pos[COEFF_DIM] = 1;
-	md_copy_block(data->N, pos, data->map_dims, data->M0, data->in_dims, src, CFL_SIZE);
+	md_copy_block(data->N, pos, data->map_dims, M0, data->in_dims, src, CFL_SIZE);
 
 	// R1s
 	pos[COEFF_DIM] = 2;
-	md_copy_block(data->N, pos, data->map_dims, data->R1s, data->in_dims, src, CFL_SIZE);
+	md_copy_block(data->N, pos, data->map_dims, R1s, data->in_dims, src, CFL_SIZE);
 	if (!use_compat_to_version("v0.7.00"))
-		md_zreal(data->N, data->map_dims, data->R1s, data->R1s);
+		md_zreal(data->N, data->map_dims, R1s, R1s);
 
 
 	// -1*scaling_R1s.*R1s
-	md_zsmul2(data->N, data->map_dims, data->map_strs, tmp_map, data->map_strs, data->R1s, -1.0*data->scaling_R1s);
+	md_zsmul2(data->N, data->map_dims, data->map_strs, tmp_map, data->map_strs, R1s, -1.0*data->scaling_R1s);
 
 	// exp(-t.*scaling_R1s*R1s):
 
@@ -115,16 +111,16 @@ static void T1_fun(const nlop_data_t* _data, complex float* dst, const complex f
 	md_zexp(data->N, data->out_dims, tmp_exp, tmp_exp);
 
 	// scaling_M0.*M0
-	md_zsmul2(data->N, data->map_dims, data->map_strs, tmp_map, data->map_strs, data->M0, data->scaling_M0);
+	md_zsmul2(data->N, data->map_dims, data->map_strs, tmp_map, data->map_strs, M0, data->scaling_M0);
 
 	// Mss + scaling_M0*M0
-	md_zadd(data->N, data->map_dims, tmp_map, data->Mss, tmp_map);
+	md_zadd(data->N, data->map_dims, tmp_map, Mss, tmp_map);
 
 	// (Mss + scaling_M0*M0).*exp(-t.*scaling_R1s*R1s)
 	md_zmul2(data->N, data->out_dims, data->out_strs, dst, data->map_strs, tmp_map, data->out_strs, tmp_exp);
 
 	// Mss -(Mss + scaling_M0*M0).*exp(-t.*scaling_R1s*R1s)
-	md_zsub2(data->N, data->out_dims, data->out_strs, dst, data->map_strs, data->Mss, data->out_strs, dst);
+	md_zsub2(data->N, data->out_dims, data->out_strs, dst, data->map_strs, Mss, data->out_strs, dst);
 
 	// Calculating derivatives
 
@@ -145,10 +141,10 @@ static void T1_fun(const nlop_data_t* _data, complex float* dst, const complex f
 		md_zsmul(data->N, data->out_dims, tmp_exp, tmp_exp, data->scaling_M0);
 
 	// scaling_M0.*M0
-	md_zsmul2(data->N, data->map_dims, data->map_strs, tmp_map, data->map_strs, data->M0, data->scaling_M0);
+	md_zsmul2(data->N, data->map_dims, data->map_strs, tmp_map, data->map_strs, M0, data->scaling_M0);
 
 	// Mss + scaling_M0*M0
-	md_zadd(data->N, data->map_dims, tmp_ones, data->Mss, tmp_map);
+	md_zadd(data->N, data->map_dims, tmp_ones, Mss, tmp_map);
 
 	// R1s' = (Mss + scaling_M0*M0) * scaling_R1s.*exp(-t.*scaling_R1s.*R1s) * t
 	md_zmul2(data->N, data->out_dims, data->out_strs, data->tmp_dR1s, data->map_strs, tmp_ones, data->out_strs, tmp_exp);
@@ -156,6 +152,10 @@ static void T1_fun(const nlop_data_t* _data, complex float* dst, const complex f
 	md_free(tmp_map);
 	md_free(tmp_ones);
 	md_free(tmp_exp);
+
+	md_free(Mss);
+	md_free(M0);
+	md_free(R1s);
 }
 
 static void T1_der(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
@@ -245,10 +245,6 @@ static void T1_del(const nlop_data_t* _data)
 {
 	struct T1_s* data = CAST_DOWN(T1_s, _data);
 
-	md_free(data->Mss);
-	md_free(data->M0);
-	md_free(data->R1s);
-
 	multiplace_free(data->TI);
 
 	md_free(data->tmp_dM0);
@@ -309,9 +305,6 @@ struct nlop_s* nlop_T1_create(int N, const long map_dims[N], const long out_dims
 	data->TI_strs = *PTR_PASS(ntistr);
 
 	data->N = N;
-	data->Mss = NULL;
-	data->M0 = NULL;
-	data->R1s = NULL;
 	data->tmp_dM0 = NULL;
 	data->tmp_dMss = NULL;
 	data->tmp_dR1s = NULL;
