@@ -1,6 +1,6 @@
 /* Copyright 2013. The Regents of the University of California.
  * Copyright 2022. Martin Uecker.
- * All rights reserved. Use of this source code is governed by 
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
@@ -15,6 +15,7 @@
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/loop.h"
+#include "num/vptr.h"
 
 #include "misc/misc.h"
 #include "misc/debug.h"
@@ -106,7 +107,7 @@ void calib_geom(long caldims[DIMS], long calpos[DIMS], const long calsize[3], co
 	assert(1 == in_dims[MAPS_DIM]);
 
 	md_select_dims(DIMS, ~COIL_FLAG, pat_dims, in_dims);
-	
+
 	complex float* pattern = md_alloc_sameplace(DIMS, pat_dims, CFL_SIZE, in_data);
 	estimate_pattern(DIMS, in_dims, COIL_FLAG, pattern, in_data);
 
@@ -149,9 +150,9 @@ void calib_geom(long caldims[DIMS], long calpos[DIMS], const long calsize[3], co
 
 			long offset = md_calc_offset(DIMS, calpos, pat_strs);
 			float si = sqrtf((float)caldims[0] * (float)caldims[1] * (float)caldims[2]);
-		
+
 			if (si != md_znorm2(DIMS, caldims, pat_strs, pattern + offset / (long)CFL_SIZE)) {
-		
+
 				caldims[i]--;
 				calpos[i] = (in_dims[i] - caldims[i]) / 2;
 				stop[i] = true;
@@ -206,7 +207,7 @@ complex float* extract_calib2(long caldims[DIMS], const long calsize[3], const l
 		}
 	}
 
-	debug_printf(DP_DEBUG1, "Calibration region...  (size: %ldx%ldx%ld, pos: %ldx%ldx%ld)\n", 
+	debug_printf(DP_DEBUG1, "Calibration region...  (size: %ldx%ldx%ld, pos: %ldx%ldx%ld)\n",
 				caldims[0], caldims[1], caldims[2], calpos[0] + tmp_pos[0], calpos[1] + tmp_pos[1], calpos[2] + tmp_pos[2]);
 
 	complex float* cal_data = md_alloc_sameplace(DIMS, caldims, CFL_SIZE, tmp_data);
@@ -231,6 +232,15 @@ complex float* extract_calib(long caldims[DIMS], const long calsize[3], const lo
  */
 void estimate_im_dims(int N, unsigned long flags, long dims[N], const long tdims[N], const complex float* traj)
 {
+	if (is_vptr(traj)) {
+
+		complex float* traj_cpu = md_alloc(N, tdims, CFL_SIZE);
+		md_copy(N, tdims, traj_cpu, traj, CFL_SIZE);
+		estimate_im_dims(N, flags, dims, tdims, traj_cpu);
+		md_free(traj_cpu);
+		return;
+	}
+
 	int T = tdims[0];
 
 	assert(T == bitcount(flags));

@@ -16,6 +16,7 @@
 #include "num/flpmath.h"
 #include "num/fft.h"
 #include "num/fltools.h"
+#include "num/vptr.h"
 
 #include "misc/mri.h"
 #include "misc/mri2.h"
@@ -71,6 +72,18 @@ void rss_combine(const long dims[DIMS], complex float* image, const complex floa
 
 float estimate_scaling_norm(float rescale, int imsize, complex float* tmpnorm, bool compat, float p)
 {
+	if (is_vptr(tmpnorm)) {
+
+		complex float* tmp = md_alloc(1, (long[1]){ imsize }, CFL_SIZE);
+		md_copy(1, (long[1]){ imsize }, tmp, tmpnorm, CFL_SIZE);
+
+		float ret = estimate_scaling_norm(rescale, imsize, tmp, compat, p);
+
+		md_free(tmp);
+
+		return ret;
+	}
+
 	zsort(imsize, tmpnorm);
 
 	float median = cabsf(tmpnorm[imsize / 2]) / rescale; //median
