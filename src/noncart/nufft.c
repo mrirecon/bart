@@ -1768,3 +1768,8 @@ void nufft_update_psf(const struct linop_s* nufft, int ND, const long psf_dims[N
 }
 
 
+void debug_nufft_conf(struct nufft_conf_s conf)
+{
+	debug_printf(DP_INFO, "\n\nDEBUG: nufft_config\n");
+	debug_printf(DP_INFO, "toeplitz:\t%d,\npcycle:\t%d,\nperiodic:\t%d,\nlowmem:\t%d,\nloopdim:\t%d,\nflags:\t%ld,\ncfft:\t%ld,\ndecomp:\t%d,\nnopsf:\t%d,\ncache_psf_gridding:\t%d,\nprecomp_linphase:\t%d,\nprecomp_fftmod:\t%d,\nprecomp_roll:\t%d,\nzero_overhead:\t%d,\nwidth:\t%f,\nos:\t%f\n\n", conf.toeplitz, conf.pcycle, conf.periodic, conf.lowmem, conf.loopdim, conf.flags, conf.cfft, conf.decomp, conf.nopsf, conf.cache_psf_gridding, conf.precomp_linphase, conf.precomp_fftmod, conf.precomp_roll, conf.zero_overhead, conf.width, conf.os);
+}

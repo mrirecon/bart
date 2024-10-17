@@ -94,5 +94,7 @@ extern int nufft_get_psf_dims(const struct linop_s* nufft, int N, long psf_dims[
 extern void nufft_get_psf2(const struct linop_s* nufft, int N, const long psf_dims[N], const long psf_strs[N], _Complex float* psf);
 extern void nufft_get_psf(const struct linop_s* nufft, int N, const long psf_dims[N], _Complex float* psf);
 
+extern void debug_nufft_conf(struct nufft_conf_s conf);
+
 #include "misc/cppwrap.h"
 
