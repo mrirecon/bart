@@ -255,6 +255,33 @@ static void make_2opd_simple(md_2opd_t fun, int D, const long dims[D], double* o
 
 static void make_z3op(size_t offset, int D, const long dim[D], const long ostr[D], complex float* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)
 {
+	if (is_vptr(optr) || is_vptr(iptr1) || is_vptr(iptr2)) {
+
+		NESTED(void, nary_loop, (void* ptr[], const long dims[], const long* strs[]))
+		{
+			make_z3op(offset, D, dims, strs[0], ptr[0], strs[1], ptr[1], strs[2], ptr[2]);
+		};
+
+		md_nary_resolve(3, D, dim, (const long*[3]) { ostr, istr1, istr2}, (void*[3]) { optr, (void*)iptr1, (void*)iptr2 }, nary_loop);
+		return;
+	}
+
+
+	if ((offset == offsetof(struct vec_ops, zmul)) && simple_zmul(D, dim, ostr, optr, istr1, iptr1, istr2, iptr2))
+		return;
+
+	if ((offset == offsetof(struct vec_ops, zmulc)) && simple_zmulc(D, dim, ostr, optr, istr1, iptr1, istr2, iptr2))
+		return;
+
+	if ((offset == offsetof(struct vec_ops, zfmac)) && simple_zfmac(D, dim, ostr, optr, istr1, iptr1, istr2, iptr2))
+		return;
+
+	if ((offset == offsetof(struct vec_ops, zfmacc)) && simple_zfmacc(D, dim, ostr, optr, istr1, iptr1, istr2, iptr2))
+		return;
+
+	if ((offset == offsetof(struct vec_ops, zmax)) && simple_zmax(D, dim, ostr, optr, istr1, iptr1, istr2, iptr2))
+		return;
+
 	NESTED(void, nary_z3op, (struct nary_opt_data_s* data, void* ptr[]))
 	{
 		(*(z3op_t*)(((char*)data->ops) + offset))(data->size, ptr[0], ptr[1], ptr[2]);
@@ -267,6 +294,28 @@ static void make_z3op(size_t offset, int D, const long dim[D], const long ostr[D
 
 static void make_3op(size_t offset, int D, const long dim[D], const long ostr[D], float* optr, const long istr1[D], const float* iptr1, const long istr2[D], const float* iptr2)
 {
+	if (is_vptr(optr) || is_vptr(iptr1) || is_vptr(iptr2)) {
+
+		NESTED(void, nary_loop, (void* ptr[], const long dims[], const long* strs[]))
+
+		{
+			make_3op(offset, D, dims, strs[0], ptr[0], strs[1], ptr[1], strs[2], ptr[2]);
+		};
+
+		md_nary_resolve(3, D, dim, (const long*[3]) { ostr, istr1, istr2}, (void*[3]) { optr, (void*)iptr1, (void*)iptr2 }, nary_loop);
+		return;
+	}
+
+	if ((offset == offsetof(struct vec_ops, mul)) && simple_mul(D, dim, ostr, optr, istr1, iptr1, istr2, iptr2))
+		return;
+
+	if ((offset == offsetof(struct vec_ops, add)) && simple_add(D, dim, ostr, optr, istr1, iptr1, istr2, iptr2))
+		return;
+
+	if ((offset == offsetof(struct vec_ops, fmac)) && simple_fmac(D, dim, ostr, optr, istr1, iptr1, istr2, iptr2))
+		return;
+
+
 	NESTED(void, nary_3op, (struct nary_opt_data_s* data, void* ptr[]))
 	{
 		(*(r3op_t*)(((char*)data->ops) + offset))(data->size, ptr[0], ptr[1], ptr[2]);
@@ -278,6 +327,21 @@ static void make_3op(size_t offset, int D, const long dim[D], const long ostr[D]
 
 static void make_z3opd(size_t offset, int D, const long dim[D], const long ostr[D], complex double* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)
 {
+	if (is_vptr(optr) || is_vptr(iptr1) || is_vptr(iptr2)) {
+
+		NESTED(void, nary_loop, (void* ptr[], const long dims[], const long* strs[]))
+
+		{
+			make_z3opd(offset, D, dims, strs[0], ptr[0], strs[1], ptr[1], strs[2], ptr[2]);
+		};
+
+		md_nary_resolve(3, D, dim, (const long*[3]) { ostr, istr1, istr2}, (void*[3]) { optr, (void*)iptr1, (void*)iptr2 }, nary_loop);
+		return;
+	}
+
+	if ((offset == offsetof(struct vec_ops, zfmaccD)) && simple_zfmaccD(D, dim, ostr, optr, istr1, iptr1, istr2, iptr2))
+		return;
+
 	NESTED(void, nary_z3opd, (struct nary_opt_data_s* data, void* ptr[]))
 	{
 		(*(z3opd_t*)(((char*)data->ops) + offset))(data->size, ptr[0], ptr[1], ptr[2]);
@@ -289,6 +353,21 @@ static void make_z3opd(size_t offset, int D, const long dim[D], const long ostr[
 
 static void make_3opd(size_t offset, int D, const long dim[D], const long ostr[D], double* optr, const long istr1[D], const float* iptr1, const long istr2[D], const float* iptr2)
 {
+	if (is_vptr(optr) || is_vptr(iptr1) || is_vptr(iptr2)) {
+
+		NESTED(void, nary_loop, (void* ptr[], const long dims[], const long* strs[]))
+
+		{
+			make_3opd(offset, D, dims, strs[0], ptr[0], strs[1], ptr[1], strs[2], ptr[2]);
+		};
+
+		md_nary_resolve(3, D, dim, (const long*[3]) { ostr, istr1, istr2}, (void*[3]) { optr, (void*)iptr1, (void*)iptr2 }, nary_loop);
+		return;
+	}
+
+	if ((offset == offsetof(struct vec_ops, fmacD)) && simple_fmacD(D, dim, ostr, optr, istr1, iptr1, istr2, iptr2))
+		return;
+
 	NESTED(void, nary_3opd, (struct nary_opt_data_s* data, void* ptr[]))
 	{
 		(*(r3opd_t*)(((char*)data->ops) + offset))(data->size, ptr[0], ptr[1], ptr[2]);
@@ -536,9 +615,6 @@ static void make_z2opf_from_real(size_t offset, int D, const long dims[D], const
  */
 void md_zmul2(int D, const long dim[D], const long ostr[D], complex float* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)
 {
-	if (simple_zmul(D, dim, ostr, optr, istr1, iptr1, istr2, iptr2))
-		return;
-
 	MAKE_Z3OP(zmul, D, dim, ostr, optr, istr1, iptr1, istr2, iptr2);
 }
 
@@ -563,9 +639,6 @@ void md_zmul(int D, const long dim[D], complex float* optr, const complex float*
  */
 void md_mul2(int D, const long dim[D], const long ostr[D], float* optr, const long istr1[D], const float* iptr1, const long istr2[D], const float* iptr2)
 {
-	if (simple_mul(D, dim, ostr, optr, istr1, iptr1, istr2, iptr2))
-		return;
-
 	MAKE_3OP(mul, D, dim, ostr, optr, istr1, iptr1, istr2, iptr2);
 }
 
@@ -686,9 +759,6 @@ void md_smul(int D, const long dims[D], float* optr, const float* iptr, float va
  */
 void md_zmulc2(int D, const long dim[D], const long ostr[D], complex float* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)
 {
-	if (simple_zmulc(D, dim, ostr, optr, istr1, iptr1, istr2, iptr2))
-		return;
-
 	MAKE_Z3OP(zmulc, D, dim, ostr, optr, istr1, iptr1, istr2, iptr2);
 }
 
@@ -1076,83 +1146,6 @@ void md_tenmul_dims(int D, long max_dims[D], const long out_dims[D], const long 
 }
 
 
-static bool detect_matrix(const long dims[3], const long ostrs[3], const long mstrs[3], const long istrs[3])
-{
-	return (   (0 == ostrs[1])
-		&& (0 == mstrs[2])
-		&& (0 == istrs[0])
-		&& ((CFL_SIZE == ostrs[0]) && (ostrs[0] * dims[0] == ostrs[2]))
-		&& ((CFL_SIZE == mstrs[0]) && (mstrs[0] * dims[0] == mstrs[1]))
-		&& ((CFL_SIZE == istrs[1]) && (istrs[1] * dims[1] == istrs[2])));
-}
-
-
-static bool simple_matmul(int N, const long max_dims[N], const long ostrs[N], complex float* out,
-		const long mstrs[N], const complex float* mat, const long istrs[N], const complex float* in)
-{
-	long dims[N];
-	md_copy_dims(N, dims, max_dims);
-
-	long ostrs2[N];
-	md_copy_strides(N, ostrs2, ostrs);
-
-	long mstrs2[N];
-	md_copy_strides(N, mstrs2, mstrs);
-
-	long istrs2[N];
-	md_copy_strides(N, istrs2, istrs);
-
-	long (*strs[3])[N] = { &ostrs2, &istrs2, &mstrs2 };
-	int ND = simplify_dims(3, N, dims, strs);
-
-	if (ND < 3)
-		return false;
-
-	long C = dims[0];
-	long B = dims[1];
-	long A = dims[2];
-
-	if ((3 == ND) && detect_matrix(dims, ostrs2, istrs2, mstrs2)) {
-
-		debug_printf(DP_DEBUG4, "matmul: matrix multiplication (1).\n");
-#ifdef NO_BLAS
-		// num/linalg.h
-
-		mat_mul(A, B, C,
-			*(complex float (*)[A][C])out,
-			*(const complex float (*)[A][B])mat,
-			*(const complex float (*)[B][C])in);
-#else
-		blas_matrix_multiply(C, A, B,
-			*(complex float (*)[A][C])out,
-			*(const complex float (*)[B][C])in,
-			*(const complex float (*)[A][B])mat);
-#endif
-		return true;
-	}
-
-	if ((3 == ND) && detect_matrix(dims, ostrs2, mstrs2, istrs2)) {
-
-		debug_printf(DP_DEBUG4, "matmul: matrix multiplication (2).\n");
-#ifdef NO_BLAS
-		// num/linalg.h
-
-		mat_mul(A, B, C,
-			*(complex float (*)[A][C])out,
-			*(const complex float (*)[A][B])in,
-			*(const complex float (*)[B][C])mat);
-#else
-		blas_matrix_multiply(C, A, B,
-			*(complex float (*)[A][C])out,
-			*(const complex float (*)[B][C])mat,
-			*(const complex float (*)[A][B])in);
-#endif
-		return true;
-	}
-
-	return false;
-}
-
 
 /*
  * tenmul (tensor multiplication) family of functions are revised
@@ -1160,9 +1153,6 @@ static bool simple_matmul(int N, const long max_dims[N], const long ostrs[N], co
  */
 void md_ztenmul2(int D, const long max_dims[D], const long out_strs[D], complex float* out, const long in1_strs[D], const complex float* in1, const long in2_strs[D], const complex float* in2)
 {
-	if (simple_matmul(D, max_dims, out_strs, out, in2_strs, in2, in1_strs, in1))
-		return;
-
 	const long (*nstr[3])[D?D:1] = { (const long (*)[D?D:1])out_strs, (const long (*)[D?D:1])in1_strs, (const long (*)[D?D:1])in2_strs};
 
 	if (0 == (md_nontriv_dims(D, max_dims) & (~parallelizable(3, 1, D, max_dims, nstr, (size_t[3]){ CFL_SIZE, CFL_SIZE, CFL_SIZE })))) {
@@ -1369,9 +1359,6 @@ static void md_zmatmul2_priv(int D, const long out_dims[D], const long out_strs[
 {
 	long max_dims[D];
 	md_tenmul_dims(D, max_dims, out_dims, mat_dims, in_dims);
-
-	if ((!conj) && simple_matmul(D, max_dims, out_strs, dst, mat_strs, mat, in_strs, src))
-		return;
 
 	md_clear2(D, out_dims, out_strs, dst, CFL_SIZE);
 	(conj ? md_zfmacc2 : md_zfmac2)(D, max_dims, out_strs, dst, in_strs, src, mat_strs, mat);
@@ -1747,9 +1734,6 @@ void md_zmax(int D, const long dims[D], complex float* optr, const complex float
  */
 void md_zmax2(int D, const long dims[D], const long ostr[D], complex float* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)
 {
-	if (simple_zmax(D, dims, ostr, optr, istr1, iptr1, istr2, iptr2))
-		return;
-
 	MAKE_Z3OP(zmax, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
 }
 
@@ -1788,24 +1772,6 @@ void md_axpy2(int D, const long dims[D], const long ostr[D], float* optr, float 
 		return;
 	}
 
-#ifdef USE_CUDA
-	if (cuda_ondevice(iptr)) {
-
-		assert(cuda_ondevice(optr));
-
-		if (md_calc_blockdim(D, dims, ostr, FL_SIZE) != D)
-			goto fallback;
-
-		if (md_calc_blockdim(D, dims, istr, FL_SIZE) != D)
-			goto fallback;
-
-		//  (iptr == optr) is safe.
-
-		gpu_ops.axpy(md_calc_size(D, dims), optr, val, iptr);
-		return;
-	}
-fallback:
-#endif
 	make_3op_scalar(md_fmac2, D, dims, ostr, optr, istr, iptr, val);
 }
 
@@ -1833,9 +1799,6 @@ void md_axpy(int D, const long dims[D], float* optr, float val, const float* ipt
  */
 void md_zadd2(int D, const long dims[D], const long ostr[D], complex float* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)
 {
-	if (simple_zadd(D, dims, ostr, optr, istr1, iptr1, istr2, iptr2))
-		return;
-
 	MAKE_Z3OP_FROM_REAL(add, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
 }
 
@@ -1923,9 +1886,6 @@ void md_zsub(int D, const long dims[D], complex float* optr, const complex float
  */
 void md_add2(int D, const long dims[D], const long ostr[D], float* optr, const long istr1[D], const float* iptr1, const long istr2[D], const float* iptr2)
 {
-	if (simple_add(D, dims, ostr, optr, istr1, iptr1, istr2, iptr2))
-		return;
-
 	MAKE_3OP(add, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
 }
 

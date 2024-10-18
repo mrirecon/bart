@@ -1444,6 +1444,12 @@ bool simple_zadd(int N, const long dims[N], const long ostrs[N], complex float* 
 
 bool simple_add(int N, const long dims[N], const long ostrs[N], float* out, const long istrs1[N], const float* in1, const long istrs2[N], const float* in2)
 {
+	if (2 == dims[N - 1] && FL_SIZE == ostrs[N - 1] && FL_SIZE == istrs1[N - 1] && FL_SIZE == istrs2[N - 1]) {
+
+		if (simple_zadd(N - 1, dims, ostrs, (complex float*)out, istrs1, (const complex float*)in1, istrs2, (const complex float*)in2))
+			return true;
+	}
+
 	struct simple_3op_check strided_calls[] = {
 		OPT_3OP(check_unfold,	add_gpu_unfold, true, false, false, false, true),
 #ifdef NON_DETERMINISTIC
