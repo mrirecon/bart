@@ -207,7 +207,7 @@ static void inverse_fista(iter_op_data* _data, float alpha, float* dst, const fl
 
 	md_gaussian_rand(1, MD_DIMS(data->size_x / 2), x);
 
-	maxeigen += power(20, data->size_x, select_vecops(src), (struct iter_op_s){ normal, CAST_UP(data) }, x);
+	maxeigen += power(20, data->size_x, select_vecops(src), (struct iter_op_s){ normal, CAST_UP(data) }, x, NULL);
 
 	md_free(x);
 

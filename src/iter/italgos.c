@@ -526,7 +526,7 @@ void conjgrad_batch(int maxiter, float l2lambda, float epsilon,
 	float* pAp = vops->allocate(Bo * Bi);
 	float* alpha = vops->allocate(Bo * Bi);
 	float* beta = vops->allocate(Bo * Bi);
-	
+
 	vops->dot_bat(Bi, N, Bo, rsnot, r, r);
 	vops->copy(Bo * Bi, rsold, rsnot);
 	vops->copy(Bo * Bi, rsnew, rsnot);
@@ -685,7 +685,7 @@ void irgnm2(int iter, float alpha, float alpha_min, float alpha_min0, float redu
 
 		if (NULL != xref)
 			vops->axpy(N, x, -1., xref);
-	
+
 		float* q = vops->allocate(M);
 
 		iter_op_call(der, q, x);
@@ -791,17 +791,20 @@ double power(int maxiter,
 	long N,
 	const struct vec_iter_s* vops,
 	struct iter_op_s op,
-	float* u)
+	float* u, float* b)
 {
 	double s = vops->norm(N, u);
 	vops->smul(N, 1. / s, u, u);
 
+	if (NULL == b)
+		b = u;
+
 	for (int i = 0; i < maxiter; i++) {
 
-		iter_op_call(op, u, u);		// r = A x
+		iter_op_call(op, b, u);		// r = A x
 
-		s = vops->norm(N, u);
-		vops->smul(N, 1. / s, u, u);
+		s = vops->norm(N, b);
+		vops->smul(N, 1. / s, u, b);
 	}
 
 	return s;
@@ -1539,7 +1542,7 @@ static bool line_search_backtracking(struct iter_op_s op, struct iter_op_s adj, 
 	const int max_iter = 50;
 
 	bool armijo = (0 >= c2); //wolfe condition else
-	
+
 	if (0. >= *stp)
 		error("Non-positive step size!\n");
 
@@ -1549,9 +1552,9 @@ static bool line_search_backtracking(struct iter_op_s op, struct iter_op_s adj, 
 	float dgtest = c1 * dginit;
 	float fprev = 0;
 
-	
+
 	if (0 < dginit)
-		error("Non-decreasing search direction!\n");	
+		error("Non-decreasing search direction!\n");
 
 	for (int i = 0; i < max_iter; i++) {
 
@@ -1630,7 +1633,7 @@ static bool zoom(struct iter_op_s op, struct iter_op_s adj, const struct vec_ite
 
 			if (phip * (stp_hi - stp_lo) >= 0)
 				stp_hi = stp_lo;
-			
+
 			*stp = stp_hi;
 			phi_lo = *f;
 		}
@@ -1734,7 +1737,7 @@ void lbfgs(int maxiter, int M, float step, float ftol, float gtol, float c1, flo
 		}
 
 		float gamma = 1;
-		
+
 		if (0 < k) {
 
 			float num = vops->dot(N, s[(k - 1) % M], y[(k - 1) % M]);
@@ -1780,7 +1783,7 @@ void lbfgs(int maxiter, int M, float step, float ftol, float gtol, float c1, flo
 
 		vops->sub(N, s[k % M], x, xprev);
 		vops->sub(N, y[k % M], g, gprev);
-		
+
 		rho[k % M] = 1. / vops->dot(N, y[k % M], s[k % M]);
 
 
