@@ -184,7 +184,7 @@ int main_ncalib(int argc, char* argv[argc])
 		long cord_dims[DIMS];
 		md_select_dims(DIMS, MD_BIT(0), cord_dims, trj_dims);
 		
-		complex float inv_dims[3] = { 1. / (dims[0] - ksenssize[0]),  1. / (dims[1] - ksenssize[1]), 1. / (dims[2] - ksenssize[2])};
+		complex float inv_dims[3] = { 1. / (dims[0] - ksenssize[0]),  1. / (dims[1] - ksenssize[1]), 1. / (dims[2] - ksenssize[2]) };
 		md_zmul2(DIMS, trj_dims, MD_STRIDES(DIMS, trj_dims, CFL_SIZE), trj_tmp, MD_STRIDES(DIMS, trj_dims, CFL_SIZE), trj_tmp, MD_STRIDES(DIMS, cord_dims, CFL_SIZE), inv_dims);
 
 		md_zslessequal(DIMS, trj_dims, trj_tmp, trj_tmp, 0.5);
@@ -197,6 +197,7 @@ int main_ncalib(int argc, char* argv[argc])
 	} else {
 
 		assert(0 == md_calc_size(3, my_sens_dims));
+
 		md_copy_dims(3, my_sens_dims, ksp_dims);
 
 		long nksp_dims[DIMS];
@@ -384,5 +385,4 @@ int main_ncalib(int argc, char* argv[argc])
 
 	return 0;
 }
-
 

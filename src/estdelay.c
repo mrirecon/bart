@@ -98,6 +98,7 @@ int main_estdelay(int argc, char* argv[argc])
 	if (1 == tdims[1] % 2) {
 
 		debug_printf(DP_WARN, "odd number of samples\n");
+
 		if (fabsf(dc_shift/scale - 0.0f) > 0.0001)
 			debug_printf(DP_WARN, "DC is shifted by: %f [sample], 1 sample = %f [1/FOV]\n", dc_shift, scale);
 
@@ -171,6 +172,7 @@ int main_estdelay(int argc, char* argv[argc])
 			oqf[i] = qf[i];
 
 		unmap_cfl(DIMS, qf_dims, oqf);
+
 	} else  {
 
 		bart_printf("%f:%f:%f\n", qf[0], qf[1], qf[2]);
@@ -182,5 +184,4 @@ int main_estdelay(int argc, char* argv[argc])
 
 	return 0;
 }
-
 
