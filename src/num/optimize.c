@@ -22,6 +22,7 @@
 #include "num/vecops.h"
 #ifdef USE_CUDA
 #include "num/gpuops.h"
+#include "num/gpukrnls_copy.h"
 #endif
 #include "num/simplex.h"
 #include "num/mpi_ops.h"
@@ -672,20 +673,30 @@ void optimized_nop(int N, unsigned long io, int D, const long dim[D], const long
 		nptr1[i] = vptr_resolve(nptr[i]);
 	}
 
+	bool gpu = false;
+
 #ifdef USE_CUDA
-	bool gpu = use_gpu(N, nptr1);
+	gpu = use_gpu(N, nptr1);
 	int ND = (gpu ? optimize_dims_gpu : optimize_dims)(N, D, tdims, nstr1);
 #else
 	int ND = optimize_dims(N, D, tdims, nstr1);
 #endif
 
+	void* cnst_buf[N];
+	for (int i = 0; i < N; i++)
+		cnst_buf[i] = NULL;
+
 #if 1
+	int NB = ND;
+	for (int i = 0; i < N; i++)
+		NB = MIN(NB, md_calc_blockdim(ND, tdims, tstrs[i], sizes[i]));
+
 	unsigned long cnst_flags = 0;
-	bool cnst_ok = true;
+	bool cnst_ok = NB < ND;
 
 	for (int i = 0; i < N; i++) {
 
-		if (0 == tstrs[i][0]) {
+		if (cnst_ok && 0 == tstrs[i][NB]) {
 
 			if (MD_IS_SET(io, i))  {
 
@@ -695,20 +706,24 @@ void optimized_nop(int N, unsigned long io, int D, const long dim[D], const long
 
 			cnst_flags = MD_SET(cnst_flags, i);
 
-			for (int d = 0; d < ND; d++)
+			for (int d = NB; d < ND; d++)
 				cnst_ok &= (0 == tstrs[i][d]);
 		}
 	}
 
 	long cnst_size = 1;
-	int cnst_dims = 0;
+	int cnst_dims = NB;
+
+	long tsizes[N];
+	for (int i = 0; i < N; i++)
+		tsizes[i] = (long)sizes[i] * md_calc_size(NB, tdims);
 
 	for (; cnst_dims < ND; cnst_dims++) {
 
 		cnst_size *= tdims[cnst_dims];
 
 		for (int i = 0; i < N; i++) {
-			if (cnst_size * (long)sizes[i] > 4096) {	// buffer too big
+			if (!gpu && cnst_size * tsizes[i] > 4096) {	// buffer too big
 
 				cnst_size /= tdims[cnst_dims];
 				cnst_dims--;
@@ -721,10 +736,6 @@ out:
 	if ((0 == cnst_size) || (1 > cnst_dims))
 		cnst_ok = false;
 
-#ifdef USE_CUDA
-	if (gpu)	// not implemented yet
-		cnst_ok = false;
-#endif
 
 	if (cnst_ok) {
 
@@ -734,15 +745,20 @@ out:
 
 			if (MD_IS_SET(cnst_flags, i)) {
 
-				for (int d = 0; d < cnst_dims; d++)
-					tstrs[i][d] = ((0 < d) ? tdims[d - 1] : 1) * (long)sizes[i];
+				for (int d = NB; d < cnst_dims; d++)
+					tstrs[i][d] = (0 < d) ? tdims[d - 1] * tstrs[i][d - 1] : (long)sizes[i];
 
-				void* np = alloca((size_t)(cnst_size * (long)sizes[i]));
+				cnst_buf[i] = md_alloc_sameplace(1, MD_DIMS(cnst_size), (size_t)tsizes[i], nptr1[i]);
 
-				for (long n = 0; n < cnst_size; n++)
-					memcpy(np + n * (long)sizes[i], vptr_resolve(nptr[i]), sizes[i]);
-
-				nptr1[i] = np;
+#ifdef USE_CUDA
+				if (gpu) {
+					cuda_copy_ND(1, MD_DIMS(cnst_size), MD_DIMS(tsizes[i]), cnst_buf[i], MD_DIMS(0), nptr1[i], (size_t)tsizes[i]);
+				} else
+#endif			
+					for (long n = 0; n < cnst_size; n++)
+						memcpy(cnst_buf[i]  + n * tsizes[i], nptr1[i], (size_t)tsizes[i]);
+				
+				nptr1[i] = cnst_buf[i];
 			}
 		}
 	}
@@ -793,6 +809,9 @@ out:
 	md_parallel_nary(N, ND - skip, tdims + skip, flags, nstr2, nptr1, nary_opt);
 
 	double end = timestamp();
+
+	for (int i = 0; i < N; i++)
+		md_free(cnst_buf[i]);
 
 #pragma omp critical
 	md_flp_total_time += end - start;
