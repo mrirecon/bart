@@ -422,22 +422,23 @@ static void make_3op_scalar(md_3op_t fun, int D, const long dims[D], const long 
 }
 
 
-static void real_from_complex_dims(int D, long odims[D + 1], const long idims[D])
+void real_from_complex_dims(int D, long odims[D + 1], const long idims[D])
 {
-	odims[0] = 2;
-	md_copy_dims(D, odims + 1, idims);
+	// having real dim in last dim simplifies detection of mpi/vptr dimensions 
+	odims[D] = 2;
+	md_copy_dims(D, odims, idims);
 }
 
-static void real_from_complex_strides(int D, long ostrs[D + 1], const long istrs[D])
+void real_from_complex_strides(int D, long ostrs[D + 1], const long istrs[D])
 {
-	ostrs[0] = FL_SIZE;
-	md_copy_dims(D, ostrs + 1, istrs);	// works for strides too
+	ostrs[D] = FL_SIZE;
+	md_copy_dims(D, ostrs, istrs);	// works for strides too
 }
 
-static void real_from_complex_stridesD(int D, long ostrs[D + 1], const long istrs[D])
+void real_from_complex_stridesD(int D, long ostrs[D + 1], const long istrs[D])
 {
-	ostrs[0] = DL_SIZE;
-	md_copy_dims(D, ostrs + 1, istrs);	// works for strides too
+	ostrs[D] = DL_SIZE;
+	md_copy_dims(D, ostrs, istrs);	// works for strides too
 }
 
 static void make_z3op_from_real(size_t offset, int D, const long dims[D], const long ostr[D], complex float* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)

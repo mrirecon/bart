@@ -21,8 +21,8 @@
 ({									\
 	int _N = (N);							\
 	long* _dims = alloca((size_t)((_N + 1) * (long)sizeof(long)));	\
-	md_copy_dims(_N, _dims + 1, dims);				\
-	_dims[0] = 2;							\
+	md_copy_dims(_N, _dims, dims);					\
+	_dims[N] = 2;							\
 	_dims;								\
 })
 
@@ -30,10 +30,14 @@
 ({									\
 	int _N = (N);							\
 	long* _strs = alloca((size_t)((_N + 1) * (long)sizeof(long)));	\
-	md_copy_dims(_N, _strs + 1, strs);				\
-	_strs[0] = (size);						\
+	md_copy_dims(_N, _strs, strs);					\
+	_strs[N] = (size);						\
 	_strs;								\
 })
+
+extern void real_from_complex_dims(int D, long odims[__VLA(D + 1)], const long idims[__VLA(D)]);
+extern void real_from_complex_strides(int D, long ostrs[__VLA(D + 1)], const long istrs[__VLA(D)]);
+extern void real_from_complex_stridesD(int D, long ostrs[__VLA(D + 1)], const long istrs[__VLA(D)]);
 
 
 extern void md_mul2(int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], float* optr, const long istr1[__VLA(D)], const float* iptr1, const long istr2[__VLA(D)], const float* iptr2);
