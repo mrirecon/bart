@@ -795,14 +795,18 @@ double power(int maxiter,
 {
 	double s = vops->norm(N, u);
 	vops->smul(N, 1. / s, u, u);
+	
+	float * t = vops->allocate(N);
 
 	for (int i = 0; i < maxiter; i++) {
 
-		iter_op_call(op, u, u);		// r = A x
+		iter_op_call(op, t, u);		// r = A x
 
-		s = vops->norm(N, u);
-		vops->smul(N, 1. / s, u, u);
+		s = vops->norm(N, t);
+		vops->smul(N, 1. / s, u, t);
 	}
+
+	vops->del(t);
 
 	return s;
 }
