@@ -35,6 +35,10 @@
 	_strs;								\
 })
 
+extern void real_from_complex_dims(int D, long odims[__VLA(D + 1)], const long idims[__VLA(D)]);
+extern void real_from_complex_strides(int D, long ostrs[__VLA(D + 1)], const long istrs[__VLA(D)]);
+extern void real_from_complex_stridesD(int D, long ostrs[__VLA(D + 1)], const long istrs[__VLA(D)]);
+
 
 extern void md_mul2(int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], float* optr, const long istr1[__VLA(D)], const float* iptr1, const long istr2[__VLA(D)], const float* iptr2);
 extern void md_mul(int D, const long dim[__VLA(D)], float* optr, const float* iptr1, const float* iptr2);
