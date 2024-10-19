@@ -181,7 +181,9 @@ struct prox_l2norm_data {
 	operator_data_t super;
 
 	float lambda;
-	long size;
+	int N;
+	const long* dims;
+	const long* strs;
 };
 
 static DEF_TYPEID(prox_l2norm_data);
@@ -201,16 +203,16 @@ static void prox_l2norm_fun(const operator_data_t* prox_data, float mu, float* z
 {
 	auto pdata = CAST_DOWN(prox_l2norm_data, prox_data);
 
-	md_clear(1, MD_DIMS(pdata->size), z, FL_SIZE);
+	md_clear2(pdata->N, pdata->dims, pdata->strs, z, FL_SIZE);
 
-	double q1 = md_norm(1, MD_DIMS(pdata->size), x_plus_u);
+	double q1 = md_norm2(pdata->N, pdata->dims, pdata->strs, x_plus_u);
 
 	if (q1 != 0) {
 
 		double q2 = 1 - pdata->lambda * mu / q1;
 
 		if (q2 > 0.)
-			md_smul(1, MD_DIMS(pdata->size), z, x_plus_u, q2);
+			md_smul2(pdata->N, pdata->dims, pdata->strs, z, pdata->strs, x_plus_u, q2);
 	}
 }
 
@@ -221,6 +223,8 @@ static void prox_l2norm_apply(const operator_data_t* _data, float mu, complex fl
 
 static void prox_l2norm_del(const operator_data_t* _data)
 {
+	xfree(CAST_DOWN(prox_l2norm_data, _data)->dims);
+	xfree(CAST_DOWN(prox_l2norm_data, _data)->strs);
 	xfree(CAST_DOWN(prox_l2norm_data, _data));
 }
 
@@ -229,8 +233,17 @@ const struct operator_p_s* prox_l2norm_create(int N, const long dims[N], float l
 	PTR_ALLOC(struct prox_l2norm_data, pdata);
 	SET_TYPEID(prox_l2norm_data, pdata);
 
+	long rdims[N + 1];
+	long rstrs[N + 1];
+
+	real_from_complex_dims(N, rdims, dims);
+	real_from_complex_strides(N, rstrs, MD_STRIDES(N, dims, CFL_SIZE));
+
+	pdata->N = N + 1;
+	pdata->dims = ARR_CLONE(long[N + 1], rdims);
+	pdata->strs = ARR_CLONE(long[N + 1], rstrs);
+
 	pdata->lambda = lambda;
-	pdata->size = md_calc_size(N, dims) * 2;
 
 	return operator_p_create(N, dims, N, dims, CAST_UP(PTR_PASS(pdata)), prox_l2norm_apply, prox_l2norm_del);
 }
@@ -403,7 +416,8 @@ struct prox_zero_data {
 
 	operator_data_t super;
 
-	long size;
+	int N;
+	const long* dims;
 };
 
 static DEF_TYPEID(prox_zero_data);
@@ -422,7 +436,7 @@ static void prox_zero_fun(const operator_data_t* prox_data, float /*mu*/, float*
 {
 	auto pdata = CAST_DOWN(prox_zero_data, prox_data);
 
-	md_copy(1, MD_DIMS(pdata->size), z, x_plus_u, FL_SIZE);
+	md_copy(pdata->N, pdata->dims, z, x_plus_u, CFL_SIZE);
 }
 
 static void prox_zero_apply(const operator_data_t* _data, float mu, complex float* dst, const complex float* src)
@@ -432,6 +446,7 @@ static void prox_zero_apply(const operator_data_t* _data, float mu, complex floa
 
 static void prox_zero_del(const operator_data_t* _data)
 {
+	xfree(CAST_DOWN(prox_zero_data, _data)->dims);
 	xfree(CAST_DOWN(prox_zero_data, _data));
 }
 
@@ -440,7 +455,8 @@ const struct operator_p_s* prox_zero_create(int N, const long dims[N])
 	PTR_ALLOC(struct prox_zero_data, pdata);
 	SET_TYPEID(prox_zero_data, pdata);
 
-	pdata->size = md_calc_size(N, dims) * 2;
+	pdata->N = N;
+	pdata->dims = ARR_CLONE(long[N], dims);
 
 	return operator_p_create(N, dims, N, dims, CAST_UP(PTR_PASS(pdata)), prox_zero_apply, prox_zero_del);
 }
@@ -462,7 +478,11 @@ struct prox_ineq_data {
 
 	const float* b;
 	float a;
-	long size;
+
+	int N;
+	const long* dims;
+	const long* strs;
+
 	bool positive;
 };
 
@@ -476,17 +496,17 @@ static void prox_ineq_fun(const operator_data_t* _data, float /*mu*/, float* dst
 
 		if (0. == pdata->a) {
 
-			(pdata->positive ? md_smax : md_smin)(1, MD_DIMS(pdata->size), dst, src, 0.);
+			(pdata->positive ? md_smax2 : md_smin2)(pdata->N, pdata->dims, pdata->strs, dst, pdata->strs, src, 0.);
 
 		} else {
 
-			(pdata->positive ? md_smax : md_smin)(1, MD_DIMS(pdata->size), dst, src, pdata->a);
-			md_zreal(1, MD_DIMS(pdata->size/2), (complex float*)dst, (complex float*)dst);
+			(pdata->positive ? md_smax2 : md_smin2)(pdata->N, pdata->dims, pdata->strs, dst, pdata->strs, src, pdata->a);
+			md_zreal(pdata->N - 1, pdata->dims, (complex float*)dst, (complex float*)dst);
 		}
 
 	} else {
 
-		(pdata->positive ? md_max : md_min)(1, MD_DIMS(pdata->size), dst, src, pdata->b);
+		(pdata->positive ? md_max2 : md_min2)(pdata->N, pdata->dims, pdata->strs, dst, pdata->strs, src, pdata->strs, pdata->b);
 	}
 }
 
@@ -497,6 +517,8 @@ static void prox_ineq_apply(const operator_data_t* _data, float mu, complex floa
 
 static void prox_ineq_del(const operator_data_t* _data)
 {
+	xfree(CAST_DOWN(prox_ineq_data, _data)->dims);
+	xfree(CAST_DOWN(prox_ineq_data, _data)->strs);
 	xfree(CAST_DOWN(prox_ineq_data, _data));
 }
 
@@ -505,7 +527,16 @@ static const struct operator_p_s* prox_ineq_create(int N, const long dims[N], co
 	PTR_ALLOC(struct prox_ineq_data, pdata);
 	SET_TYPEID(prox_ineq_data, pdata);
 
-	pdata->size = md_calc_size(N, dims) * 2;
+	long rdims[N + 1];
+	long rstrs[N + 1];
+
+	real_from_complex_dims(N, rdims, dims);
+	real_from_complex_strides(N, rstrs, MD_STRIDES(N, dims, CFL_SIZE));
+
+	pdata->N = N + 1;
+	pdata->dims = ARR_CLONE(long[N + 1], rdims);
+	pdata->strs = ARR_CLONE(long[N + 1], rstrs);
+
 	pdata->b = (const float*)b;
 	pdata->a = a;
 	pdata->positive = positive;
@@ -555,7 +586,8 @@ struct prox_rvc_data {
 
 	operator_data_t super;
 
-	long size;
+	int N;
+	const long* dims;
 };
 
 static DEF_TYPEID(prox_rvc_data);
@@ -565,11 +597,12 @@ static void prox_rvc_apply(const operator_data_t* _data, float /*mu*/, complex f
 {
 	auto pdata = CAST_DOWN(prox_rvc_data, _data);
 
-	md_zreal(1, MD_DIMS(pdata->size), dst, src);
+	md_zreal(pdata->N, pdata->dims, dst, src);
 }
 
 static void prox_rvc_del(const operator_data_t* _data)
 {
+	xfree(CAST_DOWN(prox_rvc_data, _data)->dims);
 	xfree(CAST_DOWN(prox_rvc_data, _data));
 }
 
@@ -581,7 +614,8 @@ const struct operator_p_s* prox_rvc_create(int N, const long dims[N])
 	PTR_ALLOC(struct prox_rvc_data, pdata);
 	SET_TYPEID(prox_rvc_data, pdata);
 
-	pdata->size = md_calc_size(N, dims);
+	pdata->N = N;
+	pdata->dims = ARR_CLONE(long[N], dims);
 	return operator_p_create(N, dims, N, dims, CAST_UP(PTR_PASS(pdata)), prox_rvc_apply, prox_rvc_del);
 }
 
