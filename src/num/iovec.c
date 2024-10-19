@@ -96,5 +96,10 @@ bool iovec_check(const struct iovec_s* iov, int N, const long dims[N], const lon
 	return ok;
 }
 
+bool iovec_compare(const struct iovec_s* iova, const struct iovec_s* iovb)
+{
+	return iovec_check(iova, iovb->N, iovb->dims, iovb->strs) && (iova->size == iovb->size);
+}
+
 
 
