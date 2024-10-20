@@ -32,7 +32,7 @@
 #include "lsqr.h"
 
 
-const struct lsqr_conf lsqr_defaults = { .lambda = 0., .it_gpu = false, .warmstart = false, .icont = NULL };
+const struct lsqr_conf lsqr_defaults = { .lambda = 0., .it_gpu = false, .warmstart = false, .icont = NULL, .include_adjoint = true };
 
 
 struct lsqr_data {
@@ -113,7 +113,9 @@ const struct operator_p_s* lsqr2_create(const struct lsqr_conf* conf,
 	if (NULL != model_op) {
 
 		normaleq_op = operator_create(iov->N, iov->dims, iov->N, iov->dims, CAST_UP(PTR_PASS(data)), normaleq_l2_apply, normaleq_del);
-		adjoint = operator_ref(model_op->adjoint);
+		
+		if (conf->include_adjoint)
+			adjoint = operator_ref(model_op->adjoint);
 
 	} else {
 
@@ -128,9 +130,15 @@ const struct operator_p_s* lsqr2_create(const struct lsqr_conf* conf,
 		normaleq_op = operator_chain(normaleq_op, precond_op);
 		operator_free(tmp);
 
-		tmp = adjoint;
-		adjoint = operator_chain(adjoint, precond_op);
-		operator_free(tmp);
+		if (NULL != adjoint) {
+			
+			tmp = adjoint;
+			adjoint = operator_chain(adjoint, precond_op);
+			operator_free(tmp);
+		} else {
+
+			adjoint = operator_ref(precond_op);
+		}
 	}
 
 	const struct operator_p_s* itop_op = itop_p_create(italgo, iconf, conf->warmstart, init, normaleq_op, num_funs, prox_funs, prox_linops, monitor, conf->icont);
