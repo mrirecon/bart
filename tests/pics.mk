@@ -597,6 +597,21 @@ tests/test-pics-eulermaruyama3: ones scale zeros pics var nrmse
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+
+tests/test-pics-ist: phantom upat squeeze fmac pics nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/phantom -k -s8 k.ra								;\
+	$(TOOLDIR)/phantom -S8 s.ra								;\
+	$(TOOLDIR)/upat -y 2 p.ra								;\
+	$(TOOLDIR)/squeeze p.ra p2.ra								;\
+	$(TOOLDIR)/fmac k.ra p2.ra kp.ra							;\
+	$(TOOLDIR)/pics -w1. -i100 -l2 -r100000000. kp.ra s.ra x.ra				;\
+	$(TOOLDIR)/pics -w1. -i500 -S -e -l2 -r100000000. -I kp.ra s.ra xI.ra			;\
+	$(TOOLDIR)/nrmse -t 0.006 x.ra xI.ra							;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
 TESTS += tests/test-pics-pi tests/test-pics-noncart tests/test-pics-cs tests/test-pics-pics
 TESTS += tests/test-pics-poisson-wavl1 tests/test-pics-joint-wavl1 tests/test-pics-bpwavl1
 TESTS += tests/test-pics-weights tests/test-pics-noncart-weights
@@ -609,5 +624,6 @@ TESTS += tests/test-pics-wavl1-dau2 tests/test-pics-wavl1-cdf44 tests/test-pics-
 TESTS += tests/test-pics-noncart-lowmem tests/test-pics-noncart-lowmem-stack0 tests/test-pics-noncart-lowmem-stack1 tests/test-pics-noncart-lowmem-stack2 tests/test-pics-noncart-lowmem-no-toeplitz
 TESTS += tests/test-pics-phase
 TESTS += tests/test-pics-eulermaruyama tests/test-pics-eulermaruyama2 tests/test-pics-eulermaruyama3
+TESTS += tests/test-pics-ist
 
 
