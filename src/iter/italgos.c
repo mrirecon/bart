@@ -202,13 +202,12 @@ void ist(int maxiter, float epsilon, float tau, long N,
 		if (NULL != ist_continuation)
 			ist_continuation(&itrdata);
 
-		iter_op_p_call(thresh, itrdata.scale * itrdata.tau, x, x);
-
-
 		iter_op_call(op, r, x);		// r = A x
 		vops->xpay(N, -1., r, b);	// r = b - r = b - A x
 
 		itrdata.rsnew = vops->norm(N, r);
+
+		iter_op_p_call(thresh, itrdata.scale * itrdata.tau, x, x);
 
 		debug_printf(DP_DEBUG3, "#It %03d: %f \n", itrdata.iter, itrdata.rsnew / itrdata.rsnot);
 
@@ -292,7 +291,7 @@ void fista(int maxiter, float epsilon, float tau,
 		vops->axpy(N, x, itrdata.tau, r);
 	}
 
-	if (last) {
+	if (!last) {
 
 		iter_monitor(monitor, vops, x);
 		iter_op_p_call(thresh, itrdata.scale * itrdata.tau, x, x);

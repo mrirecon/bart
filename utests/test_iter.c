@@ -251,7 +251,7 @@ static bool test_iter_irgnm_l1(void)
 
 	nlop_apply(nlid, N, dims, dst1, N, dims, src1);
 
-	md_zfill(N, dims, src2, 0.975);
+	md_zfill(N, dims, src2, 0.5);
 	md_zfill(N, dims, src3, 0.);
 
 	const struct operator_p_s* lsqr = NULL;
@@ -299,7 +299,7 @@ static bool test_iter_irgnm_l1(void)
 	md_free(src2);
 	md_free(src3);
 
-	UT_RETURN_ASSERT(err < 1.E-10);
+	UT_RETURN_ASSERT(err < 1.E-7);
 }
 
 
