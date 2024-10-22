@@ -48,6 +48,9 @@ int main_trx(int argc, char* argv[argc])
 
 	num_init();
 
+	if (cfl_loop_desc_active())
+		error("trx tool is not compatible with looping.\n");
+
 	int N = DIMS;
 	long dims[N];
 
@@ -103,18 +106,19 @@ int main_trx(int argc, char* argv[argc])
 		stream_attach(strm_out, data, false);
 	}
 
+	assert(strm_out);
+
 	long stream_pos[N];
 	md_set_dims(N, stream_pos, 0);
+	long count = 0;
 
 	do {
+		if (strm_in && !stream_receive_pos(strm_in, count++, N, stream_pos))
+			break;
 
-		if (strm_in)
-			stream_sync(strm_in, N, stream_pos);
+		stream_sync(strm_out, N, stream_pos);
 
-		if (strm_out)
-			stream_sync(strm_out, N, stream_pos);
-
-	} while (md_next(N, dims, stream_flags, stream_pos));
+	} while(strm_in || md_next(N, dims, stream_flags, stream_pos));
 
 	unmap_cfl(N, dims, data);
 
