@@ -104,13 +104,13 @@ else
 
 	DIMS="$(bart show -d 0 $pos):$(bart show -d 1 $pos):$(bart show -d 2 $pos)"
 	bart nufftbase $DIMS $TRAJ pat
-	bart nufft $BASIS -p pat -i -x$DIMS $TRAJ $sig cim
+	bart nufft $GPU $BASIS -p pat -i -x$DIMS $TRAJ $sig cim
 
 	bart fmac cim $pos ipos
 	bart fmac cim $neg ineg
 
-	bart nufft $BASIS -ppat $TRAJ ipos pos
-	bart nufft $BASIS -ppat $TRAJ ineg neg
+	bart nufft $GPU $BASIS -ppat $TRAJ ipos pos
+	bart nufft $GPU $BASIS -ppat $TRAJ ineg neg
 fi
 
 bart rovir pos neg compress
