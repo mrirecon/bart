@@ -137,13 +137,14 @@ static int bart_exit(int err_no, const char* exit_msg)
 }
 
 
-static void parse_bart_opts(int* argcp, char*** argvp)
+static void parse_bart_opts(int* argcp, char*** argvp, int order[DIMS])
 {
 	int omp_threads = 1;
 	unsigned long flags = 0;
 	unsigned long pflags = 0;
 	long param_start[DIMS] = { [0 ... DIMS - 1] = -1 };
 	long param_end[DIMS] = { [0 ... DIMS - 1] = -1 };
+	long param_order[DIMS] = { [0 ... DIMS - 1] = -1 };
 	const char* ref_file = NULL;
 	bool use_mpi = false;
 	bool version = false;
@@ -155,6 +156,7 @@ static void parse_bart_opts(int* argcp, char*** argvp)
 
 		OPTL_ULONG('l', "loop", &(flags), "flag", "Flag to specify dimensions for looping"),
 		OPTL_ULONG('p', "parallel-loop", &(pflags), "flag", "Flag to specify dimensions for looping and activate parallelization"),
+		OPTL_VECN('o', "order", param_order, "Flagged Dimensions in the order in which they should be looped over (fastest first)."),
 		OPTL_VECN('s', "start", param_start, "Start index of range for looping (default: 0)"),
 		OPTL_VECN('e', "end", param_end, "End index of range for looping (default: start + 1)"),
 		OPTL_INT('t', "threads", &omp_threads, "nthreads", "Set threads for parallelization"),
@@ -187,6 +189,11 @@ static void parse_bart_opts(int* argcp, char*** argvp)
 		omp_threads = 1;
 	}
 #endif
+
+	bool flags_set = false;
+
+	if (0 != flags || 0 != pflags)
+		flags_set = true;
 
 	if (0 != flags && 0 != pflags && flags != pflags)
 		error("Inconsistent use of -p and -l!\n");
@@ -224,12 +231,9 @@ static void parse_bart_opts(int* argcp, char*** argvp)
 
 			// reference stream:
 			// - input is a pipe so don't close.
-			// - flags are determined by stream dims.
 
-			if ((0 != flags) || (0 != pflags))
-				error("--ref-file is a stream, this is currently incompatible with --loop and --parallel-loop options!\n");
-
-			flags = stream_get_flags(s);
+			if (!flags_set)
+				flags = stream_get_flags(s);
 
 			// - delete from io_lookup table, for the bart cmd to be called, this file does not yet 'exit;.
 			io_close(ref_file);
@@ -263,6 +267,22 @@ static void parse_bart_opts(int* argcp, char*** argvp)
 	if (0 == nend)
 		for (int i = 0; i < bitcount(flags); i++)
 			param_end[i] = param_start[i] + 1;
+
+	int norder = 0;
+
+	for (; norder < DIMS && -1 != param_order[norder]; norder++)
+		if(!MD_IS_SET(flags, param_order[norder]))
+			error("Loop order must contain exactly the dimensions specified in the flags (wrong dim).\n");
+
+	if (0 != norder && bitcount(flags) != norder)
+		error("Loop order must contain exactly the dimensions specified in the flags (wrong number of dims).\n");
+
+	for (int i = 0, ip = 0; i < DIMS; i++) {
+
+		order[i] = i;
+		if (0 < norder && MD_IS_SET(flags, i))
+			order[i] = param_order[ip++];
+	}
 
 	long offs_size[DIMS] = { [0 ... DIMS - 1] = 0 };
 	long loop_dims[DIMS] = { [0 ... DIMS - 1] = 1 };
@@ -323,12 +343,64 @@ static int batch_wrapper(main_fun_t* dispatch_func, int argc, char *argv[argc], 
 	return ret;
 }
 
+static bool loop_step(long start, long total, long workers, long* idx, long *idx_p, int final_ret, const int order[DIMS])
+{
+	debug_printf(DP_DEBUG4, "Enter BART loop_step: start=%ld idx=%ld, idx_p=%ld, final_ret=%d. Order: \n [ ", start, *idx, *idx_p, final_ret);
+	for(int i = 0; i < DIMS; i++)
+		debug_printf(DP_DEBUG4, "%d, ", order[i]);
+	debug_printf(DP_DEBUG4, "].\n");
+
+	// initialization
+	if (-1 == *idx)
+		*idx = start;
+	// repetition
+	else
+		*idx += workers;
+
+	// continue?
+	if ((*idx >= total) || (0 != final_ret)) {
+
+		debug_printf(DP_DEBUG4, "BART loop_step finish: idx >= total: %d OR 0 != final_ret: %d.\n", (*idx >= total), (0 != final_ret));
+		return false;
+	}
+
+	// calculate permuted index
+	long dims[DIMS];
+	long pdims[DIMS];
+	long pos[DIMS];
+	long pstr[DIMS];
+	unsigned long flags = cfl_loop_get_flags();
+	md_set_dims(DIMS, pos, 0);
+
+	cfl_loop_get_dims(DIMS, dims);
+	md_permute_dims(DIMS, order, pstr, MD_STRIDES(DIMS, dims, 1));
+	md_permute_dims(DIMS, order, pdims, dims);
+
+	//permute by unraveling with 'wrong' dims
+	md_unravel_index(DIMS, pos, flags, pdims, *idx);
+	//calculate correct permuted index
+	*idx_p = md_calc_offset(DIMS, pstr, pos);
+
+
+	debug_printf(DP_DEBUG4, "Leave BART loop_step: start=%ld idx=%ld, idx_p=%ld, final_ret=%d.\n\n", start, *idx, *idx_p, final_ret);
+
+
+	//FIXME : Loop Order breaks random number test.
+	#ifdef USE_MPI
+	if (*idx_p != *idx)
+		error("Loop Order for MPI not implemented.\n");
+	#endif
+
+	return true;
+}
 
 int main_bart(int argc, char* argv[argc])
 {
 #ifdef __EMSCRIPTEN__
 	wasm_fd_offset = 0;
 #endif
+
+	int order[DIMS];
 
 	char* bn = basename(argv[0]);
 
@@ -342,7 +414,7 @@ int main_bart(int argc, char* argv[argc])
 		}
 
 		// This advances argv to behind the bart options
-		parse_bart_opts(&argc, &argv);
+		parse_bart_opts(&argc, &argv, order);
 
 		bn = basename(argv[0]);
 	}
@@ -384,10 +456,11 @@ int main_bart(int argc, char* argv[argc])
 				long start = cfl_loop_worker_id();
 				long total = cfl_loop_desc_total();
 				long workers = cfl_loop_num_workers();
+				long idx = -1;
+				long idx_p = -1;
+				while(loop_step(start, total, workers, &idx, &idx_p, final_ret, order)) {
 
-				for (long i = start; ((i < total) && (0 == final_ret)); i += workers) {
-
-					int ret = batch_wrapper(dispatch_func, argc, argv, i);
+					int ret = batch_wrapper(dispatch_func, argc, argv, idx_p);
 
 					if (0 != ret) {
 
@@ -403,14 +476,16 @@ int main_bart(int argc, char* argv[argc])
 			long start = cfl_loop_worker_id();
 			long total = cfl_loop_desc_total();
 			long workers = cfl_loop_num_workers();
+			long idx = -1;
+			long idx_p = -1;
 
 			mpi_signoff_proc(cfl_loop_desc_active() && (mpi_get_rank() >= total));
 
-			for (long i = start; ((i < total) && (0 == final_ret)); i += workers) {
+			while(loop_step(start, total, workers, &idx, &idx_p, final_ret, order)) {
 
-				int ret = batch_wrapper(dispatch_func, argc, argv, i);
+				int ret = batch_wrapper(dispatch_func, argc, argv, idx_p);
 
-				int tag = ((((i + workers) < total) || (0 != ret)) ? 1 : 0);
+				int tag = ((((idx_p + workers) < total) || (0 != ret)) ? 1 : 0);
 				mpi_signoff_proc(cfl_loop_desc_active() && (0 == tag));
 
 				if (0 != ret) {

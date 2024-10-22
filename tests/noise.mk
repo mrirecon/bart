@@ -76,6 +76,14 @@ tests/test-noise-mpi: bart
 	rm *.cfl ; rm *.hdr ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-noise-mpi2: bart
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)				;\
+	$(ROOTDIR)/bart zeros 4 128 128 3 11 x					;\
+	$(ROOTDIR)/bart -l 12 -e 3:11 noise x x_l				;\
+	mpirun -n 4 $(ROOTDIR)/bart -l 12 -e 3:11 noise x x_p			;\
+	$(ROOTDIR)/bart nrmse -t 0. x_l x_p					;\
+	rm *.cfl ; rm *.hdr ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
 
 
 TESTS += tests/test-noise-loop  tests/test-noise-loop2 tests/test-noise-random-dims
