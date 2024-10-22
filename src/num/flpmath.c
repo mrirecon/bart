@@ -255,6 +255,10 @@ static void make_2opd_simple(md_2opd_t fun, int D, const long dims[D], double* o
 
 static void make_z3op(size_t offset, int D, const long dim[D], const long ostr[D], complex float* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)
 {
+	optr = vptr_resolve_range(optr);
+	iptr1 = vptr_resolve_range(iptr1);
+	iptr2 = vptr_resolve_range(iptr2);
+
 	if (is_vptr(optr) || is_vptr(iptr1) || is_vptr(iptr2)) {
 
 		NESTED(void, nary_loop, (void* ptr[], const long dims[], const long* strs[]))
@@ -294,6 +298,10 @@ static void make_z3op(size_t offset, int D, const long dim[D], const long ostr[D
 
 static void make_3op(size_t offset, int D, const long dim[D], const long ostr[D], float* optr, const long istr1[D], const float* iptr1, const long istr2[D], const float* iptr2)
 {
+	optr = vptr_resolve_range(optr);
+	iptr1 = vptr_resolve_range(iptr1);
+	iptr2 = vptr_resolve_range(iptr2);
+
 	if (is_vptr(optr) || is_vptr(iptr1) || is_vptr(iptr2)) {
 
 		NESTED(void, nary_loop, (void* ptr[], const long dims[], const long* strs[]))
@@ -327,6 +335,10 @@ static void make_3op(size_t offset, int D, const long dim[D], const long ostr[D]
 
 static void make_z3opd(size_t offset, int D, const long dim[D], const long ostr[D], complex double* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)
 {
+	optr = vptr_resolve_range(optr);
+	iptr1 = vptr_resolve_range(iptr1);
+	iptr2 = vptr_resolve_range(iptr2);
+
 	if (is_vptr(optr) || is_vptr(iptr1) || is_vptr(iptr2)) {
 
 		NESTED(void, nary_loop, (void* ptr[], const long dims[], const long* strs[]))
@@ -353,6 +365,10 @@ static void make_z3opd(size_t offset, int D, const long dim[D], const long ostr[
 
 static void make_3opd(size_t offset, int D, const long dim[D], const long ostr[D], double* optr, const long istr1[D], const float* iptr1, const long istr2[D], const float* iptr2)
 {
+	optr = vptr_resolve_range(optr);
+	iptr1 = vptr_resolve_range(iptr1);
+	iptr2 = vptr_resolve_range(iptr2);
+
 	if (is_vptr(optr) || is_vptr(iptr1) || is_vptr(iptr2)) {
 
 		NESTED(void, nary_loop, (void* ptr[], const long dims[], const long* strs[]))
@@ -379,6 +395,9 @@ static void make_3opd(size_t offset, int D, const long dim[D], const long ostr[D
 
 static void make_z2op(size_t offset, int D, const long dim[D], const long ostr[D], complex float* optr, const long istr1[D], const complex float* iptr1)
 {
+	optr = vptr_resolve_range(optr);
+	iptr1 = vptr_resolve_range(iptr1);
+
 	NESTED(void, nary_z2op, (struct nary_opt_data_s* data, void* ptr[]))
 	{
 		(*(z2op_t*)(((char*)data->ops) + offset))(data->size, ptr[0], ptr[1]);
@@ -389,6 +408,9 @@ static void make_z2op(size_t offset, int D, const long dim[D], const long ostr[D
 
 static void make_2op(size_t offset, int D, const long dim[D], const long ostr[D], float* optr, const long istr1[D], const float* iptr1)
 {
+	optr = vptr_resolve_range(optr);
+	iptr1 = vptr_resolve_range(iptr1);
+
 	NESTED(void, nary_2op, (struct nary_opt_data_s* data, void* ptr[]))
 	{
 		(*(r2op_t*)(((char*)data->ops) + offset))(data->size, ptr[0], ptr[1]);
@@ -400,6 +422,9 @@ static void make_2op(size_t offset, int D, const long dim[D], const long ostr[D]
 __attribute__((unused))
 static void make_z2opd(size_t offset, int D, const long dim[D], const long ostr[D], complex double* optr, const long istr1[D], const complex float* iptr1)
 {
+	optr = vptr_resolve_range(optr);
+	iptr1 = vptr_resolve_range(iptr1);
+
 	size_t sizes[2] = { sizeof(complex double), sizeof(complex float) };
 
 	NESTED(void, nary_z2opd, (struct nary_opt_data_s* data, void* ptr[]))
@@ -413,6 +438,9 @@ static void make_z2opd(size_t offset, int D, const long dim[D], const long ostr[
 
 static void make_2opd(size_t offset, int D, const long dim[D], const long ostr[D], double* optr, const long istr1[D], const float* iptr1)
 {
+	optr = vptr_resolve_range(optr);
+	iptr1 = vptr_resolve_range(iptr1);
+
 	NESTED(void, nary_2opd, (struct nary_opt_data_s* data, void* ptr[]))
 	{
 		(*(r2opd_t*)(((char*)data->ops) + offset))(data->size, ptr[0], ptr[1]);
@@ -423,6 +451,9 @@ static void make_2opd(size_t offset, int D, const long dim[D], const long ostr[D
 
 static void make_z2opf(size_t offset, int D, const long dim[D], const long ostr[D], complex float* optr, const long istr1[D], const complex double* iptr1)
 {
+	optr = vptr_resolve_range(optr);
+	iptr1 = vptr_resolve_range(iptr1);
+
 	size_t sizes[2] = { sizeof(complex float), sizeof(complex double) };
 
 	NESTED(void, nary_z2opf, (struct nary_opt_data_s* data, void* ptr[]))
@@ -437,6 +468,9 @@ void* unused2 = make_z2opf;
 
 static void make_2opf(size_t offset, int D, const long dim[D], const long ostr[D], float* optr, const long istr1[D], const double* iptr1)
 {
+	optr = vptr_resolve_range(optr);
+	iptr1 = vptr_resolve_range(iptr1);
+
 	NESTED(void, nary_2opf, (struct nary_opt_data_s* data, void* ptr[]))
 	{
 		(*(r2opf_t*)(((char*)data->ops) + offset))(data->size, ptr[0], ptr[1]);
@@ -1753,7 +1787,53 @@ void md_axpy(int D, const long dims[D], float* optr, float val, const float* ipt
 	md_axpy2(D, dims, strs, optr, val, strs, iptr);
 }
 
+static bool vptr_zadd_range_dims(int D, const long dims[D], const long ostr[D], complex float* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)
+{
+	void* toptr = vptr_resolve_range(optr);
+	void* tiptr1 = vptr_resolve_range(iptr1);
+	void* tiptr2 = vptr_resolve_range(iptr2);
 
+	if ((toptr != optr || tiptr1 != iptr1 || tiptr2 != iptr2) && (1 == D) && (ostr[0] == istr1[0]) && (ostr[0] == istr2[0]) && ((ostr[0] == CFL_SIZE))) {
+
+		const complex float* ref = NULL;
+
+		long len = -1;
+
+		if (tiptr1 != iptr1)  {
+
+			len = (long)vptr_get_len(tiptr1);
+			ref = tiptr1;
+		}
+
+		if ((tiptr2 != iptr2 && ((-1 == len) || (len > (long)vptr_get_len(tiptr2))))) {
+
+			len = (long)vptr_get_len(tiptr2);
+			ref = tiptr2;
+		}
+
+		if ((toptr != optr) && ((-1 == len) || (len > (long)vptr_get_len(toptr)))) {
+
+			len = (long)vptr_get_len(toptr);
+			ref = toptr;
+		}
+
+		int N = vptr_get_N(ref);
+		long tdims[N];
+		vptr_get_dims(ref, N, tdims);
+		assert(CFL_SIZE == vptr_get_size(ref));
+
+		md_zadd(N, tdims, toptr, tiptr1, tiptr2);
+
+		long shift = md_calc_size(N, tdims);
+
+		if (0 < dims[0] - shift)
+			md_zadd(1, MD_DIMS(dims[0] - shift), optr + shift, iptr1 + shift, iptr2 + shift);
+
+		return true;
+	}
+
+	return false;
+}
 
 /**
  * Add two complex arrays and save to output (with strides)
@@ -1762,6 +1842,9 @@ void md_axpy(int D, const long dims[D], float* optr, float val, const float* ipt
  */
 void md_zadd2(int D, const long dims[D], const long ostr[D], complex float* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)
 {
+	if (vptr_zadd_range_dims(D, dims, ostr, optr, istr1, iptr1, istr2, iptr2))
+		return;
+
 	MAKE_Z3OP_FROM_REAL(add, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
 }
 
