@@ -42,6 +42,9 @@ struct pcfl {
 	long tot;
 	bool* synced;
 
+	long* idx;
+	long sync_count;
+
 	bart_lock_t* sync_lock;
 
 	complex float* ptr;
@@ -72,6 +75,8 @@ struct stream {
 
 	FILE* stream_logfile;
 	double* stream_ts;
+
+	long last_index;
 };
 
 struct stream_settings {
@@ -118,6 +123,10 @@ static struct pcfl* pcfl_create(complex float* x, int D, const long dims[D], uns
 
 	ret->tot = md_calc_size(D, stream_dims);
 
+	ret->idx = md_calloc(D, stream_dims, sizeof(long));
+
+	ret->sync_count = 0;
+
 	ret->sync_lock = bart_lock_create();
 
 	return PTR_PASS(ret);
@@ -129,6 +138,7 @@ static void pcfl_free(struct pcfl* p)
 		xfree(p->dims);
 
 	md_free(p->synced);
+	md_free(p->idx);
 
 	bart_lock_destroy(p->sync_lock);
 
@@ -355,6 +365,8 @@ stream_t stream_create(int N, const long dims[N], complex float* data, int pipef
 	ret->stream_ts = NULL;
 	ret->stream_logfile = NULL;
 
+	ret->last_index = -1;
+
 	ret->filename = (NULL == name) ? NULL : strdup(name);
 
 	ret->busy = false;
@@ -515,10 +527,7 @@ stream_t stream_load_file(const char* name, int D, long dims[D], char **datname)
 		// https://github.com/emscripten-core/emscripten/issues/21706
 
 		debug_printf(DP_WARN, "WARNING: synchronous stream_load_file on EMSCRIPTEN.\n");
-
-		long pos[strm->data->D];
-		md_set_dims(strm->data->D, pos, 0);
-		stream_sync_slice(strm, strm->data->D, strm->data->dims, 0, pos);
+		stream_sync_all(strm);
 	}
 #endif
 
@@ -688,12 +697,8 @@ static struct list_s* stream_get_events_at_index(struct stream* s, long index);
 
 // Stream Synchronization
 
-static bool stream_receive_idx_locked(stream_t s)
+static bool stream_receive_idx_locked2(stream_t s)
 {
-
-	s->busy = true;
-	bart_unlock(s->lock);
-
 	bool raw_received = false;
 	long offset = -1;
 	struct stream_msg msg = { .type = STREAM_MSG_INVALID };
@@ -774,6 +779,10 @@ static bool stream_receive_idx_locked(stream_t s)
 	bart_lock(s->lock);
 
 	s->data->synced[offset] = true;
+	s->data->idx[s->data->sync_count] = offset;
+	s->data->sync_count++;
+
+	s->last_index = offset;
 
 	while ((s->data->index < s->data->tot - 1) && (s->data->synced[s->data->index + 1]))
 		s->data->index++;
@@ -781,11 +790,26 @@ static bool stream_receive_idx_locked(stream_t s)
 	// if receiving, save timestamp after finished receiving!
 	stream_log_index(s, offset, timestamp());
 
-	debug_printf(DP_DEBUG3, "data offset rcvd: %ld\n", s->data->index);
-
-	s->busy = false;
+	debug_printf(DP_DEBUG3, "data offset rcvd: %ld\n", s->last_index);
 
 	return true;
+}
+
+static bool stream_receive_idx_locked(stream_t s)
+{
+	assert(!s->busy);
+	s->busy = true;
+	bart_unlock(s->lock);
+
+	bool ret = stream_receive_idx_locked2(s);
+
+	if (!ret)
+		bart_lock(s->lock);
+
+	assert(s->busy);
+	s->busy = false;
+
+	return ret;
 }
 
 static bool stream_send_index_locked(stream_t s, long index)
@@ -882,6 +906,8 @@ static bool stream_sync_index(stream_t s, long index, bool all)
 			if (s->data->synced[index])
 				break;
 
+			assert(!s->busy && !s->data->synced[index]);
+
 			// (not busy) and (not synced) -> receive.
 			if (!stream_receive_idx_locked(s))
 				break;
@@ -901,6 +927,49 @@ static bool stream_sync_index(stream_t s, long index, bool all)
 	return synced;
 }
 
+bool stream_receive_pos(stream_t s, long count, long N, long pos[N])
+{
+	assert(s->input);
+	assert(N == s->D);
+
+	if (count >= s->data->tot)
+		return false;
+
+	bart_lock(s->lock);
+
+	while (count >= s->data->sync_count) {
+
+		while (count >= s->data->sync_count && s->busy)
+			bart_cond_wait(s->cond, s->lock);
+
+		if (count >= s->data->sync_count) {
+
+			assert(!s->busy);
+
+			if (!stream_receive_idx_locked(s)) {
+
+				bart_unlock(s->lock);
+				return false;
+			}
+
+			bart_cond_notify_all(s->cond);
+		}
+	}
+
+	assert(count < s->data->sync_count);
+
+	md_unravel_index(N, pos, s->data->stream_flags, s->data->dims, s->data->idx[count]);
+
+	bart_unlock(s->lock);
+
+	return true;
+}
+
+
+/* Sync an arbitrary slice in a multidimensional array:
+ * - flags & pos together define a set of fixed indices for an n-dimensional array.
+ * - this syncs all stream slices (defined by the flags set in stream) that intersect the given slice.
+ */
 bool stream_sync_slice_try(stream_t s, int N, const long dims[N], unsigned long flags, const long _pos[N])
 {
 	if (NULL == s)
@@ -946,24 +1015,23 @@ void stream_sync(stream_t s, int N, long pos[N])
 		error("Stream_sync\n");
 }
 
+void stream_sync_all(stream_t strm)
+{
+	long pos[strm->data->D];
+	md_set_dims(strm->data->D, pos, 0);
+	stream_sync_slice(strm, strm->data->D, strm->data->dims, 0, pos);
+}
 
 void stream_fetch(stream_t s)
 {
 	assert(s->input);
 
 	bart_lock(s->lock);
-
-	if (s->busy) {
-
-		// bart condition variables have no spurious wakeups
-		bart_cond_wait(s->cond, s->lock);
-		bart_unlock(s->lock);
-		return;
-	}
-
-	stream_receive_idx_locked(s);
-
+	long count = s->data->sync_count;
 	bart_unlock(s->lock);
+
+	long pos[s->D];
+	stream_receive_pos(s, count, s->D, pos);
 }
 
 

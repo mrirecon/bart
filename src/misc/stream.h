@@ -47,7 +47,11 @@ extern _Bool stream_sync_try(stream_t s, int N, long pos[__VLA(N)]);
 extern void stream_sync_slice(stream_t s, int N, const long dims[__VLA(N)], unsigned long flags, const long pos[__VLA(N)]);
 extern _Bool stream_sync_slice_try(stream_t s, int N, const long dims[__VLA(N)], unsigned long flags, const long pos[__VLA(N)]);
 
+extern void stream_sync_all(stream_t strm);
+
 extern void stream_fetch(stream_t s);
+
+extern _Bool stream_receive_pos(stream_t s, long count, long N, long pos[__VLA(N)]);
 
 extern _Complex float* stream_get_data(stream_t s);
 extern void stream_get_dimensions(stream_t s, int D, long dims[__VLA(D)]);
