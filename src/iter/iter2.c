@@ -84,44 +84,111 @@ static bool check_ops(long size,
 	const struct operator_p_s* prox_ops[D],
 	const struct linop_s* ops[D])
 {
+	bool ret = true;
+
+	const struct iovec_s* iov = NULL;
+
 	if (NULL != normaleq_op) {
 
 		auto dom = operator_domain(normaleq_op);
 
-		if (size != 2 * md_calc_size(dom->N, dom->dims))	// FIXME: too weak
-			return false;
+		iov = operator_domain(normaleq_op);
+
+		if (size != 2 * md_calc_size(dom->N, dom->dims))
+			ret = false;
 
 		auto cod = operator_codomain(normaleq_op);
 
-		if (size != 2 * md_calc_size(cod->N, cod->dims))	// FIXME: too weak
-			return false;
+		if (!iovec_compare(iov, cod))
+			ret = false;
 	}
 
 	for (int i = 0; i < D; i++) {
-
-		long cosize = size;
+	
+		const struct iovec_s* cod = NULL;
 
 		if ((NULL != ops) && (NULL != ops[i])) {
 
 			auto dom = linop_domain(ops[i]);
 
-			if (size != 2 * md_calc_size(dom->N, dom->dims))	// FIXME: too weak
-				return false;
+			if (size != 2 * md_calc_size(dom->N, dom->dims))
+				ret = false;
 
-			auto cod = linop_codomain(ops[i]);
-			cosize = 2 * md_calc_size(cod->N, cod->dims);
+			if (NULL != iov) {
+
+				if (!iovec_compare(iov, dom))
+					ret = false;
+			} else {
+
+				iov = dom;
+			}
+
+			cod = linop_codomain(ops[i]);
 		}
 
 		if ((NULL != prox_ops) && (NULL != prox_ops[i])) {
 
 			auto dom2 = operator_p_domain(prox_ops[i]);
 
-			if (cosize != 2 * md_calc_size(dom2->N, dom2->dims))
-				return false;	// FIXME: too weak
+			if (NULL != cod) {
+
+				if (!iovec_compare(cod, dom2))
+					ret = false;
+			} else {
+
+				if (size != 2 * md_calc_size(dom2->N, dom2->dims))
+					ret = false;
+
+				if (NULL != iov) {
+
+					if (!iovec_compare(iov, dom2))
+						ret = false;
+				} else {
+
+					iov = dom2;
+				}
+			}
 		}
 	}
 
-	return true;
+	if (!ret) {
+
+		iov = NULL;
+
+		if (NULL != normaleq_op) {
+
+			debug_printf(DP_INFO, "normaleq_op:\n");
+			
+			iov = operator_domain(normaleq_op);
+			debug_print_dims(DP_INFO, iov->N, iov->dims);
+			iov = operator_codomain(normaleq_op);
+			debug_print_dims(DP_INFO, iov->N, iov->dims);
+		}
+
+		for (int i = 0; i < D; i++) {
+
+			if ((NULL != ops) && (NULL != ops[i])) {
+
+				debug_printf(DP_INFO, "linop[%d]:\n", i);
+				iov = linop_domain(ops[i]);
+				debug_print_dims(DP_INFO, iov->N, iov->dims);
+				iov = linop_codomain(ops[i]);
+				debug_print_dims(DP_INFO, iov->N, iov->dims);
+			}
+
+			if ((NULL != prox_ops) && (NULL != prox_ops[i])) {
+
+				debug_printf(DP_INFO, "prox[%d]:\n", i);
+				iov = operator_p_domain(prox_ops[i]);
+				debug_print_dims(DP_INFO, iov->N, iov->dims);
+				iov = operator_p_codomain(prox_ops[i]);
+				debug_print_dims(DP_INFO, iov->N, iov->dims);
+			}
+		}
+			
+	}
+
+	return ret;
 }
 
 
