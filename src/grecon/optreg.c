@@ -327,13 +327,13 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 		case TGV:
 
-			ropts->svars += bitcount(regs[nr].xflags);
+			ropts->svars += bitcount(regs[nr].xflags) * md_calc_size(N, img_dims);
 			ropts->sr++;
 			break;
 
 		case ICTV:
 
-			ropts->svars += 1;
+			ropts->svars += md_calc_size(N, img_dims);
 			ropts->sr++;
 			break;
 
@@ -344,12 +344,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 	assert(ropts->r <= NUM_REGS);
 	assert(1 == img_dims[BATCH_DIM]);
 
-	long ext_dims[DIMS];
-	md_copy_dims(DIMS, ext_dims, img_dims);
-
-	ext_dims[BATCH_DIM] += ropts->svars;
-
-	int ext_shift = 1;
+	long ext_shift = md_calc_size(N, img_dims);
 	int nr_penalties = ropts->r;
 
 	long blkdims[MAX_LEV][DIMS];
@@ -473,7 +468,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 			debug_printf(DP_INFO, "TGV regularization: %f\n", regs[nr].lambda);
 
-			struct reg2 reg2 = tgv_reg(regs[nr].xflags, regs[nr].jflags /*| MD_BIT(DIMS - 1)*/ | MD_BIT(DIMS), regs[nr].lambda, DIMS, ext_dims, &ext_shift);
+			struct reg2 reg2 = tgv_reg(regs[nr].xflags, regs[nr].jflags /*| MD_BIT(DIMS - 1)*/ | MD_BIT(DIMS), regs[nr].lambda, DIMS, img_dims, md_calc_size(N, img_dims) + ropts->svars, &ext_shift);
 
 			trafos[nr] = reg2.linop[0];
 			prox_ops[nr] = reg2.prox[0];
@@ -489,7 +484,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 			debug_printf(DP_INFO, "ICTV regularization: %f\n", regs[nr].lambda);
 
-			struct reg2 reg2 = ictv_reg(regs[nr].xflags & FFT_FLAGS, regs[nr].xflags & ~FFT_FLAGS, regs[nr].jflags | MD_BIT(DIMS), regs[nr].lambda, DIMS, ext_dims, &ext_shift);
+			struct reg2 reg2 = ictv_reg(regs[nr].xflags & FFT_FLAGS, regs[nr].xflags & ~FFT_FLAGS, regs[nr].jflags | MD_BIT(DIMS), regs[nr].lambda, N, img_dims, md_calc_size(N, img_dims) + ropts->svars, &ext_shift);
 
 			trafos[nr] = reg2.linop[0];
 			prox_ops[nr] = reg2.prox[0];
@@ -659,15 +654,16 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 		    && !(   (TGV == regs[nr].xform)
 			 || (ICTV == regs[nr].xform))) {
 
-			long pos[DIMS] = { 0 };
+			long pos[1] = { 0 };
 
-			trafos[nr] = linop_chain_FF(
-					linop_extract_create(DIMS, pos, linop_domain(trafos[nr])->dims, ext_dims),
-					trafos[nr]);
+			const struct linop_s* extract = linop_extract_create(1, pos, MD_DIMS(md_calc_size(N, img_dims)), MD_DIMS(md_calc_size(N, img_dims) + ropts->svars));
+			extract = linop_reshape_out_F(extract, N, img_dims);			
+
+			trafos[nr] = linop_chain_FF(extract, trafos[nr]);
 		}
 	}
 
-	assert(ext_shift == 1 + ropts->svars);
+	assert(ext_shift == md_calc_size(N, img_dims) + ropts->svars);
 	assert(nr_penalties == ropts->r + ropts->sr);
 }
 

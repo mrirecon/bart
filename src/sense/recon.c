@@ -96,25 +96,10 @@ const struct operator_p_s* sense_recon_create(const struct sense_conf* conf,
 
 	const struct operator_p_s* op = NULL;
 
-	assert(DIMS == linop_domain(sense_op)->N);
-
-	long img_dims[DIMS];
-	md_copy_dims(DIMS, img_dims, linop_domain(sense_op)->dims);
+	assert(DIMS == linop_codomain(sense_op)->N);
 
 	long ksp_dims[DIMS];
 	md_copy_dims(DIMS, ksp_dims, linop_codomain(sense_op)->dims);
-
-	if (conf->rvc) {
-
-		assert(!conf->bpsense); // FIXME: add rvc as separate constraint or build into forward model earlier
-
-		struct linop_s* rvc = linop_realval_create(DIMS, img_dims);
-		struct linop_s* tmp_op = linop_chain(rvc, sense_op);
-
-		linop_free(rvc);
-		linop_free(sense_op);
-		sense_op = tmp_op;
-	}
 
 	if (1 < conf->rwiter) {
 
