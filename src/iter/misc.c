@@ -6,11 +6,12 @@
  * 2014 Frank Ong <frankong@berkeley.edu>
  * 2015 Martin Uecker <uecker@eecs.berkeley.edu>
  */
- 
+
 #include "num/multind.h"
 #include "num/ops.h"
 #include "num/iovec.h"
 #include "num/rand.h"
+#include "num/vptr.h"
 
 #include "misc/misc.h"
 
@@ -36,9 +37,17 @@ double estimate_maxeigenval_sameplace(const struct operator_s* op, int iteration
 	const struct iovec_s* io = operator_domain(op);
 	long size = md_calc_size(io->N, io->dims);
 
-	void* x = md_alloc_sameplace(io->N, io->dims, io->size, ref);
+	void* x;
 
-	md_gaussian_rand(io->N, io->dims, x);
+	if (is_vptr(ref)) {
+
+		x = vptr_alloc_same(ref);
+		vptr_set_gpu(x, is_vptr_gpu(ref));
+
+	} else
+		x = md_alloc_sameplace(io->N, io->dims, io->size, ref);
+
+	select_vecops(ref)->rand(2 * size, x);
 
 	double max_eval = iter_power(iterations, op, 2 * size, x);
 
