@@ -34,7 +34,7 @@ struct opt_reg_s {
 	float lambda;
 	struct reg_s regs[NUM_REGS];
 	int r;
-	int svars;
+	long svars;
 	int sr;
 };
 
