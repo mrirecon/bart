@@ -29,6 +29,7 @@
 #include "linops/linop.h"
 #include "linops/fmac.h"
 #include "linops/someops.h"
+#include "linops/realval.h"
 
 #include "noncart/nufft.h"
 
@@ -670,6 +671,9 @@ int main_pics(int argc, char* argv[argc])
 		forward_op = linop_chain_FF(motion_op, forward_op);
 	}
 
+	if (conf.rvc)
+		forward_op = linop_chain_FF(linop_realval_create(DIMS, img_dims), forward_op);
+
 #ifdef USE_CUDA
 	if (conf.gpu && (gpu_gridding || NULL == traj)) {
 
@@ -855,21 +859,10 @@ int main_pics(int argc, char* argv[argc])
 
 		assert(NULL == image_truth);
 		assert(!conf.rvc);
-		assert(1 == img_dims[BATCH_DIM]);
-		assert(1 == max_dims[BATCH_DIM]);
-		assert(0 == loop_flags);
 
-		long img2_dims[DIMS];
-		md_copy_dims(DIMS, img2_dims, img_dims);
-
-		img2_dims[BATCH_DIM] += ropts.svars;
-		long pos[DIMS] = { 0 };
-
-		max_dims[BATCH_DIM] += ropts.svars;
-
-		forward_op = linop_chain_FF(
-				linop_extract_create(DIMS, pos, linop_domain(forward_op)->dims, img2_dims),
-				forward_op);
+		const struct linop_s* extract = linop_extract_create(1, MD_DIMS(0), MD_DIMS(md_calc_size(DIMS, img_dims)), MD_DIMS(md_calc_size(DIMS, img_dims) + ropts.svars));
+		extract = linop_reshape_out_F(extract, DIMS, img_dims);
+		forward_op = linop_chain_FF(extract, forward_op);
 	}
 
 	const struct operator_p_s* po = sense_recon_create(&conf, forward_op,
@@ -882,20 +875,15 @@ int main_pics(int argc, char* argv[argc])
 
 	if (0 < ropts.svars) {
 
-		assert(img_dims[BATCH_DIM] + ropts.svars == operator_codomain(op)->dims[BATCH_DIM]);
+		const struct linop_s* extract = linop_extract_create(1, MD_DIMS(0), MD_DIMS(md_calc_size(DIMS, img_dims)), MD_DIMS(md_calc_size(DIMS, img_dims) + ropts.svars));
+		extract = linop_reshape_out_F(extract, DIMS, img_dims);
 
-		long pos[DIMS] = { 0 };
-
-		auto extr = linop_extract_create(DIMS, pos, img_dims, operator_codomain(op)->dims);
-
-		auto op2 = operator_chain(op, extr->forward);
+		auto op2 = operator_chain(op, extract->forward);
 
 		operator_free(op);
 		op = op2;
 
-		assert(img_dims[BATCH_DIM] == operator_codomain(op)->dims[BATCH_DIM]);
-
-		linop_free(extr);
+		linop_free(extract);
 	}
 
 

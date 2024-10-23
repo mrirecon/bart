@@ -79,13 +79,14 @@ int main_ictv(int argc, char* argv[argc])
 
 	out_dims[DIMS - 1] = 2;
 
-	int ext_shift = 1;
-	struct reg2 reg2 = ictv_reg(flags1, flags2, /*MD_BIT(DIMS - 1) |*/ MD_BIT(DIMS), lambda, DIMS, out_dims, &ext_shift);
+	long ext_shift = md_calc_size(DIMS, in_dims);
+	struct reg2 reg2 = ictv_reg(flags1, flags2, /*MD_BIT(DIMS - 1) |*/ MD_BIT(DIMS), lambda, DIMS, in_dims, 2 * ext_shift, &ext_shift);
 
 
 	complex float* out_data = create_cfl(out_file, DIMS, out_dims);
 
 	auto id = linop_extract_create(DIMS, (long[DIMS]){ 0 }, in_dims, out_dims);
+	id = linop_reshape_out_F(id, 1, MD_DIMS(2 * md_calc_size(DIMS, in_dims)));
 
 
 	complex float* adj = md_alloc(DIMS, out_dims, CFL_SIZE);

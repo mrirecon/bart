@@ -72,8 +72,8 @@ int main_tgv(int argc, char* argv[argc])
 
 	out_dims[DIMS - 1] = 1 + bitcount(flags);
 
-	int ext_shift = 1;
-	struct reg2 reg2 = tgv_reg(flags, /*MD_BIT(DIMS - 1) |*/ MD_BIT(DIMS), lambda, DIMS, out_dims, &ext_shift);
+	long ext_shift = md_calc_size(DIMS, in_dims);
+	struct reg2 reg2 = tgv_reg(flags, /*MD_BIT(DIMS - 1) |*/ MD_BIT(DIMS), lambda, DIMS, in_dims, md_calc_size(DIMS, out_dims), &ext_shift);
 
 
 	complex float* out_data = create_cfl(out_file, DIMS, out_dims);
@@ -85,6 +85,8 @@ int main_tgv(int argc, char* argv[argc])
 	complex float* adj = md_alloc(DIMS, out_dims, CFL_SIZE);
 
 	linop_adjoint(id, DIMS, out_dims, adj, DIMS, in_dims, in_data);
+
+	id = linop_reshape_in_F(id, 1, MD_DIMS(md_calc_size(DIMS, out_dims)));
 
 	conf.maxiter = 100;
 	conf.rho = .1;
