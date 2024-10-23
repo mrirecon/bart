@@ -118,7 +118,7 @@ static struct noir_op_s* noir_init(const long dims[DIMS], const complex float* m
 	const struct linop_s* lop_fft = linop_fft_create(DIMS, data->data_dims, conf->fft_flags);
 
 
-	complex float* ptr = md_alloc(DIMS, ptrn_dims, CFL_SIZE);
+	complex float* ptr = md_alloc_sameplace(DIMS, ptrn_dims, CFL_SIZE, psf);
 
 	md_copy(DIMS, ptrn_dims, ptr, psf, CFL_SIZE);
 	fftmod(DIMS, ptrn_dims, conf->fft_flags, ptr, ptr);
