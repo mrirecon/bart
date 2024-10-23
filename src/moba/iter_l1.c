@@ -22,6 +22,7 @@
 #include "num/flpmath.h"
 #include "num/ops_p.h"
 #include "num/rand.h"
+#include "num/vptr.h"
 
 #include "num/ops.h"
 #include "num/iovec.h"
@@ -203,13 +204,14 @@ static void inverse_fista(iter_op_data* _data, float alpha, float* dst, const fl
 		data->alpha = alpha;
 	}
 
-	void* x = md_alloc_sameplace(1, MD_DIMS(data->size_x), FL_SIZE, src);
+	const struct vec_iter_s* vops = select_vecops(dst);
 
-	md_gaussian_rand(1, MD_DIMS(data->size_x / 2), x);
+	void* x = vops->allocate(data->size_x);
+	vops->rand(data->size_x / 2, x);
 
-	maxeigen += power(20, data->size_x, select_vecops(src), (struct iter_op_s){ normal, CAST_UP(data) }, x);
+	maxeigen += power(20, data->size_x, vops, (struct iter_op_s){ normal, CAST_UP(data) }, x);
 
-	md_free(x);
+	vops->del(x);
 
 	data->alpha = alpha;	// reset alpha
 
@@ -224,7 +226,7 @@ static void inverse_fista(iter_op_data* _data, float alpha, float* dst, const fl
 	int maxiter = MIN(data->conf->c2->cgiter, 10. * powf(2, data->outer_iter));
 
 
-	float eps = md_norm(1, MD_DIMS(data->size_x), src);
+	float eps = vops->norm(data->size_x, src);
 
 	data->first_iter = true;
 
@@ -237,7 +239,7 @@ static void inverse_fista(iter_op_data* _data, float alpha, float* dst, const fl
 		true,
 		ravine_classical,
 		data->size_x,
-		select_vecops(src),
+		vops,
 		continuation,
 		(struct iter_op_s){ normal, CAST_UP(data) },
 		(struct iter_op_p_s){ combined_prox, CAST_UP(data) },
