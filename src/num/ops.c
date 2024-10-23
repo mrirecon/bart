@@ -535,7 +535,7 @@ const struct operator_s* get_in_reshape(const struct operator_s* op) {
 
 	if (NULL != get_reshape_data(op))
 		return get_reshape_data(op)->x;
-	
+
 	return NULL;
 }
 
@@ -638,7 +638,7 @@ void operator_generic_apply_parallel_unchecked(int D, const struct operator_s* o
 		}
 
 		omp_set_num_threads(max_threads);
-	
+
 		return;
 	}
 #else
@@ -661,7 +661,7 @@ void operator_apply_unchecked(const struct operator_s* op, complex float* dst, c
 void operator_apply_parallel_unchecked(int D, const struct operator_s* op[D], complex float* dst[D], const complex float* src[D], int num_threads)
 {
 	void* args[D][2];
-	
+
 	for (int i = 0; i < D; i++) {
 
 		assert(op[i]->io_flags[0]);
@@ -1010,7 +1010,7 @@ struct copy_data_s {
 
 	int N;
 	const long** strs;
-	
+
 	enum COPY_LOCATION* loc;
 
 	bool copy_output;
@@ -1042,8 +1042,17 @@ static void copy_fun(const operator_data_t* _data, int N, void* args[N])
 #ifdef USE_CUDA
 		switch (data->loc[i]) {
 		case CL_CPU:
-			if (allocate || cuda_ondevice(args[i]))
-				ptr[i] = md_alloc(io->N, io->dims, io->size);
+			if (allocate || cuda_ondevice(args[i])) {
+
+				if (is_vptr(args[i])) {
+
+					ptr[i] = vptr_alloc_sameplace(io->N, io->dims, io->size, args[i]);
+					vptr_set_gpu(ptr[i], false);
+				} else {
+
+					ptr[i] = md_alloc(io->N, io->dims, io->size);
+				}
+			}
 			break;
 		case CL_SAMEPLACE:
 			if (allocate)
@@ -1051,14 +1060,23 @@ static void copy_fun(const operator_data_t* _data, int N, void* args[N])
 			break;
 		case CL_DEVICE:
 
-			if (allocate || !cuda_ondevice(args[i]))
-				ptr[i] = md_alloc_gpu(io->N, io->dims, io->size);
+			if (allocate || !cuda_ondevice(args[i])) {
+
+				if (is_vptr(args[i])) {
+
+					ptr[i] = vptr_alloc_sameplace(io->N, io->dims, io->size, args[i]);
+					vptr_set_gpu(ptr[i], true);
+				} else {
+
+					ptr[i] = md_alloc_gpu(io->N, io->dims, io->size);
+				}
+			}
 			break;
 		default: assert(0);
 		}
 #else
 		if (allocate)
-			ptr[i] = md_alloc(io->N, io->dims, io->size);
+			ptr[i] = is_vptr(args[i]) ? vptr_alloc_sameplace(io->N, io->dims, io->size, args[i]) : md_alloc(io->N, io->dims, io->size);
 #endif
 
 		if (NULL != ptr[i]) {
@@ -1128,7 +1146,7 @@ static const struct operator_s* operator_copy_wrapper_generic(int N, const long*
 		enum COPY_LOCATION loc2[N];
 		for (int i = 0; i < N; i++)
 			loc2[i] = (CL_SAMEPLACE == data->loc[i]) ? loc[i] : data->loc[i];
-			
+
 		return operator_copy_wrapper_generic(N, data->strs, loc2, data->op, device, data->copy_output);
 	}
 
@@ -1218,7 +1236,7 @@ const struct operator_s* operator_copy_wrapper_sameplace(int N, const long* strs
 		else
 #endif
 			loc[i] = CL_CPU;
-		
+
 		if (NULL == ref)
 			loc[i] = CL_SAMEPLACE;
 	}
@@ -1270,25 +1288,68 @@ struct vptr_wrapper_s {
 static DEF_TYPEID(vptr_wrapper_s);
 
 
-static void vptrw_apply(const operator_data_t* _data, int N, void* args[N])
+static void vptrw_apply(const operator_data_t* _data, int N, void* _args[N])
 {
 	const auto d = CAST_DOWN(vptr_wrapper_s, _data);
 
-	void* targs[N];
+	void* args[N];
+	void* fargs[N];
+	bool io_flags[N];
+
 	for (int i = 0; i < N; i++) {
 
-		auto iov = operator_arg_domain(d->op, i);
-		if (is_vptr(args[i]))
-			targs[i] = args[i];
-		else
-			targs[i] = vptr_wrap(iov->N, iov->dims, iov->size, args[i], d->hint, false, operator_get_io_flags(d->op)[i]);
+		args[i] = NULL;
+		fargs[i] = NULL;
 	}
 
-	operator_generic_apply_unchecked(d->op, N, targs);
+	for (int i = 0; i < N; i++) {
 
-	for (int i = 0; i < N; i++)
-		if (targs[i] != args[i])
-			md_free(targs[i]);
+		if (NULL != args[i])
+			continue;
+
+		auto iov = operator_arg_domain(d->op, i);
+		io_flags[i] = operator_get_io_flags(d->op)[i];
+
+		for (int j = i + 1; j < N; j++)
+			if (_args[j] == _args[i])
+				io_flags[i] = io_flags[i] || operator_get_io_flags(d->op)[j];
+
+		if (is_vptr(_args[i])) {
+
+			if (vptr_hint_same(d->hint, vptr_get_hint(_args[i]))) {
+
+				args[i] = _args[i];
+				continue;
+			} else {
+
+				fargs[i] = vptr_alloc(iov->N, iov->dims, iov->size, d->hint);
+				vptr_set_gpu(fargs[i], is_vptr_gpu(_args[i]));
+				md_copy(iov->N, iov->dims, fargs[i], _args[i], iov->size);
+			}
+		} else {
+
+			fargs[i] = vptr_wrap(iov->N, iov->dims, iov->size, _args[i], d->hint, false, io_flags[i]);
+		}
+
+		for (int j = i; j < N; j++)
+			if (_args[j] == _args[i])
+				args[j] = fargs[i];
+	}
+
+	operator_generic_apply_unchecked(d->op, N, args);
+
+	for (int i = 0; i < N; i++) {
+
+		if (NULL == fargs[i])
+			continue;
+
+		auto iov = operator_arg_domain(d->op, i);
+
+		if (io_flags[i] && is_vptr(_args[i]))
+			md_copy(iov->N, iov->dims, _args[i], fargs[i], iov->size);
+
+		md_free(fargs[i]);
+	}
 }
 
 static void vptrw_free(const operator_data_t* _data)
@@ -1301,27 +1362,7 @@ static void vptrw_free(const operator_data_t* _data)
 
 const struct operator_s* operator_vptr_wrapper(const struct operator_s* op, struct vptr_hint_s* hint)
 {
-	if (NULL == hint)
-		return operator_ref(op);
-
 	int A = operator_nr_args(op);
-	int N = -1;
-
-	for (int i = 0; i < A; i++) {
-
-		auto iov = operator_arg_domain(op, i);
-
-		if (1 == iov->N && 1 == iov->dims[0])
-			continue;
-
-		if (-1 == N)
-			N = iov->N;
-
-		assert(N == iov->N);
-		assert(N == md_calc_blockdim(N, iov->dims, iov->strs, iov->size));
-	}
-
-	assert(0 < N);
 
 	PTR_ALLOC(struct vptr_wrapper_s, data);
 	SET_TYPEID(vptr_wrapper_s, data);
@@ -1329,8 +1370,8 @@ const struct operator_s* operator_vptr_wrapper(const struct operator_s* op, stru
 	data->op = operator_ref(op);
 	data->hint = vptr_hint_ref(hint);
 
-	int D[N];
-	const long* op_dims[N];
+	int D[A];
+	const long* op_dims[A];
 	const long* op_strs[A];
 
 	for (int j = 0; j < A; j++) {
@@ -1616,19 +1657,21 @@ static void link_apply(const operator_data_t* _data, int N, void* args[N])
 
 	assert(iovec_check(iovb, iov->N, iov->dims, iov->strs));
 
+	const void* ref = args[0];
+
 #ifdef USE_CUDA
 	// Allocate tmp on GPU when one argument is on the GPU.
 	// The scalar parameters of op_p may be on CPU.
 
-	bool gpu = false;
-
 	for (int i = 0; i < N; i++)
-		gpu = gpu || cuda_ondevice(args[i]);
-
-	void* tmp = (gpu ? md_alloc_gpu : md_alloc)(iov->N, iov->dims, iov->size);
-#else
-	void* tmp = md_alloc(iov->N, iov->dims, iov->size);
+		if (cuda_ondevice(args[i]))
+			ref = args[i];
 #endif
+	for (int i = 0; i < N; i++)
+		if (is_vptr(args[i]))
+			ref = args[i];
+
+	void* tmp = md_alloc_sameplace(iov->N, iov->dims, iov->size, ref);
 
 	assert(N + 2 == operator_nr_args(data->x));
 
@@ -2134,9 +2177,9 @@ bool operator_zero_or_null_p(const struct operator_s* op)
 
 	if (NULL != p)
 		return operator_zero_or_null_p(p->op);
-	
+
 	auto r = CAST_MAYBE(op_reshape_s, opd);
-	
+
 	if (NULL != r)
 		return operator_zero_or_null_p(r->x);
 
@@ -2364,7 +2407,7 @@ static void chain_apply(const operator_data_t* _data, int N, void* args[N])
 		if (i == data->N - 1)
 			dst = args[0];
 		else
-			dst = md_alloc_sameplace(iov->N, iov->dims, iov->size, src);
+			dst = md_alloc_sameplace(iov->N, iov->dims, iov->size, src ?: args[0]);
 
 		operator_apply_unchecked(data->x[i], dst, src);
 
@@ -2691,3 +2734,73 @@ void operator_apply_joined_unchecked(int N, const struct operator_s* op[N], comp
 	operator_free(op_optimized);
 
 }
+
+struct vptr_set_dims_data_s {
+
+	INTERFACE(operator_data_t);
+
+	const struct operator_s* op;
+
+	const void** ref;
+	struct vptr_hint_s* hint;
+};
+
+static DEF_TYPEID(vptr_set_dims_data_s);
+
+static void vptr_set_dims_fun(const operator_data_t* _data, int N, void* args[N])
+{
+	const auto data = CAST_DOWN(vptr_set_dims_data_s, _data);
+
+
+	for (int i = 0; i < N; i++) {
+
+		if (!is_vptr(args[i]))
+			continue;
+
+		if (NULL == data->ref[i])
+			vptr_set_dims(args[i], data->op->domain[i]->N, data->op->domain[i]->dims, data->op->domain[i]->size, data->hint);
+		else
+			vptr_set_dims_sameplace(args[i], data->ref[i]);
+	}
+
+
+	operator_generic_apply_unchecked(data->op, N, args);
+}
+
+static void vptr_set_dims_del(const operator_data_t* _data)
+{
+	const auto data = CAST_DOWN(vptr_set_dims_data_s, _data);
+
+	operator_free(data->op);
+	vptr_hint_free(data->hint);
+	xfree(data->ref);
+
+	xfree(data);
+}
+
+const struct operator_s* operator_vptr_set_dims_wrapper(const struct operator_s* op, int N, const void* ref[N], struct vptr_hint_s* hint)
+{
+	assert(N == operator_nr_args(op));
+
+	PTR_ALLOC(struct vptr_set_dims_data_s, data);
+	SET_TYPEID(vptr_set_dims_data_s, data);
+
+	data->op = operator_ref(op);
+	data->ref = ARR_CLONE(const void*[N], ref);
+	data->hint = vptr_hint_ref(hint);
+
+	int D[N];
+	const long* dims[N];
+	const long* strs[N];
+
+	for (int i = 0; i < N; i++) {
+
+		D[i] = op->domain[i]->N;
+		dims[i] = op->domain[i]->dims;
+		strs[i] = op->domain[i]->strs;
+	}
+
+	return operator_generic_create2(N, op->io_flags, D, dims, strs, CAST_UP(PTR_PASS(data)), vptr_set_dims_fun, vptr_set_dims_del, NULL);
+}
+
+
