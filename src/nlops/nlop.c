@@ -1163,6 +1163,19 @@ struct nlop_s* nlop_flatten_F(const struct nlop_s* op)
 	return result;
 }
 
+struct nlop_s* nlop_flatten_inputs_F(const struct nlop_s* op)
+{
+	assert(1 == nlop_get_nr_out_args(op));
+
+	int N = nlop_generic_codomain(op, 0)->N;
+	long dims[N];
+	md_copy_dims(N, dims, nlop_generic_codomain(op, 0)->dims);
+
+	op = nlop_flatten_F(op);
+	return (struct nlop_s*)nlop_reshape_out_F(op, 0, N, dims);
+}
+
+
 
 const struct nlop_s* nlop_flatten_get_op(struct nlop_s* op)
 {
