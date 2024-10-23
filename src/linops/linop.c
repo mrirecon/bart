@@ -740,8 +740,8 @@ static void stack_cod_adjoint(const linop_data_t* _data, complex float* dst, con
 	complex float* tmp = md_alloc_sameplace(d->D, d->dims, CFL_SIZE, dst);
 
 	for (int i = 0; i < d->N; i++) {
-		
-		linop_adjoint_unchecked(d->lops[i], tmp, src + d->offset[i]);		
+
+		linop_adjoint_unchecked(d->lops[i], tmp, src + d->offset[i]);
 		md_zadd(d->D, d->dims, dst, dst, tmp);
 	}
 
@@ -845,7 +845,7 @@ struct linop_s* linop_stack_cod(int N, const struct linop_s* lops[N], int stack_
 struct linop_s* linop_stack_cod_F(int N, const struct linop_s* lops[N], int stack_dim)
 {
 	auto ret = linop_stack_cod(N, lops, stack_dim);
-	
+
 	for (int i = 0; i < N; i++)
 		linop_free(lops[i]);
 
@@ -909,9 +909,9 @@ struct linop_s* linop_loop(int D, const long dims[D], struct linop_s* op)
 struct linop_s* linop_loop_F(int D, const long dims[D], struct linop_s* op)
 {
 	auto result = linop_loop(D, dims, op);
-	
+
 	linop_free(op);
-	
+
 	return result;
 }
 
@@ -971,6 +971,18 @@ struct linop_s* linop_vptr_wrapper(struct vptr_hint_s* hint, const struct linop_
 	op2->forward = operator_vptr_wrapper(op->forward, hint);
 	op2->adjoint = operator_vptr_wrapper(op->adjoint, hint);
 	op2->normal = (NULL == op->normal) ? NULL : operator_vptr_wrapper(op->normal, hint);
+	op2->norm_inv = NULL; // FIXME
+
+	return PTR_PASS(op2);
+}
+
+struct linop_s* linop_vptr_set_dims_wrapper(const struct linop_s* op, const void* cod_ref, const void* dom_ref, struct vptr_hint_s* hint)
+{
+	PTR_ALLOC(struct linop_s, op2);
+
+	op2->forward = operator_vptr_set_dims_wrapper(op->forward, 2, (const void* [2]){ cod_ref, dom_ref }, hint);
+	op2->adjoint = operator_vptr_set_dims_wrapper(op->adjoint, 2, (const void* [2]){ dom_ref, cod_ref }, hint);
+	op2->normal = (NULL == op->normal) ? NULL : operator_vptr_set_dims_wrapper(op->normal, 2, (const void* [2]){ dom_ref, dom_ref }, hint);
 	op2->norm_inv = NULL; // FIXME
 
 	return PTR_PASS(op2);

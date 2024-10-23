@@ -115,6 +115,7 @@ extern struct linop_s* linop_copy_wrapper(int D, const long istrs[D], const long
 extern struct linop_s* linop_cpu_wrapper(const struct linop_s* op);
 extern struct linop_s* linop_gpu_wrapper(const struct linop_s* op);
 extern struct linop_s* linop_vptr_wrapper(struct vptr_hint_s* hint, const struct linop_s* op);
+extern struct linop_s* linop_vptr_set_dims_wrapper(const struct linop_s* op, const void* cod_ref, const void* dom_ref, struct vptr_hint_s* hint);
 
 extern struct linop_s* linop_null_create2(int NO, const long odims[NO], const long ostrs[NO], int NI, const long idims[NI], const long istrs[NI]);
 extern struct linop_s* linop_null_create(int NO, const long odims[NO], int NI, const long idims[NI]);
