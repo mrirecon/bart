@@ -768,6 +768,61 @@ bool md_overlap(int D1, const long dims1[D1], const long strs1[D1], const void* 
 	return !((ptr1s >= ptr2e) || (ptr2s >= ptr1e));
 }
 
+static bool vptr_clear_range_dims(int D, const long dim[D], const long str[D], void* ptr, size_t size)
+{
+	void* tptr = vptr_resolve_range(ptr);
+
+	if ((tptr != ptr) && (1 == D) && ((str[0] == (long)size))) {
+
+		long clen = dim[0] * (long)size;
+		long len = is_vptr(tptr) ? (long)vptr_get_len(tptr) : clen;
+		len = MIN(len, clen);
+
+		md_clear(1, MD_DIMS(len), tptr, 1);
+
+		if (0 < clen - len)
+			md_clear(1, MD_DIMS(clen - len), ptr + len, 1);
+		return true;
+	}
+
+
+	if (is_vptr(ptr) && D == 1 && (long)size == str[0]) {
+
+		int ND = vptr_get_N(ptr) + 1;
+		long tdim[ND];
+		vptr_get_dims(ptr, ND - 1, tdim + 1);
+		tdim[0] = (long)vptr_get_size(ptr);
+
+		long ndims[ND + 1];
+		long nstrs[ND + 1];
+
+		int i = 0;
+
+		while ((0 == (dim[0] * (long)size) % md_calc_size(i, tdim)) && (0 < (dim[0] * (long)size) / md_calc_size(i, tdim)) && i < ND) {
+
+			ndims[i] = tdim[i];
+			nstrs[i] = md_calc_size(i, tdim);
+			i++;
+		}
+
+		ndims[i] = ((long)size * dim[0]) / md_calc_size(i, tdim);
+		nstrs[i] = md_calc_size(i, tdim);
+		
+		if (1 < ndims[i]) 
+			i++;
+
+		if (2 < i) {
+
+			for (int j = 0; j < i; j++)
+				nstrs[j] = (1 == ndims[j]) ? 0 : nstrs[j];
+		
+			md_clear2(i - 1, ndims + 1, nstrs + 1, ptr, (size_t)ndims[0]);
+			return true;
+		}
+	}
+
+	return false;
+}
 
 /**
  * Zero out array (with strides)
@@ -776,6 +831,11 @@ bool md_overlap(int D1, const long dims1[D1], const long strs1[D1], const void* 
  */
 void md_clear2(int D, const long dim[D], const long str[D], void* ptr, size_t size)
 {
+	if (vptr_clear_range_dims(D, dim, str, ptr, size))
+		return;
+
+	ptr = vptr_resolve_range(ptr);
+
 	const long (*nstr[1])[D] = { (const long (*)[D])str };
 #ifdef	USE_CUDA
 	bool use_gpu = cuda_ondevice(ptr);
@@ -876,6 +936,115 @@ void md_clear(int D, const long dim[D], void* ptr, size_t size)
 }
 
 
+static bool vptr_copy_range_dims(int D, const long dim[D], const long ostr[D], void* optr, const long istr[D], const void* iptr, size_t size)
+{
+	void* toptr = vptr_resolve_range(optr);
+	void* tiptr = vptr_resolve_range(iptr);
+
+	if ((toptr != optr || tiptr != iptr) && (1 == D) && (ostr[0] == istr[0]) && ((ostr[0] == (long)size))) {
+
+		long clen = dim[0] * (long)size;
+		long ilen = is_vptr(tiptr) ? (long)vptr_get_len(tiptr) : clen;
+		long olen = is_vptr(toptr) ? (long)vptr_get_len(toptr) : clen;
+		ilen = MIN(ilen, clen);
+		olen = MIN(olen, clen);
+
+		md_copy(1, MD_DIMS(MIN(ilen, olen)), toptr, tiptr, 1);
+
+		if (0 < clen - MIN(ilen, olen))
+			md_copy(1, MD_DIMS(clen - MIN(ilen, olen)), optr + MIN(ilen, olen), iptr + MIN(ilen, olen), 1);
+
+		return true;				
+	}
+
+	optr = vptr_resolve_range(optr);
+	iptr = vptr_resolve_range(iptr);
+
+	if (is_vptr(optr) && D == 1 && (long)size == ostr[0] && (long)size == istr[0]) {
+
+		int DO = vptr_get_N(optr) + 1;
+		long odims[DO];
+		vptr_get_dims(optr, DO - 1, odims + 1);
+		odims[0] = (long)vptr_get_size(optr);
+
+		long ndims[DO + 1];
+		long nistrs[DO + 1];
+		long nostrs[DO + 1];
+
+		int i = 0;
+
+		while ((0 == (dim[0] * (long)size) % md_calc_size(i, odims)) && (0 < (dim[0] * (long)size) / md_calc_size(i, odims)) && i < DO) {
+
+			ndims[i] = odims[i];
+			nistrs[i] = md_calc_size(i, odims);
+			nostrs[i] = md_calc_size(i, odims);
+			i++;
+		}
+
+		ndims[i] = ((long)size * dim[0]) / md_calc_size(i, odims);
+		nistrs[i] = md_calc_size(i, odims);
+		nostrs[i] = md_calc_size(i, odims);
+		
+		if (1 < ndims[i]) 
+			i++;
+
+		if (2 < i) {
+
+			for (int j = 0; j < i; j++) {
+
+				nostrs[j] = (1 == ndims[j]) ? 0 : nostrs[j];
+				nistrs[j] = (1 == ndims[j]) ? 0 : nistrs[j];
+			}
+
+			md_copy2(i - 1, ndims + 1, nostrs + 1, optr, nistrs + 1, iptr, (size_t)ndims[0]);
+			return true;
+		}
+	}
+
+	if (is_vptr(iptr) && D == 1 && (long)size == istr[0] && (long)size == ostr[0]) {
+
+		int DI = vptr_get_N(iptr) + 1;
+		long idims[DI];
+		vptr_get_dims(iptr, DI - 1, idims + 1);
+		idims[0] = (long)vptr_get_size(iptr);
+
+		long ndims[DI + 1];
+		long nistrs[DI + 1];
+		long nostrs[DI + 1];
+
+		int i = 0;
+
+		while ((0 == (dim[0] * (long)size) % md_calc_size(i, idims)) && (0 < (dim[0] * (long)size) / md_calc_size(i, idims))  && i < DI) {
+
+			ndims[i] = idims[i];
+			nistrs[i] = md_calc_size(i, idims);
+			nostrs[i] = md_calc_size(i, idims);
+			i++;
+		}
+
+		ndims[i] = ((long)size * dim[0]) / md_calc_size(i, idims);
+		nistrs[i] = istr[0] * md_calc_size(i, idims);
+		nostrs[i] = ostr[0] * md_calc_size(i, idims);
+		
+		if (1 < ndims[i]) 
+			i++;
+
+		if (2 < i) {
+
+			for (int j = 0; j < i; j++) {
+
+				nostrs[j] = (1 == ndims[j]) ? 0 : nostrs[j];
+				nistrs[j] = (1 == ndims[j]) ? 0 : nistrs[j];
+			}
+
+			md_copy2(i - 1, ndims + 1, nostrs + 1, optr, nistrs + 1, iptr, (size_t)ndims[0]);
+			return true;
+		}
+	}
+
+	return false;
+}
+
 
 
 /**
@@ -897,35 +1066,30 @@ void md_copy2(int D, const long dim[D], const long ostr[D], void* optr, const lo
 	if (0 == md_calc_size(D, dim))
 		return;
 
-	if (is_mpi(optr) || is_mpi(iptr)) {
+	if (vptr_copy_range_dims(D, dim, ostr, optr, istr, iptr, size))
+		return;
 
-//		debug_print_dims(DP_INFO, D, dim);
-//		debug_print_dims(DP_INFO, D, ostr);
-//		debug_print_dims(DP_INFO, D, istr);
+	optr = vptr_resolve_range(optr);
+	iptr = vptr_resolve_range(iptr);
 
-		unsigned long iflags = vptr_block_loop_flags(D, dim, istr, iptr, size);
-		unsigned long oflags = vptr_block_loop_flags(D, dim, ostr, optr, size);
 
-		long cdims[D];
-		md_singleton_dims(D, cdims);
+	if (is_vptr(optr) || is_vptr(iptr)) {
 
+		unsigned long flags = 0;
+		flags |= vptr_block_loop_flags(D, dim, istr, iptr, size);
+		flags |= vptr_block_loop_flags(D, dim, ostr, optr, size);
+
+		long bdims[D];
 		long ldims[D];
-		md_copy_dims(D, ldims, dim);
 
-		for (int i = 0; i < D; i++) {
+		md_select_dims(D,  flags, ldims, dim);
+		md_select_dims(D, ~flags, bdims, dim);
 
-			if (MD_IS_SET(iflags, i) || MD_IS_SET(oflags, i))
-				break;
+		long icstr[D];
+		long ocstr[D];
 
-			if (1 == ldims[i])
-				continue;
-
-			if ((ostr[i] == (long)size) && (istr[i] == (long)size)) {
-
-				size = (size_t)((long)size * ldims[i]);
-				ldims[i] = 1;
-			}
-		}
+		vptr_continous_strs(D, iptr, flags, icstr, istr);
+		vptr_continous_strs(D, optr, flags, ocstr, ostr);
 
 		long pos[D];
 		md_set_dims(D, pos, 0);
@@ -934,6 +1098,14 @@ void md_copy2(int D, const long dim[D], const long ostr[D], void* optr, const lo
 			void* dst = optr + md_calc_offset(D, ostr, pos);
 			const void* src = iptr + md_calc_offset(D, istr, pos);
 
+			if (!is_mpi(dst) && !is_mpi(src)) {
+
+				dst = vptr_resolve(dst);
+				src = vptr_resolve(src);
+				md_copy2(D, bdims, ocstr, dst, icstr, src, size);
+
+				continue;
+			}
 
 			if (!is_mpi(src)) {
 
@@ -941,8 +1113,9 @@ void md_copy2(int D, const long dim[D], const long ostr[D], void* optr, const lo
 
 					dst = vptr_resolve(dst);
 					src = vptr_resolve(src);
-					md_copy(D, cdims, dst, src, size);
+					md_copy2(D, bdims, ocstr, dst, icstr, src, size);
 				}
+
 				continue;
 			}
 
@@ -955,35 +1128,42 @@ void md_copy2(int D, const long dim[D], const long ostr[D], void* optr, const lo
 				if (mpi_accessible(src)) {
 
 					src = vptr_resolve_unchecked(src);
-					md_copy(D, cdims, dst, src, size);
+					md_copy2(D, bdims, ocstr, dst, icstr, src, size);
 				}
 
-				if (-1 < root)
-					mpi_bcast(dst, (long)size, root);
+				mpi_bcast2(D, bdims, ocstr, dst, (long)size, root);
+				continue;
+			}
+
+			if (is_mpi(dst) && is_mpi(src)) {
+
+				for (int receiver = 0; receiver < mpi_get_num_procs(); receiver++) {
+
+					if (!mpi_accessible_from(dst, receiver))
+						continue;
+
+					int sender = mpi_accessible_from(src, receiver) ? receiver : mpi_ptr_get_rank(src);
+
+					const void* _src = (mpi_get_rank() == sender) ? vptr_resolve(src) : NULL;
+					void* _dst = (mpi_get_rank() == receiver) ? vptr_resolve(dst) : NULL;
+
+					if ((sender == receiver) && (mpi_get_rank() == sender))
+						md_copy2(D, bdims, ocstr, _dst, icstr, _src, size);
+					else
+						mpi_copy2(D, bdims, ocstr, _dst, icstr, _src, (long)size, sender, receiver);
+				}
 
 				continue;
 			}
 
-			for (int receiver = 0; receiver < mpi_get_num_procs(); receiver++) {
-
-				if (!mpi_accessible_from(dst, receiver))
-					continue;
-
-				int sender = mpi_accessible_from(src, receiver) ? receiver : mpi_ptr_get_rank(src);
-
-				const void* _src = (mpi_get_rank() == sender) ? vptr_resolve(src) : NULL;
-				void* _dst = (mpi_get_rank() == receiver) ? vptr_resolve(dst) : NULL;
-
-				mpi_copy(_dst, (long)size, _src, sender, receiver);
-			}
+		assert(0);
 
 		} while (md_next(D, ldims, ~0UL, pos));
 
 		return;
 	}
 
-	iptr = vptr_resolve(iptr);
-	optr = vptr_resolve(optr);
+	assert(!is_vptr(optr) && !is_vptr(iptr));
 
 #ifdef	USE_CUDA
 	bool use_gpu = cuda_ondevice(optr) || cuda_ondevice(iptr);
@@ -1035,7 +1215,9 @@ void md_copy2(int D, const long dim[D], const long ostr[D], void* optr, const lo
 #endif
 
 #ifdef USE_CUDA
-	if (use_gpu && (cuda_ondevice(optr) == cuda_ondevice(iptr)) && ND <= 7) {
+	if (use_gpu && (cuda_ondevice(optr) == cuda_ondevice(iptr)) && ND <= 7
+		    && (   ND != md_calc_blockdim(ND, tdims, tostr, size)
+		        || ND != md_calc_blockdim(ND, tdims, tistr, size))) {
 
 		cuda_copy_ND(ND, tdims, tostr, optr, tistr, iptr, size);
 		return;
