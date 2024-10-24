@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <math.h>
 
+#include "misc/misc.h"
 #include "num/multind.h"
 #include "num/iovec.h"
 #include "num/ops_p.h"
@@ -293,10 +294,21 @@ void opt_precond_configure(struct opt_reg_s* ropts, const struct operator_p_s* p
 
 	trafos[nr_penalties] = linop_clone(model_op);
 
+	if (0 < ropts->svars) {
+
+		long pos[1] = { 0 };
+		auto iov = linop_domain(trafos[nr_penalties]);
+
+		const struct linop_s* extract = linop_extract_create(1, pos, MD_DIMS(md_calc_size(iov->N, iov->dims)), MD_DIMS(md_calc_size(iov->N, iov->dims) + ropts->svars));
+		extract = linop_reshape_out_F(extract, iov->N, iov->dims);			
+
+		trafos[nr_penalties] = linop_chain_FF(extract, trafos[nr_penalties]);
+	}
+
 	ropts->sr++;
 }
 
-void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], int llr_blk, int shift_mode, const char* wtype_str, bool use_gpu)
+void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], const long (*sdims[NUM_REGS])[N], int llr_blk, int shift_mode, const char* wtype_str, bool use_gpu)
 {
 	float lambda = ropts->lambda;
 	bool randshift = (1 == shift_mode);
@@ -342,7 +354,6 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 	}
 
 	assert(ropts->r <= NUM_REGS);
-	assert(1 == img_dims[BATCH_DIM]);
 
 	long ext_shift = md_calc_size(N, img_dims);
 	int nr_penalties = ropts->r;
@@ -360,6 +371,9 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 		wtype = WAVELET_CDF44;
 	else
 		error("unsupported wavelet type.\n");
+
+	for (int i = 0; i < NUM_REGS && sdims; i++)
+		sdims[i] = NULL;
 
 
 	for (int nr = 0; nr < ropts->r; nr++) {
@@ -476,6 +490,13 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 			trafos[nr_penalties] = reg2.linop[1];
 			prox_ops[nr_penalties] = reg2.prox[1];
 
+			assert(1 == img_dims[N - 1]);
+
+			PTR_ALLOC(long[N], dims);
+			md_copy_dims(N, *dims, img_dims);
+			(*dims)[N - 1] = bitcount(regs[nr].xflags);
+			sdims[nr_penalties] = PTR_PASS(dims);
+
 			nr_penalties++;
 
 		}	break;
@@ -491,6 +512,10 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 			trafos[nr_penalties] = reg2.linop[1];
 			prox_ops[nr_penalties] = reg2.prox[1];
+
+			PTR_ALLOC(long[N], dims);
+			md_copy_dims(N, *dims, img_dims);
+			sdims[nr_penalties] = PTR_PASS(dims);
 
 			nr_penalties++;
 
