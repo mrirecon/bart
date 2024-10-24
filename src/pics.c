@@ -680,9 +680,10 @@ int main_pics(int argc, char* argv[argc])
 
 	const struct operator_p_s* thresh_ops[NUM_REGS] = { NULL };
 	const struct linop_s* trafos[NUM_REGS] = { NULL };
+	const long (*sdims[NUM_REGS])[DIMS + 1] = { NULL };
 
 
-	opt_reg_configure(DIMS, img_dims, &ropts, thresh_ops, trafos, NULL, llr_blk, shift_mode, wtype_str, conf.gpu, ITER_DIM);
+	opt_reg_configure(DIMS, img_dims, &ropts, thresh_ops, trafos, sdims, llr_blk, shift_mode, wtype_str, conf.gpu, ITER_DIM);
 
 	if (conf.bpsense)
 		opt_bpursuit_configure(&ropts, thresh_ops, trafos, forward_op, kspace, bpsense_eps);
@@ -744,6 +745,8 @@ int main_pics(int argc, char* argv[argc])
 	if (NULL != image_truth)
 		monitor = iter_monitor_create(2 * md_calc_size(DIMS, img_dims), (const float*)image_truth, NULL, NULL);
 
+	const void* vptr_ref = NULL;
+
 	if (0 < ropts.svars) {
 
 		assert(NULL == image_truth);
@@ -752,6 +755,22 @@ int main_pics(int argc, char* argv[argc])
 		const struct linop_s* extract = linop_extract_create(1, MD_DIMS(0), MD_DIMS(md_calc_size(DIMS, img_dims)), MD_DIMS(md_calc_size(DIMS, img_dims) + ropts.svars));
 		extract = linop_reshape_out_F(extract, DIMS, img_dims);
 		forward_op = linop_chain_FF(extract, forward_op);
+
+		if (is_vptr(image)) {
+
+			void* vptr_ref_array[NUM_REGS] = { NULL };
+			vptr_ref_array[0] = vptr_alloc_same(image);
+			int svars = 1;
+			for (int i = 0; i < NUM_REGS; i++)
+				if (NULL != sdims[i])
+					vptr_ref_array[svars++] = vptr_alloc_sameplace(DIMS + 1, (*sdims[i]), CFL_SIZE, image);
+
+			vptr_ref = vptr_wrap_range(svars, vptr_ref_array, true);
+
+			const struct linop_s* tmp = linop_vptr_set_dims_wrapper((struct linop_s*)forward_op, NULL, vptr_ref, vptr_get_hint(image));
+			linop_free(forward_op);
+			forward_op = tmp;
+		}
 	}
 
 	const struct operator_p_s* po = sense_recon_create(&conf, forward_op,
@@ -767,6 +786,17 @@ int main_pics(int argc, char* argv[argc])
 		const struct linop_s* extract = linop_extract_create(1, MD_DIMS(0), MD_DIMS(md_calc_size(DIMS, img_dims)), MD_DIMS(md_calc_size(DIMS, img_dims) + ropts.svars));
 		extract = linop_reshape_out_F(extract, DIMS, img_dims);
 
+		if (is_vptr(image)) {
+
+			const struct linop_s* tmp = linop_vptr_set_dims_wrapper((struct linop_s*)extract, NULL, vptr_ref, vptr_get_hint(image));
+			linop_free(extract);
+			extract = tmp;
+
+			auto op2 = operator_vptr_set_dims_wrapper(op, 2, (const void*[2]){ vptr_ref, NULL }, vptr_get_hint(image));
+			operator_free(op);
+			op = op2;
+		}
+
 		auto op2 = operator_chain(op, extract->forward);
 
 		operator_free(op);
@@ -775,9 +805,15 @@ int main_pics(int argc, char* argv[argc])
 		linop_free(extract);
 	}
 
+	for (int i = 0; i < NUM_REGS; i++)
+		if (NULL != sdims[i])
+			xfree(sdims[i]);
+
 
 	auto iov = operator_domain(op);
 	operator_apply(op, DIMS, img_dims, image, (conf.bpsense || conf.precond) ? iov->N : DIMS, (conf.bpsense || conf.precond) ? iov->dims : ksp_dims, (conf.bpsense || conf.precond) ? NULL : kspace);
+
+	md_free(vptr_ref);
 
 	operator_free(op);
 
