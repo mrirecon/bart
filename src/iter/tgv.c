@@ -34,17 +34,16 @@ struct reg2 tgv_reg(unsigned long flags, unsigned long jflags, float lambda, int
 	struct reg2 reg2;
 
 	const struct linop_s* grad1 = linop_grad_create(N, in_dims, N, flags);
-	const struct linop_s* grad2x = linop_grad_create(N + 1, linop_codomain(grad1)->dims, N + 1, flags);
 
-
-	auto grad2a = linop_transpose_create(N + 2, N + 0, N + 1, linop_codomain(grad2x)->dims);
-	auto grad2b = linop_identity_create(N + 2, linop_codomain(grad2x)->dims);
-	auto grad2 = linop_chain_FF(grad2x, linop_plus_FF(grad2a, grad2b));
-
-
-	long grd_dims[N + 1];
+	long grd_dims[N + 2];
 	md_copy_dims(N + 1, grd_dims, linop_codomain(grad1)->dims);
-
+	grd_dims[N + 1] = 1;
+	
+	
+	const struct linop_s* grad2x1 = linop_grad_create(N + 2, grd_dims, N + 1, flags);
+	const struct linop_s* grad2x2 = linop_transpose_create(N + 2, N + 0, N + 1, grd_dims);
+	grad2x2 = linop_chain_FF(grad2x2, linop_grad_create(N + 2, linop_codomain(grad2x2)->dims, N + 0, flags));
+	auto grad2 = linop_plus_FF(grad2x1, grad2x2);
 
 	auto iov = linop_domain(grad1);
 	auto grad1b = linop_extract_create(1, MD_DIMS(0), MD_DIMS(md_calc_size(N, in_dims)), MD_DIMS(isize));
@@ -56,7 +55,7 @@ struct reg2 tgv_reg(unsigned long flags, unsigned long jflags, float lambda, int
 	reg2.linop[0] = linop_plus_FF(grad1e, grad1d);
 
 	auto grad2e = linop_extract_create(1, MD_DIMS(*ext_shift), MD_DIMS(md_calc_size(N + 1, grd_dims)), MD_DIMS(isize));
-	grad2e = linop_reshape_out_F(grad2e, N + 1, grd_dims);
+	grad2e = linop_reshape_out_F(grad2e, N + 2, grd_dims);
 	reg2.linop[1] = linop_chain_FF(grad2e, grad2);
 
 	reg2.prox[0] = prox_thresh_create(N + 1, linop_codomain(reg2.linop[0])->dims, lambda, jflags);
