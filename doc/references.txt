@@ -265,6 +265,11 @@ ESPIRiT-Based Coil Compression for Cartesian Sampling.
 Annual Meeting ISMRM, Salt Lake City 2013,
 In: Proc Intl Soc Mag Reson Med 2013; 21:2657.
 
+Kim D, Cauley SF, Nayak KS, Leahy RM, Haldar JP.
+Region-optimized virtual (ROVir) coils: Localization and/or suppression
+of spatial regions using sensor-domain beamforming
+Magn Reson Med 2021; 86:197–212.
+
 
 
 

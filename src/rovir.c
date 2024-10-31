@@ -4,10 +4,10 @@
  *
  * Authors: Moritz Blumenthal
  *
- * Kim D, Cauley SF, Nayak KS, Leahy RM, Haldar JP. Region-optimized
- * virtual (ROVir) coils: Localization and/or suppression of spatial
- * regions using sensor-domain beamforming
- * Magn Reson Med. 2021; 86: 197–212.
+ * Kim D, Cauley SF, Nayak KS, Leahy RM, Haldar JP.
+ * Region-optimized virtual (ROVir) coils: Localization and/or suppression
+ * of spatial regions using sensor-domain beamforming
+ * Magn Reson Med 2021; 86:197–212.
  */
 
 
