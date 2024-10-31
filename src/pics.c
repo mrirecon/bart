@@ -757,7 +757,8 @@ int main_pics(int argc, char* argv[argc])
 	}
 
 
-	operator_apply(op, DIMS, img_dims, image, DIMS, (conf.bpsense || conf.precond) ? img_dims : ksp_dims, (conf.bpsense || conf.precond) ? NULL : kspace);
+	auto iov = operator_domain(op);
+	operator_apply(op, DIMS, img_dims, image, (conf.bpsense || conf.precond) ? iov->N : DIMS, (conf.bpsense || conf.precond) ? iov->dims : ksp_dims, (conf.bpsense || conf.precond) ? NULL : kspace);
 
 	operator_free(op);
 
