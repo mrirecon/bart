@@ -36,6 +36,7 @@
 #include "num/rand.h"
 #include "num/fft_plan.h"
 #include "num/delayed.h"
+#include "num/vptr.h"
 
 #ifdef USE_MPI
 #include <mpi.h>
@@ -88,6 +89,7 @@ static void bart_exit_cleanup(void)
 #ifdef USE_CUDA
 	cuda_memcache_clear();
 #endif
+	print_vptr_stats(DP_DEBUG1);
 #ifdef __EMSCRIPTEN__
 	wasm_close_fds();
 #endif
