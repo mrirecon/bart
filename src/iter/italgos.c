@@ -686,7 +686,7 @@ void irgnm2(int iter, float alpha, float alpha_min, float alpha_min0, float redu
 
 		vops->xpay(M, -1., r, y);	// r = y - F x
 
-		debug_printf(DP_DEBUG2, "Step: %u, Res: %f\n", i, vops->norm(M, r));
+		double* res = vops->norm2(M, r);
 
 		if (NULL != xref)
 			vops->axpy(N, x, -1., xref);
@@ -702,6 +702,8 @@ void irgnm2(int iter, float alpha, float alpha_min, float alpha_min0, float redu
 		float* a = vops->allocate(N);
 		iter_op_call(adj, a, r);
 		vops->del(r);
+
+		debug_printf(DP_DEBUG2, "Step: %u, Res: %f\n", i, vops->get_norm2(res));
 
 		iter_op_p_call(lsqr, alpha, x, a);
 		vops->del(a);
@@ -902,10 +904,12 @@ void chambolle_pock(float alpha, int maxiter, float epsilon, float tau, float si
 			vops->sub(N, Ahu_old, Ahu, Ahu_old);
 
 			// This is different to the norm in the loop below
-			res2 += vops->dot(N, Ahu_old, Ahu_old);
+			double* tmp_snorm = vops->dot2(N, Ahu_old, Ahu_old);
 
 			vops->del(Ahu_new);
 			vops->del(Ahu_old);
+
+			res2 += vops->get_dot2(tmp_snorm);
 		}
 
 
@@ -925,10 +929,13 @@ void chambolle_pock(float alpha, int maxiter, float epsilon, float tau, float si
 			vops->axpbz(M[j], u[j], lambda, u_new, 1. - lambda, u_old);
 
 			vops->sub(M[j], u_old, u[j], u_old);
-			res2 += vops->dot(M[j], u_old, u_old);
+
+			double* tmp_snorm = vops->dot2(M[j], u_old, u_old);
 
 			vops->del(u_old);
 			vops->del(u_new);
+
+			res2 += vops->get_dot2(tmp_snorm);
 		}
 
 		res2 = sqrtf(res2) / tau;
