@@ -952,7 +952,39 @@ struct vec_iter_s {
 	void (*dot_bat)(long Bi, long N, long Bo, float* dst, const float* src1, const float* src2);
 	void (*axpy_bat)(long Bi, long N, long Bo, float* a, const float* alpha, const float* x);
 
+	double* (*norm2)(long N, const float* x);
+	double* (*dot2)(long N, const float* x, const float* y);
+	double (*get_norm2)(double* x);
+	double (*get_dot2)(double* x);
 };
+
+static double* norm2(long N, const float* vec)
+{
+	double* res = xmalloc(sizeof(double));
+	*res = norm(N, vec);
+	return res;
+}
+
+static double* dot2(long N, const float* vec1, const float* vec2)
+{
+	double* res = xmalloc(sizeof(double));
+	*res = dot(N, vec1, vec2);
+	return res;
+}
+
+static double get_norm2(double* res)
+{
+	double val = *res;
+	xfree(res);
+	return val;
+}
+
+static double get_dot2(double* res)
+{
+	double val = *res;
+	xfree(res);
+	return val;
+}
 
 
 extern const struct vec_iter_s cpu_iter_ops;
@@ -986,4 +1018,9 @@ const struct vec_iter_s cpu_iter_ops = {
 	.xpay_bat = xpay_bat,
 	.dot_bat = dot_bat,
 	.axpy_bat = axpy_bat,
+
+	.norm2 = norm2,
+	.dot2 = dot2,
+	.get_norm2 = get_norm2,
+	.get_dot2 = get_dot2,
 };
