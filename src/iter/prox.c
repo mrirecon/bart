@@ -125,6 +125,7 @@ static void prox_weighted_leastsquares_del(const operator_data_t* _data)
 {
 	auto data = CAST_DOWN(prox_weighted_leastsquares_data, _data);
 	multiplace_free(data->y);
+	multiplace_free(data->W);
 
 	xfree(data->dims);
 	xfree(data->wdims);
@@ -327,7 +328,7 @@ const struct operator_p_s* prox_l2ball2_create(int N, unsigned long flags, const
 	pdata->N = N;
 	pdata->flags = flags;
 	pdata->dims = ARR_CLONE(long[N], dims);
-	
+
 
 	return operator_p_create(N, dims, N, dims, CAST_UP(PTR_PASS(pdata)), prox_l2ball_apply, prox_l2ball_del);
 }
