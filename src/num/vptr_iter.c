@@ -213,33 +213,105 @@ static void vptr_swap(long N, float* a, float* x)
 	vptr_float_free(tmp);
 }
 
+static double* vptr_dot2(long N, const float* x, const float* y)
+{
+	if (!vptr_is_init(x) || !vptr_is_init(y)) {
+
+		double* ret = vptr_alloc_sameplace(1, MD_DIMS(1), DL_SIZE, x);
+		md_clear(1, MD_DIMS(1), ret, DL_SIZE);
+
+		return vptr_wrap_range(1, (void**)&ret, true);
+	}
+
+	int R = 0;
+	long N2 = N;
+
+	const float* x2 = x;
+	const float* y2 = y;
+
+	while (0 < N2) {
+
+		float* tx = vptr_resolve_range(x2);
+		float* ty = vptr_resolve_range(y2);
+
+		assert((tx == x2) == (ty == y2));
+
+		int D = vptr_get_N_float(tx);
+		long dims[D];
+		long strs[D];
+
+		vptr_get_dims_float(tx, D, dims, strs);
+
+		N2 -= md_calc_size(D, dims);
+		x2 += md_calc_size(D, dims);
+		y2 += md_calc_size(D, dims);
+
+		R++;
+	}
+
+	void* retp[R];
+
+	for(int i = 0; i < R; i++) {
+
+		float* tx = vptr_resolve_range(x);
+		float* ty = vptr_resolve_range(y);
+
+		assert((tx == x) == (ty == y));
+
+		int D = vptr_get_N_float(tx);
+		long dims[D];
+		long strs[D];
+
+		retp[i] = vptr_alloc_sameplace(1, MD_DIMS(1), DL_SIZE, tx);
+		md_clear(1, MD_DIMS(1), retp[i], DL_SIZE);
+		vptr_get_dims_float(tx, D, dims, strs);
+
+		md_fmacD2(D, dims, MD_SINGLETON_STRS(D), retp[i], strs, tx, strs, ty);
+
+		N -= md_calc_size(D, dims);
+		x += md_calc_size(D, dims);
+		y += md_calc_size(D, dims);
+	}
+
+	return vptr_wrap_range(R, retp, true);
+}
+
+static double vptr_get_dot2(double* x)
+{
+	double ret = 0;
+
+	int N = vptr_get_len(x) / DL_SIZE;
+
+	for (int i = 0; i < N; i++) {
+
+		double tmp;
+		md_copy(1, MD_DIMS(1), &tmp, x + i, DL_SIZE);
+		ret += tmp;
+	}
+
+	md_free(x);
+
+	return ret;
+}
+
 static double vptr_dot(long N, const float* x, const float* y)
 {
-	if (0 == N)
-		return 0.;
-
-	if (!vptr_is_init(x) || !vptr_is_init(y))
-		return 0.;
-
-	float* tx = vptr_resolve_range(x);
-	float* ty = vptr_resolve_range(y);
-
-	assert((tx == x) == (ty == y));
-
-	int D = vptr_get_N_float(tx);
-	long dims[D];
-	long strs[D];
-
-	vptr_get_dims_float(tx, D, dims, strs);
-
-	double result = md_scalar2(D, dims, strs, tx, strs, ty);
-
-	return result + vptr_dot(N - md_calc_size(D, dims), x + md_calc_size(D, dims), y + md_calc_size(D, dims));
+	return vptr_get_dot2(vptr_dot2(N, x, y));
 }
 
 static double vptr_norm(long N, const float* x)
 {
 	return sqrt(vptr_dot(N, x, x));
+}
+
+static double* vptr_norm2(long N, const float* vec)
+{
+	return vptr_dot2(N, vec, vec);
+}
+
+static double vptr_get_norm2(double*x)
+{
+	return sqrt(vptr_get_dot2(x));
 }
 
 
@@ -478,6 +550,10 @@ struct vec_iter_s {
 	void (*dot_bat)(long Bi, long N, long Bo, float* dst, const float* src1, const float* src2);
 	void (*axpy_bat)(long Bi, long N, long Bo, float* a, const float* alpha, const float* x);
 
+	double* (*norm2)(long N, const float* x);
+	double* (*dot2)(long N, const float* x, const float* y);
+	double (*get_norm2)(double* x);
+	double (*get_dot2)(double* x);
 };
 
 extern const struct vec_iter_s vptr_iter_ops;
@@ -512,6 +588,10 @@ const struct vec_iter_s vptr_iter_ops = {
 	.dot_bat = NULL,
 	.axpy_bat = NULL,
 
+	.norm2 = vptr_norm2,
+	.dot2 = vptr_dot2,
+	.get_norm2 = vptr_get_norm2,
+	.get_dot2 = vptr_get_dot2,
 };
 
 extern const struct vec_iter_s vptr_iter_ops;
@@ -546,4 +626,8 @@ const struct vec_iter_s vptr_iter_ops_gpu = {
 	.dot_bat = NULL,
 	.axpy_bat = NULL,
 
+	.norm2 = vptr_norm2,
+	.dot2 = vptr_dot2,
+	.get_norm2 = vptr_get_norm2,
+	.get_dot2 = vptr_get_dot2,
 };
