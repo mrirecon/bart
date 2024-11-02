@@ -61,6 +61,7 @@
 #include "num/vptr_fun.h"
 
 #include "num/vptr.h"
+#include "num/delayed.h"
 #include "num/mpi_ops.h"
 
 #include "multind.h"
@@ -219,8 +220,13 @@ void md_nary_resolve_flagged(int C, int D, unsigned long loop_flags, const long 
 		if (!mpi_accessible_mult(C, (const void**)nptr))
 			continue;
 
-		for (int i = 0; i < C; i++)
+		for (int i = 0; i < C; i++) {
+
+			if (is_delayed(nptr[i]))
+				error("Async computation not resolved!\n");
+
 			nptr[i] = vptr_resolve(nptr[i]);
+		}
 
 		NESTED_CALL(fun, (nptr, bdim, nstr));
 
@@ -787,6 +793,9 @@ void md_clear2(int D, const long dim[D], const long str[D], void* ptr, size_t si
 
 	ptr = vptr_resolve_range(ptr);
 
+	if (delayed_queue_clear(D, dim, str, ptr, size))
+		return;
+
 	const long (*nstr[1])[D] = { (const long (*)[D])str };
 #ifdef	USE_CUDA
 	bool use_gpu = cuda_ondevice(ptr);
@@ -1022,6 +1031,15 @@ void md_copy2(int D, const long dim[D], const long ostr[D], void* optr, const lo
 
 	optr = vptr_resolve_range(optr);
 	iptr = vptr_resolve_range(iptr);
+
+	if (delayed_queue_copy(D, dim, ostr, optr, istr, iptr, size))
+		return;
+
+	if (is_delayed(iptr))
+		delayed_compute();
+
+	delayed_overwrite(optr);
+
 
 
 	if (is_vptr(optr) || is_vptr(iptr)) {
@@ -1290,15 +1308,6 @@ void md_copy(int D, const long dim[D], void* optr, const void* iptr, size_t size
 }
 
 
-
-#ifdef USE_CUDA
-// copied from flpmath.c
-static void* gpu_constant(const void* vp, size_t size)
-{
-        return md_gpu_move(1, (long[1]){ 1 }, vp, size);
-}
-#endif
-
 /**
  * Fill array with value pointed by pointer (with strides)
  *
@@ -1306,22 +1315,14 @@ static void* gpu_constant(const void* vp, size_t size)
  */
 void md_fill2(int D, const long dim[D], const long str[D], void* ptr, const void* iptr, size_t size)
 {
-#ifdef USE_CUDA
-	if (cuda_ondevice(ptr) && (!cuda_ondevice(iptr))) {
-
-		void* giptr = gpu_constant(iptr, size);
-
-		md_fill2(D, dim, str, ptr, giptr, size);
-
-		md_free(giptr);
-		return;
-	}
-#endif
+	void* tmp = md_alloc_sameplace(1, MD_SINGLETON_DIMS(1), size, ptr);
+	md_copy(1, MD_SINGLETON_DIMS(1), tmp, iptr, size);
 
 	long istr[D];
 	md_singleton_strides(D, istr);
 
-	md_copy2(D, dim, str, ptr, istr, iptr, size);
+	md_copy2(D, dim, str, ptr, istr, tmp, size);
+	md_free(tmp);
 }
 
 
@@ -2348,10 +2349,14 @@ void md_circ_shift2(int D, const long dimensions[D], const long center[D], const
 	if (dst == src) {
 
 		assert(str1 == str2);
+		assert(0 < D);
 
 		md_circ_shift_inpl2(D, dimensions, pos, str1, dst, size);
 		return;
 	}
+
+	if (delayed_queue_circ_shift(D, dimensions, center, str1, dst, str2, src, size))
+		return;
 
 	long shift = pos[i];
 

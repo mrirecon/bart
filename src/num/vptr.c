@@ -30,6 +30,7 @@
 #include "num/multind.h"
 #include "num/vptr_fun.h"
 #include "num/mpi_ops.h"
+#include "num/delayed.h"
 
 #include "vptr.h"
 
@@ -266,6 +267,9 @@ static void vptr_mem_set_dims(struct mem_s* x, int N, const long dims[N], size_t
 		x->rmpi_dims = ARR_CLONE(long[bitcount(hint->mpi_flags)], rmpi_dims);
 		x->rmpi_strs = ARR_CLONE(long[bitcount(hint->mpi_flags)], rmpi_strs);
 	}
+
+	if (is_delayed(x->ptr))
+		delayed_alloc(x->ptr, N, dims, size);
 }
 
 static void vptr_mem_set_blocking(struct mem_s* x, unsigned long flags)
@@ -620,6 +624,12 @@ bool vptr_free(const void* ptr)
 
 		xfree(mem);
 
+		return true;
+	}
+
+	if (mem->init && !mem->writeback && is_delayed(ptr)) {
+
+		delayed_free(ptr, mem->N, mem->dims, mem->size);
 		return true;
 	}
 

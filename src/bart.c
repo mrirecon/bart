@@ -35,6 +35,7 @@
 #include "num/multind.h"
 #include "num/rand.h"
 #include "num/fft_plan.h"
+#include "num/delayed.h"
 
 #ifdef USE_MPI
 #include <mpi.h>
@@ -168,6 +169,8 @@ static void parse_bart_opts(int* argcp, char*** argvp)
 		OPTL_SET(0, "version", &version, "print version"),
 		OPTL_ULONG(0, "random-dims", &cfl_loop_rand_flags, "flags", "vary random numbers along selected dimensions (default: all)"),
 		OPTL_ULONG(0, "md-split-mpi-dims", &bart_mpi_split_flags, "flags", "split md-arrays along selected dimensions for MPI parallelization"),
+		OPTL_VECN(0, "md-loop-dims", bart_delayed_loop_dims, "loop md-functions along selected dimensions sequentially (low memory mode)"),
+		OPTL_SET(0, "delayed-md", &bart_delayed_computations, "activate delayed computation in md functions (implicite by md-loop-dims)"),
 		OPT_SET('d', &attach, "(Wait for debugger)"),
 	};
 
@@ -197,6 +200,7 @@ static void parse_bart_opts(int* argcp, char*** argvp)
 		use_mpi = true;
 	}
 
+	num_init_delayed();
 
 #ifndef _OPENMP
 	if (omp_threads > 1) {
