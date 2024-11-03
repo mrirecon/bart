@@ -18,6 +18,8 @@
 #include "num/flpmath.h"
 #include "num/multiplace.h"
 #include "num/vptr_fun.h"
+#include "num/vptr.h"
+#include "num/mpi_ops.h"
 #ifdef USE_CUDA
 #include "num/gpuops.h"
 #endif
@@ -755,7 +757,30 @@ void md_interpolate(int d, unsigned long flags, int ord, int N, const long idims
 	md_max_dims(N, ~0ul, dims, idims, cdims);
 
 	md_clear(N, idims, intp, CFL_SIZE);
+
+	long ldims[N];
+	long gstrs[N];
+	long istrs[N];
+
+	md_select_dims(N, ~flags, ldims, dims);
+	md_calc_strides(N, gstrs, gdims, CFL_SIZE);
+	md_calc_strides(N, istrs, idims, CFL_SIZE);
+
+	bool mpi = mpi_is_reduction(N, ldims, istrs, intp, CFL_SIZE, gstrs, grid, CFL_SIZE);
+
+	if (mpi)
+		mpi_set_reduce(grid);
+
 	md_interpolate2(d, flags, ord, N, dims, MD_STRIDES(N, idims, CFL_SIZE), intp, MD_STRIDES(N, cdims, CFL_SIZE), coor, gdims, MD_STRIDES(N, gdims, CFL_SIZE), grid);
+
+	if (mpi) {
+
+		long dims2[N];
+		md_select_dims(N, md_nontriv_strides(N, istrs), dims2, idims);
+
+		mpi_reduce_zsum(N, dims2, intp, intp);
+		mpi_unset_reduce(intp);
+	}
 }
 
 void md_interpolateH(int d, unsigned long flags, int ord, int N, const long gdims[N], complex float* grid, const long idims[N], const complex float* intp, const long cdims[N], const complex float* coor)
@@ -766,7 +791,30 @@ void md_interpolateH(int d, unsigned long flags, int ord, int N, const long gdim
 	md_max_dims(N, ~0ul, dims, idims, cdims);
 
 	md_clear(N, gdims, grid, CFL_SIZE);
+
+	long ldims[N];
+	long gstrs[N];
+	long istrs[N];
+
+	md_select_dims(N, ~flags, ldims, dims);
+	md_calc_strides(N, gstrs, gdims, CFL_SIZE);
+	md_calc_strides(N, istrs, idims, CFL_SIZE);
+
+	bool mpi = mpi_is_reduction(N, ldims, gstrs, grid, CFL_SIZE, istrs, intp, CFL_SIZE);
+
+	if (mpi)
+		mpi_set_reduce(grid);
+
 	md_interpolateH2(d, flags, ord, N, gdims, MD_STRIDES(N, gdims, CFL_SIZE), grid, dims, MD_STRIDES(N, idims, CFL_SIZE), intp, MD_STRIDES(N, cdims, CFL_SIZE), coor);
+
+	if (mpi) {
+
+		long dims2[N];
+		md_select_dims(N, md_nontriv_strides(N, gstrs), dims2, gdims);
+
+		mpi_reduce_zsum(N, dims2, grid, grid);
+		mpi_unset_reduce(grid);
+	}
 }
 
 void md_interpolate_adj_coor(int d, unsigned long flags, int ord, int N, const long cdims[N], const complex float* coor, complex float* dcoor, const long idims[N], const complex float* dintp, const long gdims[N], const complex float* grid)
