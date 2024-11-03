@@ -18,7 +18,7 @@
  *
  * - GPU version is not optimized
  * - memory use could possible be reduced
- * 
+ *
  * Missing:
  *
  * - different boundary conditions
@@ -37,6 +37,7 @@
 #include "num/flpmath.h"
 #include "num/multind.h"
 #include "num/ops.h"
+#include "num/vptr_fun.h"
 
 #ifdef USE_CUDA
 #include "num/gpuops.h"
@@ -97,7 +98,7 @@ static void wavelet_down3(const long dims[3], const long out_str[3], complex flo
 				for (int l = 0; l < flen; l++) {
 
 					int n = coord(j, dims[1], flen, l);
-	
+
 					*access(out_str, out, i, j, k) +=
 						*(caccess(in_str, in, i, n, k)) * filter[flen - l - 1];
 				}
@@ -258,7 +259,7 @@ static void wavelet_dims_r(int N, int n, unsigned long flags, long odims[2 * N],
 
 		odims[0 + n] = bandsize(dims[n], flen);
 		odims[N + n] = 2;
-	} 
+	}
 
 	if (n > 0)
 		wavelet_dims_r(N, n - 1, flags, odims, dims, flen);
@@ -288,7 +289,7 @@ void fwtN(int N, unsigned long flags, const long shifts[N], const long dims[N], 
 	long tidims[2 * N];
 	md_copy_dims(N, tidims, dims);
 	md_singleton_dims(N, tidims + N);
-	
+
 	long tistrs[2 * N];
 	md_calc_strides(2 * N, tistrs, tidims, CFL_SIZE);
 
@@ -310,7 +311,7 @@ void fwtN(int N, unsigned long flags, const long shifts[N], const long dims[N], 
 			todims[N + i] = odims[N + i];
 
 			md_calc_strides(2 * N, tostrs, todims, CFL_SIZE);
-		
+
 			fwt1(2 * N, i, tidims, tostrs, tmpB, (void*)tmpB + tostrs[N + i], tistrs, tmpA, flen, filter);
 
 			md_copy_dims(2 * N, tidims, todims);
@@ -341,7 +342,7 @@ void iwtN(int N, unsigned long flags, const long shifts[N], const long dims[N], 
 
 	long tidims[2 * N];
 	md_copy_dims(2 * N, tidims, idims);
-	
+
 	long tistrs[2 * N];
 	md_calc_strides(2 * N, tistrs, tidims, CFL_SIZE);
 
@@ -364,7 +365,7 @@ void iwtN(int N, unsigned long flags, const long shifts[N], const long dims[N], 
 			todims[N + i] = 1;
 
 			md_calc_strides(2 * N, tostrs, todims, CFL_SIZE);
-		
+
 			iwt1(2 * N, i, todims, tostrs, tmpB, tistrs, tmpA, (void*)tmpA + tistrs[N + i], flen, filter);
 
 			md_copy_dims(2 * N, tidims, todims);
@@ -417,7 +418,7 @@ static int wavelet_coeffs_r(int levels, int N, unsigned long flags, const long d
 
 	if (0 == flags)
 		return bands * coeffs;
-	
+
 	return coeffs * (bands - 1) + wavelet_coeffs_r(levels - 1, N, wavelet_filter_flags(N, flags, wdims, min), wdims, min, flen);
 }
 
@@ -505,7 +506,7 @@ static void embed(int N, unsigned long flags, long ostr[N], const long dims[N], 
 }
 
 
-void fwt2(int N, unsigned long flags, const long shifts[N], const long odims[N], const long ostr[N], complex float* out, const long idims[N], const long istr[N], const complex float* in, const long minsize[N], long flen, const float filter[2][2][flen])
+static void fwt2_int(int N, unsigned long flags, const long shifts[N], const long odims[N], const long ostr[N], complex float* out, const long idims[N], const long istr[N], const complex float* in, const long minsize[N], long flen, const float filter[2][2][flen])
 {
 	assert(wavelet_check_dims(N, flags, idims, minsize));
 
@@ -583,12 +584,12 @@ void fwt2(int N, unsigned long flags, const long shifts[N], const long odims[N],
 		long ostr3[N];
 		embed(N, flags, ostr3, odims3, ostr);
 
-		fwt2(N, flags2, shifts0, odims3, ostr3, out, wdims2, ostr2, out + offset, minsize, flen, filter);
+		fwt2_int(N, flags2, shifts0, odims3, ostr3, out, wdims2, ostr2, out + offset, minsize, flen, filter);
 	}
 }
 
 
-void iwt2(int N, unsigned long flags, const long shifts[N], const long odims[N], const long ostr[N], complex float* out, const long idims[N], const long istr[N], const complex float* in, const long minsize[N], const long flen, const float filter[2][2][flen])
+static void iwt2_int(int N, unsigned long flags, const long shifts[N], const long odims[N], const long ostr[N], complex float* out, const long idims[N], const long istr[N], const complex float* in, const long minsize[N], const long flen, const float filter[2][2][flen])
 {
 	assert(wavelet_check_dims(N, flags, odims, minsize));
 
@@ -672,13 +673,111 @@ void iwt2(int N, unsigned long flags, const long shifts[N], const long odims[N],
 		long istr3[N];
 		embed(N, flags, istr3, idims3, istr);
 
-		iwt2(N, flags2, shifts0, wdims2, tstr, tmp, idims3, istr3, in, minsize, flen, filter);
+		iwt2_int(N, flags2, shifts0, wdims2, tstr, tmp, idims3, istr3, in, minsize, flen, filter);
 	}
 
 	iwtN(N, flags, shifts, odims, ostr, out, tstr, tmp, flen, filter);
 
 	md_free(tmp);
 }
+
+struct vptr_wt_s {
+
+	vptr_fun_data_t super;
+	unsigned long flags;
+	bool backwards;
+
+	int N;
+	const long* shifts;
+	const long* minsize;
+	long flen;
+	const void* filter;
+};
+
+DEF_TYPEID(vptr_wt_s);
+
+static void vptr_wt_del(vptr_fun_data_t* _d)
+{
+	auto d = CAST_DOWN(vptr_wt_s, _d);
+
+	xfree(d->shifts);
+	xfree(d->minsize);
+	xfree(d->filter);
+}
+
+static void wt2_wrap(vptr_fun_data_t* _data, int N, int D, const long* dims[N], const long* strs[N], void* args[N])
+{
+	auto d = CAST_DOWN(vptr_wt_s, _data);
+
+	assert(D == d->N);
+
+	long ostr[D];
+	long istr[D];
+
+	md_select_strides(D, md_nontriv_dims(D, dims[0]), ostr, strs[0]);
+	md_select_strides(D, md_nontriv_dims(D, dims[1]), istr, strs[1]);
+
+	const float (*pfilter)[2][2][d->flen] = d->filter;
+
+	(d->backwards ? iwt2_int : fwt2_int)(D, d->flags, d->shifts, dims[0], ostr, args[0], dims[1], istr, args[1], d->minsize, d->flen, (*pfilter));
+}
+
+
+void fwt2(int N, unsigned long flags, const long shifts[N], const long odims[N], const long ostr[N], complex float* out, const long idims[N], const long istr[N], const complex float* in, const long minsize[N], long flen, const float filter[2][2][flen])
+{
+	PTR_ALLOC(struct vptr_wt_s, _d);
+	SET_TYPEID(vptr_wt_s, _d);
+	_d->super.del = vptr_wt_del;
+	_d->N = N;
+	_d->flags = flags;
+	_d->backwards = false;
+	_d->shifts = ARR_CLONE(long[N], shifts);
+	_d->minsize = ARR_CLONE(long[N], minsize);
+	_d->flen = flen;
+
+	float (*pfilter)[2][2][flen] = TYPE_ALLOC(float[2][2][flen]);
+	for (int i = 0; i < 2; i++)
+		for (int j = 0; j < 2; j++)
+			for (int k = 0; k < flen; k++)
+				(*pfilter)[i][j][k] = filter[i][j][k];
+
+	_d->filter = pfilter;
+
+	assert(md_check_equal_dims(N, MD_SINGLETON_STRS(N), shifts, ~flags));
+	//FIXME: minsize does not make sense for batch dim
+	//assert(md_check_equal_dims(N, MD_SINGLETON_DIMS(N), minsize, ~flags));
+
+	exec_vptr_zfun(wt2_wrap, CAST_UP(PTR_PASS(_d)), 2, N, ~flags & ~md_nontriv_dims(N, minsize), MD_BIT(0), MD_BIT(1), (const long*[2]) { odims, idims }, (const long*[2]) { ostr, istr }, (complex float*[2]) { out, (void*)in});
+}
+
+void iwt2(int N, unsigned long flags, const long shifts[N], const long odims[N], const long ostr[N], complex float* out, const long idims[N], const long istr[N], const complex float* in, const long minsize[N], long flen, const float filter[2][2][flen])
+{
+	PTR_ALLOC(struct vptr_wt_s, _d);
+	SET_TYPEID(vptr_wt_s, _d);
+	_d->super.del = vptr_wt_del;
+	_d->N = N;
+	_d->flags = flags;
+	_d->backwards = true;
+	_d->shifts = ARR_CLONE(long[N], shifts);
+	_d->minsize = ARR_CLONE(long[N], minsize);
+	_d->flen = flen;
+
+	float (*pfilter)[2][2][flen] = TYPE_ALLOC(float[2][2][flen]);
+	for (int i = 0; i < 2; i++)
+		for (int j = 0; j < 2; j++)
+			for (int k = 0; k < flen; k++)
+				(*pfilter)[i][j][k] = filter[i][j][k];
+
+	_d->filter = pfilter;
+
+	assert(md_check_equal_dims(N, MD_SINGLETON_STRS(N), shifts, ~flags));
+	//FIXME: minsize does not make sense for batch dim
+	//assert(md_check_equal_dims(N, MD_SINGLETON_DIMS(N), minsize, ~flags));
+
+	exec_vptr_zfun(wt2_wrap, CAST_UP(PTR_PASS(_d)), 2, N, ~flags & ~md_nontriv_dims(N, minsize), MD_BIT(0), MD_BIT(1), (const long*[2]) { odims, idims }, (const long*[2]) { ostr, istr }, (complex float*[2]) { out, (void*)in});
+}
+
+
 
 
 
@@ -694,10 +793,10 @@ void iwt(int N, unsigned long flags, const long shifts[N], const long odims[N], 
 }
 
 
-// 1D Wavelet coefficients. 
+// 1D Wavelet coefficients.
 // The first dimension indexes along forward wavelet decomposition and reconstruction filters for fwt and iwt
 // The second dimension indexes along low-pass and high-pass filters
-// The third dimension is the number of filter taps. 
+// The third dimension is the number of filter taps.
 const float wavelet_haar[2][2][2] = {
 	{ { +0.7071067811865475, +0.7071067811865475 },
 	  { -0.7071067811865475, +0.7071067811865475 }, },
@@ -714,11 +813,11 @@ const float wavelet_dau2[2][2][4] = {
 
 // Cohen-Daubechies-Feaveau wavelet
 const float wavelet_cdf44[2][2][10] = {
-	{ { +0.00000000000000000, +0.03782845550726404 , -0.023849465019556843, -0.11062440441843718 , +0.37740285561283066, 
+	{ { +0.00000000000000000, +0.03782845550726404 , -0.023849465019556843, -0.11062440441843718 , +0.37740285561283066,
 	    +0.85269867900889385, +0.37740285561283066 , -0.11062440441843718 , -0.023849465019556843, +0.03782845550726404 },
-	  { +0.00000000000000000, -0.064538882628697058, +0.040689417609164058, +0.41809227322161724 , -0.7884856164055829, 
+	  { +0.00000000000000000, -0.064538882628697058, +0.040689417609164058, +0.41809227322161724 , -0.7884856164055829,
 	    +0.41809227322161724, +0.040689417609164058, -0.064538882628697058, +0.00000000000000000 , +0.00000000000000000 }, },
-	{ { +0.00000000000000000, -0.064538882628697058, -0.040689417609164058, +0.41809227322161724 , +0.7884856164055829, 
+	{ { +0.00000000000000000, -0.064538882628697058, -0.040689417609164058, +0.41809227322161724 , +0.7884856164055829,
 	    +0.41809227322161724, -0.040689417609164058, -0.064538882628697058, +0.000000000000000000, +0.00000000000000000 },
 	  { +0.00000000000000000, -0.03782845550726404 , -0.023849465019556843, +0.11062440441843718 , +0.37740285561283066,
             -0.85269867900889385, +0.37740285561283066 , +0.11062440441843718 , -0.023849465019556843, -0.03782845550726404 }, },
