@@ -167,6 +167,20 @@ extern "C" void cuda_add(long N, float* dst, const float* src1, const float* src
 	cuda_3op(kern_add, N, dst, src1, src2);
 }
 
+__global__ void kern_addD(long N, double* dst, const double* src1, const double* src2)
+{
+	int start = threadIdx.x + blockDim.x * blockIdx.x;
+	int stride = blockDim.x * gridDim.x;
+
+	for (long i = start; i < N; i += stride)
+		dst[i] = src1[i] + src2[i];
+}
+
+void cuda_addD(long N, double* dst, const double* src1, const double* src2)
+{
+	kern_addD<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(N, dst, src1, src2);
+}
+
 __global__ void kern_sadd(long N, float val, float* dst, const float* src1)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
@@ -1558,7 +1572,7 @@ __global__ static void kern_reduce_zsumD(long N, cuDoubleComplex* dst, const cuD
 	}
 }
 
-static _Complex double cuda_reduce_zsumD(long N, const _Complex double* src)
+static void cuda_reduce_add_zsumD(long N, _Complex double* dst, const _Complex double* src)
 {
 	_Complex double* tmp1 = (_Complex double*)cuda_malloc(gridsize(N) * sizeof(_Complex double));
 	_Complex double* tmp2 = (_Complex double*)cuda_malloc(gridsize(gridsize(N)) * sizeof(_Complex double));
@@ -1573,10 +1587,22 @@ static _Complex double cuda_reduce_zsumD(long N, const _Complex double* src)
 		SWAP(tmp1, tmp2);
 	}
 
-	_Complex double ret;
-	cuda_memcpy(sizeof(_Complex double), &ret, tmp1);
+	cuda_addD(2, (double*)dst, (double*)dst, (double*)tmp1);
 	cuda_free(tmp1);
 	cuda_free(tmp2);
+}
+
+
+static _Complex double cuda_reduce_zsumD(long N, const _Complex double* src)
+{
+	_Complex double* ret_ptr = (_Complex double*)cuda_malloc(sizeof(_Complex double));
+	cuda_clear(sizeof(_Complex double), ret_ptr);
+
+	cuda_reduce_add_zsumD(N, ret_ptr, src);
+
+	_Complex double ret;
+	cuda_memcpy(sizeof(_Complex double), &ret, ret_ptr);
+	cuda_free(ret_ptr);
 
 	return ret;
 }
@@ -1606,7 +1632,7 @@ __global__ static void kern_reduce_sumD(long N, double* dst, const double* src)
 		dst[blockIdx.x] = sdata_D[0];
 }
 
-static double cuda_reduce_sumD(long N, const double* src)
+static void cuda_reduce_add_sumD(long N, double* dst, const double* src)
 {
 	double* tmp1 = (double*)cuda_malloc(gridsize(N) * sizeof(double));
 	double* tmp2 = (double*)cuda_malloc(gridsize(gridsize(N)) * sizeof(double));
@@ -1621,10 +1647,22 @@ static double cuda_reduce_sumD(long N, const double* src)
 		SWAP(tmp1, tmp2);
 	}
 
-	double ret;
-	cuda_memcpy(sizeof(double), &ret, tmp1);
+	cuda_addD(1, dst, dst, tmp1);
 	cuda_free(tmp1);
 	cuda_free(tmp2);
+}
+
+
+static double cuda_reduce_sumD(long N, const double* src)
+{
+	double* ret_ptr = (double*)cuda_malloc(sizeof(double));
+	cuda_clear(sizeof(double), ret_ptr);
+
+	cuda_reduce_add_sumD(N, ret_ptr, src);
+
+	double ret;
+	cuda_memcpy(sizeof(double), &ret, ret_ptr);
+	cuda_free(ret_ptr);
 
 	return ret;
 }
@@ -1658,6 +1696,15 @@ __global__ static void kern_cdot(long N, cuDoubleComplex* dst, const cuFloatComp
 		dst[blockIdx.x].x = sdata_cD[0].x;
 		dst[blockIdx.x].y = sdata_cD[0].y;
 	}
+}
+
+extern "C" void cuda_zfmaccD_dot(long N, _Complex double* dst, const _Complex float* src1, const _Complex float* src2)
+{
+	_Complex double* tmp = (_Complex double*)cuda_malloc(gridsize(N) * sizeof(_Complex double));
+	kern_cdot<<<gridsize(N), blocksize(N), blocksize(N) * sizeof(_Complex double), cuda_get_stream()>>>(N, (cuDoubleComplex*)tmp, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
+
+	cuda_reduce_add_zsumD(gridsize(N), dst, tmp);
+	cuda_free(tmp);
 }
 
 extern "C" _Complex double cuda_cdot(long N, const _Complex float* src1, const _Complex float* src2)
@@ -1695,6 +1742,16 @@ __global__ static void kern_dot(long N, double* dst, const float* src1, const fl
 
 	if (0 == tidx)
 		dst[blockIdx.x] = sdata_D[0];
+}
+
+extern "C" void cuda_fmacD_dot(long N, double* dst, const float* src1, const float* src2)
+{
+	double* tmp = (double*)cuda_malloc(gridsize(N) * sizeof(double));
+
+	kern_dot<<<gridsize(N), blocksize(N), blocksize(N) * sizeof(double), cuda_get_stream()>>>(N, tmp, src1, src2);
+
+	cuda_reduce_add_sumD(gridsize(N), dst, tmp);
+	cuda_free(tmp);
 }
 
 extern "C" double cuda_dot(long N, const float* src1, const float* src2)
