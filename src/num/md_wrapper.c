@@ -381,3 +381,52 @@ void zmulc_gpu_unfold(int N, const long dims[N], const long ostr[N], complex flo
 	assert(0);
 #endif
 }
+
+
+void fmacD_dot(int N, const long dims[__VLA(N)], const long ostr[__VLA(N)], double* optr, const long istr1[__VLA(N)], const float* iptr1, const long istr2[__VLA(N)], const float* iptr2)
+{
+	assert(1 == N);
+	assert(0 == ostr[0]);
+	assert(FL_SIZE == istr1[0]);
+	assert(FL_SIZE == istr2[0]);
+	
+#ifdef USE_CUDA
+	if (cuda_ondevice(optr)) {
+		
+		cuda_fmacD_dot(dims[0], optr, iptr1, iptr2);
+		return;
+	}
+#endif
+
+	double ret = 0.;
+	for (long i = 0; i < dims[0]; i++)
+		ret += iptr1[i] * iptr2[i];
+
+	optr[0] += ret;
+}
+
+
+void zfmaccD_dot(int N, const long dims[__VLA(N)], const long ostr[__VLA(N)], _Complex double* optr, const long istr1[__VLA(N)], const _Complex float* iptr1, const long istr2[__VLA(N)], const _Complex float* iptr2)
+{
+	assert(1 == N);
+	assert(0 == ostr[0]);
+	assert(CFL_SIZE == istr1[0]);
+	assert(CFL_SIZE == istr2[0]);
+	
+#ifdef USE_CUDA
+	if (cuda_ondevice(optr)) {
+		
+		cuda_zfmaccD_dot(dims[0], optr, iptr1, iptr2);
+		return;
+	}
+#endif
+
+	complex double ret = 0.;
+	for (long i = 0; i < dims[0]; i++)
+		ret += iptr1[i] * conjf(iptr2[i]);
+
+	optr[0] += ret;
+}
+
+
+
