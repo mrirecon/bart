@@ -7,12 +7,12 @@
  * Publications:
  *
  * Avants BB, Epstein CL, Grossman M, Gee JC.
- * Symmetric diffeomorphic image registration with cross-correlation: 
+ * Symmetric diffeomorphic image registration with cross-correlation:
  * evaluating automated labeling of elderly and neurodegenerative brain.
  * Med Image Anal. 2008;12(1):26-41.
  *
- * Avants BB, Tustison NJ, Song G, Cook PA, Klein A, Gee JC. 
- * A reproducible evaluation of ANTs similarity metric performance in 
+ * Avants BB, Tustison NJ, Song G, Cook PA, Klein A, Gee JC.
+ * A reproducible evaluation of ANTs similarity metric performance in
  * brain image registration. Neuroimage. 2011;54(3):2033-2044.
  */
 
@@ -54,9 +54,9 @@ static void zentral_differences(int D, const long dims[D], int d, unsigned long 
 	md_select_dims(D, ~MD_BIT(d), idims, dims);
 
 	const struct linop_s* lop = linop_grad_zentral_create(D, idims, d, flags);
-	
+
 	linop_forward(lop, D, dims, out, D, idims, in);
-	
+
 	linop_free(lop);
 }
 
@@ -72,7 +72,7 @@ static void zentral_differences(int D, const long dims[D], int d, unsigned long 
 //}
 
 
-static void _iterate(int d, unsigned long flags, int N, const long dims[N],
+static void _iterate(int iter, int d, unsigned long flags, int N, const long dims[N],
 			const struct nlop_s* nlop_metric, const struct linop_s* lop_gaussian,
 			complex float* static_to_ref_fw, complex float* static_to_ref_bw, const complex float* static_img,
 			complex float* moving_to_ref_fw, complex float* moving_to_ref_bw, const complex float* moving_img)
@@ -99,6 +99,8 @@ static void _iterate(int d, unsigned long flags, int N, const long dims[N],
 
 	complex float loss;
 	md_copy(1, MD_DIMS(1), &loss, scalar, CFL_SIZE);
+
+	debug_printf(DP_DEBUG1, "Loss[%d]: %e\n", iter, loss);
 
 	complex float* bw_stp = md_alloc_sameplace(N, dims, CFL_SIZE, scalar);
 	complex float* fw_stp = md_alloc_sameplace(N, dims, CFL_SIZE, scalar);
@@ -131,7 +133,7 @@ static void _iterate(int d, unsigned long flags, int N, const long dims[N],
 	for (int i = 0; i < N; i++)
 		if (MD_IS_SET(flags, i))
 			rdims[i] -= 2;
-			
+
 	// Set boundary to zero
 	complex float* tmpr = md_alloc_sameplace(N, rdims, CFL_SIZE, scalar);
 	md_resize_center(N, rdims, tmpr, dims, fw_stp, CFL_SIZE);
@@ -166,7 +168,7 @@ static void _iterate(int d, unsigned long flags, int N, const long dims[N],
 	md_copy(N, dims, static_to_ref_fw, tmp, CFL_SIZE);
 
 	invert_displacement(N, d, flags, dims, static_to_ref_bw, static_to_ref_fw);
-	invert_displacement(N, d, flags, dims, static_to_ref_fw, static_to_ref_bw);	
+	invert_displacement(N, d, flags, dims, static_to_ref_fw, static_to_ref_bw);
 
 	compose_displacement(N, d, flags, dims, tmp, moving_to_ref_fw, bw_stp);
 	md_copy(N, dims, moving_to_ref_fw, tmp, CFL_SIZE);
@@ -191,7 +193,7 @@ void syn(int levels, float sigma[levels], float factors[levels], int nwarps[leve
 	const complex float* static_img, const complex float* moving_img)
 {
 	assert(_dims[d] == bitcount(flags));
-	
+
 	long tdims[N];
 	md_select_dims(N, ~MD_BIT(d), tdims, _dims);
 
@@ -242,7 +244,7 @@ void syn(int levels, float sigma[levels], float factors[levels], int nwarps[leve
 		//const struct nlop_s* nlop_metric = nlop_mse_create(N, img_dims, 0ul);
 
 		for (int j = 0; j < nwarps[i]; j++)
-			_iterate(d, flags, N, udims, nlop_metric, lop_gaussian,
+			_iterate(j, d, flags, N, udims, nlop_metric, lop_gaussian,
 				static_to_ref_fw, static_to_ref_bw, img_static[i],
 				moving_to_ref_fw, moving_to_ref_bw, img_moved[i]);
 
