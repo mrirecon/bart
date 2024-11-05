@@ -813,15 +813,15 @@ static bool vptr_clear_range_dims(int D, const long dim[D], const long str[D], v
 
 		ndims[i] = ((long)size * dim[0]) / md_calc_size(i, tdim);
 		nstrs[i] = md_calc_size(i, tdim);
-		
-		if (1 < ndims[i]) 
+
+		if (1 < ndims[i])
 			i++;
 
 		if (2 < i) {
 
 			for (int j = 0; j < i; j++)
 				nstrs[j] = (1 == ndims[j]) ? 0 : nstrs[j];
-		
+
 			md_clear2(i - 1, ndims + 1, nstrs + 1, ptr, (size_t)ndims[0]);
 			return true;
 		}
@@ -963,7 +963,7 @@ static bool vptr_copy_range_dims(int D, const long dim[D], const long ostr[D], v
 		if (0 < clen - MIN(ilen, olen))
 			md_copy(1, MD_DIMS(clen - MIN(ilen, olen)), optr + MIN(ilen, olen), iptr + MIN(ilen, olen), 1);
 
-		return true;				
+		return true;
 	}
 
 	optr = vptr_resolve_range(optr);
@@ -993,8 +993,8 @@ static bool vptr_copy_range_dims(int D, const long dim[D], const long ostr[D], v
 		ndims[i] = ((long)size * dim[0]) / md_calc_size(i, odims);
 		nistrs[i] = md_calc_size(i, odims);
 		nostrs[i] = md_calc_size(i, odims);
-		
-		if (1 < ndims[i]) 
+
+		if (1 < ndims[i])
 			i++;
 
 		if (2 < i) {
@@ -1034,8 +1034,8 @@ static bool vptr_copy_range_dims(int D, const long dim[D], const long ostr[D], v
 		ndims[i] = ((long)size * dim[0]) / md_calc_size(i, idims);
 		nistrs[i] = istr[0] * md_calc_size(i, idims);
 		nostrs[i] = ostr[0] * md_calc_size(i, idims);
-		
-		if (1 < ndims[i]) 
+
+		if (1 < ndims[i])
 			i++;
 
 		if (2 < i) {
@@ -2715,6 +2715,9 @@ void* md_gpu_move(int D, const long dims[D], const void* ptr, size_t size)
 {
 	if (NULL == ptr)
 		return NULL;
+
+	if (is_vptr(ptr))
+		return vptr_move_gpu(ptr);
 
 	void* gpu_ptr = md_alloc_gpu(D, dims, size);
 
