@@ -184,11 +184,12 @@ int main_nlinv(int argc, char* argv[argc])
 	} else {
 
 		md_select_dims(DIMS, ~COIL_FLAG, pat_dims, ksp_dims);
-		pattern = anon_cfl("", DIMS, pat_dims);
-		if (real_time_stream)
-			md_zfill(DIMS, pat_dims, pattern, 1);
-		else
+
+		if (!real_time_stream) {
+
+			pattern = anon_cfl("", DIMS, pat_dims);
 			estimate_pattern(DIMS, ksp_dims, COIL_FLAG, pattern, kspace);
+		}
 	}
 
 	psf_based_reco = psf_based_reco || (-1 != restrict_fov) || (NULL != init_file);

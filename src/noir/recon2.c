@@ -37,6 +37,7 @@
 #include "misc/misc.h"
 #include "misc/types.h"
 #include "misc/mri.h"
+#include "misc/mri2.h"
 #include "misc/debug.h"
 #include "misc/stream.h"
 #include "misc/version.h"
@@ -551,7 +552,7 @@ void noir2_recon_noncart(
 	complex float* l_ksens = 	my_alloc(N, lkco_dims, CFL_SIZE);
 	complex float* l_sens_ref = 	(!conf->realtime && (NULL == sens_ref)) ? NULL : my_alloc(N, lkco_dims, CFL_SIZE);
 	complex float* l_kspace = 	my_alloc(N, lksp_dims, CFL_SIZE);
-	complex float* l_wgh = 		(NULL == weights) ? NULL : my_alloc(N, lwgh_dims, CFL_SIZE);
+	complex float* l_wgh = 		(!conf->realtime && (NULL == weights)) ? NULL : my_alloc(N, lwgh_dims, CFL_SIZE);
 	complex float* l_trj = 		my_alloc(N, ltrj_dims, CFL_SIZE);
 
 	long pos[N];
@@ -584,6 +585,8 @@ void noir2_recon_noncart(
 
 			if (NULL != weights)
 				pos_wgh[TIME_DIM] = pos_wgh[TIME_DIM] % wgh_dims[TIME_DIM];
+			else
+				estimate_pattern(N, lksp_dims, COIL_FLAG, l_wgh, l_kspace);
 
 			if (0 == pos[TIME_DIM]) {
 
