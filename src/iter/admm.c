@@ -7,7 +7,7 @@
  * Authors:
  * 2014-2023 Martin Uecker <uecker@tugraz.at>
  * 2014-2017 Jon Tamir <jtamir@eecs.berkeley.edu>
- * 
+ *
  *
  *
  * Glowinski R and Marroco A. Sur l'approximation, par elements finis
@@ -181,8 +181,6 @@ void admm(const struct admm_plan_s* plan,
 
 	float* rhs = vops->allocate(N);
 	float* s = vops->allocate(N);
-	float* GH_usum = NULL;
-
 
 	float* z[num_funs ?:1];
 	float* u[num_funs ?:1];
@@ -194,10 +192,6 @@ void admm(const struct admm_plan_s* plan,
 		u[j] = vops->allocate(z_dims[j]);
 		r[j] = vops->allocate(z_dims[j]);
 	}
-
-
-	if (!plan->fast)
-		GH_usum = vops->allocate(N);
 
 	float rho = plan->rho;
 	float tau = plan->tau;
@@ -256,7 +250,7 @@ void admm(const struct admm_plan_s* plan,
 	if (plan->do_warmstart) {
 
 		for (int j = 0; j < num_funs; j++) {
-	
+
 			// initialize for j'th function update
 
 			float* Gjx_plus_uj = vops->allocate(z_dims[j]);
@@ -318,9 +312,13 @@ void admm(const struct admm_plan_s* plan,
 
 		double n1 = 0.;
 
+		float* GH_usum = NULL;
+
 		if (!plan->fast) {
 
+			GH_usum = vops->allocate(N);
 			vops->clear(N, GH_usum);
+
 			vops->clear(N, s);
 
 			for (int j = 0; j < num_funs; j++)
@@ -330,7 +328,7 @@ void admm(const struct admm_plan_s* plan,
 
 		// z_j prox
 		for (int j = 0; j < num_funs; j++) {
-	
+
 			// initialize for j'th function update
 
 			float* Gjx_plus_uj = vops->allocate(z_dims[j]);
@@ -415,6 +413,8 @@ void admm(const struct admm_plan_s* plan,
 
 			r_scaling = sqrt(MAX(MAX(n1, n2), n3));
 			s_scaling = rho * vops->norm(N, GH_usum);
+
+			vops->del(GH_usum);
 
 			long M = sum_long_array(num_funs, z_dims);
 
@@ -529,7 +529,4 @@ void admm(const struct admm_plan_s* plan,
 		vops->del(u[j]);
 		vops->del(r[j]);
 	}
-
-	if (!plan->fast)
-		vops->del(GH_usum);
 }
