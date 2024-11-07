@@ -2455,6 +2455,22 @@ void* md_alloc_sameplace(int D, const long dimensions[D], size_t size, const voi
 #endif
 }
 
+bool md_is_sameplace(const void* ptr1, const void* ptr2)
+{
+	if (is_vptr(ptr1) != is_vptr(ptr2))
+		return false;
+
+	if (is_vptr(ptr1))
+		return is_vptr_gpu(ptr1) == is_vptr_gpu(ptr2);
+
+#ifdef USE_CUDA
+	return cuda_ondevice(ptr1) == cuda_ondevice(ptr2);
+#else
+	return true;
+#endif
+}
+
+
 
 /**
  * Free CPU/GPU memory
