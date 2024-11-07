@@ -17,6 +17,7 @@
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/fft.h"
+#include "num/vptr.h"
 #include "num/iovec.h"
 #ifdef USE_CUDA
 #include "num/gpuops.h"
@@ -122,8 +123,7 @@ void noir2_recon(const struct noir2_conf_s* conf, struct noir2_s* noir_ops,
 #ifdef USE_CUDA
 	if((conf->gpu) && !cuda_ondevice(data)) {
 
-		complex float* tmp_data = md_alloc_gpu(N, dat_dims, CFL_SIZE);
-		md_copy(N, dat_dims, tmp_data, data, CFL_SIZE);
+		complex float* tmp_data = md_gpu_move(N, dat_dims, data, CFL_SIZE);
 		md_free(data);
 		data = tmp_data;
 	}
@@ -147,18 +147,37 @@ void noir2_recon(const struct noir2_conf_s* conf, struct noir2_s* noir_ops,
 	long skip = md_calc_size(N, img_dims);
 	long size = skip + md_calc_size(N, kco_dims);
 
+	long d1[1] = { size };
+	// variable which is optimized by the IRGNM
+	complex float* x = NULL;
 	complex float* ref = NULL;
-	assert((NULL == img_ref) == (NULL == sens_ref));
+
+	if (is_vptr(img)) {
+
+		void* img_ptr = (is_vptr_gpu(kspace) ? vptr_move_gpu : vptr_move_cpu)(img);
+		void* sens_ptr = (is_vptr_gpu(kspace) ? vptr_move_gpu : vptr_move_cpu)(ksens);
+
+		x = vptr_wrap_range(2, (void* [2]){ img_ptr, sens_ptr }, true);
+
+		if (NULL != img_ref)
+			ref = vptr_alloc_same(x);
+	} else {
+
+		x = md_alloc_sameplace(1, d1, CFL_SIZE, data);
+		md_clear(1, d1, x, CFL_SIZE);
+
+		if (NULL != img_ref) {
+
+			ref = md_alloc_sameplace(1, d1, CFL_SIZE, data);
+			md_clear(1, d1, ref, CFL_SIZE);
+		}
+	}
 
 	if (NULL != img_ref) {
-
-		ref = md_alloc_sameplace(1, MD_DIMS(size), CFL_SIZE, data);
 
 		md_copy(N, img_dims, ref, img_ref, CFL_SIZE);
 		md_copy(N, kco_dims, ref + skip, sens_ref, CFL_SIZE);
 	}
-
-	complex float* x = md_alloc_sameplace(1, MD_DIMS(size), CFL_SIZE, data);
 
 	md_copy(N, img_dims, x, img, CFL_SIZE);
 	md_copy(N, kco_dims, x + skip, ksens, CFL_SIZE);
@@ -176,7 +195,7 @@ void noir2_recon(const struct noir2_conf_s* conf, struct noir2_s* noir_ops,
 	irgnm_conf.cgiter = conf->cgiter;
 
 
-	struct nlop_s* nlop_flat = nlop_flatten(noir_ops->model);
+	struct nlop_s* nlop_flat = nlop_flatten_inputs_F(nlop_clone(noir_ops->model));
 
 	struct nlop_wrapper2_s nlw;
 	SET_TYPEID(nlop_wrapper2_s, &nlw);
@@ -287,21 +306,25 @@ void noir2_recon_noncart(
 
 	struct noir2_s noir_ops = (conf->optimized ? noir2_noncart_optimized_create :noir2_noncart_create)(N, ltrj_dims, NULL, lwgh_dims, weights, bas_dims, basis, msk_dims, mask, lksp_dims, lcim_dims, limg_dims, lkco_dims, lcol_dims, &mconf);
 
+	const void* ref = NULL;
+	if (is_vptr(kspace)) {
+
+		ref = vptr_alloc_sameplace(1, MD_DIMS(1), 1, kspace);
+		vptr_set_gpu(ref, conf->gpu);
+	}
 #ifdef USE_CUDA
-	md_alloc_fun_t my_alloc = conf->gpu ? md_alloc_gpu : md_alloc;
-#else
-	assert(!conf->gpu);
-	md_alloc_fun_t my_alloc = md_alloc;
+	else if (conf->gpu)
+		ref = md_alloc_gpu(1, MD_DIMS(1), 1);
 #endif
 
-	complex float* l_img = 		my_alloc(N, limg_dims, CFL_SIZE);
-	complex float* l_img_ref = 	(!conf->realtime && (NULL == img_ref)) ? NULL : my_alloc(N, limg_dims, CFL_SIZE);
-	complex float* l_sens = 	(NULL == sens) ? NULL : my_alloc(N, lcol_dims, CFL_SIZE);
-	complex float* l_ksens = 	my_alloc(N, lkco_dims, CFL_SIZE);
-	complex float* l_sens_ref = 	(!conf->realtime && (NULL == sens_ref)) ? NULL : my_alloc(N, lkco_dims, CFL_SIZE);
-	complex float* l_kspace = 	my_alloc(N, lksp_dims, CFL_SIZE);
-	complex float* l_wgh = 		(NULL == weights) ? NULL : my_alloc(N, lwgh_dims, CFL_SIZE);
-	complex float* l_trj = 		my_alloc(N, ltrj_dims, CFL_SIZE);
+	complex float* l_img = 		md_alloc_sameplace(N, limg_dims, CFL_SIZE, ref);
+	complex float* l_img_ref = 	(!conf->realtime && (NULL == img_ref)) ? NULL : md_alloc_sameplace(N, limg_dims, CFL_SIZE, ref);
+	complex float* l_sens = 	(NULL == sens) ? NULL : md_alloc_sameplace(N, lcol_dims, CFL_SIZE, ref);
+	complex float* l_ksens = 	md_alloc_sameplace(N, lkco_dims, CFL_SIZE, ref);
+	complex float* l_sens_ref = 	(!conf->realtime && (NULL == sens_ref)) ? NULL : md_alloc_sameplace(N, lkco_dims, CFL_SIZE, ref);
+	complex float* l_kspace = 	md_alloc_sameplace(N, lksp_dims, CFL_SIZE, ref);
+	complex float* l_wgh = 		(NULL == weights) ? NULL : md_alloc_sameplace(N, lwgh_dims, CFL_SIZE, ref);
+	complex float* l_trj = 		md_alloc_sameplace(N, ltrj_dims, CFL_SIZE, ref);
 
 	long pos[N];
 	md_set_dims(N, pos, 0);
@@ -393,6 +416,7 @@ void noir2_recon_noncart(
 	md_free(l_trj);
 
 	noir2_free(&noir_ops);
+	md_free(ref);
 }
 
 
