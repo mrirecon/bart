@@ -224,11 +224,12 @@ void ist(int maxiter, float epsilon, float tau, long N,
 
 
 /**
- * Iterative Soft Thresholding/FISTA to solve min || b - Ax ||_2 + lambda || T x ||_1
+ * Iterative Soft Thresholding/FISTA to solve min || b - Ax ||_2 + lambda * alpha || T x ||_1
  *
  * @param maxiter maximum number of iterations
  * @param epsilon stop criterion
- * @param tau (step size) weighting on the residual term, A^H (b - Ax)
+ * @param tau step size
+ * @param alpha scaling of prox
  * @param last final application of threshold function
  * @param cf parameters for ravine step
  * @param N size of input, x
@@ -238,7 +239,7 @@ void ist(int maxiter, float epsilon, float tau, long N,
  * @param x initial estimate
  * @param b observations
  */
-void fista(int maxiter, float epsilon, float tau,
+void fista(int maxiter, float epsilon, float tau, float alpha,
 	bool last,
 	struct ravine_conf cf,
 	long N,
@@ -275,7 +276,7 @@ void fista(int maxiter, float epsilon, float tau,
 		if (NULL != ist_continuation)
 			ist_continuation(&itrdata);
 
-		iter_op_p_call(thresh, itrdata.scale * itrdata.tau, x, x);
+		iter_op_p_call(thresh, itrdata.scale * itrdata.tau * alpha, x, x);
 
 		ravine(vops, cf, N, &ra, x, o);	// FISTA
 		iter_op_call(op, r, x);		// r = A x
@@ -294,7 +295,7 @@ void fista(int maxiter, float epsilon, float tau,
 	if (!last) {
 
 		iter_monitor(monitor, vops, x);
-		iter_op_p_call(thresh, itrdata.scale * itrdata.tau, x, x);
+		iter_op_p_call(thresh, itrdata.scale * itrdata.tau * alpha, x, x);
 	}
 
 	debug_printf(DP_DEBUG3, "\n");
@@ -838,7 +839,7 @@ double power(int maxiter,
  * @param x initial estimate
  * @param monitor callback function
  */
-void chambolle_pock(int maxiter, float epsilon, float tau, float sigma, float theta, float decay,
+void chambolle_pock(float alpha, int maxiter, float epsilon, float tau, float sigma, float theta, float decay,
 	int O, long N, long M[O],
 	const struct vec_iter_s* vops,
 	struct iter_op_s op_norm,
@@ -915,7 +916,7 @@ void chambolle_pock(int maxiter, float epsilon, float tau, float sigma, float th
 
 			vops->axpy(M[j], u_old, 1. / sigma, u[j]); // (u + sigma * A(x)) / sigma
 
-			iter_op_p_call(prox1[j], 1. / sigma, u_new, u_old);
+			iter_op_p_call(prox1[j], 1. / sigma * alpha, u_new, u_old);
 
 			vops->axpbz(M[j], u_new, -1. * sigma, u_new, sigma, u_old);
 			vops->copy(M[j], u_old, u[j]);
@@ -954,7 +955,7 @@ void chambolle_pock(int maxiter, float epsilon, float tau, float sigma, float th
 			vops->axpy(N, x, -1. * tau, x_new);
 		}
 
-		iter_op_p_call(prox2, tau, x_new, x);
+		iter_op_p_call(prox2, tau * alpha, x_new, x);
 
 		vops->axpbz(N, x, lambda, x_new, 1. - lambda, x_old);
 

@@ -409,7 +409,7 @@ void iter2_fista(const iter_conf* _conf,
 	if (0 != conf->maxeigen_iter)
 		maxeigen = estimate_maxeigenval_sameplace(t_normaleq_op, conf->maxeigen_iter, image_adj);
 
-	fista(conf->maxiter, eps * conf->tol, conf->INTERFACE.alpha * conf->step / maxeigen, conf->last,
+	fista(conf->maxiter, eps * conf->tol, conf->step / maxeigen, conf->INTERFACE.alpha , conf->last,
 		(struct ravine_conf){ conf->p, conf->q, conf->r }, size, select_vecops(image_adj),
 		continuation, OPERATOR2ITOP(t_normaleq_op), OPERATOR_P2ITOP(t_prox), image, image_adj, monitor);
 
@@ -526,7 +526,7 @@ void iter2_chambolle_pock(const iter_conf* _conf,
 
 
 	// FIXME: conf->INTERFACE.alpha * c
-	chambolle_pock(conf->maxiter, eps * conf->tol, conf->tau / sqrtf(maxeigen), conf->sigma / sqrtf(maxeigen), conf->theta, conf->decay, D, size, M, select_vecops(image),
+	chambolle_pock(conf->INTERFACE.alpha, conf->maxiter, eps * conf->tol, conf->tau / sqrtf(maxeigen), conf->sigma / sqrtf(maxeigen), conf->theta, conf->decay, D, size, M, select_vecops(image),
 			OPERATOR2ITOP(normaleq_op), lop_frw, lop_adj, it_prox, OPERATOR_P2ITOP(prox_G),
 			image, image_adj, monitor);
 

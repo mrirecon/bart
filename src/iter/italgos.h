@@ -189,7 +189,7 @@ struct ravine_conf {
 extern struct ravine_conf ravine_classical;
 extern struct ravine_conf ravine_mod;
 
-void fista(int maxiter, float epsilon, float tau,
+void fista(int maxiter, float epsilon, float tau, float alpha,
 	_Bool last,
 	struct ravine_conf,
 	long N,
@@ -243,7 +243,7 @@ double power(int maxiter,
 	struct iter_op_s op,
 	float* u, float*b);
 
-void chambolle_pock(int maxiter, float epsilon, float tau, float sigma, float theta, float decay,
+void chambolle_pock(float alpha, int maxiter, float epsilon, float tau, float sigma, float theta, float decay,
 	int O, long N, long M[O],
 	const struct vec_iter_s* vops,
 	struct iter_op_s op_norm,

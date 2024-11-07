@@ -235,7 +235,7 @@ static void inverse_fista(iter_op_data* _data, float alpha, float* dst, const fl
 		itrdata->scale = data->alpha;
 	};
 
-	fista(maxiter, data->conf->c2->cgtol * alpha * eps, step,
+	fista(maxiter, data->conf->c2->cgtol * alpha * eps, step, 1,
 		true,
 		ravine_classical,
 		data->size_x,
