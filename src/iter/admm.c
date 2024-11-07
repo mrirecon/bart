@@ -185,13 +185,11 @@ void admm(const struct admm_plan_s* plan,
 
 	float* z[num_funs ?:1];
 	float* u[num_funs ?:1];
-	float* r[num_funs ?:1];
 
 	for (int j = 0; j < num_funs; j++) {
 
 		z[j] = vops->allocate(z_dims[j]);
 		u[j] = vops->allocate(z_dims[j]);
-		r[j] = vops->allocate(z_dims[j]);
 	}
 
 	float rho = plan->rho;
@@ -290,15 +288,19 @@ void admm(const struct admm_plan_s* plan,
 
 		for (int j = 0; j < num_funs; j++) {
 
-			vops->sub(z_dims[j], r[j], z[j], u[j]);
+			float* r = vops->allocate(z_dims[j]);
+
+			vops->sub(z_dims[j], r, z[j], u[j]);
 
 			if (NULL != biases[j])
-				vops->add(z_dims[j], r[j], r[j], biases[j]);
+				vops->add(z_dims[j], r, r, biases[j]);
 
 			float* s = vops->allocate(N);
-			iter_op_call(plan->ops[j].adjoint, s, r[j]);
+			iter_op_call(plan->ops[j].adjoint, s, r);
 			vops->add(N, rhs, rhs, s);
 			vops->del(s);
+
+			vops->del(r);
 		}
 
 		if (NULL != Aop.fun) {
@@ -315,6 +317,12 @@ void admm(const struct admm_plan_s* plan,
 
 		double n1 = 0.;
 
+		float s_norm = 0.;
+		float r_norm = 0.;
+
+		double s_scaling = 1.;
+		double r_scaling = 1.;
+
 		float* GH_usum = NULL;
 		float* s = NULL;
 
@@ -326,9 +334,6 @@ void admm(const struct admm_plan_s* plan,
 
 			s = vops->allocate(N);
 			vops->clear(N, s);
-
-			for (int j = 0; j < num_funs; j++)
-				vops->clear(z_dims[j], r[j]);
 		}
 
 
@@ -339,16 +344,19 @@ void admm(const struct admm_plan_s* plan,
 
 			float* Gjx_plus_uj = vops->allocate(z_dims[j]);
 			float* zj_old = vops->allocate(z_dims[j]);
+			float* r = NULL;
 
 			iter_op_call(plan->ops[j].forward, Gjx_plus_uj, x); // Gj(x)
 
 			// over-relaxation: Gjx_hat = alpha * Gj(x) + (1 - alpha) * (zj_old + bj)
 			if (!plan->fast) {
 
-				vops->copy(z_dims[j], zj_old, z[j]);
-				vops->copy(z_dims[j], r[j], Gjx_plus_uj); // rj = Gj(x)
+				r = vops->allocate(z_dims[j]);
 
-				n1 += pow(vops->norm(z_dims[j], r[j]), 2.);
+				vops->copy(z_dims[j], zj_old, z[j]);
+				vops->copy(z_dims[j], r, Gjx_plus_uj); // rj = Gj(x)
+
+				n1 += pow(vops->norm(z_dims[j], r), 2.);
 
 				vops->smul(z_dims[j], plan->alpha, Gjx_plus_uj, Gjx_plus_uj);
 				vops->axpy(z_dims[j], Gjx_plus_uj, (1. - plan->alpha), z[j]);
@@ -375,10 +383,13 @@ void admm(const struct admm_plan_s* plan,
 			if (!plan->fast) {
 
 				// rj = rj - zj - bj = Gj(x) - zj - bj
-				vops->sub(z_dims[j], r[j], r[j], z[j]);
+				vops->sub(z_dims[j], r, r, z[j]);
 
 				if (NULL != biases[j])
-					vops->sub(z_dims[j], r[j], r[j], biases[j]);
+					vops->sub(z_dims[j], r, r, biases[j]);
+
+				r_norm += pow(vops->norm(z_dims[j], r), 2.);
+				vops->del(r);
 
 				// add next term to s: s = s + Gj^H (zj - zj_old)
 				vops->sub(z_dims[j], zj_old, z[j], zj_old);
@@ -393,21 +404,11 @@ void admm(const struct admm_plan_s* plan,
 			vops->del(zj_old);
 		}
 
-		float s_norm = 0.;
-		float r_norm = 0.;
-
-		double s_scaling = 1.;
-		double r_scaling = 1.;
 
 		if (!plan->fast) {
 
 			s_norm = rho * vops->norm(N, s);
 			vops->del(s);
-
-			r_norm = 0.;
-
-			for (int j = 0; j < num_funs; j++)
-				r_norm += pow(vops->norm(z_dims[j], r[j]), 2.);
 
 			r_norm = sqrt(r_norm);
 
@@ -531,6 +532,5 @@ void admm(const struct admm_plan_s* plan,
 
 		vops->del(z[j]);
 		vops->del(u[j]);
-		vops->del(r[j]);
 	}
 }
