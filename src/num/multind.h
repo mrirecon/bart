@@ -118,6 +118,7 @@ extern void* md_gpu_move(int D, const long dims[__VLA(D)], const void* ptr, size
 #endif
 extern void* md_alloc_sameplace(int D, const long dimensions[__VLA(D)], size_t size, const void* ptr);
 extern void md_free(const void* p);
+extern _Bool md_is_sameplace(const void* ptr1, const void* ptr2);
 
 extern void* md_alloc_mpi(int D, unsigned long dist_flags, const long dims[__VLA(D)], size_t size);
 extern void* md_mpi_move(int D, unsigned long dist_flags, const long dims[__VLA(D)], const void* ptr, size_t size);
