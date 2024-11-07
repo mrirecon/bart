@@ -95,5 +95,72 @@ const struct operator_p_s* prox_convex_conjugate_F(const struct operator_p_s* op
 }
 
 
+/**
+ * Data for computing prox of scaled variable:
+ * Proximal function for f(z) = g(sz)
+ *
+ * @param op prox of f
+ */
+struct prox_scale_data {
+
+	operator_data_t super;
+	const struct operator_p_s* op;
+	float scale;
+};
+
+static DEF_TYPEID(prox_scale_data);
+
+/**
+ * Proximal function for g(sz)
+ * Solution is prox_{mu g(s*)}(z) = 1/s prox_{s^2 * mu g}(sz)
+ *
+ * @param prox_data should be of type prox_convex_conjugate_data
+ * @param mu proximal penalty
+ * @param z output
+ * @param x_plus_u input
+ */
+
+static void prox_scale_apply(const operator_data_t* _data, float mu, complex float* dst, const complex float* src)
+{
+	auto data = CAST_DOWN(prox_scale_data, _data);
+	auto iov = operator_p_domain(data->op);
+
+	complex float* tmp = md_alloc_sameplace(iov->N, iov->dims, iov->size, dst);
+
+	md_zsmul(iov->N, iov->dims, tmp, src, data->scale);
+	operator_p_apply_unchecked(data->op, data->scale * data->scale * mu, dst, tmp);
+	md_free(tmp);
+	md_zsmul(iov->N, iov->dims, dst, dst, 1. / data->scale);
+}
+
+static void prox_scale_del(const operator_data_t* _data)
+{
+	auto pdata = CAST_DOWN(prox_scale_data, _data);
+
+	operator_p_free(pdata->op);
+	xfree(pdata);
+}
+
+const struct operator_p_s* prox_scale(const struct operator_p_s* op, float scale)
+{
+	PTR_ALLOC(struct prox_scale_data, pdata);
+	SET_TYPEID(prox_scale_data, pdata);
+
+	pdata->op = operator_p_ref(op);
+	pdata->scale = scale;
+	auto iov = operator_p_domain(op);
+
+	return operator_p_create(iov->N, iov->dims, iov->N, iov->dims, CAST_UP(PTR_PASS(pdata)), prox_scale_apply, prox_scale_del);
+}
+
+const struct operator_p_s* prox_scale_F(const struct operator_p_s* op, float scale)
+{
+	const struct operator_p_s* tmp = prox_scale(op, scale);
+	operator_p_free(op);
+	return tmp;
+}
+
+
+
 
 
