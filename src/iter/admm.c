@@ -181,8 +181,6 @@ void admm(const struct admm_plan_s* plan,
 	if (plan->dynamic_rho)
 		assert(!plan->fast);
 
-	float* rhs = vops->allocate(N);
-
 	float* z[num_funs ?:1];
 	float* u[num_funs ?:1];
 
@@ -284,6 +282,7 @@ void admm(const struct admm_plan_s* plan,
 		iter_monitor(monitor, vops, x);
 
 		// update x
+		float* rhs = vops->allocate(N);
 		vops->clear(N, rhs);
 
 		for (int j = 0; j < num_funs; j++) {
@@ -313,6 +312,8 @@ void admm(const struct admm_plan_s* plan,
 
 		iter_op_p_call(xupdate, rho, x, rhs);
 		ndata.nr_invokes++;
+
+		vops->del(rhs);
 
 
 		double n1 = 0.;
@@ -391,6 +392,8 @@ void admm(const struct admm_plan_s* plan,
 				r_norm += pow(vops->norm(z_dims[j], r), 2.);
 				vops->del(r);
 
+				float* rhs = vops->allocate(N);
+
 				// add next term to s: s = s + Gj^H (zj - zj_old)
 				vops->sub(z_dims[j], zj_old, z[j], zj_old);
 				iter_op_call(plan->ops[j].adjoint, rhs, zj_old);
@@ -399,6 +402,8 @@ void admm(const struct admm_plan_s* plan,
 				// GH_usum += G_j^H uj (for updating eps_dual)
 				iter_op_call(plan->ops[j].adjoint, rhs, u[j]);
 				vops->add(N, GH_usum, GH_usum, rhs);
+
+				vops->del(rhs);
 			}
 
 			vops->del(zj_old);
@@ -526,8 +531,6 @@ void admm(const struct admm_plan_s* plan,
 
 
 	// cleanup
-	vops->del(rhs);
-
 	for (int j = 0; j < num_funs; j++) {
 
 		vops->del(z[j]);
