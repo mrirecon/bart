@@ -182,7 +182,6 @@ void admm(const struct admm_plan_s* plan,
 		assert(!plan->fast);
 
 	float* rhs = vops->allocate(N);
-	float* s = vops->allocate(N);
 
 	float* z[num_funs ?:1];
 	float* u[num_funs ?:1];
@@ -296,8 +295,10 @@ void admm(const struct admm_plan_s* plan,
 			if (NULL != biases[j])
 				vops->add(z_dims[j], r[j], r[j], biases[j]);
 
+			float* s = vops->allocate(N);
 			iter_op_call(plan->ops[j].adjoint, s, r[j]);
 			vops->add(N, rhs, rhs, s);
+			vops->del(s);
 		}
 
 		if (NULL != Aop.fun) {
@@ -315,12 +316,15 @@ void admm(const struct admm_plan_s* plan,
 		double n1 = 0.;
 
 		float* GH_usum = NULL;
+		float* s = NULL;
+
 
 		if (!plan->fast) {
 
 			GH_usum = vops->allocate(N);
 			vops->clear(N, GH_usum);
 
+			s = vops->allocate(N);
 			vops->clear(N, s);
 
 			for (int j = 0; j < num_funs; j++)
@@ -398,6 +402,8 @@ void admm(const struct admm_plan_s* plan,
 		if (!plan->fast) {
 
 			s_norm = rho * vops->norm(N, s);
+			vops->del(s);
+
 			r_norm = 0.;
 
 			for (int j = 0; j < num_funs; j++)
@@ -520,7 +526,6 @@ void admm(const struct admm_plan_s* plan,
 
 	// cleanup
 	vops->del(rhs);
-	vops->del(s);
 
 	for (int j = 0; j < num_funs; j++) {
 
