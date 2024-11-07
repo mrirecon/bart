@@ -178,6 +178,8 @@ void admm(const struct admm_plan_s* plan,
 {
 	int num_funs = D;
 
+	if (plan->dynamic_rho)
+		assert(!plan->fast);
 
 	float* rhs = vops->allocate(N);
 	float* s = vops->allocate(N);
@@ -393,7 +395,7 @@ void admm(const struct admm_plan_s* plan,
 		double s_scaling = 1.;
 		double r_scaling = 1.;
 
-		if (plan->dynamic_rho || !plan->fast) {
+		if (!plan->fast) {
 
 			s_norm = rho * vops->norm(N, s);
 			r_norm = 0.;
@@ -402,9 +404,6 @@ void admm(const struct admm_plan_s* plan,
 				r_norm += pow(vops->norm(z_dims[j], r[j]), 2.);
 
 			r_norm = sqrt(r_norm);
-		}
-
-		if (!plan->fast) {
 
 			double n2 = 0.;
 
