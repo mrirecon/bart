@@ -17,6 +17,7 @@
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/fft.h"
+#include "num/vptr.h"
 #include "num/iovec.h"
 #include "num/ops.h"
 #include "num/ops_p.h"
@@ -263,8 +264,7 @@ void noir2_recon(const struct noir2_conf_s* conf, struct noir2_s* noir_ops,
 #ifdef USE_CUDA
 	if((conf->gpu) && !cuda_ondevice(data)) {
 
-		complex float* tmp_data = md_alloc_gpu(N, dat_dims, CFL_SIZE);
-		md_copy(N, dat_dims, tmp_data, data, CFL_SIZE);
+		complex float* tmp_data = md_gpu_move(N, dat_dims, data, CFL_SIZE);
 		md_free(data);
 		data = tmp_data;
 	}
@@ -313,13 +313,36 @@ void noir2_recon(const struct noir2_conf_s* conf, struct noir2_s* noir_ops,
 	complex float* x = NULL;
 	complex float* ref = NULL;
 
-	x = md_alloc_sameplace(1, d1, CFL_SIZE, data);
-	md_clear(1, d1, x, CFL_SIZE);
+	if (is_vptr(img)) {
 
-	if (NULL != img_ref) {
+		void* range[NUM_REGS + 2];
 
-		ref = md_alloc_sameplace(1, d1, CFL_SIZE, data);
-		md_clear(1, d1, ref, CFL_SIZE);
+		int R = 0;
+		range[R++] = (is_vptr_gpu(kspace) ? vptr_move_gpu : vptr_move_cpu)(img);
+
+		for (int i = 0; i < NUM_REGS; i++)
+			if (NULL != sdims[i])
+				range[R++] = md_alloc_sameplace(N + 1, (*sdims[i]), CFL_SIZE, range[0]);
+
+		range[R++] = (is_vptr_gpu(kspace) ? vptr_move_gpu : vptr_move_cpu)(ksens);
+
+		x = vptr_wrap_range(R, range, true);
+
+		if (NULL != img_ref) {
+
+			ref = vptr_alloc_same(x);
+			md_clear(1, d1, ref, CFL_SIZE);
+		}
+	} else {
+
+		x = md_alloc_sameplace(1, d1, CFL_SIZE, data);
+		md_clear(1, d1, x, CFL_SIZE);
+
+		if (NULL != img_ref) {
+
+			ref = md_alloc_sameplace(1, d1, CFL_SIZE, data);
+			md_clear(1, d1, ref, CFL_SIZE);
+		}
 	}
 
 	for (int i = 0; i < NUM_REGS; i++)
@@ -539,21 +562,25 @@ void noir2_recon_noncart(
 
 	struct noir2_s noir_ops = (conf->optimized ? noir2_noncart_optimized_create :noir2_noncart_create)(N, ltrj_dims, NULL, lwgh_dims, weights, bas_dims, basis, msk_dims, mask, lksp_dims, lcim_dims, limg_dims, lkco_dims, lcol_dims, &mconf);
 
+	const void* ref = NULL;
+	if (is_vptr(kspace)) {
+
+		ref = vptr_alloc_sameplace(1, MD_DIMS(1), 1, kspace);
+		vptr_set_gpu(ref, conf->gpu);
+	}
 #ifdef USE_CUDA
-	md_alloc_fun_t my_alloc = conf->gpu ? md_alloc_gpu : md_alloc;
-#else
-	assert(!conf->gpu);
-	md_alloc_fun_t my_alloc = md_alloc;
+	else if (conf->gpu)
+		ref = md_alloc_gpu(1, MD_DIMS(1), 1);
 #endif
 
-	complex float* l_img = 		my_alloc(N, limg_dims, CFL_SIZE);
-	complex float* l_img_ref = 	(!conf->realtime && (NULL == img_ref)) ? NULL : my_alloc(N, limg_dims, CFL_SIZE);
-	complex float* l_sens = 	(NULL == sens) ? NULL : my_alloc(N, lcol_dims, CFL_SIZE);
-	complex float* l_ksens = 	my_alloc(N, lkco_dims, CFL_SIZE);
-	complex float* l_sens_ref = 	(!conf->realtime && (NULL == sens_ref)) ? NULL : my_alloc(N, lkco_dims, CFL_SIZE);
-	complex float* l_kspace = 	my_alloc(N, lksp_dims, CFL_SIZE);
-	complex float* l_wgh = 		(NULL == weights) ? NULL : my_alloc(N, lwgh_dims, CFL_SIZE);
-	complex float* l_trj = 		my_alloc(N, ltrj_dims, CFL_SIZE);
+	complex float* l_img = 		md_alloc_sameplace(N, limg_dims, CFL_SIZE, ref);
+	complex float* l_img_ref = 	(!conf->realtime && (NULL == img_ref)) ? NULL : md_alloc_sameplace(N, limg_dims, CFL_SIZE, ref);
+	complex float* l_sens = 	(NULL == sens) ? NULL : md_alloc_sameplace(N, lcol_dims, CFL_SIZE, ref);
+	complex float* l_ksens = 	md_alloc_sameplace(N, lkco_dims, CFL_SIZE, ref);
+	complex float* l_sens_ref = 	(!conf->realtime && (NULL == sens_ref)) ? NULL : md_alloc_sameplace(N, lkco_dims, CFL_SIZE, ref);
+	complex float* l_kspace = 	md_alloc_sameplace(N, lksp_dims, CFL_SIZE, ref);
+	complex float* l_wgh = 		(NULL == weights) ? NULL : md_alloc_sameplace(N, lwgh_dims, CFL_SIZE, ref);
+	complex float* l_trj = 		md_alloc_sameplace(N, ltrj_dims, CFL_SIZE, ref);
 
 	long pos[N];
 	md_set_dims(N, pos, 0);
@@ -582,7 +609,7 @@ void noir2_recon_noncart(
 		if (conf->realtime) {
 
 			pos_trj[TIME_DIM] = pos_trj[TIME_DIM] % trj_dims[TIME_DIM];
-			
+
 			if (NULL != weights)
 				pos_wgh[TIME_DIM] = pos_wgh[TIME_DIM] % wgh_dims[TIME_DIM];
 
@@ -607,7 +634,7 @@ void noir2_recon_noncart(
 
 			if (NULL != img_ref)
 				md_slice(N, loop_flags, pos, img_dims, l_img_ref, img_ref, CFL_SIZE);
-			
+
 			if (NULL != sens_ref)
 				md_slice(N, loop_flags, pos, kco_dims, l_sens_ref, sens_ref, CFL_SIZE);
 		}
@@ -621,18 +648,18 @@ void noir2_recon_noncart(
 			md_slice(N, loop_flags, pos_wgh, wgh_dims, l_wgh, weights, CFL_SIZE);
 
 		noir2_noncart_update(&noir_ops, N, ltrj_dims, l_trj, lwgh_dims, l_wgh, bas_dims, basis);
-		
+
 		noir2_recon(conf, &noir_ops, N, limg_dims, l_img, l_img_ref, lcol_dims, l_sens, lkco_dims, l_ksens, l_sens_ref, lksp_dims, l_kspace);
 
 		if (NULL != sens)
 			md_copy_block(N, pos, col_dims, sens, lcol_dims, l_sens, CFL_SIZE);
-	
+
 		md_copy_block(N, pos, kco_dims, ksens, lkco_dims, l_ksens, CFL_SIZE);
 		md_copy_block(N, pos, img_dims, img, limg_dims, l_img, CFL_SIZE);
 
 		if (NULL != strm_img)
 			stream_sync(strm_img, N, pos);
-	
+
 	} while (md_next(N, ksp_dims, loop_flags, pos));
 
 	md_free(l_img);
@@ -645,13 +672,14 @@ void noir2_recon_noncart(
 	md_free(l_trj);
 
 	noir2_free(&noir_ops);
+	md_free(ref);
 }
 
 
 void noir2_recon_cart(
 	const struct noir2_conf_s* conf, int N,
 	const long img_dims[N], complex float* img, const complex float* img_ref,
-	const long col_dims[N], complex float* sens, 
+	const long col_dims[N], complex float* sens,
 	const long kco_dims[N], complex float* ksens, const complex float* sens_ref,
 	const long ksp_dims[N], const complex float* kspace,
 	const long pat_dims[N], const complex float* pattern,
@@ -719,7 +747,7 @@ void noir2_recon_cart(
 
 		if (l_pattern != pattern)
 			noir2_cart_update(&noir_ops, N,lpat_dims, l_pattern, bas_dims, basis);
-		
+
 		noir2_recon(conf, &noir_ops, N, limg_dims, l_img, l_img_ref, lcol_dims, l_sens, lkco_dims, l_ksens, l_sens_ref, lksp_dims, l_kspace);
 
 	} while (md_next(N, ksp_dims, conf->loop_flags, pos));

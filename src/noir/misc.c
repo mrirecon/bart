@@ -155,7 +155,7 @@ void postprocess(const long dims[DIMS], bool normalize,
 		long img_output2_strs[DIMS];
 		md_calc_strides(DIMS, img_output2_strs, img_output2_dims, CFL_SIZE);
 
-		complex float* tmp = md_alloc(DIMS, img_output2_dims, CFL_SIZE);
+		complex float* tmp = md_alloc_sameplace(DIMS, img_output2_dims, CFL_SIZE, img);
 
 		postprocess(dims, normalize, sens_strs, sens, img_strs, img, img_output2_dims, img_output2_strs, tmp);
 
@@ -185,7 +185,7 @@ void postprocess(const long dims[DIMS], bool normalize,
 	// image output
 	if (normalize) {
 
-		complex float* buf = md_alloc(DIMS, dims, CFL_SIZE);
+		complex float* buf = md_alloc_sameplace(DIMS, dims, CFL_SIZE, img);
 		md_clear(DIMS, dims, buf, CFL_SIZE);
 
 		if (combine) {
