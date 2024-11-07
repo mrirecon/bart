@@ -2,7 +2,7 @@
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
- 
+
 #include "misc/misc.h"
 #include "misc/types.h"
 
@@ -50,7 +50,7 @@ static struct multiplace_array_s* multiplace_alloc(int D, const long dimensions[
 	result->mpi_cpu = NULL;
 	result->ptr_gpu = NULL;
 	result->mpi_gpu = NULL;
-	
+
 	result->free = true;
 
 	return PTR_PASS(result);
@@ -67,13 +67,13 @@ void multiplace_free(const struct multiplace_array_s* _ptr)
 
 	if (ptr->ptr_ref == ptr->ptr_cpu)
 		ptr->ptr_cpu = NULL;
-	
+
 	if (ptr->ptr_ref == ptr->mpi_cpu)
 		ptr->mpi_cpu = NULL;
 
 	if (ptr->ptr_ref == ptr->ptr_gpu)
 		ptr->ptr_gpu = NULL;
-	
+
 	if (ptr->ptr_ref == ptr->mpi_gpu)
 		ptr->mpi_gpu = NULL;
 
@@ -89,6 +89,16 @@ void multiplace_free(const struct multiplace_array_s* _ptr)
 	xfree(ptr);
 }
 
+static bool is_gpu(const void* ptr)
+{
+#ifdef USE_CUDA
+	return cuda_ondevice(ptr);
+#else
+	(void)ptr;
+	return false;
+#endif
+}
+
 
 const void* multiplace_read(struct multiplace_array_s* ptr, const void* ref)
 {
@@ -101,8 +111,14 @@ const void* multiplace_read(struct multiplace_array_s* ptr, const void* ref)
 
 			if (NULL == ptr->mpi_cpu) {
 
-				ptr->mpi_cpu = vptr_alloc_sameplace(ptr->N, ptr->dims, ptr->size, ref);
-				md_copy(ptr->N, ptr->dims, ptr->mpi_cpu, ptr->ptr_ref, ptr->size);
+				if (!is_vptr(ptr->ptr_ref) && !is_gpu(ptr->ptr_ref)) {
+
+					ptr->mpi_cpu = vptr_wrap_sameplace(ptr->N, ptr->dims, ptr->size, ptr->ptr_ref, ref, false, true);
+				} else {
+
+					ptr->mpi_cpu = vptr_alloc_sameplace(ptr->N, ptr->dims, ptr->size, ref);
+					md_copy(ptr->N, ptr->dims, ptr->mpi_cpu, ptr->ptr_ref, ptr->size);
+				}
 			}
 
 			return ptr->mpi_cpu;
@@ -112,8 +128,14 @@ const void* multiplace_read(struct multiplace_array_s* ptr, const void* ref)
 
 			if (NULL == ptr->mpi_gpu) {
 
-				ptr->mpi_gpu = vptr_alloc_sameplace(ptr->N, ptr->dims, ptr->size, ref);
-				md_copy(ptr->N, ptr->dims, ptr->mpi_gpu, ptr->ptr_ref, ptr->size);
+				if (!is_vptr(ptr->ptr_ref) && is_gpu(ptr->ptr_ref)) {
+
+					ptr->mpi_gpu = vptr_wrap_sameplace(ptr->N, ptr->dims, ptr->size, ptr->ptr_ref, ref, false, true);
+				} else {
+
+					ptr->mpi_gpu = vptr_alloc_sameplace(ptr->N, ptr->dims, ptr->size, ref);
+					md_copy(ptr->N, ptr->dims, ptr->mpi_gpu, ptr->ptr_ref, ptr->size);
+				}
 			}
 
 			return ptr->mpi_gpu;
@@ -123,7 +145,7 @@ const void* multiplace_read(struct multiplace_array_s* ptr, const void* ref)
 
 #ifdef USE_CUDA
 		if (cuda_ondevice(ref)) {
-			
+
 			if (NULL == ptr->ptr_gpu) {
 
 				ptr->ptr_gpu = md_alloc_gpu(ptr->N, ptr->dims, ptr->size);
@@ -133,11 +155,11 @@ const void* multiplace_read(struct multiplace_array_s* ptr, const void* ref)
 			return ptr->ptr_gpu;
 		}
 #endif
-	
+
 		if (NULL == ptr->ptr_cpu) {
 
 			ptr->ptr_cpu = md_alloc(ptr->N, ptr->dims, ptr->size);
-			md_copy(ptr->N, ptr->dims, ptr->mpi_cpu, ptr->ptr_ref, ptr->size);
+			md_copy(ptr->N, ptr->dims, ptr->ptr_cpu, ptr->ptr_ref, ptr->size);
 		}
 
 		return ptr->ptr_cpu;
