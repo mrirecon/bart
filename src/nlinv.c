@@ -34,6 +34,7 @@
 #include "num/fft.h"
 #include "num/init.h"
 #include "num/rand.h"
+#include "num/vptr.h"
 
 #include "noncart/nufft.h"
 #include "linops/linop.h"
@@ -166,12 +167,17 @@ int main_nlinv(int argc, char* argv[argc])
 	bool pprocess = (!real_time_stream && (0 == my_sens_dims[0]));
 	conf.realtime |= real_time_stream;
 
+	struct vptr_hint_s* hint = !real_time_stream && (0 != bart_mpi_split_flags) ? hint_mpi_create(bart_mpi_split_flags, DIMS, ksp_dims) : NULL;
+	if (NULL != hint)
+		kspace = vptr_wrap_cfl(DIMS, ksp_dims, CFL_SIZE, kspace, hint, true, false);
+	vptr_hint_free(hint);
+
 	const complex float* basis = NULL;
 	long bas_dims[DIMS];
 
 	if (NULL != basis_file) {
 
-		basis = load_cfl(basis_file, DIMS, bas_dims);
+		basis = load_cfl_sameplace(basis_file, DIMS, bas_dims, kspace);
 
 	} else {
 
@@ -183,7 +189,7 @@ int main_nlinv(int argc, char* argv[argc])
 
 	if (NULL != psf_file) {
 
-		pattern = load_cfl(psf_file, DIMS, pat_dims);
+		pattern = load_cfl_sameplace(psf_file, DIMS, pat_dims, kspace);
 	} else {
 
 		md_select_dims(DIMS, ~COIL_FLAG, pat_dims, ksp_dims);
@@ -191,6 +197,8 @@ int main_nlinv(int argc, char* argv[argc])
 		if (!real_time_stream) {
 
 			pattern = anon_cfl("", DIMS, pat_dims);
+			if (is_vptr(kspace))
+				pattern = vptr_wrap_cfl(DIMS, pat_dims, CFL_SIZE, pattern, vptr_get_hint(kspace), true, false);
 			estimate_pattern(DIMS, ksp_dims, COIL_FLAG, pattern, kspace);
 		}
 	}
@@ -230,7 +238,7 @@ int main_nlinv(int argc, char* argv[argc])
 		long trj_dims[DIMS];
 		long psf_dims[DIMS];
 
-		complex float* traj = load_cfl(trajectory, DIMS, trj_dims);
+		complex float* traj = load_cfl_sameplace(trajectory, DIMS, trj_dims, kspace);
 
 		if (0 == md_calc_size(3, my_img_dims)) {
 
@@ -271,6 +279,8 @@ int main_nlinv(int argc, char* argv[argc])
 		md_copy_dims(DIMS, pat_dims, psf_dims);
 
 		pattern = anon_cfl("", DIMS, pat_dims);
+		if (is_vptr(kspace))
+			pattern = vptr_wrap_cfl(DIMS, pat_dims, CFL_SIZE, pattern, vptr_get_hint(kspace), true, false);
 
 		md_copy(DIMS, pat_dims, pattern, psf, CFL_SIZE);
 
@@ -334,7 +344,10 @@ int main_nlinv(int argc, char* argv[argc])
 
 		conf.noncart = true;
 
-		traj = (real_time_stream ? load_async_cfl : load_cfl)(trajectory, DIMS, trj_dims);
+		if (real_time_stream)
+			traj = load_async_cfl(trajectory, DIMS, trj_dims);
+		else
+			traj = load_cfl_sameplace(trajectory, DIMS, trj_dims, kspace);
 
 		md_copy_dims(3, dims, my_img_dims);
 
@@ -406,19 +419,27 @@ int main_nlinv(int argc, char* argv[argc])
 
 	if (real_time_stream)
 		img = create_async_cfl(img_file, TIME_FLAG, DIMS, img_dims);
-	else
+	else {
 		img = ((!pprocess) ? create_cfl : anon_cfl)(img_file, DIMS, img_dims);
+		if (is_vptr(kspace))
+			img = vptr_wrap_cfl(DIMS, img_dims, CFL_SIZE, ((!pprocess) ? create_cfl : anon_cfl)(img_file, DIMS, img_dims), vptr_get_hint(kspace), true, true);
+	}
 
 	long msk_dims[DIMS];
 	md_select_dims(DIMS, FFT_FLAGS, msk_dims, img_dims);
 
 	complex float* mask = NULL;
 
-	complex float* ksens = md_alloc(DIMS, sens_dims, CFL_SIZE);
+	complex float* ksens = md_alloc_sameplace(DIMS, sens_dims, CFL_SIZE, kspace);
 	complex float* sens = NULL;
 
-	if (pprocess || sens_file)
+	if (pprocess || sens_file) {
+
 		sens = ((NULL != sens_file) ? create_cfl : anon_cfl)(sens_file, DIMS, sens_dims);
+
+		if (is_vptr(kspace))
+			sens = vptr_wrap_cfl(DIMS, sens_dims, CFL_SIZE, sens, vptr_get_hint(kspace) , true, true);
+	}
 
 	// initialization
 	if (NULL != init_file) {
@@ -426,7 +447,7 @@ int main_nlinv(int argc, char* argv[argc])
 		long skip = md_calc_size(DIMS, img_dims);
 		long init_dims[DIMS];
 
-		complex float* init = load_cfl(init_file, DIMS, init_dims);
+		complex float* init = load_cfl_sameplace(init_file, DIMS, init_dims, kspace);
 
 		assert(md_calc_size(DIMS, init_dims) == (md_calc_size(DIMS, img_dims) + md_calc_size(DIMS, sens_dims)));
 
@@ -506,8 +527,7 @@ int main_nlinv(int argc, char* argv[argc])
 		if (combine && (0 == my_sens_dims[0]))
 			img_output_dims[MAPS_DIM] = 1;
 
-		complex float* img_output = create_cfl(img_file, DIMS, img_output_dims);
-
+		complex float* img_output = create_cfl_sameplace(img_file, DIMS, img_output_dims, img);
 		if (0 == my_sens_dims[0]) {
 
 			md_clear(DIMS, img_output_dims, img_output, CFL_SIZE);
