@@ -144,7 +144,7 @@ static struct noir2_s noir2_init_create(int N,
 							wgh_dims, conf->wght_flags,
 							(conf->ret_os_coils ? 1. : conf->oversampling_coils),
 							conf->a, conf->b, conf->c);
-		
+
 		ret.lop_coil2 = linop_loop_F(N, tlop_dims, lop_coil2);
 	} else {
 
@@ -516,9 +516,6 @@ struct noir2_opt_s {
 	const struct linop_s* lop_fft_col;
 	const struct linop_s* lop_psf;
 
-	struct linop_s* lop_psf_cache_nufft;
-	struct linop_s* lop_psf_cache_fft;
-
 	complex float* img;
 	complex float* col;
 
@@ -629,7 +626,7 @@ static void noir2_opt_nrm(const nlop_data_t* _data, int /*o*/, int /*i*/, comple
 
 	linop_forward_unchecked(d->lop_fft, d->cim_buf, d->cim_buf_zeropad);
 	linop_forward_unchecked(d->lop_psf, d->cim_buf, d->cim_buf);
-	linop_adjoint_unchecked(d->lop_fft, d->cim_buf, d->cim_buf);	
+	linop_adjoint_unchecked(d->lop_fft, d->cim_buf, d->cim_buf);
 
 	md_ztenmulc2(d->N, d->max_dims, d->img_strs, dimg, d->cim_strs, d->cim_buf + d->cim_offset, d->col_strs, d->col + d->col_offset);
 
@@ -662,9 +659,6 @@ static void nlop_noir_opt_del(const nlop_data_t* _data)
 	linop_free(d->lop_fft);
 	linop_free(d->lop_fft_col);
 	linop_free(d->lop_psf);
-
-	linop_free(d->lop_psf_cache_nufft);
-	linop_free(d->lop_psf_cache_fft);
 
 	md_free(d->img);
 	md_free(d->col);
@@ -783,9 +777,6 @@ static const struct nlop_s* nlop_noir_opt_create(int N,
 
 	d->col_offset = md_calc_offset(3, MD_STRIDES(3, col_dims_os, 1), pos);
 
-	d->lop_psf_cache_nufft = NULL;
-	d->lop_psf_cache_fft = linop_fftc_create(3, cim_dims_os, FFT_FLAGS);
-
 	return nlop_create(N, out_dims, 1, MD_DIMS(md_calc_size(N, img_dims) + md_calc_size(N, kco_dims)), CAST_UP(PTR_PASS(d)),
 					noir2_opt_fun, noir2_opt_der, noir2_opt_adj, noir2_opt_nrm, NULL, nlop_noir_opt_del);
 }
@@ -864,11 +855,11 @@ struct noir2_s noir2_noncart_optimized_create(int N,
 	long max_dims[N];
 	long cim_dims_os[N];
 	long col_dims_os[N];
-	
+
 	md_max_dims(N, ~0UL, max_dims, img_dims, col_dims);
 	md_copy_dims(N, cim_dims_os, cim_dims);
 	md_copy_dims(N, col_dims_os, col_dims);
-	
+
 	for (int i = 0; i < 3; i++) {
 
 		if (1 < img_dims[i]) {
@@ -907,10 +898,10 @@ void noir2_noncart_update(struct noir2_s* model, int N,
 		long psf_dims[N];
 		md_select_dims(N, FFT_FLAGS, psf_dims, d->cim_dims_os);
 
-		complex float* psf = compute_psf_cached(N, psf_dims, trj_dims, ttraj, MD_SINGLETON_DIMS(N), NULL, wgh_dims, weights, true, false, &(d->lop_psf_cache_nufft));
+		complex float* psf = compute_psf(N, psf_dims, trj_dims, ttraj, MD_SINGLETON_DIMS(N), NULL, wgh_dims, weights, true, false);
 		md_free(ttraj);
-		
-		linop_forward_unchecked(d->lop_psf_cache_fft, psf, psf);
+
+		fftuc(N, psf_dims, FFT_FLAGS, psf, psf);
 		fftscale(N, psf_dims, FFT_FLAGS, psf, psf);
 		fftscale(N, psf_dims, FFT_FLAGS, psf, psf);
 		md_zsmul(N, psf_dims, psf, psf, 4.);
