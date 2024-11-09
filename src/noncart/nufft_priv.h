@@ -63,7 +63,6 @@ struct nufft_data {
 	int cycle;
 
 	struct linop_s* lop_nufft_psf;
-	struct linop_s* lop_fftuc_psf;
 };
 
 
