@@ -28,6 +28,7 @@
 #include "num/fft.h"
 #include "num/shuffle.h"
 #include "num/ops.h"
+#include "num/delayed.h"
 #include "num/multiplace.h"
 #include "num/triagmat.h"
 #include "num/compress.h"
@@ -679,7 +680,7 @@ complex float* compute_psf2(int N, const long psf_dims[N + 1], unsigned long fla
 	bool gpu = false;
 #endif
 
-	if (upper_triag || lowmem || gpu)
+	if (upper_triag || lowmem || gpu || is_delayed(traj))
 		return compute_psf2_decomposed(N, psf_dims, flags,
 					       trj_dims, traj, bas_dims, basis, wgh_dims, weights,
 					       periodic, lowmem, upper_triag);
