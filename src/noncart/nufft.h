@@ -15,6 +15,8 @@ struct nufft_conf_s {
 	unsigned long cfft;
 	_Bool decomp;
 	_Bool nopsf;
+	_Bool upper_triag;
+	_Bool real;
 
 	_Bool precomp_linphase;
 	_Bool precomp_fftmod;
