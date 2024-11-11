@@ -126,7 +126,8 @@ int main_affinereg(int argc, char* argv[argc])
 		trafo = (1 == rdims[2]) ? nlop_affine_translation_2D() : nlop_affine_translation_3D();
 		break;
 
-	assert(0);
+	default:
+		unreachable();
 	}
 
 	long aff_dims[DIMS] = { 3, 4, [ 2 ... DIMS - 1 ] = 1 };
