@@ -917,6 +917,15 @@ static bool simple_z3op(int N_checks, struct simple_z3op_check strided_calls[N_c
 	return true;
 }
 
+static void reorder_long(int N, int ord[N], long x[N])
+{
+	long tmp[N];
+	memcpy(tmp, x, (size_t)(N * (long)sizeof(long)));
+
+	for (int i = 0; i < N; i++)
+		x[i] = tmp[ord[i]];
+}
+
 
 static bool simple_3op(int N_checks, struct simple_3op_check strided_calls[N_checks], const char* fun_name,
 		int N, const long _dims[N],
@@ -946,6 +955,30 @@ static bool simple_3op(int N_checks, struct simple_3op_check strided_calls[N_che
 
 	long (*nstr[3])[N?N:1] = { (long (*)[N?N:1])ostrs, (long (*)[N?N:1])istrs1, (long (*)[N?N:1])istrs2 };
 	N = simplify_dims(3, N, dims, nstr);
+
+	unsigned long riflags = 0;
+
+	for (int i = 0; i < N; i++)
+		if (   ((0 == ostrs[i]) || (long)FL_SIZE == ostrs[i])
+		    && ((0 == istrs1[i]) || (long)FL_SIZE == istrs1[i])
+		    && ((0 == istrs2[i]) || (long)FL_SIZE == istrs2[i]))
+			riflags = MD_SET(riflags, i);
+
+	if (0 != riflags && !MD_IS_SET(riflags, 0)) {
+
+		int perm[N];
+		perm[0] = md_min_idx(riflags);
+
+		for (int i = 0, ip = 1; i < N; i++)
+			if (i != perm[0])
+				perm[ip++] = i;
+
+		reorder_long(N, perm, dims);
+		reorder_long(N, perm, ostrs);
+		reorder_long(N, perm, istrs1);
+		reorder_long(N, perm, istrs2);
+	}
+
 
 	if ((1 == N) && (FL_SIZE == ostrs[0]) && (FL_SIZE == istrs1[0]) && (FL_SIZE == istrs2[0]))
 		return false;
