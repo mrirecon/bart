@@ -28,6 +28,8 @@
 #define MAKE_ARRAY(x, ...) ((__typeof__(x)[]){ x, __VA_ARGS__ })
 #define ARRAY_SIZE(x)	(sizeof(x) / sizeof(x[0]))
 
+#define unreachable() __builtin_trap()
+
 #define SWAP(x, y) do { __auto_type temp = x; x = y; y = temp; } while (0)
 
 #include "misc/cppwrap.h"
