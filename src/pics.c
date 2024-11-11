@@ -642,15 +642,6 @@ int main_pics(int argc, char* argv[argc])
 			md_zsmul(DIMS, img_dims, image_start, image_start, 1. / scaling);
 	}
 
-	double maxeigen = 1.;
-
-	if (eigen && (ALGO_PRIDU != algo)) {
-
-		// Maxeigen in PRIDU must include regularizations
-		maxeigen = estimate_maxeigenval_sameplace(forward_op->normal, 30, kspace);
-
-		debug_printf(DP_INFO, "Maximum eigenvalue: %.2e\n", maxeigen);
-	}
 
 
 	// initialize prox functions
@@ -701,15 +692,9 @@ int main_pics(int argc, char* argv[argc])
 		if (-1. != step)
 			debug_printf(DP_INFO, "Stepsize ignored.\n");
 
-	step /= maxeigen;
-
-
 	// initialize algorithm
 
-	struct iter it = italgo_config(algo, nr_penalties, ropts.regs, maxiter, step, hogwild, admm, fista, scaling, NULL != image_truth);
-
-	if (eigen && (ALGO_PRIDU == algo))
-		CAST_DOWN(iter_chambolle_pock_conf, it.iconf)->maxeigen_iter = 30;
+	struct iter it = italgo_config(algo, nr_penalties, ropts.regs, maxiter, step, eigen ? 20 : 0, hogwild, admm, fista, scaling, NULL != image_truth);
 
 	if (ALGO_CG == algo)
 		nr_penalties = 0;
