@@ -21,10 +21,11 @@ struct nufft_data {
 	struct multiplace_array_s* linphase;	///< Linear phase for pruned FFT
 	struct multiplace_array_s* traj;	///< Trajectory
 	struct multiplace_array_s* roll;	///< Roll-off factor
-	struct multiplace_array_s* psf;	///< Point-spread function (2x size)
+	struct multiplace_array_s* psf;		///< Point-spread function (2x size)
 	struct multiplace_array_s* fftmod;	///< FFT modulation for centering
 	struct multiplace_array_s* weights;	///< Weights, ex, density compensation
 	struct multiplace_array_s* basis;
+	struct multiplace_array_s* compress;	///< Compression index
 
 	float width;			///< Interpolation kernel width
 	double beta;			///< Kaiser-Bessel beta parameter
@@ -43,6 +44,7 @@ struct nufft_data {
 	long* out_dims;
 	long* ciT_dims;			///< Coil image dimension
 	long* cmT_dims;			///< Coil + linear phase dimension
+	long* com_dims;			///< Compression index dimensions
 
 	//!
 	long* cm2_dims;			///< 2x oversampled coil image dimension
@@ -58,6 +60,7 @@ struct nufft_data {
 	long* wgh_strs;
 	long* bas_strs;
 	long* out_strs;
+	long* com_strs;			///< Compression index dimensions
 
 	const struct linop_s* cfft_op;   ///< Pcycle FFT operator
 	int cycle;

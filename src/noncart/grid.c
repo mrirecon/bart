@@ -254,7 +254,7 @@ static void grid2_dims(int D, const long trj_dims[D], const long ksp_dims[D], co
 	assert(D >= 4);
 	assert(md_check_compat(D - 3, ~0UL, grid_dims + 3, ksp_dims + 3));
 //	assert(md_check_compat(D - 3, ~(MD_BIT(0) | MD_BIT(1)), trj_dims + 3, ksp_dims + 3));
-	assert(md_check_bounds(D - 3, ~0UL, trj_dims + 3, ksp_dims + 3));
+	assert(md_check_compat(D - 3, ~0UL, trj_dims + 3, ksp_dims + 3));
 
 	assert(3 == trj_dims[0]);
 	assert(1 == trj_dims[3]);
