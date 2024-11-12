@@ -248,7 +248,6 @@ Build_wasm:
         "FFTW_BASE=$DEPS_FOLDER\n
         BLAS_BASE=$DEPS_FOLDER\n
         CC=emcc\n
-        CFLAGS+=-O3 -fblocks\n
         LDFLAGS=-s EXPORTED_FUNCTIONS=_main,__Block_object_dispose -s ALLOW_MEMORY_GROWTH=1 -s MAXIMUM_MEMORY=4GB -s INITIAL_MEMORY=256MB -s TOTAL_STACK=64MB $DEPS_FOLDER/lib/libfftw3f.a $DEPS_FOLDER/lib/libopenblas.a $DEPS_FOLDER/usr/local/lib/libBlocksRuntime.a -lnodefs.js -lnoderawfs.js\n
         OPENBLAS=1\n
         FORTRAN=0\n
