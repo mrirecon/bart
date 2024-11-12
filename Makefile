@@ -344,7 +344,7 @@ MODULES_interpolate = -lmotion -liter -lnlops -llinops
 
 
 
-GCCVERSION11 := $(shell expr `$(CC) -dumpversion | cut -f1 -d.` \>= 11)
+GCCVERSION12 := $(shell expr `$(CC) -dumpversion | cut -f1 -d.` \>= 12)
 GCCVERSION14 := $(shell expr `$(CC) -dumpversion | cut -f1 -d.` \>= 14)
 
 # clang
@@ -363,10 +363,12 @@ endif
 else
 # only add if not clang, as it doesn't understand this:
 ifeq ($(GCCVERSION14), 1)
-    CFLAGS += -Wuseless-cast -Wjump-misses-init
+CFLAGS += -Wuseless-cast -Wjump-misses-init
 else
-ifeq ($(GCCVERSION11), 1)
-    CFLAGS += -Wno-vla-parameter -Wno-nonnull -Wno-maybe-uninitialized
+ifeq ($(GCCVERSION12), 1)
+CFLAGS += -Wno-vla-parameter -Wno-nonnull -Wno-maybe-uninitialized
+else
+$(error ERROR: GCC version 12 or newer is required)
 endif
 endif
 endif
@@ -430,7 +432,7 @@ endif
 
 
 CPPFLAGS += $(DEPFLAG) -iquote $(srcdir)/
-CFLAGS += -std=gnu11
+CFLAGS += -std=gnu17
 CXXFLAGS += -std=c++14
 
 
