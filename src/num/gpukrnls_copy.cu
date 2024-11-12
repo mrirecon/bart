@@ -248,3 +248,75 @@ void cuda_copy_ND(int D, const long dims[], const long ostrs[], void* dst, const
 	}
 }
 
+
+static __device__ void mmemcpy(void* dst, const void* src, size_t size)
+{
+	switch (size) {
+
+		case 1:
+			*((uint8_t*)dst) = *((uint8_t*)src);
+			break;
+
+		case 2:
+			*((uint16_t*)dst) = *((uint16_t*)src);
+			break;
+
+		case 4:
+			*((uint32_t*)dst) = *((uint32_t*)src);
+			break;
+
+		case 8:
+			*((uint64_t*)dst) = *((uint64_t*)src);
+			break;
+
+		default:
+			memcpy(dst, src, size);
+	}
+}
+
+
+#define BLOCKSIZE 1024
+
+static int blocksize(long N)
+{
+	return BLOCKSIZE;
+}
+
+static long gridsize(long N)
+{
+	// to ensure that "start" does not overflow we need to restrict gridsize!
+	return MIN((N + BLOCKSIZE - 1) / BLOCKSIZE, 65536 - 1);
+}
+
+
+__global__ static void decompress_kern(long istride, long N, long dcstrs, void* dst, long istrs, const long* index, const void* src, size_t size)
+{
+	int start = threadIdx.x + blockDim.x * blockIdx.x;
+	int stride = blockDim.x * gridDim.x;
+
+	for (long i = start; i < N; i += stride)
+		if (index[i] >= 0)
+			memcpy((uint8_t*)dst + dcstrs * i, (uint8_t*)src + index[istrs * i] * istride, size);
+}
+
+extern "C" void cuda_decompress(long stride, long N, long dcstrs, void* dst, long istrs, const long* index, const void* src, size_t size)
+{
+	decompress_kern<<<gridsize(N), blocksize(N), blocksize(N) * sizeof(float), cuda_get_stream()>>>(stride, N, dcstrs, dst, istrs, index, src, size);
+}
+
+
+__global__ static void compress_kern(long istride, long N, void* dst, long istrs, const long* index, long dcstrs, const void* src, size_t size)
+{
+	int start = threadIdx.x + blockDim.x * blockIdx.x;
+	int stride = blockDim.x * gridDim.x;
+
+	for (long i = start; i < N; i += stride)
+		if (index[i] >= 0)
+			memcpy((uint8_t*)dst + index[istrs * i] * istride, (uint8_t*)src + dcstrs * i, size);
+}
+
+extern "C" void cuda_compress(long stride, long N, void* dst, long istrs, const long* index, long dcstrs, const void* src, size_t size)
+{
+	compress_kern<<<gridsize(N), blocksize(N), blocksize(N) * sizeof(float), cuda_get_stream()>>>(stride, N, dst, istrs, index, dcstrs, src, size);
+}
+
