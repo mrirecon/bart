@@ -68,39 +68,39 @@ tests/test-signal-fse: signal nrmse
 	touch $@
 
 tests/test-signal-fse-epg: signal epg extract nrmse
-	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/signal -T -n 8 -e 0.01 -r 12 -f 120 -1 1:1:1 -2 0.1:0.1:1 sig.ra	;\
-	$(TOOLDIR)/epg -C -n 7 -e 0.01 -r 12 -f 120 -1 1 -2 0.1 sig2.ra	;\
-	$(TOOLDIR)/extract 5 1 8 sig.ra sig3.ra					;\
-	$(TOOLDIR)/nrmse -t 0.00001 sig2.ra sig3.ra			    	;\
+	$(TOOLDIR)/epg -C -n 7 -e 0.01 -r 12 -f 120 -1 1 -2 0.1 sig2.ra			;\
+	$(TOOLDIR)/extract 5 1 8 sig.ra sig3.ra						;\
+	$(TOOLDIR)/nrmse -t 0.00001 sig2.ra sig3.ra			    		;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
 tests/test-signal-ir-se: signal ones scale slice nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
 	$(TOOLDIR)/signal -S -I -i 0.5 -n 3 -e 0.0001 -r 100 -1 3:3:1 -2 1000:1000:1 sig.ra	;\
-	$(TOOLDIR)/ones 1 1 one.ra				;\
-	$(TOOLDIR)/scale -- -1 one.ra ref0.ra			    	;\
-	$(TOOLDIR)/slice 5 0 sig.ra t0.ra ;\
+	$(TOOLDIR)/ones 1 1 one.ra						;\
+	$(TOOLDIR)/scale -- -1 one.ra ref0.ra			    		;\
+	$(TOOLDIR)/slice 5 0 sig.ra t0.ra 					;\
 	$(TOOLDIR)/nrmse -t 0.00001 t0.ra ref0.ra			    	;\
 	$(TOOLDIR)/scale -- -0.692963 one.ra ref1.ra			    	;\
-	$(TOOLDIR)/slice 5 1 sig.ra t1.ra ;\
+	$(TOOLDIR)/slice 5 1 sig.ra t1.ra 					;\
 	$(TOOLDIR)/nrmse -t 0.00001 t1.ra ref1.ra			    	;\
 	$(TOOLDIR)/scale -- -0.4330626 one.ra ref2.ra			    	;\
-	$(TOOLDIR)/slice 5 2 sig.ra t2.ra ;\
+	$(TOOLDIR)/slice 5 2 sig.ra t2.ra 					;\
 	$(TOOLDIR)/nrmse -t 0.00001 t2.ra ref2.ra			    	;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
 tests/test-signal-se-single: signal slice nrmse
-	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/signal -S -i 0.5 -n 3 -e 0.01 -r 100 -1 3:3:1 -2 0.01:0.01:1 sig.ra	;\
 	$(TOOLDIR)/signal -S -i 0.5 -n 1 -e 0.01 -r 100 -1 3:3:1 -2 0.01:0.01:1 sig2.ra	;\
 	$(TOOLDIR)/signal -S -i 0.5 -n 1 -e 0.02 -r 100 -1 3:3:1 -2 0.01:0.01:1 sig3.ra	;\
-	$(TOOLDIR)/slice 5 1 sig.ra t1.ra ;\
-	$(TOOLDIR)/nrmse -t 0.00001 t1.ra sig2.ra			    	;\
-	$(TOOLDIR)/slice 5 2 sig.ra t2.ra ;\
-	$(TOOLDIR)/nrmse -t 0.00001 t2.ra sig3.ra			    	;\
+	$(TOOLDIR)/slice 5 1 sig.ra t1.ra 						;\
+	$(TOOLDIR)/nrmse -t 0.00001 t1.ra sig2.ra			    		;\
+	$(TOOLDIR)/slice 5 2 sig.ra t2.ra 						;\
+	$(TOOLDIR)/nrmse -t 0.00001 t2.ra sig3.ra			    		;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
@@ -130,3 +130,4 @@ TESTS += tests/test-signal-se tests/test-signal-ir-se
 TESTS += tests/test-signal-fse tests/test-signal-fse-epg
 TESTS += tests/test-signal-se-single tests/test-signal-ir-se-single
 TESTS += tests/test-signal-LL-short-TR-approx
+

@@ -61,8 +61,8 @@ int main_fft(int argc, char* argv[argc])
 	complex float* idata = load_cfl(in_file, DIMS, dims);
 	complex float* data = create_cfl(out_file, DIMS, dims);
 
-
 	md_copy(DIMS, dims, data, idata, sizeof(complex float));
+
 	unmap_cfl(DIMS, dims, idata);
 
 	if (unitary)
@@ -74,5 +74,4 @@ int main_fft(int argc, char* argv[argc])
 
 	return 0;
 }
-
 

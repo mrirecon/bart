@@ -2,7 +2,9 @@
 #include <complex.h>
 #include <math.h>
 #include <assert.h>
+
 #include "misc/mri.h"
+
 #include "num/flpmath.h"
 
 #include "simu/epg.h"
@@ -88,3 +90,4 @@ static bool test_hyperecho_epg(void)
 }
 
 UT_REGISTER_TEST(test_hyperecho_epg);
+
