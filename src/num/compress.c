@@ -7,12 +7,14 @@
 
 #include "misc/debug.h"
 #include "misc/misc.h"
+#include "misc/types.h"
 
 #include "num/multind.h"
 #ifdef USE_CUDA
 #include "num/gpuops.h"
 #include "num/gpukrnls_copy.h"
 #endif
+#include "num/vptr_fun.h"
 
 #include "compress.h"
 
@@ -89,9 +91,19 @@ static void compress_kern(long stride, long N, void* dst, long istrs, const long
 }
 
 
+struct vptr_decompress_s {
 
-static void md_decompress2_int(int N, int D, const long* dims[N], const long* strs[N], void* args[N], size_t size)
+	INTERFACE(vptr_fun_data_t);
+	size_t size;
+};
+
+DEF_TYPEID(vptr_decompress_s);
+
+
+static void md_decompress2_int(vptr_fun_data_t* _data, int N, int D, const long* dims[N], const long* strs[N], void* args[N])
 {
+	auto d = CAST_DOWN(vptr_decompress_s, _data);
+
 	const long* odims = dims[0];
 	const long* idims = dims[1];
 	const long* mdims = dims[2];
@@ -150,17 +162,27 @@ static void md_decompress2_int(int N, int D, const long* dims[N], const long* st
 
 #ifdef USE_CUDA
 		if (gpu)
-			cuda_decompress(istrs[flat_idx], merge_size, ostrs[midx], tdst, mstrs[midx] / (long)sizeof(long), tindex, tsrc, size);
+			cuda_decompress(istrs[flat_idx], merge_size, ostrs[midx], tdst, mstrs[midx] / (long)sizeof(long), tindex, tsrc, d->size);
 		else
 #endif
-		decompress_kern(istrs[flat_idx], merge_size, ostrs[midx], tdst, mstrs[midx] / (long)sizeof(long), tindex, tsrc, size);
+		decompress_kern(istrs[flat_idx], merge_size, ostrs[midx], tdst, mstrs[midx] / (long)sizeof(long), tindex, tsrc, d->size);
 
 	} while (md_next(D, odims, ~merge_flags, pos));
 }
 
+struct vptr_compress_s {
 
-static void md_compress2_int(int N, int D, const long* dims[N], const long* strs[N], void* args[N], size_t size)
+	INTERFACE(vptr_fun_data_t);
+	size_t size;
+};
+
+DEF_TYPEID(vptr_compress_s);
+
+
+static void md_compress2_int(vptr_fun_data_t* _data, int N, int D, const long* dims[N], const long* strs[N], void* args[N])
 {
+	auto d = CAST_DOWN(vptr_compress_s, _data);
+
 	const long* odims = dims[0];
 	const long* idims = dims[1];
 	const long* mdims = dims[2];
@@ -221,10 +243,10 @@ static void md_compress2_int(int N, int D, const long* dims[N], const long* strs
 
 #ifdef USE_CUDA
 		if (gpu)
-			cuda_compress(ostrs[flat_idx], merge_size, tdst, mstrs[midx] / (long)sizeof(long), tindex, ostrs[midx], tsrc, size);
+			cuda_compress(ostrs[flat_idx], merge_size, tdst, mstrs[midx] / (long)sizeof(long), tindex, ostrs[midx], tsrc, d->size);
 		else
 #endif
-		compress_kern(ostrs[flat_idx], merge_size, tdst, mstrs[midx] / (long)sizeof(long), tindex, ostrs[midx], tsrc, size);
+		compress_kern(ostrs[flat_idx], merge_size, tdst, mstrs[midx] / (long)sizeof(long), tindex, ostrs[midx], tsrc, d->size);
 
 	} while (md_next(D, idims, ~merge_flags, pos));
 }
@@ -236,15 +258,32 @@ void md_decompress2(int N, const long odims[N], const long ostrs[N], void* dst, 
 	if (NULL != fill)
 		md_fill2(N, odims, ostrs, dst, fill, size);
 
-	md_decompress2_int(3, N, (const long*[3]) { odims, idims, mdims }, (const long*[3]) { ostrs, istrs, mstrs },
-			    (void* [3]) { dst, (void*)src, (void*)index}, size);
+	PTR_ALLOC(struct vptr_decompress_s, _d);
+	SET_TYPEID(vptr_decompress_s, _d);
+	_d->INTERFACE.del = NULL;
+	_d->size = size;
+
+	unsigned long lflags = ~md_nontriv_strides(N, mstrs);
+
+	// 0 is read as not completely over written
+	exec_vptr_fun_gen(md_decompress2_int, CAST_UP(PTR_PASS(_d)), 3, N, lflags, MD_BIT(0), MD_BIT(0) | MD_BIT(1) | MD_BIT(2),
+				(const long*[3]) { odims, idims, mdims }, (const long*[3]) { ostrs, istrs, mstrs },
+				(void* [3]) { dst, (void*)src, (void*)index}, (size_t[3]) { size, size, sizeof(long)}, true);
 }
 
 
 void md_compress2(int N, const long odims[N], const long ostrs[N], void* dst, const long idims[N], const long istrs[N], const void* src, const long mdims[N], const long mstrs[N], const long* index, size_t size)
 {
-	md_compress2_int(3, N, (const long*[3]) { odims, idims, mdims }, (const long*[3]) { ostrs, istrs, mstrs },
-			 (void* [3]) { dst, (void*)src, (void*)index}, size);
+	PTR_ALLOC(struct vptr_compress_s, _d);
+	SET_TYPEID(vptr_compress_s, _d);
+	_d->INTERFACE.del = NULL;
+	_d->size = size;
+
+	unsigned long lflags = ~md_nontriv_strides(N, mstrs);
+
+	exec_vptr_fun_gen(md_compress2_int, CAST_UP(PTR_PASS(_d)), 3, N, lflags, MD_BIT(0), MD_BIT(1) | MD_BIT(2),
+				(const long*[3]) { odims, idims, mdims }, (const long*[3]) { ostrs, istrs, mstrs },
+				(void* [3]) { dst, (void*)src, (void*)index}, (size_t[3]) { size, size, sizeof(long)}, true);
 }
 
 
