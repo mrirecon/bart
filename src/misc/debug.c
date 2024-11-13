@@ -49,7 +49,7 @@
 double timestamp(void)
 {
 	struct timeval tv;
-	gettimeofday(&tv, 0); // more accurate than <time.h>
+	gettimeofday(&tv, NULL); // more accurate than <time.h>
 
 	return (double)tv.tv_sec + 1e-6 * (double)tv.tv_usec;
 }

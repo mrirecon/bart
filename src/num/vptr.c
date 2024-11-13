@@ -247,7 +247,7 @@ static struct mem_s* vptr_create(int N, const long dims[N], size_t size, struct 
 {
 	long len = md_calc_size(N, dims) * (long)size;
 
-	void* ptr = mmap(0, (size_t)len, PROT_NONE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+	void* ptr = mmap(NULL, (size_t)len, PROT_NONE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
 
 	PTR_ALLOC(struct mem_s, x);
 

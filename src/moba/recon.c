@@ -294,7 +294,7 @@ static void recon(const struct moba_conf* conf, struct moba_conf_s* data,
 	mconf.b = conf->sobolev_b;
 	mconf.cnstcoil_flags = TE_FLAG | CSHIFT_FLAG;
 
-	struct mobamod nl = { 0 };
+	struct mobamod nl = { };
 
 	switch (conf->mode) {
 

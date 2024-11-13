@@ -2391,7 +2391,7 @@ void* md_alloc_sameplace(int D, const long dimensions[D], size_t size, const voi
 #ifdef USE_CUDA
 	return (cuda_ondevice(ptr) ? md_alloc_gpu : md_alloc)(D, dimensions, size);
 #else
-	assert(0 != ptr);
+	assert(NULL != ptr);
 	return md_alloc(D, dimensions, size);
 #endif
 }

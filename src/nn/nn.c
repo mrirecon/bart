@@ -794,7 +794,7 @@ void nn_export_graph(const char* filename, nn_t op)
 	FILE *fp;
 	fp = fopen(filename, "w+");
 
-	assert(0 != fp);
+	assert(NULL != fp);
 
 	fprintf(fp, "digraph {\nnewrank=true;\n");
 	fprintf(fp, "{\n%s}\n", str);

@@ -135,7 +135,7 @@ extern const struct nlop_s* nn_batchgen_create(struct bat_gen_conf_s* config, nn
 
 		if (IN_BATCH_GENERATOR == in_types[i]) {
 
-			assert(0 != names[i]);
+			assert(NULL != names[i]);
 
 			N = MAX(N, nn_generic_domain(network, 0, names[i])->N);
 			D++;

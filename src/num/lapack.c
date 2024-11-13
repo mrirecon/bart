@@ -134,7 +134,7 @@ void lapack_schur(long N, complex float W[N], complex float VS[N][N], complex fl
 	int sdim = 0;
 
 	// On output, A overwritten by Schur form T
-	LAPACKE(cgees, 'V', 'N', 0, N, &A[0][0], N, &sdim, &W[0], &VS[0][0], N);
+	LAPACKE(cgees, 'V', 'N', NULL, N, &A[0][0], N, &sdim, &W[0], &VS[0][0], N);
 }
 
 void lapack_schur_double(long N, complex double W[N], complex double VS[N][N], complex double A[N][N])
@@ -142,7 +142,7 @@ void lapack_schur_double(long N, complex double W[N], complex double VS[N][N], c
 	int sdim = 0;
 
 	// On output, A overwritten by Schur form T
-	LAPACKE(zgees, 'V', 'N', 0, N, &A[0][0], N, &sdim, &W[0], &VS[0][0], N);
+	LAPACKE(zgees, 'V', 'N', NULL, N, &A[0][0], N, &sdim, &W[0], &VS[0][0], N);
 }
 
 // Solves the complex Sylvester matrix equation

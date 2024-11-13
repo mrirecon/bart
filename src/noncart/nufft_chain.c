@@ -210,7 +210,7 @@ extern struct linop_s* nufft_create_chain(int N,
 	
 	ret = linop_chain_FF(ret, linop_fftc_create(N, os_cim_dims, flags));
 
-	if (0 != basis) {
+	if (NULL != basis) {
 
 		long ksp_max_dims[N];
 		md_max_dims(N, ~0UL, ksp_max_dims, ksp_dims, bas_dims);
@@ -218,6 +218,7 @@ extern struct linop_s* nufft_create_chain(int N,
 
 		ret = linop_chain_FF(ret, linop_interpolate_kb_create(N, flags, ksp_max_dims, os_cim_dims, traj_dims, traj, conf));
 		ret = linop_chain_FF(ret, linop_fmac_create(N, ksp_max_dims, ~md_nontriv_dims(N, ksp_dims), 0, ~md_nontriv_dims(N, bas_dims), basis));
+
 	} else {
 
 		ret = linop_chain_FF(ret, linop_interpolate_kb_create(N, flags, ksp_dims, os_cim_dims, traj_dims, traj, conf));

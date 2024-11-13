@@ -379,8 +379,9 @@ static nn_t nlinvnet_get_network_step(const struct nlinvnet_s* nlinvnet, struct 
 		auto dummy = nn_from_nlop_F(nlop_del_out_create(dom->N, dom->dims));
 		dummy = nn_set_input_name_F(dummy, 0, "ref_col");
 		
-		complex float zero[1] = { 0 };
-		join = nn_set_input_const_F2(join, 1, 0, dom->N, dom->dims, MD_SINGLETON_STRS(dom->N), true, zero);
+		complex float zero[1] = { 0. };
+
+		join = nn_set_input_const_F2(join, 1, NULL, dom->N, dom->dims, MD_SINGLETON_STRS(dom->N), true, zero);
 		join = nn_combine_FF(dummy, join);	
 	}
 
@@ -722,7 +723,7 @@ static nn_t nlinvnet_valid_create(const struct nlinvnet_s* nlinvnet, struct name
 	result = nn_chain2_FF(result, 0, NULL, nn_from_nlop_F(noir_decomp_create(model)), 0, NULL);
 
 	auto cim_iov = named_data_list_get_iovec(valid_data, "ref");
-	auto valid_loss = nn_chain2_FF(result, 0, 0, val_measure_create(nlinvnet->valid_loss, cim_iov->N, cim_iov->dims), 0, NULL);
+	auto valid_loss = nn_chain2_FF(result, 0, NULL, val_measure_create(nlinvnet->valid_loss, cim_iov->N, cim_iov->dims), 0, NULL);
 	iovec_free(cim_iov);
 
 	valid_loss = nn_set_input_name_F(valid_loss, 0, "ref");
