@@ -57,6 +57,7 @@ opt_conv_f opt_ulong;
 opt_conv_f opt_ullong;
 opt_conv_f opt_long;
 opt_conv_f opt_float;
+opt_conv_f opt_double;
 opt_conv_f opt_cfl;
 opt_conv_f opt_string;
 opt_conv_f opt_infile;
@@ -96,6 +97,7 @@ static const char* opt_arg_str(enum OPT_TYPE type)
 		return "d";
 
 	case OPT_FLOAT:
+	case OPT_DOUBLE:
 		return "f";
 
 	case OPT_CFL:
@@ -148,6 +150,7 @@ static const char* opt_type_str(enum OPT_TYPE type)
 	OPT_ARG_TYPE_CASE(OPT_ULLONG)
 	OPT_ARG_TYPE_CASE(OPT_LONG)
 	OPT_ARG_TYPE_CASE(OPT_FLOAT)
+	OPT_ARG_TYPE_CASE(OPT_DOUBLE)
 	OPT_ARG_TYPE_CASE(OPT_CFL)
 	OPT_ARG_TYPE_CASE(OPT_VEC2)
 	OPT_ARG_TYPE_CASE(OPT_VEC3)
@@ -192,6 +195,8 @@ static bool opt_dispatch(enum OPT_TYPE type, void* ptr, opt_conv_f* conv, char c
 		return opt_long(ptr, c, optarg);
 	case OPT_FLOAT:
 		return opt_float(ptr, c, optarg);
+	case OPT_DOUBLE:
+		return opt_double(ptr, c, optarg);
 	case OPT_CFL:
 		return opt_cfl(ptr, c, optarg);
 	case OPT_VEC2:
@@ -685,6 +690,20 @@ bool opt_float(void* ptr, char /*c*/, const char* optarg)
 	return false;
 }
 
+bool opt_double(void* ptr, char /*c*/, const char* optarg)
+{
+	complex float val;
+
+	if (0 != parse_cfl(&val, optarg))
+		error("Could not parse argument to opt_double: %s!\n", optarg);
+
+	if (0.f != cimagf(val))
+		error("Argument \"%s\" to opt_double is not real\n", optarg);
+
+	*(double*)ptr = val;
+
+	return false;
+}
 
 bool opt_cfl(void* ptr, char /*c*/, const char* optarg)
 {

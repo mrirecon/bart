@@ -257,6 +257,16 @@ ok:
 	return 0;
 }
 
+int parse_double(double res[1], const char* str)
+{
+	char* tail;
+	float re = strtof(str, &tail);
+
+	if ('\0' != tail[0])
+		return -1;
+	res[0] = (double)re;
+	return 0;
+}
 
 int parse_long(long res[1], const char* str)
 {

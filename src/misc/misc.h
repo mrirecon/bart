@@ -69,6 +69,7 @@ extern void warn_nonnull_ptr(void*);
 #define ARR_CLONE(T, x)		({ PTR_ALLOC(T, __tmp2); memcpy(*__tmp2, x, sizeof(T)); *PTR_PASS(__tmp2); })
 
 extern int parse_cfl(_Complex float res[1], const char* str);
+extern int parse_double(double res[1], const char* str);
 extern int parse_long(long res[1], const char* str);
 extern int parse_longlong(long long res[1], const char* str);
 extern int parse_ulonglong(unsigned long long res[1], const char* str);
