@@ -26,7 +26,7 @@
 #define BLOCKSIZE 1024
 
 
-template <int DIMS, typename T> 
+template <int DIMS, typename T>
 struct im2col_descriptor {
 
 	T NC;		// number channels
@@ -50,7 +50,7 @@ struct im2col_descriptor {
 	bool triv_strides_dilation;	// trivial dilation and strides
 };
 
-template <int DIMS, typename T> 
+template <int DIMS, typename T>
 static struct im2col_descriptor<DIMS, T>get_im2col_descriptor(const long odims[5], const long idims[5], const long kdims[5], const long dilation[5], const long strides[5])
 {
 	struct im2col_descriptor<DIMS, T>config;
@@ -85,7 +85,7 @@ static struct im2col_descriptor<DIMS, T>get_im2col_descriptor(const long odims[5
 
 		if (!((1 < odims[i]) || (1 < kdims[i])))
 		 	continue;
-		
+
 		assert(j < DIMS);
 
 		config.odims[j] = odims[i];
@@ -120,7 +120,7 @@ static struct im2col_descriptor<DIMS, T>get_im2col_descriptor(const long odims[5
 }
 
 // loop over out-dims and krn-dims and copy elements from input (copies one element per thread)
-template <int DIMS, typename T, bool transp> 
+template <int DIMS, typename T, bool transp>
 __global__ static void kern_im2col_valid(struct im2col_descriptor<DIMS, T> config, cuFloatComplex* dst, const cuFloatComplex* src)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
@@ -167,7 +167,7 @@ __global__ static void kern_im2col_valid(struct im2col_descriptor<DIMS, T> confi
 }
 
 // loop over in-dims and copy elements from input to all corresponding output position
-template <int DIMS, typename T, bool transp> 
+template <int DIMS, typename T, bool transp>
 __global__ static void kern_im2col_valid_no_dil_str(struct im2col_descriptor<DIMS, T> config, cuFloatComplex* dst, const cuFloatComplex* src)
 {
 	int start = threadIdx.x + blockDim.x * blockIdx.x;
@@ -212,13 +212,13 @@ __global__ static void kern_im2col_valid_no_dil_str(struct im2col_descriptor<DIM
 				copy = copy && (idx_k[j] <= idx_i[j]) && (idx_i[j] < idx_k[j] + config.odims[j]);
 
 				index += (idx_i[j] - idx_k[j]) * o_stride + idx_k[j] * k_stride;
-				
+
 				o_stride *= config.odims[j];
 				k_stride *= config.kdims[j];
 			}
 
 			if (copy) {
-			
+
 				if (transp)
 					tmp = cuCaddf(tmp, src[index]);
 				else
@@ -231,7 +231,7 @@ __global__ static void kern_im2col_valid_no_dil_str(struct im2col_descriptor<DIM
 	}
 }
 
-template <int DIMS, typename T, bool transp> 
+template <int DIMS, typename T, bool transp>
 static void cuda_im2col_int(_Complex float* dst, const _Complex float* src, const long odims[5], const long idims[5], const long kdims[5], const long dilation[5], const long strides[5])
 {
 	struct im2col_descriptor<DIMS, T> config = get_im2col_descriptor<DIMS, T>(odims, idims, kdims, dilation, strides);
@@ -248,23 +248,25 @@ static void cuda_im2col_int(_Complex float* dst, const _Complex float* src, cons
 
 
 	if (func1) {
-	
+
 		const void* func = (const void*)kern_im2col_valid_no_dil_str<DIMS, T, transp>;
 		kern_im2col_valid_no_dil_str<DIMS, T, transp><<<getGridSize(config.N_in_elements, func), getBlockSize(config.N_in_elements, func), 0, cuda_get_stream() >>>(config, (cuFloatComplex*) dst, (cuFloatComplex*) src);
+		CUDA_KERNEL_ERROR;
 		return;
 	}
-	
+
 	if (func2) {
 
 		const void* func = (const void*)kern_im2col_valid<DIMS, T, transp>;
 		kern_im2col_valid<DIMS, T, transp><<<getGridSize(config.N_in_elements, func), getBlockSize(config.N_in_elements, func), 0, cuda_get_stream() >>>(config, (cuFloatComplex*) dst, (cuFloatComplex*) src);
+		CUDA_KERNEL_ERROR;
 		return;
 	}
 
 	assert(0);
 }
 
-template <bool transp> 
+template <bool transp>
 static void cuda_im2col_int2(_Complex float* dst, const _Complex float* src, const long odims[5], const long idims[5], const long kdims[5], const long dilation[5], const long strides[5])
 {
 	long Nout = idims[1] * md_calc_size(3, kdims + 2) * md_calc_size(3, odims + 2);
@@ -273,7 +275,7 @@ static void cuda_im2col_int2(_Complex float* dst, const _Complex float* src, con
 	for (int i = 0 ; i < 3; i++)
 		if (1 == odims[DIMS + 1] * kdims[DIMS + 1] * idims[DIMS + 1] * (NULL != dilation ? dilation[DIMS + 1] : 1) * (NULL != strides ? strides[DIMS + 1] : 1))
 			DIMS --;
-	
+
 	DIMS = 3;
 
 	switch (DIMS) {
@@ -284,14 +286,14 @@ static void cuda_im2col_int2(_Complex float* dst, const _Complex float* src, con
 		else
 			cuda_im2col_int<1, uint64_t, transp>(dst, src, odims, idims, kdims, dilation, strides);
 		break;
-	
+
 	case 2:
 		if (INT32_MAX / 2 > Nout)
 			cuda_im2col_int<2, uint32_t, transp>(dst, src, odims, idims, kdims, dilation, strides);
 		else
 			cuda_im2col_int<2, uint64_t, transp>(dst, src, odims, idims, kdims, dilation, strides);
 		break;
-	
+
 	case 3:
 		if (INT32_MAX / 2 > Nout)
 			cuda_im2col_int<3, uint32_t, transp>(dst, src, odims, idims, kdims, dilation, strides);
