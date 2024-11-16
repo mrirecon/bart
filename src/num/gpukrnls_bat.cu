@@ -55,7 +55,7 @@ static long gridsize_int(long N, int blocksize)
 static dim3 getGridSize2(long Bi, long Bo, const void* func)
 {
 	int block[3] = { 1, 1, 1};
-	
+
 	cudaFuncAttributes attr;
 	cudaFuncGetAttributes(&attr, func);
 	int threads = attr.maxThreadsPerBlock;
@@ -115,6 +115,7 @@ extern "C" void cuda_xpay_bat(long Bi, long N, long Bo, const float* beta, float
 	dim3 gridDim = getGridSize2(Bi, Bo, (const void*)kern_xpay_bat);
 
 	kern_xpay_bat<<<gridDim, blockDim>>>(Bi, N, Bo, beta, (cuFloatComplex*) a, (const cuFloatComplex*)x);
+	CUDA_KERNEL_ERROR;
 }
 
 __global__ static void kern_axpy_bat(long Bi, long N, long Bo, cuFloatComplex* _a, const float* _alpha, const cuFloatComplex* _x)
@@ -153,6 +154,7 @@ extern "C" void cuda_axpy_bat(long Bi, long N, long Bo, float* a, const float* a
 	dim3 gridDim = getGridSize2(Bi, Bo, (const void*)kern_axpy_bat);
 
 	kern_axpy_bat<<<gridDim, blockDim>>>(Bi, N, Bo, (cuFloatComplex*) a, alpha, (const cuFloatComplex*)x);
+	CUDA_KERNEL_ERROR;
 }
 
 
@@ -191,4 +193,5 @@ extern "C" void cuda_dot_bat(long Bi, long N, long Bo, float* dst, const float* 
 	dim3 gridDim = getGridSize2(Bi, Bo, (const void*)kern_dot_bat);
 
 	kern_dot_bat<<<gridDim, blockDim>>>(Bi, N, Bo, dst, (const cuFloatComplex*)x, (const cuFloatComplex*)y);
+	CUDA_KERNEL_ERROR;
 }
