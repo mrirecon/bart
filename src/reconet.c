@@ -21,6 +21,8 @@
 #include "num/init.h"
 #include "num/rand.h"
 
+#include "noncart/nufft.h"
+
 #include "iter/iter6.h"
 
 #include "nn/data_list.h"
@@ -77,7 +79,6 @@ int main_reconet(int argc, char* argv[argc])
 
 	const char* filename_mask = NULL;
 	const char* filename_mask_val = NULL;
-
 
 	struct opt_s dc_opts[] = {
 
@@ -158,6 +159,8 @@ int main_reconet(int argc, char* argv[argc])
 		OPTL_INOUTFILE(0, "psf", &(data.filename_psf), "<file>", "(psf (load or export))"),
 		OPTL_SET(0, "export", &(data.export), "(export psf and adjoint reconstruction)"),
 
+		OPTL_SUBOPT(0, "nufft-conf", "...", "configure nufft", N_nufft_conf_opts, nufft_conf_opts),
+
 		OPTL_INFILE(0, "mask", &(filename_mask), "<mask>", "mask for computation of loss"),
 
 		OPTL_SUBOPT(0, "valid-data", "...", "provide validation data", ARRAY_SIZE(valid_opts),valid_opts),
@@ -192,6 +195,9 @@ int main_reconet(int argc, char* argv[argc])
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
+
+	data.nufft_conf = &nufft_conf_options;
+	valid_data.nufft_conf = &nufft_conf_options;
 
 	if (train)
 		config.train_conf = iter6_get_conf_from_opts();
