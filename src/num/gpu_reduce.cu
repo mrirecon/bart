@@ -21,6 +21,9 @@
 #define FL_SIZE 4
 
 #define BLOCKSIZE 1024
+#define MIN(a, b) ((a < b) ? a : b)
+#define MAX(a, b) ((a > b) ? a : b)
+
 
 static long gridsizeX(long N, unsigned int blocksize)
 {
@@ -28,11 +31,8 @@ static long gridsizeX(long N, unsigned int blocksize)
 }
 static unsigned int gridsizeY(long N, unsigned int blocksize)
 {
-	return (N + blocksize - 1) / blocksize;
+	return MIN(32768, (N + blocksize - 1) / blocksize);
 }
-
-#define MIN(a, b) ((a < b) ? a : b)
-#define MAX(a, b) ((a > b) ? a : b)
 
 __device__ static __inline__ cuFloatComplex dev_zadd(cuFloatComplex arg1, cuFloatComplex arg2)
 {
@@ -75,6 +75,8 @@ __global__ static void kern_reduce_zadd_outer(long dim_reduce, long dim_batch, c
 	}
 }
 
+#include "misc/debug.h"
+
 extern "C" void cuda_reduce_zadd_outer(long dim_reduce, long dim_batch, _Complex float* dst, const _Complex float* src)
 {
 	long maxBlockSizeX_dim = 1;
@@ -94,6 +96,7 @@ extern "C" void cuda_reduce_zadd_outer(long dim_reduce, long dim_batch, _Complex
     	dim3 gridDim(gridsizeX(dim_batch, blockSizeX), gridsizeY(maxBlockSizeY_dim, blockSizeY));
 
 	kern_reduce_zadd_outer<<<gridDim, blockDim, blockSizeX * blockSizeY * CFL_SIZE, cuda_get_stream()>>>(dim_reduce, dim_batch, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
+	CUDA_KERNEL_ERROR;
 }
 
 
@@ -147,6 +150,7 @@ extern "C" void cuda_reduce_zadd_inner(long dim_reduce, long dim_batch, _Complex
     	dim3 gridDim(gridsizeX(maxBlockSizeX_dim, blockSizeX), gridsizeY(dim_batch, blockSizeY));
 
 	kern_reduce_zadd_inner<<<gridDim, blockDim, blockSizeX * blockSizeY * CFL_SIZE, cuda_get_stream()>>>(dim_reduce, dim_batch, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
+	CUDA_KERNEL_ERROR;
 }
 
 __device__ static __inline__ float dev_add(float arg1, float arg2)
@@ -208,6 +212,7 @@ extern "C" void cuda_reduce_add_outer(long dim_reduce, long dim_batch, float* ds
     	dim3 gridDim(gridsizeX(dim_batch, blockSizeX), gridsizeY(maxBlockSizeY_dim, blockSizeY));
 
 	kern_reduce_add_outer<<<gridDim, blockDim, blockSizeX * blockSizeY * FL_SIZE, cuda_get_stream()>>>(dim_reduce, dim_batch, dst, src);
+	CUDA_KERNEL_ERROR;
 }
 
 
@@ -261,6 +266,7 @@ extern "C" void cuda_reduce_add_inner(long dim_reduce, long dim_batch, float* ds
     	dim3 gridDim(gridsizeX(maxBlockSizeX_dim, blockSizeX), gridsizeY(dim_batch, blockSizeY));
 
 	kern_reduce_add_inner<<<gridDim, blockDim, blockSizeX * blockSizeY * FL_SIZE, cuda_get_stream()>>>(dim_reduce, dim_batch, dst, src);
+	CUDA_KERNEL_ERROR;
 }
 
 
@@ -337,6 +343,7 @@ extern "C" void cuda_reduce_zmax_outer(long dim_reduce, long dim_batch, _Complex
     	dim3 gridDim(gridsizeX(dim_batch, blockSizeX), gridsizeY(maxBlockSizeY_dim, blockSizeY));
 
 	kern_reduce_zmax_outer<<<gridDim, blockDim, blockSizeX * blockSizeY * CFL_SIZE, cuda_get_stream()>>>(dim_reduce, dim_batch, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
+	CUDA_KERNEL_ERROR;
 }
 
 
@@ -390,4 +397,5 @@ extern "C" void cuda_reduce_zmax_inner(long dim_reduce, long dim_batch, _Complex
     	dim3 gridDim(gridsizeX(maxBlockSizeX_dim, blockSizeX), gridsizeY(dim_batch, blockSizeY));
 
 	kern_reduce_zmax_inner<<<gridDim, blockDim, blockSizeX * blockSizeY * CFL_SIZE, cuda_get_stream()>>>(dim_reduce, dim_batch, (cuFloatComplex*)dst, (const cuFloatComplex*)src);
+	CUDA_KERNEL_ERROR;
 }
