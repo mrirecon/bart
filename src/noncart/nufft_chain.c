@@ -48,7 +48,7 @@ static void rolloff_apply(const linop_data_t* _d, complex float* dst, const comp
 
 	md_calc_strides(d->N, ostrs, d->odims, CFL_SIZE);
 	md_calc_strides(d->N, istrs, d->dims, CFL_SIZE);
- 
+
 	long pos[d->N];
 	for (int i = 0; i < d->N; i++)
 		pos[i] = (i < 3) ? labs((d->odims[i] / 2) - (d->dims[i] / 2)) : 0;
@@ -68,7 +68,7 @@ static void rolloff_adjoint(const linop_data_t* _d, complex float* dst, const co
 
 	md_calc_strides(d->N, ostrs, d->odims, CFL_SIZE);
 	md_calc_strides(d->N, istrs, d->dims, CFL_SIZE);
- 
+
 	long pos[d->N];
 	for (int i = 0; i < d->N; i++)
 		pos[i] = (i < 3) ? labs((d->odims[i] / 2) - (d->dims[i] / 2)) : 0;
@@ -106,7 +106,7 @@ struct linop_s* linop_kb_rolloff_create(int N, const long dims[N], unsigned long
 
 	flags &= md_nontriv_dims(N, dims);
 	assert(0 == (flags & ~FFT_FLAGS));
-	
+
 	long odims[N];
 	for (int i = 0; i < N; i++)
 		odims[i] = (MD_IS_SET(flags, i)) ? lround(conf->os * dims[i]) : dims[i];
@@ -180,7 +180,10 @@ struct linop_s* linop_interpolate_kb_create(int N, unsigned long flags, const lo
 
 	assert(0 == (flags & ~FFT_FLAGS));
 
-	data->traj = multiplace_move(N, trj_dims, CFL_SIZE, traj);
+	float* traj_real = md_alloc_sameplace(N, trj_dims, FL_SIZE, traj);
+	md_real(N, trj_dims, traj_real, traj);
+
+	data->traj = multiplace_move_F(N, trj_dims, FL_SIZE, traj_real);
 	data->conf = *conf;
 
 	return linop_create(N, ksp_dims, N, grd_dims, CAST_UP(PTR_PASS(data)), interpolate_apply, interpolate_adjoint, NULL, NULL, interpolate_free);
@@ -207,7 +210,7 @@ extern struct linop_s* nufft_create_chain(int N,
 	long os_cim_dims[N];
 	for (int i = 0; i < N; i++)
 		os_cim_dims[i] = (MD_IS_SET(flags, i)) ? lround(conf->os * cim_dims[i]) : cim_dims[i];
-	
+
 	ret = linop_chain_FF(ret, linop_fftc_create(N, os_cim_dims, flags));
 
 	if (NULL != basis) {

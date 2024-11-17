@@ -5,8 +5,8 @@ extern void cuda_apply_rolloff_correction2(float os, float width, float beta, in
 
 
 struct grid_conf_s;
-extern void cuda_grid(const struct grid_conf_s* conf, const long ksp_dims[4], const long trj_strs[4], const _Complex float* traj, const long grid_dims[4], const long grid_strs[4], _Complex float* grid, const long ksp_strs[4], const _Complex float* src);
-extern void cuda_gridH(const struct grid_conf_s* conf, const long ksp_dims[4], const long trj_strs[4], const _Complex float* traj, const long ksp_strs[4], _Complex float* dst, const long grid_dims[4], const long grid_strs[4], const _Complex float* grid);
+extern void cuda_grid(const struct grid_conf_s* conf, const long ksp_dims[4], const long trj_strs[4], const float* traj, const long grid_dims[4], const long grid_strs[4], _Complex float* grid, const long ksp_strs[4], const _Complex float* src);
+extern void cuda_gridH(const struct grid_conf_s* conf, const long ksp_dims[4], const long trj_strs[4], const float* traj, const long ksp_strs[4], _Complex float* dst, const long grid_dims[4], const long grid_strs[4], const _Complex float* grid);
 
 #include "misc/cppwrap.h"
 
