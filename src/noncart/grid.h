@@ -23,14 +23,14 @@ extern int kb_size;
 extern double bessel_kb_beta; // = bessel_i0(beta);
 extern const struct multiplace_array_s* kb_get_table(double beta);
 
-extern void grid(const struct grid_conf_s* conf, const long ksp_dims[4], const long trj_strs[4], const _Complex float* traj, const long grid_dims[4], const long grid_strs[4], _Complex float* grid, const long ksp_strs[4], const _Complex float* src);
+extern void grid(const struct grid_conf_s* conf, const long ksp_dims[4], const long trj_strs[4], const float* traj, const long grid_dims[4], const long grid_strs[4], _Complex float* grid, const long ksp_strs[4], const _Complex float* src);
 
-extern void gridH(const struct grid_conf_s* conf, const long ksp_dims[4], const long trj_strs[4], const _Complex float* traj, const long ksp_strs[4], _Complex float* dst, const long grid_dims[4], const long grid_strs[4], const _Complex float* grid);
+extern void gridH(const struct grid_conf_s* conf, const long ksp_dims[4], const long trj_strs[4], const float* traj, const long ksp_strs[4], _Complex float* dst, const long grid_dims[4], const long grid_strs[4], const _Complex float* grid);
 
 
-extern void grid2(const struct grid_conf_s* conf, int D, const long trj_dims[__VLA(D)], const _Complex float* traj, const long grid_dims[__VLA(D)], _Complex float* grid, const long ksp_dims[__VLA(D)], const _Complex float* src);
+extern void grid2(const struct grid_conf_s* conf, int D, const long trj_dims[__VLA(D)], const float* traj, const long grid_dims[__VLA(D)], _Complex float* grid, const long ksp_dims[__VLA(D)], const _Complex float* src);
 
-extern void grid2H(const struct grid_conf_s* conf, int D, const long trj_dims[__VLA(D)], const _Complex float* traj, const long ksp_dims[__VLA(D)], _Complex float* dst, const long grid_dims[__VLA(D)], const _Complex float* grid);
+extern void grid2H(const struct grid_conf_s* conf, int D, const long trj_dims[__VLA(D)], const float* traj, const long ksp_dims[__VLA(D)], _Complex float* dst, const long grid_dims[__VLA(D)], const _Complex float* grid);
 
 
 extern void grid_pointH(int ch, int N, const long dims[__VLA(N)], const long strs[__VLA(N)], const float pos[__VLA(N)], _Complex float val[__VLA(ch)], const _Complex float* src, _Bool periodic, float width, int kb_size, const float kb_table[__VLA(kb_size + 1)]);
