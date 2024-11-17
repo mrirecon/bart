@@ -23,6 +23,7 @@ struct nufft_conf_s {
 	_Bool nopsf;
 	_Bool upper_triag;
 	_Bool real;
+	_Bool psf_store_cpu;
 	_Bool compress_psf;
 
 	_Bool precomp_linphase;
