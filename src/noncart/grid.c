@@ -149,14 +149,14 @@ static float intlookup(int n, const float table[n + 1], float x)
 
 
 
-void gridH(const struct grid_conf_s* conf, const long ksp_dims[4], const long trj_strs[4], const complex float* traj, const long ksp_strs[4], complex float* dst, const long grid_dims[4], const long grid_strs[4], const complex float* grid)
+void gridH(const struct grid_conf_s* conf, const long ksp_dims[4], const long trj_strs[4], const float* traj, const long ksp_strs[4], complex float* dst, const long grid_dims[4], const long grid_strs[4], const complex float* grid)
 {
 	if (grid_dims[3] != ksp_dims[3])
 		error("Adjoint gridding: ksp and grid are incompatible in dim 3 (%d != %d)!\n", ksp_dims[3], grid_dims[3]);
 	
 	assert(3 == ksp_dims[0]);
 	assert(0 == ksp_strs[0]);
-	assert(CFL_SIZE == trj_strs[0]);
+	assert(FL_SIZE == trj_strs[0]);
 	assert(0 == trj_strs[3]);
 
 #ifdef USE_CUDA
@@ -173,13 +173,13 @@ void gridH(const struct grid_conf_s* conf, const long ksp_dims[4], const long tr
 	for (int ir = 0; ir < ksp_dims[1]; ir++) {
 		for (int ip = 0; ip < ksp_dims[2]; ip++) {
 
-			long it = (ir * trj_strs[1] + ip * trj_strs[2]) / (long)CFL_SIZE;
+			long it = (ir * trj_strs[1] + ip * trj_strs[2]) / (long)FL_SIZE;
 			long ik = (ir * ksp_strs[1] + ip * ksp_strs[2]) / (long)CFL_SIZE;
 
 			float pos[3];
-			pos[0] = conf->os * (creal(traj[it + 0]) + conf->shift[0]);
-			pos[1] = conf->os * (creal(traj[it + 1]) + conf->shift[1]);
-			pos[2] = conf->os * (creal(traj[it + 2]) + conf->shift[2]);
+			pos[0] = conf->os * (traj[it + 0] + conf->shift[0]);
+			pos[1] = conf->os * (traj[it + 1] + conf->shift[1]);
+			pos[2] = conf->os * (traj[it + 2] + conf->shift[2]);
 
 			pos[0] += (grid_dims[0] > 1) ? ((float) grid_dims[0] / 2.) : 0.;
 			pos[1] += (grid_dims[1] > 1) ? ((float) grid_dims[1] / 2.) : 0.;
@@ -198,14 +198,14 @@ void gridH(const struct grid_conf_s* conf, const long ksp_dims[4], const long tr
 }
 
 
-void grid(const struct grid_conf_s* conf, const long ksp_dims[4], const long trj_strs[4], const complex float* traj, const long grid_dims[4], const long grid_strs[4], complex float* grid, const long ksp_strs[4], const complex float* src)
+void grid(const struct grid_conf_s* conf, const long ksp_dims[4], const long trj_strs[4], const float* traj, const long grid_dims[4], const long grid_strs[4], complex float* grid, const long ksp_strs[4], const complex float* src)
 {
 	if (grid_dims[3] != ksp_dims[3])
 		error("Gridding: ksp and grid are incompatible in dim 3 (%d != %d)!\n", ksp_dims[3], grid_dims[3]);
 
 	assert(3 == ksp_dims[0]);
 	assert(0 == ksp_strs[0]);
-	assert(CFL_SIZE == trj_strs[0]);
+	assert(FL_SIZE == trj_strs[0]);
 	assert(0 == trj_strs[3]);
 
 #ifdef USE_CUDA
@@ -223,13 +223,13 @@ void grid(const struct grid_conf_s* conf, const long ksp_dims[4], const long trj
 	for (int ir = 0; ir < ksp_dims[1]; ir++) {
 		for (int ip = 0; ip < ksp_dims[2]; ip++) {
 
-			long it = (ir * trj_strs[1] + ip * trj_strs[2]) / (long)CFL_SIZE;
+			long it = (ir * trj_strs[1] + ip * trj_strs[2]) / (long)FL_SIZE;
 			long ik = (ir * ksp_strs[1] + ip * ksp_strs[2]) / (long)CFL_SIZE;
 
 			float pos[3];
-			pos[0] = conf->os * (creal(traj[it + 0]) + conf->shift[0]);
-			pos[1] = conf->os * (creal(traj[it + 1]) + conf->shift[1]);
-			pos[2] = conf->os * (creal(traj[it + 2]) + conf->shift[2]);
+			pos[0] = conf->os * (traj[it + 0] + conf->shift[0]);
+			pos[1] = conf->os * (traj[it + 1] + conf->shift[1]);
+			pos[2] = conf->os * (traj[it + 2] + conf->shift[2]);
 
 			pos[0] += (grid_dims[0] > 1) ? ((float) grid_dims[0] / 2.) : 0.;
 			pos[1] += (grid_dims[1] > 1) ? ((float) grid_dims[1] / 2.) : 0.;
@@ -335,7 +335,7 @@ static void grid_int(vptr_fun_data_t* _data, int N, int D, const long* dims[N], 
 	{
 		complex float* grd = ptr[0];
 		complex float* ksp = ptr[1];
-		const complex float* trj = ptr[2];
+		const float* trj = ptr[2];
 
 		if (data->backward)
 			gridH(&(data->conf), ptr_ksp_dims, ptr_trj_strs, trj, ptr_ksp_strs, ksp, ptr_grd_dims, ptr_grid_strs, grd);
@@ -354,7 +354,7 @@ static void grid_int(vptr_fun_data_t* _data, int N, int D, const long* dims[N], 
 	md_parallel_nary(3, D - 4, max_dims + 4, pflags, lstrs, args, nary_grid);
 }
 
-void grid2(const struct grid_conf_s* conf, int D, const long trj_dims[D], const complex float* traj, const long grid_dims[D], complex float* dst, const long ksp_dims[D], const complex float* src)
+void grid2(const struct grid_conf_s* conf, int D, const long trj_dims[D], const float* traj, const long grid_dims[D], complex float* dst, const long ksp_dims[D], const complex float* src)
 {
 	grid2_dims(D, trj_dims, ksp_dims, grid_dims);
 
@@ -364,14 +364,14 @@ void grid2(const struct grid_conf_s* conf, int D, const long trj_dims[D], const 
 	_d->conf = *conf;
 	_d->backward = false;
 
-	exec_vptr_zfun(grid_int, CAST_UP(PTR_PASS(_d)), 3, D, ~7UL, MD_BIT(0), MD_BIT(0) | MD_BIT(1) | MD_BIT(2),
+	exec_vptr_fun_gen(grid_int, CAST_UP(PTR_PASS(_d)), 3, D, ~7UL, MD_BIT(0), MD_BIT(0) | MD_BIT(1) | MD_BIT(2),
 			(const long*[3]) { grid_dims, ksp_dims, trj_dims },
-			(const long*[3]) { MD_STRIDES(D, grid_dims, CFL_SIZE), MD_STRIDES(D, ksp_dims, CFL_SIZE), MD_STRIDES(D, trj_dims, CFL_SIZE) },
-			(complex float*[3]) { dst, (void*) src, (void*)traj});
+			(const long*[3]) { MD_STRIDES(D, grid_dims, CFL_SIZE), MD_STRIDES(D, ksp_dims, CFL_SIZE), MD_STRIDES(D, trj_dims, FL_SIZE) },
+			(void*[3]) { dst, (void*) src, (void*)traj}, (size_t[3]){ CFL_SIZE, CFL_SIZE, FL_SIZE }, true);
 }
 
 
-void grid2H(const struct grid_conf_s* conf, int D, const long trj_dims[D], const complex float* traj, const long ksp_dims[D], complex float* dst, const long grid_dims[D], const complex float* src)
+void grid2H(const struct grid_conf_s* conf, int D, const long trj_dims[D], const float* traj, const long ksp_dims[D], complex float* dst, const long grid_dims[D], const complex float* src)
 {
 	grid2_dims(D, trj_dims, ksp_dims, grid_dims);
 
@@ -381,10 +381,10 @@ void grid2H(const struct grid_conf_s* conf, int D, const long trj_dims[D], const
 	_d->conf = *conf;
 	_d->backward = true;
 
-	exec_vptr_zfun(grid_int, CAST_UP(PTR_PASS(_d)), 3, D, ~7UL, MD_BIT(1), MD_BIT(0) | MD_BIT(1) | MD_BIT(2),
+	exec_vptr_fun_gen(grid_int, CAST_UP(PTR_PASS(_d)), 3, D, ~7UL, MD_BIT(1), MD_BIT(0) | MD_BIT(1) | MD_BIT(2),
 			(const long*[3]) { grid_dims, ksp_dims, trj_dims },
-			(const long*[3]) { MD_STRIDES(D, grid_dims, CFL_SIZE), MD_STRIDES(D, ksp_dims, CFL_SIZE), MD_STRIDES(D, trj_dims, CFL_SIZE) },
-			(complex float*[3]) { (void*) src, dst, (void*)traj});
+			(const long*[3]) { MD_STRIDES(D, grid_dims, CFL_SIZE), MD_STRIDES(D, ksp_dims, CFL_SIZE), MD_STRIDES(D, trj_dims, FL_SIZE) },
+			(void*[3]) { (void*) src, dst, (void*)traj}, (size_t[3]){ CFL_SIZE, CFL_SIZE, FL_SIZE }, true);
 }
 
 

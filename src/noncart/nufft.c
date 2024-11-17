@@ -155,7 +155,7 @@ static struct grid_conf_s compute_grid_conf_decomp(int N, const long factors[N],
 
 
 static void grid2_decomp(struct grid_conf_s* _conf, int idx, int N, const long factors[N],
-			const long trj_dims[N], const complex float* traj,
+			const long trj_dims[N], const float* traj,
 			const long cim_dims[N], complex float* grid,
 			const long ksp_dims[N],  const complex float* ksp)
 {
@@ -167,7 +167,7 @@ static void grid2_decomp(struct grid_conf_s* _conf, int idx, int N, const long f
 }
 
 static void grid2H_decomp(struct grid_conf_s* _conf, int idx, int N, const long factors[N],
-			const long trj_dims[N], const complex float* traj,
+			const long trj_dims[N], const float* traj,
 			const long ksp_dims[N], complex float* ksp,
 			const long cim_dims[N], const complex float* grid)
 {
@@ -969,7 +969,10 @@ static void nufft_set_traj(struct nufft_data* data, int N,
 
 		multiplace_free(data->traj);
 
-		data->traj = multiplace_move(N, trj_dims, CFL_SIZE, traj);
+		float* traj_real = md_alloc_sameplace(N, trj_dims, FL_SIZE, traj);
+		md_real(N, trj_dims, traj_real, traj);
+
+		data->traj = multiplace_move_F(N, trj_dims, FL_SIZE, traj_real);
 	}
 
 	if (NULL != basis) {
@@ -1199,7 +1202,7 @@ static struct linop_s* nufft_create3(int N,
 	md_copy_dims(N, data->trj_dims, traj_dims);
 	data->trj_dims[N] = 1;
 
-	md_calc_strides(ND, data->trj_strs, data->trj_dims, CFL_SIZE);
+	md_calc_strides(ND, data->trj_strs, data->trj_dims, FL_SIZE);
 	md_calc_strides(ND, data->ksp_strs, data->ksp_dims, CFL_SIZE);
 	md_calc_strides(ND, data->out_strs, data->out_dims, CFL_SIZE);
 
