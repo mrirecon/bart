@@ -29,6 +29,7 @@
 #include "num/ops.h"
 #include "num/delayed.h"
 #include "num/multiplace.h"
+#include "num/vptr.h"
 #include "num/vptr_fun.h"
 #include "num/triagmat.h"
 #include "num/compress.h"
@@ -62,6 +63,7 @@ struct nufft_conf_s nufft_conf_defaults = {
 	.nopsf = false,
 	.upper_triag = false,
 	.real = false,
+	.psf_store_cpu = false,
 	.compress_psf = false,
 	.precomp_linphase = true,
 	.precomp_fftmod = true,
@@ -1064,6 +1066,19 @@ static void nufft_set_traj(struct nufft_data* data, int N,
 				md_calc_strides(ND, data->psf_strs, data->psf_dims, data->conf.real ? FL_SIZE : CFL_SIZE);
 				data->psf = multiplace_move_F(ND, data->psf_dims, data->conf.real ? FL_SIZE : CFL_SIZE, com_psf);
 			}
+
+			if (data->conf.psf_store_cpu) {
+
+				const void* psf = multiplace_read(data->psf, traj);
+				void* psf_cpu = md_alloc_sameplace(ND, data->psf_dims, data->conf.real ? FL_SIZE : CFL_SIZE, traj);
+
+				if (is_vptr(psf_cpu))
+					vptr_set_host(psf_cpu, true);
+
+				md_copy(ND, data->psf_dims, psf_cpu, psf, data->conf.real ? FL_SIZE : CFL_SIZE);
+				multiplace_free(data->psf);
+				data->psf = multiplace_move_F(ND, data->psf_dims, data->conf.real ? FL_SIZE : CFL_SIZE, psf_cpu);
+			}
 		}
 	}
 }
@@ -1501,7 +1516,6 @@ static void toeplitz_mult(const struct nufft_data* data, complex float* dst, con
 	int ND = data->N + 1;
 
 	const complex float* linphase = multiplace_read(data->linphase, src);
-	const void* psf = multiplace_read(data->psf, src);
 
 	complex float* grid = md_alloc_sameplace(ND, data->cml_dims, CFL_SIZE, dst);
 
@@ -1535,6 +1549,15 @@ static void toeplitz_mult(const struct nufft_data* data, complex float* dst, con
 
 	complex float* gridT = md_alloc_sameplace(ND, cml_dims, CFL_SIZE, dst);
 
+	const void* psf = multiplace_read(data->psf, src);
+	const void* psf_work = psf;
+
+	if (is_vptr(psf) && is_vptr_gpu(psf) && is_vptr_host(psf)) {
+
+		psf_work = md_alloc_sameplace(ND, data->psf_dims, data->conf.real ? FL_SIZE : CFL_SIZE, psf);
+		md_copy(ND, data->psf_dims, (void*)psf_work, psf, data->conf.real ? FL_SIZE : CFL_SIZE);
+	}
+
 	if (data->conf.real) {
 
 		long cmT_strs[ND + 1];
@@ -1543,16 +1566,19 @@ static void toeplitz_mult(const struct nufft_data* data, complex float* dst, con
 		md_calc_strides(ND, cml_strs, cml_dims, CFL_SIZE);
 
 		if (data->conf.upper_triag)
-			md_tenmul_upper_triag2(5, 6, ND + 1, MD_REAL_DIMS(ND, max_dims), MD_REAL_STRS(ND, cmT_strs, FL_SIZE), (float*)gridT, MD_REAL_STRS(ND, cml_strs, FL_SIZE), (float*)grid, MD_REAL_DIMS(ND, data->psf_dims), MD_REAL_STRS(ND, data->psf_strs, 0), (float*)psf);
+			md_tenmul_upper_triag2(5, 6, ND + 1, MD_REAL_DIMS(ND, max_dims), MD_REAL_STRS(ND, cmT_strs, FL_SIZE), (float*)gridT, MD_REAL_STRS(ND, cml_strs, FL_SIZE), (float*)grid, MD_REAL_DIMS(ND, data->psf_dims), MD_REAL_STRS(ND, data->psf_strs, 0), (float*)psf_work);
 		else
-			md_tenmul2(ND + 1, MD_REAL_DIMS(ND, max_dims), MD_REAL_STRS(ND, cmT_strs, FL_SIZE), (float*)gridT, MD_REAL_STRS(ND, cml_strs, FL_SIZE), (float*)grid, MD_REAL_STRS(ND, data->psf_strs, 0), (float*)psf);
+			md_tenmul2(ND + 1, MD_REAL_DIMS(ND, max_dims), MD_REAL_STRS(ND, cmT_strs, FL_SIZE), (float*)gridT, MD_REAL_STRS(ND, cml_strs, FL_SIZE), (float*)grid, MD_REAL_STRS(ND, data->psf_strs, 0), (float*)psf_work);
 	} else {
 
 		if (data->conf.upper_triag)
-			md_ztenmul_upper_triag(5, 6, ND, cmT_dims, gridT, cml_dims, grid, data->psf_dims, psf);
+			md_ztenmul_upper_triag(5, 6, ND, cmT_dims, gridT, cml_dims, grid, data->psf_dims, psf_work);
 		else
-			md_ztenmul(ND, cmT_dims, gridT, cml_dims, grid, data->psf_dims, psf);
+			md_ztenmul(ND, cmT_dims, gridT, cml_dims, grid, data->psf_dims, psf_work);
 	}
+
+	if (psf_work != psf)
+		md_free(psf_work);
 
 	md_free(grid);
 	grid = gridT;
@@ -1562,6 +1588,7 @@ static void toeplitz_mult(const struct nufft_data* data, complex float* dst, con
 		const long* idx = multiplace_read(data->compress, grid);
 		complex float* dec_grid = md_alloc_sameplace(ND, data->cml_dims, CFL_SIZE, grid);
 		md_clear(ND, data->cml_dims, dec_grid, CFL_SIZE);
+
 		md_decompress(ND, data->cml_dims, dec_grid, cml_dims, grid, data->com_dims, idx, NULL, CFL_SIZE);
 		md_free(grid);
 		grid = dec_grid;
