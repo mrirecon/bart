@@ -501,6 +501,8 @@ static void getBlockSize3_internal(int block[3], const long dims[3], int threads
 		block[2] *= 2;
 		threads /= 2;
 	}
+
+	block[2] = MIN(block[2], 64);
 }
 
 static dim3 getBlockSize3(const long dims[3], int threads)
@@ -567,10 +569,9 @@ static void cuda_fop_unfold(int D, const long dims[], const long ostrs[], float*
 
 	if (const1)
 		size1 = (!MD_IS_SET(const1, 0) ? blockDim.x : 1) * (!MD_IS_SET(const1, 1) ? blockDim.y : 1) * (!MD_IS_SET(const1, 2) ? blockDim.z : 1);
-	
+
 	if (const2)
 		size2 = (!MD_IS_SET(const2, 0) ? blockDim.x : 1) * (!MD_IS_SET(const2, 1) ? blockDim.y : 1) * (!MD_IS_SET(const2, 2) ? blockDim.z : 1);
-
 
 	func<<<gridDim, blockDim, sizeof(float) * (size1 + size2), cuda_get_stream()>>>(strs, dst, src1, src2);
 	CUDA_KERNEL_ERROR;
@@ -617,7 +618,7 @@ static void cuda_zop_unfold(int D, const long dims[], const long ostrs[], _Compl
 
 	if (const1)
 		size1 = (!MD_IS_SET(const1, 0) ? blockDim.x : 1) * (!MD_IS_SET(const1, 1) ? blockDim.y : 1) * (!MD_IS_SET(const1, 2) ? blockDim.z : 1);
-	
+
 	if (const2)
 		size2 = (!MD_IS_SET(const2, 0) ? blockDim.x : 1) * (!MD_IS_SET(const2, 1) ? blockDim.y : 1) * (!MD_IS_SET(const2, 2) ? blockDim.z : 1);
 
