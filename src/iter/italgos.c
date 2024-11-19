@@ -1047,8 +1047,11 @@ static void getgrad(int NI, unsigned long in_optimize_flag, long isize[NI], floa
 		tmp_grad[i] = NULL;
 
 	for (int i = 0; i < NI; i++)
-		if ((1 < NO) && MD_IS_SET(in_optimize_flag, i))
+		if ((1 < NO) && MD_IS_SET(in_optimize_flag, i)) {
+
 			tmp_grad[i] = vops->allocate(isize[i]);
+			vops->copy(isize[i], tmp_grad[i], grad[i]);
+		}
 
 	for (int o = 0, count = 0; o < NO; o++) {
 
@@ -1102,7 +1105,7 @@ void sgd(	int epochs, int batches,
 		float learning_rate, float batchnorm_momentum,
 		float learning_rate_schedule[epochs][batches],
 		int NI, long isize[NI], enum IN_TYPE in_type[NI], float* x[NI],
-		int NO, long osize[NO], enum OUT_TYPE out_type[NI],
+		int NO, long /*osize*/[NO], enum OUT_TYPE out_type[NO], float* out[NO],
 		int N_batch, int N_total,
 		const struct vec_iter_s* vops,
 		struct iter_nlop_s nlop, struct iter_op_arr_s adj,
@@ -1143,6 +1146,9 @@ void sgd(	int epochs, int batches,
 			grad[i] = vops->allocate(isize[i]);
 			dxs[i] = vops->allocate(isize[i]);
 
+			vops->copy(isize[i], dxs[i], x[i]);
+			vops->copy(isize[i], grad[i], x[i]);
+
 			in_optimize_flag = MD_SET(in_optimize_flag, i);
 
 			if (NULL != prox[i].fun)
@@ -1170,7 +1176,7 @@ void sgd(	int epochs, int batches,
 
 	for (int o = 0; o < NO; o++) {
 
-		args[o] = vops->allocate(osize[o]);
+		args[o] = out[o];
 
 		if (OUT_OPTIMIZE == out_type[o])
 			out_optimize_flag = MD_SET(out_optimize_flag, o);
