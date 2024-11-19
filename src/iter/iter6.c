@@ -14,6 +14,9 @@
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/iovec.h"
+#ifdef USE_CUDA
+#include "num/gpuops.h"
+#endif
 
 #include "nlops/nlop.h"
 
@@ -289,21 +292,21 @@ static const float* learning_rate_schedule_add_warmup(int epochs, int numbatches
 {
 	if (0 == epochs_warmup)
 		return schedule;
-	
+
 	long dims[2] = { numbatches, epochs };
 	float (*result)[numbatches] = (float (*)[numbatches])md_alloc(2, dims, FL_SIZE);
-	
+
 	for (int ie = 0; ie < epochs_warmup; ie++)
 		for (int ib = 0; ib < numbatches; ib++)
 			result[ie][ib] = learning_rate / (float)(epochs_warmup * numbatches) * (float)(ie * numbatches + ib);
-	
+
 	for (int ie = 0; ie < epochs - epochs_warmup; ie++)
 		for (int ib = 0; ib < numbatches; ib++)
 			result[ie + epochs_warmup][ib] = (NULL == schedule) ? learning_rate : schedule[numbatches * ie + ib];
-	
+
 	if (NULL != schedule)
 		md_free(schedule);
-	
+
 	return &(result[0][0]);
 }
 
@@ -386,6 +389,15 @@ void iter6_sgd_like(	const iter6_conf* conf,
 
 	assert(NULL != gpu_ref);
 
+#ifdef USE_CUDA
+	if (cuda_ondevice(gpu_ref)) {
+
+		for (int i = 0; i < NI; i++)
+			if (IN_BATCH_GENERATOR == in_type[i])
+				dst[i] = cuda_malloc_host(sizeof(float) * isize[i]);
+	}
+#endif
+
 	bool free_monitor = (NULL == monitor);
 
 	if (free_monitor)
@@ -402,7 +414,7 @@ void iter6_sgd_like(	const iter6_conf* conf,
 		dump = iter6_dump_default_create(conf->dump_filename, conf->dump_mod, nlop, conf->dump_flag, NI, in_type);
 
 	float (*learning_rate_schedule)[numbatches] = NULL;
-	
+
 	if (0 < conf->min_learning_rate) {
 
 		if (conf->learning_rate_epoch_mod)

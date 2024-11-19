@@ -1152,10 +1152,8 @@ void sgd(	int epochs, int batches,
 
 		case IN_BATCH_GENERATOR:
 
-			if (NULL != x[i])
-				error("NULL != x[%d] for batch generator\n", i);
-
-			x[i] = vops->allocate(isize[i]);
+			if (NULL == x[i])
+				x[i] = vops->allocate(isize[i]);
 
 			x_batch_gen[N_batch_gen] = x[i];
 			N_batch_gen += 1;
