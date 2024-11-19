@@ -14,6 +14,7 @@
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/iovec.h"
+#include "num/vptr.h"
 #ifdef USE_CUDA
 #include "num/gpuops.h"
 #endif
@@ -389,14 +390,32 @@ void iter6_sgd_like(	const iter6_conf* conf,
 
 	assert(NULL != gpu_ref);
 
-#ifdef USE_CUDA
-	if (cuda_ondevice(gpu_ref)) {
+	const struct vec_iter_s* vops = select_vecops(gpu_ref);
 
-		for (int i = 0; i < NI; i++)
-			if (IN_BATCH_GENERATOR == in_type[i])
-				dst[i] = cuda_malloc_host(sizeof(float) * isize[i]);
+	float* out[NO];
+	for (int i = 0; i < NO; i++) {
+
+		out[i] = vops->allocate(osize[i]);
+		auto iov = nlop_generic_codomain(nlop, i);
+
+		if (is_vptr(out[i]))
+			vptr_set_dims(out[i], iov->N, iov->dims, CFL_SIZE, NULL);
 	}
-#endif
+
+	for (int i = 0; i < NI; i++) {
+
+		if (IN_BATCH_GENERATOR == in_type[i]) {
+
+			dst[i] = vops->allocate(isize[i]);
+			if (is_vptr_gpu(dst[i]))
+				vptr_set_host(dst[i], true);
+
+			auto iov = nlop_generic_domain(nlop, i);
+
+			if (is_vptr(dst[i]))
+				vptr_set_dims(dst[i], iov->N, iov->dims, CFL_SIZE, NULL);
+		}
+	}
 
 	bool free_monitor = (NULL == monitor);
 
@@ -429,7 +448,7 @@ void iter6_sgd_like(	const iter6_conf* conf,
 		conf->learning_rate, conf->batchnorm_momentum,
 		learning_rate_schedule,
 		NI, isize, in_type, dst,
-		NO, osize, out_type,
+		NO, osize, out_type, out,
 		batchsize, batchsize * numbatches,
 		select_vecops(gpu_ref),
 		nlop_iter, adj_op_arr,
