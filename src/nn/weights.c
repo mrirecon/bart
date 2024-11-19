@@ -14,6 +14,7 @@
 
 #include "num/multind.h"
 #include "num/iovec.h"
+#include "num/vptr.h"
 #ifdef USE_CUDA
 #include "num/gpuops.h"
 #endif
@@ -124,8 +125,8 @@ nn_weights_t load_nn_weights(const char *name)
  * @param weights pointer to struct holding the weights
  *
  */
-void dump_nn_weights(const char *name, nn_weights_t weights) {
-
+void dump_nn_weights(const char *name, nn_weights_t weights)
+{
 	int D[weights->N];
 	const long* dims[weights->N];
 	for (int i = 0; i < weights->N; i++) {
@@ -142,7 +143,8 @@ void dump_nn_weights(const char *name, nn_weights_t weights) {
  *
  * @param weights pointer to struct holding the weights
  */
-void move_gpu_nn_weights(nn_weights_t weights){
+void move_gpu_nn_weights(nn_weights_t weights)
+{
 #ifdef USE_CUDA
 	for (int i = 0; i < weights->N; i++) {
 
@@ -160,6 +162,20 @@ void move_gpu_nn_weights(nn_weights_t weights){
 	(void)weights;
 	error("Compiled without gpu support!\n");
 #endif
+}
+
+/**
+ * Move weights to vptr
+ *
+ * @param weights pointer to struct holding the weights
+ */
+void move_vptr_nn_weights(nn_weights_t weights)
+{
+	for (int i = 0; i < weights->N; i++) {
+
+		auto iov = weights->iovs[i];
+		weights->tensors[i] = vptr_wrap(iov->N, iov->dims, iov->size, weights->tensors[i], NULL, true, false);
+	}
 }
 
 /**
@@ -184,8 +200,8 @@ bool nn_weights_on_gpu(nn_weights_t weights)
  *
  * @param weights pointer to struct holding the weights
  */
-void nn_weights_free(nn_weights_t weights){
-
+void nn_weights_free(nn_weights_t weights)
+{
 	for (int i = 0; i < weights->N; i++) {
 
 		iovec_free(weights->iovs[i]);
