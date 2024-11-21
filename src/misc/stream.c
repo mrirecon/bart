@@ -15,6 +15,7 @@
 #include <fcntl.h>
 #include <limits.h>
 #include <sys/mman.h>
+#include <stdio.h>
 
 #include "num/multind.h"
 #include "num/optimize.h"
@@ -68,6 +69,9 @@ struct stream {
 	bool unmap;
 
 	list_t events;
+
+	FILE* stream_logfile;
+	double* stream_ts;
 };
 
 struct stream_settings {
@@ -311,6 +315,10 @@ const char* stream_mangle_name(const char* name, bool in)
 
 static void stream_del(const struct shared_obj_s* sptr);
 
+static void stream_stop_log(const struct stream* s);
+static void stream_init_log(stream_t s);
+static void stream_log_index(stream_t s, long index, double t);
+
 /**
  * Creates a stream.
  *
@@ -344,6 +352,8 @@ stream_t stream_create(int N, const long dims[N], complex float* data, int pipef
 	ret->data = NULL;
 	ret->unmap = false;
 	ret->events =  NULL;
+	ret->stream_ts = NULL;
+	ret->stream_logfile = NULL;
 
 	ret->filename = (NULL == name) ? NULL : strdup(name);
 
@@ -380,6 +390,7 @@ stream_t stream_create(int N, const long dims[N], complex float* data, int pipef
 	ret->D = N;
 	ret->data = pcfl_create(data, N, dims, flags);
 
+	stream_init_log(ret);
 
 	assert(!(regist && (NULL == data)));
 
@@ -429,6 +440,8 @@ static void stream_del(const struct shared_obj_s* sptr)
 		xfree(s->filename);
 
 	stream_event_list_free(s->events);
+
+	stream_stop_log(s);
 
 	xfree(s);
 }
@@ -761,6 +774,9 @@ static bool stream_receive_idx_locked(stream_t s)
 
 	bart_cond_notify_all(s->cond);
 
+	// if receiving, save timestamp after finished receiving!
+	stream_log_index(s, offset, timestamp());
+
 	debug_printf(DP_DEBUG3, "data offset rcvd: %ld\n", s->data->index);
 
 	return true;
@@ -768,6 +784,9 @@ static bool stream_receive_idx_locked(stream_t s)
 
 static bool stream_send_index_locked(stream_t s, long index)
 {
+	// if sending, save timestamp before starting sending of index.
+	stream_log_index(s, index, timestamp());
+
 	if (!stream_send_msg(s->pipefd, &(struct stream_msg){ .type = STREAM_MSG_INDEX, .data.offset = index }))
 		return false;
 
@@ -1159,3 +1178,45 @@ static struct stream_event* stream_event_create(int index, int type, long size, 
 	return event;
 }
 
+static void stream_init_log(stream_t s)
+{
+	char* streamlog_prefix = getenv("BART_STREAM_LOG");
+	if (!streamlog_prefix)
+		return;
+
+	const char* suffix2 = ".txt";
+	unsigned int logfile_len = strlen(streamlog_prefix) + strlen(s->filename) + strlen(suffix2) + 1;
+
+	char* logfile_path = xmalloc(logfile_len);
+
+	assert(logfile_path);
+	snprintf(logfile_path, logfile_len, "%s%s%s", streamlog_prefix, s->filename, suffix2);
+
+	s->stream_logfile = fopen(logfile_path, "a");
+	assert(s->stream_logfile);
+	xfree(logfile_path);
+
+	s->stream_ts = xmalloc(sizeof(double) * (unsigned long)s->data->tot);
+
+	fprintf(s->stream_logfile, "# index, timestamp\n");
+}
+
+static void stream_stop_log(const struct stream* s)
+{
+	if (NULL == s->stream_logfile || NULL == s->stream_ts)
+		return;
+
+	for (long i = 0; i <= s->data->index; i++)
+		fprintf(s->stream_logfile, "%ld, %f\n", i, s->stream_ts[i]);
+
+	if (s->stream_logfile)
+		fclose(s->stream_logfile);
+
+	xfree(s->stream_ts);
+}
+
+static void stream_log_index(stream_t s, long index, double t)
+{
+	if (s->stream_ts)
+		s->stream_ts[index] = t;
+}
