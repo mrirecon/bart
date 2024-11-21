@@ -691,6 +691,7 @@ static complex float* create_pipe(const char* name, int D, long dimensions[D], u
 	int fd;
 	char* dir;
 	char* abs_filename;
+	bool call_msync = false;
 
 	if (NULL != strm) {
 
@@ -716,7 +717,10 @@ static complex float* create_pipe(const char* name, int D, long dimensions[D], u
 		error("Directory pathname too long.\n");
 	abs_filename = (char*)ptr_printf("%s/%s", dir, filename);
 
-	strm = stream_create_file(name, D, dimensions, stream_flags, abs_filename, true);
+#ifdef __EMSCRIPTEN__
+	call_msync = true;
+#endif
+	strm = stream_create_file(name, D, dimensions, stream_flags, abs_filename, call_msync);
 
 	xfree(dir);
 	xfree(abs_filename);
