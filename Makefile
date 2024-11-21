@@ -269,7 +269,7 @@ ISMRM_BASE ?= /usr/local/ismrmrd/
 TBASE=show slice crop resize join transpose squeeze flatten zeros ones flip circshift extract repmat bitmask reshape version delta copy casorati vec poly index multicfl tee trx compress
 TFLP=scale invert conj fmac saxpy sdot spow cpyphs creal carg normalize cdf97 pattern nrmse mip avg cabs zexp calc unwrap
 TNUM=fft fftmod fftshift noise bench threshold conv rss filter nlmeans mandelbrot wavelet window var std fftrot roistat pol2mask conway morphop
-TRECO=pics pocsense sqpics itsense nlinv moba nufft nufftbase rof tgv ictv sake wave lrmatrix estdims estshift estdelay wavepsf wshfl rtnlinv mobafit grog denoise
+TRECO=pics pocsense sqpics itsense nlinv moba nufft nufftbase rof tgv ictv sake wave lrmatrix estdims estshift estdelay wavepsf wshfl rtnlinv mobafit grog denoise estscaling
 TCALIB=ecalib ecaltwo caldir walsh cc ccapply rovir calmat svd estvar whiten rmfreq ssa bin psf ncalib
 TMRI=homodyne poisson twixread fakeksp looklocker upat fovshift
 TSIM=phantom traj signal epg sim raga stl
@@ -343,7 +343,7 @@ MODULES_estmotion = -lmotion -lnn -liter -lnlops -llinops
 MODULES_interpolate = -lmotion -liter -lnlops -llinops
 MODULES_unwrap = -llinops
 MODULES_stl = -lstl
-
+MODULES_estscaling = -lsense -llinops
 
 
 GCCVERSION12 := $(shell expr `$(CC) -dumpversion | cut -f1 -d.` \>= 12)
