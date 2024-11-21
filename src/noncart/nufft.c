@@ -903,9 +903,6 @@ static void nufft_set_traj(struct nufft_data* data, int N,
 
 	if (NULL != basis) {
 
-		//	conf.toeplitz = false;
-		debug_print_dims(DP_DEBUG1, N, bas_dims);
-
 		assert(1 == md_calc_size(5, bas_dims));
 		data->out_dims[5] = bas_dims[5];	// TE
 		data->out_dims[6] = 1;			// COEFF
