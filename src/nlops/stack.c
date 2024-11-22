@@ -279,6 +279,9 @@ static int set_streams(int streams)
 
 static int thread_id(void)
 {
+	if (cuda_is_stream_default())
+		return 0;
+
 	if (-1 < cuda_get_device_id())
 		return cuda_get_stream_id();
 	else
@@ -452,7 +455,7 @@ static void stack_container_adj(const nlop_data_t* _data, int o, int i, complex 
 		auto iov = nlop_generic_domain(d->nlops[0], i);
 
 		if (d->dup[i])
-			mpi_reduce_zsum_vector(md_calc_size(iov->N, iov->dims), _dst);
+			mpi_reduce_zsum(iov->N, iov->dims, _dst, _dst);
 
 	}
 }
@@ -531,7 +534,7 @@ static void stack_container_nrm(const nlop_data_t* _data, int o, int i, complex 
 		auto iov = nlop_generic_domain(d->nlops[0], i);
 
 		if (d->dup[i])
-			mpi_reduce_zsum_vector(md_calc_size(iov->N, iov->dims), _dst);
+			mpi_reduce_zsum(iov->N, iov->dims, _dst, _dst);
 
 	}
 }
