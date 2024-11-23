@@ -29,6 +29,9 @@ From: debian:12
 	# Install useful tools for the installation process and workflows
 	apt-get install -y make gcc git wget vim dpkg unzip screen time bc
 
+	# Install openMPI
+	apt-get install -y libopenmpi-dev libopenmpi3 openmpi-bin openmpi-common openmpi-doc
+
 	# Install CUDA
 	CUDA_VERSION=12-3
 	wget https://developer.download.nvidia.com/compute/cuda/repos/debian12/x86_64/cuda-keyring_1.1-1_all.deb
@@ -44,7 +47,7 @@ From: debian:12
 	rm v${BART_VERSION}.zip
 	cd bart
 	touch Makefiles/Makefile.local
-	printf "PARALLEL=1\nCUDA=1\nCUDA_BASE=/usr/local/cuda\nCUDA_LIB=lib64\n" > Makefiles/Makefile.local
+	printf "PARALLEL=1\nCUDA=1\nCUDA_BASE=/usr/local/cuda\nCUDA_LIB=lib64\nMPI=1\n" > Makefiles/Makefile.local
 	make
 	cd ..
 

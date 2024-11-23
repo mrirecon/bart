@@ -27,12 +27,22 @@ From: ubuntu:22.04
 	# Install useful tools for the installation process and workflows
 	apt-get install -y make gcc git wget vim dpkg unzip screen time bc
 
+	# Install openMPI
+	apt-get install -y libopenmpi-dev libopenmpi3 openmpi-bin openmpi-common openmpi-doc
+
 	# Install CUDA
 	CUDA_VERSION=12-0
 	wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
 	dpkg -i cuda-keyring_1.1-1_all.deb
 	apt-get update
 	DEBIAN_FRONTEND=noninteractive apt-get -y install cuda-${CUDA_VERSION} # `DEBIAN_FRONTEND=noninteractive` avoids keyboard pop-up
+
+	# Install CuDNN
+	wget https://developer.download.nvidia.com/compute/cudnn/9.2.0/local_installers/cudnn-local-repo-ubuntu2204-9.2.0_1.0-1_amd64.deb
+	dpkg -i cudnn-local-repo-ubuntu2204-9.2.0_1.0-1_amd64.deb
+	cp /var/cudnn-local-repo-ubuntu2204-9.2.0/cudnn-*-keyring.gpg /usr/share/keyrings/
+	apt-get update
+	apt-get -y install cudnn-cuda-12
 
 	# Install BART and compile it with GPU support
 	BART_VERSION=0.9.00
@@ -42,7 +52,7 @@ From: ubuntu:22.04
 	rm v${BART_VERSION}.zip
 	cd bart
 	touch Makefiles/Makefile.local
-	printf "PARALLEL=1\nCUDA=1\nCUDA_BASE=/usr/local/cuda\nCUDA_LIB=lib64\n" > Makefiles/Makefile.local
+	printf "PARALLEL=1\nCUDA=1\nCUDA_BASE=/usr/local/cuda\nCUDA_LIB=lib64\nCUDNN=1\nMPI=1\n" > Makefiles/Makefile.local
 	make
 	cd ..
 
