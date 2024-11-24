@@ -58,6 +58,7 @@
 #include "num/gpukrnls.h"
 #include "num/gpukrnls_copy.h"
 #endif
+#include "num/vptr_fun.h"
 
 #include "num/vptr.h"
 #include "num/mpi_ops.h"
@@ -159,7 +160,7 @@ void md_parallel_nary(int C, int D, const long dim[D], unsigned long flags, cons
 	int outer_threads = MAX(1, MIN(old_threads, total_iterations));
 	int inner_threads = MAX(1, old_threads / outer_threads);
 
-	omp_set_num_threads(outer_threads);	
+	omp_set_num_threads(outer_threads);
 #endif
 
 #pragma omp parallel for
@@ -411,7 +412,7 @@ void md_select_strides(int D, unsigned long flags, long ostrs[D], const long ist
 		if (!MD_IS_SET(flags, i))
 			ostrs[i] = 0;
 		else
-			ostrs[i] = istrs[i]; 
+			ostrs[i] = istrs[i];
 }
 
 /**
@@ -485,7 +486,7 @@ bool md_check_equal_dims(int N, const long dims1[N], const long dims2[N], unsign
 	for (int i = 0; i < N; i++)
 		if (MD_IS_SET(flags, i) && (dims1[i] != dims2[i]))
 			return false;
-	
+
 	return true;
 }
 
@@ -586,7 +587,7 @@ bool md_check_bounds(int D, unsigned long flags, const long dim1[D], const long 
 	for (int i = 0; i < D; i++)
 		if (MD_IS_SET(flags, i) && (dim1[i] > dim2[i]))
 			return false;
-	
+
 	return true;
 }
 
@@ -2252,28 +2253,37 @@ void md_periodic(int D, const long dims1[D], void* dst, const long dims2[D], con
 }
 
 
-void md_mask_compress(int D, const long dims[D], long M, uint32_t dst[static M], const float* src)
-{
-	long N = md_calc_size(D, dims);
+struct vptr_mask_compress_s { INTERFACE(vptr_fun_data_t); };
+DEF_TYPEID(vptr_mask_compress_s);
 
-	assert(M == (N + 31) / 32);
+static void md_mask_compress_int(vptr_fun_data_t* _data, int N, int D, const long* dims[N], const long* /*strs*/[N], void* args[N])
+{
+	assert(CAST_DOWN(vptr_mask_compress_s, _data));
+	assert(N == 2);
+
+	assert(dims[0][0] == (md_calc_size(D, dims[1]) + 31) / 32);
+
+	long tot = md_calc_size(D, dims[1]);
+
+	uint32_t* dst = args[0];
+	float* src = args[1];
 
 #ifdef USE_CUDA
-	if (cuda_ondevice(src)) {
+	if (cuda_ondevice(args[1])) {
 
-		cuda_mask_compress(N, dst, src);
+		cuda_mask_compress(tot, dst, src);
 		return;
 	}
-#endif 
+#endif
 
 #pragma omp parallel for
-	for (long i = 0; i < M; i++) {
+	for (long i = 0; i < dims[0][0]; i++) {
 
 		uint32_t result = 0;
 
 		for (long j = 0; j < 32; j++) {
 
-			if ((32 * i + j) >= N)
+			if ((32 * i + j) >= tot)
 				continue;
 
 			if (0. != src[(32 * i + j)])
@@ -2284,6 +2294,54 @@ void md_mask_compress(int D, const long dims[D], long M, uint32_t dst[static M],
 	}
 }
 
+void md_mask_compress(int D, const long dims[D], long M, uint32_t dst[static M], const float* src)
+{
+	long N = md_calc_size(D, dims);
+
+	assert(M == (N + 31) / 32);
+
+	PTR_ALLOC(struct vptr_mask_compress_s, _d);
+	SET_TYPEID(vptr_mask_compress_s, _d);
+	_d->INTERFACE.del = NULL;
+
+	exec_vptr_fun_gen(md_mask_compress_int, CAST_UP(PTR_PASS(_d)), 2, 1, 0UL, MD_BIT(0), MD_BIT(1), (const long*[2]) { &M, &N }, (const long*[2]) { MD_DIMS(sizeof(uint32_t)), MD_DIMS(sizeof(uint32_t)) }, (void*[2]){ dst, (void*)src }, (size_t[2]) { sizeof(uint32_t), sizeof(float) }, true);
+}
+
+struct vptr_mask_decompress_s { INTERFACE(vptr_fun_data_t); };
+DEF_TYPEID(vptr_mask_decompress_s);
+
+static void md_mask_decompress_int(vptr_fun_data_t* _data, int N, int D, const long* dims[N], const long* /*strs*/[N], void* args[N])
+{
+	assert(CAST_DOWN(vptr_mask_decompress_s, _data));
+	assert(N == 2);
+
+	assert(dims[1][0] == (md_calc_size(D, dims[0]) + 31) / 32);
+
+	long tot = md_calc_size(D, dims[0]);
+
+	float* dst = args[0];
+	uint32_t* src = args[1];
+
+#ifdef USE_CUDA
+	if (cuda_ondevice(src)) {
+
+		cuda_mask_decompress(tot, dst, src);
+		return;
+	}
+#endif
+
+#pragma omp parallel for
+	for (long i = 0; i < dims[1][0]; i++) {
+
+		for (long j = 0; j < 32; j++) {
+
+			if ((32 * i + j) >= tot)
+				continue;
+
+			dst[32 * i + j] = MD_IS_SET(src[i], j) ? 1. : 0.;
+		}
+	}
+}
 
 void md_mask_decompress(int D, const long dims[D], float* dst, long M, const uint32_t src[static M])
 {
@@ -2291,26 +2349,13 @@ void md_mask_decompress(int D, const long dims[D], float* dst, long M, const uin
 
 	assert(M == (N + 31) / 32);
 
-#ifdef USE_CUDA
-	if (cuda_ondevice(src)) {
+	PTR_ALLOC(struct vptr_mask_decompress_s, _d);
+	SET_TYPEID(vptr_mask_decompress_s, _d);
+	_d->INTERFACE.del = NULL;
 
-		cuda_mask_decompress(N, dst, src);
-		return;
-	}
-#endif 
-
-#pragma omp parallel for
-	for (long i = 0; i < M; i++) {
-
-		for (long j = 0; j < 32; j++) {
-
-			if ((32 * i + j) >= N)
-				continue;
-
-			dst[32 * i + j] = MD_IS_SET(src[i], j) ? 1. : 0.;
-		}
-	}
+	exec_vptr_fun_gen(md_mask_decompress_int, CAST_UP(PTR_PASS(_d)), 2, 1, 0UL, MD_BIT(0), MD_BIT(1), (const long*[2]) { &N, &M }, (const long*[2]) { MD_DIMS(sizeof(uint32_t)), MD_DIMS(sizeof(uint32_t)) }, (void*[2]){ dst, (void*)src }, (size_t[2]) { sizeof(float), sizeof(uint32_t) }, true);
 }
+
 
 
 /**
@@ -2546,7 +2591,7 @@ long md_reravel_index2(int D, unsigned long flags, const long dims[D], const lon
 		if (MD_IS_SET(flags, i))
 			ret += (0 == ustrs[i]) ? 0 : ((index / ustrs[i]) % dims[i]) * rstrs[i];
 
-	return ret;	
+	return ret;
 }
 
 
