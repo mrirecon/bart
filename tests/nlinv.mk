@@ -10,6 +10,45 @@ tests/test-nlinv: normalize nlinv pocsense nrmse $(TESTS_OUT)/shepplogan_coil_ks
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-nlinv-reg: normalize nlinv pocsense nrmse $(TESTS_OUT)/shepplogan_coil_ksp.ra
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/nlinv -i10 -RW:3:0:0.1 --liniter=50 $(TESTS_OUT)/shepplogan_coil_ksp.ra r.ra c.ra	;\
+	$(TOOLDIR)/normalize 8 c.ra c_norm.ra						;\
+	$(TOOLDIR)/pocsense -i1 $(TESTS_OUT)/shepplogan_coil_ksp.ra c_norm.ra proj.ra	;\
+	$(TOOLDIR)/nrmse -t 0.03 proj.ra $(TESTS_OUT)/shepplogan_coil_ksp.ra		;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-nlinv-reg2: nlinv fft fmac nrmse $(TESTS_OUT)/shepplogan_coil_ksp_sub.ra $(TESTS_OUT)/shepplogan_coil_ksp.ra
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)							;\
+	$(TOOLDIR)/nlinv -d4 -i12 -RW:3:0:1. --liniter=50 --cgiter=30 -N -S --sens-os=2 $(TESTS_OUT)/shepplogan_coil_ksp_sub.ra r.ra c.ra;\
+	$(TOOLDIR)/fmac r.ra c.ra cim.ra								;\
+	$(TOOLDIR)/fft -u 7 cim.ra ksp.ra								;\
+	$(TOOLDIR)/nrmse -s -t 0.05 ksp.ra $(TESTS_OUT)/shepplogan_coil_ksp.ra				;\
+	$(TOOLDIR)/nrmse -t 0.05 ksp.ra $(TESTS_OUT)/shepplogan_coil_ksp.ra				;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-nlinv-reg3: nlinv fft fmac nrmse $(TESTS_OUT)/shepplogan_coil_ksp_sub.ra $(TESTS_OUT)/shepplogan_coil_ksp.ra
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)							;\
+	$(TOOLDIR)/nlinv -d4 -i12 -RT:3:0:10. --liniter=50 --cgiter=30 -N -S --sens-os=2 $(TESTS_OUT)/shepplogan_coil_ksp_sub.ra r.ra c.ra;\
+	$(TOOLDIR)/fmac r.ra c.ra cim.ra								;\
+	$(TOOLDIR)/fft -u 7 cim.ra ksp.ra								;\
+	$(TOOLDIR)/nrmse -t 0.05 ksp.ra $(TESTS_OUT)/shepplogan_coil_ksp.ra				;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-nlinv-reg4: nlinv fft fmac nrmse $(TESTS_OUT)/shepplogan_coil_ksp_sub.ra $(TESTS_OUT)/shepplogan_coil_ksp.ra
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)							;\
+	$(TOOLDIR)/nlinv -d4 -i12 -RG:3:0:1. --liniter=50 --cgiter=30 -N -S --sens-os=2 $(TESTS_OUT)/shepplogan_coil_ksp_sub.ra r.ra c.ra;\
+	$(TOOLDIR)/fmac r.ra c.ra cim.ra								;\
+	$(TOOLDIR)/fft -u 7 cim.ra ksp.ra								;\
+	$(TOOLDIR)/nrmse -s -t 0.05 ksp.ra $(TESTS_OUT)/shepplogan_coil_ksp.ra				;\
+	$(TOOLDIR)/nrmse -t 0.05 ksp.ra $(TESTS_OUT)/shepplogan_coil_ksp.ra				;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
 
 tests/test-nlinv-sms: repmat fft nlinv nrmse scale $(TESTS_OUT)/shepplogan_coil_ksp.ra
 	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
@@ -369,6 +408,7 @@ TESTS += tests/test-nlinv-basis-noncart
 TESTS += tests/test-nlinv-ksens
 TESTS += tests/test-nlinv-psf-noncart tests/test-nlinv-sms-noncart-psf
 TESTS += tests/test-ncalib tests/test-ncalib-noncart
+TESTS += tests/test-nlinv-reg tests/test-nlinv-reg2 tests/test-nlinv-reg3 tests/test-nlinv-reg4
 TESTS_GPU += tests/test-nlinv-gpu tests/test-nlinv-sms-gpu
 
 
