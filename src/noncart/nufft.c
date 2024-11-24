@@ -437,7 +437,7 @@ complex float* compute_psf(int N, const long img_dims[N], const long trj_dims[N]
 
 // This function computes decompose(fftuc(nufft^H(1; 2*traj)) on the factor 2 oversampled grid
 // It computes the even and off frequencies independently and is hence more memory efficient
-static complex float* compute_psf2_decomposed(int N, const long psf_dims[N + 1], unsigned long flags, const long trj_dims[N + 1], const complex float* traj,
+complex float* compute_psf2_decomposed(int N, const long psf_dims[N + 1], unsigned long flags, const long trj_dims[N + 1], const complex float* traj,
 				const long bas_dims[N + 1], const complex float* basis, const long wgh_dims[N + 1], const complex float* weights,
 				bool periodic, bool lowmem, bool upper_triag)
 {
@@ -553,7 +553,7 @@ static complex float* compute_psf2_decomposed(int N, const long psf_dims[N + 1],
 
 
 
-static complex float* compute_psf2(int N, const long psf_dims[N + 1], unsigned long flags, const long trj_dims[N + 1], const complex float* traj,
+complex float* compute_psf2(int N, const long psf_dims[N + 1], unsigned long flags, const long trj_dims[N + 1], const complex float* traj,
 				const long bas_dims[N + 1], const complex float* basis, const long wgh_dims[N + 1], const complex float* weights,
 				bool periodic, bool lowmem, bool upper_triag)
 {
