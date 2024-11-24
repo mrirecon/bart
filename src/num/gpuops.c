@@ -74,7 +74,7 @@ void cuda_gpu_check(const char* file, int line, const char* note)
 	cudaError_t code = cudaStreamSynchronize(cuda_get_stream());
 
 	if (cudaSuccess != code) {
-		
+
 		const char *err_str = cudaGetErrorString(code);
 
 		if (0 == strlen(note))
@@ -93,7 +93,7 @@ void cuda_check_ptr(const char* file, int line, int N, const void* ptr[N])
 {
 #ifdef GPU_ASSERTS
 	bool same_device = true;
-	
+
 	for (int i = 0; i < N; i++)
 		if (!cuda_ondevice(ptr[i]))
 			error("CUDA Error: Pointer not on device in %s:%d", file, line);
@@ -139,7 +139,7 @@ static bool cuda_try_init(int device)
 	if (cudaSuccess == errval) {
 
 		cuda_device_id = device;
-		
+
 		cuda_streams[CUDA_MAX_STREAMS] = cudaStreamLegacy;
 		for (int i = 0; i < CUDA_MAX_STREAMS; i++)
 			CUDA_ERROR(cudaStreamCreate(&(cuda_streams[i])));
@@ -237,12 +237,23 @@ int cuda_get_stream_id(void)
 #endif
 }
 
+bool cuda_is_stream_default(void)
+{
+	if (-1 == cuda_device_id)
+		return true;
+
+	return CUDA_MAX_STREAMS == cuda_get_stream_id();
+}
+
 
 
 int cuda_set_stream_level(void)
 {
 #ifdef _OPENMP
 	if (0 < omp_get_active_level())
+		return 1;
+
+	if (1 == cuda_num_streams)
 		return 1;
 
 	if (-1 == cuda_stream_level)
@@ -279,12 +290,12 @@ void cuda_sync_stream(void)
 	// do not initialize gpu just for syncing
 	if (-1 == cuda_device_id)
 		return;
-	
+
 	CUDA_ERROR(cudaStreamSynchronize(cuda_get_stream()));
 }
 
 
-//*************************************** Memory Management ********************************************* 
+//*************************************** Memory Management *********************************************
 
 
 static void* cuda_malloc_wrapper(size_t size)
@@ -316,15 +327,42 @@ static void* cuda_malloc_wrapper(size_t size)
 
 	} else {
 
-		CUDA_ERROR(cudaMalloc(&ptr, size));
+		cudaError_t err = cudaMalloc(&ptr, size);
+
+		if (cudaSuccess != err) {
+
+			if (cudaErrorMemoryAllocation == err) {
+
+				cuda_memcache_clear();
+				cudaGetLastError();
+				err = cudaMalloc(&ptr, size);
+			}
+
+			if (cudaSuccess != err) {
+
+				debug_print_memcache(DP_INFO);
+				debug_printf(DP_WARN, "Trying to allocate %zu GB\n", size / 1024 /1024 /1024);
+				cuda_error(__FILE__, __LINE__, err);
+			}
+		}
 	}
 
 	return ptr;
 }
 
-static void cuda_free_wrapper(const void* ptr)
+static void* cuda_malloc_host_wrapper(size_t size)
 {
-	CUDA_ERROR(cudaFree((void*)ptr));
+	void* ptr;
+	CUDA_ERROR(cudaMallocHost(&ptr, (size_t)size));
+	return ptr;
+}
+
+static void cuda_free_wrapper(const void* ptr, bool host)
+{
+	if (host)
+		CUDA_ERROR(cudaFreeHost((void*)ptr));
+	else
+		CUDA_ERROR(cudaFree((void*)ptr));
 }
 
 void cuda_free(void* ptr)
@@ -334,7 +372,12 @@ void cuda_free(void* ptr)
 
 void* cuda_malloc(long size)
 {
-	return mem_device_malloc((size_t)size, cuda_malloc_wrapper);
+	return mem_device_malloc((size_t)size, cuda_malloc_wrapper, false);
+}
+
+void* cuda_malloc_host(long size)
+{
+	return mem_device_malloc((size_t)size, cuda_malloc_host_wrapper, true);
 }
 
 void cuda_use_global_memory(void)
@@ -361,7 +404,7 @@ static bool cuda_ondevice_int(const void* ptr)
 {
 #ifdef CUDA_GET_CUDA_DEVICE_NUM
 // (We still don use this because it is slow. Why? Nivida, why?)
-// Starting with CUDA 10 it has similar speed to the memcache but is 
+// Starting with CUDA 10 it has similar speed to the memcache but is
 // faster if multiple threads access the memcache
 // with our trees it's faster again...
 	if (NULL == ptr)
@@ -369,7 +412,7 @@ static bool cuda_ondevice_int(const void* ptr)
 
 	if (-1 == cuda_device_id)
 		return false;
-	
+
 	struct cudaPointerAttributes attr;
 	if (cudaSuccess != (cudaPointerGetAttributes(&attr, ptr)))
 	{
@@ -385,7 +428,7 @@ static bool cuda_ondevice_int(const void* ptr)
 		return false;
 
 	return 0 <= attr.device;
-#else 
+#else
 	return mem_ondevice(ptr);
 #endif
 }
@@ -599,7 +642,7 @@ const struct vec_iter_s gpu_iter_ops = {
 	.xpay_bat = cuda_xpay_bat,
 	.dot_bat = cuda_dot_bat,
 	.axpy_bat = cuda_axpy_bat,
-	
+
 };
 #endif
 

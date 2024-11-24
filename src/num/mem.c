@@ -54,6 +54,7 @@ struct mem_s {
 	const void* ptr;
 	ssize_t len;
 	ssize_t len_used;
+	bool host;
 
 	const char* backtrace;
 };
@@ -66,7 +67,7 @@ static int ptr_cmp(const void* _a, const void* _b)
 
 	if (a->ptr == b->ptr)
 		return 0;
-	
+
 	return (a->ptr > b->ptr) ? 1 : -1;
 }
 
@@ -77,7 +78,7 @@ static int size_cmp(const void* _a, const void* _b)
 
 	if (a->len == b->len)
 		return 0;
-	
+
 	return (a->len > b->len) ? 1 : -1;
 }
 
@@ -104,7 +105,7 @@ bool memcache_is_empty(void)
 
 		if (NULL != mem_cache[i] && 0 != tree_count(mem_cache[i]))
 			return false;
-	
+
 		if (NULL != mem_allocs[i] && 0 != tree_count(mem_allocs[i]))
 			return false;
 	}
@@ -132,17 +133,23 @@ void memcache_destroy(void)
 static void print_mem_tree(int dl, tree_t tree)
 {
 	int N = tree_count(tree);
-	
+
 	struct mem_s* m[N];
 	tree_to_array(tree, N, (void**)m);
 
+	long total = 0;
+
 	for (int j = 0; j < N; j++) {
 
-		debug_printf(dl, "ptr: %p, len: %zd\n", m[j]->ptr, m[j]->len);
+		debug_printf(dl, "ptr: %p, len: %3.2eB\n", m[j]->ptr, (double)m[j]->len);
+		total += m[j]->len;
 
 		if (NULL != m[j]->backtrace)
 			debug_printf(dl, "%s", m[j]->backtrace);
 	}
+
+	if (0 != N)
+		debug_printf(dl, "Total: %3.2eB\n", (double)total);
 }
 
 void debug_print_memcache(int dl)
@@ -151,7 +158,7 @@ void debug_print_memcache(int dl)
 		return;
 
 	for (int i = 0; i < CUDA_MAX_STREAMS + 1; i++) {
-		
+
 		if (NULL == mem_allocs[i])
 			return;
 
@@ -168,7 +175,7 @@ static int inside_p(const void* _rptr, const void* ptr)
 
 	if ((ptr >= rptr->ptr) && (ptr < rptr->ptr + rptr->len))
 		return 0;
-	
+
 	return (rptr->ptr > ptr) ? 1 : -1;
 }
 
@@ -199,7 +206,7 @@ static int find_free_p(const void* _rptr, const void* _cmp)
 
 	if ((rptr->len >= min) && (rptr->len <= max))
 		return 0;
-	
+
 	return (rptr->len > max) ? 1 : -1;
 }
 
@@ -215,7 +222,7 @@ static struct mem_s* find_free(ssize_t size, int i)
 }
 
 
-void memcache_clear(void (*device_free)(const void*x))
+void memcache_clear(void (*device_free)(const void* x, bool host))
 {
 	if (!mem_init)
 		return;
@@ -223,17 +230,21 @@ void memcache_clear(void (*device_free)(const void*x))
 	struct mem_s* nptr = find_free(0, cuda_get_stream_id());
 
 	long freed = 0;
-	
+
 	while (NULL != nptr) {
 
 		debug_printf(DP_DEBUG3, "Freeing %ld bytes.\n", nptr->len);
-		freed += nptr->len;
+		if (!nptr->host)
+			freed += nptr->len;
 
-		device_free(nptr->ptr);
+		device_free(nptr->ptr, nptr->host);
 		xfree(nptr);
 
 		nptr = find_free(0, cuda_get_stream_id());
 	}
+
+#pragma	omp atomic
+	unused_memory[cuda_get_stream_id()] -= freed;
 
 	debug_printf(DP_DEBUG2, "Freed %ld bytes.\n", freed);
 }
@@ -248,7 +259,7 @@ bool mem_ondevice(const void* ptr)
 		return false;
 
 	int stream = cuda_get_stream_id();
-	
+
 	if (stream != CUDA_MAX_STREAMS)
 		return (NULL != search(ptr, false, cuda_get_stream_id())) || (NULL != search(ptr, false, CUDA_MAX_STREAMS));
 
@@ -259,10 +270,10 @@ bool mem_ondevice(const void* ptr)
 		if (NULL != search(ptr, false, i))
 			return true;
 
-	return false; 
+	return false;
 }
 
-void mem_device_free(void* ptr, void (*device_free)(const void* ptr))
+void mem_device_free(void* ptr, void (*device_free)(const void* ptr, bool host))
 {
 	for (int i = 0; i < CUDA_MAX_STREAMS + 1; i++) {
 
@@ -282,8 +293,8 @@ void mem_device_free(void* ptr, void (*device_free)(const void* ptr))
 		assert(NULL != nptr);
 		assert(nptr->ptr == ptr);
 
-		if (memcache) {
-		
+		if (memcache && !nptr->host) {
+
 			tree_insert(mem_cache[i], nptr);
 
 #pragma			omp atomic
@@ -295,9 +306,9 @@ void mem_device_free(void* ptr, void (*device_free)(const void* ptr))
 		} else {
 
 #pragma 		omp atomic
-			used_memory[i] -= nptr->len_used;
+			used_memory[i] -= nptr->len_used * (nptr->host ? 0 : 1);
 
-			device_free(ptr);
+			device_free(ptr, nptr->host);
 			xfree(nptr);
 		}
 
@@ -309,15 +320,12 @@ void mem_device_free(void* ptr, void (*device_free)(const void* ptr))
 
 
 
-void* mem_device_malloc(size_t size2, void* (*device_alloc)(size_t))
+void* mem_device_malloc(size_t size2, void* (*device_alloc)(size_t), bool host)
 {
 	int stream = cuda_get_stream_id();
 	long size = (long)size2;
 
-#pragma omp atomic
-	used_memory[stream] += size;
-
-	struct mem_s* nptr = find_free(size, stream);
+	struct mem_s* nptr = host ? NULL : find_free(size, stream);
 
 	if (NULL != nptr) {
 
@@ -340,10 +348,15 @@ void* mem_device_malloc(size_t size2, void* (*device_alloc)(size_t))
 		_nptr->ptr = ptr;
 		_nptr->len = size;
 		_nptr->len_used = size;
+		_nptr->host = host;
 		_nptr->backtrace = NULL;
 
 		nptr = PTR_PASS(_nptr);
 	}
+
+	if (!host)
+#pragma 	omp atomic
+		used_memory[stream] += size;
 
 	//use for debugging memcache
 	//nptr->backtrace = debug_good_backtrace_string(2);
