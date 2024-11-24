@@ -16,7 +16,7 @@ struct noir2_conf_s {
 
 	float oversampling_coils;
 	_Bool ret_os_coils;
-	
+
 	_Bool sms;
 
 	float scaling;
@@ -24,6 +24,8 @@ struct noir2_conf_s {
 
 	_Bool noncart;
 	struct nufft_conf_s* nufft_conf;
+
+	struct opt_reg_s* regs;
 
 	_Bool gpu;
 
@@ -34,7 +36,11 @@ struct noir2_conf_s {
 	_Bool realtime;
 	float temp_damp;
 
-	_Bool optimized;	
+	_Bool optimized;
+
+	int iter_reg;
+	int liniter;
+	float lintol;
 };
 
 extern const struct noir2_conf_s noir2_defaults;

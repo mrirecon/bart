@@ -287,8 +287,8 @@ endif
 MODULES_pics = -lgrecon -lsense -lmotion -liter -llinops -lwavelet -llowrank -lnoncart -lnn -lnlops
 MODULES_sqpics = -lsense -liter -llinops -lwavelet -llowrank -lnoncart -llinops
 MODULES_pocsense = -lsense -liter -llinops -lwavelet
-MODULES_nlinv = -lnoir -liter -lnlops -llinops -lnoncart
-MODULES_ncalib = -lnoir -liter -lnlops -llinops -lnoncart
+MODULES_nlinv = -lnoir -lgrecon -lwavelet -llowrank -lnn -liter -lnlops -llinops -lnoncart
+MODULES_ncalib = -lnoir -lgrecon -lwavelet -llowrank -lnn -liter -lnlops -llinops -lnoncart
 MODULES_rtnlinv = -lnoir -liter -lnlops -llinops -lnoncart
 MODULES_moba = -lmoba -lnoir -lnn -lnlops -llinops -lwavelet -lnoncart -lsimu -lgrecon -llowrank -llinops -liter -lnn
 MODULES_mobafit = -lmoba -lnlops -llinops -lsimu -liter -lnoir
