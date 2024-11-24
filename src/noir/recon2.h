@@ -36,6 +36,8 @@ struct noir2_conf_s {
 	_Bool realtime;
 	float temp_damp;
 
+	_Bool legacy_early_stoppping;
+
 	_Bool optimized;
 
 	int iter_reg;

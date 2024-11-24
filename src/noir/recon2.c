@@ -40,6 +40,7 @@
 #include "misc/mri.h"
 #include "misc/debug.h"
 #include "misc/stream.h"
+#include "misc/version.h"
 
 #include "noir/model2.h"
 
@@ -103,6 +104,8 @@ const struct noir2_conf_s noir2_defaults = {
 	.loop_flags = 0,
 	.realtime = false,
 	.temp_damp = 0.9,
+
+	.legacy_early_stoppping = false,
 
 	.iter_reg = 3,
 	.liniter = 100,
@@ -362,7 +365,7 @@ void noir2_recon(const struct noir2_conf_s* conf, struct noir2_s* noir_ops,
 	irgnm_conf.alpha_min = conf->alpha_min;
 	irgnm_conf.redu = conf->redu;
 
-	irgnm_conf.nlinv_legacy = true;
+	irgnm_conf.nlinv_legacy = use_compat_to_version("v0.9.00") || conf->legacy_early_stoppping;
 	irgnm_conf.alpha_min = conf->alpha_min;
 
 
