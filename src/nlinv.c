@@ -143,6 +143,7 @@ int main_nlinv(int argc, char* argv[argc])
 		OPTL_INT(0, "liniter", &conf.liniter, "iter", "(iterations for solving linearized problem)"),
 		OPTL_SET(0, "real-time", &(conf.realtime), "Use real-time (temporal l2) regularization"),
 		OPTL_SET(0, "fast", &(conf.optimized), "Use tuned but less generic model"),
+		OPTL_SET(0, "legacy-early-stopping", &(conf.legacy_early_stoppping), "(legacy mode for irgnm early stopping)"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);

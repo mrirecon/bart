@@ -33,7 +33,7 @@ tests/test-smallfov-pics: fmac fft nrmse ecalib pics $(TESTS_OUT)/shepplogan-sma
 tests/test-smallfov-enlive: fmac fft nrmse nlinv $(TESTS_OUT)/shepplogan-smallfov-ksp.ra $(TESTS_OUT)/cart-pattern.ra
 	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)							;\
 	$(TOOLDIR)/fmac $(TESTS_OUT)/shepplogan-smallfov-ksp.ra $(TESTS_OUT)/cart-pattern.ra ku.ra	;\
-	$(TOOLDIR)/nlinv -m2 -i12 -U -S -N ku.ra xu2.ra sn.ra			 			;\
+	$(TOOLDIR)/nlinv -m2 -i14 -U -S -N ku.ra xu2.ra sn.ra			 			;\
 	$(TOOLDIR)/fmac -s16 xu2.ra sn.ra xsn.ra							;\
 	$(TOOLDIR)/fft -u 7 xsn.ra xsn2.ra								;\
 	$(TOOLDIR)/nrmse -t 0.032 $(TESTS_OUT)/shepplogan-smallfov-ksp.ra xsn2.ra		 	;\
@@ -57,7 +57,7 @@ tests/test-smallfov-enlive-batch2: repmat fmac fft nrmse nlinv $(TESTS_OUT)/shep
 	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)							;\
 	$(TOOLDIR)/repmat 7 2 $(TESTS_OUT)/shepplogan-smallfov-ksp.ra ksp.ra				;\
 	$(TOOLDIR)/fmac ksp.ra $(TESTS_OUT)/cart-pattern.ra ku.ra					;\
-	$(TOOLDIR)/nlinv -m2 -s128 -i12 -U -S -N ku.ra xu2.ra sn.ra			 		;\
+	$(TOOLDIR)/nlinv -m2 -s128 -i13 -U -S -N ku.ra xu2.ra sn.ra			 		;\
 	$(TOOLDIR)/fmac -s16 xu2.ra sn.ra xsn.ra							;\
 	$(TOOLDIR)/fft -u 7 xsn.ra xsn2.ra								;\
 	$(TOOLDIR)/nrmse -t 0.04 ksp.ra xsn2.ra		 						;\
