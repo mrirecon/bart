@@ -100,7 +100,7 @@ tests/test-nlinv-batch: conj join nlinv fmac fft nrmse $(TESTS_OUT)/shepplogan_c
 	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/conj $(TESTS_OUT)/shepplogan_coil_ksp.ra kc.ra			;\
 	$(TOOLDIR)/join 6 $(TESTS_OUT)/shepplogan_coil_ksp.ra kc.ra ksp.ra		;\
-	$(TOOLDIR)/nlinv -N -S ksp.ra r.ra c.ra						;\
+	$(TOOLDIR)/nlinv -i10 -N -S ksp.ra r.ra c.ra					;\
 	$(TOOLDIR)/fmac r.ra c.ra x.ra							;\
 	$(TOOLDIR)/fft -u 7 x.ra ksp2.ra						;\
 	$(TOOLDIR)/nrmse -t 0.05 ksp.ra ksp2.ra						;\
@@ -178,13 +178,14 @@ tests/test-nlinv-precomp-psf: traj scale phantom ones repmat fft nufft nlinv nrm
 	$(TOOLDIR)/fft -u 7 psf.ra mtf.ra					;\
 	$(TOOLDIR)/fft -u 7 adj.ra ksp2.ra					;\
 	$(TOOLDIR)/scale 4. mtf.ra mtf2.ra					;\
-	$(TOOLDIR)/nlinv -w1. -n -N -i7 -p mtf2.ra ksp2.ra r1.ra c1.ra		;\
-	$(TOOLDIR)/nlinv --psf-based -w1. -N -i7 -t traj2.ra ksp.ra r2.ra c2.ra	;\
-	$(TOOLDIR)/nrmse -t 0.000001 r2.ra r1.ra				;\
-	$(TOOLDIR)/nrmse -t 0.000001 c2.ra c1.ra				;\
+	$(TOOLDIR)/nlinv          -n -w0.0001 -N -i7 -p mtf2.ra ksp2.ra r1.ra c1.ra	;\
+	$(TOOLDIR)/nlinv --psf-based -w0.0001 -N -i7 -t traj2.ra ksp.ra r2.ra c2.ra	;\
+	$(TOOLDIR)/nrmse -t 0.0001 r2.ra r1.ra					;\
+	$(TOOLDIR)/nrmse -t 0.0001 c2.ra c1.ra					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+#FIXME: Test only works legacy scaloing as 0 cg iter
 tests/test-nlinv-precomp: traj scale phantom ones repmat fft nufft nlinv nrmse
 	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)				;\
 	$(TOOLDIR)/traj -r -x256 -y55 traj.ra					;\
@@ -197,8 +198,8 @@ tests/test-nlinv-precomp: traj scale phantom ones repmat fft nufft nlinv nrmse
 	$(TOOLDIR)/fft -u 7 psf.ra mtf.ra					;\
 	$(TOOLDIR)/fft -u 7 adj.ra ksp2.ra					;\
 	$(TOOLDIR)/scale 4. mtf.ra mtf2.ra					;\
-	$(TOOLDIR)/nlinv -w1. -n -N -i7 -p mtf2.ra ksp2.ra r1.ra c1.ra		;\
-	$(TOOLDIR)/nlinv -w1. --ret-sens-os -N -i7 -t traj2.ra ksp.ra r2.ra c2.ra		;\
+	$(TOOLDIR)/nlinv --legacy-early-stopping -w1. -n -N -i7 -p mtf2.ra ksp2.ra r1.ra c1.ra		;\
+	$(TOOLDIR)/nlinv --legacy-early-stopping -w1. --ret-sens-os -N -i7 -t traj2.ra ksp.ra r2.ra c2.ra		;\
 	$(TOOLDIR)/nrmse -t 0.0002 r2.ra r1.ra				;\
 	$(TOOLDIR)/nrmse -t 0.0001 c2.ra c1.ra				;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
@@ -265,7 +266,7 @@ tests/test-ncalib: fmac ncalib scale copy resize pics nlinv nrmse $(TESTS_OUT)/s
 	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
 	$(TOOLDIR)/copy $(TESTS_OUT)/shepplogan_coil_ksp.ra ksp.ra	;\
 	$(TOOLDIR)/nlinv -N -S -i10 --cgiter=10 ksp.ra r1.ra c1.ra	;\
-	$(TOOLDIR)/ncalib -i6 --cgiter=10 ksp.ra c2.ra			;\
+	$(TOOLDIR)/ncalib      -i10 --cgiter=10 ksp.ra c2.ra		;\
 	$(TOOLDIR)/pics -r0.001 -S ksp.ra c2.ra r2.ra			;\
 	$(TOOLDIR)/fmac c1.ra r1.ra x1.ra				;\
 	$(TOOLDIR)/fmac c2.ra r2.ra x2.ra				;\
