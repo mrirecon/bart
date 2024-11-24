@@ -66,6 +66,18 @@ extern _Complex float* compute_psf(int N,
 				   _Bool periodic,
 				   _Bool lowmem);
 
+extern _Complex float* compute_psf2(int N, const long psf_dims[__VLA(N + 1)], unsigned long flags,
+				const long trj_dims[__VLA(N + 1)], const complex float* traj,
+				const long bas_dims[__VLA(N + 1)], const complex float* basis,
+				const long wgh_dims[__VLA(N + 1)], const complex float* weights,
+				bool periodic, bool lowmem, bool upper_triag);
+
+extern _Complex float* compute_psf2_decomposed(int N, const long psf_dims[__VLA(N + 1)], unsigned long flags,
+				const long trj_dims[__VLA(N + 1)], const complex float* traj,
+				const long bas_dims[__VLA(N + 1)], const complex float* basis,
+				const long wgh_dims[__VLA(N + 1)], const complex float* weights,
+				bool periodic, bool lowmem, bool upper_triag);
+
 extern const struct operator_s* nufft_precond_create(const struct linop_s* nufft_op);
 
 extern struct linop_s* nufft_create_normal(int N, const long cim_dims[__VLA(N)],
