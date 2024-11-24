@@ -21,6 +21,7 @@ struct noir2_conf_s {
 
 	float scaling;
 	_Bool undo_scaling;
+	_Bool normalize_lowres;
 
 	_Bool noncart;
 	struct nufft_conf_s* nufft_conf;

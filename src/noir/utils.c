@@ -46,30 +46,6 @@ void noir_calc_weights(double a, double b, const long dims[3], complex float* ds
 static struct linop_s* linop_ifft_resize_create(int N, unsigned long flags, const long osdims[N], const long idims[N], const long kdims[N])
 {
 
-#ifdef USE_CUDA
-	int first = 0;
-	while (flags && !MD_IS_SET(flags, first))
-		first++;
-
-	if (1 == bitcount(flags) && 0 < first) {
-		//cuFFT is much more efficient for FFT in first dimension!
-
-		long tosdims[N];
-		long tidims[N];
-		long tkdims[N];
-
-		md_transpose_dims(N, 0, first, tosdims, osdims);
-		md_transpose_dims(N, 0, first, tidims, idims);
-		md_transpose_dims(N, 0, first, tkdims, kdims);
-
-		auto lop_ret = linop_ifft_resize_create(N, MD_BIT(0), tosdims, tidims, tkdims);
-		lop_ret = linop_chain_FF(linop_transpose_create(N, 0, first, kdims), lop_ret);
-		lop_ret = linop_chain_FF(lop_ret, linop_transpose_create(N, 0, first, tidims));
-
-		return lop_ret;
-	}
-#endif
-
 	auto lop_ret = linop_ifft_create(N, osdims, flags);
 
 	if (!md_check_equal_dims(N, osdims, kdims, flags))
@@ -77,7 +53,7 @@ static struct linop_s* linop_ifft_resize_create(int N, unsigned long flags, cons
 
 	if (!md_check_equal_dims(N, osdims, idims, flags))
 		lop_ret = linop_chain_FF(lop_ret, linop_resize_center_create(N, idims, osdims));
-	
+
 	return lop_ret;
 }
 
@@ -138,36 +114,7 @@ struct linop_s* linop_noir_weights_create(int N, const long img_dims[N], const l
 
 	struct linop_s* lop_ret = NULL;
 
-	if (md_check_equal_dims(N, os_dims, ksp_dims, flags)) {
-
-		lop_ret = linop_ifft_resize_create(N, flags, os_dims, img_dims, ksp_dims);
-
-	} else {
-
-		long timg_dims[N];
-		long tksp_dims[N];
-		long tos_dims[N];
-
-		md_copy_dims(N, timg_dims, img_dims);
-		md_copy_dims(N, tksp_dims, img_dims);
-
-		lop_ret = linop_identity_create(N, timg_dims);
-
-		for (int i = 0; i < N; i++) {
-
-			if (!MD_IS_SET(flags, i))
-				continue;
-
-			md_copy_dims(N, tos_dims, tksp_dims);
-			
-			tksp_dims[i] = ksp_dims[i];
-			tos_dims[i] = os_dims[i];
-
-			lop_ret = linop_chain_FF(linop_ifft_resize_create(N, MD_BIT(i), tos_dims, timg_dims, tksp_dims), lop_ret);
-
-			timg_dims[i] = ksp_dims[i];
-		}
-	}
+	lop_ret = linop_ifft_resize_create(N, flags, os_dims, img_dims, ksp_dims);
 
 	long wgh_ksp_dims[N];
 	long wgh_img_dims[N];
