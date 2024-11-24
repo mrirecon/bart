@@ -1,5 +1,5 @@
 /* Copyright 2013. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
 
@@ -36,11 +36,13 @@ extern cudaStream_t cuda_get_stream(void);
 #endif
 
 extern int cuda_set_stream_level(void);
+extern _Bool cuda_is_stream_default(void);
 
 extern void cuda_sync_device(void);
 extern void cuda_sync_stream(void);
 
 extern void* cuda_malloc(long N);
+extern void* cuda_malloc_host(long N);
 extern void cuda_free(void*);
 extern _Bool cuda_ondevice(const void* ptr);
 extern void cuda_clear(long size, void* ptr);
