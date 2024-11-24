@@ -20,7 +20,7 @@
 
 #include "num/multind.h"
 #include "num/flpmath.h"
-#include "num/fft.h"
+#include "num/vptr.h"
 #include "num/init.h"
 
 #include "noncart/nufft.h"
@@ -101,6 +101,8 @@ int main_ncalib(int argc, char* argv[argc])
 		OPT_FLOAT('w', &scaling, "", "(inverse scaling of the data)"),
 		OPT_SET('o', &conf.ret_os_coils, "return oversampled coils"),
 
+		OPTL_SUBOPT(0, "nufft-conf", "...", "configure nufft", N_nufft_conf_opts, nufft_conf_opts),
+
 		OPT_SET('N', &normalize, "Normalize coil sensitivities"),
 		OPT_INT('m', &maps, "nmaps", "Number of ENLIVE maps to use in reconstruction"),
 		OPTL_VEC3('x', "dims", &my_sens_dims, "x:y:z", "Explicitly specify sens dimensions"),
@@ -119,6 +121,9 @@ int main_ncalib(int argc, char* argv[argc])
 	long ksp_dims[DIMS];
 	complex float* kspace = load_cfl(ksp_file, DIMS, ksp_dims);
 
+	struct vptr_hint_s* hint = ((0 != bart_mpi_split_flags) || bart_delayed_computations) ? vptr_hint_create(bart_mpi_split_flags, DIMS, ksp_dims, bart_delayed_loop_flags) : NULL;
+	kspace = vptr_wrap_cfl(DIMS, ksp_dims, CFL_SIZE, kspace, hint, true, false);
+
 	// The only multimap we understand with is the one we do ourselves, where
 	// we allow multiple images and sensitivities during the reconstruction
 	assert(1 == ksp_dims[MAPS_DIM]);
@@ -134,12 +139,13 @@ int main_ncalib(int argc, char* argv[argc])
 
 	if (NULL != pat_file) {
 
-		pattern = load_cfl(pat_file, DIMS, pat_dims);
+		pattern = load_cfl_wrap(pat_file, DIMS, pat_dims, hint);
 
 	} else {
 
 		md_select_dims(DIMS, ~COIL_FLAG, pat_dims, ksp_dims);
 		pattern = anon_cfl("", DIMS, pat_dims);
+		pattern = vptr_wrap_cfl(DIMS, pat_dims, CFL_SIZE, pattern, hint, true, false);
 		estimate_pattern(DIMS, ksp_dims, COIL_FLAG, pattern, kspace);
 	}
 
@@ -148,7 +154,7 @@ int main_ncalib(int argc, char* argv[argc])
 
 	if (NULL != bas_file) {
 
-		basis = load_cfl(bas_file, DIMS, bas_dims);
+		basis = load_cfl_wrap(bas_file, DIMS, bas_dims, hint);
 
 	} else {
 
@@ -167,7 +173,7 @@ int main_ncalib(int argc, char* argv[argc])
 
 		conf.noncart = true;
 
-		traj = load_cfl(trj_file, DIMS, trj_dims);
+		traj = load_cfl_wrap(trj_file, DIMS, trj_dims, hint);
 
 		long tdims[DIMS];
 		estimate_im_dims(DIMS, FFT_FLAGS, tdims, trj_dims, traj);
@@ -222,8 +228,8 @@ int main_ncalib(int argc, char* argv[argc])
 			npat_dims[i] = MIN(npat_dims[i], calsize[i]);
 		}
 
-		complex float* nksp = anon_cfl(NULL, DIMS, nksp_dims);
-		complex float* npat = anon_cfl(NULL, DIMS, npat_dims);
+		complex float* nksp = vptr_wrap_cfl(DIMS, nksp_dims, CFL_SIZE, anon_cfl(NULL, DIMS, nksp_dims), hint, true, false);
+		complex float* npat = vptr_wrap_cfl(DIMS, npat_dims, CFL_SIZE, anon_cfl(NULL, DIMS, npat_dims), hint, true, false);
 
 		complex float* tmp = md_alloc_sameplace(DIMS, nksp_dims, CFL_SIZE, nksp);
 		long tdims[DIMS];
@@ -307,8 +313,10 @@ int main_ncalib(int argc, char* argv[argc])
 	md_select_dims(DIMS, ~MAPS_FLAG, cim_dims, dims);
 
 	complex float* img = (NULL != img_file ? create_cfl : anon_cfl)(img_file, DIMS, img_dims);
+	img = vptr_wrap_cfl(DIMS, img_dims, CFL_SIZE, img, hint, true, true);
+
 	complex float* ksens = md_alloc_sameplace(DIMS, ksens_dims, CFL_SIZE, kspace);
-	complex float* sens = create_cfl(out_file, DIMS, sens_dims);
+	complex float* sens = create_cfl_wrap(out_file, DIMS, sens_dims, hint);
 
 	float norm_img = sqrtf(md_calc_size(3, my_sens_dims)) / sqrtf(md_calc_size(3, img_dims));
 
@@ -330,12 +338,7 @@ int main_ncalib(int argc, char* argv[argc])
 
 	if (NULL != traj) {
 
-		struct nufft_conf_s nufft_conf = nufft_conf_defaults;
-		nufft_conf.toeplitz = true;
-		nufft_conf.pcycle = false;
-		nufft_conf.periodic = false;
-		nufft_conf.lowmem = true;
-		conf.nufft_conf = &nufft_conf;
+		conf.nufft_conf = &nufft_conf_options;
 
 		noir2_recon_noncart(&conf, DIMS,
 			img_dims, img, NULL,
