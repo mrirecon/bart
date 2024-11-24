@@ -18,14 +18,23 @@
 #include "num/flpmath.h"
 #include "num/fft.h"
 #include "num/iovec.h"
+#include "num/ops.h"
+#include "num/ops_p.h"
 #ifdef USE_CUDA
 #include "num/gpuops.h"
 #endif
 
+#include "iter/italgos.h"
+#include "iter/iter.h"
+#include "iter/iter2.h"
 #include "iter/iter3.h"
 #include "iter/iter4.h"
 #include "iter/italgos.h"
+#include "iter/lsqr.h"
+#include "iter/prox.h"
+#include "iter/misc.h"
 
+#include "misc/misc.h"
 #include "misc/types.h"
 #include "misc/mri.h"
 #include "misc/debug.h"
@@ -33,7 +42,14 @@
 
 #include "noir/model2.h"
 
+#include "grecon/optreg.h"
+#include "grecon/italgo.h"
+
+#include "linops/someops.h"
+
 #include "nlops/nlop.h"
+#include "nlops/chain.h"
+#include "nlops/const.h"
 
 #include "recon2.h"
 
@@ -87,12 +103,133 @@ const struct noir2_conf_s noir2_defaults = {
 	.realtime = false,
 	.temp_damp = 0.9,
 
+	.iter_reg = 3,
+	.liniter = 100,
+	.lintol= 0.,
+
 	.ret_os_coils = false,
 
 	.optimized = false,
 };
 
 
+struct noir_irgnm_conf {
+
+	struct iter3_irgnm_conf* irgnm_conf;
+	enum algo_t algo;
+
+	struct lsqr_conf *lsqr_conf;
+};
+
+
+static void noir_irgnm2(const struct noir_irgnm_conf* conf,
+			const struct nlop_s* nlop,
+			int NO, const long odims[NO], complex float* x, const complex float* ref,
+			int NI, const long idims[NI], const complex float* data,
+			int num_regs, const struct operator_p_s* thresh_ops[num_regs], const struct linop_s* trafos[num_regs],
+			struct iter_op_s cb)
+{
+	struct lsqr_conf lsqr_conf = *(conf->lsqr_conf);
+
+	const struct operator_p_s* pinv_op = NULL;
+
+	auto cod = nlop_codomain(nlop);
+	auto dom = nlop_domain(nlop);
+
+	long M = 2 * md_calc_size(cod->N, cod->dims);
+	long N = 2 * md_calc_size(dom->N, dom->dims);
+
+	assert(N == 2 * md_calc_size(NO, odims));
+	assert(M == 2 * md_calc_size(NI, idims));
+
+	enum algo_t algo = conf->algo;
+
+	switch (algo) {
+
+		case ALGO_CG:
+		case ALGO_IST:
+		case ALGO_FISTA:
+		{
+			struct iter_fista_conf fista_conf = iter_fista_defaults;
+			fista_conf.maxiter = conf->irgnm_conf->cgiter;
+			fista_conf.maxeigen_iter = 20;
+			fista_conf.tol = 0;
+			pinv_op = lsqr2_create(&lsqr_conf, iter2_fista, CAST_UP(&fista_conf), NULL, nlop_get_derivative(nlop, 0, 0), NULL, num_regs, thresh_ops, trafos, NULL);
+
+			iter4_irgnm2(CAST_UP(conf->irgnm_conf), (struct nlop_s*)nlop, N, (float*)x, (const float*)ref, M, (const float*)data, pinv_op, cb);
+		}
+		break;
+
+		case ALGO_PRIDU:
+		{
+			struct iter_chambolle_pock_conf cp_conf = iter_chambolle_pock_defaults;
+			cp_conf.maxiter = conf->irgnm_conf->cgiter;
+			cp_conf.maxeigen_iter = 20;
+			cp_conf.tol = 0;
+			pinv_op = lsqr2_create(&lsqr_conf, iter2_chambolle_pock, CAST_UP(&cp_conf), NULL, nlop_get_derivative(nlop, 0, 0), NULL, num_regs, thresh_ops, trafos, NULL);
+
+			iter4_irgnm2(CAST_UP(conf->irgnm_conf), (struct nlop_s*)nlop, N, (float*)x, (const float*)ref, M, (const float*)data, pinv_op, cb);
+		}
+		break;
+
+		case ALGO_ADMM:
+		{
+			struct iter_admm_conf admm_conf = iter_admm_defaults;
+			admm_conf.maxiter = conf->irgnm_conf->cgiter;
+			admm_conf.do_warmstart = true;
+			pinv_op = lsqr2_create(&lsqr_conf, iter2_admm, CAST_UP(&admm_conf), NULL, nlop_get_derivative(nlop, 0, 0), NULL, num_regs, thresh_ops, trafos, NULL);
+
+			iter4_irgnm2(CAST_UP(conf->irgnm_conf), (struct nlop_s*)nlop, N, (float*)x, (const float*)ref, M, (const float*)data, pinv_op, cb);
+		}
+		break;
+
+		case ALGO_NIHT:
+		default:
+			error("Algorithm not implemented!");
+
+	}
+
+	operator_p_free(pinv_op);
+}
+
+
+static int opt_reg_noir_join_prox(int NI, const long img_dims[NI], int NC, const long col_dims[NC], int num_regs, const struct operator_p_s* prox_ops[num_regs + 1], const struct linop_s* trafos[num_regs + 1])
+{
+	assert(0 < num_regs);
+
+	const struct operator_p_s* prox = prox_leastsquares_create(NC, col_dims, 1., NULL);
+
+	struct linop_s* lop_ext = linop_extract_create(1, MD_DIMS(0), MD_DIMS(md_calc_size(NI, img_dims)), MD_DIMS(md_calc_size(NI, img_dims) + md_calc_size(NC, col_dims)));
+	lop_ext = linop_reshape_out_F(lop_ext, NI, img_dims);
+
+	for (int i = 0; i < num_regs; i++) {
+
+		if (NULL != prox && linop_is_identity(trafos[i])) {
+
+			prox_ops[i] = operator_p_stack_FF(0, 0, operator_p_flatten_F(prox_ops[i]), operator_p_flatten_F(prox));
+			prox = NULL;
+
+			linop_free(trafos[i]);
+			trafos[i] = linop_identity_create(1, MD_DIMS(md_calc_size(NI, img_dims) + md_calc_size(NC, col_dims)));
+
+		} else {
+
+			trafos[i] = linop_chain_FF(linop_clone(lop_ext), trafos[i]);
+		}
+	}
+
+	linop_free(lop_ext);
+
+	if (NULL != prox) {
+
+		prox_ops[num_regs] = prox;
+		trafos[num_regs] = linop_extract_create(1, MD_DIMS(md_calc_size(NI, img_dims)), MD_DIMS(md_calc_size(NC, col_dims)), MD_DIMS(md_calc_size(NI, img_dims) + md_calc_size(NC, col_dims)));
+		trafos[num_regs] = linop_reshape_out_F(trafos[num_regs], NC, col_dims);
+		num_regs++;
+	}
+
+	return num_regs;
+}
 
 
 void noir2_recon(const struct noir2_conf_s* conf, struct noir2_s* noir_ops,
@@ -143,8 +280,28 @@ void noir2_recon(const struct noir2_conf_s* conf, struct noir2_s* noir_ops,
 	debug_printf(DP_DEBUG1, "Scaling: %f\n", scaling);
 	md_zsmul(N, dat_dims, data, data, scaling);
 
+	const struct operator_p_s* prox_ops[NUM_REGS];
+	const struct linop_s* trafos[NUM_REGS];
+	const long (*sdims[NUM_REGS])[N + 1] = { NULL };
+
+	if (!((NULL == conf->regs) || (0 == conf->regs->r)))
+		opt_reg_configure(N, img_dims, conf->regs, prox_ops, trafos, sdims, 0, 1, "dau2", conf->gpu);
 
 	long skip = md_calc_size(N, img_dims);
+
+	const struct nlop_s* nlop = nlop_clone(noir_ops->model);
+
+	for (int i = 0; i < NUM_REGS; i++) {
+
+		if (NULL != sdims[i]) {
+
+			nlop = nlop_combine_FF(nlop, nlop_del_out_create(N + 1, (*sdims[i])));
+			nlop = nlop_shift_input_F(nlop, nlop_get_nr_in_args(nlop) - 2, nlop_get_nr_in_args(nlop) - 1);
+
+			skip += md_calc_size(N + 1, (*sdims[i]));
+		}
+	}
+
 	long size = skip + md_calc_size(N, kco_dims);
 
 	long d1[1] = { size };
@@ -160,6 +317,10 @@ void noir2_recon(const struct noir2_conf_s* conf, struct noir2_s* noir_ops,
 		ref = md_alloc_sameplace(1, d1, CFL_SIZE, data);
 		md_clear(1, d1, ref, CFL_SIZE);
 	}
+
+	for (int i = 0; i < NUM_REGS; i++)
+		if (NULL != sdims[i])
+			xfree(sdims[i]);
 
 	if (NULL != img_ref) {
 
@@ -177,13 +338,12 @@ void noir2_recon(const struct noir2_conf_s* conf, struct noir2_s* noir_ops,
 	irgnm_conf.alpha = conf->alpha;
 	irgnm_conf.alpha_min = conf->alpha_min;
 	irgnm_conf.redu = conf->redu;
-	irgnm_conf.cgtol = conf->cgtol;
+
 	irgnm_conf.nlinv_legacy = true;
 	irgnm_conf.alpha_min = conf->alpha_min;
-	irgnm_conf.cgiter = conf->cgiter;
 
 
-	struct nlop_s* nlop_flat = nlop_flatten_inputs_F(nlop_clone(noir_ops->model));
+	struct nlop_s* nlop_flat = nlop_flatten_inputs_F(nlop);
 
 	struct nlop_wrapper2_s nlw;
 	SET_TYPEID(nlop_wrapper2_s, &nlw);
@@ -191,12 +351,59 @@ void noir2_recon(const struct noir2_conf_s* conf, struct noir2_s* noir_ops,
 	nlw.N = N;
 	nlw.col_dims = kco_dims;
 
-	iter4_irgnm(CAST_UP(&irgnm_conf),
+	irgnm_conf.alpha = conf->alpha;
+	irgnm_conf.cgtol = conf->cgtol;
+	irgnm_conf.cgiter = conf->cgiter;
+
+	if (!((NULL == conf->regs) || (0 == conf->regs->r)))
+		irgnm_conf.iter = irgnm_conf.iter - conf->iter_reg;
+
+	if (0 < irgnm_conf.iter)
+		iter4_irgnm(CAST_UP(&irgnm_conf),
 			nlop_flat,
 			size * 2, (float*)x, (const float*)ref,
 			md_calc_size(N, dat_dims) * 2, (const float*)data,
 			NULL,
 			(struct iter_op_s){ orthogonalize, CAST_UP(&nlw) });
+
+	for (int i = 0; i < irgnm_conf.iter; i++)
+		irgnm_conf.alpha = (irgnm_conf.alpha - irgnm_conf.alpha_min) / irgnm_conf.redu + irgnm_conf.alpha_min;
+
+	irgnm_conf.iter = (int)conf->iter - irgnm_conf.iter;
+	irgnm_conf.cgtol = conf->lintol;
+	irgnm_conf.cgiter = conf->liniter;
+
+	if (0 < irgnm_conf.iter) {
+
+		int num_regs = conf->regs->r + conf->regs->sr;
+
+		struct noir_irgnm_conf noir_irgnm_conf = {
+
+			.irgnm_conf = &irgnm_conf,
+			.algo = italgo_choose(num_regs, conf->regs->regs),
+			.lsqr_conf = NULL,
+		};
+
+		struct lsqr_conf lsqr_conf = lsqr_defaults;
+		lsqr_conf.warmstart = true;
+		lsqr_conf.lambda = 0;
+		noir_irgnm_conf.lsqr_conf = &lsqr_conf;
+
+		bool sup = skip != md_calc_size(N, img_dims);
+		num_regs = opt_reg_noir_join_prox(sup ? 1 : N, sup ? MD_DIMS(skip) : img_dims, N, kco_dims, num_regs , prox_ops, trafos);
+
+		noir_irgnm2(&noir_irgnm_conf, nlop_flat,
+			   1, MD_DIMS(size), x, ref,
+			   1, MD_DIMS(md_calc_size(N, dat_dims)), data,
+			   num_regs, prox_ops, trafos,
+			   (struct iter_op_s){ orthogonalize, CAST_UP(&nlw) });
+
+		for (int nr = 0; nr < num_regs; nr++) {
+
+			operator_p_free(prox_ops[nr]);
+			linop_free(trafos[nr]);
+		}
+	}
 
 	nlop_free(nlop_flat);
 
@@ -213,10 +420,14 @@ void noir2_recon(const struct noir2_conf_s* conf, struct noir2_s* noir_ops,
 
 	if (NULL != sens) {
 
-		complex float* tmp = md_alloc_sameplace(N, col_dims, CFL_SIZE, x);
-		linop_forward_unchecked(noir_ops->lop_coil2, tmp, x + skip);
+		complex float* tmp = md_alloc_sameplace(N, col_dims, CFL_SIZE, data);
+		complex float* tmp_kcol = md_alloc_sameplace(N, kco_dims, CFL_SIZE, data);
+
+		md_copy(N, kco_dims, tmp_kcol, x + skip, CFL_SIZE);
+		linop_forward_unchecked(noir_ops->lop_coil2, tmp, tmp_kcol);
 		md_copy(DIMS, col_dims, sens, tmp, CFL_SIZE);	// needed for GPU
 		md_free(tmp);
+		md_free(tmp_kcol);
 
 		if (1 != col_dims[SLICE_DIM])
 			fftmod(DIMS, col_dims, SLICE_FLAG, sens, sens);

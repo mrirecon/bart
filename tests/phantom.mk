@@ -11,6 +11,15 @@ $(TESTS_OUT)/shepplogan_coil.ra: phantom
 $(TESTS_OUT)/shepplogan_coil_ksp.ra: phantom
 	$(TOOLDIR)/phantom -s8 -k $@
 
+$(TESTS_OUT)/shepplogan_pat3.ra: poisson
+	$(TOOLDIR)/poisson -y2.5 -z2.5 -C24 $@
+
+$(TESTS_OUT)/shepplogan_pat.ra: reshape $(TESTS_OUT)/shepplogan_pat3.ra
+	$(TOOLDIR)/reshape 7 128 128 1 $(TESTS_OUT)/shepplogan_pat3.ra $@
+
+$(TESTS_OUT)/shepplogan_coil_ksp_sub.ra: fmac $(TESTS_OUT)/shepplogan_coil_ksp.ra $(TESTS_OUT)/shepplogan_pat.ra
+	$(TOOLDIR)/fmac $(TESTS_OUT)/shepplogan_coil_ksp.ra $(TESTS_OUT)/shepplogan_pat.ra $@
+
 $(TESTS_OUT)/coils.ra: phantom
 	$(TOOLDIR)/phantom -S8 $@
 
@@ -37,7 +46,7 @@ tests/test-phantom-noncart: traj phantom reshape nrmse $(TESTS_OUT)/shepplogan_k
 	$(TOOLDIR)/phantom -k -t traj.ra shepplogan_ksp2.ra					;\
 	$(TOOLDIR)/reshape 7 128 128 1 shepplogan_ksp2.ra shepplogan_ksp3.ra			;\
 	$(TOOLDIR)/nrmse -t 0. $(TESTS_OUT)/shepplogan_ksp.ra shepplogan_ksp3.ra		;\
-	rm *.ra ; cd .. ; rmdir $(TESTS_TMP) 
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
 

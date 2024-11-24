@@ -45,6 +45,8 @@
 #include "misc/opts.h"
 #include "misc/debug.h"
 
+#include "grecon/optreg.h"
+
 #include "noir/recon2.h"
 #include "noir/misc.h"
 
@@ -85,6 +87,10 @@ int main_nlinv(int argc, char* argv[argc])
 	const char* init_file = NULL;
 
 	struct noir2_conf_s conf = noir2_defaults;
+	struct opt_reg_s reg_opts;
+	conf.regs = &reg_opts;
+	opt_reg_init(conf.regs);
+
 	bool nufft_lowmem = false;
 	bool psf_based_reco = false;
 
@@ -101,9 +107,11 @@ int main_nlinv(int argc, char* argv[argc])
 	const struct opt_s opts[] = {
 
 		OPT_UINT('i', &conf.iter, "iter", "Number of Newton steps"),
-		OPT_FLOAT('R', &conf.redu, "", "(reduction factor)"),
+		OPT_FLOAT('r', &conf.redu, "", "(reduction factor)"),
 		OPTL_FLOAT(0, "alpha", &conf.alpha, "val", "(alpha in first iteration)"),
 		OPT_FLOAT('M', &conf.alpha_min, "", "(minimum for regularization)"),
+		{ 'R', NULL, true, OPT_SPECIAL, opt_reg, conf.regs, "<T>:A:B:C", "generalized regularization options (-Rh for help)" },
+		OPTL_INT(0, "reg-iter", &conf.iter_reg, "iter", "Number of Newton steps with regularization (-1 means all)"),
 		OPT_INT('d', &debug_level, "level", "Debug level"),
 		OPT_SET('c', &conf.rvc, "Real-value constraint"),
 		OPT_CLEAR('N', &normalize, "Do not normalize image with coil sensitivities"),
@@ -131,6 +139,7 @@ int main_nlinv(int argc, char* argv[argc])
 		OPTL_SET(0, "ret-sens-os", &(conf.ret_os_coils), "(return sensitivities on oversampled grid)"),
 		OPTL_INT(0, "cgiter", &conf.cgiter, "iter", "(iterations for linearized problem)"),
 		OPTL_FLOAT(0, "cgtol", &conf.cgtol, "tol", "(tolerance for linearized problem)"),
+		OPTL_INT(0, "liniter", &conf.liniter, "iter", "(iterations for solving linearized problem)"),
 		OPTL_SET(0, "real-time", &(conf.realtime), "Use real-time (temporal l2) regularization"),
 		OPTL_SET(0, "fast", &(conf.optimized), "Use tuned but less generic model"),
 	};
