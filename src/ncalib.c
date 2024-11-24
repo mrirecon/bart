@@ -19,7 +19,7 @@
 
 #include "num/multind.h"
 #include "num/flpmath.h"
-#include "num/fft.h"
+#include "num/vptr.h"
 #include "num/init.h"
 
 #include "noncart/nufft.h"
@@ -48,15 +48,19 @@ int main_ncalib(int argc, char* argv[argc])
 
 	const char* ksp_file = NULL;
 	const char* out_file = NULL;
+	const char* img_file = NULL;
 
 	struct arg_s args[] = {
 
 		ARG_INFILE(true, &ksp_file, "kspace"),
 		ARG_OUTFILE(true, &out_file, "sensitivities"),
+		ARG_OUTFILE(false, &img_file, "image (roughly scaled to rss of lowres k-space)"),
 	};
 
 	struct noir2_conf_s conf = noir2_defaults;
 	conf.iter = 25;
+	conf.undo_scaling = true;
+	conf.normalize_lowres = true;
 
 	long calsize[3] = { 48, 48, 48 };
 	long ksenssize[3] = { 16, 16, 16 };
@@ -94,6 +98,9 @@ int main_ncalib(int argc, char* argv[argc])
 		OPT_FLOAT('b', &conf.b, "", "(b in 1 + a * \\Laplace^-b/2)"),
 		OPT_FLOAT('c', &conf.c, "", "(c in 1 + a * \\Laplace^-b/2)"),
 		OPT_FLOAT('w', &scaling, "", "(inverse scaling of the data)"),
+		OPT_SET('o', &conf.ret_os_coils, "return oversampled coils"),
+
+		OPTL_SUBOPT(0, "nufft-conf", "...", "configure nufft", N_nufft_conf_opts, nufft_conf_opts),
 
 		OPT_SET('N', &normalize, "Normalize coil sensitivities"),
 		OPT_INT('m', &maps, "nmaps", "Number of ENLIVE maps to use in reconstruction"),
@@ -107,11 +114,14 @@ int main_ncalib(int argc, char* argv[argc])
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 
-	conf.gpu = bart_use_gpu;
 	num_init_gpu_support();
+	conf.gpu = bart_use_gpu;
 
 	long ksp_dims[DIMS];
 	complex float* kspace = load_cfl(ksp_file, DIMS, ksp_dims);
+
+	struct vptr_hint_s* hint = ((0 != bart_mpi_split_flags) || bart_delayed_computations) ? vptr_hint_create(bart_mpi_split_flags, DIMS, ksp_dims, bart_delayed_loop_flags) : NULL;
+	kspace = vptr_wrap_cfl(DIMS, ksp_dims, CFL_SIZE, kspace, hint, true, false);
 
 	// The only multimap we understand with is the one we do ourselves, where
 	// we allow multiple images and sensitivities during the reconstruction
@@ -128,12 +138,13 @@ int main_ncalib(int argc, char* argv[argc])
 
 	if (NULL != pat_file) {
 
-		pattern = load_cfl(pat_file, DIMS, pat_dims);
+		pattern = load_cfl_wrap(pat_file, DIMS, pat_dims, hint);
 
 	} else {
 
 		md_select_dims(DIMS, ~COIL_FLAG, pat_dims, ksp_dims);
 		pattern = anon_cfl("", DIMS, pat_dims);
+		pattern = vptr_wrap_cfl(DIMS, pat_dims, CFL_SIZE, pattern, hint, true, false);
 		estimate_pattern(DIMS, ksp_dims, COIL_FLAG, pattern, kspace);
 	}
 
@@ -142,7 +153,7 @@ int main_ncalib(int argc, char* argv[argc])
 
 	if (NULL != bas_file) {
 
-		basis = load_cfl(bas_file, DIMS, bas_dims);
+		basis = load_cfl_wrap(bas_file, DIMS, bas_dims, hint);
 
 	} else {
 
@@ -161,7 +172,7 @@ int main_ncalib(int argc, char* argv[argc])
 
 		conf.noncart = true;
 
-		traj = load_cfl(trj_file, DIMS, trj_dims);
+		traj = load_cfl_wrap(trj_file, DIMS, trj_dims, hint);
 
 		long tdims[DIMS];
 		estimate_im_dims(DIMS, FFT_FLAGS, tdims, trj_dims, traj);
@@ -177,7 +188,7 @@ int main_ncalib(int argc, char* argv[argc])
 
 		// discard high frequencies (needed for periodic in toeplitz)
 
-		complex float* trj_tmp = md_alloc(DIMS, trj_dims, CFL_SIZE);
+		complex float* trj_tmp = md_alloc_sameplace(DIMS, trj_dims, CFL_SIZE, kspace);
 
 		md_zabs(DIMS, trj_dims, trj_tmp, traj);
 
@@ -185,7 +196,12 @@ int main_ncalib(int argc, char* argv[argc])
 		md_select_dims(DIMS, MD_BIT(0), cord_dims, trj_dims);
 
 		complex float inv_dims[3] = { 1. / (dims[0] - ksenssize[0]),  1. / (dims[1] - ksenssize[1]), 1. / (dims[2] - ksenssize[2]) };
-		md_zmul2(DIMS, trj_dims, MD_STRIDES(DIMS, trj_dims, CFL_SIZE), trj_tmp, MD_STRIDES(DIMS, trj_dims, CFL_SIZE), trj_tmp, MD_STRIDES(DIMS, cord_dims, CFL_SIZE), inv_dims);
+
+		complex float* inv_dims_arr = md_alloc_sameplace(1, MD_DIMS(3), CFL_SIZE, trj_tmp);
+		md_copy(1, MD_DIMS(3), inv_dims_arr, inv_dims, CFL_SIZE);
+
+		md_zmul2(DIMS, trj_dims, MD_STRIDES(DIMS, trj_dims, CFL_SIZE), trj_tmp, MD_STRIDES(DIMS, trj_dims, CFL_SIZE), trj_tmp, MD_STRIDES(DIMS, cord_dims, CFL_SIZE), inv_dims_arr);
+		md_free(inv_dims_arr);
 
 		md_zslessequal(DIMS, trj_dims, trj_tmp, trj_tmp, 0.5);
 
@@ -211,10 +227,10 @@ int main_ncalib(int argc, char* argv[argc])
 			npat_dims[i] = MIN(npat_dims[i], calsize[i]);
 		}
 
-		complex float* nksp = anon_cfl(NULL, DIMS, nksp_dims);
-		complex float* npat = anon_cfl(NULL, DIMS, npat_dims);
+		complex float* nksp = vptr_wrap_cfl(DIMS, nksp_dims, CFL_SIZE, anon_cfl(NULL, DIMS, nksp_dims), hint, true, false);
+		complex float* npat = vptr_wrap_cfl(DIMS, npat_dims, CFL_SIZE, anon_cfl(NULL, DIMS, npat_dims), hint, true, false);
 
-		complex float* tmp = md_alloc(DIMS, nksp_dims, CFL_SIZE);
+		complex float* tmp = md_alloc_sameplace(DIMS, nksp_dims, CFL_SIZE, nksp);
 		long tdims[DIMS];
 
 		md_copy_dims(DIMS, tdims, nksp_dims);
@@ -276,7 +292,7 @@ int main_ncalib(int argc, char* argv[argc])
 	md_copy_dims(3, sens_dims, my_sens_dims);
 
 	if (0 == scaling)
-		conf.scaling = -100;
+		conf.scaling = (1 == sens_dims[2]) ? -100 : -1000;
 	else
 		conf.scaling = scaling;
 
@@ -295,9 +311,11 @@ int main_ncalib(int argc, char* argv[argc])
 	long cim_dims[DIMS];
 	md_select_dims(DIMS, ~MAPS_FLAG, cim_dims, dims);
 
-	complex float* img = md_alloc(DIMS, img_dims, CFL_SIZE);
-	complex float* ksens = md_alloc(DIMS, ksens_dims, CFL_SIZE);
-	complex float* sens = create_cfl(out_file, DIMS, sens_dims);
+	complex float* img = (NULL != img_file ? create_cfl : anon_cfl)(img_file, DIMS, img_dims);
+	img = vptr_wrap_cfl(DIMS, img_dims, CFL_SIZE, img, hint, true, true);
+
+	complex float* ksens = md_alloc_sameplace(DIMS, ksens_dims, CFL_SIZE, kspace);
+	complex float* sens = create_cfl_wrap(out_file, DIMS, sens_dims, hint);
 
 	float norm_img = sqrt(md_calc_size(3, my_sens_dims)) / sqrtf(md_calc_size(3, img_dims));
 
@@ -319,12 +337,7 @@ int main_ncalib(int argc, char* argv[argc])
 
 	if (NULL != traj) {
 
-		struct nufft_conf_s nufft_conf = nufft_conf_defaults;
-		nufft_conf.toeplitz = true;
-		nufft_conf.pcycle = false;
-		nufft_conf.periodic = false;
-		nufft_conf.lowmem = true;
-		conf.nufft_conf = &nufft_conf;
+		conf.nufft_conf = &nufft_conf_options;
 
 		noir2_recon_noncart(&conf, DIMS,
 			img_dims, img, NULL,
@@ -350,7 +363,6 @@ int main_ncalib(int argc, char* argv[argc])
 			cim_dims);
 	}
 
-	md_free(img);
 	md_free(ksens);
 
 	unmap_cfl(DIMS, ksp_dims, kspace);
@@ -360,19 +372,28 @@ int main_ncalib(int argc, char* argv[argc])
 
 	unmap_cfl(DIMS, pat_dims, pattern);
 
-	if (normalize) {
+	long nrm_dims[DIMS];
+	md_select_dims(DIMS, ~(MAPS_FLAG | COIL_FLAG), nrm_dims, sens_dims);
+	complex float* scl = md_alloc_sameplace(DIMS, nrm_dims, CFL_SIZE, sens);
+	md_zrss(DIMS, sens_dims, (MAPS_FLAG | COIL_FLAG), scl, sens);
 
-		long scl_dims[DIMS];
-		md_select_dims(DIMS, ~(MAPS_FLAG | COIL_FLAG), scl_dims, sens_dims);
+	complex float* max_ptr = md_alloc_sameplace(DIMS, MD_SINGLETON_DIMS(DIMS), CFL_SIZE, sens);
+	md_clear(DIMS, MD_SINGLETON_DIMS(DIMS), max_ptr, CFL_SIZE);
+	md_zmax2(DIMS, nrm_dims, MD_SINGLETON_STRS(DIMS), max_ptr, MD_SINGLETON_STRS(DIMS), max_ptr, MD_STRIDES(DIMS, nrm_dims, CFL_SIZE), scl);
 
-		complex float* scl = md_alloc(DIMS, scl_dims, CFL_SIZE);
+	float max;
+	md_copy(1, MD_DIMS(1), &max, max_ptr, FL_SIZE);
+	md_free(max_ptr);
 
-		md_zrss(DIMS, sens_dims, (MAPS_FLAG | COIL_FLAG), scl, sens);
-		md_zdiv2(DIMS, sens_dims, MD_STRIDES(DIMS, sens_dims, CFL_SIZE), sens, MD_STRIDES(DIMS, sens_dims, CFL_SIZE), sens, MD_STRIDES(DIMS, scl_dims, CFL_SIZE), scl);
+	if (normalize)
+		md_zdiv2(DIMS, sens_dims, MD_STRIDES(DIMS, sens_dims, CFL_SIZE), sens, MD_STRIDES(DIMS, sens_dims, CFL_SIZE), sens, MD_STRIDES(DIMS, nrm_dims, CFL_SIZE), scl);
+	else
+		md_zsmul(DIMS, sens_dims, sens, sens, 1. / max);
 
-		md_free(scl);
-	}
+	md_zsmul(DIMS, img_dims, img, img, sqrtf((float)md_calc_size(3, img_dims) / (float)md_calc_size(3, sens_dims)));
+	md_free(scl);
 
+	unmap_cfl(DIMS, img_dims, img);
 	unmap_cfl(DIMS, sens_dims, sens);
 
 	if (NULL != basis)

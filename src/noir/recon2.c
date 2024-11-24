@@ -92,6 +92,7 @@ const struct noir2_conf_s noir2_defaults = {
 	.sms = false,
 	.scaling = -100,
 	.undo_scaling = false,
+	.normalize_lowres = false,
 
 	.noncart = false,
 	.nufft_conf = NULL,
@@ -447,13 +448,46 @@ void noir2_recon(const struct noir2_conf_s* conf, struct noir2_s* noir_ops,
 
 	if (NULL != sens) {
 
-		complex float* tmp = md_alloc_sameplace(N, col_dims, CFL_SIZE, x);
-		linop_forward_unchecked(noir_ops->lop_coil2, tmp, x + skip);
+		complex float* tmp = md_alloc_sameplace(N, col_dims, CFL_SIZE, data);
+		complex float* tmp_kcol = md_alloc_sameplace(N, kco_dims, CFL_SIZE, data);
+
+		md_copy(N, kco_dims, tmp_kcol, x + skip, CFL_SIZE);
+		linop_forward_unchecked(noir_ops->lop_coil2, tmp, tmp_kcol);
 		md_copy(DIMS, col_dims, sens, tmp, CFL_SIZE);	// needed for GPU
 		md_free(tmp);
+		md_free(tmp_kcol);
 
 		if (1 != col_dims[SLICE_DIM])
 			fftmod(DIMS, col_dims, SLICE_FLAG, sens, sens);
+	}
+
+	if (conf->normalize_lowres) {
+
+		long nrm_col_dims[N];
+		md_copy_dims(N, nrm_col_dims, linop_codomain(noir_ops->lop_coil)->dims);
+
+		complex float* tmp = md_alloc_sameplace(N, nrm_col_dims, CFL_SIZE, data);
+		complex float* tmp_kcol = md_alloc_sameplace(N, kco_dims, CFL_SIZE, data);
+
+		md_copy(N, kco_dims, tmp_kcol, x + skip, CFL_SIZE);
+		linop_forward_unchecked(noir_ops->lop_coil, tmp, tmp_kcol);
+		md_free(tmp_kcol);
+
+		long nrm_dims[N];
+		md_select_dims(N, md_nontriv_dims(N, img_dims), nrm_dims, nrm_col_dims);
+		complex float* nrm = md_alloc_sameplace(N, nrm_dims, CFL_SIZE, data);
+		md_zrss(N, nrm_col_dims, ~md_nontriv_dims(N, nrm_dims), nrm, tmp);
+		md_free(tmp);
+
+		if (1 != nrm_col_dims[SLICE_DIM])
+			fftmod(DIMS, nrm_col_dims, SLICE_FLAG, nrm, nrm);
+
+		complex float* nrm2 = md_alloc_sameplace(N, nrm_dims, CFL_SIZE, img);
+		md_copy(N, nrm_dims, nrm2, nrm, CFL_SIZE);
+		md_free(nrm);
+
+		md_zmul2(N, img_dims, MD_STRIDES(N, img_dims, CFL_SIZE), img, MD_STRIDES(N, img_dims, CFL_SIZE), img, MD_STRIDES(N, nrm_dims, CFL_SIZE), nrm2);
+		md_free(nrm2);
 	}
 
 	md_free(x);
