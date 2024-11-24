@@ -40,7 +40,14 @@ int main_psf(int argc, char* argv[argc])
 		ARG_OUTFILE(true, &psf_file, "psf"),
 	};
 
-	const struct opt_s opts[] = { };
+	bool oversampled = false;
+	bool oversampled_decomp = false;
+
+	const struct opt_s opts[] = {
+
+		OPTL_SET(0, "oversampled", &oversampled, "oversampled psf with linphases in dim 15"),
+		OPTL_SET(0, "oversampled-decomposed", &oversampled_decomp, "oversampled psf with linphases in dim 15"),
+	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
@@ -56,7 +63,29 @@ int main_psf(int argc, char* argv[argc])
 	img_dims[READ_DIM] = tdims[PHS1_DIM];
 	img_dims[PHS1_DIM] = tdims[PHS1_DIM];
 
-	complex float* tmp = compute_psf(DIMS, img_dims, tdims, traj, tdims, NULL, NULL, NULL, false, false);
+	complex float* tmp = NULL;
+
+	if (oversampled) {
+
+		for (int i = 0; i < 3; i++)
+			if (1 < img_dims[i])
+				img_dims[BATCH_DIM] *= 2;
+
+		tmp = compute_psf2(DIMS - 1, img_dims, md_nontriv_dims(3, img_dims), tdims, traj, MD_SINGLETON_DIMS(DIMS), NULL, MD_SINGLETON_DIMS(DIMS), NULL, true, false, false);
+
+	} else if (oversampled_decomp) {
+
+		for (int i = 0; i < 3; i++)
+			if (1 < img_dims[i])
+				img_dims[BATCH_DIM] *= 2;
+
+		tmp = compute_psf2_decomposed(DIMS - 1, img_dims, md_nontriv_dims(3, img_dims), tdims, traj, MD_SINGLETON_DIMS(DIMS), NULL, MD_SINGLETON_DIMS(DIMS), NULL, true, false, false);
+
+	} else {
+
+		tmp = compute_psf(DIMS, img_dims, tdims, traj, tdims, NULL, NULL, NULL, false, false);
+	}
+
 
 	complex float* psf = create_cfl(psf_file, DIMS, img_dims);
 
