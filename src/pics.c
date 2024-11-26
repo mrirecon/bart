@@ -33,6 +33,7 @@
 
 #include "noncart/nufft.h"
 
+#include "num/rand.h"
 #include "sense/recon.h"
 #include "sense/model.h"
 #include "sense/optcom.h"
@@ -504,6 +505,8 @@ int main_pics(int argc, char* argv[argc])
 
 	assert(1 == ksp_dims[MAPS_DIM]);
 
+	num_rand_init(0ULL);
+
 	num_init_gpu_support();
 	conf.gpu = bart_use_gpu;
 
@@ -863,7 +866,7 @@ int main_pics(int argc, char* argv[argc])
 
 	// initialize algorithm
 	pridu.maxeigen_iter = eigen ? 30 : 0;
-	
+
 	struct iter it = italgo_config(algo, nr_penalties, ropts.regs, maxiter, step, hogwild, admm, fista, pridu, NULL != image_truth);
 
 	if (ALGO_CG == algo)

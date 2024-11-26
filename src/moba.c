@@ -16,6 +16,7 @@
 #include "num/fft.h"
 #include "num/init.h"
 #include "num/filter.h"
+#include "num/rand.h"
 
 #include "misc/mri.h"
 #include "misc/mri2.h"
@@ -263,7 +264,8 @@ int main_moba(int argc, char* argv[argc])
 		error("Multi-GPU only supported by MPI!\n");
 
 	num_init_gpu_support();
-	
+	num_rand_init(0ULL);
+
 	data.model = conf.mode;
 
 	if (MDB_T1_PHY == conf.mode)
@@ -414,7 +416,7 @@ int main_moba(int argc, char* argv[argc])
 
 	complex float* pattern = NULL;
 	long pat_dims[DIMS];
-	
+
 
 	if (NULL != psf_file) {
 
@@ -450,7 +452,7 @@ int main_moba(int argc, char* argv[argc])
 		pattern = anon_cfl("", DIMS, pat_dims);
 
 		// Gridding sampling pattern
-		
+
 		complex float* psf = NULL;
 
 		long wgh_dims[DIMS];

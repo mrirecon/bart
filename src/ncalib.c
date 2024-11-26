@@ -22,6 +22,7 @@
 #include "num/flpmath.h"
 #include "num/fft.h"
 #include "num/init.h"
+#include "num/rand.h"
 
 #include "noncart/nufft.h"
 #include "linops/linop.h"
@@ -115,6 +116,7 @@ int main_ncalib(int argc, char* argv[argc])
 
 
 	num_init_gpu_support();
+	num_rand_init(0ULL);
 	conf.gpu = bart_use_gpu;
 
 	long ksp_dims[DIMS];

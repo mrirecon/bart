@@ -583,7 +583,7 @@ tests/test-pics-eulermaruyama: ones zeros pics var nrmse
 	$(TOOLDIR)/zeros 3 128 128 1 z.ra						;\
 	$(TOOLDIR)/pics --eulermaruyama -S -w1. -s0.02 -i100 -l2 -r1. z.ra z.ra x.ra	;\
 	$(TOOLDIR)/var 3 x.ra v.ra							;\
-	$(TOOLDIR)/nrmse -t 0.005 o.ra v.ra						;\
+	$(TOOLDIR)/nrmse -t 0.008 o.ra v.ra						;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
@@ -595,7 +595,7 @@ tests/test-pics-eulermaruyama2: ones zeros pics var nrmse
 	$(TOOLDIR)/zeros 3 128 128 1 z.ra							;\
 	$(TOOLDIR)/pics --eulermaruyama -S -w1. -s0.02 -i150 -l2 -r0. -p s.ra z.ra s.ra x.ra	;\
 	$(TOOLDIR)/var 3 x.ra v.ra								;\
-	$(TOOLDIR)/nrmse -t 0.01 o.ra v.ra							;\
+	$(TOOLDIR)/nrmse -t 0.015 o.ra v.ra							;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 

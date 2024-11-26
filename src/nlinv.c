@@ -33,6 +33,7 @@
 #include "num/flpmath.h"
 #include "num/fft.h"
 #include "num/init.h"
+#include "num/rand.h"
 
 #include "noncart/nufft.h"
 #include "linops/linop.h"
@@ -152,6 +153,7 @@ int main_nlinv(int argc, char* argv[argc])
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init_gpu_support();
+	num_rand_init(0ULL);
 	conf.gpu = bart_use_gpu;
 
 
