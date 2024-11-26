@@ -17,6 +17,7 @@
 #include "num/init.h"
 #include "num/filter.h"
 #include "num/vptr.h"
+#include "num/rand.h"
 
 #include "misc/mri.h"
 #include "misc/mri2.h"
@@ -263,6 +264,7 @@ int main_moba(int argc, char* argv[argc])
 		error("Multi-GPU only supported by MPI!\n");
 
 	num_init_gpu_support();
+	num_rand_init(0ULL);
 
 	data.model = conf.mode;
 

@@ -34,6 +34,7 @@
 
 #include "noncart/nufft.h"
 
+#include "num/rand.h"
 #include "sense/recon.h"
 #include "sense/model.h"
 #include "sense/optcom.h"
@@ -247,6 +248,7 @@ int main_pics(int argc, char* argv[argc])
 		nuconf.toeplitz = false;
 
 	num_init_delayed();
+	num_rand_init(0ULL);
 
 	if (0 != bart_delayed_loop_flags && NULL != traj_file) {
 
