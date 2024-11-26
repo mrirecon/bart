@@ -19,6 +19,7 @@
 
 #include "num/multind.h"
 #include "num/init.h"
+#include "num/rand.h"
 
 #include "iter/iter6.h"
 #include "iter/iter.h"
@@ -141,7 +142,7 @@ int main_reconet(int argc, char* argv[argc])
 		OPTL_SUBOPT(0, "resnet-block", "...", "configure residual block", N_res_block_opts, res_block_opts),
 		OPTL_SUBOPT(0, "varnet-block", "...", "configure variational block", N_variational_block_opts, variational_block_opts),
 		OPTL_SUBOPT(0, "tensorflow", "...", "configure tensorflow as network", N_tensorflow_opts, network_tensorflow_opts),
-		OPTL_SUBOPT(0, "unet", "...", "configure U-Net block", N_unet_reco_opts, unet_reco_opts),
+		//OPTL_SUBOPT(0, "unet", "...", "configure U-Net block", N_unet_reco_opts, unet_reco_opts),
 
 		OPTL_SUBOPT(0, "data-consistency", "...", "configure data-consistency method", ARRAY_SIZE(dc_opts), dc_opts),
 		OPTL_SUBOPT(0, "initial-reco", "...", "configure initialization", ARRAY_SIZE(init_opts), init_opts),
@@ -262,6 +263,7 @@ int main_reconet(int argc, char* argv[argc])
 
 	config.gpu = bart_use_gpu;
 	num_init_gpu_support();
+	num_rand_init(0ULL);
 
 	if (apply)
 		data.create_out = true;

@@ -34,6 +34,7 @@
 
 #include "noncart/nufft.h"
 
+#include "num/rand.h"
 #include "sense/recon.h"
 #include "sense/model.h"
 #include "sense/optcom.h"
@@ -245,6 +246,7 @@ int main_pics(int argc, char* argv[argc])
 		nuconf.toeplitz = false;
 
 	num_init_delayed();
+	num_rand_init(0ULL);
 
 	if (0 != bart_delayed_loop_flags && NULL != traj_file) {
 
@@ -719,7 +721,7 @@ int main_pics(int argc, char* argv[argc])
 		const struct linop_s* extract = linop_extract_create(1, MD_DIMS(0), MD_DIMS(md_calc_size(DIMS, img_dims)), MD_DIMS(md_calc_size(DIMS, img_dims) + ropts.svars));
 		extract = linop_reshape_out_F(extract, DIMS, img_dims);
 		forward_op = linop_chain_FF(extract, forward_op);
-		
+
 		if (is_vptr(image)) {
 
 			void* vptr_ref_array[NUM_REGS] = { NULL };
@@ -728,7 +730,7 @@ int main_pics(int argc, char* argv[argc])
 			for (int i = 0; i < NUM_REGS; i++)
 				if (NULL != sdims[i])
 					vptr_ref_array[svars++] = vptr_alloc_sameplace(DIMS + 1, (*sdims[i]), CFL_SIZE, image);
-			
+
 			vptr_ref = vptr_wrap_range(svars, vptr_ref_array, true);
 
 			const struct linop_s* tmp = linop_vptr_set_dims_wrapper((struct linop_s*)forward_op, NULL, vptr_ref, vptr_get_hint(image));
@@ -771,7 +773,7 @@ int main_pics(int argc, char* argv[argc])
 
 	for (int i = 0; i < NUM_REGS; i++)
 		if (NULL != sdims[i])
-			xfree(sdims[i]);	
+			xfree(sdims[i]);
 
 
 	auto iov = operator_domain(op);

@@ -57,6 +57,9 @@ static void philox_4x32(const uint64_t state, const uint64_t ctr1, const uint64_
 #define MAX_WORKER 128
 static struct bart_rand_state global_rand_state[MAX_WORKER] = { [0 ... MAX_WORKER - 1] = { .num_rand_seed = 123, .state = 0x7012082D361B3B31, .ctr1 = 0, .ctr2 = 0 } };
 
+//init is required
+static bool rand_is_init = false;
+
 void rand_state_update(struct bart_rand_state* state, unsigned long long seed)
 {
 	static_assert(sizeof(unsigned long long) == sizeof(uint64_t), "unsigned long long is not 64 bits!\n");
@@ -92,7 +95,7 @@ struct bart_rand_state* rand_state_create(unsigned long long seed)
 
 			warned = true;
 
-			if (0 != (cfl_loop_rand_flags & cfl_loop_get_flags()))			
+			if (0 != (cfl_loop_rand_flags & cfl_loop_get_flags()))
 				debug_printf(DP_WARN, "rand_state_create provides identical random numbers for each cfl loop iteration.\n");
 		}
 	}
@@ -105,7 +108,9 @@ struct bart_rand_state* rand_state_create(unsigned long long seed)
 }
 
 static struct bart_rand_state get_worker_state(void)
-{ 
+{
+	assert(rand_is_init);
+
 	struct bart_rand_state worker_state;
 
 #pragma omp critical(global_rand_state)
@@ -118,7 +123,7 @@ static struct bart_rand_state get_worker_state(void)
 }
 
 static struct bart_rand_state get_worker_state_cfl_loop(void)
-{ 
+{
 	struct bart_rand_state worker_state = get_worker_state();
 
 	if (cfl_loop_desc_active()) {
@@ -143,6 +148,8 @@ static struct bart_rand_state get_worker_state_cfl_loop(void)
 
 void num_rand_init(unsigned long long seed)
 {
+	rand_is_init = true;
+
 	if (use_obsolete_rng())
 		assert(seed <= UINT_MAX);
 
