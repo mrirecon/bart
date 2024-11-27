@@ -2420,7 +2420,7 @@ void* md_mpi_wrap(int D, unsigned long f, const long dims[D], const void* ptr, s
 /**
  * Allocate memory on the same device (CPU/GPU) place as ptr
  *
- * return pointer to CPU memory if ptr is in CPU or to GPU memory if ptr is in GPU
+ * return pointer to CPU memory if ptr is in CPU( or NULL) or to GPU memory if ptr is in GPU
  */
 void* md_alloc_sameplace(int D, const long dimensions[D], size_t size, const void* ptr)
 {
@@ -2432,7 +2432,6 @@ void* md_alloc_sameplace(int D, const long dimensions[D], size_t size, const voi
 #ifdef USE_CUDA
 	return (cuda_ondevice(ptr) ? md_alloc_gpu : md_alloc)(D, dimensions, size);
 #else
-	assert(NULL != ptr);
 	return md_alloc(D, dimensions, size);
 #endif
 }
