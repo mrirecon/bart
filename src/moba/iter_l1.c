@@ -1,7 +1,7 @@
 /* Copyright 2013-2014. The Regents of the University of California.
  * Copyright 2019. Uecker Lab, University Medical Center Goettingen.
  * Copryright 2023. Institute of Biomedical Imaging. TU Graz.
- * All rights reserved. Use of this source code is governed by 
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: Xiaoqing Wang, Nick Scholand, Martin Uecker
@@ -22,6 +22,7 @@
 #include "num/flpmath.h"
 #include "num/ops_p.h"
 #include "num/rand.h"
+#include "num/vptr.h"
 
 #include "num/ops.h"
 #include "num/iovec.h"
@@ -64,12 +65,12 @@ struct T1inv_s {
 
 	const struct nlop_s* nlop;
 	const struct mdb_irgnm_l1_conf* conf;
-    
+
 	long size_x;
 	long size_y;
 
 	float alpha;
-    
+
 	const long* dims;
 
 	bool first_iter;
@@ -96,7 +97,7 @@ static void normal(iter_op_data* _data, float* _dst, const float* _src)
 #if 0
 	if (0. == data->alpha)
 		return;
- 
+
 	assert(dst != src);
 #endif
 
@@ -108,7 +109,7 @@ static void normal(iter_op_data* _data, float* _dst, const float* _src)
 
 	long map_dims[DIMS];
 	md_select_dims(DIMS, ~COEFF_FLAG, map_dims, img_dims);
-	
+
 	long pos[DIMS] = { };
 
 	for (pos[COEFF_DIM] = 0; pos[COEFF_DIM] < img_dims[COEFF_DIM]; pos[COEFF_DIM]++) {
@@ -146,7 +147,7 @@ static void pos_value(iter_op_data* _data, float* dst, const float* src)
 
 	long dims1[DIMS];
 	md_select_dims(DIMS, FFT_FLAGS, dims1, img_dims);
-	
+
 	long pos[DIMS] = { };
 
 	do {
@@ -169,7 +170,7 @@ static void combined_prox(iter_op_data* _data, float rho, float* dst, const floa
 
 	// coil sensitivity part is left untouched
 
-	assert(src == dst); 
+	assert(src == dst);
 
 	if (data->first_iter) {
 
@@ -204,13 +205,14 @@ static void inverse_fista(iter_op_data* _data, float alpha, float* dst, const fl
 		data->alpha = alpha;
 	}
 
-	void* x = md_alloc_sameplace(1, MD_DIMS(data->size_x), FL_SIZE, src);
+	const struct vec_iter_s* vops = select_vecops(dst);
 
-	md_gaussian_rand(1, MD_DIMS(data->size_x / 2), x);
+	void* x = vops->allocate(data->size_x);
+	vops->rand(data->size_x, x);
 
-	maxeigen += power(20, data->size_x, select_vecops(src), (struct iter_op_s){ normal, CAST_UP(data) }, x, NULL);
+	maxeigen += power(20, data->size_x, vops, (struct iter_op_s){ normal, CAST_UP(data) }, x, NULL);
 
-	md_free(x);
+	vops->del(x);
 
 	data->alpha = alpha;	// reset alpha
 
@@ -221,11 +223,11 @@ static void inverse_fista(iter_op_data* _data, float alpha, float* dst, const fl
 	debug_printf(DP_DEBUG3, "##max eigenv = %f, step = %f, alpha = %f\n", maxeigen, step, alpha);
 
 	wavthresh_rand_state_set(data->prox1, 1);
-    
+
 	int maxiter = MIN(data->conf->c2->cgiter, 10. * powf(2, data->outer_iter));
 
 
-	float eps = md_norm(1, MD_DIMS(data->size_x), src);
+	float eps = vops->norm(data->size_x, src);
 
 	data->first_iter = true;
 
@@ -238,7 +240,7 @@ static void inverse_fista(iter_op_data* _data, float alpha, float* dst, const fl
 		true,
 		ravine_classical,
 		data->size_x,
-		select_vecops(src),
+		vops,
 		continuation,
 		(struct iter_op_s){ normal, CAST_UP(data) },
 		(struct iter_op_p_s){ combined_prox, CAST_UP(data) },
@@ -373,7 +375,7 @@ static void T1inv_apply(const operator_data_t* _data, float alpha, complex float
 	const auto data = &CAST_DOWN(T1inv2_s, _data)->data;
 
 	switch (data->conf->algo) {
-	
+
 	case ALGO_FISTA:
 		inverse_fista(CAST_UP(data), alpha, (float*)dst, (const float*)src);
 		break;
@@ -381,7 +383,7 @@ static void T1inv_apply(const operator_data_t* _data, float alpha, complex float
 	case ALGO_ADMM:
 		inverse_admm(CAST_UP(data), alpha, (float*)dst, (const float*)src);
 		break;
-	
+
 	default:
 		break;
 	}
