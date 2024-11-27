@@ -16,6 +16,7 @@
 
 #include "misc/debug.h"
 #include "misc/misc.h"
+#include "misc/mri2.h"
 
 #include "calib/calib.h"
 #include "calib/calmat.h"

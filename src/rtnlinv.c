@@ -42,6 +42,7 @@
 #include "num/init.h"
 
 #include "misc/mri.h"
+#include "misc/mri2.h"
 #include "misc/misc.h"
 #include "misc/version.h"
 #include "misc/mmio.h"

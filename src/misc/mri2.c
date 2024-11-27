@@ -21,11 +21,7 @@
 
 #include "sense/optcom.h"
 
-#include "mri.h"
-
-
-
-
+#include "mri2.h"
 
 
 
@@ -48,13 +44,6 @@ void data_consistency(const long dims[DIMS], complex float* dst, const complex f
 	md_copy(DIMS, dims, dst, tmp, CFL_SIZE);
 	md_free(tmp);
 }
-
-
-
-
-
-
-
 
 
 
@@ -307,78 +296,4 @@ void estimate_fast_sq_im_dims(int N, long dims[3], const long tdims[N], const co
 	for (int j = 0; j < 3; j++)
 		dims[j] = (0. == max_dims[j]) ? 1 : fast_size;
 }
-
-
-
-void traj_radial_angles(int N, float angles[N], const long tdims[DIMS], const complex float* traj)
-{
-	assert(N == tdims[2]);
-
-	long tdims1[DIMS];
-	md_select_dims(DIMS, ~MD_BIT(1), tdims1, tdims);
-
-	complex float* traj1 = md_alloc(DIMS, tdims1, CFL_SIZE);
-
-	md_slice(DIMS, MD_BIT(1), (long[DIMS]){ 0 }, tdims, traj1, traj, CFL_SIZE);
-
-	for (int i = 0; i < N; i++)
-		angles[i] = M_PI + atan2f(crealf(traj1[3 * i + 0]), crealf(traj1[3 * i + 1]));
-
-	md_free(traj1);
-}
-
-
-float traj_radial_dcshift(const long tdims[DIMS], const complex float* traj)
-{
-	long tdims1[DIMS];
-	md_select_dims(DIMS, ~MD_BIT(1), tdims1, tdims);
-
-	complex float* traj1 = md_alloc(DIMS, tdims1, CFL_SIZE);
-	// Extract what would be the DC component in Cartesian sampling
-
-	md_slice(DIMS, MD_BIT(1), (long[DIMS]){ [1] = tdims[1] / 2 }, tdims, traj1, traj, CFL_SIZE);
-
-	NESTED(float, dist, (int i))
-	{
-		return sqrtf(powf(crealf(traj1[3 * i + 0]), 2.) + powf(crealf(traj1[3 * i + 1]), 2.));
-	};
-
-	float dc_shift = dist(0);
-
-	for (int i = 0; i < tdims[2]; i++)
-		if (fabsf(dc_shift - dist(i)) > 0.0001)
-			debug_printf(DP_WARN, "Inconsistently shifted spoke: %d %f != %f\n", i, dist(i), dc_shift);
-
-	md_free(traj1);
-
-	return dc_shift;
-}
-
-
-float traj_radial_dk(const long tdims[DIMS], const complex float* traj)
-{
-	long tdims1[DIMS];
-	md_select_dims(DIMS, ~MD_BIT(1), tdims1, tdims);
-
-	complex float* traj1 = md_alloc(DIMS, tdims1, CFL_SIZE);
-	// Extract what would be the DC component in Cartesian sampling
-
-	md_slice(DIMS, MD_BIT(1), (long[DIMS]){ [1] = tdims[1] / 2 }, tdims, traj1, traj, CFL_SIZE);
-
-	NESTED(float, dist, (int i))
-	{
-		return sqrtf(powf(crealf(traj1[3 * i + 0]), 2.) + powf(crealf(traj1[3 * i + 1]), 2.));
-	};
-
-	float dc_shift = dist(0);
-
-	md_slice(DIMS, MD_BIT(1), (long[DIMS]){ [1] = tdims[1] / 2 + 1 }, tdims, traj1, traj, CFL_SIZE);
-
-	float shift1 = dist(0) - dc_shift;
-
-	md_free(traj1);
-
-	return shift1;
-}
-
 

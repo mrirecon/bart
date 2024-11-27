@@ -10,6 +10,7 @@
 #include "misc/misc.h"
 #include "misc/mmio.h"
 #include "misc/mri.h"
+#include "misc/mri2.h"
 
 #include "misc/version.h"
 #include "num/multind.h"

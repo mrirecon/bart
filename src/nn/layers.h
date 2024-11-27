@@ -24,4 +24,6 @@ extern const struct nlop_s* append_flatten_layer(const struct nlop_s* network, i
 
 extern const struct nlop_s* append_batchnorm_layer(const struct nlop_s* network, int o, unsigned long norm_flags, enum NETWORK_STATUS status);
 
+#include "misc/cppwrap.h"
+
 #endif

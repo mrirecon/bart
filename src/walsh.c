@@ -13,6 +13,7 @@
 #include "misc/mmio.h"
 #include "misc/misc.h"
 #include "misc/mri.h"
+#include "misc/mri2.h"
 #include "misc/opts.h"
 #include "misc/debug.h"
 

@@ -18,6 +18,7 @@
 #include "num/fltools.h"
 
 #include "misc/mri.h"
+#include "misc/mri2.h"
 #include "misc/misc.h"
 #include "misc/debug.h"
 
