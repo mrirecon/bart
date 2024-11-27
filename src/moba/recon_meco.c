@@ -1,7 +1,7 @@
 /* Copyright 2020. Uecker Lab, University Medical Center Goettingen.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
- * 
+ *
  * Authors:
  * 2019-2020 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2019-2020 Zhengguo Tan <zhengguo.tan@med.uni-goettingen.de>
@@ -217,8 +217,8 @@ void meco_recon(const struct moba_conf* moba_conf,
 	long mask_dims[DIMS];
 	md_select_dims(DIMS, FFT_FLAGS, mask_dims, maps_dims);
 
-	md_zmul2(DIMS, maps_1s_dims, MD_STRIDES(DIMS, maps_1s_dims, CFL_SIZE), maps_ptr, 
-		MD_STRIDES(DIMS, maps_1s_dims, CFL_SIZE), maps_ptr, 
+	md_zmul2(DIMS, maps_1s_dims, MD_STRIDES(DIMS, maps_1s_dims, CFL_SIZE), maps_ptr,
+		MD_STRIDES(DIMS, maps_1s_dims, CFL_SIZE), maps_ptr,
 		MD_STRIDES(DIMS, mask_dims, CFL_SIZE), mask);
 
 
@@ -329,7 +329,7 @@ void meco_recon(const struct moba_conf* moba_conf,
 		if (ALGO_CG == algo) { // CG
 
 			debug_printf(DP_DEBUG2, " >> linearized problem solved by CG\n");
-			
+
 			// assert(0 == moba_conf->ropts->r);
 
 			inv_op = NULL;
@@ -358,6 +358,7 @@ void meco_recon(const struct moba_conf* moba_conf,
 			struct lsqr_conf lsqr_conf = lsqr_defaults;
 			lsqr_conf.it_gpu = false;
 			lsqr_conf.warmstart = warmstart;
+			lsqr_conf.include_adjoint = false;
 
 			NESTED(void, lsqr_cont, (iter_conf* iconf))
 			{

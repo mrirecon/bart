@@ -17,6 +17,7 @@ struct lsqr_conf {
 	float lambda;
 	_Bool it_gpu;
 	_Bool warmstart;
+	_Bool include_adjoint;
 	itop_continuation_t icont;
 };
 
