@@ -103,7 +103,7 @@ bool opt_reg(void* ptr, char c, const char* optarg)
 			assert(3 == ret);
 
 		} else if (strcmp(rt, "H") == 0) {
-			
+
 			regs[r].xform = NIHTWAV;
 			int ret = sscanf(optarg, "%*[^:]:%lu:%lu:%d", &regs[r].xflags, &regs[r].jflags, &regs[r].k);
 			assert(3 == ret);
@@ -308,7 +308,7 @@ void opt_precond_configure(struct opt_reg_s* ropts, const struct operator_p_s* p
 	ropts->sr++;
 }
 
-void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], const long (*sdims[NUM_REGS])[N], int llr_blk, int shift_mode, const char* wtype_str, bool use_gpu)
+void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], const long (*sdims[NUM_REGS])[N + 1], int llr_blk, int shift_mode, const char* wtype_str, bool use_gpu)
 {
 	float lambda = ropts->lambda;
 	bool randshift = (1 == shift_mode);
@@ -412,7 +412,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 			trafos[nr] = linop_identity_create(DIMS, img_dims);
 			prox_ops[nr] = prox_wavelet_thresh_create(DIMS, img_dims, wflags, regs[nr].jflags, wtype, minsize, regs[nr].lambda, randshift);
 			break;
-		
+
 		case NIHTWAV: {
 
 			debug_printf(DP_INFO, "NIHT with wavelets regularization: k = %d%% of total elements in each wavelet transform\n", regs[nr].k);
@@ -448,7 +448,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 				debug_printf(DP_DEBUG3,"%d ", wav_dims[i]);
 
 			debug_printf(DP_DEBUG3, "]\n");
-			
+
 			prox_ops[nr] = prox_niht_thresh_create(N, wav_dims, K, regs[nr].jflags);
 
 		}	break;
@@ -493,13 +493,11 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 			trafos[nr_penalties] = reg2.linop[1];
 			prox_ops[nr_penalties] = reg2.prox[1];
 
-			assert(1 == img_dims[N - 1]);
-
 			if (NULL != sdims) {
 
-				PTR_ALLOC(long[N], dims);
+				PTR_ALLOC(long[N + 1], dims);
 				md_copy_dims(N, *dims, img_dims);
-				(*dims)[N - 1] = bitcount(regs[nr].xflags);
+				(*dims)[N] = bitcount(regs[nr].xflags);
 				sdims[nr_penalties] = PTR_PASS(dims);
 			}
 
@@ -521,8 +519,9 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 			if (NULL != sdims) {
 
-				PTR_ALLOC(long[N], dims);
+				PTR_ALLOC(long[N + 1], dims);
 				md_copy_dims(N, *dims, img_dims);
+				(*dims)[N] = 1;
 				sdims[nr_penalties] = PTR_PASS(dims);
 			}
 
@@ -588,7 +587,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 		case MLR:
 #if 0
-			// FIXME: multiscale low rank changes the output image dimensions 
+			// FIXME: multiscale low rank changes the output image dimensions
 			// and requires the forward linear operator. This should be decoupled...
 			debug_printf(DP_INFO, "multi-scale lowrank regularization: %f\n", regs[nr].lambda);
 
@@ -691,7 +690,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 			long pos[1] = { 0 };
 
 			const struct linop_s* extract = linop_extract_create(1, pos, MD_DIMS(md_calc_size(N, img_dims)), MD_DIMS(md_calc_size(N, img_dims) + ropts->svars));
-			extract = linop_reshape_out_F(extract, N, img_dims);			
+			extract = linop_reshape_out_F(extract, N, img_dims);
 
 			trafos[nr] = linop_chain_FF(extract, trafos[nr]);
 		}
