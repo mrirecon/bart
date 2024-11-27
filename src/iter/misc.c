@@ -11,6 +11,7 @@
 #include "num/ops.h"
 #include "num/iovec.h"
 #include "num/rand.h"
+#include "num/vptr.h"
 
 #include "misc/misc.h"
 #include "misc/debug.h"
@@ -40,8 +41,19 @@ double estimate_maxeigenval_sameplace(const struct operator_s* op, int iteration
 	if (NULL == ref)
 		ref = &size; // cpu_ref
 
-	void* x = md_alloc_sameplace(io->N, io->dims, io->size, ref);
-	void* b = md_alloc_sameplace(io->N, io->dims, io->size, ref);
+	void* x;
+	void* b;
+
+	if (is_vptr(ref)) {
+
+		x = vptr_alloc_same(ref);
+		b = vptr_alloc_same(ref);
+
+	} else {
+
+		x = md_alloc_sameplace(io->N, io->dims, io->size, ref);
+		b = md_alloc_sameplace(io->N, io->dims, io->size, ref);
+	}
 
 	select_vecops(ref)->rand(2 * size, x);
 
