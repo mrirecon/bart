@@ -657,7 +657,7 @@ int main_pics(int argc, char* argv[argc])
 
 	const struct operator_p_s* thresh_ops[NUM_REGS] = { NULL };
 	const struct linop_s* trafos[NUM_REGS] = { NULL };
-	const long (*sdims[NUM_REGS])[DIMS] = { NULL };
+	const long (*sdims[NUM_REGS])[DIMS + 1] = { NULL };
 
 
 	opt_reg_configure(DIMS, img_dims, &ropts, thresh_ops, trafos, sdims, llr_blk, shift_mode, wtype_str, conf.gpu);
@@ -742,7 +742,7 @@ int main_pics(int argc, char* argv[argc])
 			int svars = 1;
 			for (int i = 0; i < NUM_REGS; i++)
 				if (NULL != sdims[i])
-					vptr_ref_array[svars++] = vptr_alloc_sameplace(DIMS, (*sdims[i]), CFL_SIZE, image);
+					vptr_ref_array[svars++] = vptr_alloc_sameplace(DIMS + 1, (*sdims[i]), CFL_SIZE, image);
 			
 			vptr_ref = vptr_wrap_range(svars, vptr_ref_array, true);
 
