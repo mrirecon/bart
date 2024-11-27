@@ -689,7 +689,7 @@ static complex float* create_pipe(const char* name, int D, long dimensions[D], u
 	complex float* ptr;
 	char filename[] = "bart-XXXXXX";
 	int fd;
-	const char* dir;
+	char* dir;
 	char* abs_filename;
 
 	if (NULL != strm) {
@@ -707,7 +707,13 @@ static complex float* create_pipe(const char* name, int D, long dimensions[D], u
 
 	debug_printf(DP_DEBUG1, "Temp file for pipe: %s\n", filename);
 
-	dir = get_current_dir_name();
+	dir = xmalloc(BART_MAX_DIR_PATH_SIZE);
+
+	if (!dir)
+		error("Failed to allocate space for dir. name.\n");
+
+	if (!getcwd(dir, BART_MAX_DIR_PATH_SIZE))
+		error("Directory pathname too long.\n");
 	abs_filename = (char*)ptr_printf("%s/%s", dir, filename);
 
 	strm = stream_create_file(name, D, dimensions, stream_flags, abs_filename, true);

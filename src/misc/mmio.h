@@ -5,6 +5,8 @@
 
 #include "misc/cppwrap.h"
 
+#define BART_MAX_DIR_PATH_SIZE 4096
+
 extern _Bool mmio_file_locking;
 
 #include <stddef.h>
