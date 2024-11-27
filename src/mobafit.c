@@ -558,6 +558,7 @@ int main_mobafit(int argc, char* argv[argc])
 
 	struct lsqr_conf lsqr_conf = lsqr_defaults;
 	lsqr_conf.it_gpu = false;
+	lsqr_conf.include_adjoint = false;
 
 	const struct operator_p_s* lsqr = lsqr2_create(&lsqr_conf, iter2_conjgrad, CAST_UP(&conjgrad_conf), NULL, &nlop->derivative[0][0], NULL, 0, NULL, NULL, NULL);
 

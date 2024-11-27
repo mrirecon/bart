@@ -392,6 +392,7 @@ void noir2_recon(const struct noir2_conf_s* conf, struct noir2_s* noir_ops,
 		struct lsqr_conf lsqr_conf = lsqr_defaults;
 		lsqr_conf.warmstart = true;
 		lsqr_conf.lambda = 0;
+		lsqr_conf.include_adjoint = false;
 		noir_irgnm_conf.lsqr_conf = &lsqr_conf;
 
 		bool sup = skip != md_calc_size(N, img_dims);

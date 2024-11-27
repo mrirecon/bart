@@ -184,23 +184,6 @@ void iter4_landweber(const iter3_conf* _conf,
 
 
 
-static void inverse2(iter_op_data* _data, float alpha, float* dst, const float* src)
-{
-	auto data = CAST_DOWN(irgnm_s, _data);
-
-	const struct vec_iter_s* vops = select_vecops(dst);
-
-	float* tmp = vops->allocate(data->size);
-
-	iter_op_call(data->adj, tmp, src);
-
-	inverse(_data, alpha, dst, tmp);
-
-	vops->del(tmp);
-}
-
-
-
 void iter4_irgnm2(const iter3_conf* _conf,
 		const struct nlop_s* _nlop,
 		long N, float* dst, const float* ref,
@@ -229,12 +212,12 @@ void iter4_irgnm2(const iter3_conf* _conf,
 
 	// one limitation is that we currently cannot warm start the inner solver
 
-	struct iter_op_p_s inv2 = { inverse2, CAST_UP(&data2) };
+	struct iter_op_p_s inv2 = { inverse, CAST_UP(&data2) };
 
 	const struct operator_p_s* vlsqr = (NULL == lsqr) ? NULL : is_vptr(dst) ? operator_p_vptr_set_dims_wrapper(lsqr, dst, dst, vptr_get_hint(dst)) : operator_p_ref(lsqr);
 
 	irgnm2(conf->iter, conf->alpha, conf->alpha_min, conf->alpha_min0, conf->redu, N, M, select_vecops(src),
-		frw, der, (NULL == lsqr) ? inv2 : OPERATOR_P2ITOP(vlsqr),
+		frw, der, adj, (NULL == lsqr) ? inv2 : OPERATOR_P2ITOP(vlsqr),
 		dst, ref, src, cb, NULL);
 
 	nlop_free(nlop);

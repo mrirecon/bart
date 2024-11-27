@@ -670,17 +670,18 @@ void irgnm2(int iter, float alpha, float alpha_min, float alpha_min0, float redu
 	const struct vec_iter_s* vops,
 	struct iter_op_s op,
 	struct iter_op_s der,
+	struct iter_op_s adj,
 	struct iter_op_p_s lsqr,
 	float* x, const float* xref, const float* y,
 	struct iter_op_s callback,
 	struct iter_monitor_s* monitor)
 {
-	float* r = vops->allocate(M);
 
 	for (int i = 0; i < iter; i++) {
 
 		iter_monitor(monitor, vops, x);
 
+		float* r = vops->allocate(M);
 		iter_op_call(op, r, x);			// r = F x
 
 		vops->xpay(M, -1., r, y);	// r = y - F x
@@ -698,7 +699,12 @@ void irgnm2(int iter, float alpha, float alpha_min, float alpha_min0, float redu
 
 		vops->del(q);
 
-		iter_op_p_call(lsqr, alpha, x, r);
+		float* a = vops->allocate(N);
+		iter_op_call(adj, a, r);
+		vops->del(r);
+
+		iter_op_p_call(lsqr, alpha, x, a);
+		vops->del(a);
 
 		if (NULL != xref)
 			vops->axpy(N, x, +1., xref);
@@ -711,8 +717,6 @@ void irgnm2(int iter, float alpha, float alpha_min, float alpha_min0, float redu
 		if (NULL != callback.fun)
 			iter_op_call(callback, x, x);
 	}
-
-	vops->del(r);
 }
 
 
