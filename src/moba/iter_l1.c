@@ -479,10 +479,7 @@ static const struct operator_p_s* T1inv_p_create(const struct mdb_irgnm_l1_conf*
 	}
 #endif
 
-	auto result = operator_p_pre_chain(nlop_get_derivative(nlop, 0, 0)->adjoint, tmp);
-	operator_p_free(tmp);
-
-	return result;
+	return tmp;
 }
 
 
@@ -577,6 +574,7 @@ void mdb_irgnm_l1(const struct mdb_irgnm_l1_conf* conf,
 		};
 
 		lsqr_conf.icont = lsqr_cont;
+		lsqr_conf.include_adjoint = false;
 
 		inv_op = lsqr2_create(&lsqr_conf, iter2_admm, CAST_UP(&iadmm_conf), NULL, &nlop->derivative[0][0],
 				 NULL, conf->ropts->r, thresh_ops, trafos, NULL);
