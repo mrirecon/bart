@@ -25,6 +25,7 @@
 #include "num/iovec.h"
 #include "num/ops_p.h"
 #include "num/ops.h"
+#include "num/vptr.h"
 
 #include "linops/linop.h"
 #include "linops/someops.h"
@@ -191,6 +192,35 @@ static bool check_ops(long size,
 	return ret;
 }
 
+static const struct operator_s* vptr_get_normaleq_op(const struct operator_s* normaleq_op, const float* image)
+{
+	if (NULL == normaleq_op)
+		return NULL;
+
+	return (is_vptr(image) ? operator_vptr_set_dims_wrapper(normaleq_op, 2, (const void*[2]) { image, image }, vptr_get_hint(image)) : operator_ref(normaleq_op));
+}
+
+static const struct linop_s* vptr_get_linop(const struct linop_s* linop, const float* image)
+{
+	if (NULL == linop)
+		return NULL;
+
+	const void* ref = (linop_is_identity(linop)) ? image : NULL;
+	return is_vptr(image) ? linop_vptr_set_dims_wrapper((struct linop_s*)linop, ref, image, vptr_get_hint(image)) : linop_clone(linop);
+}
+
+static const struct operator_p_s* vptr_get_prox(const struct operator_p_s* prox, const struct linop_s* linop, const float* image)
+{
+	if (NULL == prox)
+		return NULL;
+
+	const void* ref = (NULL == linop || linop_is_identity(linop) ? image : NULL);
+
+	return is_vptr(image) ? operator_p_vptr_set_dims_wrapper(prox, ref, ref, vptr_get_hint(image)) : operator_p_ref(prox);
+}
+
+
+
 
 
 void iter2_conjgrad(const iter_conf* _conf,
@@ -215,24 +245,27 @@ void iter2_conjgrad(const iter_conf* _conf,
 	long Bo = conf->Bo;
 	long Bi = conf->Bi;
 
+	const struct operator_s* t_normaleq_op = vptr_get_normaleq_op(normaleq_op, image);
+
 	if (1 == Bo * Bi) {
 
-		float eps = md_norm(1, MD_DIMS(size), image_adj);
+		float eps = select_vecops(image_adj)->norm(size, image_adj);
 
 		if (checkeps(eps))
 			goto cleanup;
 
 		conjgrad(conf->maxiter, conf->super.alpha * conf->l2lambda, eps * conf->tol, size, select_vecops(image_adj),
-				OPERATOR2ITOP(normaleq_op), image, image_adj, monitor);
+				OPERATOR2ITOP(t_normaleq_op), image, image_adj, monitor);
 	} else {
 
 		assert(0 == size % (Bo * Bi));
 
 		conjgrad_batch(conf->maxiter, conf->super.alpha * conf->l2lambda, NULL, conf->tol, size / (Bo * Bi * 2), Bi, Bo, select_vecops(image_adj),
-			OPERATOR2ITOP(normaleq_op), image, image_adj, monitor);
+			OPERATOR2ITOP(t_normaleq_op), image, image_adj, monitor);
 	}
 
 cleanup:
+	operator_free(t_normaleq_op);
 }
 
 
@@ -257,7 +290,9 @@ void iter2_ist(const iter_conf* _conf,
 
 	auto conf = CAST_DOWN(iter_ist_conf, _conf);
 
-	float eps = md_norm(1, MD_DIMS(size), image_adj);
+	float eps = select_vecops(image_adj)->norm(size, image_adj);
+	const struct operator_s* t_normaleq_op = vptr_get_normaleq_op(normaleq_op, image);
+	const struct operator_p_s* t_prox = vptr_get_prox(prox_ops[0], NULL, image);
 
 	if (checkeps(eps))
 		goto cleanup;
@@ -270,9 +305,11 @@ void iter2_ist(const iter_conf* _conf,
 	assert(!conf->hogwild);
 
 	ist(conf->maxiter, eps * conf->tol, conf->super.alpha * conf->step, conf->last, size, select_vecops(image_adj),
-		NULL, OPERATOR2ITOP(normaleq_op), OPERATOR_P2ITOP(prox_ops[0]), image, image_adj, monitor);
+		NULL, OPERATOR2ITOP(t_normaleq_op), OPERATOR_P2ITOP(t_prox), image, image_adj, monitor);
 
 cleanup:
+	operator_free(t_normaleq_op);
+	operator_p_free(t_prox);
 }
 
 
@@ -295,21 +332,29 @@ void iter2_eulermaruyama(const iter_conf* _conf,
 
 	assert(check_ops(size, normaleq_op, D, prox_ops, ops));
 
+	const struct operator_s* t_normaleq_op = vptr_get_normaleq_op(normaleq_op, image);
+	const struct operator_p_s* t_prox = vptr_get_prox(prox_ops[0], NULL, image);
+
+
+
 	auto conf = CAST_DOWN(iter_eulermaruyama_conf, _conf);
 
 	if (NULL == conf->lop_prec && 0. == conf->diag_prec) {
 
 		eulermaruyama(conf->maxiter, conf->super.alpha, conf->step, size, select_vecops(image_adj),
-			OPERATOR2ITOP(normaleq_op), &OPERATOR_P2ITOP(prox_ops[0]), image, image_adj, monitor);
+			OPERATOR2ITOP(t_normaleq_op), &OPERATOR_P2ITOP(t_prox), image, image_adj, monitor);
 	} else {
 
 		const struct iovec_s* cod_prec = linop_codomain(conf->lop_prec);
 
 		preconditioned_eulermaruyama(conf->maxiter, conf->super.alpha, conf->step, size, select_vecops(image_adj),
-			OPERATOR2ITOP(normaleq_op), &OPERATOR_P2ITOP(prox_ops[0]), image, image_adj,
+			OPERATOR2ITOP(t_normaleq_op), &OPERATOR_P2ITOP(t_prox), image, image_adj,
 			2 * md_calc_size(cod_prec->N, cod_prec->dims), OPERATOR2ITOP(conf->lop_prec->adjoint), OPERATOR2ITOP(conf->lop_prec->normal), conf->diag_prec,
 			conf->max_prec_iter, conf->prec_tol, conf->batchsize, monitor);
 	}
+
+	operator_free(t_normaleq_op);
+	operator_p_free(t_prox);
 }
 
 
@@ -331,13 +376,21 @@ void iter2_fista(const iter_conf* _conf,
 
 	auto conf = CAST_DOWN(iter_fista_conf, _conf);
 
-	float eps = md_norm(1, MD_DIMS(size), image_adj);
+	float eps = select_vecops(image_adj)->norm(size, image_adj);
+
+	const struct operator_s* t_normaleq_op = vptr_get_normaleq_op(normaleq_op, image);
+	const struct operator_p_s* t_prox = vptr_get_prox(prox_ops[0], NULL, image);
 
 	assert(check_ops(size, normaleq_op, D, prox_ops, ops));
 
-	if (checkeps(eps))
+	if (checkeps(eps)) {
+
+		operator_free(t_normaleq_op);
+		operator_p_free(t_prox);
+
 		return; // clang limitation
-	//	goto cleanup;
+		//	goto cleanup;
+	}
 
 	assert((conf->continuation >= 0.) && (conf->continuation <= 1.));
 
@@ -368,13 +421,15 @@ void iter2_fista(const iter_conf* _conf,
 
 	double maxeigen = 1.;
 	if (0 != conf->maxeigen_iter)
-		maxeigen = estimate_maxeigenval_sameplace(normaleq_op, conf->maxeigen_iter, image_adj);
+		maxeigen = estimate_maxeigenval_sameplace(t_normaleq_op, conf->maxeigen_iter, image_adj);
 
 	fista(conf->maxiter, eps * conf->tol, conf->step / maxeigen, conf->super.alpha , conf->last,
 		(struct ravine_conf){ conf->p, conf->q, conf->r }, size, select_vecops(image_adj),
-		continuation, OPERATOR2ITOP(normaleq_op), OPERATOR_P2ITOP(prox_ops[0]), image, image_adj, monitor);
+		continuation, OPERATOR2ITOP(t_normaleq_op), OPERATOR_P2ITOP(t_prox), image, image_adj, monitor);
 
 // cleanup:
+	operator_free(t_normaleq_op);
+	operator_p_free(t_prox);
 }
 
 
@@ -398,7 +453,7 @@ void iter2_chambolle_pock(const iter_conf* _conf,
 
 	assert(check_ops(size, normaleq_op, D, prox_ops, ops));
 
-	normaleq_op = operator_ref(normaleq_op);
+	normaleq_op = vptr_get_normaleq_op(normaleq_op, image);
 
 	const struct operator_p_s* prox_G = NULL;
 
@@ -425,20 +480,33 @@ void iter2_chambolle_pock(const iter_conf* _conf,
 		prox_G = prox_zero_create(iov->N, iov->dims);
 	}
 
+	if (is_vptr(image)) {
+
+		const struct operator_p_s* prox_G2 = prox_G;
+		prox_G = operator_p_vptr_set_dims_wrapper(prox_G, image, image, vptr_get_hint(image));
+		operator_p_free(prox_G2);
+	}
+
 	long M[D?:1];
 
 	struct iter_op_s lop_frw[D?:1];
 	struct iter_op_s lop_adj[D?:1];
 	struct iter_op_p_s it_prox[D?:1];
 
+	const struct linop_s* t_ops[D ?:1];
+	const struct operator_p_s* t_prox_ops[D ?:1];
+
 	for (int i = 0; i < D; i++) {
 
 		const struct iovec_s* ov = linop_codomain(ops[i]);
 		M[i] = 2 * md_calc_size(ov->N, ov->dims);
 
-		lop_frw[i] = OPERATOR2ITOP(ops[i]->forward);
-		lop_adj[i] = OPERATOR2ITOP(ops[i]->adjoint);
-		it_prox[i] = OPERATOR_P2ITOP(prox_ops[i]);
+		t_ops[i] = vptr_get_linop(ops[i], image);
+		t_prox_ops[i] = vptr_get_prox(prox_ops[i], t_ops[i], image);
+
+		lop_frw[i] = OPERATOR2ITOP(t_ops[i]->forward);
+		lop_adj[i] = OPERATOR2ITOP(t_ops[i]->adjoint);
+		it_prox[i] = OPERATOR_P2ITOP(t_prox_ops[i]);
 	}
 
 	float eps = 1.;
@@ -461,6 +529,10 @@ void iter2_chambolle_pock(const iter_conf* _conf,
 			operator_free(tmp);
 		}
 
+		auto tmp = me_normal;
+		me_normal = vptr_get_normaleq_op(me_normal, image);
+		operator_free(tmp);
+
 		debug_printf(DP_INFO, "Estimating max eigenvalue...\n");
 		maxeigen = estimate_maxeigenval_sameplace(me_normal, conf->maxeigen_iter, image);
 		debug_printf(DP_INFO, "Max eigenvalue: %e\n", maxeigen);
@@ -481,6 +553,12 @@ void iter2_chambolle_pock(const iter_conf* _conf,
 
 	operator_p_free(prox_G);
 	operator_free(normaleq_op);
+
+	for (int i = 0; i < D; i++) {
+
+		linop_free(t_ops[i]);
+		operator_p_free(t_prox_ops[i]);
+	}
 }
 
 
@@ -526,13 +604,20 @@ void iter2_admm(const iter_conf* _conf,
 	struct admm_op a_ops[D ?:1];
 	struct iter_op_p_s a_prox_ops[D ?:1];
 
+	const struct linop_s* t_ops[D ?:1];
+	const struct operator_p_s* t_prox_ops[D ?:1];
+	const struct operator_s* t_normaleq_op = vptr_get_normaleq_op(normaleq_op, image);
+
 	for (int i = 0; i < D; i++) {
 
-		a_ops[i].forward = OPERATOR2ITOP(ops[i]->forward),
-		a_ops[i].normal = OPERATOR2ITOP(ops[i]->normal);
-		a_ops[i].adjoint = OPERATOR2ITOP(ops[i]->adjoint);
+		t_ops[i] = vptr_get_linop(ops[i], image);
+		t_prox_ops[i] = vptr_get_prox(prox_ops[i], ops[i], image);
 
-		a_prox_ops[i] = OPERATOR_P2ITOP(prox_ops[i]);
+		a_ops[i].forward = OPERATOR2ITOP(t_ops[i]->forward),
+		a_ops[i].normal = OPERATOR2ITOP(t_ops[i]->normal);
+		a_ops[i].adjoint = OPERATOR2ITOP(t_ops[i]->adjoint);
+
+		a_prox_ops[i] = OPERATOR_P2ITOP(t_prox_ops[i]);
 	}
 
 	admm_plan.ops = a_ops;
@@ -548,16 +633,23 @@ void iter2_admm(const iter_conf* _conf,
 
 	if (NULL != image_adj) {
 
-		float eps = md_norm(1, MD_DIMS(size), image_adj);
+		float eps = select_vecops(image_adj)->norm(size, image_adj);
 
 		if (checkeps(eps))
 			goto cleanup;
 	}
 
-	admm(&admm_plan, admm_plan.num_funs, z_dims, size, image, image_adj, select_vecops(image), OPERATOR2ITOP(normaleq_op), monitor);
+	admm(&admm_plan, admm_plan.num_funs, z_dims, size, image, image_adj, select_vecops(image), OPERATOR2ITOP(t_normaleq_op), monitor);
 
 cleanup:
-	;
+
+	for (int i = 0; i < D; i++) {
+
+		linop_free(t_ops[i]);
+		operator_p_free(t_prox_ops[i]);
+	}
+
+	operator_free(t_normaleq_op);
 }
 
 
@@ -577,6 +669,7 @@ void iter2_pocs(const iter_conf* _conf,
 	assert(NULL == ops);
 	assert(NULL == biases);
 	assert(NULL == image_adj);
+	assert(!is_vptr(image));
 
 	assert(check_ops(size, normaleq_op, D, prox_ops, ops));
 
@@ -600,6 +693,7 @@ void iter2_niht(const iter_conf* _conf,
 		struct iter_monitor_s* monitor)
 {
 	assert(D == 1);
+	assert(!is_vptr(image));
 
 	auto conf = CAST_DOWN(iter_niht_conf, _conf);
 
@@ -621,7 +715,7 @@ void iter2_niht(const iter_conf* _conf,
 		niht_conf.trans = 1;
 	}
 
-	float eps = md_norm(1, MD_DIMS(size), image_adj);
+	float eps = select_vecops(image_adj)->norm(size, image_adj);
 
 	if (checkeps(eps))
 		goto cleanup;
