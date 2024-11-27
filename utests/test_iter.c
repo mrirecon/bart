@@ -102,7 +102,10 @@ static bool test_iter_irgnm_lsqr0(bool ref)
 
 	auto der = linop_clone(&zexp->derivative[0][0]);
 
-	lsqr = lsqr2_create(&lsqr_defaults,
+	struct lsqr_conf lsqrc = lsqr_defaults;
+	lsqrc.include_adjoint = false;
+
+	lsqr = lsqr2_create(&lsqrc,
 				iter2_conjgrad, CAST_UP(&conf),
 				NULL, der, NULL,
 				0, NULL, NULL, NULL);
@@ -163,7 +166,10 @@ static bool test_iter_irgnm_lsqr1(bool ref, bool regu)
 
 	const struct linop_s* trafos[1] = { linop_identity_create(3, dims) };
 
-	lsqr = lsqr2_create(&lsqr_defaults,
+	struct lsqr_conf lsqrc = lsqr_defaults;
+	lsqrc.include_adjoint = false;
+
+	lsqr = lsqr2_create(&lsqrc,
 				iter2_admm, CAST_UP(&conf),
 				NULL, der, NULL,
 				regu ? 1 : 0,
@@ -272,7 +278,10 @@ static bool test_iter_irgnm_l1(void)
 	operator_p_free(p1);
 	operator_p_free(p2);
 
-	lsqr = lsqr2_create(&lsqr_defaults,
+	struct lsqr_conf lsqrc = lsqr_defaults;
+	lsqrc.include_adjoint = false;
+
+	lsqr = lsqr2_create(&lsqrc,
 				iter2_fista, CAST_UP(&conf),
 				NULL, &nlid->derivative[0][0], NULL,
 				1, prox_ops, trafos, NULL);
