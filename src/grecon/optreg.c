@@ -308,7 +308,7 @@ void opt_precond_configure(struct opt_reg_s* ropts, const struct operator_p_s* p
 	ropts->sr++;
 }
 
-void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], const long (*sdims[NUM_REGS])[N], int llr_blk, int shift_mode, const char* wtype_str, bool use_gpu)
+void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], const long (*sdims[NUM_REGS])[N + 1], int llr_blk, int shift_mode, const char* wtype_str, bool use_gpu)
 {
 	float lambda = ropts->lambda;
 	bool randshift = (1 == shift_mode);
@@ -492,9 +492,9 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 			assert(1 == img_dims[N - 1]);
 
-			PTR_ALLOC(long[N], dims);
+			PTR_ALLOC(long[N + 1], dims);
 			md_copy_dims(N, *dims, img_dims);
-			(*dims)[N - 1] = bitcount(regs[nr].xflags);
+			(*dims)[N] = bitcount(regs[nr].xflags);
 			sdims[nr_penalties] = PTR_PASS(dims);
 
 			nr_penalties++;
@@ -513,8 +513,9 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 			trafos[nr_penalties] = reg2.linop[1];
 			prox_ops[nr_penalties] = reg2.prox[1];
 
-			PTR_ALLOC(long[N], dims);
+			PTR_ALLOC(long[N + 1], dims);
 			md_copy_dims(N, *dims, img_dims);
+			(*dims)[N] = 1;
 			sdims[nr_penalties] = PTR_PASS(dims);
 
 			nr_penalties++;
