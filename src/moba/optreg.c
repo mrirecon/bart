@@ -1,12 +1,12 @@
 /* Copyright 2020. Uecker Lab, University Medical Center Goettingen.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
- * 
+ *
  * Authors:
  * 2020 Xiaoqing Wang <xiaoqing.wang@med.uni-goettingen.de>
  * 2020 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2020 Zhengguo Tan <zhengguo.tan@med.uni-goettingen.de>
- * 
+ *
  */
 
 #include <assert.h>
@@ -227,10 +227,10 @@ bool opt_reg_moba(void* ptr, char c, const char* optarg)
 	const int r = p->r;
 
 	assert(r < NUM_REGS);
-	
+
 	char rt[5];
 	int ret;
-	
+
 	switch (c) {
 
 	case 'r':
@@ -245,7 +245,7 @@ bool opt_reg_moba(void* ptr, char c, const char* optarg)
 			int ret = sscanf(optarg, "%*[^:]:%lu:%lu:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
 			assert(3 == ret);
 
-		} else 
+		} else
 		if (strcmp(rt, "Q") == 0) {
 
 			regs[r].xform = L2IMG;
@@ -254,7 +254,7 @@ bool opt_reg_moba(void* ptr, char c, const char* optarg)
 			regs[r].xflags = 0u;
 			regs[r].jflags = 0u;
 
-		} else 
+		} else
 		if (strcmp(rt, "S") == 0) {
 
 			regs[r].xform = POS;
@@ -263,14 +263,14 @@ bool opt_reg_moba(void* ptr, char c, const char* optarg)
 			regs[r].xflags = 0u;
 			regs[r].jflags = 0u;
 
-		} else 
+		} else
 		if (strcmp(rt, "T") == 0) {
 
 			regs[r].xform = TV;
 			int ret = sscanf(optarg, "%*[^:]:%lu:%lu:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
 			assert(3 == ret);
 
-		} else 
+		} else
 		if (strcmp(rt, "h") == 0) {
 
 			help_reg_moba();
@@ -301,7 +301,7 @@ static void opt_reg_meco_configure(int N, const long dims[N], struct opt_reg_s* 
 
 	long sens_size = md_calc_size(N, sens_dims);
 
-	long x_size = maps_size + sens_size;
+	long x_dims[1] = { maps_size + sens_size };
 
 
 	// set number of coefficients for joint regularization
@@ -310,7 +310,7 @@ static void opt_reg_meco_configure(int N, const long dims[N], struct opt_reg_s* 
 	if (MECO_SOBOLEV == optreg_conf->weight_fB0_type)
 		nr_joint_coeff -= 1;
 
-	// set the flag for the position of the coefficient 
+	// set the flag for the position of the coefficient
 	// which needs non-negativity constraint
 	unsigned long nonneg_flag = get_R2S_flag(optreg_conf->moba_model);
 
@@ -329,21 +329,21 @@ static void opt_reg_meco_configure(int N, const long dims[N], struct opt_reg_s* 
 			debug_printf(DP_INFO, "  > l1-wavelet regularization with parameters %lu:%lu:%.3f\n", regs[nr].xflags, regs[nr].jflags, regs[nr].lambda);
 
 			auto prox_maps = moba_joint_wavthresh_prox_create(N, maps_dims, COEFF_DIM, regs[nr].xflags, regs[nr].jflags, regs[nr].lambda, nr_joint_coeff);
-
 			auto prox_sens = moba_sens_prox_create(N, sens_dims);
 
 			prox_ops[nr] = stack_flatten_prox(prox_maps, prox_sens);
 
-			trafos[nr] = linop_identity_create(1, MD_DIMS(x_size));
+			trafos[nr] = linop_identity_create(1, x_dims);
 
 		} break;
 
 		case L2IMG:
 
+			//FIXME: This is actually l1 regularization as it is not l2-squares!
 			debug_printf(DP_INFO, "  > l2 regularization\n");
 
-			prox_ops[nr] = prox_l2norm_create(1, MD_DIMS(x_size), regs[nr].lambda);
-			trafos[nr] = linop_identity_create(1, MD_DIMS(x_size));
+			prox_ops[nr] = prox_l2norm_create(1, x_dims, regs[nr].lambda);
+			trafos[nr] = linop_identity_create(1, x_dims);
 
 			break;
 
@@ -352,12 +352,11 @@ static void opt_reg_meco_configure(int N, const long dims[N], struct opt_reg_s* 
 			debug_printf(DP_INFO, "  > non-negative constraint with lambda %f\n", regs[nr].lambda);
 
 			auto prox_maps = moba_nonneg_prox_create(N, maps_dims, COEFF_DIM, nonneg_flag, regs[nr].lambda);
-
 			auto prox_sens = moba_sens_prox_create(N, sens_dims);
 
 			prox_ops[nr] = stack_flatten_prox(prox_maps, prox_sens);
 
-			trafos[nr] = linop_identity_create(1, MD_DIMS(x_size));
+			trafos[nr] = linop_identity_create(1, x_dims);
 
 		}	break;
 
@@ -365,7 +364,7 @@ static void opt_reg_meco_configure(int N, const long dims[N], struct opt_reg_s* 
 
 			debug_printf(DP_INFO, "  > TV regularization with parameters %lu:%lu:%.3f\n", regs[nr].xflags, regs[nr].jflags, regs[nr].lambda);
 
-			auto lo_extract_maps = linop_extract_create(1, MD_DIMS(0), MD_DIMS(maps_size), MD_DIMS(x_size));
+			auto lo_extract_maps = linop_extract_create(1, MD_DIMS(0), MD_DIMS(maps_size), x_dims);
 			lo_extract_maps = linop_reshape_out_F(lo_extract_maps, N, maps_dims);
 
 			auto lo_grad_maps = linop_grad_create(N, maps_dims, N, regs[nr].xflags);
@@ -401,13 +400,10 @@ static void opt_reg_IRLL_configure(int N, const long dims[N], struct opt_reg_s* 
 	long img_dims[DIMS];
 	md_select_dims(DIMS, ~COIL_FLAG, img_dims, dims);
 
-	long x_dims[DIMS];
-	md_copy_dims(DIMS, x_dims, img_dims);
-	x_dims[COEFF_DIM] = img_dims[COEFF_DIM] + dims[COIL_DIM]; //FIXME
-
 	long coil_dims[DIMS];
-	md_copy_dims(DIMS, coil_dims, x_dims);
-	coil_dims[COEFF_DIM] = dims[COIL_DIM];
+	md_select_dims(DIMS, ~COEFF_FLAG, coil_dims, dims);
+
+	long x_dims[1] = { md_calc_size(DIMS, img_dims) + md_calc_size(DIMS, coil_dims) };
 
 	long map_dims[DIMS];
 	md_copy_dims(DIMS, map_dims, img_dims);
@@ -419,7 +415,6 @@ static void opt_reg_IRLL_configure(int N, const long dims[N], struct opt_reg_s* 
 
 	debug_print_dims(DP_INFO, DIMS, img_dims);
 	debug_print_dims(DP_INFO, DIMS, coil_dims);
-	debug_print_dims(DP_INFO, DIMS, x_dims);
 	debug_print_dims(DP_INFO, DIMS, map_dims);
 	debug_print_dims(DP_INFO, DIMS, map2_dims);
 
@@ -460,7 +455,7 @@ static void opt_reg_IRLL_configure(int N, const long dims[N], struct opt_reg_s* 
 			auto l1Wav_prox = create_wav_prox(img_dims, regs[nr].xflags, regs[nr].jflags, regs[nr].lambda);
 			auto zero_prox = prox_zero_create(DIMS, coil_dims);
 
-			trafos[nr] = linop_identity_create(DIMS, x_dims);
+			trafos[nr] = linop_identity_create(1, x_dims);
 			prox_ops[nr] = operator_p_stack_FF(0, 0, operator_p_flatten_F(l1Wav_prox), operator_p_flatten_F(zero_prox));
 
 			break;
@@ -470,9 +465,9 @@ static void opt_reg_IRLL_configure(int N, const long dims[N], struct opt_reg_s* 
 
 			debug_printf(DP_INFO, "TV regularization: %f\n", regs[nr].lambda);
 
-			auto extract = linop_extract_create(1, MD_DIMS(0), MD_DIMS(md_calc_size(DIMS, img_dims)), MD_DIMS(md_calc_size(DIMS, x_dims)));
+			auto extract = linop_extract_create(1, MD_DIMS(0), MD_DIMS(md_calc_size(DIMS, img_dims)), MD_DIMS(md_calc_size(DIMS, img_dims) + md_calc_size(DIMS, coil_dims)));
 			extract = linop_reshape_out_F(extract, DIMS, img_dims);
-			
+
 			auto grad = linop_grad_create(DIMS, img_dims, DIMS, regs[nr].xflags);
 
 			trafos[nr] = linop_chain(extract, grad);
@@ -506,8 +501,8 @@ static void opt_reg_IRLL_configure(int N, const long dims[N], struct opt_reg_s* 
 
 			auto stack0 = operator_p_stack_FF(COEFF_DIM, COEFF_DIM, zero_prox1, zsmax_prox);
 
-			trafos[nr] = linop_identity_create(DIMS, x_dims);;
-			prox_ops[nr] = operator_p_stack_FF(0, 0, operator_p_flatten_F(stack0), 
+			trafos[nr] = linop_identity_create(1, x_dims);
+			prox_ops[nr] = operator_p_stack_FF(0, 0, operator_p_flatten_F(stack0),
 							operator_p_flatten_F(prox_zero_create(DIMS, coil_dims)));
 
 			break;
@@ -515,10 +510,11 @@ static void opt_reg_IRLL_configure(int N, const long dims[N], struct opt_reg_s* 
 
 		case L2IMG: {
 
+			//FIXME: This is actually l1 regularization as it is not l2-squares!
 			debug_printf(DP_INFO, "l2 regularization: %f\n", regs[nr].lambda);
 
-			trafos[nr] = linop_identity_create(DIMS, x_dims);;
-			prox_ops[nr] = operator_p_stack_FF(0, 0, operator_p_flatten_F(prox_zero_create(DIMS, img_dims)), 
+			trafos[nr] = linop_identity_create(1, x_dims);
+			prox_ops[nr] = operator_p_stack_FF(0, 0, operator_p_flatten_F(prox_zero_create(DIMS, img_dims)),
 							operator_p_flatten_F(prox_l2norm_create(DIMS, coil_dims, regs[nr].lambda)));
 
 			break;
