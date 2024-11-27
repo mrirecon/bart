@@ -91,7 +91,7 @@ struct bart_rand_state* rand_state_create(unsigned long long seed)
 
 			warned = true;
 
-			if (0 != (cfl_loop_rand_flags & cfl_loop_get_flags()))			
+			if (0 != (cfl_loop_rand_flags & cfl_loop_get_flags()))
 				debug_printf(DP_WARN, "rand_state_create provides identical random numbers for each cfl loop iteration.\n");
 		}
 	}
@@ -104,7 +104,7 @@ struct bart_rand_state* rand_state_create(unsigned long long seed)
 }
 
 static struct bart_rand_state get_worker_state(void)
-{ 
+{
 	struct bart_rand_state worker_state;
 
 #pragma omp critical(global_rand_state)
@@ -117,7 +117,7 @@ static struct bart_rand_state get_worker_state(void)
 }
 
 static struct bart_rand_state get_worker_state_cfl_loop(void)
-{ 
+{
 	struct bart_rand_state worker_state = get_worker_state();
 
 	if (cfl_loop_desc_active()) {
@@ -478,6 +478,12 @@ static void md_sample_mpi(int D, const long dims[D], complex float* dst, md_samp
 	long offset_cfl = cfl_loop_offset_and_strides(D, strs_offset, dims);
 
 	unsigned long loop_flags = vptr_block_loop_flags(D, dims, strs, dst, sizeof(complex float));
+
+	if (0 != loop_flags) {
+
+		for (int i = md_min_idx(loop_flags); i < D; i++)
+			loop_flags |= MD_BIT(i);
+	}
 
 	if (D != md_calc_blockdim(D, dims, strs_offset, 1))
 		loop_flags |= ~(MD_BIT(md_calc_blockdim(D, dims, strs_offset, 1)) - 1);
