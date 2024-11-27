@@ -7,16 +7,15 @@
 #include <math.h>
 
 #include "num/ops.h"
+#include "num/ops_p.h"
 #include "num/multind.h"
 #include "num/flpmath.h"
-
 #include "num/iovec.h"
+#include "num/vptr.h"
 
 #include "nlops/nlop.h"
 
-#include "misc/misc.h"
 #include "misc/types.h"
-#include "misc/debug.h"
 
 #include "iter/italgos.h"
 #include "iter/vec.h"
@@ -97,9 +96,11 @@ static void inverse(iter_op_data* _data, float alpha, float* dst, const float* s
 {
 	auto data = CAST_DOWN(irgnm_s, _data);
 
-	md_clear(1, MD_DIMS(data->size), dst, FL_SIZE);
+	const struct vec_iter_s* vops = select_vecops(src);
 
-        float eps = data->cgtol * md_norm(1, MD_DIMS(data->size), src);
+	vops->clear(data->size, dst);
+
+        float eps = data->cgtol * vops->norm(data->size, src);
 
 
 	/* The original (Matlab) nlinv implementation uses
@@ -108,18 +109,20 @@ static void inverse(iter_op_data* _data, float alpha, float* dst, const float* s
 	if (data->nlinv_legacy)
 		eps = powf(eps, 2.);
 
-        conjgrad(data->cgiter, alpha, eps, data->size, select_vecops(src),
+        conjgrad(data->cgiter, alpha, eps, data->size, vops,
 			(struct iter_op_s){ normal, CAST_UP(data) }, dst, src, NULL);
 }
 
 
 void iter4_irgnm(const iter3_conf* _conf,
-		const struct nlop_s* nlop,
+		const struct nlop_s* _nlop,
 		long N, float* dst, const float* ref,
 		long M, const float* src,
 		const struct operator_p_s* pinv,
 		struct iter_op_s cb)
 {
+	const struct nlop_s* nlop = is_vptr(src) ? nlop_vptr_set_dims_wrapper(_nlop, 1, (const void*[1]) { src }, 1, (const void*[1]) { dst }, vptr_get_hint(dst)) : nlop_clone(_nlop);
+
 	struct iter4_nlop_s data = { { &TYPEID(iter4_nlop_s) }, *nlop };
 
 	auto cd = nlop_codomain(nlop);
@@ -144,6 +147,8 @@ void iter4_irgnm(const iter3_conf* _conf,
 	irgnm(conf->iter, conf->alpha, conf->alpha_min, conf->redu, N, M, select_vecops(src),
 		frw, adj, inv,
 		dst, ref, src, cb, NULL);
+
+	nlop_free(nlop);
 }
 
 
@@ -162,15 +167,17 @@ void iter4_landweber(const iter3_conf* _conf,
 
 	auto conf = CAST_DOWN(iter3_landweber_conf, _conf);
 
-	float* tmp = md_alloc_sameplace(1, MD_DIMS(N), FL_SIZE, src);
+	const struct vec_iter_s* vops = select_vecops(src);
+
+	float* tmp = vops->allocate(N);
 
 	struct iter_op_s frw = { nlop_for_iter, CAST_UP(&data) };
 	struct iter_op_s adj = { nlop_adj_iter, CAST_UP(&data) };
 
 	landweber(conf->iter, conf->epsilon, conf->alpha, N, M,
-		select_vecops(src), frw, adj, dst, src, cb, NULL);
+		vops, frw, adj, dst, src, cb, NULL);
 
-	md_free(tmp);
+	vops->del(tmp);
 }
 
 
@@ -181,24 +188,28 @@ static void inverse2(iter_op_data* _data, float alpha, float* dst, const float* 
 {
 	auto data = CAST_DOWN(irgnm_s, _data);
 
-	float* tmp = md_alloc_sameplace(1, MD_DIMS(data->size), FL_SIZE, src);
+	const struct vec_iter_s* vops = select_vecops(dst);
+
+	float* tmp = vops->allocate(data->size);
 
 	iter_op_call(data->adj, tmp, src);
 
 	inverse(_data, alpha, dst, tmp);
 
-	md_free(tmp);
+	vops->del(tmp);
 }
 
 
 
 void iter4_irgnm2(const iter3_conf* _conf,
-		const struct nlop_s* nlop,
+		const struct nlop_s* _nlop,
 		long N, float* dst, const float* ref,
 		long M, const float* src,
 		const struct operator_p_s* lsqr,
 		struct iter_op_s cb)
 {
+	const struct nlop_s* nlop = is_vptr(src) ? nlop_vptr_set_dims_wrapper(_nlop, 1, (const void*[1]) { src }, 1, (const void*[1]) { dst }, vptr_get_hint(dst)) : nlop_clone(_nlop);
+
 	struct iter4_nlop_s data = { { &TYPEID(iter4_nlop_s) }, *nlop };
 
 	auto cd = nlop_codomain(nlop);
@@ -220,9 +231,14 @@ void iter4_irgnm2(const iter3_conf* _conf,
 
 	struct iter_op_p_s inv2 = { inverse2, CAST_UP(&data2) };
 
+	const struct operator_p_s* vlsqr = (NULL == lsqr) ? NULL : is_vptr(dst) ? operator_p_vptr_set_dims_wrapper(lsqr, dst, dst, vptr_get_hint(dst)) : operator_p_ref(lsqr);
+
 	irgnm2(conf->iter, conf->alpha, conf->alpha_min, conf->alpha_min0, conf->redu, N, M, select_vecops(src),
-		frw, der, (NULL == lsqr) ? inv2 : OPERATOR_P2ITOP(lsqr),
+		frw, der, (NULL == lsqr) ? inv2 : OPERATOR_P2ITOP(vlsqr),
 		dst, ref, src, cb, NULL);
+
+	nlop_free(nlop);
+	operator_p_free(vlsqr);
 }
 
 void iter4_lbfgs(const iter3_conf* _conf,
