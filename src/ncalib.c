@@ -87,7 +87,7 @@ int main_ncalib(int argc, char* argv[argc])
 		OPT_UINT('i', &conf.iter, "iter", "Number of Newton steps"),
 		OPTL_INT(0, "cgiter", &conf.cgiter, "iter", "(iterations for linearized problem)"),
 		OPTL_FLOAT(0, "cgtol", &conf.cgtol, "tol", "(tolerance for linearized problem)"),
-	
+
 		OPTL_FLOAT(0, "alpha", &conf.alpha, "val", "(alpha in first iteration)"),
 		OPT_FLOAT('M', &conf.alpha_min, "", "(minimum for regularization)"),
 		OPT_FLOAT('a', &conf.a, "", "(a in 1 + a * \\Laplace^-b/2)"),
@@ -96,7 +96,7 @@ int main_ncalib(int argc, char* argv[argc])
 		OPT_FLOAT('w', &scaling, "", "(inverse scaling of the data)"),
 
 		OPT_SET('N', &normalize, "Normalize coil sensitivities"),
-		OPT_INT('m', &maps, "nmaps", "Number of ENLIVE maps to use in reconstruction"),	
+		OPT_INT('m', &maps, "nmaps", "Number of ENLIVE maps to use in reconstruction"),
 		OPTL_VEC3('x', "dims", &my_sens_dims, "x:y:z", "Explicitly specify sens dimensions"),
 		OPTL_FLOAT(0, "sens-os", &(oversampling_coils), "val", "(over-sampling factor for sensitivities)"),
 		OPTL_ULONG(0, "shared-img-dims", &shared_img_flags, "flags", "deselect image dims with flags"),
@@ -183,7 +183,7 @@ int main_ncalib(int argc, char* argv[argc])
 
 		long cord_dims[DIMS];
 		md_select_dims(DIMS, MD_BIT(0), cord_dims, trj_dims);
-		
+
 		complex float inv_dims[3] = { 1. / (dims[0] - ksenssize[0]),  1. / (dims[1] - ksenssize[1]), 1. / (dims[2] - ksenssize[2]) };
 		md_zmul2(DIMS, trj_dims, MD_STRIDES(DIMS, trj_dims, CFL_SIZE), trj_tmp, MD_STRIDES(DIMS, trj_dims, CFL_SIZE), trj_tmp, MD_STRIDES(DIMS, cord_dims, CFL_SIZE), inv_dims);
 
@@ -260,7 +260,7 @@ int main_ncalib(int argc, char* argv[argc])
 
 		assert(1 == ksp_dims[COEFF_DIM]);
 		assert(bas_dims[TE_DIM] == ksp_dims[TE_DIM]);
-		
+
 		if (conf.noncart)
 			assert(1 == md_calc_size(5, bas_dims));
 		else
@@ -308,7 +308,7 @@ int main_ncalib(int argc, char* argv[argc])
 
 	long scl_dims[DIMS];
 	md_select_dims(DIMS, scale_loop_flags, scl_dims, ksp_dims);
-	
+
 	if (0 > conf.scaling)
 		conf.scaling *= sqrtf(md_calc_size(DIMS, scl_dims));
 
@@ -323,7 +323,6 @@ int main_ncalib(int argc, char* argv[argc])
 		nufft_conf.toeplitz = true;
 		nufft_conf.pcycle = false;
 		nufft_conf.periodic = false;
-		nufft_conf.cache_psf_grdding = false;
 		nufft_conf.lowmem = true;
 		conf.nufft_conf = &nufft_conf;
 
