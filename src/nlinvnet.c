@@ -83,7 +83,6 @@ int main_nlinvnet(int argc, char* argv[argc])
 
 	struct nufft_conf_s nufft_conf = nufft_conf_defaults;
 
-	nufft_conf.cache_psf_grdding = true;
 	nufft_conf.lowmem = true;
 	nufft_conf.precomp_fftmod = false;
 	nufft_conf.precomp_roll = false;

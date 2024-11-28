@@ -334,7 +334,6 @@ int main_ncalib(int argc, char* argv[argc])
 		nufft_conf.toeplitz = true;
 		nufft_conf.pcycle = false;
 		nufft_conf.periodic = false;
-		nufft_conf.cache_psf_grdding = false;
 		nufft_conf.lowmem = true;
 		conf.nufft_conf = &nufft_conf;
 
