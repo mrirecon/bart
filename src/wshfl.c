@@ -1208,7 +1208,7 @@ int main_wshfl(int argc, char* argv[argc])
 
 		struct fista_conf fc = { 0 };	// unused
 
-		it = italgo_config(ALGO_ADMM, nr_penalties, regs, maxiter, step,
+		it = italgo_config(ALGO_ADMM, nr_penalties, regs, maxiter, step, 0,
 				hgwld, admm, fc, 1, false);
 	}
 

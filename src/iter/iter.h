@@ -62,6 +62,7 @@ struct iter_ist_conf {
 	float continuation;
 	_Bool hogwild;
 	float tol;
+	int maxeigen_iter;
 };
 
 
@@ -71,6 +72,7 @@ struct iter_eulermaruyama_conf {
 
 	int maxiter;
 	float step;
+	int maxeigen_iter;
 };
 
 
