@@ -465,7 +465,7 @@ static bool test_conv_der(void)
 
 	debug_printf(DP_DEBUG1, "conv errors der, adj: %.8f, %.8f\n", err_der, err_adj);
 
-	bool test = (err_adj < 1.E-5) && (err_der < 1.E-1);
+	bool test = (err_adj < 2.E-5) && (err_der < 1.E-6);
 
 	UT_RETURN_ASSERT(test);
 }
