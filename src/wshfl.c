@@ -2,12 +2,12 @@
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * Authors: 
+ * Authors:
  * 2018-2019 Siddharth Iyer <ssi@mit.edu>
  *
  * References:
- * Tamir J, Uecker M, Chen W, Lai P, Alley MT, Vasanawala SS, Lustig M. 
- * T2 shuffling: Sharp, multicontrast, volumetric fast spin‐echo imaging. 
+ * Tamir J, Uecker M, Chen W, Lai P, Alley MT, Vasanawala SS, Lustig M.
+ * T2 shuffling: Sharp, multicontrast, volumetric fast spin‐echo imaging.
  * Magnetic resonance in medicine. 2017 Jan 1;77(1):180-95.
  *
  * B Bilgic, BA Gagoski, SF Cauley, AP Fan, JR Polimeni, PE Grant,
@@ -17,7 +17,7 @@
  * Iyer S, Bilgic B, Setsompop K.
  * Faster T2 shuffling with Wave.
  * Presented in the session: "Signal Encoding and Decoding" at ISMRM 2018.
- * https://www.ismrm.org/18/program_files/O67.htm 
+ * https://www.ismrm.org/18/program_files/O67.htm
  */
 
 #include <stdbool.h>
@@ -61,7 +61,7 @@
 #include "grecon/italgo.h"
 
 
-static const char help_str[]  = 
+static const char help_str[]  =
 	"Perform a wave-shuffling reconstruction.\n\n"
 	"Conventions:\n"
 	"  * (sx, sy, sz) - Spatial dimensions.\n"
@@ -82,7 +82,7 @@ static const char help_str[]  =
 	"Descriptions:\n"
 	"  * reorder is an (n by 3) index matrix such that\n"
 	"    [ky, kz, t] = reorder(i, :) represents the\n"
-	"    (ky, kz) kspace position of the readout line\n" 
+	"    (ky, kz) kspace position of the readout line\n"
 	"    acquired at echo number (t), and 0 <= ky < sy,\n"
 	"    0 <= kz < sz, 0 <= t < tf).\n"
 	"  * table is a (wx by nc by n) matrix such that\n"
@@ -97,7 +97,7 @@ static const char help_str[]  =
 	"  * table   - (   wx, nc,  n,  1,  1,  1,  1)";
 
 /* Helper function to print out operator dimensions. */
-static void print_opdims(const struct linop_s* op) 
+static void print_opdims(const struct linop_s* op)
 {
 	const struct iovec_s* domain   = linop_domain(op);
 	const struct iovec_s* codomain = linop_codomain(op);
@@ -118,7 +118,7 @@ static void print_opdims(const struct linop_s* op)
 
 /* Construct sampling mask array from reorder tables. */
 static void construct_mask(
-	long reorder_dims[DIMS], complex float* reorder, 
+	long reorder_dims[DIMS], complex float* reorder,
 	long mask_dims[DIMS],    complex float* mask)
 {
 	long n  = reorder_dims[0];
@@ -398,7 +398,7 @@ static void kern_free(const linop_data_t* _data)
 	xfree(data);
 }
 
-static const struct linop_s* linop_kern_create(bool gpu_flag, 
+static const struct linop_s* linop_kern_create(bool gpu_flag,
 	const long _reorder_dims[DIMS], complex float* reorder,
 	const long _phi_dims[DIMS],     complex float* phi,
 	const long _kernel_dims[DIMS],  complex float* kernel,
@@ -620,7 +620,7 @@ static void multc_adjoint(const linop_data_t* _data, complex float* dst, const c
 	md_calc_strides(DIMS, strides_dst, dst_dims, CFL_SIZE);
 
 	md_clear(DIMS, dst_dims, dst, CFL_SIZE);
-	
+
 	for (long k = 0; k < data->nc; k++) {
 
 
@@ -812,7 +812,7 @@ static const struct linop_s* linop_fyz_create(long wx, long sy, long sz, long nc
 /* Construction sampling temporal kernel.*/
 static void construct_kernel(
 	long mask_dims[DIMS], complex float* mask,
-	long phi_dims[DIMS],  complex float* phi, 
+	long phi_dims[DIMS],  complex float* phi,
 	long kern_dims[DIMS], complex float* kern)
 {
 	long sy = mask_dims[1];
@@ -880,7 +880,7 @@ static void construct_kernel(
 }
 
 static void fftmod_apply(long sy, long sz,
-	long reorder_dims[DIMS], complex float* reorder, 
+	long reorder_dims[DIMS], complex float* reorder,
 	long table_dims[DIMS],   complex float* table,
 	long maps_dims[DIMS],    complex float* maps)
 {
@@ -971,7 +971,7 @@ int main_wshfl(int argc, char* argv[argc])
 
 	struct admm_conf admm = { false, false, false, rho, cgiter, false };
 
-	struct pridu_conf pridu = { 1., false, 0. };
+	struct pridu_conf pridu = { 1., false };
 
 	debug_printf(DP_INFO, "Loading data... ");
 
@@ -1207,7 +1207,7 @@ int main_wshfl(int argc, char* argv[argc])
 
 		struct fista_conf fc = { };	// unused
 
-		it = italgo_config(ALGO_ADMM, nr_penalties, regs, maxiter, step,
+		it = italgo_config(ALGO_ADMM, nr_penalties, regs, maxiter, step, 0,
 				hgwld, admm, fc, pridu, false);
 	}
 

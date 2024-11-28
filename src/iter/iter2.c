@@ -294,6 +294,8 @@ void iter2_ist(const iter_conf* _conf,
 	const struct operator_s* t_normaleq_op = vptr_get_normaleq_op(normaleq_op, image);
 	const struct operator_p_s* t_prox = vptr_get_prox(prox_ops[0], NULL, image);
 
+	double maxeigen = 1.;
+
 	if (checkeps(eps))
 		goto cleanup;
 
@@ -304,7 +306,10 @@ void iter2_ist(const iter_conf* _conf,
 	// Let's see whether somebody uses it...
 	assert(!conf->hogwild);
 
-	ist(conf->maxiter, eps * conf->tol, conf->super.alpha * conf->step, conf->last, size, select_vecops(image_adj),
+	if (0 != conf->maxeigen_iter)
+		maxeigen = estimate_maxeigenval_sameplace(t_normaleq_op, conf->maxeigen_iter, image_adj);
+
+	ist(conf->maxiter, eps * conf->tol, conf->super.alpha * conf->step / maxeigen, conf->last, size, select_vecops(image_adj),
 		NULL, OPERATOR2ITOP(t_normaleq_op), OPERATOR_P2ITOP(t_prox), image, image_adj, monitor);
 
 cleanup:
@@ -339,15 +344,20 @@ void iter2_eulermaruyama(const iter_conf* _conf,
 
 	auto conf = CAST_DOWN(iter_eulermaruyama_conf, _conf);
 
+	double maxeigen = 1.;
+	if (0 != conf->maxeigen_iter)
+		maxeigen = estimate_maxeigenval_sameplace(t_normaleq_op, conf->maxeigen_iter, image_adj);
+
+
 	if (NULL == conf->lop_prec && 0. == conf->diag_prec) {
 
-		eulermaruyama(conf->maxiter, conf->super.alpha, conf->step, size, select_vecops(image_adj),
+		eulermaruyama(conf->maxiter, conf->super.alpha, conf->step / maxeigen, size, select_vecops(image_adj),
 			OPERATOR2ITOP(t_normaleq_op), &OPERATOR_P2ITOP(t_prox), image, image_adj, monitor);
 	} else {
 
 		const struct iovec_s* cod_prec = linop_codomain(conf->lop_prec);
 
-		preconditioned_eulermaruyama(conf->maxiter, conf->super.alpha, conf->step, size, select_vecops(image_adj),
+		preconditioned_eulermaruyama(conf->maxiter, conf->super.alpha, conf->step / maxeigen, size, select_vecops(image_adj),
 			OPERATOR2ITOP(t_normaleq_op), &OPERATOR_P2ITOP(t_prox), image, image_adj,
 			2 * md_calc_size(cod_prec->N, cod_prec->dims), OPERATOR2ITOP(conf->lop_prec->adjoint), OPERATOR2ITOP(conf->lop_prec->normal), conf->diag_prec,
 			conf->max_prec_iter, conf->prec_tol, conf->batchsize, monitor);

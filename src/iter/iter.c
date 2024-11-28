@@ -81,6 +81,7 @@ const struct iter_ist_conf iter_ist_defaults = {
 	.hogwild = false,
 	.tol = 0.,
 	.last = false,
+	.maxeigen_iter = 0,
 };
 
 const struct iter_eulermaruyama_conf iter_eulermaruyama_defaults = {
@@ -96,6 +97,8 @@ const struct iter_eulermaruyama_conf iter_eulermaruyama_defaults = {
 	.prec_tol = 0,
 	.max_prec_iter = 10,
 	.batchsize = 1,
+
+	.maxeigen_iter = 0,
 };
 
 const struct iter_fista_conf iter_fista_defaults = {

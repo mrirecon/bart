@@ -69,7 +69,7 @@ enum algo_t italgo_choose(int nr_penalties, const struct reg_s regs[nr_penalties
 
 
 struct iter italgo_config(enum algo_t algo, int nr_penalties, const struct reg_s* regs,
-		int maxiter, float step, bool hogwild, const struct admm_conf admm,
+		int maxiter, float step, int maxeigen, bool hogwild, const struct admm_conf admm,
 		const struct fista_conf fista, const struct pridu_conf pridu, bool warm_start)
 {
 	italgo_fun2_t italgo = NULL;
@@ -116,6 +116,7 @@ struct iter italgo_config(enum algo_t algo, int nr_penalties, const struct reg_s
 		isconf->step = step;
 		isconf->hogwild = hogwild;
 		isconf->last = fista.last;
+		isconf->maxeigen_iter = maxeigen;
 
 		PTR_ALLOC(struct iter_call_s, iter2_ist_data);
 		SET_TYPEID(iter_call_s, iter2_ist_data);
@@ -139,6 +140,7 @@ struct iter italgo_config(enum algo_t algo, int nr_penalties, const struct reg_s
 		*isconf = iter_eulermaruyama_defaults;
 		isconf->maxiter = maxiter;
 		isconf->step = step;
+		isconf->maxeigen_iter = maxeigen;
 
 		PTR_ALLOC(struct iter_call_s, iter2_eulermaruyama_data);
 		SET_TYPEID(iter_call_s, iter2_eulermaruyama_data);
@@ -196,7 +198,7 @@ struct iter italgo_config(enum algo_t algo, int nr_penalties, const struct reg_s
 		pdconf->tol = 1.E-4;
 
 		pdconf->adapt_stepsize = pridu.adaptive_stepsize;
-		pdconf->maxeigen_iter = pridu.maxeigen_iter;
+		pdconf->maxeigen_iter = maxeigen;
 
 		italgo = iter2_chambolle_pock;
 		iconf = CAST_UP(PTR_PASS(pdconf));
@@ -216,6 +218,7 @@ struct iter italgo_config(enum algo_t algo, int nr_penalties, const struct reg_s
 		fsconf->step = step;
 		fsconf->hogwild = hogwild;
 		fsconf->last = fista.last;
+		fsconf->maxeigen_iter = maxeigen;
 
 		if (-1. != fista.params[0]) {
 

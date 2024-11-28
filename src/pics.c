@@ -261,7 +261,7 @@ int main_pics(int argc, char* argv[argc])
 
 	struct admm_conf admm = { false, false, false, iter_admm_defaults.rho, iter_admm_defaults.maxitercg, false };
 	struct fista_conf fista = { { -1., -1., -1. }, false };
-	struct pridu_conf pridu = { 1., false, 0. };
+	struct pridu_conf pridu = { 1., false };
 
 	enum algo_t algo = ALGO_DEFAULT;
 
@@ -771,15 +771,6 @@ int main_pics(int argc, char* argv[argc])
 			md_zsmul(DIMS, img_dims, image_start, image_start, 1. / scaling);
 	}
 
-	double maxeigen = 1.;
-
-	if (eigen && (ALGO_PRIDU != algo)) {
-
-		// Maxeigen in PRIDU must include regularizations
-		maxeigen = estimate_maxeigenval_sameplace(forward_op->normal, 30, kspace);
-
-		debug_printf(DP_INFO, "Maximum eigenvalue: %.2e\n", maxeigen);
-	}
 
 
 	// initialize prox functions
@@ -829,13 +820,9 @@ int main_pics(int argc, char* argv[argc])
 		if (-1. != step)
 			debug_printf(DP_INFO, "Stepsize ignored.\n");
 
-	step /= maxeigen;
-
-
 	// initialize algorithm
-	pridu.maxeigen_iter = eigen ? 30 : 0;
 
-	struct iter it = italgo_config(algo, nr_penalties, ropts.regs, maxiter, step, hogwild, admm, fista, pridu, NULL != image_truth);
+	struct iter it = italgo_config(algo, nr_penalties, ropts.regs, maxiter, step, eigen ? 30 : 0, hogwild, admm, fista, pridu, NULL != image_truth);
 
 	if (ALGO_CG == algo)
 		nr_penalties = 0;

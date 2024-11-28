@@ -58,6 +58,7 @@ struct iter_ist_conf {
 	_Bool hogwild;
 	float tol;
 	_Bool last;
+	int maxeigen_iter;
 };
 
 
@@ -73,6 +74,8 @@ struct iter_eulermaruyama_conf {
 	float prec_tol;
 	int max_prec_iter;
 	long batchsize;
+
+	int maxeigen_iter;
 };
 
 
