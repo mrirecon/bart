@@ -496,9 +496,6 @@ struct noir2_opt_s {
 	const struct linop_s* lop_fft_col;
 	const struct linop_s* lop_psf;
 
-	struct linop_s* lop_psf_cache_nufft;
-	struct linop_s* lop_psf_cache_fft;
-
 	complex float* img;
 	complex float* col;
 
@@ -643,9 +640,6 @@ static void nlop_noir_opt_del(const nlop_data_t* _data)
 	linop_free(d->lop_fft_col);
 	linop_free(d->lop_psf);
 
-	linop_free(d->lop_psf_cache_nufft);
-	linop_free(d->lop_psf_cache_fft);
-
 	md_free(d->img);
 	md_free(d->col);
 	md_free(d->cim_buf);
@@ -762,9 +756,6 @@ static const struct nlop_s* nlop_noir_opt_create(int N,
 		pos[i] = labs((col_dims_os[i] / 2) - (out_dims[i] / 2));
 
 	d->col_offset = md_calc_offset(3, MD_STRIDES(3, col_dims_os, 1), pos);
-
-	d->lop_psf_cache_nufft = NULL;
-	d->lop_psf_cache_fft = linop_fftc_create(3, cim_dims_os, FFT_FLAGS);
 
 	return nlop_create(N, out_dims, 1, MD_DIMS(md_calc_size(N, img_dims) + md_calc_size(N, kco_dims)), CAST_UP(PTR_PASS(d)),
 					noir2_opt_fun, noir2_opt_der, noir2_opt_adj, noir2_opt_nrm, NULL, nlop_noir_opt_del);
@@ -887,10 +878,10 @@ void noir2_noncart_update(struct noir2_s* model, int N,
 		long psf_dims[N];
 		md_select_dims(N, FFT_FLAGS, psf_dims, d->cim_dims_os);
 
-		complex float* psf = compute_psf_cached(N, psf_dims, trj_dims, ttraj, MD_SINGLETON_DIMS(N), NULL, wgh_dims, weights, true, false, &(d->lop_psf_cache_nufft));
+		complex float* psf = compute_psf(N, psf_dims, trj_dims, ttraj, MD_SINGLETON_DIMS(N), NULL, wgh_dims, weights, true, false);
 		md_free(ttraj);
 
-		linop_forward_unchecked(d->lop_psf_cache_fft, psf, psf);
+		fftuc(N, psf_dims, FFT_FLAGS, psf, psf);
 		fftscale(N, psf_dims, FFT_FLAGS, psf, psf);
 		fftscale(N, psf_dims, FFT_FLAGS, psf, psf);
 		md_zsmul(N, psf_dims, psf, psf, 4.);

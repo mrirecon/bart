@@ -61,8 +61,6 @@ struct nufft_data {
 
 	const struct linop_s* cfft_op;   ///< Pcycle FFT operator
 	int cycle;
-
-	struct linop_s* lop_nufft_psf;
 };
 
 

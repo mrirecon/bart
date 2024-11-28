@@ -228,7 +228,6 @@ static void compute_adjoint_noncart(struct network_data_s* nd)
 	md_select_dims(DIMS, ~nd->batch_flags, col_dims_s, nd->col_dims);
 
 	struct nufft_conf_s nufft_conf = *(nd->nufft_conf);
-	nufft_conf.cache_psf_grdding = !use_compat_to_version("v0.8.00");
 
 	auto model = sense_noncart_create(nd->N, trj_dims_s, pat_dims_s, ksp_dims_s, cim_dims_s, img_dims_s, col_dims_s, nd->bas_dims, nd->basis, nufft_conf);
 	auto sense_adjoint = nlop_sense_adjoint_create(1, &model, true);
