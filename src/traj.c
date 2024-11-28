@@ -296,8 +296,11 @@ int main_traj(int argc, char* argv[argc])
 
 			double angle = 0.;
 
+			long ind[DIMS] = { 0L };
+			indices_from_position(ind, pos, conf, 0);
+
 			for (int d = 1; d < DIMS; d++)
-				angle += (double)pos[d] * base_angle[d];
+				angle += (double)ind[d] * base_angle[d];
 
 
 			if (conf.half_circle_gold)
