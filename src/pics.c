@@ -642,15 +642,6 @@ int main_pics(int argc, char* argv[argc])
 			md_zsmul(DIMS, img_dims, image_start, image_start, 1. / scaling);
 	}
 
-	double maxeigen = 1.;
-
-	if (eigen && (ALGO_PRIDU != algo)) {
-
-		// Maxeigen in PRIDU must include regularizations
-		maxeigen = estimate_maxeigenval_sameplace(forward_op->normal, 30, kspace);
-
-		debug_printf(DP_INFO, "Maximum eigenvalue: %.2e\n", maxeigen);
-	}
 
 
 	// initialize prox functions
@@ -701,15 +692,9 @@ int main_pics(int argc, char* argv[argc])
 		if (-1. != step)
 			debug_printf(DP_INFO, "Stepsize ignored.\n");
 
-	step /= maxeigen;
-
-
 	// initialize algorithm
 
-	struct iter it = italgo_config(algo, nr_penalties, ropts.regs, maxiter, step, hogwild, admm, fista, scaling, NULL != image_truth);
-
-	if (eigen && (ALGO_PRIDU == algo))
-		CAST_DOWN(iter_chambolle_pock_conf, it.iconf)->maxeigen_iter = 30;
+	struct iter it = italgo_config(algo, nr_penalties, ropts.regs, maxiter, step, eigen ? 30 : 0, hogwild, admm, fista, scaling, NULL != image_truth);
 
 	if (ALGO_CG == algo)
 		nr_penalties = 0;
@@ -734,7 +719,7 @@ int main_pics(int argc, char* argv[argc])
 		const struct linop_s* extract = linop_extract_create(1, MD_DIMS(0), MD_DIMS(md_calc_size(DIMS, img_dims)), MD_DIMS(md_calc_size(DIMS, img_dims) + ropts.svars));
 		extract = linop_reshape_out_F(extract, DIMS, img_dims);
 		forward_op = linop_chain_FF(extract, forward_op);
-		
+
 		if (is_vptr(image)) {
 
 			void* vptr_ref_array[NUM_REGS] = { NULL };
@@ -743,7 +728,7 @@ int main_pics(int argc, char* argv[argc])
 			for (int i = 0; i < NUM_REGS; i++)
 				if (NULL != sdims[i])
 					vptr_ref_array[svars++] = vptr_alloc_sameplace(DIMS + 1, (*sdims[i]), CFL_SIZE, image);
-			
+
 			vptr_ref = vptr_wrap_range(svars, vptr_ref_array, true);
 
 			const struct linop_s* tmp = linop_vptr_set_dims_wrapper((struct linop_s*)forward_op, NULL, vptr_ref, vptr_get_hint(image));
@@ -786,7 +771,7 @@ int main_pics(int argc, char* argv[argc])
 
 	for (int i = 0; i < NUM_REGS; i++)
 		if (NULL != sdims[i])
-			xfree(sdims[i]);	
+			xfree(sdims[i]);
 
 
 	auto iov = operator_domain(op);
