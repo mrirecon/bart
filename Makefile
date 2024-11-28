@@ -780,9 +780,9 @@ MODULES_test_nufft += -lnoncart -llinops
 MODULES_test_fib += -lnoncart
 
 # lib seq
-UTARGETS += test_gradient
+UTARGETS += test_gradient test_events
 MODULES_test_gradient += -lseq
-
+MODULES_test_events += -lseq
 
 # lib num
 UTARGETS += test_multind test_flpmath test_splines test_linalg test_polynom test_window test_conv
