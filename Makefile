@@ -744,6 +744,7 @@ define alib
 $(1)srcs := $(wildcard $(srcdir)/$(1)/*.c)
 $(1)cudasrcs := $(wildcard $(srcdir)/$(1)/*.cu)
 $(1)objs := $$($(1)srcs:.c=.o)
+$(1)winobjs := $$($(1)srcs:.c=.win.o)
 $(1)objs += $$($(1)extrasrcs:.c=.o)
 $(1)objs += $$($(1)extracxxsrcs:.cc=.o)
 
@@ -765,6 +766,9 @@ endif
 ifeq ($(BUILDTYPE), MSYS)
 ALIBS += win
 endif
+ifeq ($(BARTDLL), 1)
+ALIBS += win
+endif
 $(eval $(foreach t,$(ALIBS),$(eval $(call alib,$(t)))))
 
 
@@ -783,6 +787,24 @@ lib/libbox.a: CPPFLAGS += -include src/main.h
 UTARGETS += test_grog test_casorati
 MODULES_test_grog += -lcalib -lnoncart -lsimu -lgeom
 MODULES_test_casorati+= -lcalib -llinops -liter
+
+
+# shared libraries
+define dlllib
+$(1)srcs := $(wildcard $(srcdir)/$(1)/*.c)
+$(1)objs := $$($(1)srcs:.c=.win.o)
+
+.INTERMEDIATE: $$($(1)objs)
+
+lib/$(1).dll: $$($(1)objs)
+
+endef
+
+DLLS=seq
+
+$(eval $(foreach t,$(DLLS),$(eval $(call dlllib,$(t)))))
+
+
 
 # lib linop
 UTARGETS += test_linop_matrix test_linop test_padding
@@ -937,6 +959,28 @@ mat2cfl: $(srcdir)/mat2cfl.c -lnum -lmisc
 	$(CC) $(CFLAGS) $(MATLAB_H) -omat2cfl  $+ $(MATLAB_L) $(CUDA_L)
 
 
+LIBSEQ_NAME = bart_seq_$(shell git diff --quiet && git rev-parse --short HEAD)
+
+
+ifeq (32,$(ARCH))
+MINGWDLLTOOL = i686-w64-mingw32-dlltool
+else
+MINGWDLLTOOL = x86_64-w64-mingw32-dlltool
+endif
+
+.PHONY: libseq_deploy
+libseq_deploy: gitclean_check
+	$(MAKE) lib/libbart.a
+	$(MAKE) BARTDLL=1 bart.dll
+	$(MINGWDLLTOOL) -l lib/$(LIBSEQ_NAME).lib --dllname $(LIBSEQ_NAME).dll -d bart.def
+	cp lib/$(LIBSEQ_NAME).lib $(VM_BART_PATH)/lib/$(LIBSEQ_NAME).lib
+	cp lib/libbart.a $(VM_BART_PATH)/lib/lib$(LIBSEQ_NAME).a
+	cp bart.dll $(VM_BIN_PATH)/$(LIBSEQ_NAME).dll
+
+
+.PHONY: gitclean_check
+gitclean_check:
+	git diff --quiet
 
 
 
@@ -968,6 +1012,30 @@ else
 %.a : ; $(AR) $(ARFLAGS) $@ $?
 endif
 
+ifeq (32,$(ARCH))
+MINGWCC = i686-w64-mingw32-gcc
+else
+MINGWCC = x86_64-w64-mingw32-gcc
+endif
+
+
+%.win.o: %.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
+
+# BLAS, LAPACK
+WIN_NOT_SUPPORTED=%blas.win.o %lapack.win.o %blas_md_wrapper.win.o %vecops_strided.win.o %convcorr.win.o
+
+bart.dll: CC = $(MINGWCC)
+bart.dll: CFLAGS = -D NO_PNG -D NOLAPACKE -D NO_FFTW -D NO_LAPACK -D NO_BLAS -D NO_FIFO -D BARTDLL
+bart.dll: CPPFLAGS = -D BARTLIB_EXPORTS -I$(srcdir)/
+bart.dll: LDFLAGS = -shared -Wl,--subsystem,windows -Wl,--out-implib,bart.lib -Wl,--output-def,bart.def -static-libgcc
+bart.dll: $(seqwinobjs) $(miscwinobjs) $(filter-out $(WIN_NOT_SUPPORTED),$(numwinobjs)) $(winwinobjs) $(noncartwinobjs) $(linopswinobjs) $(waveletwinobjs) $(geomwinobjs) $(simuwinobjs)
+	$(CC) $^ $(LDFLAGS) -o $@
+
+lib/libbart.a: CFLAGS = -D NO_PNG -D NOLAPACKE -D NO_FFTW -D NO_LAPACK -D NO_BLAS -D NO_FIFO -D BARTDLL -fPIC
+lib/libbart.a: CPPFLAGS = -I$(srcdir)/
+lib/libbart.a: $(seqobjs) $(miscobjs) $(filter-out $(WIN_NOT_SUPPORTED:.win.o=.o),$(numobjs)) $(winobjs) $(noncartobjs) $(linopsobjs) $(waveletobjs) $(geomobjs) $(simuobjs)
+	$(AR) rcs $@ $^
 
 
 .SECONDEXPANSION:
@@ -1094,6 +1162,9 @@ clean:
 .PHONY: allclean
 allclean: clean
 	rm -f $(libdir)/*.a $(ALLDEPS)
+	rm -f $(root)/*.dll
+	rm -f $(root)/*.lib
+	rm -f $(root)/*.def
 	rm -f bart
 	rm -f $(patsubst commands/%, %, $(CTARGETS))
 	rm -f $(CTARGETS)

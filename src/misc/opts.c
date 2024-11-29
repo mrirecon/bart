@@ -29,6 +29,10 @@
 
 #include "opts.h"
 
+#ifdef BARTDLL
+int getsubopt(char **restrict, char *const *restrict, char **restrict) { assert(0); }
+#endif
+
 list_t str_list = NULL;
 
 void opt_free_strdup(void)

@@ -212,6 +212,7 @@ static int vptr_cmp(const void* _a, const void* _b)
 
 static struct mem_s* search(const void* ptr, bool remove);
 
+#ifndef BARTLIB_EXPORTS
 static struct sigaction old_sa;
 
 static void handler(int /*sig*/, siginfo_t *si, void*)
@@ -227,12 +228,14 @@ static void handler(int /*sig*/, siginfo_t *si, void*)
 #endif
 	error("Segfault!\n");
 }
+#endif
 
 static void vptr_init(void)
 {
 	if (NULL != vmap)
 		return;
 
+#ifndef BARTLIB_EXPORTS
 	struct sigaction sa;
 
 	sa.sa_flags = SA_SIGINFO;
@@ -244,6 +247,7 @@ static void vptr_init(void)
 #pragma omp critical(bart_vmap)
 	if (NULL == vmap)
 		vmap = tree_create(vptr_cmp);
+#endif
 }
 
 
