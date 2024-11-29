@@ -828,10 +828,10 @@ static nn_t unet_lowest_level_create(struct network_unet_s* unet, int N, const l
 	last_same = last_same && md_check_equal_dims(N, kdims, okdims, ~0UL);
 	last_same = last_same && (ogroup_flag == unet->group_flag) && (ochannel_flag == unet->channel_flag);
 
-	if (init_same)
+	if (!init_same)
 		Nl--;
 
-	if (last_same)
+	if (!last_same)
 		Nl--;
 
 	assert(0 <= Nl);
