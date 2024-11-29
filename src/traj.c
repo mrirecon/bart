@@ -46,8 +46,6 @@ int main_traj(int argc, char* argv[argc])
 	int Z = 1;
 	int D = -1;
 	int E = 1;
-	int mb = 1;
-	int turns = 1;
 	float rot = 0.;
 	float over = 1.;
 	int raga_inc = 0;
@@ -73,8 +71,8 @@ int main_traj(int argc, char* argv[argc])
 		OPT_INT('d', &D, "d", "full readout samples"),
 		OPT_INT('e', &E, "e", "number of echoes"),
 		OPT_INT('a', &conf.accel, "a", "acceleration"),
-		OPT_INT('t', &turns, "t", "turns"),
-		OPT_INT('m', &mb, "mb", "SMS multiband factor"),
+		OPT_INT('t', &conf.turns, "t", "conf.turns"),
+		OPT_INT('m', &conf.mb, "mb", "SMS multiband factor"),
 		OPT_SET('l', &conf.aligned, "aligned partition angle"),
 		OPT_SET('g', &conf.golden_partition, "(golden angle in partition direction)"),
 		OPT_SET('r', &conf.radial, "radial"),
@@ -156,7 +154,7 @@ int main_traj(int argc, char* argv[argc])
 	X = (int)((float)X * over);
 
 
-	int tot_sp = Y * E * mb * turns;	// total number of lines/spokes
+	int tot_sp = Y * E * conf.mb * conf.turns;	// total number of lines/spokes
 	int N = X * tot_sp / conf.accel * Z;
 
 
@@ -177,19 +175,21 @@ int main_traj(int argc, char* argv[argc])
 	long z_reflines = z_usamp[0];
 	long z_acc = z_usamp[1];
 
-	long mb2 = mb;
+	long mb2 = conf.mb;
 
 	if (z_acc > 1) {
 
-		mb2 = z_reflines + (mb - z_reflines) / z_acc;
+		mb2 = z_reflines + (conf.mb - z_reflines) / z_acc;
 
-		if ((mb2 < 1) || ((mb - z_reflines) % z_acc != 0))
+		if ((mb2 < 1) || ((conf.mb - z_reflines) % z_acc != 0))
 			error("Invalid z-Acceleration!\n");
 	}
 
 
-	dims[TIME_DIM] = turns;
-	dims[SLICE_DIM] = mb;
+	dims[TIME_DIM] = conf.turns;
+	dims[SLICE_DIM] = conf.mb;
+
+	conf.mb = mb2;
 
 	if (conf.half_circle_gold) {
 
@@ -204,10 +204,10 @@ int main_traj(int argc, char* argv[argc])
 
 		if (conf.radial) {
 
-			if (turns > 1)
+			if (conf.turns > 1)
 				error("Turns not implemented for 3D-Kooshball\n");
 
-			if (mb > 1)
+			if (conf.mb > 1)
 				error("Multiple partitions not sensible for 3D-Kooshball\n");
 		}
 	}
@@ -228,7 +228,7 @@ int main_traj(int argc, char* argv[argc])
 
 	} else { // Cartesian
 
-		if (((turns != 1) || (mb != 1)) && (!raga_index_file))
+		if (((conf.turns != 1) || (conf.mb != 1)) && (!raga_index_file))
 			error("Turns or partitions not allowed/implemented for Cartesian trajectories!\n");
 	}
 
@@ -259,7 +259,7 @@ int main_traj(int argc, char* argv[argc])
 	md_clear(DIMS, dims, samples, CFL_SIZE);
 
 	double base_angle[DIMS] = { 0. };
-	calc_base_angles(base_angle, Y, E, mb2, turns, conf);
+	calc_base_angles(base_angle, Y, E, conf);
 
 	int p = 0;
 	long pos[DIMS] = { 0 };

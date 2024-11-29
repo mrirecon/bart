@@ -38,6 +38,8 @@ const struct traj_conf traj_defaults = {
 	.tiny_gold = 0,
 	.rational = false,
 	.double_base = false,
+	.turns = 1,
+	.mb = 1,
 };
 
 
@@ -131,7 +133,7 @@ static float rational_angle(int Y, int n)
 }
 
 
-void calc_base_angles(double base_angle[DIMS], int Y, int E, int mb, int turns, struct traj_conf conf)
+void calc_base_angles(double base_angle[DIMS], int Y, int E, struct traj_conf conf)
 {
 	/*
 	 * Winkelmann S, Schaeffter T, Koehler T, Eggers H, Doessel O.
@@ -170,7 +172,7 @@ void calc_base_angles(double base_angle[DIMS], int Y, int E, int mb, int turns, 
 	double angle_s = angle_atom * (conf.full_circle ? 2 : 1);
 
 	// Angle between slices/partitions
-	double angle_m = angle_atom / mb; // linear-turned partitions
+	double angle_m = angle_atom / conf.mb; // linear-turned partitions
 
 	if (conf.aligned)
 		angle_m = 0;
@@ -178,8 +180,8 @@ void calc_base_angles(double base_angle[DIMS], int Y, int E, int mb, int turns, 
 	// Angle between turns
 	double angle_t = 0.;
 
-	if (turns > 1)
-		angle_t = angle_atom / turns * (conf.full_circle ? 2 : 1);
+	if (conf.turns > 1)
+		angle_t = angle_atom / conf.turns / conf.mb * (conf.full_circle ? 2 : 1);
 
 	/* radial multi-echo multi-spoke sampling
 	 *
@@ -208,7 +210,7 @@ void calc_base_angles(double base_angle[DIMS], int Y, int E, int mb, int turns, 
 
 			angle_s = golden_angle;
 			angle_m = golden_angle * Y;
-			angle_t = golden_angle * Y * mb;
+			angle_t = golden_angle * Y * conf.mb;
 		}
 
 #ifdef SSAFARY_PAPER

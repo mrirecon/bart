@@ -47,7 +47,7 @@ static bool test_grog(void)
 	conf.tiny_gold = 1;
 
 	double base_angle[DIMS] = { 0. };
-	calc_base_angles(base_angle, 5, 1, 1, 1, conf);
+	calc_base_angles(base_angle, 5, 1, conf);
 
 	int p = 0;
 	long pos[DIMS] = { 0 };
