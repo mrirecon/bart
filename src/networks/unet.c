@@ -581,11 +581,7 @@ static nn_t unet_sample_conv_strided_create(struct network_unet_s* unet, int N, 
 			assert(0 == dims[i] % stride);
 			down_dims[i] = dims[i] / stride;
 			strides[i] = stride;
-			if (up) {
-				kdims[i] = 2;
-			} else {
-				kdims[i] = 3;
-			}
+
 		}
 
 		if (MD_IS_SET(unet->channel_flag, i)) {
@@ -654,11 +650,10 @@ static nn_t nnunet_sample_conv_strided_create(struct network_unet_s* unet, int N
 			assert(0 == dims[i] % stride);
 			down_dims[i] = dims[i] / stride;
 			strides[i] = stride;
-			if (up) {
+			if (up)
 				kdims[i] = 2;
-			} else {
-				kdims[i] = 3;
-			}
+			else
+				kdims[i] = 4;
 		}
 
 		if (MD_IS_SET(unet->channel_flag, i)) {
