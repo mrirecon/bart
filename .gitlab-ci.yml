@@ -552,8 +552,8 @@ RockyLinux_8:
   stage: distro_build
   image: docker.io/rockylinux:8
   script:
-    - dnf --enablerepo=powertools install -y fftw-devel atlas-devel libpng-devel lapack-devel gcc-toolset-11
-    - source scl_source enable gcc-toolset-11 # redhat magic for enabling gcc-11
+    - dnf --enablerepo=powertools install -y fftw-devel atlas-devel libpng-devel lapack-devel gcc-toolset-12
+    - source scl_source enable gcc-toolset-12 # redhat magic for enabling gcc-12
     - make all -j8
     - make utest -j8
 
@@ -567,6 +567,7 @@ RockyLinux_9:
   image: docker.io/rockylinux:9
   script:
     - dnf --enablerepo=crb install -y fftw-devel atlas-devel libpng-devel lapack-devel gcc-toolset-12
+    - source scl_source enable gcc-toolset-12 # redhat magic for enabling gcc-12
     - make all -j8
     - make utest -j8
 
@@ -580,7 +581,8 @@ Ubuntu_22.04:
   image: docker.io/ubuntu:22.04
   script:
     - apt-get update
-    - apt-get install -y gcc make libfftw3-dev liblapacke-dev libpng-dev libopenblas-dev gfortran
+    - apt-get install -y gcc-12 make libfftw3-dev liblapacke-dev libpng-dev libopenblas-dev gfortran
+    - echo -e -n "CC=gcc-12\n" > Makefiles/Makefile.local
     - make all -j8
     - make utest -j8
 
