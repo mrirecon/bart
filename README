@@ -75,7 +75,7 @@ to install the BART packages, or compile it yourself as described below.
 GCC compiler, the FFTW library, and optionally CUDA.
 (see recon/Makefile to turn options on or off)
 
-The minimum GCC supported is 11. It should also be possible
+The minimum GCC supported is 12. It should also be possible
 to use the clang compiler.
 
 The software can be used in combination with Matlab or octave.
@@ -110,15 +110,15 @@ To install the required libraries on Debian and Ubuntu run:
 
 To install the required libraries on Redhat / Centos / RockyLinux / AlmaLinux 8 run:
 
-    $ sudo dnf --enablerepo=powertools install fftw-devel atlas-devel libpng-devel lapack-devel gcc-toolset-11
+    $ sudo dnf --enablerepo=powertools install fftw-devel atlas-devel libpng-devel lapack-devel gcc-toolset-12
 
-To activate gcc-11 in the current shell:
+To activate gcc-12 in the current shell:
 
-    $ source scl_source enable gcc-toolset-11
+    $ source scl_source enable gcc-toolset-12
 
-or to start a new shell with gcc-11 enabled:
+or to start a new shell with gcc-12 enabled:
 
-    $ scl enable gcc-toolset-11 bash
+    $ scl enable gcc-toolset-12 bash
 
 To install the required libraries on Redhat / Centos / RockyLinux / AlmaLinux 9 run:
 
