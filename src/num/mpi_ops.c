@@ -27,6 +27,7 @@
 
 #ifdef USE_CUDA
 #include "num/gpuops.h"
+#include "num/gpukrnls.h"
 #endif
 #include "num/multind.h"
 #include "num/optimize.h"
@@ -65,7 +66,7 @@ void init_mpi(int* argc, char*** argv)
 		MPI_Comm_dup(MPI_COMM_WORLD, &comm);
 		MPI_Comm_rank(comm, &mpi_rank);
 		MPI_Comm_size(comm, &mpi_nprocs);
-		
+
 		if (1 == mpi_nprocs)
 			return;
 
@@ -78,7 +79,7 @@ void init_mpi(int* argc, char*** argv)
 
 		int rank_on_node;
 		MPI_Comm_rank(node_comm, &rank_on_node);
-		
+
 		int number_of_nodes = (rank_on_node == 0);
 
 		MPI_Allreduce(MPI_IN_PLACE, &number_of_nodes, 1, MPI_INT, MPI_SUM, comm);
@@ -142,7 +143,7 @@ void mpi_signoff_proc(bool signoff)
 	if (1 >= mpi_get_num_procs())
 		return;
 
-	MPI_Comm new_comm;	
+	MPI_Comm new_comm;
 	MPI_Comm_split(comm, !signoff, mpi_get_rank(), &new_comm);
 	MPI_Comm_free(&comm);
 
@@ -168,7 +169,7 @@ void mpi_signoff_proc(bool signoff)
 static void print_cuda_aware_warning(void)
 {
 	static bool printed = false;
-	
+
 	if (!printed && !cuda_aware_mpi)
 		debug_printf(DP_WARN, "CUDA aware MPI is not activated. This may decrease performance for multi-GPU operations significantly!.\n");
 
@@ -187,15 +188,19 @@ void mpi_sync(void)
 
 #ifdef USE_MPI
 #ifdef USE_CUDA
+static void mpi_bcast_selected(bool tag, void* ptr, long size, int root);
+
 static void mpi_bcast_selected_gpu(bool tag, void* ptr, long size, int root)
 {
+	assert(!is_vptr(ptr));
+
 	if (1 == mpi_get_num_procs())
 		return;
 
 	print_cuda_aware_warning();
 
 	void* tmp = xmalloc((size_t)size);
-	
+
 	if (mpi_get_rank() == root)
 		cuda_memcpy(size, tmp, ptr);
 
@@ -209,8 +214,10 @@ static void mpi_bcast_selected_gpu(bool tag, void* ptr, long size, int root)
 #endif
 #endif
 
-void mpi_bcast_selected(bool tag, void* ptr, long size, int root)
+static void mpi_bcast_selected(bool tag, void* ptr, long size, int root)
 {
+	assert(!is_vptr(ptr));
+
 #ifdef USE_MPI
 	if (1 == mpi_get_num_procs())
 		return;
@@ -223,7 +230,7 @@ void mpi_bcast_selected(bool tag, void* ptr, long size, int root)
 	}
 
 	if (cuda_ondevice(ptr))
-		cuda_sync_stream();
+		cuda_sync_device();
 #endif
 
 	MPI_Comm comm_sub;
@@ -244,32 +251,75 @@ void mpi_bcast_selected(bool tag, void* ptr, long size, int root)
 #endif
 }
 
+static void mpi_bcast_selected2(bool tag, int N, const long dims[N], const long strs[N], void* ptr, long size, int root)
+{
+	assert(!is_vptr(ptr));
+
+#ifdef USE_MPI
+	if (1 == mpi_get_num_procs())
+		return;
+
+	if (N == md_calc_blockdim(N, dims, strs, (size_t)size)) {
+
+		mpi_bcast_selected(tag, ptr, size * md_calc_size(N, dims), root);
+		return;
+	}
+
+	void* tmp = tag ? md_alloc_sameplace(N, dims, (size_t)size, ptr) : NULL;
+
+	if (mpi_get_rank() == root)
+		md_copy2(N, dims, MD_STRIDES(N, dims, (size_t)size), tmp, strs, ptr, (size_t)size);
+
+	mpi_bcast_selected(tag, tmp, size * md_calc_size(N, dims), root);
+
+	if (tag && (mpi_get_rank() != root))
+		md_copy2(N, dims, strs, ptr, MD_STRIDES(N, dims, (size_t)size), tmp, (size_t)size);
+
+	md_free(tmp);
+
+#else
+	UNUSED(N);
+	UNUSED(dims);
+	UNUSED(strs);
+	UNUSED(tag);
+	UNUSED(ptr);
+	UNUSED(size);
+	UNUSED(root);
+#endif
+}
+
 void mpi_bcast(void* ptr, long size, int root)
 {
+	assert(!is_vptr(ptr));
+
 	mpi_bcast_selected(true, ptr, size, root);
 }
 
 
+struct vptr_mpi_bcast_s {
+
+	INTERFACE(vptr_fun_data_t);
+	int root;
+	long size;
+};
+
+DEF_TYPEID(vptr_mpi_bcast_s);
+
+static void vptr_mpi_bcast2(vptr_fun_data_t* _d, int N, int D, const long* dims[N], const long* strs[N], void* args[N])
+{
+	auto d = CAST_DOWN(vptr_mpi_bcast_s, _d);
+	mpi_bcast_selected2(true, D, dims[0], strs[0], args[0], d->size, d->root);
+}
+
 void mpi_bcast2(int N, const long dims[N], const long strs[N], void* ptr, long size, int root)
 {
-	long tdims[N];
-	md_copy_dims(N, tdims, dims);
+	PTR_ALLOC(struct vptr_mpi_bcast_s, _d);
+	SET_TYPEID(vptr_mpi_bcast_s, _d);
+	_d->INTERFACE.del = NULL;
+	_d->root = root;
+	_d->size = size;
 
-	for (int i = 0; i < N; i++) {
-
-		if (strs[i] == size) {
-
-			size *= tdims[i];
-			tdims[i] = 1;
-		}
-	}
-
-	NESTED(void, nary_bcast, (void* ptr[]))
-	{
-		mpi_bcast(ptr[0], size, root);
-	};
-	
-	md_nary(1, N, tdims, &strs, &ptr, nary_bcast);
+	exec_vptr_fun_gen(vptr_mpi_bcast2, CAST_UP(PTR_PASS(_d)), 1, N, ~0UL, MD_BIT(0), MD_BIT(0), (const long*[1]) { dims }, (const long*[1]) { strs }, (void*[1]) { ptr }, (size_t[1]) { (size_t)size }, true);
 }
 
 
@@ -355,22 +405,41 @@ void mpi_copy(void* dst, long size, const void* src, int sender_rank, int recv_r
 
 void mpi_copy2(int N, const long dim[N], const long ostr[N], void* optr, const long istr[N], const void* iptr, long size, int sender_rank, int recv_rank)
 {
-	const long (*nstr[2])[N] = { (const long (*)[N])ostr, (const long (*)[N])istr };
+	if (N == md_calc_blockdim(N, dim, ostr, (size_t)size) && N == md_calc_blockdim(N, dim, istr, (size_t)size)) {
 
-	NESTED(void, nary_copy_mpi, (struct nary_opt_data_s* opt_data, void* ptr[]))
-	{
-		long size2 = size * opt_data->size;
+		mpi_copy(optr, size * md_calc_size(N, dim), iptr, sender_rank, recv_rank);
+		return;
+	}
 
-		mpi_copy(ptr[0], size2, ptr[1], sender_rank, recv_rank);
-	};
+	if (!(mpi_get_rank() == sender_rank || mpi_get_rank() == recv_rank))
+		return;
 
-	optimized_nop(2, MD_BIT(0), N, dim, nstr, (void*[2]){ optr, (void*)iptr }, (size_t[2]){ (size_t)size, (size_t)size }, nary_copy_mpi);
+	long tdims[N];
+	md_select_dims(N, md_nontriv_strides(N, istr), tdims, dim);
+
+	void* tmp = NULL;
+#ifdef USE_CUDA
+	if (cuda_ondevice(iptr) || cuda_ondevice(optr))
+		tmp = cuda_malloc(md_calc_size(N, tdims) * size);
+	else
+#endif
+		tmp = xmalloc((size_t)md_calc_size(N, tdims) * (size_t)size);
+
+	if (sender_rank == mpi_get_rank())
+		md_copy2(N, tdims, MD_STRIDES(N, tdims, (size_t)size), tmp, istr, iptr, (size_t)size);
+
+	mpi_copy(tmp, size * md_calc_size(N, tdims), tmp, sender_rank, recv_rank);
+
+	if (recv_rank == mpi_get_rank())
+		md_copy2(N, dim, ostr, optr, MD_STRIDES(N, tdims, (size_t)size), tmp, (size_t)size);
+
+	md_free(tmp);
 }
 
 
 /**
  * Synchronise pval to all processes (take part in calculation)
- * 
+ *
  * This function requires Communicator handling!
  *
  * @param pval source (rank == 0) /destination (rank != 0) buffer
@@ -385,7 +454,7 @@ void mpi_sync_val(void* pval, long size)
  * Inplace scatter src to dest in block of size N
  * Copies N elements from src buffer (rank = 0) to dst buffers
  * (rank != 0). For rank == 0, dst == src, evenly over communicator
- * 
+ *
  * This function requires Communicator handling!
  *
  * @param dst destination buffer of ranks != 0
@@ -414,7 +483,7 @@ void mpi_scatter_batch(void* dst, long count, const void* src, size_t size)
 /**
  * Copies N elements from src buffer (rank = 0) to dst buffers
  * (rank != 0). For rank == 0, dst == src, evenly over communicator
- * 
+ *
  * This function requires Communicator handling!
  *
  * @param dst destination buffer of ranks != 0
@@ -479,7 +548,7 @@ void mpi_reduce_land(long N, bool vec[__VLA(N)])
 	if (cuda_ondevice(vec))
 		cuda_sync_stream();
 #endif
-	
+
 	for (long n = 0; n < N; n += INT_MAX / 2)
 		MPI_Allreduce(MPI_IN_PLACE, vec + n, MIN(N - n, INT_MAX / 2), MPI_C_BOOL, MPI_LAND, mpi_get_comm());
 #else
