@@ -14,6 +14,7 @@
 
 #include "misc/resize.h"
 #include "misc/mmio.h"
+#include "misc/io.h"
 #include "misc/misc.h"
 #include "misc/opts.h"
 
@@ -82,10 +83,15 @@ int main_copy(int argc, char* argv[argc])
 
 	if (count > 0) {
 
+		if (FILE_TYPE_CFL != file_type(out_file))
+			error("Output file must be a cfl if position is specified.\n");
+
 		// get dimensions
 		void* out_data = load_cfl(out_file, N, out_dims);
 
 		unmap_cfl(N, out_dims, out_data);
+
+		io_close(out_file);
 
 	} else {
 
