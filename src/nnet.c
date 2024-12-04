@@ -92,8 +92,8 @@ int main_nnet(int argc, char* argv[argc])
 	struct opt_s network_opts[] = {
 
 		OPTL_SET('M', "mnist", &(mnist_default), "use basic MNIST Network"),
-		OPTL_LONG(0, "unet-segm", &(N_unet_segm_labels), "labels", "(use U-Net for segmentation)"),
-		OPTL_LONG('U', "nnunet-segm", &(N_nnunet_segm_labels), "labels", "use nnU-Net for segmentation"),
+		OPTL_LONG('U', "unet-segm", &(N_unet_segm_labels), "labels", "use U-Net for segmentation"),
+		OPTL_LONG(0, "nnunet-segm", &(N_nnunet_segm_labels), "labels", "use nnU-Net for segmentation"),
 	};
 
 	const char* validation_in = NULL;
@@ -117,8 +117,8 @@ int main_nnet(int argc, char* argv[argc])
 		OPTL_INFILE('l', "load", &filename_weights_load, "<weights-init>", "load weights for continuing training"),
 
 		OPTL_SUBOPT('N', "network", "...", "select neural network", ARRAY_SIZE(network_opts), network_opts),
-		OPTL_SUBOPT(0, "unet-segm", "...", "(configure U-Net for segmentation)", N_unet_segm_opts, unet_segm_opts),
-		OPTL_SUBOPT('U', "nnunet-segm", "...", "configure nnU-Net for segmentation", N_nnunet_segm_opts, nnunet_segm_opts),
+		OPTL_SUBOPT('U', "unet-segm", "...", "configure U-Net for segmentation", N_unet_segm_opts, unet_segm_opts),
+		OPTL_SUBOPT(0, "nnunet-segm", "...", "configure nnU-Net for segmentation", N_nnunet_segm_opts, nnunet_segm_opts),
 
 		OPTL_SUBOPT(0, "train-loss", "...", "configure the training loss", N_loss_opts, loss_opts),
 		OPTL_SUBOPT(0, "valid-loss", "...", "configure the validation loss", N_val_loss_opts, val_loss_opts),
