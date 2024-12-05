@@ -269,7 +269,7 @@ static nn_t reconet_sort_args(nn_t reconet)
 	return reconet;
 }
 
-//add "scale" input for normlization
+//add "scale" input for normalization
 static nn_t reconet_normalization(const struct reconet_s* config, nn_t network)
 {
 	const char* norm_names_in[] = {

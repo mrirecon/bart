@@ -241,7 +241,7 @@ static void batch_gen_del(const nlop_data_t* _data)
  * @param tot_dims total dims of dataset
  * @param data pointers to data
  * @param Nb batch size
- * @param type methode to compose new batches
+ * @param type method to compose new batches
  * @param seed seed for random reshuffeling of batches
  */
 const struct nlop_s* batch_gen_create(int D, const int Ns[D], const long* bat_dims[D], const long* tot_dims[D], const complex float* data[D], long Nc, enum BATCH_GEN_TYPE type, unsigned long long seed)

@@ -1185,7 +1185,7 @@ void cmdline(int* argcp, char* argv[*argcp], int m, const struct arg_s args[m], 
 
 			// Consume as many arguments as possible, except for possible args following the tuple
 			// As we can only have one tuple, a tuple consuming multiple arguments cannot follow.
-			// Further, as we cannot have an optional arg following, all declared args afer the tuple
+			// Further, as we cannot have an optional arg following, all declared args after the tuple
 			// are required and take exactly one argument.
 			int tuple_end = *argcp - declared_args_following;
 			int num_tuple_args = tuple_end - j;

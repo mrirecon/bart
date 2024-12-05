@@ -17,7 +17,7 @@
  * come in two flavours:
  *
  * 1. A basic version which takes the number of dimensions, an array
- * of long integers specifing the size of each dimension, the pointers
+ * of long integers specifying the size of each dimension, the pointers
  * to the data, and the size of each element and other required parameters.
  * The data is assumed to be stored in column-major format.
  *
@@ -351,7 +351,7 @@ long md_calc_size(int D, const long dim[D])
 
 /**
  * Computes the number of smallest dimensions which are stored
- * contineously, i.e. can be accessed as a block of memory.
+ * continuously, i.e. can be accessed as a block of memory.
  *
  */
 int md_calc_blockdim(int D, const long dim[D], const long str[D], size_t size)
@@ -544,7 +544,7 @@ void md_singleton_strides(int D, long strs[D])
 /**
  * Check dimensions for compatibility. Dimensions must be equal or
  * where indicated by a set bit in flags one must be equal to one
- * in atleast one of the arguments.
+ * in at least one of the arguments.
  */
 bool md_check_compat(int D, unsigned long flags, const long dim1[D], const long dim2[D])
 {
@@ -1524,7 +1524,7 @@ void md_transpose_dims(int D, int dim1, int dim2, long odims[D], const long idim
 
 
 /**
- * Tranpose array (with strides)
+ * Transpose array (with strides)
  *
  * optr[dim2] = iptr[dim1]
  *
@@ -1549,7 +1549,7 @@ void md_transpose2(int D, int dim1, int dim2, const long odims[D], const long os
 
 
 /**
- * Tranpose array (without strides)
+ * Transpose array (without strides)
  *
  * optr[dim2] = iptr[dim1]
  *
@@ -2030,7 +2030,7 @@ void md_circ_shift2(int D, const long dimensions[D], const long center[D], const
 			pos[i] += dimensions[i];
 	}
 
-	int i = 0;		// FIXME :maybe we shoud search the other way?
+	int i = 0;		// FIXME :maybe we should search the other way?
 
 	while ((i < D) && (0 == pos[i]))
 		i++;
@@ -2106,7 +2106,7 @@ void md_circ_ext2(int D, const long dims1[D], const long strs1[D], void* dst, co
 		assert(ext[i] <= dims2[i]);
 	}
 
-	int i = 0;		// FIXME :maybe we shoud search the other way?
+	int i = 0;		// FIXME :maybe we should search the other way?
 	while ((i < D) && (0 == ext[i]))
 		i++;
 

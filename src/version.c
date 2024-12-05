@@ -68,7 +68,7 @@ int main_version(int argc, char* argv[argc])
 			return 1;
 		}
 
-		// invert here, because unix interprets 0 as succesful exit
+		// invert here, because unix interprets 0 as successful exit
 		return !(version_compare(va, vb) >= 0);
 	}
 

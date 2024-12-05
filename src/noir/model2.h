@@ -20,7 +20,7 @@ struct noir2_model_conf_s {
 
 	struct nufft_conf_s* nufft_conf;
 
-	_Bool asymetric;
+	_Bool asymmetric;
 	_Bool ret_os_coils;
 };
 
@@ -32,7 +32,7 @@ struct noir2_s {
 	struct noir2_model_conf_s model_conf;
 
 	const struct nlop_s* model;		// nlop holding the model 
-	const struct linop_s* lop_asym;		// for asymetric reconstruction
+	const struct linop_s* lop_asym;		// for asymmetric reconstruction
 						// use adjoint to grid data
 
 	// linops to construct model: lop_fft(tenmul(lop_im, lop_coil))

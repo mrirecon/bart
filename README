@@ -167,13 +167,13 @@ Using HomeBrew (https://brew.sh):
 
 ### 2.2.3 Windows
 
-BART is supported through WSL 2 which is avaialable on Windows 10. The instructions are
+BART is supported through WSL 2 which is available on Windows 10. The instructions are
 similar to installing on Linux.
 
 Step-by-step instructions are available on the website at:
 	https://mrirecon.github.io/bart/installation_windows.html
 
-First follow the instructions for Debian/Ubuntu in Section 2.1.1 to install reqiured libraries.
+First follow the instructions for Debian/Ubuntu in Section 2.1.1 to install required libraries.
 Next follow the instructions in Section 2.2 to download and compile bart
 
 2.2.3.1. Using BART with Matlab outside of WSL
@@ -328,7 +328,7 @@ Python interactively as follows:
 
     $ python3 -i startup.py
 
-To avoid doing the above everytime, it is recommended to update your
+To avoid doing the above every time, it is recommended to update your
 PYTHONPATH environment. For example, in Linux, assuming your 
 BART_TOOLBOX_PATH is set, add the below line to your bashrc file.
 
@@ -493,8 +493,8 @@ the following information (as applicable):
 
 * The specific error message.
 
-* Information about the data files used when the problem occured
-  (please provide atleast the dimensions of all input files).
+* Information about the data files used when the problem occurred
+  (please provide at least the dimensions of all input files).
 
 
 

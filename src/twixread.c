@@ -120,18 +120,18 @@ enum adc_return {
 enum adc_flags {
 	ACQEND, // last scan
 	RTFEEDBACK, // Realtime feedback scan
-	HPFEEDBACK, // High perfomance feedback scan
+	HPFEEDBACK, // High performance feedback scan
 	ONLINE, // processing should be done online
 	OFFLINE, // processing should be done offline
-	SYNCDATA, // readout contains synchroneous data
+	SYNCDATA, // readout contains synchronous data
 	unused06,
 	unused07,
-	LASTSCANINCONCAT, // Flag for last scan in concatination
+	LASTSCANINCONCAT, // Flag for last scan in concatenation
 	unused09,
 	RAWDATACORRECTION, // Correct the rawadata with the rawdata correction factor
 	LASTSCANINMEAS, // Flag for last scan in measurement
 	SCANSCALEFACTOR, // Flag for scan specific additional scale factor
-	_2NDHADAMARPULSE, // 2nd RF exitation of HADAMAR
+	_2NDHADAMARPULSE, // 2nd RF excitation of HADAMAR
 	REFPHASESTABSCAN, // reference phase stabilization scan
 	PHASESTABSCAN, // phase stabilization scan
 	D3FFT, // execute 3D FFT
@@ -140,8 +140,8 @@ enum adc_flags {
 	SWAPPED, // swapped phase/readout direction
 	POSTSHAREDLINE, // shared line
 	PHASCOR, // phase correction data
-	PATREFSCAN, // additonal scan for PAT reference line/partition
-	PATREFANDIMASCAN, // additonal scan for PAT reference line/partition that is also used as image scan
+	PATREFSCAN, // additional scan for PAT reference line/partition
+	PATREFANDIMASCAN, // additional scan for PAT reference line/partition that is also used as image scan
 	REFLECT, // reflect line
 	NOISEADJSCAN, // noise adjust scan
 	SHARENOW, // all lines are acquired from the actual and previous e.g. phases

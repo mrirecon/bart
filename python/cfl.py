@@ -15,7 +15,7 @@ import numpy as np
 import mmap
 import os
 
-# see src/misc/io.c for rawarray header defintion
+# see src/misc/io.c for rawarray header definition
 _RA_MAGIC = int(0x7961727261776172)
 _RA_TYPE_COMPLEX = int(4)
 _RA_CFL_SIZE = int(8)

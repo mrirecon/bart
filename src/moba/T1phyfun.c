@@ -50,7 +50,7 @@ struct T1_phy_s {
 	complex float* R1;
 	complex float* alpha;
 
-	// FIXME: temporary storage should be allocted when used
+	// FIXME: temporary storage should be allocated when used
 	complex float* tmp_map;
 	complex float* tmp_R1s;
 	complex float* tmp_map1;

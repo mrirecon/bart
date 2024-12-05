@@ -369,7 +369,7 @@ int main_bart(int argc, char* argv[argc])
 		if (cfl_loop_omp()) {
 
 			// gomp does only use a thread pool for non-nested parallelism!
-			// Threads are spwaned dynamically with a performance penality for md_functions,
+			// Threads are spawned dynamically with a performance penalty for md_functions,
 			// if we have an outer parallel region even if it is inactive.
 
 #ifdef USE_CUDA

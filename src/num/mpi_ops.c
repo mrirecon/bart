@@ -367,7 +367,7 @@ void mpi_copy2(int N, const long dim[N], const long ostr[N], void* optr, const l
 
 
 /**
- * Syncronise pval to all processes (take part in calculation)
+ * Synchronise pval to all processes (take part in calculation)
  * 
  * This function requires Communicator handling!
  *

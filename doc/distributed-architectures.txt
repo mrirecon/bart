@@ -1,7 +1,7 @@
 Distributed architectures means to use different compute entities.
 Nodes can be PCs, workstations, or nodes of a cluster.
 They can be connected by TCP/IP or other connections such as InfiniBand.
-An alternative term would be heterogenous systems.
+An alternative term would be heterogeneous systems.
 
 BART uses the Message Passing Interface (MPI) [1] to work on distributed systems.
 
@@ -31,8 +31,8 @@ BART uses the Message Passing Interface (MPI) [1] to work on distributed systems
 - [Setup ssh key]: ssh-keygen -t rsa -b 2024 -f ~/.ssh/mpi
    - generate rsa key with bitlength 2024 in file ~/.ssh/mpi
 - [Copy ssh key]: ssh-copy-id <user>@<node>
-   - copies public key from <user> to <node>, 'ssh-copy-id' has to be installed seperatly
-   - Advantage: you can not accidantly share your private key
+   - copies public key from <user> to <node>, 'ssh-copy-id' has to be installed separately
+   - Advantage: you can not accidentally share your private key
 - [Setup file share over ssh]: sshfs <user>@<node>:<wd> <wd_on_localhost>
   - mounts <wd> on <wd_on_localhost>
   - <user>, user on <node>, Note: if ssh is setup correctly, you don't need the same users on each nodes
@@ -76,7 +76,7 @@ BART uses the Message Passing Interface (MPI) [1] to work on distributed systems
 - Q: "/lib/x86_64-linux-gnu/libc.so.6: version `GLIBC_2.33'
       /lib/x86_64-linux-gnu/libc.so.6: version `GLIBC_2.34'"
 - A: Most likely you nodes use different OS (distributions) with different versions of GLIBC.
-     Compile bart on each node separatly
+     Compile bart on each node separately
      Use the absolute path to this binary in your call of 'mpirun', different nodes can be separated by ':' 
 
 [1] https://mpitutorial.com/

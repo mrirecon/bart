@@ -75,7 +75,7 @@ static void grog_calib2(int calib_spokes, int D, const long lnG_dims[D], complex
 	long ddims3[5];
 	md_copy_dims(5, ddims3, ddims2);
 
-	// truncate numer of spokes
+	// truncate number of spokes
 
 	if (0 < calib_spokes) {
 

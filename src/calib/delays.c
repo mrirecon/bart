@@ -200,7 +200,7 @@ static void check_intersections(const int Nint, const int N, const float S[3], c
 
 
 
-// [RING] Caclucate intersection points
+// [RING] Calculate intersection points
 static void calc_intersections(int Nint, int N, int no_intersec_sp, bool b0, float dist[Nint][2], long idx[Nint][2],
 		const float angles[N], const long kc_dims[DIMS], const complex float* kc)
 {
@@ -240,7 +240,7 @@ static void calc_intersections(int Nint, int N, int no_intersec_sp, bool b0, flo
 			idx[i * no_intersec_sp + j][0] = i;
 			idx[i * no_intersec_sp + j][1] = intersec_sp[j];
 
-			// Elementwise rss comparisson
+			// Elementwise rss comparison
 			float ss = FLT_MAX;
 			int channels = spoke_dims[COIL_DIM];
 

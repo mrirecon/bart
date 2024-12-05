@@ -119,10 +119,10 @@ async function bart_cmd(data) {
         // e is a bit weird, to be precise
         //  - it breaks console.log,
         //  - it breaks postMessage!
-        // thus it's catched here.
+        // thus it's caught here.
         // furthermore, if exit/abort are called in the c code, it causes a runtime error
         // which would break bart tool -h.
-        console.log("WASM Runtime error occured:", e.message);
+        console.log("WASM Runtime error occurred:", e.message);
         rt_error = e.message;
     }
 

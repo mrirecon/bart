@@ -60,7 +60,7 @@ struct noir2_model_conf_s noir2_model_conf_defaults = {
 
 	.nufft_conf = NULL,
 
-	.asymetric = false,
+	.asymmetric = false,
 
 	.ret_os_coils = false,
 };

@@ -317,7 +317,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 	if (-1. == lambda)
 		lambda = 0.;
 
-	// if no penalities specified but regularization
+	// if no penalties specified but regularization
 	// parameter is given, add a l2 penalty
 
 	struct reg_s* regs = ropts->regs;

@@ -79,7 +79,7 @@ int main_mandelbrot(int argc, char* argv[argc])
 	md_zsub(2, dims, c, c, t);
 	md_zsmul(2, dims, c, c, 1. / (zoom * size));
 
-	complex float* ocur = o;
+	complex float* occur = o;
 	complex float* prev = o;
 	long skip = md_calc_size(2, dims);
 
@@ -93,11 +93,11 @@ int main_mandelbrot(int argc, char* argv[argc])
 		md_zabs(2, dims, t, x);
 		md_slessequal(3, (long[3]){ 2, dims[0], dims[1] }, (float*)t, (float*)t, thresh);
 		md_zreal(2, dims, t, t);
-		md_zsub(2, dims, ocur, prev, t);
+		md_zsub(2, dims, occur, prev, t);
 
 		if (dims[2] > 1) {
 
-			ocur += skip;
+			occur += skip;
 
 			if (i != 0)
 				prev += skip;

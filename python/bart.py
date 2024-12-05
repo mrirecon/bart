@@ -249,7 +249,7 @@ async def run_wasm_cmd(shell_cmd, infiles, infiles_kw, outfiles):
         return ERR, stdout, stderr
 
     except Exception as e:
-        print("Exception in bart worker calls occured:")
+        print("Exception in bart worker calls occurred:")
         print(e)
         wasm_bart_ok = False
         raise e

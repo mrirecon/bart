@@ -26,7 +26,7 @@ const char* bart_version =
 bool version_parse(unsigned int v[5], const char* version)
 {
 	int q, r, s;
-	s = -1; //initialize variabel;
+	s = -1; //initialize variable;
 
 	int len = strlen(version);
 

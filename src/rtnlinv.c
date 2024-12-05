@@ -390,7 +390,7 @@ int main_rtnlinv(int argc, char* argv[argc])
 	long ref_dim[1] = { size };
 	complex float* ref = md_calloc(1, ref_dim, CFL_SIZE);
 
-	if (NULL != init_file_im) { // Prepare refrence from init file
+	if (NULL != init_file_im) { // Prepare reference from init file
 		
 		md_zsmul(DIMS, img1_dims, ref, img1, temp_damp);
 		md_zsmul(DIMS, sens1_dims, ref + skip, ksens1, temp_damp);
@@ -399,7 +399,7 @@ int main_rtnlinv(int argc, char* argv[argc])
 	struct linop_s* nufft_ops[turns];
 	const struct operator_s* fftc = NULL;
 
-	// analyzer false positiv
+	// analyzer false positive
 	for (int i = 0; i < turns; ++i)
 		nufft_ops[i] = NULL;
 

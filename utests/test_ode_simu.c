@@ -1940,7 +1940,7 @@ static bool test_mcconnell_CEST_ode_sim(void)
 	// Reference values from group Stollberger 1
 	float ref_sb[7] = { 0.604649192, 0.902927875, 0.577800915, 0.215424391, 0.576719564, 0.903064561, 0.60501979 };
 
-	// Intialize ODE
+	// Initialize ODE
 	int P = 5 * sim_data.voxel.P;
 	int N = 3 * sim_data.voxel.P;
 

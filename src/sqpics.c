@@ -475,7 +475,7 @@ int main_sqpics(int argc, char* argv[argc])
 	if (-1. == lambda)
 		lambda = 0.;
 
-	// if no penalities specified but regularization
+	// if no penalties specified but regularization
 	// parameter is given, add a l2 penalty
 
 	struct reg_s* regs = ropts.regs;

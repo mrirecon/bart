@@ -359,7 +359,7 @@ void iwtN(int N, unsigned long flags, const long shifts[N], const long dims[N], 
 
 	md_copy2(2 * N, tidims, tistrs, tmpA, istr, in, CFL_SIZE);
 
-	for (int i = N - 1; i >= 0; i--) {	// run backwards to maintain contigous blocks
+	for (int i = N - 1; i >= 0; i--) {	// run backwards to maintain contiguous blocks
 
 		if (MD_IS_SET(flags, i)) {
 
@@ -697,7 +697,7 @@ void iwt(int N, unsigned long flags, const long shifts[N], const long odims[N], 
 }
 
 
-// 1D Wavelet coefficeints. 
+// 1D Wavelet coefficients. 
 // The first dimension indexes along forward wavelet decomposition and reconstruction filters for fwt and iwt
 // The second dimension indexes along low-pass and high-pass filters
 // The third dimension is the number of filter taps. 

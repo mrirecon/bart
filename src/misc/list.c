@@ -292,7 +292,7 @@ static inline bool cmp_wrapper(list_cmp_t cmp, const void* item, const void* ref
 
 /**
  * Find first index for which cmp(item, ref) evaluates true
- * If (cmp == NULL) the first index with item==ref is retruned
+ * If (cmp == NULL) the first index with item==ref is returned
  * If no index is found, -1 is returned
  *
  * @param list
@@ -416,7 +416,7 @@ list_t array_to_list(int N, void* items[N])
 
 /**
  * Return list with all items for which cmp(item, ref) evaluates true
- * If (cmp == NULL) the first index with item==ref is retruned
+ * If (cmp == NULL) the first index with item==ref is returned
  *
  * @param list
  * @param ref reference pointer
@@ -442,7 +442,7 @@ list_t list_get_sublist(list_t list, const void* ref, list_cmp_t cmp)
 
 /**
  * Return list with all items for which cmp(item, ref) evaluates true and remove items from list
- * If (cmp == NULL) the first index with item==ref is retruned
+ * If (cmp == NULL) the first index with item==ref is returned
  *
  * @param list
  * @param ref reference pointer

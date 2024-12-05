@@ -1,6 +1,6 @@
 /* Copyright 2013-2018 The Regents of the University of California.
  * Copyright 2016-2022. Uecker Lab. University Medical Center Göttingen.
- * Copyright 2023-2024. Insitute of Biomedical Imaging. TU Graz.
+ * Copyright 2023-2024. Institute of Biomedical Imaging. TU Graz.
  * Copyright 2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
@@ -18,7 +18,7 @@
  * point numbers. Most functions come in two flavours:
  *
  * 1. A basic version which takes the number of dimensions, an array
- * of long integers specifing the size of each dimension, the pointers
+ * of long integers specifying the size of each dimension, the pointers
  * to the data, and the size of each element and other required parameters.
  *
  * 2. An extended version which takes an array of long integers which
@@ -842,7 +842,7 @@ void md_div(int D, const long dims[D], float* optr, const float* iptr1, const fl
 void md_zpow2(int D, const long dims[D], const long ostr[D], complex float* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)
 {
 #ifdef USE_CUDA
-	// FIXME: something is broken with the cuda implementation of zpow -> comparision test on cpu and gpu does not fail
+	// FIXME: something is broken with the cuda implementation of zpow -> comparison test on cpu and gpu does not fail
 	//assert(!(cuda_ondevice(optr) || cuda_ondevice(iptr1) || cuda_ondevice(iptr2)));
 #endif
 	MAKE_Z3OP(zpow, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
@@ -4410,7 +4410,7 @@ extern void md_zcmpl(int D, const long dims[D], complex float* dst, const float*
 
 
 /**
- * Gaussian propability density
+ * Gaussian probability density
  *
  * optr = 1/sqrt(2pi) * sigma * exp(-(iptr-mu)^2/(2*sigma^2))
  */

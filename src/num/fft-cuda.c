@@ -62,7 +62,7 @@ static void cufft_error(const char* file, int line, enum cufftResult_t code)
 #define CUFFT_ERROR(x)	({ CUDA_ASYNC_ERROR_NOTE("before cuFFT call"); enum cufftResult_t errval = (x); if (CUFFT_SUCCESS != errval) cufft_error(__FILE__, __LINE__, errval); CUDA_ASYNC_ERROR_NOTE("after cuFFT call");})
 
 
-// detect if flags has blocks of 1's seperated by 0's
+// detect if flags has blocks of 1's separated by 0's
 static bool noncontiguous_flags(int D, unsigned long flags)
 {
 	bool o = false;
