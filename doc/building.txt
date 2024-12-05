@@ -92,7 +92,7 @@ The build can be configured by setting or adding variables.
 It is recommended to put this variables into a file called
 'Makefile.local' in the main BART directory. This file is
 then automatically included. By having local configuration
-is a seperate file, local changes are not overwritten when
+is a separate file, local changes are not overwritten when
 BART is updated and do not cause conflicts when using a
 version control system.
 
@@ -200,7 +200,7 @@ TensorFlow support can then be activated with:
 Support for MPI can be turned on. It is recommended to use Open MPI as
 MPI implementation as this enables automatic detection of CUDA-aware 
 MPI. Moreover BART reads environment variables exported by the Open MPI
-implementation of mpirun to automatically acivate run-time support for MPI.
+implementation of mpirun to automatically activate run-time support for MPI.
 
 	MPI=1
 

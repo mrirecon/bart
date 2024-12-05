@@ -43,7 +43,7 @@
 #define CFL_SIZE sizeof(complex float)
 #endif
 
-static const char help_str[] = "Trains or appplies a neural network for reconstruction.";
+static const char help_str[] = "Trains or applies a neural network for reconstruction.";
 
 int main_reconet(int argc, char* argv[argc])
 {

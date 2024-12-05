@@ -209,7 +209,7 @@ int main_moba(int argc, char* argv[argc])
 		OPT_SELECT('D', enum mdb_t, &conf.mode, MDB_IR_MGRE, "Joint T1 and T2* mapping using model-based IR multiple gradient echo"),
                 OPTL_SELECT(0, "bloch", enum mdb_t, &conf.mode, MDB_BLOCH, "Bloch model-based reconstruction"),
 		OPT_UINT('m', &conf.mgre_model, "model", "Select the MGRE model from enum { WF = 0, WFR2S, WF2R2S, R2S, PHASEDIFF, ..., WF_fB0, WF_R2S, T1_R2S, W_T1_F_T1_RS2 } [default: WFR2S]"),
-		OPT_PINT('l', &conf.opt_reg, "\b1/-l2", "  toggle l1-wavelet or l2 regularization."), // extra spaces needed because of backsapce \b earlier
+		OPT_PINT('l', &conf.opt_reg, "\b1/-l2", "  toggle l1-wavelet or l2 regularization."), // extra spaces needed because of backspace \b earlier
 		OPT_PINT('i', &conf.iter, "iter", "Number of Newton steps"),
 		OPTL_FLOAT('R', "reduction", &conf.redu, "redu", "reduction factor"),
 		OPT_FLOAT('j', &conf.alpha_min, "minreg", "Minimum regularization parameter"),
@@ -226,7 +226,7 @@ int main_moba(int argc, char* argv[argc])
 		OPT_SET('M', &conf.sms, "Simultaneous Multi-Slice reconstruction"),
 		OPT_SET('O', &conf.out_origin_maps, "(Output original maps from reconstruction without post processing)"),
 		OPT_SET('g', &bart_use_gpu, "use gpu"),
-		OPTL_LONG(0, "positive-maps", &conf.constrained_maps, "flag", "Maps with positivity contraint as FLAG!"),
+		OPTL_LONG(0, "positive-maps", &conf.constrained_maps, "flag", "Maps with positivity constraint as FLAG!"),
 		OPTL_PINT(0, "not-wav-maps", &conf.not_wav_maps, "d", "Maps removed from wavelet denoising (counted from back!)"),
 		OPTL_ULONG(0, "l2-on-parameters", &conf.l2para, "flag", "Flag for parameter maps with l2 norm"),
 		OPTL_PINT(0, "pusteps", &conf.pusteps, "ud", "Number of partial update steps for IRGNM"),

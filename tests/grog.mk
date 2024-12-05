@@ -1,6 +1,6 @@
 
 # Simples pattern: No repeating pattern in time and
-# no splitted information over two dimensions
+# no split information over two dimensions
 # tdims: [  3  64  57   1   1   1   1   1   1   1   1   1   1   1   1   1 ]
 # ddims: [  1  64  57   8   1   1   1   1   1   1   1   1   1   1   1   1 ]
 tests/test-grog: traj phantom grog pics calc nrmse
@@ -34,7 +34,7 @@ tests/test-grog-repeat: traj repmat phantom calc grog slice nrmse
 	touch $@
 
 
-# Trajectory provides unique infomration in time dim
+# Trajectory provides unique information in time dim
 # tdims: [  3  64  57   1   1   1   1   1   1   1   2   1   1   1   1   1 ]
 # ddims: [  1  64  57   8   1   1   1   1   1   1   2   1   1   1   1   1 ]
 tests/test-grog-repeat2: traj repmat phantom calc grog slice nrmse

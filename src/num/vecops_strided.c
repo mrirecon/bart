@@ -302,7 +302,7 @@ static int check_gemm(int N, long ndims[N], long nostrs[N], long nistrs1[N], lon
                        && (ipos1 != ipos2)
                        && (3 == opos + ipos1 + ipos2));
 
-	// Check if matrix dims are continuos in memory
+	// Check if matrix dims are continuous in memory
 	matrix = matrix && is_matrix(tdims, tostrs, (opos + 1) % 3, (opos + 2) % 3, size);
 	matrix = matrix && is_matrix(tdims, tistrs1, (ipos1 + 1) % 3, (ipos1 + 2) % 3, size);
 	matrix = matrix && is_matrix(tdims, tistrs2, (ipos2 + 1) % 3, (ipos2 + 2) % 3, size);
@@ -945,7 +945,7 @@ static bool simple_z3op(int N_checks, struct simple_z3op_check strided_calls[N_c
 	md_select_dims(N, md_nontriv_strides(N, istrs2), bdims, dims);
 
 	if (conj && (N != md_calc_blockdim(N, bdims, istrs2, CFL_SIZE)))
-		return false; //the conjugated input is not a contiguos memory block
+		return false; //the conjugated input is not a contiguous memory block
 
 	struct simple_z3op_check strided_call;
 

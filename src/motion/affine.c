@@ -46,7 +46,7 @@
 #include "affine.h"
 
 /**
- * Affine transformations are stored as comlex 3x4 matrices using md_*
+ * Affine transformations are stored as complex 3x4 matrices using md_*
  * conventions (i.e. Fortran order).
  *
  *     (\ | / | | )

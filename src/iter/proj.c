@@ -263,7 +263,7 @@ static void proj_sphere_complex_fun(const struct operator_data_s* _data, unsigne
 
 	md_clear(data->N, bdims, dst, FL_SIZE);
 	md_real(data->N, bdims, (float*)dst, tmp); // I don't trust zmulc to have vanishing imag on gpu
-	md_sqrt(data->N, bdims, (float*)tmp, (float*)dst);//propably more efficient than md_zsqrt
+	md_sqrt(data->N, bdims, (float*)tmp, (float*)dst);//probably more efficient than md_zsqrt
 
 	md_clear(data->N, data->dims, dst, CFL_SIZE);
 	md_copy2(data->N, data->dims, MD_STRIDES(data->N, data->dims, CFL_SIZE), dst, MD_STRIDES(data->N, bdims, FL_SIZE), tmp, FL_SIZE);

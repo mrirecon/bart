@@ -71,7 +71,7 @@ int main_affinereg(int argc, char* argv[argc])
 		OPTL_INFILE(0, "mask-moved", &msk_mov_file, "file", "binary mask for the moved image"),
 
 		OPT_SELECT('T', enum AFFINE_TYPE, &aff, AFFINE_TRANS, "Translation"),
-		OPT_SELECT('R', enum AFFINE_TYPE, &aff, AFFINE_RIGID, "Rigid tranformation (default)"),
+		OPT_SELECT('R', enum AFFINE_TYPE, &aff, AFFINE_RIGID, "Rigid transformation (default)"),
 		OPT_SELECT('A', enum AFFINE_TYPE, &aff, AFFINE_ALL, "All degrees of freedom"),
 	};
 

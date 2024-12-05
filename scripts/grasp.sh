@@ -190,7 +190,7 @@ recon_slice()
 	bart reshape $(bart bitmask 0 1 2) 1 $READ $SPOKES grasp2-$1 grasp1-$1
 	rm grasp2-$1.cfl grasp2-$1.hdr
 
-	# reconstruction with tv penality along dimension 10
+	# reconstruction with tv penalty along dimension 10
 	# old (v0.2.08):
 	# pics -S -d5 -lv -u10. -r$REG -R$(bitmask 10) -i$ITER -t rfull grasp1-$1 sens-$1 i-$1.coo
 	# new (v0.2.09):

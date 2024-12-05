@@ -138,7 +138,7 @@ static struct linop_s* linop_gdiag_create(int N, const long dims[N], unsigned lo
  *
  * @param N number of dimensions
  * @param dims input and output dimensions
- * @param flags bitmask specifiying the dimensions present in diag
+ * @param flags bitmask specifying the dimensions present in diag
  * @param diag diagonal matrix
  */
 struct linop_s* linop_cdiag_create(int N, const long dims[N], unsigned long flags, const complex float* diag)
@@ -152,7 +152,7 @@ struct linop_s* linop_cdiag_create(int N, const long dims[N], unsigned long flag
  *
  * @param N number of dimensions
  * @param dims input and output dimensions
- * @param flags bitmask specifiying the dimensions present in diag
+ * @param flags bitmask specifying the dimensions present in diag
  * @param diag diagonal matrix
  */
 struct linop_s* linop_rdiag_create(int N, const long dims[N], unsigned long flags, const complex float* diag)
@@ -1918,7 +1918,7 @@ struct linop_s* linop_ifftc_create(int N, const long dims[N], unsigned long flag
  * @param N number of dimensions
  * @param dims dimensions of input
  * @param flags bitmask of the dimensions to apply the Fourier transform
- * @param center_flags bitmask for centerd fft
+ * @param center_flags bitmask for centered fft
  * @param unitary_flags bitmask for unitary scaling
  * @param pre_flags bitmask of the dimensions of the pre-chained diag operator
  * @param pre_diag diagonal of the pre-chained diag operator
@@ -1938,7 +1938,7 @@ struct linop_s* linop_fft_generic_create(int N, const long dims[N], unsigned lon
  * @param N number of dimensions
  * @param dims dimensions of input
  * @param flags bitmask of the dimensions to apply the Fourier transform
- * @param center_flags bitmask for centerd fft
+ * @param center_flags bitmask for centered fft
  * @param unitary_flags bitmask for unitary scaling
  * @param pre_flags bitmask of the dimensions of the pre-chained diag operator
  * @param pre_diag diagonal of the pre-chained diag operator

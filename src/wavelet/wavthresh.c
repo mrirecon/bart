@@ -100,7 +100,7 @@ static void wavelet_thresh_del(const operator_data_t* _data)
  * @param flags bitmask for Wavelet transform
  * @param jflags bitmask for joint thresholding
  * Qparam wtype wavelet type
- * @param minsize minimium size of coarse Wavelet scale
+ * @param minsize minimum size of coarse Wavelet scale
  * @param lambda threshold parameter
  * @param randshift random shifting
  */

@@ -693,7 +693,7 @@ graph_t graph_topological_sort_F(graph_t graph)
 	return graph;
 }
 
-//trys to remove a one-in-one-out (identity) node from a graph
+//tries to remove a one-in-one-out (identity) node from a graph
 //and connects in edges with oout edges
 //returns new graph if successful, NULL else
 //nodes cannot be removed if they map to output
@@ -740,7 +740,7 @@ graph_t graph_bridge_node(graph_t graph, node_t node)
 	return graph;
 }
 
-//trys to remove a end-node (only inputs) from a graph
+//tries to remove a end-node (only inputs) from a graph
 //returns new graph if successful, NULL else
 //nodes cannot be removed if they map to output
 graph_t graph_remove_end_node(graph_t graph, node_t node)
@@ -902,7 +902,7 @@ static bool cmp_node_count(const void* _data, const void* /*_ref*/)
 }
 
 
-// trys to identfy node whith each other
+// tries to identify node with each other
 // i.e. nodes representing the same node are replaced by one node
 graph_t graph_identify_nodes_F(graph_t graph, node_cmp_t cmp)
 {
@@ -946,7 +946,7 @@ graph_t graph_identify_nodes_F(graph_t graph, node_cmp_t cmp)
  * For each vertex which maps to nodes not in the new subgraph, the function get_separator_nodes is used
  * to create a pair of external nodes which bridge between the new subgraph and the old graph.
  *
- * By combining and linking the new subgraph can be reinserted (propably after modification) in the old graph.
+ * By combining and linking the new subgraph can be reinserted (probably after modification) in the old graph.
  *
  * @param graph
  * @param nodes list of nodes which form the new graph

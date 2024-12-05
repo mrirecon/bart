@@ -37,7 +37,7 @@ extern void operator_iter(iter_op_data* data, float* dst, const float* src);
 extern void operator_p_iter(iter_op_data* data, float rho, float* dst, const float* src);
 
 
-// the temporay copy is needed if used in loops
+// the temporary copy is needed if used in loops
 #define STRUCT_TMP_COPY(x) ({ __typeof(x) __foo = (x); __typeof(__foo)* __foo2 = alloca(sizeof(__foo)); *__foo2 = __foo; __foo2; })
 #define OPERATOR2ITOP(op) (struct iter_op_s){ (NULL == op) ? NULL : operator_iter, CAST_UP(STRUCT_TMP_COPY(((struct iter_op_op){ { &TYPEID(iter_op_op) }, op }))) }
 #define OPERATOR_P2ITOP(op) (struct iter_op_p_s){ (NULL == op) ? NULL : operator_p_iter, CAST_UP(STRUCT_TMP_COPY(((struct iter_op_p_op){ { &TYPEID(iter_op_p_op) }, op }))) }

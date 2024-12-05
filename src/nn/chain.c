@@ -27,7 +27,7 @@
 #include "chain.h"
 
 /**
- * Add real value constraint to intput of nn_t
+ * Add real value constraint to input of nn_t
  *
  * @param op nn_t struct
  * @param i input index (ignored if iname != NULL)
@@ -89,7 +89,7 @@ nn_t nn_real_output(nn_t op, int o, const char* oname)
 }
 
 /**
- * Add real value constraint to intput of nn_t
+ * Add real value constraint to input of nn_t
  *
  * @param op nn_t struct
  * @param i input index (ignored if iname != NULL)

@@ -360,8 +360,8 @@ void bloch_mcc_matrix_ode_sa2(int P, float matrix[15 * P * P + 1][15 * P * P + 1
 {
 	int N = 15 * P * P + 1;
 	int Ns = P * 3; // Number of rows of a BMC submatrix / parameter that only occurs once (M, B1)
-	int Np = 3 * P * P; // Number of rows for a parameter occuring in all pools (R1, R2, M0)
-	int Np2 = 3 * P * (P - 1); // Number of rows for a parameter occuring in all but one pool (k, Om)
+	int Np = 3 * P * P; // Number of rows for a parameter occurring in all pools (R1, R2, M0)
+	int Np2 = 3 * P * (P - 1); // Number of rows for a parameter occurring in all but one pool (k, Om)
 	float m[N][N];
 	float m2[P * 3 + 1][P * 3 + 1];
 

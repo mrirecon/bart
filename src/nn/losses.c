@@ -673,7 +673,7 @@ static void cce_del(const nlop_data_t* _data)
  * where:	i - batch index
  *		j - label index
  *		t_ij = target prediction, i.e. 0 or 1 and sum_j t_ij = 1
- *		p_ij(x) = propability predicted by the network, i.e. p_i(x) in [0, 1] and sum_j p_ij(x) = 1 (softmax activation)
+ *		p_ij(x) = probability predicted by the network, i.e. p_i(x) in [0, 1] and sum_j p_ij(x) = 1 (softmax activation)
  *
  * @param N
  * @param dims
@@ -883,7 +883,7 @@ static const struct nlop_s* nlop_frequency_compensation_create(int N, const long
  * where:	i - batch index
  *		j - label index
  *		t_ij = target prediction, i.e. 0 or 1 and sum_j t_ij = 1
- *		p_ij(x) = propability predicted by the network, i.e. p_i(x) in [0, 1] and sum_j p_ij(x) = 1 (softmax activation)
+ *		p_ij(x) = probability predicted by the network, i.e. p_i(x) in [0, 1] and sum_j p_ij(x) = 1 (softmax activation)
  *		w_j = 1 / sum_i t_ij
  *
  * @param N
@@ -1147,7 +1147,7 @@ static void dice_del(const nlop_data_t* _data)
  *		l - label index
  *		w_l - wighting factor
  *		t_ij = target prediction (usually 0 or 1 and sum_j t_ij = 1)
- *		p_ij = propability predicted by the network (usually p_i(x) in [0, 1] and sum_j p_ij(x) = 1 (softmax activation))
+ *		p_ij = probability predicted by the network (usually p_i(x) in [0, 1] and sum_j p_ij(x) = 1 (softmax activation))
  *
  * For t_ij in {0, 1}, MIN(p_li, t_li) = p_li * t_li resulting in the form presented in
  * Sudre C.H., Li W., Vercauteren T., Ourselin S., Jorge Cardoso M. (2017) Generalised Dice Overlap as a Deep Learning Loss Function for Highly Unbalanced Segmentations. In: Cardoso M. et al. (eds) Deep Learning in Medical Image Analysis and Multimodal Learning for Clinical Decision Support. DLMIA 2017, ML-CDS 2017. Lecture Notes in Computer Science, vol 10553. Springer, Cham. https://doi.org/10.1007/978-3-319-67558-9_28
@@ -1219,7 +1219,7 @@ const struct nlop_s* nlop_dice_generic_create(int N, const long dims[N], unsigne
  *		l - label index
  *		w_l - wighting factor
  *		t_ij = target prediction (usually 0 or 1 and sum_j t_ij = 1)
- *		p_ij = propability predicted by the network (usually p_i(x) in [0, 1] and sum_j p_ij(x) = 1 (softmax activation))
+ *		p_ij = probability predicted by the network (usually p_i(x) in [0, 1] and sum_j p_ij(x) = 1 (softmax activation))
  *
  * For t_ij in {0, 1}, MIN(p_li, t_li) = p_li * t_li resulting in the form presented in
  * Sudre C.H., Li W., Vercauteren T., Ourselin S., Jorge Cardoso M. (2017) Generalised Dice Overlap as a Deep Learning Loss Function for Highly Unbalanced Segmentations. In: Cardoso M. et al. (eds) Deep Learning in Medical Image Analysis and Multimodal Learning for Clinical Decision Support. DLMIA 2017, ML-CDS 2017. Lecture Notes in Computer Science, vol 10553. Springer, Cham. https://doi.org/10.1007/978-3-319-67558-9_28

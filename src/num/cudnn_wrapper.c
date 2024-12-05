@@ -832,7 +832,7 @@ static void cudnn_tensor_transform_combine_complex(float alpha, float beta, cudn
 		CUDNN_CALL(cudnnTransformTensor(get_handle(), &alpha, real_desc, imag, &beta, comp_desc, (float*)comp + 1));
 	}
 }
-// *_split methodes compute four real convolutions
+// *_split methods compute four real convolutions
 // to compute one complex
 static bool cudnn_zconvcorr_fwd_split(
  			struct conv_desc_s bcd,
@@ -1055,7 +1055,7 @@ static bool cudnn_zconvcorr_bwd_krn_split(
 	return success;
 }
 
-// these methodes compute real convolutions
+// these methods compute real convolutions
 static bool cudnn_convcorr_fwd(
  			struct conv_desc_s bcd,
 			const float* in,
@@ -1211,7 +1211,7 @@ static bool cudnn_convcorr_bwd_krn(
 	return success;
 }
 
-// *_kernel methodes merge the complex channel in the convolution channel
+// *_kernel methods merge the complex channel in the convolution channel
 // and create a real kernel including the complex multiplication
 // this seems to be faster as only one
 // 2 * in_channel x 2 * out_channel convolution is invoked instead of

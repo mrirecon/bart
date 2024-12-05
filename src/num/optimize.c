@@ -108,8 +108,8 @@ static long memory_footprint(int N, const long dims[N], const long strs[N])
  * Each parameter is either input or output. The pointers must valid
  * and all accesses using any position inside the range given by
  * dimensions and using corresponding strides must be inside of the
- * adressed memory region. Pointers pointing inside the same region
- * can be passed multipe times.
+ * addressed memory region. Pointers pointing inside the same region
+ * can be passed multiple times.
  */
 
 
@@ -218,7 +218,7 @@ static void demmel_factors(int D, int N, float blocking[N], long (*strs[D])[N])
 
 
 	// now maximize 1^T x subject to Delta x <= 1
-	// M^{x_n} yields blocking factors where M is cache size (maybe needs to be devided by D?)
+	// M^{x_n} yields blocking factors where M is cache size (maybe needs to be divided by D?)
 
 	float ones[MAX(N, D)];
 	for (int n = 0; n < MAX(N, D); n++)
@@ -294,7 +294,7 @@ int simplify_dims(int D, int N, long dims[N], long (*strs[D])[N])
 
 	int ND = remove_empty_dims(D, N, dims, strs);
 
-	if (0 == ND) { // atleast return a single dimension
+	if (0 == ND) { // at least return a single dimension
 
 		dims[0] = 1;
 

@@ -962,7 +962,7 @@ static complex float* load_cfl_internal(const char* name, int D, long dimensions
 
 		case FILE_TYPE_PIPE:
 
-			// FIXME: shoud probably be moved into a file
+			// FIXME: should probably be moved into a file
 
 			assert(1 == mpi_get_num_procs());
 

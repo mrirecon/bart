@@ -290,7 +290,7 @@ def tf1_export_graph(path, graph = None, session=None, inputs=None, outputs=None
         saver.save(session, os.path.join(path, name))
     else:
         if (tf1_op_exists(graph, "save/restore_all")):
-            print("WARNING: No weights are stored with the graph!\nWARNING: BART propably will not be able to load the graph.")
+            print("WARNING: No weights are stored with the graph!\nWARNING: BART probably will not be able to load the graph.")
 
     tf1_export_tensor_mapping(path, name, mappings)
 

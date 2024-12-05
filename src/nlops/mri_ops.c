@@ -128,7 +128,7 @@ static void sense_model_del(const struct shared_obj_s* sptr)
 	linop_free(x->pattern);
 	linop_free(x->nufft);
 
-	//only save referenece
+	//only save reference
 	//md_free(x->basis);
 
 	xfree(x);
@@ -819,7 +819,7 @@ const struct nlop_s* nlop_sense_scale_maxeigen_create(int Nb, struct sense_model
 	for (int i = 0; i < Nb; i++) {
 
 		auto normal_op = nlop_from_linop_F(linop_get_normal(models[i]->sense));
-		normal_op = nlop_combine_FF(normal_op, nlop_del_out_create(N, dims_scl)); // that is necessary to apply operators in corect order
+		normal_op = nlop_combine_FF(normal_op, nlop_del_out_create(N, dims_scl)); // that is necessary to apply operators in correct order
 		nlops[i] = nlop_maxeigen_create(normal_op);
 		nlops[i] = nlop_no_der_F(nlops[i], 0, 0);
 		nlop_free(normal_op);
@@ -1107,7 +1107,7 @@ static const struct nlop_s* nlop_mri_normal_max_eigen_slice_create(int N, const 
 
 	auto normal_op = nlop_from_linop_F(linop_get_normal(model->sense));
 
-	normal_op = nlop_combine_FF(normal_op, nlop_del_out_create(1, MD_DIMS(1))); // that is necessary to apply operators in corect order
+	normal_op = nlop_combine_FF(normal_op, nlop_del_out_create(1, MD_DIMS(1))); // that is necessary to apply operators in correct order
 
 	result = nlop_chain2_FF(result, 0, nlop_maxeigen_create(normal_op), 0);
 

@@ -155,7 +155,7 @@ static long pcfl_pos2offset(struct pcfl* data, int N, const long pos[N])
 }
 
 
-/** Gets the position up to which data is continusly available for a pcfl.
+/** Gets the position up to which data is continuously available for a pcfl.
  *
  * @param p: pcfl ptr
  * @param N: number of indices

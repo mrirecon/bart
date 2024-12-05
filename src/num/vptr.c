@@ -275,7 +275,7 @@ static struct mem_s* vptr_create(int N, const long dims[N], size_t size, struct 
 
 		x->mpi_flags = md_nontriv_dims(N, dims) & hint->mpi_flags;
 
-		x->block_size = (long)size;	// size of continous blocks located on one rank
+		x->block_size = (long)size;	// size of continuous blocks located on one rank
 
 		for (int i = 0; (i < N) && !MD_IS_SET(x->mpi_flags, i); i++)
 			x->block_size *= x->dims[i];
@@ -499,7 +499,7 @@ unsigned long vptr_block_loop_flags(int N, const long dims[N], const long strs[N
 	md_select_strides(N, md_nontriv_dims(N, tdims + 1), tstrs + 1, strs);
 
 
-	//general case: To check if dimension i can be savely acessed from one rank:
+	//general case: To check if dimension i can be safely accessed from one rank:
 	//		1.) Search for all positions with pos[i] = 0 for max(offset % block_size) and min(offset % block_size)
 	//		2.) Check if by changing pos[i] the range [0, mpi_size - 1] is left
 

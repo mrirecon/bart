@@ -100,7 +100,7 @@ export PATH="$BART_TOOLBOX_PATH:$PATH"
 output=$(readlink -f "$1")
 
 
-# Tests for usefull input
+# Tests for useful input
 
 if [ ! -z "${TRAJ}" ] && [ "$KSPACE" = false ]; then
 
@@ -124,7 +124,7 @@ case $GEOM in
 NIST)
         echo "NIST Phantom Geometry"
         echo "T2 Sphere of Model 130"
-        echo "Relaxation Paramters for 3 T"
+        echo "Relaxation Parameters for 3 T"
         echo ""
 
         ## Relaxation parameters for T2 Sphere of NIST phantom at 3 T (Model 130)

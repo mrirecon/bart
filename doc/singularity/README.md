@@ -6,7 +6,7 @@ Here, we provide some basic information about how to run BART in a container usi
 
 A blueprint to create a singularity container for BART can be found in the definition files
 * [`bart_ubuntu.def`](bart_ubuntu.def): for an Ubuntu 22.04 operating system. 
-* [`bart_debian.def`](bart_debian.def): for a Debain 12 (bookworm) operating system.
+* [`bart_debian.def`](bart_debian.def): for a Debian 12 (bookworm) operating system.
 
 After installing singularity, a container `container.sif` can be created in the Singularity Image Format (SIF):
 ```code
@@ -30,4 +30,4 @@ singularity exec --nv container.sif bash 'recon.sh'
 ```
 
 ### Note
-The definition files above also respresent simple guides of how to install BART on the individual operating systems.
+The definition files above also represent simple guides of how to install BART on the individual operating systems.

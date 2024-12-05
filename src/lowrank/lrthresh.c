@@ -70,7 +70,7 @@ static void lrthresh_apply(const operator_data_t* _data, float lambda, complex f
 
 
 /**
- * Intialize lrthresh operator
+ * Initialize lrthresh operator
  *
  * @param dims_decom - decomposition dimensions
  * @param randshift - randshift boolean
@@ -88,7 +88,7 @@ const struct operator_p_s* lrthresh_create(const long dims_lev[DIMS], bool rands
 
 
 /**
- * Intialize lrthresh data
+ * Initialize lrthresh data
  *
  * @param dims_decom - dimensions with levels at LEVEL_DIMS
  * @param randshift - randshift boolean

@@ -19,7 +19,7 @@
  * code follows the logic of Eric Hughes' C++ implementation
  * Eric Hughes EPG simulator: https://github.com/EricHughesABC/EPG
  *
- * and computes partial derivatives similiar to:
+ * and computes partial derivatives similar to:
  * K. Layton, M. Morelande, D. Wright, P. Farrell, B. Moran, L A. Johnston.
  * Modelling and Estimation of Multicomponent T2 Distributions, IEEE TMI, 2013
  */

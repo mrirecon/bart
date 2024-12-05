@@ -30,7 +30,7 @@
  *
  * Assumptions:
  * @param data fully sampled data
- * @param sens physical (unormalized) coil sensitivites
+ * @param sens physical (unormalized) coil sensitivities
  * @param alpha the best estimator has alpha > 0.
  */ 
 void optimal_combine(const long dims[DIMS], float alpha, complex float* image, const complex float* sens, const complex float* data)

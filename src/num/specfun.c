@@ -271,7 +271,7 @@ double Si(double x)
 	// Definition of Si_large_x just for x > 0,
 	// therefore use Si(-z) = -Si(z)
 	// For more information compare:
-	// 	Abramowitz, M., & Stegun, I. 1964, Handbook of Mathematical Functions, 5th edn. (New York: Dover)
+	// 	Abramowitz, M., & Stegun, I. 1964, Handbook of Mathematical Functions, 5th end. (New York: Dover)
 	// 		-> Chapter 5.2
 
 	return (fabs(x) <= 4) ? Si_power(x) : ((x < 0) ? -1 : 1) * Si_large_x(fabs(x));
@@ -361,7 +361,7 @@ double gamma_func(double x)
 // Following:
 //	J.W. Pearson, S. Olver, and M.A. Porter
 //	Numerical methods for the computation of the confluent and Gauss hypergeometric functions
-//	Numer Algor 74, 821–866 (2017).
+//	Number Algor 74, 821–866 (2017).
 //	https://doi.org/10.1007/s11075-016-0173-0
 static double hyp2f1_powerseries(double a, double b, double c, double x)
 {

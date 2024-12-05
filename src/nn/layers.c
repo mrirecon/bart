@@ -451,7 +451,7 @@ const struct nlop_s* append_convcorr_layer(const struct nlop_s* network, int o, 
  * @param adjoint if true, the operator is a adjoint convolution, else it's a transposed one
  * @param conv_pad padding for the convolution
  * @param channel_first data layout is {c, x, y, z}/{filter, channel, kx, ky, kz} if true, {x, y, z, c} {kx, ky, kz, filter, channel} else
- * @param strides only take into account convolutions seperated by strides {sx, sy, sz}
+ * @param strides only take into account convolutions separated by strides {sx, sy, sz}
  * @param dilations elements of kernel dilated by {dx, dy, dz}
  */
 const struct nlop_s* append_transposed_convcorr_layer(const struct nlop_s* network, int o, int channels, long const kernel_size[3], bool conv, bool adjoint, enum PADDING conv_pad, bool channel_first, const long strides[3], const long dilations[3])

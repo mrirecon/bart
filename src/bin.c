@@ -64,7 +64,7 @@
 // Copy spokes from input array to correct position in output array
 static void asgn_bins(const long bins_dims[DIMS], const float* bins, const long sg_dims[DIMS], complex float* sg, const long in_dims[DIMS], const complex float* in, const int n_card, const int n_resp)
 {
-	// Array to keep track of numbers of spokes already asigned to each bin
+	// Array to keep track of numbers of spokes already assigned to each bin
 	long count_dims[2] = { n_card, n_resp };
 
 	int* count = md_calloc(2, count_dims, sizeof(int));

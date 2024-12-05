@@ -197,7 +197,7 @@ int main_epg(int argc, char* argv[argc])
 
 			int Q = bitcount(unknowns); // selected unknowns
 
-			// determine indeces to unknowns in derivative
+			// determine indices to unknowns in derivative
 			int idx_unknowns[Q];
 
 			int P = Q + 1; // selected unknowns + M0

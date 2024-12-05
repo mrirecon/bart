@@ -274,7 +274,7 @@ static void restore_session(TF_Graph* graph, TF_Status *status, TF_Session *sess
 
 
 /*
-Argument name mapping from BART names to TensorFlow opration names and index
+Argument name mapping from BART names to TensorFlow operation names and index
 */
 
 
@@ -511,7 +511,7 @@ const struct tf_shared_graph_s* tf_shared_graph_create(const char* path, const c
 		sess = create_session(graph, status);
 		restore_session(graph, status, sess, path);
 
-		debug_printf(DP_DEBUG1, "Succesfully loaded TensorFlow v1 graph!\n");
+		debug_printf(DP_DEBUG1, "Successfully loaded TensorFlow v1 graph!\n");
 
 		snprintf(graph_path, plen, "%s.map", path);
 		arg_name_mapping = read_name_mapping(graph_path, signature_key ?: "serving_default");
@@ -538,7 +538,7 @@ const struct tf_shared_graph_s* tf_shared_graph_create(const char* path, const c
 		if (NULL == arg_name_mapping)
 			error("TensorFlow config file %s not found!\n", graph_path);
 
-		debug_printf(DP_DEBUG1, "Succesfully loaded TensorFlow v2 saved model!\n");
+		debug_printf(DP_DEBUG1, "Successfully loaded TensorFlow v2 saved model!\n");
 
 		init_file = ptr_printf("%s/bart_initial_weights", path);
 	}

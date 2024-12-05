@@ -577,7 +577,7 @@ out:
  * Writes a header for multiple md_arrays in one cfl file
  *
  * @param fd file to write in
- * @param num_ele total number of elements in all arrays, used for backwards compability to load_cfl
+ * @param num_ele total number of elements in all arrays, used for backwards compatibility to load_cfl
  * @param D number of arrays written in file
  * @param n[D] number of dimensions per array
  * @param dimensions[D] pointer to dimensions of each array

@@ -1,7 +1,7 @@
 #! /usr/bin/octave -qf
 
 addpath(strcat(getenv("BART_TOOLBOX_PATH"), "/matlab"));
-addpath(strcat(getenv("TOOLBOX_PATH"), "/matlab")); % support old enviroment variable
+addpath(strcat(getenv("TOOLBOX_PATH"), "/matlab")); % support old environment variable
 arg_list = argv();
 
 

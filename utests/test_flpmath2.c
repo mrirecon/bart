@@ -633,7 +633,7 @@ static bool test_blas_threadsave_gemm1(void) {
 	md_free(out2);
 
 	//this test fails if linked against libmkl-rt
-	//propably related to:
+	//probably related to:
 	//https://community.intel.com/t5/Intel-oneAPI-Math-Kernel-Library/BUG-Race-condition-in-Intel-MKL-Update-3-matrix-multiplication/td-p/1214109
 	//https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=921207
 

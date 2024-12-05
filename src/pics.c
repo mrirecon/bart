@@ -290,7 +290,7 @@ int main_pics(int argc, char* argv[argc])
 		OPT_SET('g', &bart_use_gpu, "use GPU"),
 		OPTL_SET(0, "gpu-gridding", &gpu_gridding, "use GPU for gridding"),
 		OPT_INFILE('p', &pat_file, "file", "pattern or weights"),
-		OPTL_SET(0, "precond", &(conf.precond), "interprete weights as preconditioner"),
+		OPTL_SET(0, "precond", &(conf.precond), "interpret weights as preconditioner"),
 		OPT_PINT('b', &llr_blk, "blk", "Lowrank block size"),
 		OPT_SET('e', &eigen, "Scale stepsize based on max. eigenvalue"),
 		OPT_SET('H', &hogwild, "(hogwild)"),
@@ -345,7 +345,7 @@ int main_pics(int argc, char* argv[argc])
 			error("MPI requested but not initialized using bart wrapper!\n");
 
 		if (cfl_loop_desc_active())
-			error("Simultanious use of BART generic looping interface and --mpi not supported!\n");
+			error("Simultaneous use of BART generic looping interface and --mpi not supported!\n");
 	}
 
 	if (0 != loop_flags)

@@ -10,9 +10,9 @@
  * 
  *
  *
- * Glowinski R and Marroco A. Sur l'approximation, par elements finis
+ * Glowinski R and Marroco A. Sur l'approximation, par elements finish
  * d'ordre un, et la resolution, par penalisation-dualite d'une classe
- * de problemes de Dirichlet non lineaires. ESAIM: Mathematical
+ * de problems de Dirichlet non lineaires. ESAIM: Mathematical
  * Modelling and Numerical Analysis - Modelisation Mathematique
  * et Analyse Numerique 9.R2: 41-76 (1975)
  *
