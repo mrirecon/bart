@@ -306,7 +306,7 @@ void ode_adjoint_sa_noinit(float h, float tol,
 		for (int m = 0; m < M; m++)
 			z[i - 1][m] = z[i][m];
 
-		// invert time -> ned. sign on RHS
+		// invert time -> neg. sign on RHS
 
 		NESTED(void, asa_eval, (float out[M], float t, const float yn[M]))
 		{
@@ -379,7 +379,7 @@ void ode_matrix_adjoint_sa(float h, float tol,
 		const void* cost2 = cost;
 		const void* sys2 = sys;
 #endif
-		// invert time -> ned. sign on RHS
+		// invert time -> neg. sign on RHS
 
 		NESTED(void, matrix_fun, (float x[M], float t, const float in[M]))
 		{

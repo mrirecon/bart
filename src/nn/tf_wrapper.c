@@ -408,7 +408,7 @@ out:
 
 
 /*
-Structure to hold TensorFlow grap and session.
+Structure to hold TensorFlow graph and session.
 The same structure can be used to create multiple nlops.
 */
 

@@ -2,8 +2,8 @@
 # Ref: https://github.com/codespell-project/codespell#using-a-config-file
 skip = .git*,.codespellrc
 check-hidden = true
-# ignore all acronyms, or mixed case
-ignore-regex =  \b([A-Z]+|[a-z]+[A-Z][a-z]*)\b
+# ignore all acronyms, or mixed case, some names
+ignore-regex =  \b([A-Z]+|[a-z]+[A-Z][a-z]*|Unser|Hart L|Wil Sweldens)\b|.*d'une.*
 # some unfortunate choices of variable names, or even typos which are now
 # parts of API
-ignore-words-list = te,reconet,reson,nd,scond,inout,coo,dout,parm,pyramide,ist,mot,mapp,regist,noo
+ignore-words-list = te,reconet,reson,nd,scond,inout,coo,dout,parm,pyramide,ist,mot,mapp,regist,noo,mone
