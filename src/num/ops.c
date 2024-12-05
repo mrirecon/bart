@@ -1107,7 +1107,7 @@ static const struct graph_s* copy_wrapper_graph_create(const struct operator_s* 
 	auto data = CAST_DOWN(copy_data_s, op->data);
 
 	auto subgraph = operator_get_graph(data->op);
-	auto result = create_graph_container(op, "coppy wrapper", subgraph);
+	auto result = create_graph_container(op, "copy wrapper", subgraph);
 
 	return result;
 }
