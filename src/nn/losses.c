@@ -1145,7 +1145,7 @@ static void dice_del(const nlop_data_t* _data)
  * D = 1 - 2 * [sum_l w_l sum_i MIN(p_li, t_li)] / [sum_l w_l sum_i (p_li + t_li)]
  * where:	i - batch index
  *		l - label index
- *		w_l - wighting factor
+ *		w_l - weighting factor
  *		t_ij = target prediction (usually 0 or 1 and sum_j t_ij = 1)
  *		p_ij = probability predicted by the network (usually p_i(x) in [0, 1] and sum_j p_ij(x) = 1 (softmax activation))
  *
@@ -1217,7 +1217,7 @@ const struct nlop_s* nlop_dice_generic_create(int N, const long dims[N], unsigne
  * D = 1 - 2 * [sum_l w_l sum_i MIN(p_li, t_li)] / [sum_l w_l sum_i (p_li + t_li)]
  * where:	i - batch index
  *		l - label index
- *		w_l - wighting factor
+ *		w_l - weighting factor
  *		t_ij = target prediction (usually 0 or 1 and sum_j t_ij = 1)
  *		p_ij = probability predicted by the network (usually p_i(x) in [0, 1] and sum_j p_ij(x) = 1 (softmax activation))
  *

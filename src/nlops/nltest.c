@@ -125,7 +125,7 @@ static float nlop_test_derivative_priv(const struct nlop_s* op, const complex fl
 
 		float scale = 1.;
 		float vall = 0.;
-		val0 = 1.; // do not devide by zero if val0 is never changed
+		val0 = 1.; // do not divide by zero if val0 is never changed
 		val = 0.;
 
 		for (int i = 0; i < 10; i++) {

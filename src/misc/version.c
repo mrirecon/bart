@@ -33,7 +33,7 @@ bool version_parse(unsigned int v[5], const char* version)
 	v[3] = 0;	// patch level
 
 	// simple version string format, for when git describe fails
-	// This might happen if the .git directory exsits, but git is not installed on a system
+	// This might happen if the .git directory exists, but git is not installed on a system
 	int ret = sscanf(version, "v%u.%u.%u-dirty%n", &v[0], &v[1], &v[2], &s);
 
 	if ((3 == ret) && (len == s)) {

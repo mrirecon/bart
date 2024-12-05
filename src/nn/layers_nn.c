@@ -107,7 +107,7 @@ nn_t nn_append_transposed_convcorr_layer_generic(
  * @param oname
  * @param N
  * @param pool_size size of pooling
- * @param conv_pad must be PAD_VALID/PAD_SAME if image size is not a multiple of padding size, the image is shrinked/expanded to a multiple
+ * @param conv_pad must be PAD_VALID/PAD_SAME if image size is not a multiple of padding size, the image is shrunk/expanded to a multiple
  */
 nn_t nn_append_maxpool_layer_generic(nn_t network, int o, const char* oname, int N, const long pool_size[N], enum PADDING conv_pad)
 {
@@ -256,7 +256,7 @@ nn_t nn_append_batchnorm_layer(nn_t network, int o, const char* oname, const cha
  * @param o output index of network, the layer is appended
  * @param oname
  * @param pool_size {px, py, pz} size of pooling
- * @param conv_pad must be PAD_VALID/PAD_SAME if image size is not a multiple of padding size, the image is shrinked/expanded to a multiple
+ * @param conv_pad must be PAD_VALID/PAD_SAME if image size is not a multiple of padding size, the image is shrunk/expanded to a multiple
  * @param channel_first data layout is {c, x, y, z} if true, {x, y, z, c} else
  */
 nn_t nn_append_maxpool_layer(nn_t network, int o, const char* oname, const long pool_size[3], enum PADDING conv_pad, bool channel_first)

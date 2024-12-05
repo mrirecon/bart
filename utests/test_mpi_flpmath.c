@@ -134,7 +134,7 @@ static bool test_mpi_z3op(z3op_t test_fun, unsigned long mpi_flags)
 	md_free(ref);
 	md_free(ret_copy);
 	
-	UT_RETURN_ASSERT(err < UT_TOL * 10); //because single precission
+	UT_RETURN_ASSERT(err < UT_TOL * 10); //because single precision
 }
 
 static bool test_mpi_zfmac2_3(void)	{ return test_mpi_z3op(md_zfmac2,	MD_BIT(3))		; }

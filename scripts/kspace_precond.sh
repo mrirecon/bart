@@ -11,7 +11,7 @@ set -eu
 
 helpstr=$(cat <<- EOF
 Compute k-space preconditioner P such that ||P^2 AA^H - 1|| is minimal
-Note the square in the definition. The preconditioner can be used directly as wights in PICS.
+Note the square in the definition. The preconditioner can be used directly as weights in PICS.
 
 <ones>	contains ones with image dimensions
 
