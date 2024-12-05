@@ -294,6 +294,17 @@ void opt_precond_configure(struct opt_reg_s* ropts, const struct operator_p_s* p
 
 	trafos[nr_penalties] = linop_clone(model_op);
 
+	if (0 < ropts->svars) {
+
+		long pos[1] = { 0 };
+		auto iov = linop_domain(trafos[nr_penalties]);
+
+		const struct linop_s* extract = linop_extract_create(1, pos, MD_DIMS(md_calc_size(iov->N, iov->dims)), MD_DIMS(md_calc_size(iov->N, iov->dims) + ropts->svars));
+		extract = linop_reshape_out_F(extract, iov->N, iov->dims);
+
+		trafos[nr_penalties] = linop_chain_FF(extract, trafos[nr_penalties]);
+	}
+
 	ropts->sr++;
 }
 
