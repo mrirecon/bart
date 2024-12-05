@@ -646,7 +646,7 @@ static struct tf_arg process_arg(const struct tf_shared_graph_s* graph, const ch
 	enum TF_DataType type = TF_OperationOutputType(arg.out);
 
 	if (! ((TF_COMPLEX64 == type) || (TF_FLOAT == type)))
-		error("TensorFlow: Argument \"%s:%d\" has unsupported type. Only single precission (complex) floats are supported.\n");
+		error("TensorFlow: Argument \"%s:%d\" has unsupported type. Only single precision (complex) floats are supported.\n");
 
 	long tdims[arg.N ?: 1];
 

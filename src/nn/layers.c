@@ -531,7 +531,7 @@ static bool calc_pooling_working_dims(int N, long dims_working[N], const long di
  * @param o output index of network, the layer is appended
  * @param N
  * @param pool_size {px, py, pz} size of pooling
- * @param conv_pad must be PAD_VALID/PAD_SAME if image size is not a multiple of padding size, the image is shrinked/expanded to a multiple
+ * @param conv_pad must be PAD_VALID/PAD_SAME if image size is not a multiple of padding size, the image is shrunk/expanded to a multiple
  */
 const struct nlop_s* append_maxpool_layer_generic(const struct nlop_s* network, int o, int N, const long pool_size[N], enum PADDING conv_pad)
 {
@@ -568,7 +568,7 @@ const struct nlop_s* append_maxpool_layer_generic(const struct nlop_s* network, 
  * @param network operator to append the layer (the operator is freed)
  * @param o output index of network, the layer is appended
  * @param pool_size {px, py, pz} size of pooling
- * @param conv_pad must be PAD_VALID/PAD_SAME if image size is not a multiple of padding size, the image is shrinked/expanded to a multiple
+ * @param conv_pad must be PAD_VALID/PAD_SAME if image size is not a multiple of padding size, the image is shrunk/expanded to a multiple
  * @param channel_first data layout is {c, x, y, z} if true, {x, y, z, c}else
  */
 const struct nlop_s* append_maxpool_layer(const struct nlop_s* network, int o, const long pool_size[3], enum PADDING conv_pad, bool channel_first)

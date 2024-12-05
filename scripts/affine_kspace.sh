@@ -15,7 +15,7 @@ A = (- R - | a )
 
 The transform needs to be defined following the usual convention:
 1.) Shifts are measured in units of FOV as the trajectory measures k-space coordinates in units 1/FOV
-2.) The image origin (x=0) is at grid position N//2 (integer devision for odd numbers)
+2.) The image origin (x=0) is at grid position N//2 (integer division for odd numbers)
 
 The transformed k-space is given by
 F[IR] (R^T k) = exp(i2pi ak) F[IM](k)

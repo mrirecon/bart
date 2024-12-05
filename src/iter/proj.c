@@ -294,7 +294,7 @@ static void proj_sphere_del(const operator_data_t* _data)
  * @param N
  * @param dims
  * @param bflag
- * @param real if true, real and imaginary part are handeled independently (as bflag is set for dimension real/imag)
+ * @param real if true, real and imaginary part are handled independently (as bflag is set for dimension real/imag)
  */
 const struct operator_p_s* operator_project_sphere_create(long N, const long dims[N], unsigned long bflag, bool real)
 {
@@ -317,7 +317,7 @@ const struct operator_p_s* operator_project_sphere_create(long N, const long dim
  * @param N
  * @param dims
  * @param bflag
- * @param real if real, real and imaginary part are handeled independently (as bflag is set for dimension real/imag)
+ * @param real if real, real and imaginary part are handled independently (as bflag is set for dimension real/imag)
  */
 
 const struct operator_p_s* operator_project_mean_free_sphere_create(long N, const long dims[N], unsigned long bflag, bool real)
