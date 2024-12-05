@@ -129,30 +129,10 @@ static struct noir2_s noir2_init_create(int N,
 						wgh_dims, conf->wght_flags, conf->oversampling_coils,
 						conf->a, conf->b, conf->c);
 
-	if (md_calc_size(N, col_dims) > md_calc_size(N, ret.col_ten_dims)) {
-
-		// reduce memory by looping when only coil estimation is required.
-
-		long tcol_dims[N];
-		long tcol_dims2[N];
-		long tlop_dims[N];
-		md_select_dims(N, ~COIL_FLAG, tcol_dims, col_dims);
-		md_select_dims(N, ~COIL_FLAG, tcol_dims2, ret.col_dims);
-		md_select_dims(N, COIL_FLAG, tlop_dims, col_dims);
-
-		auto lop_coil2 = linop_noir_weights_create(N, tcol_dims, tcol_dims2,
-							wgh_dims, conf->wght_flags,
-							(conf->ret_os_coils ? 1. : conf->oversampling_coils),
-							conf->a, conf->b, conf->c);
-		
-		ret.lop_coil2 = linop_loop_F(N, tlop_dims, lop_coil2);
-	} else {
-
-		ret.lop_coil2 = linop_noir_weights_create(N, col_dims, ret.col_dims,
+	ret.lop_coil2 = linop_noir_weights_create(N, col_dims, ret.col_dims,
 						wgh_dims, conf->wght_flags,
 						(conf->ret_os_coils ? 1. : conf->oversampling_coils),
 						conf->a, conf->b, conf->c);
-	}
 
 
 	ret.lop_im = NULL;
@@ -629,7 +609,7 @@ static void noir2_opt_nrm(const nlop_data_t* _data, int /*o*/, int /*i*/, comple
 
 	linop_forward_unchecked(d->lop_fft, d->cim_buf, d->cim_buf_zeropad);
 	linop_forward_unchecked(d->lop_psf, d->cim_buf, d->cim_buf);
-	linop_adjoint_unchecked(d->lop_fft, d->cim_buf, d->cim_buf);	
+	linop_adjoint_unchecked(d->lop_fft, d->cim_buf, d->cim_buf);
 
 	md_ztenmulc2(d->N, d->max_dims, d->img_strs, dimg, d->cim_strs, d->cim_buf + d->cim_offset, d->col_strs, d->col + d->col_offset);
 
@@ -864,11 +844,11 @@ struct noir2_s noir2_noncart_optimized_create(int N,
 	long max_dims[N];
 	long cim_dims_os[N];
 	long col_dims_os[N];
-	
+
 	md_max_dims(N, ~0UL, max_dims, img_dims, col_dims);
 	md_copy_dims(N, cim_dims_os, cim_dims);
 	md_copy_dims(N, col_dims_os, col_dims);
-	
+
 	for (int i = 0; i < 3; i++) {
 
 		if (1 < img_dims[i]) {
@@ -909,7 +889,7 @@ void noir2_noncart_update(struct noir2_s* model, int N,
 
 		complex float* psf = compute_psf_cached(N, psf_dims, trj_dims, ttraj, MD_SINGLETON_DIMS(N), NULL, wgh_dims, weights, true, false, &(d->lop_psf_cache_nufft));
 		md_free(ttraj);
-		
+
 		linop_forward_unchecked(d->lop_psf_cache_fft, psf, psf);
 		fftscale(N, psf_dims, FFT_FLAGS, psf, psf);
 		fftscale(N, psf_dims, FFT_FLAGS, psf, psf);

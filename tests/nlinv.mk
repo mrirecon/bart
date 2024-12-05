@@ -253,8 +253,8 @@ tests/test-ncalib-noncart: fmac ncalib traj scale phantom resize pics nlinv nrms
 	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
 	$(TOOLDIR)/traj -o2 -r -x64 -y45 traj.ra			;\
 	$(TOOLDIR)/phantom -s8 -k -t traj.ra ksp.ra			;\
-	$(TOOLDIR)/nlinv -N -S -i9 -t traj.ra ksp.ra r1.ra c1.ra	;\
-	$(TOOLDIR)/ncalib -i9 -x64:64:1 -t traj.ra ksp.ra c2.ra	;\
+	$(TOOLDIR)/nlinv -N -S -i10 -t traj.ra ksp.ra r1.ra c1.ra	;\
+	$(TOOLDIR)/ncalib -i10 -x64:64:1 -t traj.ra ksp.ra c2.ra	;\
 	$(TOOLDIR)/pics -r0.001 -S -t traj.ra ksp.ra c2.ra r2.ra	;\
 	$(TOOLDIR)/fmac c1.ra r1.ra x1.ra				;\
 	$(TOOLDIR)/fmac c2.ra r2.ra x2.ra				;\
