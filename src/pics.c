@@ -791,7 +791,7 @@ int main_pics(int argc, char* argv[argc])
 	const struct linop_s* trafos[NUM_REGS] = { NULL };
 
 
-	opt_reg_configure(DIMS, img_dims, &ropts, thresh_ops, trafos, llr_blk, shift_mode, wtype_str, conf.gpu);
+	opt_reg_configure(DIMS, img_dims, &ropts, thresh_ops, trafos, NULL, llr_blk, shift_mode, wtype_str, conf.gpu);
 
 	if (conf.bpsense)
 		opt_bpursuit_configure(&ropts, thresh_ops, trafos, forward_op, kspace_p, bpsense_eps);

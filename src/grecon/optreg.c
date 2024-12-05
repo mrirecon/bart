@@ -40,6 +40,7 @@
 
 #include "nn/tf_wrapper.h"
 
+#include "misc/misc.h"
 #include "misc/mri.h"
 #include "misc/utils.h"
 #include "misc/opts.h"
@@ -296,7 +297,7 @@ void opt_precond_configure(struct opt_reg_s* ropts, const struct operator_p_s* p
 	ropts->sr++;
 }
 
-void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], int llr_blk, int shift_mode, const char* wtype_str, bool use_gpu)
+void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], const long (*sdims[NUM_REGS])[N], int llr_blk, int shift_mode, const char* wtype_str, bool use_gpu)
 {
 	float lambda = ropts->lambda;
 	bool randshift = (1 == shift_mode);
@@ -361,6 +362,11 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 	else
 		error("unsupported wavelet type.\n");
 
+	if (NULL != sdims) {
+
+		for (int i = 0; i < NUM_REGS && sdims; i++)
+			sdims[i] = NULL;
+	}
 
 	for (int nr = 0; nr < ropts->r; nr++) {
 
@@ -476,6 +482,16 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 			trafos[nr_penalties] = reg2.linop[1];
 			prox_ops[nr_penalties] = reg2.prox[1];
 
+			assert(1 == img_dims[N - 1]);
+
+			if (NULL != sdims) {
+
+				PTR_ALLOC(long[N], dims);
+				md_copy_dims(N, *dims, img_dims);
+				(*dims)[N - 1] = bitcount(regs[nr].xflags);
+				sdims[nr_penalties] = PTR_PASS(dims);
+			}
+
 			nr_penalties++;
 
 		}	break;
@@ -491,6 +507,13 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 			trafos[nr_penalties] = reg2.linop[1];
 			prox_ops[nr_penalties] = reg2.prox[1];
+
+			if (NULL != sdims) {
+
+				PTR_ALLOC(long[N], dims);
+				md_copy_dims(N, *dims, img_dims);
+				sdims[nr_penalties] = PTR_PASS(dims);
+			}
 
 			nr_penalties++;
 
