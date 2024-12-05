@@ -112,7 +112,7 @@ void noir2_recon(const struct noir2_conf_s* conf, struct noir2_s* noir_ops,
 		assert(md_check_equal_dims(N, img_dims, nlop_generic_domain(noir_ops->model, 0)->dims, ~0UL));
 		assert(md_check_equal_dims(N, kco_dims, nlop_generic_domain(noir_ops->model, 1)->dims, ~0UL));
 		assert(md_check_equal_dims(N, ksp_dims, linop_codomain(noir_ops->lop_asym)->dims, ~0UL));
-	
+
 	}
 
 	complex float* data = md_alloc_sameplace(N, dat_dims, CFL_SIZE, kspace);
@@ -147,18 +147,25 @@ void noir2_recon(const struct noir2_conf_s* conf, struct noir2_s* noir_ops,
 	long skip = md_calc_size(N, img_dims);
 	long size = skip + md_calc_size(N, kco_dims);
 
+	long d1[1] = { size };
+	// variable which is optimized by the IRGNM
+	complex float* x = NULL;
 	complex float* ref = NULL;
-	assert((NULL == img_ref) == (NULL == sens_ref));
+
+	x = md_alloc_sameplace(1, d1, CFL_SIZE, data);
+	md_clear(1, d1, x, CFL_SIZE);
 
 	if (NULL != img_ref) {
 
-		ref = md_alloc_sameplace(1, MD_DIMS(size), CFL_SIZE, data);
+		ref = md_alloc_sameplace(1, d1, CFL_SIZE, data);
+		md_clear(1, d1, ref, CFL_SIZE);
+	}
+
+	if (NULL != img_ref) {
 
 		md_copy(N, img_dims, ref, img_ref, CFL_SIZE);
 		md_copy(N, kco_dims, ref + skip, sens_ref, CFL_SIZE);
 	}
-
-	complex float* x = md_alloc_sameplace(1, MD_DIMS(size), CFL_SIZE, data);
 
 	md_copy(N, img_dims, x, img, CFL_SIZE);
 	md_copy(N, kco_dims, x + skip, ksens, CFL_SIZE);
@@ -176,7 +183,7 @@ void noir2_recon(const struct noir2_conf_s* conf, struct noir2_s* noir_ops,
 	irgnm_conf.cgiter = conf->cgiter;
 
 
-	struct nlop_s* nlop_flat = nlop_flatten(noir_ops->model);
+	struct nlop_s* nlop_flat = nlop_flatten_inputs_F(nlop_clone(noir_ops->model));
 
 	struct nlop_wrapper2_s nlw;
 	SET_TYPEID(nlop_wrapper2_s, &nlw);
