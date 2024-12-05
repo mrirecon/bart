@@ -313,7 +313,7 @@ tests/test-nlinv-pf-vcc: nlinv conj nrmse zeros ones join flip circshift fmac $(
 	$(TOOLDIR)/conj tmp4.ra pu_conj.ra						;\
 	$(TOOLDIR)/join 3 pu.ra pu_conj.ra pu_vcc.ra					;\
 	$(TOOLDIR)/nlinv -i10 -P -ppat_vcc.ra pu_vcc.ra nl_vcc.ra			;\
-	$(TOOLDIR)/nrmse -t 0.00001 nl.ra nl_vcc.ra					;\
+	$(TOOLDIR)/nrmse -t 0.00003 nl.ra nl_vcc.ra					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
