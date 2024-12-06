@@ -13,7 +13,7 @@ struct linop_s;
 struct nufft_conf_s {
 
 	_Bool toeplitz; ///< Toeplitz embedding boolean for A^T A
-	_Bool pcycle; /// < Phase cycling
+	_Bool pcycle; 	/// < Phase cycling
 	_Bool periodic;
 	_Bool lowmem;
 	int loopdim;
@@ -25,6 +25,7 @@ struct nufft_conf_s {
 	_Bool real;
 	_Bool compress_psf;
 
+	_Bool precomp;
 	_Bool precomp_linphase;
 	_Bool precomp_fftmod;
 	_Bool precomp_roll;
@@ -35,6 +36,11 @@ struct nufft_conf_s {
 };
 
 extern struct nufft_conf_s nufft_conf_defaults;
+extern struct nufft_conf_s nufft_conf_options;
+
+#include "misc/opts.h"
+extern struct opt_s nufft_conf_opts[];
+extern int N_nufft_conf_opts;
 
 
 extern struct linop_s* nufft_create(int N,				///< Number of dimensions
