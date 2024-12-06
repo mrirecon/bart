@@ -20,6 +20,7 @@
 #include "misc/debug.h"
 #include "misc/types.h"
 #include "misc/version.h"
+#include "misc/opts.h"
 
 #include "num/multind.h"
 #include "num/flpmath.h"
@@ -62,6 +63,7 @@ struct nufft_conf_s nufft_conf_defaults = {
 	.upper_triag = false,
 	.real = false,
 	.compress_psf = false,
+	.precomp = true,
 	.precomp_linphase = true,
 	.precomp_fftmod = true,
 	.precomp_roll = true,
@@ -70,6 +72,47 @@ struct nufft_conf_s nufft_conf_defaults = {
 	.os = 2.,
 
 };
+
+struct nufft_conf_s nufft_conf_options = {
+
+	.toeplitz = true,
+	.pcycle = false,
+	.periodic = false,
+	.lowmem = false,
+	.loopdim = -1,
+	.flags = FFT_FLAGS,
+	.cfft = 0u,
+	.decomp = true,
+	.nopsf = false,
+	.upper_triag = false,
+	.real = false,
+	.compress_psf = false,
+	.precomp = true,
+	.precomp_linphase = true,
+	.precomp_fftmod = true,
+	.precomp_roll = true,
+	.zero_overhead = false,
+	.width = 6,
+	.os = 2.,
+
+};
+
+struct opt_s nufft_conf_opts[] = {
+
+	OPTL_CLEAR('r', "no-toeplitz", &(nufft_conf_options.toeplitz), "turn-off Toeplitz embedding for inverse NUFFT"),
+	OPTL_SET('P', "periodic", &(nufft_conf_options.periodic), "periodic k-space"),
+	OPT_CLEAR('1', &(nufft_conf_options.decomp), "(use/return oversampled grid)"),
+	OPTL_SET(0, "lowmem", &(nufft_conf_options.lowmem), "(use low-mem mode of the nuFFT)"),
+	OPTL_SET(0, "zero-mem", &(nufft_conf_options.zero_overhead), "(use zero-overhead mode of the nuFFT)"),
+	OPTL_CLEAR(0, "no-precomp", &(nufft_conf_options.precomp), "don't precompute linphases, rolloff, and fftmod"),
+	OPTL_FLOAT('o', "oversampling", &(nufft_conf_options.os), "o", "(oversample grid by factor (default: o=2; required for Toeplitz))"),
+	OPTL_FLOAT('w', "width", &(nufft_conf_options.width), "w", "(width of Kaiser-Bessel window on oversampled grid (default: w=6))"),
+	OPTL_SET(0, "real-psf", &(nufft_conf_options.real), "only store real part of PSF (lower memory usage and faster in some cases)"),
+	OPTL_SET(0, "compress-psf", &(nufft_conf_options.compress_psf), "only store non-zero entries of PSF (lower memory usage and faster in some cases)"),
+	OPTL_SET(0, "upper-triag-psf", &(nufft_conf_options.upper_triag), "store only upper triangular part of PSF for subspace (lower memory usage and faster in some cases)"),
+};
+
+int N_nufft_conf_opts = ARRAY_SIZE(nufft_conf_opts);
 
 #include "nufft_priv.h"
 
@@ -626,9 +669,9 @@ static struct nufft_data* nufft_create_data(int N,
 	PTR_ALLOC(struct nufft_data, data);
 	SET_TYPEID(nufft_data, data);
 
-	conf.precomp_fftmod = conf.precomp_fftmod && !conf.zero_overhead;
-	conf.precomp_linphase = conf.precomp_linphase && !conf.zero_overhead;
-	conf.precomp_roll = conf.precomp_roll && !conf.zero_overhead;
+	conf.precomp_fftmod = conf.precomp_fftmod && !conf.zero_overhead && conf.precomp;
+	conf.precomp_linphase = conf.precomp_linphase && !conf.zero_overhead && conf.precomp;
+	conf.precomp_roll = conf.precomp_roll && !conf.zero_overhead && conf.precomp;
 	conf.lowmem = conf.lowmem || conf.zero_overhead;
 
 	data->N = N;
