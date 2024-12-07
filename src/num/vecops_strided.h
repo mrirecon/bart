@@ -15,6 +15,10 @@ extern _Bool simple_zadd(int N, const long dims[__VLA(N)], const long ostrs[__VL
 extern _Bool simple_add(int N, const long dims[__VLA(N)], const long ostrs[__VLA(N)], float* out, const long istrs1[__VLA(N)], const float* in1, const long istrs2[__VLA(N)], const float* in2);
 
 extern _Bool simple_zmax(int N, const long dims[__VLA(N)], const long ostrs[__VLA(N)], _Complex float* out, const long istrs1[__VLA(N)], const _Complex float* in1, const long istrs2[__VLA(N)], const _Complex float* in2);
+
+extern _Bool simple_fmacD(int N, const long dims[__VLA(N)], const long ostrs[__VLA(N)], double* out, const long istrs1[__VLA(N)], const float* in1, const long istrs2[__VLA(N)], const float* in2);
+extern _Bool simple_zfmaccD(int N, const long dims[__VLA(N)], const long ostrs[__VLA(N)], _Complex double* out, const long istrs1[__VLA(N)], const _Complex float* in1, const long istrs2[__VLA(N)], const _Complex float* in2);
+
 #else
 #define simple_fmac(...) false
 #define simple_zfmac(...) false
@@ -28,6 +32,8 @@ extern _Bool simple_zmax(int N, const long dims[__VLA(N)], const long ostrs[__VL
 #define simple_zadd(...) false
 #define simple_add(...) false
 #define simple_zmax(...) false
+#define simple_fmacD(...) false
+#define simple_zfmaccD(...) false
 #endif
 
 

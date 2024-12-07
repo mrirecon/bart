@@ -1591,7 +1591,8 @@ void md_fmac(int D, const long dims[D], float* optr, const float* iptr1, const f
  */
 void md_fmacD2(int D, const long dims[D], const long ostr[D], double* optr, const long istr1[D], const float* iptr1, const long istr2[D], const float* iptr2)
 {
-	MAKE_3OPD(fmacD, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
+	if (!simple_fmacD(D, dims, ostr, optr, istr1, iptr1, istr2, iptr2))
+		MAKE_3OPD(fmacD, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
 
 	if (is_mpi(iptr1) || is_mpi(iptr2)) {
 
@@ -1667,7 +1668,8 @@ void md_zfmacc(int D, const long dims[D], complex float* optr, const complex flo
  */
 void md_zfmaccD2(int D, const long dims[D], const long ostr[D], complex double* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)
 {
-	MAKE_Z3OPD(zfmaccD, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
+	if (!simple_zfmaccD(D, dims, ostr, optr, istr1, iptr1, istr2, iptr2))
+		MAKE_Z3OPD(zfmaccD, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
 
 	if (is_mpi(iptr1) || is_mpi(iptr2)) {
 
@@ -2606,22 +2608,15 @@ void md_zcosh(int D, const long dims[D], complex float* optr, const complex floa
 }
 
 
-
-
-
-/**
- * Calculate inner product between two scalar arrays (with strides)
- *
- * return iptr1^T * iptr2
- */
-float md_scalar2(int D, const long dim[D], const long str1[D], const float* ptr1, const long str2[D], const float* ptr2)
+//workaround fixed later
+static float md_scalar2_mpi(int D, const long dim[D], const long str1[D], const float* ptr1, const long str2[D], const float* ptr2)
 {
 	int N = MIN(md_calc_blockdim(D, dim, str1, FL_SIZE), md_calc_blockdim(D, dim, str2, FL_SIZE));
 
 	int mpi_idx = md_min_idx(vptr_block_loop_flags(D, dim, str1, ptr1, FL_SIZE) | vptr_block_loop_flags(D, dim, str2, ptr2, FL_SIZE));
 	if (-1 < mpi_idx)
 		N = MIN(N, mpi_idx);
-	
+
 	long S = md_calc_size(N, dim);
 
 	__block double ret = 0.;
@@ -2650,6 +2645,29 @@ float md_scalar2(int D, const long dim[D], const long str1[D], const float* ptr1
 	}
 
 	return (float)ret;
+}
+
+
+/**
+ * Calculate inner product between two scalar arrays (with strides)
+ *
+ * return iptr1^T * iptr2
+ */
+float md_scalar2(int D, const long dim[D], const long str1[D], const float* ptr1, const long str2[D], const float* ptr2)
+{
+	if (is_mpi(ptr1) || is_mpi(ptr2))
+		return md_scalar2_mpi(D, dim, str1, ptr1, str2, ptr2);
+
+	double* ret_ptr = md_alloc_sameplace(D, MD_SINGLETON_DIMS(D), DL_SIZE, ptr1);
+	md_clear(D, MD_SINGLETON_DIMS(D), ret_ptr, DL_SIZE);
+
+	md_fmacD2(D, dim, MD_SINGLETON_STRS(D), ret_ptr, str1, ptr1, str2, ptr2);
+
+	double ret;
+	md_copy(D, MD_SINGLETON_DIMS(D), &ret, ret_ptr, DL_SIZE);
+	md_free(ret_ptr);
+
+	return ret;
 }
 
 
@@ -2808,13 +2826,8 @@ float md_zrnorme(int D, const long dim[D], const complex float* ref, const compl
 }
 
 
-
-/**
- * Calculate inner product between two complex arrays (with strides)
- *
- * return iptr1 * iptr2^H
- */
-complex float md_zscalar2(int D, const long dim[D], const long str1[D], const complex float* ptr1, const long str2[D], const complex float* ptr2)
+//workaround fixed later
+static complex float md_zscalar2_mpi(int D, const long dim[D], const long str1[D], const complex float* ptr1, const long str2[D], const complex float* ptr2)
 {
 	int N = MIN(md_calc_blockdim(D, dim, str1, CFL_SIZE), md_calc_blockdim(D, dim, str2, CFL_SIZE));
 
@@ -2838,18 +2851,38 @@ complex float md_zscalar2(int D, const long dim[D], const long str1[D], const co
 
 	md_nary(2, D - N, dim + N, (const long*[2]){ str1 + N, str2 + N }, (void*[2]){ (void*)ptr1, (void*)ptr2 }, nary_zscalar2);
 
-	if (is_mpi(ptr1) || is_mpi(ptr2)) {
+	complex double* ret_mpi = vptr_wrap_sameplace(D, MD_SINGLETON_DIMS(D), CDL_SIZE, &ret, ptr1, false, true);
 
-		complex double* ret_mpi = vptr_wrap_sameplace(D, MD_SINGLETON_DIMS(D), CDL_SIZE, &ret, ptr1, false, true);
+	unsigned long batch_flags = mpi_parallel_flags(D, dim, str1, CFL_SIZE, ptr1)
+				  & mpi_parallel_flags(D, dim, str2, CFL_SIZE, ptr2);
 
-		unsigned long batch_flags = mpi_parallel_flags(D, dim, str1, CFL_SIZE, ptr1)
-					  & mpi_parallel_flags(D, dim, str2, CFL_SIZE, ptr2);
-
-		mpi_reduce_zsumD(D, ~batch_flags, MD_SINGLETON_DIMS(D), ret_mpi);
-		md_free(ret_mpi);
-	}
+	mpi_reduce_zsumD(D, ~batch_flags, MD_SINGLETON_DIMS(D), ret_mpi);
+	md_free(ret_mpi);
 
 	return (complex float)ret;
+}
+
+
+/**
+ * Calculate inner product between two complex arrays (with strides)
+ *
+ * return iptr1 * iptr2^H
+ */
+complex float md_zscalar2(int D, const long dim[D], const long str1[D], const complex float* ptr1, const long str2[D], const complex float* ptr2)
+{
+	if (is_mpi(ptr1) || is_mpi(ptr2))
+		return md_zscalar2_mpi(D, dim, str1, ptr1, str2, ptr2);
+
+	complex double* ret_ptr = md_alloc_sameplace(D, MD_SINGLETON_DIMS(D), CDL_SIZE, ptr1);
+	md_clear(D, MD_SINGLETON_DIMS(D), ret_ptr, CDL_SIZE);
+
+	md_zfmaccD2(D, dim, MD_SINGLETON_STRS(D), ret_ptr, str1, ptr1, str2, ptr2);
+
+	complex double ret;
+	md_copy(D, MD_SINGLETON_DIMS(D), &ret, ret_ptr, CDL_SIZE);
+	md_free(ret_ptr);
+
+	return ret;
 }
 
 
@@ -2881,7 +2914,7 @@ float md_zscalar_real2(int D, const long dims[D], const long strs1[D], const com
 
 		complex float* t1 = md_alloc_sameplace(D, dims, CFL_SIZE, ptr1);
 		complex float* t2 = md_alloc_sameplace(D, dims, CFL_SIZE, ptr2);
-		
+
 		md_copy2(D, dims, MD_STRIDES(D, dims, CFL_SIZE), t1, strs1, ptr1, CFL_SIZE);
 		md_copy2(D, dims, MD_STRIDES(D, dims, CFL_SIZE), t2, strs2, ptr2, CFL_SIZE);
 
@@ -2893,7 +2926,7 @@ float md_zscalar_real2(int D, const long dims[D], const long strs1[D], const com
 		return ret;
 	}
 
-	
+
 	long dimsR[D + 1];
 	long strs1R[D + 1];
 	long strs2R[D + 1];
@@ -3289,7 +3322,7 @@ void md_zvar2(int D, const long dims[D], unsigned long flags, const long ostr[D]
 	complex float* tmp = md_alloc_sameplace(D, dims, CFL_SIZE, optr);
 
 	md_zavg2(D, dims, flags, ostr, optr, istr, iptr);
-	
+
 	//zadd2 is optimized, zsub2 not!
 	md_zsmul2(D, odims, ostr, optr, ostr, optr, -1.);
 	md_zadd2(D, dims, tstrs, tmp, istr, iptr, ostr, optr);
@@ -3451,7 +3484,7 @@ void md_zavg2(int D, const long dims[D], unsigned long flags, const long ostr[D]
 {
 	long odims[D];
 	long sdims[D];
-	
+
 	md_select_dims(D, ~flags, odims, dims);
 	md_select_dims(D, flags, sdims, dims);
 

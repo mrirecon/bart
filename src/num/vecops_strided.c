@@ -1468,3 +1468,87 @@ bool simple_zmax(int N, const long dims[N], const long ostrs[N], complex float* 
 	return simple_z3op(	ARRAY_SIZE(strided_calls), strided_calls, "md_zmax",
 				N, dims, ostrs, out, istrs1, in1, istrs2, in2, true, false);
 }
+
+bool simple_fmacD(int N, const long dims[N], const long ostrs[N], double* out, const long istrs1[N], const float* in1, const long istrs2[N], const float* in2)
+{
+	long tdims[N];
+	long tostrs[N];
+	long tistrs1[N];
+	long tistrs2[N];
+
+	md_copy_dims(N, tdims, dims);
+	md_copy_strides(N, tostrs, ostrs);
+	md_copy_strides(N, tistrs1, istrs1);
+	md_copy_strides(N, tistrs2, istrs2);
+
+	long (*strs[3])[N] = { &tostrs, &tistrs1, &tistrs2 };
+
+	N = optimize_dims_gpu(3, N, tdims, strs);
+
+	const long* tdims_p = tdims;
+	const long* tostrs_p = tostrs;
+	const long* tistrs1_p = tistrs1;
+	const long* tistrs2_p = tistrs2;
+
+	if (0 < N && (1 < tdims[0]) && (0 == tostrs[0]) && (FL_SIZE == tistrs1[0]) && (FL_SIZE == tistrs2[0])) {
+
+		NESTED(void, nary_inner_3op, (struct nary_opt_data_s* data, void* ptr[]))
+		{
+			for (long i = 0; i < data->size; i++)
+				fmacD_dot(1, tdims_p, tostrs_p, (double*)(ptr[0]) + i,
+						tistrs1_p, (const float*)(ptr[1]) + i * tdims_p[0],
+						tistrs2_p, (const float*)(ptr[2]) + i * tdims_p[0]);
+		};
+
+		optimized_threeop_oii(	N - 1, tdims + 1,
+				tostrs + 1, (void*)out, tistrs1 + 1, (void*)in1, tistrs2 + 1, (void*)in2,
+				(size_t[3]){ DL_SIZE, ((size_t)tdims[0] * FL_SIZE), ((size_t)tdims[0] * FL_SIZE) }, nary_inner_3op);
+
+		return true;
+	}
+
+	return false;
+}
+
+bool simple_zfmaccD(int N, const long dims[N], const long ostrs[N], complex double* out, const long istrs1[N], const complex float* in1, const long istrs2[N], const complex float* in2)
+{
+	long tdims[N];
+	long tostrs[N];
+	long tistrs1[N];
+	long tistrs2[N];
+
+	md_copy_dims(N, tdims, dims);
+	md_copy_strides(N, tostrs, ostrs);
+	md_copy_strides(N, tistrs1, istrs1);
+	md_copy_strides(N, tistrs2, istrs2);
+
+	long (*strs[3])[N] = { &tostrs, &tistrs1, &tistrs2 };
+
+	N = optimize_dims_gpu(3, N, tdims, strs);
+
+	const long* tdims_p = tdims;
+	const long* tostrs_p = tostrs;
+	const long* tistrs1_p = tistrs1;
+	const long* tistrs2_p = tistrs2;
+
+	if (0 < N && (1 < tdims[0]) && (0 == tostrs[0]) && (CFL_SIZE == tistrs1[0]) && (CFL_SIZE == tistrs2[0])) {
+
+		NESTED(void, nary_inner_3op, (struct nary_opt_data_s* data, void* ptr[]))
+		{
+			for (long i = 0; i < data->size; i++)
+				zfmaccD_dot(1, tdims_p, tostrs_p, (complex double*)(ptr[0]) + i,
+						tistrs1_p, (const complex float*)(ptr[1]) + i * tdims_p[0],
+						tistrs2_p, (const complex float*)(ptr[2]) + i * tdims_p[0]);
+		};
+
+		optimized_threeop_oii(	N - 1, tdims + 1,
+				tostrs + 1, (void*)out, tistrs1 + 1, (void*)in1, tistrs2 + 1, (void*)in2,
+				(size_t[3]){ CDL_SIZE, ((size_t)tdims[0] * CFL_SIZE), ((size_t)tdims[0] * CFL_SIZE) }, nary_inner_3op);
+
+		return true;
+	}
+
+	return false;
+}
+
+
