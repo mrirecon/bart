@@ -778,6 +778,7 @@ static complex float* create_cfl_internal2(const char* name, int D, const long d
 static complex float* create_cfl_typed(enum file_types_e type, const char* name, int D, long dims[D], unsigned long stream_flags)
 {
 	complex float* addr = NULL;
+
 	if (mpi_is_main_proc()) {
 
 		switch (type) {
@@ -811,6 +812,7 @@ static complex float* create_cfl_typed(enum file_types_e type, const char* name,
 		default:
 			error("Unknown filetype!\n");
 		}
+
 	} else {
 
 		addr = anon_cfl(NULL, D, dims);
