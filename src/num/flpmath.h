@@ -21,8 +21,8 @@
 ({									\
 	int _N = (N);							\
 	long* _dims = alloca((size_t)((_N + 1) * (long)sizeof(long)));	\
-	md_copy_dims(_N, _dims + 1, dims);				\
-	_dims[0] = 2;							\
+	md_copy_dims(_N, _dims, dims);					\
+	_dims[N] = 2;							\
 	_dims;								\
 })
 
@@ -30,8 +30,8 @@
 ({									\
 	int _N = (N);							\
 	long* _strs = alloca((size_t)((_N + 1) * (long)sizeof(long)));	\
-	md_copy_dims(_N, _strs + 1, strs);				\
-	_strs[0] = (size);						\
+	md_copy_dims(_N, _strs, strs);					\
+	_strs[N] = (size);						\
 	_strs;								\
 })
 
