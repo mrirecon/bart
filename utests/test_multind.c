@@ -264,9 +264,9 @@ static bool test_md_next(void)
 	const long dims[] = { 2, 3 };
 
 	const long good[6][2] = {
-		{0, 0}, {1, 0},
-		{0, 1}, {1, 1},
-		{0, 2}, {1, 2}
+		{ 0, 0 }, { 1, 0 },
+		{ 0, 1 }, { 1, 1 },
+		{ 0, 2 }, { 1, 2 },
 	};
 
 	long pos[2] = { 0 };
@@ -275,22 +275,24 @@ static bool test_md_next(void)
 
 	do {
 		UT_RETURN_ON_FAILURE(md_check_equal_dims(2, good[i++], pos, 3UL));
-	} while (md_next(2, dims, 3UL, pos));
 
+	} while (md_next(2, dims, 3UL, pos));
 
 	return true;
 }
+
 UT_REGISTER_TEST(test_md_next);
 
-static bool test_md_next_order(void)
+
+static bool test_md_next_permuted(void)
 {
 	const long dims[] = { 2, 3 };
 
-	const int order[] = {1, 0};
+	const int order[] = { 1, 0 };
 
 	const long good[6][2] = {
-		{0, 0}, {0, 1}, {0, 2},
-		{1, 0}, {1, 1}, {1, 2}
+		{ 0, 0 }, { 0, 1 }, { 0, 2 },
+		{ 1, 0 }, { 1, 1 }, { 1, 2 }
 	};
 
 	long pos[2] = { 0 };
@@ -299,24 +301,43 @@ static bool test_md_next_order(void)
 
 	do {
 		UT_RETURN_ON_FAILURE(md_check_equal_dims(2, good[i++], pos, 3UL));
-	} while (md_next_order(2, order, dims, 3UL, pos));
 
+	} while (md_next_permuted(2, order, dims, 3UL, pos));
 
 	return true;
 }
 
-UT_REGISTER_TEST(test_md_next_order);
+UT_REGISTER_TEST(test_md_next_permuted);
+
 
 static bool test_md_permute_dims_inverse(void)
 {
 	const int order[6] = { 0, 2, 5, 3, 1, 4 };
 	const long good[6] = { 0, 1, 2, 3, 4, 5 };
-	long permute[6], inv_permute[6];
+
+	long permute[6];
+	long inv_permute[6];
+
 	md_permute_dims(6, order, permute, good);
-	md_permute_dims_inverse(6, order, inv_permute, permute);
+
+	int inv_order[6];
+	md_permute_invert(6, inv_order, order);
+	md_permute_dims(6, inv_order, inv_permute, permute);
 
 	return md_check_equal_dims(6, good, inv_permute, ~0UL);
 }
 
 UT_REGISTER_TEST(test_md_permute_dims_inverse);
+
+
+static bool test_md_permute_flags(void)
+{
+	const int order[6] = { 0, 2, 5, 3, 1, 4 };
+	unsigned long in = MD_BIT(1) | MD_BIT(5);
+	unsigned long out = MD_BIT(2) | MD_BIT(4);
+
+	return out == md_permute_flags(6, order, in);
+}
+
+UT_REGISTER_TEST(test_md_permute_flags);
 

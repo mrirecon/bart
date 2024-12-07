@@ -138,13 +138,15 @@ extern bool md_is_index(int D, const long pos[__VLA(D)], const long dims[__VLA(D
 extern bool md_check_dimensions(int N, const long dims[__VLA(N)], unsigned long flags);
 extern bool md_check_equal_dims(int N, const long dims1[__VLA(N)], const long dims2[__VLA(N)], unsigned long flags);
 extern void md_permute_dims(int D, const int order[__VLA(D)], long odims[__VLA(D)], const long idims[__VLA(D)]);
-extern void md_permute_dims_inverse(int D, const int order[__VLA(D)], long odims[__VLA(D)], const long idims[__VLA(D)]);
 extern void md_transpose_dims(int D, int dim1, int dim2, long odims[__VLA(D)], const long idims[__VLA(D)]);
 extern bool md_next(int D, const long dims[__VLA(D)], unsigned long flags, long pos[__VLA(D)]);
-extern bool md_next_order(int D, const int order[__VLA(D)], const long dims[__VLA(D)], unsigned long flags, long pos[__VLA(D)]);
+extern bool md_next_permuted(int D, const int order[__VLA(D)], const long dims[__VLA(D)], unsigned long flags, long pos[__VLA(D)]);
 
 extern void md_mask_compress(int D, const long dims[__VLA(D)], long M, uint32_t dst[__VLA(M)], const float* src);
 extern void md_mask_decompress(int D, const long dims[__VLA(D)], float* dst, long M, const uint32_t src[__VLA(M)]);
+
+extern unsigned long md_permute_flags(int D, const int order[__VLA(D)], unsigned long flags);
+extern void md_permute_invert(int D, int inv_order[__VLA(D)], const int order[__VLA(D)]);
 
 extern unsigned long md_nontriv_dims(int D, const long dims[__VLA(D)]);
 extern unsigned long md_nontriv_strides(int D, const long dims[__VLA(D)]);

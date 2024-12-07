@@ -306,10 +306,28 @@ bool md_next(int D, const long dims[D], unsigned long flags, long pos[D])
 
 
 /**
+ * Permute the order of bits in flags.
+ */
+unsigned long md_permute_flags(int D, const int order[D], unsigned long flags)
+{
+	long zeros[D];
+	md_singleton_strides(D, zeros);
+
+	long tmp[D];
+	md_select_dims(D, ~flags, tmp, zeros);
+
+	long tmp2[D];
+	md_permute_dims(D, order, tmp2, tmp);
+
+	return md_nontriv_strides(D, tmp2);
+}
+
+
+/**
  * Computes the next position after permuting the dims according to order.
  * Returns true until last index.
  */
-bool md_next_order(int D, const int order[D], const long dims[D], unsigned long flags, long pos[D])
+bool md_next_permuted(int D, const int order[D], const long dims[D], unsigned long flags, long pos[D])
 {
 	long dims2[D];
 	md_permute_dims(D, order, dims2, dims);
@@ -317,9 +335,13 @@ bool md_next_order(int D, const int order[D], const long dims[D], unsigned long 
 	long pos2[D];
 	md_permute_dims(D, order, pos2, pos);
 
-	bool next = md_next(D, dims2, flags, pos2);
+	unsigned long flags2 = md_permute_flags(D, order, flags);
 
-	md_permute_dims_inverse(D, order, pos, pos2);
+	bool next = md_next(D, dims2, flags2, pos2);
+
+	int inv_order[D];
+	md_permute_invert(D, inv_order, order);
+	md_permute_dims(D, order, pos, pos2);
 
 	return next;
 }
@@ -1514,7 +1536,6 @@ void md_permute(int D, const int order[D], const long odims[D], void* optr, cons
 /**
  * Permute dimensions
  *
- *
  */
 void md_permute_dims(int D, const int order[D], long odims[D], const long idims[D])
 {
@@ -1522,18 +1543,15 @@ void md_permute_dims(int D, const int order[D], long odims[D], const long idims[
 		odims[i] = idims[order[i]];
 }
 
+
 /**
- * Inverse permute dimensions
- *
+ * Invert permutation.
  *
  */
-void md_permute_dims_inverse(int D, const int order[D], long odims[D], const long idims[D])
+void md_permute_invert(int D, int inv_order[D], const int order[D])
 {
-	int inv_order[D];
 	for (int i = 0; i < D; i++)
 		inv_order[order[i]] = i;
-
-	md_permute_dims(D, inv_order, odims, idims);
 }
 
 
@@ -1549,9 +1567,9 @@ static void md_transpose_order(int D, int order[D], int dim1, int dim2)
 	order[dim2] = dim1;
 }
 
+
 /**
  * Transpose dimensions
- *
  *
  */
 void md_transpose_dims(int D, int dim1, int dim2, long odims[D], const long idims[D])
