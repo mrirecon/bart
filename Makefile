@@ -896,7 +896,6 @@ ifeq ($(BUILDTYPE), WASM)
 endif
 
 
-#	rm $(srcdir)/$@.o
 
 UTESTS=$(shell $(root)/utests/utests-collect.sh ./utests/$@.c)
 
