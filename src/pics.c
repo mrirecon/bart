@@ -55,7 +55,7 @@
 #include "num/vptr.h"
 
 static const char help_str[] = "Parallel-imaging compressed-sensing reconstruction.\n";
-                 
+
 
 static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long map_dims[DIMS], const complex float* maps, const long ksp_dims[DIMS],
 			const long traj_dims[DIMS], const complex float* traj, struct nufft_conf_s conf,
@@ -233,9 +233,8 @@ int main_pics(int argc, char* argv[argc])
 	double start_time = timestamp();
 
 	// Read input options
-	struct nufft_conf_s nuconf = nufft_conf_defaults;
-	nuconf.toeplitz = true;
-	nuconf.lowmem = false;
+	nufft_conf_options.toeplitz = true;
+	nufft_conf_options.lowmem = false;
 
 	const char* pat_file = NULL;
 	const char* traj_file = NULL;
@@ -326,13 +325,13 @@ int main_pics(int argc, char* argv[argc])
 		OPT_SET('S', &scale_im, "re-scale the image after reconstruction"),
 		OPT_ULONG('L', &loop_flags, "flags", "(batch-mode)"),
 		OPTL_ULONG(0, "shared-img-dims", &shared_img_flags, "flags", "deselect image dims with flags"),
-		OPT_SET('K', &nuconf.pcycle, "randshift for NUFFT"),
+		OPT_SET('K', &nufft_conf_options.pcycle, "randshift for NUFFT"),
 		OPT_INFILE('B', &basis_file, "file", "temporal (or other) basis"),
 		OPT_FLOAT('P', &bpsense_eps, "eps", "Basis Pursuit formulation, || y- Ax ||_2 <= eps"),
 		OPT_SET('M', &sms, "Simultaneous Multi-Slice reconstruction"),
-		OPTL_SET('U', "lowmem", &nuconf.lowmem, "Use low-mem mode of the nuFFT"),
+		OPTL_SET('U', "lowmem", &nufft_conf_options.lowmem, "Use low-mem mode of the nuFFT"),
 		OPTL_ULONG(0, "lowmem-stack", &lowmem_flags, "flags", "(Stack SENSE model along selected dimscurrently only supports COIL_DIM and noncart)"),
-		OPTL_CLEAR(0, "no-toeplitz", &nuconf.toeplitz, "Turn off Toeplitz mode of nuFFT"),
+		OPTL_CLEAR(0, "no-toeplitz", &nufft_conf_options.toeplitz, "(Turn off Toeplitz mode of nuFFT)"),
 		OPTL_OUTFILE(0, "psf_export", &psf_ofile, "file", "Export PSF to file"),
 		OPTL_INFILE(0, "psf_import", &psf_ifile, "file", "Import PSF from file"),
 		OPTL_STRING(0, "wavelet", &wtype_str, "name", "wavelet type (haar,dau2,cdf44)"),
@@ -340,6 +339,7 @@ int main_pics(int argc, char* argv[argc])
 		OPTL_FLVEC3(0, "fista_pqr", &fista.params, "p:q:r", "parameters for FISTA acceleration"),
 		OPTL_SET(0, "fista_last", &fista.last, "end iteration with call to data consistency"),
 		OPTL_INFILE(0, "motion-field", &motion_file, "file", "motion field"),
+		OPTL_SUBOPT(0, "nufft-conf", "...", "configure nufft", N_nufft_conf_opts, nufft_conf_opts),
 	};
 
 
@@ -367,6 +367,8 @@ int main_pics(int argc, char* argv[argc])
 
 	admm.dynamic_tau = admm.relative_norm;
 
+	struct nufft_conf_s nuconf = nufft_conf_options;
+
 	if (conf.bpsense)
 		nuconf.toeplitz = false;
 
@@ -386,6 +388,8 @@ int main_pics(int argc, char* argv[argc])
 	long coilim_dims[DIMS];
 	long ksp_dims[DIMS];
 	long traj_dims[DIMS];
+
+	memset(traj_dims, 0, sizeof traj_dims);	// GCC ANALYZER
 
 
 	// load kspace and maps and get dimensions
@@ -817,7 +821,7 @@ int main_pics(int argc, char* argv[argc])
 
 	if (conf.bpsense)
 		opt_bpursuit_configure(&ropts, thresh_ops, trafos, forward_op, kspace_p, bpsense_eps);
-	
+
 	if (conf.precond)
 		opt_precond_configure(&ropts, thresh_ops, trafos, forward_op, DIMS, ksp_dims, kspace_p, pat_dims, conf.precond ? pattern : NULL);
 

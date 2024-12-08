@@ -1,6 +1,6 @@
 
 
-$(TESTS_OUT)/exponentials.ra: index fmac scale zexp 
+$(TESTS_OUT)/exponentials.ra: index fmac scale zexp
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/index 0 128 i.ra							;\
 	$(TOOLDIR)/index 6 32 i2.ra							;\
@@ -16,8 +16,8 @@ $(TESTS_OUT)/phantom-exp.ra: phantom fmac $(TESTS_OUT)/exponentials.ra
 	$(TOOLDIR)/fmac x.ra $(TESTS_OUT)/exponentials.ra $@				;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 
-	
-$(TESTS_OUT)/expon-basis.ra: squeeze svd transpose extract reshape $(TESTS_OUT)/exponentials.ra 
+
+$(TESTS_OUT)/expon-basis.ra: squeeze svd transpose extract reshape $(TESTS_OUT)/exponentials.ra
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/squeeze $(TESTS_OUT)/exponentials.ra es.ra				;\
 	$(TOOLDIR)/svd es.ra u.ra s.ra v.ra						;\
@@ -72,5 +72,37 @@ tests/test-pics-linsub-noncart: traj scale nufft reshape ones delta repmat resha
 	touch $@
 
 
-TESTS += tests/test-pics-linsub tests/test-pics-linsub-noncart
+tests/test-pics-linsub-noncart2: traj scale nufft reshape ones delta repmat reshape fmac pics transpose nrmse $(TESTS_OUT)/phantom-exp.ra $(TESTS_OUT)/expon-basis.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)							;\
+	$(TOOLDIR)/traj -r -x256 -y128 t.ra								;\
+	$(TOOLDIR)/scale 0.5 t.ra t2.ra									;\
+	$(TOOLDIR)/nufft t2.ra $(TESTS_OUT)/phantom-exp.ra xek.ra					;\
+	$(TOOLDIR)/reshape 96 32 1 xek.ra xek2.ra							;\
+	$(TOOLDIR)/ones 2 128 128 o.ra									;\
+	$(TOOLDIR)/delta 8 33 8 p.ra									;\
+	$(TOOLDIR)/repmat 1 16 p.ra p2.ra								;\
+	$(TOOLDIR)/repmat 6 4 p2.ra p3.ra								;\
+	$(TOOLDIR)/reshape 7 1 1 128 p3.ra p4.ra							;\
+	$(TOOLDIR)/reshape 96 32 1 p4.ra p5.ra								;\
+	$(TOOLDIR)/fmac xek2.ra p5.ra xek3.ra								;\
+	$(TOOLDIR)/repmat 1 256 p5.ra p6.ra								;\
+	$(TOOLDIR)/scale 2 $(TESTS_OUT)/expon-basis.ra basis.ra						;\
+	$(TOOLDIR)/pics -S -i10 -w1. -Bbasis.ra -pp6.ra -t t2.ra xek3.ra o.ra x1.ra			;\
+	$(TOOLDIR)/pics -S -i10 -w1. --nufft-conf real-psf,upper-triag-psf,compress-psf	-Bbasis.ra -pp6.ra -t t2.ra xek3.ra o.ra x2.ra	;\
+	$(TOOLDIR)/pics -S -i10 -w1. --nufft-conf real-psf,upper-triag-psf		-Bbasis.ra -pp6.ra -t t2.ra xek3.ra o.ra x3.ra	;\
+	$(TOOLDIR)/pics -S -i10 -w1. --nufft-conf real-psf,compress-psf			-Bbasis.ra -pp6.ra -t t2.ra xek3.ra o.ra x4.ra	;\
+	$(TOOLDIR)/pics -S -i10 -w1. --nufft-conf real-psf				-Bbasis.ra -pp6.ra -t t2.ra xek3.ra o.ra x5.ra	;\
+	$(TOOLDIR)/pics -S -i10 -w1. --nufft-conf upper-triag-psf,compress-psf		-Bbasis.ra -pp6.ra -t t2.ra xek3.ra o.ra x6.ra	;\
+	$(TOOLDIR)/pics -S -i10 -w1. --nufft-conf upper-triag-psf			-Bbasis.ra -pp6.ra -t t2.ra xek3.ra o.ra x7.ra	;\
+	$(TOOLDIR)/pics -S -i10 -w1. --nufft-conf compress-psf				-Bbasis.ra -pp6.ra -t t2.ra xek3.ra o.ra x8.ra	;\
+	$(TOOLDIR)/nrmse -t 0.0001 x1.ra x2.ra								;\
+	$(TOOLDIR)/nrmse -t 0.0001 x1.ra x3.ra								;\
+	$(TOOLDIR)/nrmse -t 0.0001 x1.ra x4.ra								;\
+	$(TOOLDIR)/nrmse -t 0.0001 x1.ra x5.ra								;\
+	$(TOOLDIR)/nrmse -t 0.0001 x1.ra x6.ra								;\
+	$(TOOLDIR)/nrmse -t 0.0001 x1.ra x7.ra								;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+TESTS += tests/test-pics-linsub tests/test-pics-linsub-noncart tests/test-pics-linsub-noncart2
 
