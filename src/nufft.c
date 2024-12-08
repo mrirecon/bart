@@ -64,7 +64,6 @@ int main_nufft(int argc, char* argv[argc])
 	const char* fieldmap_file = NULL;
 	const char* timemap_file = NULL;
 
-	struct nufft_conf_s conf = nufft_conf_defaults;
 	struct iter_conjgrad_conf cgconf = iter_conjgrad_defaults;
 
 	long coilim_vec[3] = { };
@@ -79,29 +78,32 @@ int main_nufft(int argc, char* argv[argc])
 		OPT_VEC3('x', &coilim_vec, "x:y:z", "dimensions"),
 		OPT_VEC3('d', &coilim_vec, "", "(dimensions, deprecated)"),
 		OPT_VEC3('D', &coilim_vec, "", "(dimensions, long deprecated)"),
-		OPT_SET('t', &conf.toeplitz, "Toeplitz embedding for inverse NUFFT"),
-		OPT_CLEAR('r', &conf.toeplitz, "turn-off Toeplitz embedding for inverse NUFFT"),
+		OPT_SET('t', &nufft_conf_options.toeplitz, "Toeplitz embedding for inverse NUFFT"),
+		OPT_CLEAR('r', &nufft_conf_options.toeplitz, "turn-off Toeplitz embedding for inverse NUFFT"),
 		OPT_SET('c', &precond, "Preconditioning for inverse NUFFT"),
 		OPT_FLOAT('l', &lambda, "lambda", "l2 regularization"),
 		OPT_PINT('m', &cgconf.maxiter, "iter", "max. number of iterations (inverse only)"),
-		OPT_SET('P', &conf.periodic, "periodic k-space"),
+		OPT_SET('P', &nufft_conf_options.periodic, "periodic k-space"),
 		OPT_SET('s', &dft, "DFT"),
 		OPT_SET('g', &bart_use_gpu, "GPU"),
-		OPT_CLEAR('1', &conf.decomp, "use/return oversampled grid"),
-		OPTL_SET(0, "lowmem", &conf.lowmem, "Use low-mem mode of the nuFFT"),
-		OPTL_SET(0, "zero-mem", &conf.zero_overhead, "Use zero-overhead mode of the nuFFT"),
+		OPT_CLEAR('1', &nufft_conf_options.decomp, "use/return oversampled grid"),
+		OPTL_SET(0, "lowmem", &nufft_conf_options.lowmem, "Use low-mem mode of the nuFFT"),
+		OPTL_SET(0, "zero-mem", &nufft_conf_options.zero_overhead, "Use zero-overhead mode of the nuFFT"),
 		OPTL_CLEAR(0, "no-precomp", &precomp, "Use low-low-mem mode of the nuFFT"),
 		OPT_INFILE('B', &basis_file, "file", "temporal (or other) basis"),
 		OPT_INFILE('p', &pattern_file, "file", "weighting of nufft"),
-		OPTL_FLOAT('o', "oversampling", &(conf.os), "o", "oversample grid by factor (default: o=2; required for Toeplitz)"),
-		OPTL_FLOAT('w', "width", &(conf.width), "w", "width of Kaiser-Bessel window (default: w=6)"),
+		OPTL_FLOAT('o', "oversampling", &(nufft_conf_options.os), "o", "oversample grid by factor (default: o=2; required for Toeplitz)"),
+		OPTL_FLOAT('w', "width", &(nufft_conf_options.width), "w", "width of Kaiser-Bessel window (default: w=6)"),
 		OPT_INFILE('F', &fieldmap_file, "file", "b0 inhomogeneity fieldmap"),
 		OPT_INFILE('T', &timemap_file, "file", "timemap for conjugate phase reconstruction"),
+		OPTL_SUBOPT(0, "nufft-conf", "...", "configure nufft", N_nufft_conf_opts, nufft_conf_opts),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init_gpu_support();
+
+	struct nufft_conf_s conf = nufft_conf_options;
 
 	if (adjoint && inverse)
 		error("Adjoint and inverse requested at the same time.\n");
@@ -158,7 +160,7 @@ int main_nufft(int argc, char* argv[argc])
 			timemap = load_cfl(timemap_file, DIMS, timemap_dims);
 
 			assert(md_check_compat(DIMS, 1u, timemap_dims, traj_dims));
-			assert(md_check_compat(DIMS, 4u, coilest_dims, fieldmap_dims)); 
+			assert(md_check_compat(DIMS, 4u, coilest_dims, fieldmap_dims));
 			assert(1 == dft); /* only implemented for dft for now */
 		}
 	}
