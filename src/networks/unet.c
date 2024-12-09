@@ -248,30 +248,39 @@ static nn_t unet_sort_names(nn_t network, struct network_unet_s* unet)
 	const char* prefixes[] = { "_init", "_before", "_down", "", "_up", "_stack", "_after", "_last" };
 	const char* weights[] = { "conv", "corr", "conv_adj", "corr_adj", "bn", "bn_gamma", "inorm", "bias" };
 
-	const char* names[unet->N_level][ARRAY_SIZE(prefixes)][ARRAY_SIZE(weights)];
+	int J = (int)ARRAY_SIZE(prefixes);
+	int K = (int)ARRAY_SIZE(weights);
+	int N = unet->N_level * J * K;
+
+	const char* names[N];
+	int l = 0;
 
 	for (int i = 0; i < unet->N_level; i++) {
-		for (int j = 0; j < (int)ARRAY_SIZE(prefixes); j++) {
-			for (int k = 0; k < (int)ARRAY_SIZE(weights); k++) {
 
-				names[i][j][k] = ptr_printf("level_%d%s_%s", i, prefixes[j], weights[k]);
+		for (int j = 0; j < J; j++) {
+			for (int k = 0; k < K; k++) {
 
-				if (unet->real_constraint && nn_is_name_in_in_args(network, names[i][j][k]))
-					network = nn_real_input_F(network, 0, names[i][j][k]);
+				names[l] = ptr_printf("level_%d%s_%s", i, prefixes[j], weights[k]);
+
+				if (unet->real_constraint && nn_is_name_in_in_args(network, names[l]))
+					network = nn_real_input_F(network, 0, names[l]);
+
+				l++;
 			}
 		}
 	}
 
-	int N = unet->N_level * (int)ARRAY_SIZE(prefixes) * (int)ARRAY_SIZE(weights);
+	assert(N == l);
 
-	network = nn_sort_inputs_by_list_F(network, N, &(names[0][0][0]));
-	network = nn_sort_outputs_by_list_F(network, N, &(names[0][0][0]));
+	network = nn_sort_inputs_by_list_F(network, N, names);
+	network = nn_sort_outputs_by_list_F(network, N, names);
 
 	for (int i = 0; i < N; i++)
-		xfree((&(names[0][0][0]))[i]);
+		xfree(names[i]);
 
 	return network;
 }
+
 
 struct nn_conv_block_s {
 
