@@ -1,4 +1,5 @@
-/* Copyright 2021-2022. Uecker Lab. University Medical Center Göttingen.
+/* Copyright 2021-2024. Uecker Lab. University Medical Center Göttingen.
+ * Copyright 2022-2024. TU Graz. Institute of Biomedical Imaging.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  **/
@@ -659,10 +660,7 @@ static nn_t nnunet_sample_conv_strided_create(struct network_unet_s* unet, int N
 			assert(0 == dims[i] % stride);
 			down_dims[i] = dims[i] / stride;
 			strides[i] = stride;
-			if (up)
-				kdims[i] = 2;
-			else
-				kdims[i] = 4;
+			kdims[i] = up ? 2 : 4;
 		}
 
 		if (MD_IS_SET(unet->channel_flag, i)) {

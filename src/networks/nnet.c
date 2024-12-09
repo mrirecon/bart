@@ -1,4 +1,5 @@
-/* Copyright 2021-2022. Uecker Lab. University Medical Center Göttingen.
+/* Copyright 2021-2024. Uecker Lab. University Medical Center Göttingen.
+ * Copyright 2024. TU Graz. Institute of Biomedical Imaging.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  **/
@@ -133,6 +134,7 @@ void nnet_init_unet_segm_default(struct nnet_s* nnet, long N_unet_segm_labels, l
 	nnet->train_conf = CAST_UP(PTR_PASS(train_conf));
 
 	PTR_ALLOC(struct network_unet_s, network);
+
 	if (-1 != N_nnunet_segm_labels)
 		*network = network_nnunet_default_segm;
 	else
@@ -152,7 +154,7 @@ void nnet_init_unet_segm_default(struct nnet_s* nnet, long N_unet_segm_labels, l
 	if (NULL == nnet->valid_loss)
 		nnet->valid_loss =  &loss_classification_valid;
 
-	nnet->N_segm_labels =MAX(N_unet_segm_labels, N_nnunet_segm_labels);
+	nnet->N_segm_labels = MAX(N_unet_segm_labels, N_nnunet_segm_labels);
 }
 
 
@@ -311,7 +313,8 @@ void apply_nnet(	const struct nnet_s* config,
 	auto nnet = nnet_apply_op_create(config, NO, odims, NI, idims);
 
 	static bool export = true;
-	if (export && NULL != config->graph_file) {
+
+	if (export && (NULL != config->graph_file)) {
 
 		nn_export_graph(config->graph_file, nnet);
 		export = false;
@@ -322,12 +325,9 @@ void apply_nnet(	const struct nnet_s* config,
 
 	md_copy(NI, idims, in_tmp, in, CFL_SIZE);
 
-	complex float* args[2];
+	void* args[2] = { out_tmp, in_tmp };
 
-	args[0] = out_tmp;
-	args[1] = in_tmp;
-
-	nlop_generic_apply_no_derivative_unchecked(nn_get_nlop(nnet), 2, (void**)args);
+	nlop_generic_apply_no_derivative_unchecked(nn_get_nlop(nnet), 2, args);
 
 	md_copy(NO, odims, out, out_tmp, CFL_SIZE);
 
@@ -384,17 +384,17 @@ extern void eval_nnet(	struct nnet_s* nnet,
 
 	apply_nnet_batchwise(nnet, NO, odims, tmp_out, NI, idims, in, Nb);
 
-	complex float* args[N + 2];
+	void* args[N + 2];
 
 	for (int i = 0; i < N; i++)
 		args[i] = losses + i;
 
 	args[N] = tmp_out;
-	args[N + 1] = (complex float*)out;
+	args[N + 1] = (void*)out;
 
-	nlop_generic_apply_no_derivative_unchecked(nn_get_nlop(loss), N + 2, (void**)args);
+	nlop_generic_apply_no_derivative_unchecked(nn_get_nlop(loss), N + 2, args);
 
-	for (int i = 0; i < N ; i++)
+	for (int i = 0; i < N; i++)
 		debug_printf(DP_INFO, "%s: %e\n", nn_get_out_name_from_arg_index(loss, i, false), crealf(losses[i]));
 
 	nn_free(loss);

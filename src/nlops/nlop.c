@@ -1,5 +1,5 @@
 /* Copyright 2018-2022. Uecker Lab. University Center Göttingen.
- * Copyright 2023. Institute of Biomedical Imaging. TU Graz.
+ * Copyright 2023-2024. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -617,6 +617,7 @@ void nlop_generic_apply_no_derivative_unchecked(const struct nlop_s* op, int N, 
 
 	for(int o = 0; o < OO; o++) {
 		for(int i = 0; i < II; i++) {
+
 			select_der[i][o] = false;
 			select_all[i][o] = true;
 		}

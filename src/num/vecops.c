@@ -804,12 +804,13 @@ static void axpy_bat(long Bi, long N, long Bo, float* a, const float* alpha, con
 
 static void zsetnanzero(long N, complex float* dst, const complex float* src)
 {
-	for (long i = 0; i < N; i++)
+	for (long i = 0; i < N; i++) {
+
 		if (safe_isnanf(crealf(src[i])) || safe_isnanf(cimagf(src[i])))
 			dst[i] = 0;
 		else
 			dst[i] = src[i];
-
+	}
 }
 
 /*

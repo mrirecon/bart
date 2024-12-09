@@ -1,4 +1,5 @@
-/* Copyright 2020. Uecker Lab. University Medical Center Göttingen.
+/* Copyright 2020-2024. Uecker Lab. University Medical Center Göttingen.
+ * Copyright 2023-2024. TU Graz. Institute of Biomedical Imaging.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -65,7 +66,9 @@ static void stats_fun(const nlop_data_t* _data, int N, complex float* args[N])
 	md_zsum(data->dom->N, data->dom->dims, data->flags, mean, src);
 	md_zsmul(data->dom->N, data->codom->dims, mean, mean, 1. / data->n);
 
+
 	complex float* neg_mean = md_alloc_sameplace(data->codom->N, data->codom->dims, data->codom->size, mean);
+
 	md_zsmul(data->codom->N, data->codom->dims, neg_mean, mean, -1);
 
 	md_zadd2(data->dom->N, data->dom->dims, data->dom->strs, data->x, data->dom->strs, src, data->codom->strs, neg_mean);
@@ -132,6 +135,7 @@ static void stats_del(const struct nlop_data_s* _data)
 
 	xfree(data);
 }
+
 
 /**
  * Nlop to compute mean and variance of input
@@ -228,9 +232,11 @@ static void normalize_fun(const nlop_data_t* _data, int N, complex float* args[N
 		md_zsub(data->dom->N, data->dom->dims, data->tmp, src, tmp);
 
 		md_free(tmp);
-	} else
-#endif
+
+	} else {
+#else
 	{
+#endif
 		md_zsub2(data->dom->N, data->dom->dims, data->dom->strs, data->tmp, data->dom->strs, src, data->statdom->strs, mean);
 	}
 
@@ -469,6 +475,7 @@ static void bn_fun(const nlop_data_t* _data, int D, complex float* args[D])
 	md_zsmul(N, data->stat_dom->dims, var, var, data->mean_size / (data->mean_size - 1));
 
 	bool der = nlop_der_requested(_data, 0, 0);
+
 	if (der) {
 
 		bn_init(data, out);
@@ -542,6 +549,7 @@ static void bn_del(const struct nlop_data_s* _data)
 
 	xfree(data);
 }
+
 
 /**
  * Nlop to compute mean and variance of input
@@ -622,8 +630,7 @@ const struct nlop_s* nlop_batchnorm_create(int N, const long dims[N], unsigned l
 		result = nlop_stack_outputs_F(result, 1, 2, N);
 		iov = nlop_generic_codomain(result, 1);
 		result = nlop_combine_FF(result, nlop_del_out_create(iov->N, iov->dims));
-
-		return result;
+		break;
 
 	case STAT_TEST:
 
@@ -634,13 +641,15 @@ const struct nlop_s* nlop_batchnorm_create(int N, const long dims[N], unsigned l
 		iov = nlop_generic_domain(result, 1);
 		result = nlop_combine_FF(result, nlop_from_linop_F(linop_identity_create(iov->N, iov->dims)));
 		result = nlop_dup_F(result, 1, 2);
+		break;
 
-		return result;
+	default:
+		assert(0);
 	}
 
-	assert(0);
-	return NULL;
+	return result;
 }
+
 
 /**
  * Nlop to normalize input
@@ -655,7 +664,6 @@ const struct nlop_s* nlop_batchnorm_create(int N, const long dims[N], unsigned l
  **/
 const struct nlop_s* nlop_normalize_create(int N, const long dims[N], unsigned long flags, float epsilon)
 {
-
 	const struct nlop_s* result = NULL;
 
 	result = nlop_combine_FF(nlop_normalize_stats_create(N, dims, flags, epsilon), nlop_stats_create(N, dims, flags));
@@ -665,3 +673,4 @@ const struct nlop_s* nlop_normalize_create(int N, const long dims[N], unsigned l
 
 	return result;
 }
+
