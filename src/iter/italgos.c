@@ -29,6 +29,9 @@
  *
  * Chambolle A, Pock, T. A First-Order Primal-Dual Algorithm for Convex Problems
  * with Applications to Imaging. J. Math. Imaging Vis. 2011; 40, 120-145.
+ * 
+ * Bredies K, Holler M. A TGV-Based Framework for Variational Image Decompression, 
+ * Zooming, and Reconstruction. Part II: Numerics. SIAM J. Imaging Sci. 2015; 8, 2851-2886.
  */
 
 #include <math.h>
@@ -821,19 +824,22 @@ double power(int maxiter,
  * @param epsilon stop criterion
  * @param tau primal step size
  * @param sigma dual step size
+ * @param sigma_tau_ratio ratio of sigma to tau
  * @param decay decay rate
+ * @param adapt_stepsize adaptive step size algorithm
  * @param theta convex combination rate
  * @param N size of input, x
- * @param M size of transformed input, Ax
+ * @param M array with sizes of transformed input, Ax
  * @param vops vector ops definition
- * @param op_forw forward operator, A
- * @param op_adj adjoint operator, AH
- * @param prox1 proximal function of F, e.g. prox_l2ball
+ * @param op_forw array of forward operators, A
+ * @param op_adj array of adjoint operators, AH
+ * @param prox1 array of proximal functions of F, e.g. prox_l2bal
  * @param prox2 proximal function of G, e.g. prox_wavelet_thresh
  * @param x initial estimate
  * @param monitor callback function
  */
-void chambolle_pock(float alpha, int maxiter, float epsilon, float tau, float sigma, float theta, float decay,
+void chambolle_pock(float alpha, int maxiter, float epsilon, float tau, float sigma, 
+	float sigma_tau_ratio, float theta, float decay, bool adapt_stepsize,
 	int O, long N, long M[O],
 	const struct vec_iter_s* vops,
 	struct iter_op_s op_norm,
@@ -947,6 +953,80 @@ void chambolle_pock(float alpha, int maxiter, float epsilon, float tau, float si
 		iter_op_p_call(prox2, tau * alpha, x_new, x);
 
 		vops->axpbz(N, x, lambda, x_new, 1. - lambda, x_old);
+
+		/* adapt step sizes
+		* x_new = x - x_old
+		* u = A( x_new )
+		* norm_Kx = || u ||_2
+		* norm_x = || x_new ||_2
+		*/
+		if (adapt_stepsize) {
+			
+			vops->sub(N, x_new, x, x_old);
+
+			float norm_Kx = 0;
+			
+			// || A( x - x_old ) ||_2
+
+			for (int j = 0; j < O; j++) {
+
+				float* u = vops->allocate(M[j]);
+
+				iter_op_call(op_forw[j], u, x_new);
+				norm_Kx += pow(vops->norm(M[j], u), 2.);
+
+				vops->del(u);
+			}
+
+			if (NULL != Ahu) {
+
+				float* Ahu_new = vops->allocate(N);
+
+				iter_op_call(op_norm, Ahu_new, x_new);
+				norm_Kx += vops->dot(N, Ahu_new, x_new);
+
+				vops->del(Ahu_new);
+			}
+
+			norm_Kx = sqrt(norm_Kx);
+
+			// || ( x - x_old ) ||_2
+
+			float norm_x = vops->norm(N, x_new);
+
+			if (0 != norm_Kx) {
+
+				float ratio = norm_x / norm_Kx;
+				
+				float sigma_tau_sqrt = sqrtf(sigma * tau);
+
+				float threshold = 0.95f * sigma_tau_sqrt;
+
+				float temp;
+
+				// adapt step sizes depending on ratio
+
+				if ((ratio < sigma_tau_sqrt) && (0 != ratio)) {
+
+					if (threshold < ratio)
+						temp = threshold;
+					else
+						temp = ratio;
+				} else {
+
+					temp = sigma_tau_sqrt;
+				}
+				
+				sigma = temp * sigma_tau_ratio;
+				tau = temp / sigma_tau_ratio;
+
+				debug_printf(DP_DEBUG3, "#Step sizes %03d: sigma: %f, tau: %f  \n", i, sigma, tau);
+
+			} else {
+				
+				debug_printf(DP_DEBUG3, "#Step sizes unchanged.\n");
+			}
+		}
 
 		/* update x_avg
 		 * a_avg = x + theta * (x - x0)

@@ -261,7 +261,7 @@ int main_pics(int argc, char* argv[argc])
 
 	struct admm_conf admm = { false, false, false, iter_admm_defaults.rho, iter_admm_defaults.maxitercg, false };
 	struct fista_conf fista = { { -1., -1., -1. }, false };
-	struct pridu_conf pridu = { 1., 0. };
+	struct pridu_conf pridu = { 1., false, 0. };
 
 	enum algo_t algo = ALGO_DEFAULT;
 
@@ -296,6 +296,7 @@ int main_pics(int argc, char* argv[argc])
 		OPTL_SET(0, "precond", &(conf.precond), "interpret weights as preconditioner"),
 		OPT_PINT('b', &llr_blk, "blk", "Lowrank block size"),
 		OPT_SET('e', &eigen, "Scale stepsize based on max. eigenvalue"),
+		OPTL_SET(0, "adaptive-stepsize", &(pridu.adaptive_stepsize), "PRIDU adaptive step size"),
 		OPT_SET('H', &hogwild, "(hogwild)"),
 		OPT_SET('D', &admm.dynamic_rho, "(ADMM dynamic step size)"),
 		OPT_SET('F', &admm.fast, "(fast)"),

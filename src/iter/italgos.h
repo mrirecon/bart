@@ -242,7 +242,9 @@ double power(int maxiter,
 	struct iter_op_s op,
 	float* u, float*b);
 
-void chambolle_pock(float alpha, int maxiter, float epsilon, float tau, float sigma, float theta, float decay,
+void chambolle_pock(float alpha, int maxiter, float epsilon, float tau, float sigma, 
+	float sigma_tau_ratio, float theta, 
+	float decay, _Bool adapt_stepsize,
 	int O, long N, long M[O],
 	const struct vec_iter_s* vops,
 	struct iter_op_s op_norm,

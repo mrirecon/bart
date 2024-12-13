@@ -193,6 +193,7 @@ struct iter italgo_config(enum algo_t algo, int nr_penalties, const struct reg_s
 		pdconf->decay = (hogwild ? .95 : 1.);
 		pdconf->tol = 1.E-4;
 
+		pdconf->adapt_stepsize = pridu.adaptive_stepsize;
 		pdconf->maxeigen_iter = pridu.maxeigen_iter;
 
 		italgo = iter2_chambolle_pock;

@@ -101,11 +101,13 @@ struct iter_chambolle_pock_conf {
 	int maxiter;
 	float tau;
 	float sigma;
+	float sigma_tau_ratio;
 	float theta;
 	float decay;
 	float tol;
 	_Bool fast;
 	int maxeigen_iter;
+	_Bool adapt_stepsize;
 };
 
 

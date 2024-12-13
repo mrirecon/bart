@@ -29,6 +29,7 @@ struct fista_conf {
 struct pridu_conf {
 
 	float sigma_tau_ratio;
+	bool adaptive_stepsize;
 	int maxeigen_iter;
 };
 

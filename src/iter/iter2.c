@@ -455,11 +455,15 @@ void iter2_chambolle_pock(const iter_conf* _conf,
 		debug_printf(DP_INFO, "Max eigenvalue: %e\n", maxeigen);
 
 		operator_free(me_normal);
+	} else if (!conf->adapt_stepsize) {
+
+		debug_printf(DP_WARN, "Max eigenvalue not estimated and no adaptive stepsize, possible convergence issues.\n");
 	}
 
 
 	// FIXME: conf->INTERFACE.alpha * c
-	chambolle_pock(conf->INTERFACE.alpha, conf->maxiter, eps * conf->tol, conf->tau / sqrtf(maxeigen), conf->sigma / sqrtf(maxeigen), conf->theta, conf->decay, D, size, M, select_vecops(image),
+	chambolle_pock(conf->INTERFACE.alpha, conf->maxiter, eps * conf->tol, conf->tau / sqrtf(maxeigen), conf->sigma / sqrtf(maxeigen),
+			conf->sigma_tau_ratio, conf->theta, conf->decay, conf->adapt_stepsize, D, size, M, select_vecops(image),
 			OPERATOR2ITOP(normaleq_op), lop_frw, lop_adj, it_prox, OPERATOR_P2ITOP(prox_G),
 			image, image_adj, monitor);
 

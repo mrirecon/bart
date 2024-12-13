@@ -974,7 +974,7 @@ int main_wshfl(int argc, char* argv[argc])
 
 	struct admm_conf admm = { false, false, false, rho, cgiter, false };
 
-	struct pridu_conf pridu = { 1., 0. };
+	struct pridu_conf pridu = { 1., false, 0. };
 
 	debug_printf(DP_INFO, "Loading data... ");
 
