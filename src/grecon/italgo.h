@@ -26,6 +26,11 @@ struct fista_conf {
 	bool last;
 };
 
+struct pridu_conf {
+
+	float sigma_tau_ratio;
+	int maxeigen_iter;
+};
 
 struct iter {
 
@@ -40,7 +45,7 @@ extern enum algo_t italgo_choose(int nr_penalties, const struct reg_s regs [nr_p
 
 extern struct iter italgo_config(enum algo_t algo, int nr_penalties, const struct reg_s* regs,
 		int maxiter, float step, bool hogwild, const struct admm_conf admm,
-		const struct fista_conf fista, float scaling, bool warm_start);
+		const struct fista_conf fista, const struct pridu_conf pridu, bool warm_start);
 
 extern void italgo_config_free(struct iter it);
 

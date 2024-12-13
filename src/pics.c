@@ -261,6 +261,7 @@ int main_pics(int argc, char* argv[argc])
 
 	struct admm_conf admm = { false, false, false, iter_admm_defaults.rho, iter_admm_defaults.maxitercg, false };
 	struct fista_conf fista = { { -1., -1., -1. }, false };
+	struct pridu_conf pridu = { 1., 0. };
 
 	enum algo_t algo = ALGO_DEFAULT;
 
@@ -729,6 +730,7 @@ int main_pics(int argc, char* argv[argc])
 			bpsense_eps /= scaling;
 			debug_printf(DP_DEBUG1, "scaling basis pursuit eps: %.3e\n", bpsense_eps);
 		}
+		pridu.sigma_tau_ratio = scaling;
 	}
 
 
@@ -837,11 +839,9 @@ int main_pics(int argc, char* argv[argc])
 
 
 	// initialize algorithm
-
-	struct iter it = italgo_config(algo, nr_penalties, ropts.regs, maxiter, step, hogwild, admm, fista, scaling, NULL != image_truth);
-
-	if (eigen && (ALGO_PRIDU == algo))
-		CAST_DOWN(iter_chambolle_pock_conf, it.iconf)->maxeigen_iter = 30;
+	pridu.maxeigen_iter = eigen ? 30 : 0;
+	
+	struct iter it = italgo_config(algo, nr_penalties, ropts.regs, maxiter, step, hogwild, admm, fista, pridu, NULL != image_truth);
 
 	if (ALGO_CG == algo)
 		nr_penalties = 0;

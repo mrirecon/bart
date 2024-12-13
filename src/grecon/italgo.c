@@ -69,7 +69,7 @@ enum algo_t italgo_choose(int nr_penalties, const struct reg_s regs[nr_penalties
 
 struct iter italgo_config(enum algo_t algo, int nr_penalties, const struct reg_s* regs,
 		int maxiter, float step, bool hogwild, const struct admm_conf admm,
-		const struct fista_conf fista, float scaling, bool warm_start)
+		const struct fista_conf fista, const struct pridu_conf pridu, bool warm_start)
 {
 	italgo_fun2_t italgo = NULL;
 	iter_conf* iconf = NULL;
@@ -186,12 +186,14 @@ struct iter italgo_config(enum algo_t algo, int nr_penalties, const struct reg_s
 		pdconf->sigma = sqrtf(step);
 		pdconf->tau = sqrtf(step);
 
-		pdconf->sigma *= scaling;
-		pdconf->tau /= scaling;
+		pdconf->sigma *= pridu.sigma_tau_ratio;
+		pdconf->tau /= pridu.sigma_tau_ratio;
 
 		pdconf->theta = 1.;
 		pdconf->decay = (hogwild ? .95 : 1.);
 		pdconf->tol = 1.E-4;
+
+		pdconf->maxeigen_iter = pridu.maxeigen_iter;
 
 		italgo = iter2_chambolle_pock;
 		iconf = CAST_UP(PTR_PASS(pdconf));

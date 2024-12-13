@@ -974,6 +974,8 @@ int main_wshfl(int argc, char* argv[argc])
 
 	struct admm_conf admm = { false, false, false, rho, cgiter, false };
 
+	struct pridu_conf pridu = { 1., 0. };
+
 	debug_printf(DP_INFO, "Loading data... ");
 
 	long maps_dims[DIMS];
@@ -1209,7 +1211,7 @@ int main_wshfl(int argc, char* argv[argc])
 		struct fista_conf fc = { 0 };	// unused
 
 		it = italgo_config(ALGO_ADMM, nr_penalties, regs, maxiter, step,
-				hgwld, admm, fc, 1, false);
+				hgwld, admm, fc, pridu, false);
 	}
 
 	complex float* init = NULL;
