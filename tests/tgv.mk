@@ -9,7 +9,7 @@ tests/test-tgv: phantom slice noise tgv nrmse
 	$(TOOLDIR)/noise -s 1 -n 1000000. x0.ra x0n.ra					;\
 	$(TOOLDIR)/tgv 650. 3 x0n.ra xd.ra						;\
 	$(TOOLDIR)/slice 15 0 xd.ra xd0.ra						;\
-	$(TOOLDIR)/nrmse -t 0.026 x0.ra xd0.ra						;\
+	$(TOOLDIR)/nrmse -t 0.030 x0.ra xd0.ra						;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 

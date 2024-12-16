@@ -87,7 +87,7 @@ struct reg tv_reg(unsigned long flags, unsigned long jflags, float lambda, int N
  * \min_{x,z} \alpha_1 \| \Delta(x) + z \|_1 + \alpha_0 \| \text{Eps}(z) \|_1
  * \f]
  * 
- * where \f$ \text{Eps}(z) = \Delta(z + z^T) \f$.
+ * where \f$ \text{Eps}(z) = 0.5 \cdot \Delta(z + z^T) \f$.
  *
  * @param flags       Bitmask specifying the dimensions for the regularization.
  * @param jflags      Bitmask for joint thresholding operation.
@@ -140,6 +140,8 @@ struct reg2 tgv_reg(unsigned long flags, unsigned long jflags, float lambda, int
 		grad2 = linop_chain_FF(grad2,
 			linop_cdiag_create(N + 2, linop_codomain(grad2)->dims, MD_BIT(N + 1), ztvscales));
 	}
+
+	grad2 = linop_chain_FF(grad2, linop_scale_create(N + 2, linop_codomain(grad2)->dims, 0.5f));
 
 	auto iov = linop_domain(grad1);
 	auto grad1b = linop_extract_create(1, MD_DIMS(0), MD_DIMS(md_calc_size(N, in_dims)), MD_DIMS(isize));
