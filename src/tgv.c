@@ -47,6 +47,9 @@ int main_tgv(int argc, char* argv[argc])
 	const char* in_file = NULL;
 	const char* out_file = NULL;
 
+	int tvscales_N = 5;
+	float tvscales[5] = { 0.0, 0.0, 0.0, 0.0, 0.0 };
+
 	struct arg_s args[] = {
 
 		ARG_FLOAT(true, &lambda, "lambda"),
@@ -55,7 +58,10 @@ int main_tgv(int argc, char* argv[argc])
 		ARG_OUTFILE(true, &out_file, "output"),
 	};
 
-	const struct opt_s opts[] = { };
+	const struct opt_s opts[] = { 
+
+		OPTL_FLVECN(0, "tvscales", tvscales, "Scaling of derivatives")
+	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
@@ -73,7 +79,7 @@ int main_tgv(int argc, char* argv[argc])
 	out_dims[DIMS - 1] = 1 + bitcount(flags);
 
 	long ext_shift = md_calc_size(DIMS, in_dims);
-	struct reg2 reg2 = tgv_reg(flags, /*MD_BIT(DIMS - 1) |*/ MD_BIT(DIMS), lambda, DIMS, in_dims, md_calc_size(DIMS, out_dims), &ext_shift);
+	struct reg2 reg2 = tgv_reg(flags, /*MD_BIT(DIMS - 1) |*/ MD_BIT(DIMS), lambda, DIMS, in_dims, md_calc_size(DIMS, out_dims), &ext_shift, tvscales_N, tvscales);
 
 
 	complex float* out_data = create_cfl(out_file, DIMS, out_dims);

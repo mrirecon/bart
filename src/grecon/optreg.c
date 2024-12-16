@@ -254,6 +254,13 @@ bool opt_reg(void* ptr, char c, const char* optarg)
 bool opt_reg_init(struct opt_reg_s* ropts)
 {
 	*ropts = (struct opt_reg_s){ .lambda = -1. };
+
+	ropts->tvscales_N = NUM_TV_SCALES;
+	for (int i = 0; i < ropts->tvscales_N; i++) {
+		
+		ropts->tvscales[i] = 0.0;
+	}
+
 	return false;
 }
 
@@ -475,7 +482,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 			debug_printf(DP_INFO, "TV regularization: %f\n", regs[nr].lambda);
 
-			struct reg reg = tv_reg(regs[nr].xflags, regs[nr].jflags, regs[nr].lambda, DIMS, img_dims);
+			struct reg reg = tv_reg(regs[nr].xflags, regs[nr].jflags, regs[nr].lambda, DIMS, img_dims, ropts->tvscales_N, ropts->tvscales);
 			
 			trafos[nr] = reg.linop;
 			prox_ops[nr] = reg.prox;
@@ -486,7 +493,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 			debug_printf(DP_INFO, "TGV regularization: %f\n", regs[nr].lambda);
 
-			struct reg2 reg2 = tgv_reg(regs[nr].xflags, regs[nr].jflags /*| MD_BIT(DIMS - 1)*/ | MD_BIT(DIMS), regs[nr].lambda, DIMS, img_dims, md_calc_size(N, img_dims) + ropts->svars, &ext_shift);
+			struct reg2 reg2 = tgv_reg(regs[nr].xflags, regs[nr].jflags /*| MD_BIT(DIMS - 1)*/ | MD_BIT(DIMS), regs[nr].lambda, DIMS, img_dims, md_calc_size(N, img_dims) + ropts->svars, &ext_shift, ropts->tvscales_N, ropts->tvscales);
 
 			trafos[nr] = reg2.linop[0];
 			prox_ops[nr] = reg2.prox[0];

@@ -12,7 +12,7 @@
 #include "linops/grad.h"
 
 #include "iter/thresh.h"
-
+#include "misc/debug.h"
 
 #include "tgv.h"
 
@@ -30,14 +30,34 @@
  * @param lambda      Regularization parameter.
  * @param N           Number of dimensions.
  * @param img_dims    Array of size N specifying the input dimensions.
+ * @param tvscales_N  Number of TV scales.
+ * @param tvscales    Array of size tvscales_N specifying the scaling of the derivatives.
  * @return            A structure containing the TV regularization operator, which contains
  * 					  a linear operator for the gradient and a proximal operator for the thresholding.
  */
-struct reg tv_reg(unsigned long flags, unsigned long jflags, float lambda, int N, const long img_dims[N])
+struct reg tv_reg(unsigned long flags, unsigned long jflags, float lambda, int N, const long img_dims[N], int tvscales_N, const float tvscales[tvscales_N])
 {
 	struct reg reg;
 
+	while ((0 < tvscales_N) && (0. == tvscales[tvscales_N - 1]))
+		tvscales_N--;
+
 	reg.linop = linop_grad_create(N, img_dims, N, flags);
+
+	if (0 < tvscales_N) {
+
+		debug_printf(DP_INFO, "TV anisotropic scaling: %d\n", tvscales_N);
+
+		assert(tvscales_N == linop_codomain(reg.linop)->dims[N]);
+
+		complex float ztvscales[tvscales_N];
+		for (int i = 0; i < tvscales_N; i++)
+			ztvscales[i] = tvscales[i];
+
+		reg.linop = linop_chain_FF(reg.linop,
+			linop_cdiag_create(N + 1, linop_codomain(reg.linop)->dims, MD_BIT(N), ztvscales));
+	}
+
 	reg.prox = prox_thresh_create(N + 1,
 			linop_codomain(reg.linop)->dims,
 			lambda, jflags | MD_BIT(N));
@@ -55,11 +75,14 @@ struct reg tv_reg(unsigned long flags, unsigned long jflags, float lambda, int N
  * \alpha = 1, \beta = 2
  *
  * */
-struct reg2 tgv_reg(unsigned long flags, unsigned long jflags, float lambda, int N, const long in_dims[N], long isize, long* ext_shift)
+struct reg2 tgv_reg(unsigned long flags, unsigned long jflags, float lambda, int N, const long in_dims[N], long isize, long* ext_shift, int tvscales_N, const float tvscales[tvscales_N])
 {
 	assert(1 <= N);
 
 	struct reg2 reg2;
+
+	while ((0 < tvscales_N) && (0. == tvscales[tvscales_N - 1]))
+		tvscales_N--;
 
 	const struct linop_s* grad1 = linop_grad_create(N, in_dims, N, flags);
 
@@ -72,6 +95,23 @@ struct reg2 tgv_reg(unsigned long flags, unsigned long jflags, float lambda, int
 	const struct linop_s* grad2x2 = linop_transpose_create(N + 2, N + 0, N + 1, grd_dims);
 	grad2x2 = linop_chain_FF(grad2x2, linop_grad_create(N + 2, linop_codomain(grad2x2)->dims, N + 0, flags));
 	auto grad2 = linop_plus_FF(grad2x1, grad2x2);
+
+	if (0 < tvscales_N) {
+
+		debug_printf(DP_INFO, "TGV anisotropic scaling: %d\n", tvscales_N);
+
+		assert(tvscales_N == linop_codomain(grad1)->dims[N]);
+
+		complex float ztvscales[tvscales_N];
+		for (int i = 0; i < tvscales_N; i++)
+			ztvscales[i] = tvscales[i];
+
+		grad1 = linop_chain_FF(grad1,
+			linop_cdiag_create(N + 1, linop_codomain(grad1)->dims, MD_BIT(N), ztvscales));
+
+		grad2 = linop_chain_FF(grad2,
+			linop_cdiag_create(N + 2, linop_codomain(grad2)->dims, MD_BIT(N + 1), ztvscales));
+	}
 
 	auto iov = linop_domain(grad1);
 	auto grad1b = linop_extract_create(1, MD_DIMS(0), MD_DIMS(md_calc_size(N, in_dims)), MD_DIMS(isize));

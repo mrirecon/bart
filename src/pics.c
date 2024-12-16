@@ -297,6 +297,7 @@ int main_pics(int argc, char* argv[argc])
 		OPT_PINT('b', &llr_blk, "blk", "Lowrank block size"),
 		OPT_SET('e', &eigen, "Scale stepsize based on max. eigenvalue"),
 		OPTL_SET(0, "adaptive-stepsize", &(pridu.adaptive_stepsize), "PRIDU adaptive step size"),
+		OPTL_FLVECN(0, "tvscales", ropts.tvscales, "Scaling of derivatives in TV or TGV regularization"),
 		OPT_SET('H', &hogwild, "(hogwild)"),
 		OPT_SET('D', &admm.dynamic_rho, "(ADMM dynamic step size)"),
 		OPT_SET('F', &admm.fast, "(fast)"),

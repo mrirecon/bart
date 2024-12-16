@@ -11,6 +11,7 @@
 
 
 #define NUM_REGS 10
+#define NUM_TV_SCALES 5
 
 struct operator_p_s;
 struct linop_s;
@@ -36,6 +37,9 @@ struct opt_reg_s {
 	int r;
 	long svars;
 	int sr;
+	
+	int tvscales_N;
+	float tvscales[NUM_TV_SCALES];
 };
 
 
