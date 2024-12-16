@@ -471,15 +471,16 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 		}	break;
 
-		case TV:
+		case TV: {
 
 			debug_printf(DP_INFO, "TV regularization: %f\n", regs[nr].lambda);
 
-			trafos[nr] = linop_grad_create(DIMS, img_dims, DIMS, regs[nr].xflags);
-			prox_ops[nr] = prox_thresh_create(DIMS + 1,
-					linop_codomain(trafos[nr])->dims,
-					regs[nr].lambda, regs[nr].jflags | MD_BIT(DIMS));
-			break;
+			struct reg reg = tv_reg(regs[nr].xflags, regs[nr].jflags, regs[nr].lambda, DIMS, img_dims);
+			
+			trafos[nr] = reg.linop;
+			prox_ops[nr] = reg.prox;
+
+		}	break;
 
 		case TGV: {
 

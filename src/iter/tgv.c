@@ -17,6 +17,34 @@
 #include "tgv.h"
 
 
+/**
+ * This function creates a Total Variation (TV) regularization operator with the specified parameters.
+ * It minimizes the following objective:
+ * 
+ * \f[
+ * \min_{x} \alpha_1 \| \Delta(u) \|_1
+ * \f]
+ *
+ * @param flags       Bitmask specifying the dimensions for the regularization.
+ * @param jflags      Bitmask for joint thresholding operation.
+ * @param lambda      Regularization parameter.
+ * @param N           Number of dimensions.
+ * @param img_dims    Array of size N specifying the input dimensions.
+ * @return            A structure containing the TV regularization operator, which contains
+ * 					  a linear operator for the gradient and a proximal operator for the thresholding.
+ */
+struct reg tv_reg(unsigned long flags, unsigned long jflags, float lambda, int N, const long img_dims[N])
+{
+	struct reg reg;
+
+	reg.linop = linop_grad_create(N, img_dims, N, flags);
+	reg.prox = prox_thresh_create(N + 1,
+			linop_codomain(reg.linop)->dims,
+			lambda, jflags | MD_BIT(N));
+	
+	return reg;
+}
+
 
 /* TGV
  *
