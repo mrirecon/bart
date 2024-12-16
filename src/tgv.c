@@ -84,7 +84,10 @@ int main_tgv(int argc, char* argv[argc])
 	out_dims[DIMS - 1] = 1 + bitcount(flags);
 
 	long ext_shift = md_calc_size(DIMS, in_dims);
-	struct reg2 reg2 = tgv_reg(flags, /*MD_BIT(DIMS - 1) |*/ MD_BIT(DIMS), lambda, DIMS, in_dims, md_calc_size(DIMS, out_dims), &ext_shift, alpha, tvscales_N, tvscales);
+
+	unsigned int tgvflags = MD_BIT(DIMS) | MD_BIT(DIMS - 1);
+
+	struct reg2 reg2 = tgv_reg(flags, tgvflags, lambda, DIMS, in_dims, md_calc_size(DIMS, out_dims), &ext_shift, alpha, tvscales_N, tvscales);
 
 
 	complex float* out_data = create_cfl(out_file, DIMS, out_dims);
