@@ -68,6 +68,7 @@ void help_reg(void)
 			"-R T:7:0:.01\t3D isotropic total variation with 0.01 regularization.\n"
 			"-R G:A:B:C\ttotal generalized variation\n"
 			"-R C:A:B:C\tinfimal convolution TV\n"
+			"-R V:A:B:C\tinfimal convolution TGV\n"
 			"-R L:7:7:.02\tLocally low rank with spatial decimation and 0.02 regularization.\n"
 			"-R M:7:7:.03\tMulti-scale low rank with spatial decimation and 0.03 regularization.\n"
 			"-R TF:{graph_path}:lambda\tTensorFlow loss\n"
@@ -149,6 +150,12 @@ bool opt_reg(void* ptr, char c, const char* optarg)
 		} else if (strcmp(rt, "C") == 0) {
 
 			regs[r].xform = ICTV;
+			int ret = sscanf(optarg, "%*[^:]:%lu:%lu:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
+			assert(3 == ret);
+
+		} else if (strcmp(rt, "V") == 0) {
+
+			regs[r].xform = ICTGV;
 			int ret = sscanf(optarg, "%*[^:]:%lu:%lu:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
 			assert(3 == ret);
 
@@ -368,6 +375,12 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 			ropts->svars += md_calc_size(N, img_dims);
 			ropts->sr++;
 			break;
+		
+		case ICTGV:
+
+			ropts->svars += (2*bitcount(regs[nr].xflags) + 1) * md_calc_size(N, img_dims);
+			ropts->sr += 3;
+			break;
 
 		default:
 		}
@@ -552,6 +565,60 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 		}	break;
 
+		case ICTGV: {
+
+			assert(nr_penalties + 3 < NUM_REGS);
+
+			debug_printf(DP_INFO, "ICTGV regularization: %f\n", regs[nr].lambda);
+
+			unsigned int ictgvflags = regs[nr].jflags | MD_BIT(DIMS) | MD_BIT(DIMS - 1);
+
+			struct reg4 reg4 = ictgv_reg(regs[nr].xflags, ictgvflags, regs[nr].lambda, N, img_dims, md_calc_size(N, img_dims) + ropts->svars, &ext_shift, ropts->alpha, ropts->gamma, ropts->tvscales_N, ropts->tvscales, ropts->tvscales2_N, ropts->tvscales2);
+
+			trafos[nr] = reg4.linop[0];
+			prox_ops[nr] = reg4.prox[0];
+
+			trafos[nr_penalties] = reg4.linop[1];
+			prox_ops[nr_penalties] = reg4.prox[1];
+			
+			if (NULL != sdims) {
+
+				PTR_ALLOC(long[N + 1], dims);
+				md_copy_dims(N, *dims, img_dims);
+				(*dims)[N] = bitcount(regs[nr].xflags);
+				sdims[nr_penalties] = PTR_PASS(dims);
+			}
+
+			nr_penalties++;
+			
+			trafos[nr_penalties] = reg4.linop[2];
+			prox_ops[nr_penalties] = reg4.prox[2];
+
+			if (NULL != sdims) {
+
+				PTR_ALLOC(long[N + 1], dims);
+				md_copy_dims(N, *dims, img_dims);
+				(*dims)[N] = 1;
+				sdims[nr_penalties] = PTR_PASS(dims);
+			}
+
+			nr_penalties++;
+
+			trafos[nr_penalties] = reg4.linop[3];
+			prox_ops[nr_penalties] = reg4.prox[3];
+
+			if (NULL != sdims) {
+
+				PTR_ALLOC(long[N + 1], dims);
+				md_copy_dims(N, *dims, img_dims);
+				(*dims)[N] = bitcount(regs[nr].xflags);
+				sdims[nr_penalties] = PTR_PASS(dims);
+			}
+
+			nr_penalties++;
+
+		}	break;
+
 		case LAPLACE: {
 
 			debug_printf(DP_INFO, "L1-Laplace regularization: %f\n", regs[nr].lambda);
@@ -708,7 +775,8 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 		if (   (0 < ropts->svars)
 		    && !(   (TGV == regs[nr].xform)
-			 || (ICTV == regs[nr].xform))) {
+			 || (ICTV == regs[nr].xform)
+			 || (ICTGV == regs[nr].xform))) {
 
 			long pos[1] = { 0 };
 

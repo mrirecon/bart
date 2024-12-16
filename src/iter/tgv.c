@@ -20,6 +20,10 @@
  * On Infimal Convolution of TV-Type Functionals and Applications 
  * to Video and Image Reconstruction. 
  * SIAM J. Imaging Sci. 2014; 7, 2258-2300.
+ * 
+ * Schloegl M, Holler M, Schwarzl A, Bredies K, Stollberger R. 
+ * Infimal convolution of total generalized variation functionals for dynamic MRI. 
+ * Magn Reson Med 2017;78(1):142-155.
  **/
 
 #include "num/ops.h"
@@ -268,6 +272,112 @@ struct reg2 ictv_reg(unsigned long flags, unsigned long jflags, float lambda, in
 	*ext_shift += md_calc_size(N, in_dims);
 
 	return reg2;
+}
+
+/**
+ * This function creates an ICTGV (Infimal Convolution of Total Generalized Variation) regularization operator
+ * with the specified parameters. The ICTGV regularization is applied to the image dimensions specified by `out_dims`.
+ *
+ * The regularization term is given by:
+ * \f[
+ * \gamma_1 \| \text{TGV} (x + z) \| + \gamma_2 \| \text{TGV} (z) \|
+ * \]
+ * 
+ * The minimization problem is:
+ * \f[
+ * \min_{x,z,u,w} \gamma_1 (\alpha_1 \|\Delta (x + z) + u\|_1 + \alpha_0 \|\text{Eps} (u)\|_1)
+ * + \gamma_2 (\alpha_1 \|\Delta (z) + w\|_1 + \alpha_0 \|\text{Eps} (w)\|_1)
+ * \]
+ * 
+ * where \f$ \text{Eps} (u) = 0.5 \Delta (u + u^T) \f$.
+ *
+ * @param flags        Bitmask specifying the dimensions for the regularization.
+ * @param jflags       Bitmask for joint thresholding operation.
+ * @param lambda       Regularization parameter.
+ * @param N            Number of dimensions.
+ * @param in_dims      Array of size N specifying the input dimensions.
+ * @param isize        Size of the image including supporting variables.
+ * @param ext_shift    Pointer to an integer specifying the external shift.
+ * @param alpha        Array of size 2 specifying alpha_1 and alpha_0, the regularization parameters for each TGV regularization.
+ * @param gamma        Array of size 2 specifying gamma_1 and gamma_2, the weighting factors between TGV terms.
+ * @param tvscales_N   Number of TV scales for the first TGV regularization.
+ * @param tvscales     Array of size tvscales_N specifying the scaling of the derivative in 
+ * 		       \f$ \| \text{TGV} (x + z) \| \f$.
+ * @param tvscales2_N  Number of TV scales for the second TGV regularization.
+ * @param tvscales2    Array of size tvscales2_N specifying the scaling of the derivative in 
+ * 		       \f$ \text{TGV} (z) \f$.
+ * @return             A structure containing the ICTGV regularization operator, which contains
+ * 		       four linear operators for the two gradients and two symmetric gradients,
+ * 		       and four proximal operators for the thresholding.
+ */
+
+struct reg4 ictgv_reg(unsigned long flags, unsigned long jflags, float lambda, int N, const long in_dims[N], long isize, long* ext_shift, const float alpha[2], 
+			const float gamma[2], int tvscales_N, const float tvscales[tvscales_N], int tvscales2_N, const float tvscales2[tvscales2_N])
+{
+	struct reg4 reg4;
+
+	assert(0 != (flags & FFT_FLAGS));
+	assert(0 != (flags & ~FFT_FLAGS));
+
+	while ((0 < tvscales_N) && (0. == tvscales[tvscales_N - 1]))
+		tvscales_N--;
+		
+	while ((0 < tvscales2_N) && (0. == tvscales2[tvscales2_N - 1]))
+		tvscales2_N--;
+
+	const struct linop_s* grad1 = linop_grad_create(N, in_dims, N, flags);
+
+	if (0 < tvscales_N) {
+
+		debug_printf(DP_INFO, "TGV anisotropic scaling: %d\n", tvscales_N);
+
+		assert(tvscales_N == linop_codomain(grad1)->dims[N]);
+
+		complex float ztvscales[tvscales_N];
+		for (int i = 0; i < tvscales_N; i++)
+			ztvscales[i] = tvscales[i];
+
+		grad1 = linop_chain_FF(grad1,
+			linop_cdiag_create(N + 1, linop_codomain(grad1)->dims, MD_BIT(N), ztvscales));
+	}
+
+	long grd_dims[N + 2];
+	md_copy_dims(N + 1, grd_dims, linop_codomain(grad1)->dims);
+	grd_dims[N + 1] = 1;
+
+	auto iov = linop_domain(grad1);
+	auto grad1b = linop_extract_create(1, MD_DIMS(*ext_shift), MD_DIMS(md_calc_size(N, in_dims)), MD_DIMS(isize));
+	auto grad1c = linop_reshape_out_F(grad1b, iov->N, iov->dims);
+
+	// \Delta ( z )
+	auto grad1d = linop_chain_FF(grad1c, grad1);
+
+	*ext_shift += md_calc_size(N, in_dims);
+
+	// \Delta ( x ) + u
+	struct reg2 reg_tgv1 = tgv_reg(flags, jflags, lambda*gamma[0], N, in_dims, isize, ext_shift, alpha, tvscales_N, tvscales);
+
+	// \Delta ( z + x ) + u
+	reg4.linop[0] = linop_plus_FF(grad1d, reg_tgv1.linop[0]);
+	
+	// \Eps ( u )
+	reg4.linop[1] = reg_tgv1.linop[1];
+
+	reg4.prox[0] = reg_tgv1.prox[0];
+	reg4.prox[1] = reg_tgv1.prox[1];
+
+	struct reg2 reg_tgv2 = tgv_reg(flags, jflags, lambda*gamma[1], N, in_dims, isize, ext_shift, alpha, tvscales_N, tvscales);
+
+	// \Delta ( z )
+	reg4.linop[2] = reg_tgv2.linop[0];
+
+	// \Eps ( w )
+	reg4.linop[3] = reg_tgv2.linop[1];
+
+	reg4.prox[2] = reg_tgv2.prox[0];
+	reg4.prox[3] = reg_tgv2.prox[1];
+
+	return reg4;
 }
 
 
