@@ -14,6 +14,8 @@
  * 3:492-526 (2010)
  */
 
+#include <math.h>
+
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/ops_p.h"
@@ -50,6 +52,8 @@ int main_tgv(int argc, char* argv[argc])
 	int tvscales_N = 5;
 	float tvscales[5] = { 0.0, 0.0, 0.0, 0.0, 0.0 };
 
+	float alpha[] = { 1.0, sqrtf(3.) };
+
 	struct arg_s args[] = {
 
 		ARG_FLOAT(true, &lambda, "lambda"),
@@ -60,7 +64,8 @@ int main_tgv(int argc, char* argv[argc])
 
 	const struct opt_s opts[] = { 
 
-		OPTL_FLVECN(0, "tvscales", tvscales, "Scaling of derivatives")
+		OPTL_FLVECN(0, "tvscales", tvscales, "Scaling of derivatives"),
+		OPTL_FLVEC2(0, "alpha", &alpha, "alpha1:alpha0", "alpha1 * || grad x - z ||_1, alpha0 * || Eps z ||_1")
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -79,7 +84,7 @@ int main_tgv(int argc, char* argv[argc])
 	out_dims[DIMS - 1] = 1 + bitcount(flags);
 
 	long ext_shift = md_calc_size(DIMS, in_dims);
-	struct reg2 reg2 = tgv_reg(flags, /*MD_BIT(DIMS - 1) |*/ MD_BIT(DIMS), lambda, DIMS, in_dims, md_calc_size(DIMS, out_dims), &ext_shift, tvscales_N, tvscales);
+	struct reg2 reg2 = tgv_reg(flags, /*MD_BIT(DIMS - 1) |*/ MD_BIT(DIMS), lambda, DIMS, in_dims, md_calc_size(DIMS, out_dims), &ext_shift, alpha, tvscales_N, tvscales);
 
 
 	complex float* out_data = create_cfl(out_file, DIMS, out_dims);

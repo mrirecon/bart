@@ -45,6 +45,7 @@
 #include "misc/utils.h"
 #include "misc/opts.h"
 #include "misc/debug.h"
+#include "misc/version.h"
 
 #include "optreg.h"
 
@@ -260,6 +261,9 @@ bool opt_reg_init(struct opt_reg_s* ropts)
 		
 		ropts->tvscales[i] = 0.0;
 	}
+
+	ropts->alpha[0] = 1.0;
+	ropts->alpha[1] = sqrtf(3.);
 
 	return false;
 }
@@ -493,7 +497,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 			debug_printf(DP_INFO, "TGV regularization: %f\n", regs[nr].lambda);
 
-			struct reg2 reg2 = tgv_reg(regs[nr].xflags, regs[nr].jflags /*| MD_BIT(DIMS - 1)*/ | MD_BIT(DIMS), regs[nr].lambda, DIMS, img_dims, md_calc_size(N, img_dims) + ropts->svars, &ext_shift, ropts->tvscales_N, ropts->tvscales);
+			struct reg2 reg2 = tgv_reg(regs[nr].xflags, regs[nr].jflags /*| MD_BIT(DIMS - 1)*/ | MD_BIT(DIMS), regs[nr].lambda, DIMS, img_dims, md_calc_size(N, img_dims) + ropts->svars, &ext_shift, ropts->alpha, ropts->tvscales_N, ropts->tvscales);
 
 			trafos[nr] = reg2.linop[0];
 			prox_ops[nr] = reg2.prox[0];

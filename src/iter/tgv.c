@@ -1,6 +1,20 @@
 /* Copyright 2022. Institute of Medical Engineering. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
+ *
+ * Publications:
+ * 
+ * Rudin LI, Osher S, Fatemi E.
+ * Nonlinear total variation based noise removal algorithms,
+ * Physica D: Nonlinear Phenomena 1992; 60:259-268.
+ * 
+ * Bredies K, Kunisch K, Pock T.
+ * Total generalized variation.
+ * SIAM Journal on Imaging Sciences 2010; 3:492-526.
+ * 
+ * Knoll F, Bredies K, Pock T, Stollberger R.
+ * Second order total generalized variation (TGV) for MRI.
+ * Magn Reson Med 2010; 65:480-491.
  **/
 
 #include "num/ops.h"
@@ -66,16 +80,30 @@ struct reg tv_reg(unsigned long flags, unsigned long jflags, float lambda, int N
 }
 
 
-/* TGV
+/**
+ * This function creates a TGV regularization operator that minimizes the following objective:
+ * 
+ * \f[
+ * \min_{x,z} \alpha_1 \| \Delta(x) + z \|_1 + \alpha_0 \| \text{Eps}(z) \|_1
+ * \f]
+ * 
+ * where \f$ \text{Eps}(z) = \Delta(z + z^T) \f$.
  *
- * min x 0.5 \|Ix - y\|_2^2 + min z \alpha \|grad x - z \|_1 + \beta \|Eps z \|_1
- *
- * min x,z 0.5 \| Ix - y \|_2^2 + \alpha \|grad x - z\|_1 + \beta \|Eps z\|_1
- *
- * \alpha = 1, \beta = 2
- *
- * */
-struct reg2 tgv_reg(unsigned long flags, unsigned long jflags, float lambda, int N, const long in_dims[N], long isize, long* ext_shift, int tvscales_N, const float tvscales[tvscales_N])
+ * @param flags       Bitmask specifying the dimensions for the regularization.
+ * @param jflags      Bitmask for joint thresholding operation.
+ * @param lambda      Regularization parameter.
+ * @param N           Number of dimensions.
+ * @param in_dims     Array of size N specifying the input dimensions.
+ * @param isize       Size of the image including supporting variables.
+ * @param ext_shift   Pointer to an integer specifying the external shift.
+ * @param alpha       Array of size 2 specifying the regularization parameters \f$ \alpha_1 \f$ and \f$ \alpha_0 \f$.
+ * @param tvscales_N  Number of TV scales.
+ * @param tvscales    Array of size tvscales_N specifying the scaling of the derivatives.
+ * @return            A structure containing the TGV regularization operator, which contains
+ * 		      two linear operators for the gradient and the symmetric gradient
+ * 		      and two proximal operators for the thresholding.
+ */
+struct reg2 tgv_reg(unsigned long flags, unsigned long jflags, float lambda, int N, const long in_dims[N], long isize, long* ext_shift, const float alpha[2], int tvscales_N, const float tvscales[tvscales_N])
 {
 	assert(1 <= N);
 
@@ -126,8 +154,8 @@ struct reg2 tgv_reg(unsigned long flags, unsigned long jflags, float lambda, int
 	grad2e = linop_reshape_out_F(grad2e, N + 2, grd_dims);
 	reg2.linop[1] = linop_chain_FF(grad2e, grad2);
 
-	reg2.prox[0] = prox_thresh_create(N + 1, linop_codomain(reg2.linop[0])->dims, lambda, jflags);
-	reg2.prox[1] = prox_thresh_create(N + 2, linop_codomain(reg2.linop[1])->dims, lambda, jflags);
+	reg2.prox[0] = prox_thresh_create(N + 1, linop_codomain(reg2.linop[0])->dims, lambda*alpha[0], jflags);
+	reg2.prox[1] = prox_thresh_create(N + 2, linop_codomain(reg2.linop[1])->dims, lambda*alpha[1], jflags);
 
 	*ext_shift += md_calc_size(N + 1, grd_dims);
 
