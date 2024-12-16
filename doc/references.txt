@@ -417,7 +417,10 @@ Knoll F, Bredies K, Pock T, Stollberger R.
 Second order total generalized variation (TGV) for MRI.
 Magn Reson Med 2010; 65:480-491.
 
-
+Holler M, Kunisch K. 
+On Infimal Convolution of TV-Type Functionals and Applications 
+to Video and Image Reconstruction. 
+SIAM J. Imaging Sci. 2014; 7, 2258-2300.
 
 
 - sampling schemes -

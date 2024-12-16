@@ -41,6 +41,9 @@ struct opt_reg_s {
 	int tvscales_N;
 	float tvscales[NUM_TV_SCALES];
 
+	int tvscales2_N;
+	float tvscales2[NUM_TV_SCALES];
+
 	float alpha[2];
 };
 

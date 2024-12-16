@@ -42,18 +42,22 @@ static const char help_str[] = "Infimal convolution of total variation along dim
 int main_ictv(int argc, char* argv[argc])
 {
 	float lambda = 0.;
-	unsigned long flags1 = 0;
-	unsigned long flags2 = 0;
+	unsigned long flags = 0;
 	const char* in_file = NULL;
 	const char* out_file = NULL;
+
+	int tvscales_N = 5;
+	float tvscales[5] = { 0.0, 0.0, 0.0, 0.0, 0.0 };
+
+	int tvscales2_N = 5;
+	float tvscales2[5] = { 0.0, 0.0, 0.0, 0.0, 0.0 };
 
 	struct iter_admm_conf conf = iter_admm_defaults;
 
 	struct arg_s args[] = {
 
 		ARG_FLOAT(true, &lambda, "lambda"),
-		ARG_ULONG(true, &flags1, "flags"),
-		ARG_ULONG(true, &flags2, "flags"),
+		ARG_ULONG(true, &flags, "flags"),
 		ARG_INFILE(true, &in_file, "input"),
 		ARG_OUTFILE(true, &out_file, "output"),
 	};
@@ -62,6 +66,8 @@ int main_ictv(int argc, char* argv[argc])
 	
 		OPT_PINT('i', &conf.maxiter, "i", "max. iterations"),
 		OPT_FLOAT('u', &conf.rho, "rho", "rho in ADMM"),
+		OPTL_FLVECN(0, "tvscales", tvscales, "Scaling of derivatives of the first gradient"),
+		OPTL_FLVECN(0, "tvscales2", tvscales2, "Scaling of derivatives of the second gradient")
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -80,7 +86,7 @@ int main_ictv(int argc, char* argv[argc])
 	out_dims[DIMS - 1] = 2;
 
 	long ext_shift = md_calc_size(DIMS, in_dims);
-	struct reg2 reg2 = ictv_reg(flags1, flags2, /*MD_BIT(DIMS - 1) |*/ MD_BIT(DIMS), lambda, DIMS, in_dims, 2 * ext_shift, &ext_shift);
+	struct reg2 reg2 = ictv_reg(flags, /*MD_BIT(DIMS - 1) |*/ MD_BIT(DIMS), lambda, DIMS, in_dims, 2 * ext_shift, &ext_shift, tvscales_N, tvscales, tvscales2_N, tvscales2);
 
 
 	complex float* out_data = create_cfl(out_file, DIMS, out_dims);

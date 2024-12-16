@@ -298,6 +298,7 @@ int main_pics(int argc, char* argv[argc])
 		OPT_SET('e', &eigen, "Scale stepsize based on max. eigenvalue"),
 		OPTL_SET(0, "adaptive-stepsize", &(pridu.adaptive_stepsize), "PRIDU adaptive step size"),
 		OPTL_FLVECN(0, "tvscales", ropts.tvscales, "Scaling of derivatives in TV or TGV regularization"),
+		OPTL_FLVECN(0, "tvscales2", ropts.tvscales2, "Scaling of secondary derivatives in ICTV reconstruction"),
 		OPTL_FLVEC2(0, "alpha", &ropts.alpha, "alpha1:alpha0", "regularization parameter for TGV reconstruction"),
 		OPT_SET('H', &hogwild, "(hogwild)"),
 		OPT_SET('D', &admm.dynamic_rho, "(ADMM dynamic step size)"),

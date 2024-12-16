@@ -15,6 +15,11 @@
  * Knoll F, Bredies K, Pock T, Stollberger R.
  * Second order total generalized variation (TGV) for MRI.
  * Magn Reson Med 2010; 65:480-491.
+ * 
+ * Holler M, Kunisch K. 
+ * On Infimal Convolution of TV-Type Functionals and Applications 
+ * to Video and Image Reconstruction. 
+ * SIAM J. Imaging Sci. 2014; 7, 2258-2300.
  **/
 
 #include "num/ops.h"
@@ -27,6 +32,7 @@
 
 #include "iter/thresh.h"
 #include "misc/debug.h"
+#include "misc/mri.h"
 
 #include "tgv.h"
 
@@ -167,17 +173,44 @@ struct reg2 tgv_reg(unsigned long flags, unsigned long jflags, float lambda, int
 
 
 
-/*
- *	\| \Delta (x - z) \| + \| \Delta z \|
+/**
+ * This function creates an ICTV (infimal convolution of total variation) operator with the specified parameters.
+ * The ICTV regularization is applied to the image dimensions specified by `out_dims`.
+ * 
+ * The regularization minimizes the following expression:
+ * \f[
+ * \min_{x,z} \gamma_1 \| \Delta (x + z) \| + \gamma_2 \| \Delta(z) \|
+ * \f]
  *
- * */
+ * @param flags        Bitmask specifying the dimensions for the regularization.
+ * @param jflags       Bitmask for joint thresholding operation.
+ * @param lambda       Regularization parameter.
+ * @param N            Number of dimensions.
+ * @param in_dims      Array of size N specifying the input dimensions.
+ * @param isize        Size of the image including supporting variables.
+ * @param ext_shift    Pointer to an array specifying the external shift.
+ * @param tvscales_N   Number of TV scales for the first gradient.
+ * @param tvscales     Array of size tvscales_N specifying the scaling of the derivatives
+ * 		       of \f$ | \Delta(z) \| \f$.
+ * @param tvscales2_N  Number of TV scales for the second gradient.
+ * @param tvscales2    Array of size tvscales2_N specifying the scaling of the derivatives
+ * 		       of \f$ | \Delta(x + z) \| \f$.
+ * @return             A structure containing the ICTV regularization operator, which contains
+ * 		       two linear operators for the gradients and two proximal operators for the thresholding.
+ */
 
-struct reg2 ictv_reg(unsigned long flags1, unsigned long flags2, unsigned long jflags, float lambda, int N, const long in_dims[N], long isize, long* ext_shift)
+struct reg2 ictv_reg(unsigned long flags, unsigned long jflags, float lambda, int N, const long in_dims[N], long isize, long* ext_shift, int tvscales_N, const float tvscales[tvscales_N], int tvscales2_N, const float tvscales2[tvscales2_N])
 {
 	struct reg2 reg2;
 
-	assert(0 != flags1);
-	assert(0 != flags2);
+	while ((0 < tvscales_N) && (0. == tvscales[tvscales_N - 1]))
+		tvscales_N--;
+		
+	while ((0 < tvscales2_N) && (0. == tvscales2[tvscales2_N - 1]))
+		tvscales2_N--;
+
+	assert(0 != (flags & FFT_FLAGS));
+	assert(0 != (flags & ~FFT_FLAGS));
 
 	auto grad1b = linop_extract_create(1, MD_DIMS(0), MD_DIMS(md_calc_size(N, in_dims)), MD_DIMS(isize));
 	grad1b = linop_reshape_out_F(grad1b, N, in_dims);
@@ -187,15 +220,41 @@ struct reg2 ictv_reg(unsigned long flags1, unsigned long flags2, unsigned long j
 
 	auto grad1d = linop_plus_FF(grad1b, grad1c);
 
+	const struct linop_s* grad1 = linop_grad_create(N, in_dims, N, flags);
+	
+	if (0 < tvscales_N) {
 
-	const struct linop_s* grad1 = linop_grad_create(N, in_dims, N, flags1);
+		debug_printf(DP_INFO, "ICTV anisotropic scaling of first gradient: %d\n", tvscales_N);
+
+		assert(tvscales_N == linop_codomain(grad1)->dims[N]);
+
+		complex float ztvscales[tvscales_N];
+		for (int i = 0; i < tvscales_N; i++)
+			ztvscales[i] = tvscales[i];
+
+		grad1 = linop_chain_FF(grad1,
+			linop_cdiag_create(N + 1, linop_codomain(grad1)->dims, MD_BIT(N), ztvscales));
+	}
 
 	// \Delta (x + z)
 
 	reg2.linop[0] = linop_chain_FF(grad1d, grad1);
 
-	const struct linop_s* grad2 = linop_grad_create(N, in_dims, N, flags2);
+	const struct linop_s* grad2 = linop_grad_create(N, in_dims, N, flags);
 
+	if (0 < tvscales2_N) {
+
+		debug_printf(DP_INFO, "ICTV anisotropic scaling of second gradient: %d\n", tvscales2_N);
+			
+		assert(tvscales2_N == linop_codomain(grad2)->dims[N]);
+
+		complex float ztvscales2[tvscales2_N];
+		for (int i = 0; i < tvscales2_N; i++)
+			ztvscales2[i] = tvscales2[i];
+	
+		grad2 = linop_chain_FF(grad2,
+			linop_cdiag_create(N + 1, linop_codomain(grad2)->dims, MD_BIT(N), ztvscales2));
+	}
 
 	auto grad2e = linop_extract_create(1, MD_DIMS(*ext_shift), MD_DIMS(md_calc_size(N, in_dims)), MD_DIMS(isize));
 	grad2e = linop_reshape_out_F(grad2e, N, in_dims);
