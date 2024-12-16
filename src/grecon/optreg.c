@@ -271,6 +271,9 @@ bool opt_reg_init(struct opt_reg_s* ropts)
 	ropts->alpha[0] = 1.0;
 	ropts->alpha[1] = sqrtf(3.);
 
+	ropts->gamma[0] = 1.0;
+	ropts->gamma[1] = 1.0;
+
 	return false;
 }
 
@@ -529,7 +532,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 			debug_printf(DP_INFO, "ICTV regularization: %f\n", regs[nr].lambda);
 
-			struct reg2 reg2 = ictv_reg(regs[nr].xflags, regs[nr].jflags | MD_BIT(DIMS), regs[nr].lambda, N, img_dims, md_calc_size(N, img_dims) + ropts->svars, &ext_shift, ropts->tvscales_N, ropts->tvscales, ropts->tvscales2_N, ropts->tvscales2);
+			struct reg2 reg2 = ictv_reg(regs[nr].xflags, regs[nr].jflags | MD_BIT(DIMS), regs[nr].lambda, N, img_dims, md_calc_size(N, img_dims) + ropts->svars, &ext_shift, ropts->gamma, ropts->tvscales_N, ropts->tvscales, ropts->tvscales2_N, ropts->tvscales2);
 
 			trafos[nr] = reg2.linop[0];
 			prox_ops[nr] = reg2.prox[0];

@@ -189,6 +189,7 @@ struct reg2 tgv_reg(unsigned long flags, unsigned long jflags, float lambda, int
  * @param in_dims      Array of size N specifying the input dimensions.
  * @param isize        Size of the image including supporting variables.
  * @param ext_shift    Pointer to an array specifying the external shift.
+ * @param gamma        Array of size 2 specifying gamma_1 and gamma_2, the weighting parameters between the TV terms.
  * @param tvscales_N   Number of TV scales for the first gradient.
  * @param tvscales     Array of size tvscales_N specifying the scaling of the derivatives
  * 		       of \f$ | \Delta(z) \| \f$.
@@ -199,7 +200,7 @@ struct reg2 tgv_reg(unsigned long flags, unsigned long jflags, float lambda, int
  * 		       two linear operators for the gradients and two proximal operators for the thresholding.
  */
 
-struct reg2 ictv_reg(unsigned long flags, unsigned long jflags, float lambda, int N, const long in_dims[N], long isize, long* ext_shift, int tvscales_N, const float tvscales[tvscales_N], int tvscales2_N, const float tvscales2[tvscales2_N])
+struct reg2 ictv_reg(unsigned long flags, unsigned long jflags, float lambda, int N, const long in_dims[N], long isize, long* ext_shift, const float gamma[2], int tvscales_N, const float tvscales[tvscales_N], int tvscales2_N, const float tvscales2[tvscales2_N])
 {
 	struct reg2 reg2;
 
@@ -261,8 +262,8 @@ struct reg2 ictv_reg(unsigned long flags, unsigned long jflags, float lambda, in
 
 	reg2.linop[1] = linop_chain_FF(grad2e, grad2);
 
-	reg2.prox[0] = prox_thresh_create(N + 1, linop_codomain(reg2.linop[0])->dims, lambda, jflags);
-	reg2.prox[1] = prox_thresh_create(N + 1, linop_codomain(reg2.linop[1])->dims, lambda, jflags);
+	reg2.prox[0] = prox_thresh_create(N + 1, linop_codomain(reg2.linop[0])->dims, lambda*gamma[0], jflags);
+	reg2.prox[1] = prox_thresh_create(N + 1, linop_codomain(reg2.linop[1])->dims, lambda*gamma[1], jflags);
 
 	*ext_shift += md_calc_size(N, in_dims);
 

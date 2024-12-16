@@ -51,6 +51,8 @@ int main_ictv(int argc, char* argv[argc])
 
 	int tvscales2_N = 5;
 	float tvscales2[5] = { 0.0, 0.0, 0.0, 0.0, 0.0 };
+	
+	float gamma[] = { 1.0, 1.0 };
 
 	struct iter_admm_conf conf = iter_admm_defaults;
 
@@ -67,7 +69,8 @@ int main_ictv(int argc, char* argv[argc])
 		OPT_PINT('i', &conf.maxiter, "i", "max. iterations"),
 		OPT_FLOAT('u', &conf.rho, "rho", "rho in ADMM"),
 		OPTL_FLVECN(0, "tvscales", tvscales, "Scaling of derivatives of the first gradient"),
-		OPTL_FLVECN(0, "tvscales2", tvscales2, "Scaling of derivatives of the second gradient")
+		OPTL_FLVECN(0, "tvscales2", tvscales2, "Scaling of derivatives of the second gradient"),
+		OPTL_FLVEC2(0, "gamma", &gamma, "gamma1:gamma2", "gamma1 * || grad (x - z) ||_1, gamma2 * || grad z ||_1")
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -86,7 +89,7 @@ int main_ictv(int argc, char* argv[argc])
 	out_dims[DIMS - 1] = 2;
 
 	long ext_shift = md_calc_size(DIMS, in_dims);
-	struct reg2 reg2 = ictv_reg(flags, /*MD_BIT(DIMS - 1) |*/ MD_BIT(DIMS), lambda, DIMS, in_dims, 2 * ext_shift, &ext_shift, tvscales_N, tvscales, tvscales2_N, tvscales2);
+	struct reg2 reg2 = ictv_reg(flags, /*MD_BIT(DIMS - 1) |*/ MD_BIT(DIMS), lambda, DIMS, in_dims, 2 * ext_shift, &ext_shift, gamma, tvscales_N, tvscales, tvscales2_N, tvscales2);
 
 
 	complex float* out_data = create_cfl(out_file, DIMS, out_dims);

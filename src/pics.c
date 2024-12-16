@@ -300,6 +300,7 @@ int main_pics(int argc, char* argv[argc])
 		OPTL_FLVECN(0, "tvscales", ropts.tvscales, "Scaling of derivatives in TV or TGV regularization"),
 		OPTL_FLVECN(0, "tvscales2", ropts.tvscales2, "Scaling of secondary derivatives in ICTV reconstruction"),
 		OPTL_FLVEC2(0, "alpha", &ropts.alpha, "alpha1:alpha0", "regularization parameter for TGV reconstruction"),
+		OPTL_FLVEC2(0, "gamma", &ropts.gamma, "gamma1:gamma2", "regularization parameter for ICTV reconstruction"),
 		OPT_SET('H', &hogwild, "(hogwild)"),
 		OPT_SET('D', &admm.dynamic_rho, "(ADMM dynamic step size)"),
 		OPT_SET('F', &admm.fast, "(fast)"),
