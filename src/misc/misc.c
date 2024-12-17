@@ -707,6 +707,32 @@ const char* ptr_printf(const char* fmt, ...)
 	return result;
 }
 
+void ptr_append_printf(const char** prefix, const char* fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+
+	const char* tmp = ptr_vprintf(fmt, ap);
+
+	va_end(ap);
+
+	size_t l1 = NULL != *prefix ? strlen(*prefix) : 0;
+	size_t l2 = strlen(tmp);
+
+	PTR_ALLOC(char[l1 + l2 + 1], result);
+
+	if (NULL != *prefix) {
+
+		memcpy(*result, *prefix, l1);
+		xfree(*prefix);
+	}
+
+	memcpy(*result + l1, tmp, l2 + 1);
+	xfree(tmp);
+
+	*prefix = *PTR_PASS(result);
+}
+
 const char* ptr_print_dims(int D, const long dims[D])
 {
 	const char* result = ptr_printf("[");
@@ -725,6 +751,16 @@ const char* ptr_print_dims(int D, const long dims[D])
 	xfree(result);
 
 	return tmp;
+}
+
+void ptr_append_print_dims(const char** prefix, int D, const long dims[D])
+{
+	ptr_append_printf(prefix, "[");
+
+	for (int i = 0; i < D; i++)
+		ptr_append_printf(prefix, "%3ld ", dims[i]);
+
+	ptr_append_printf(prefix, "]");
 }
 
 
