@@ -354,20 +354,21 @@ void md_loop(int D, const long dim[D], md_loop_fun_t fun)
  */
 bool md_next(int D, const long dims[D], unsigned long flags, long pos[D])
 {
-	if (0 == D--)
-		return false;
+	for (int i = 0; i < D; i++) {
 
-	if (md_next(D, dims, flags, pos))
-		return true;
+		if (!MD_IS_SET(flags, i))
+			continue;
 
-	if (MD_IS_SET(flags, D)) {
+		if (pos[i] < dims[i] - 1) {
 
-		assert((0 <= pos[D]) && (pos[D] < dims[D]));
+			pos[i]++;
 
-		if (++pos[D] < dims[D])
+			for (int j = 0; j < i; j++)
+				if (MD_IS_SET(flags, j))
+					pos[j] = 0;
+
 			return true;
-
-		pos[D] = 0;
+		}
 	}
 
 	return false;
@@ -601,8 +602,11 @@ bool md_check_dimensions(int N, const long dims[N], unsigned long flags)
  */
 bool md_check_equal_dims(int N, const long dims1[N], const long dims2[N], unsigned long flags)
 {
-	return (   md_check_bounds(N, flags, dims1, dims2)
-	        && md_check_bounds(N, flags, dims2, dims1));
+	for (int i = 0; i < N; i++)
+		if (MD_IS_SET(flags, i) && (dims1[i] != dims2[i]))
+			return false;
+
+	return true;
 }
 
 
@@ -699,13 +703,11 @@ void md_merge_dims(int N, long out_dims[N], const long dims1[N], const long dims
  */
 bool md_check_bounds(int D, unsigned long flags, const long dim1[D], const long dim2[D])
 {
-	if (0 == D--)
-		return true;
+	for (int i = 0; i < D; i++)
+		if (MD_IS_SET(flags, i) && (dim1[i] > dim2[i]))
+			return false;
 
-	if (!MD_IS_SET(flags, D) || (dim1[D] <= dim2[D]))
-		return md_check_bounds(D, flags, dim1, dim2);
-
-	return false;
+	return true;
 }
 
 
