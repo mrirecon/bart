@@ -29,9 +29,13 @@ typedef void CLOSURE_TYPE(md_trafo_fun_t)(long N, long str, void* ptr);
 typedef void CLOSURE_TYPE(md_loop_fun_t)(const long* pos);
 typedef void CLOSURE_TYPE(md_loop_fun2_t)(unsigned long flags, long* pos);
 
+extern void md_unravel_index2(int D, long pos[__VLA(D)], unsigned long flags, const long dims[__VLA(D)], const long strs[__VLA(D)], long index);
 extern void md_unravel_index(int D, long pos[__VLA(D)], unsigned long flags, const long dims[__VLA(D)], long index);
 extern void md_unravel_index_permuted(int D, const int order[__VLA(D)], long pos[__VLA(D)], unsigned long flags, const long dims[__VLA(D)], long index);
+extern long md_ravel_index2(int D, const long pos[__VLA(D)], unsigned long flags, const long dims[__VLA(D)], const long strs[__VLA(D)]);
 extern long md_ravel_index(int D, const long pos[__VLA(D)], unsigned long flags, const long dims[__VLA(D)]);
+extern long md_reravel_index2(int D, unsigned long flags, const long dims[__VLA(D)], const long rstrs[__VLA(D)], const long ustrs[__VLA(D)], long index);
+extern long md_reravel_index(int D, unsigned long rflags, unsigned long uflags, const long dims[__VLA(D)], long index);
 
 extern void md_nary(int C, int D, const long dim[__VLA(D)], const long* str[__VLA(C)], void* ptr[__VLA(C)], md_nary_fun_t fun);
 
@@ -121,6 +125,7 @@ extern void* md_mpi_wrap(int D, unsigned long dist_flags, const long dims[__VLA(
 
 extern long md_calc_size(int D, const long dimensions[__VLA(D)]);
 extern long* md_calc_strides(int D, long str[__VLA2(D)], const long dim[__VLA(D)], size_t size);
+extern long* md_calc_strides_selected(int D, unsigned long flags, long str[__VLA2(D)], const long dim[__VLA(D)], size_t size);
 extern long md_calc_offset(int D, const long strides[__VLA(D)], const long position[__VLA(D)]);
 extern int md_calc_blockdim(int D, const long dim[__VLA(D)], const long str[__VLA(D)], size_t size);
 extern void md_select_dims(int D, unsigned long flags, long odims[__VLA(D)], const long idims[__VLA(D)]);
@@ -152,6 +157,9 @@ extern void md_permute_invert(int D, int inv_order[__VLA(D)], const int order[__
 
 extern unsigned long md_nontriv_dims(int D, const long dims[__VLA(D)]);
 extern unsigned long md_nontriv_strides(int D, const long dims[__VLA(D)]);
+
+extern _Bool md_overlap(int D1, const long dims1[__VLA(D1)], const long strs1[__VLA(D1)], const void* ptr1, size_t size1,
+			int D2, const long dims2[__VLA(D2)], const long strs2[__VLA(D2)], const void* ptr2, size_t size2);
 
 
 #define MD_MAKE_ARRAY(T, ...) ((T[]){ __VA_ARGS__ })
