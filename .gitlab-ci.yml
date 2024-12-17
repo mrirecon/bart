@@ -403,7 +403,7 @@ IntTest_riscv:
   needs: [Build_riscv]
   dependencies:
     - Build_riscv
-  timeout: 6 hours
+  timeout: 9 hours
 
 
 
