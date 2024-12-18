@@ -7,7 +7,7 @@
  */
 
 #ifdef _OPENMP
-#include <omp.h>
+#include <threads.h>
 #endif
 
 #include "misc/misc.h"
@@ -16,7 +16,7 @@
 
 struct bart_lock {
 #ifdef _OPENMP
-	omp_lock_t omp;
+	mtx_t mx;
 #else
 	int dummy;
 #endif
@@ -25,7 +25,7 @@ struct bart_lock {
 void bart_lock(bart_lock_t* lock)
 {
 #ifdef _OPENMP
-	omp_set_lock(&lock->omp);
+	mtx_lock(&lock->mx);
 #else
 	(void)lock;
 #endif
@@ -34,7 +34,7 @@ void bart_lock(bart_lock_t* lock)
 void bart_unlock(bart_lock_t* lock)
 {
 #ifdef _OPENMP
-	omp_unset_lock(&lock->omp);
+	mtx_unlock(&lock->mx);
 #else
 	(void)lock;
 #endif
@@ -45,7 +45,7 @@ bart_lock_t* bart_lock_create(void)
 	bart_lock_t* lock = xmalloc(sizeof *lock);
 
 #ifdef _OPENMP
-	omp_init_lock(&lock->omp);
+	mtx_init(&lock->mx, mtx_plain);
 #endif
 	return lock;
 }
@@ -53,7 +53,7 @@ bart_lock_t* bart_lock_create(void)
 void bart_lock_destroy(bart_lock_t* lock)
 {
 #ifdef _OPENMP
-	omp_destroy_lock(&lock->omp);
+	mtx_destroy(&lock->mx);
 #endif
 	xfree(lock);
 }
@@ -61,38 +61,32 @@ void bart_lock_destroy(bart_lock_t* lock)
 
 struct bart_cond {
 
-	unsigned long counter;
+#ifdef _OPENMP
+	long counter;
+	cnd_t cnd;
+#else
+	int dummy;
+#endif
 };
 
 bart_cond_t* bart_cond_create(void)
 {
 	bart_cond_t* cond = xmalloc(sizeof *cond);
 
+#ifdef _OPENMP
+	cnd_init(&cond->cnd);
 	cond->counter = 0;
+#endif
 	return cond;
 }
 
 void bart_cond_wait(bart_cond_t* cond, bart_lock_t* lock)
 {
 #ifdef _OPENMP
-	unsigned long counter;
+	long counter = cond->counter;
 
-#pragma omp atomic read
-	counter = cond->counter;
-
-	bart_unlock(lock);
-
-	unsigned long cnt2 = counter;
-
-	while (cnt2 == counter) {
-
-#pragma 	omp atomic read
-		cnt2 = cond->counter;
-
-#pragma 	omp taskyield
-	}
-
-	bart_lock(lock);
+	while (counter == cond->counter)
+		cnd_wait(&cond->cnd, &lock->mx);
 #else
 	(void)cond;
 	(void)lock;
@@ -101,15 +95,17 @@ void bart_cond_wait(bart_cond_t* cond, bart_lock_t* lock)
 
 void bart_cond_notify_all(bart_cond_t* cond)
 {
-#pragma omp atomic
+#ifdef _OPENMP
 	cond->counter++;
+	cnd_broadcast(&cond->cnd);
+#endif
 }
 
 void bart_cond_destroy(bart_cond_t* cond)
 {
+#ifdef _OPENMP
+	cnd_destroy(&cond->cnd);
+#endif
 	xfree(cond);
 }
-
-
-
 
