@@ -14,6 +14,7 @@
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/rand.h"
+#include "num/vptr.h"
 
 #include "iter/italgos.h"
 #include "iter/iter.h"
@@ -98,6 +99,46 @@ static void norm_inv_free_ops(const struct norm_inv_s* d)
 
 static void norm_inv(const struct norm_inv_s* d, complex float* dst, const complex float* src)
 {
+	auto iov = d->dom[0];
+
+	if (is_vptr(dst)) {
+
+		int N = vptr_get_N(dst);
+		long dims[N];
+		vptr_get_dims(dst, N, dims);
+
+		if (N != iov->N || !md_check_equal_dims(N, dims, iov->dims, ~0UL)) {
+
+			complex float* tdst = md_alloc_sameplace(iov->N, iov->dims, CFL_SIZE, dst);
+
+			norm_inv(d, tdst, src);
+
+			md_copy(iov->N, iov->dims, dst, tdst, CFL_SIZE);
+			md_free(tdst);
+
+			return;
+		}
+	}
+
+	if (is_vptr(src)) {
+
+		int N = vptr_get_N(src);
+		long dims[N];
+		vptr_get_dims(src, N, dims);
+
+		if (N != iov->N || !md_check_equal_dims(N, dims, iov->dims, ~0UL)) {
+
+			complex float* tsrc = md_alloc_sameplace(iov->N, iov->dims, CFL_SIZE, src);
+			md_copy(iov->N, iov->dims, tsrc, src, CFL_SIZE);
+
+			norm_inv(d, dst, tsrc);
+
+			md_free(tsrc);
+
+			return;
+		}
+	}
+
 	const struct operator_s* normal_op = nlop_get_derivative(d->normal_op, 0, 0)->forward;
 
 	md_clear(d->dom[0]->N, d->dom[0]->dims, dst, CFL_SIZE);

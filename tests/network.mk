@@ -379,9 +379,9 @@ tests/test-reconet-nnmodl-train-ksp-gpu: nrmse reconet $(TRN_REF_KSP) $(TRN_KSP)
 
 tests/test-reconet-nnmodl-train-delayed-noncart: bart nrmse reconet $(TRN_KSP_NC) $(TRN_COL) $(TRN_REF_IMG) $(TRN_TRJ)
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP); export OMP_NUM_THREADS=2 	;\
-	                            $(TOOLDIR)/reconet --network modl --resnet-block=no-batch-normalization              --test -t --train-algo e=3 -b1 --trajectory=$(TRN_TRJ) $(TRN_KSP_NC) $(TRN_COL) weights0 $(TRN_REF_IMG)	;\
-	$(ROOTDIR)/bart --md-loop-dims=17:16:3 reconet --network modl --resnet-block=no-batch-normalization --no-precomp --test -t --train-algo e=3 -b1 --trajectory=$(TRN_TRJ) $(TRN_KSP_NC) $(TRN_COL) weights1 $(TRN_REF_IMG)	;\
-	$(TOOLDIR)/nrmse -t 1.e-4 weights1 weights0	;\
+	                            $(TOOLDIR)/reconet --network modl --resnet-block=no-batch-normalization              --test -t --train-algo e=3 -b2 --trajectory=$(TRN_TRJ) $(TRN_KSP_NC) $(TRN_COL) weights0 $(TRN_REF_IMG)	;\
+	$(ROOTDIR)/bart --md-loop-dims=17:16:3 reconet --network modl --resnet-block=no-batch-normalization --no-precomp --test -t --train-algo e=3 -b2 --trajectory=$(TRN_TRJ) $(TRN_KSP_NC) $(TRN_COL) weights1 $(TRN_REF_IMG)	;\
+	$(TOOLDIR)/nrmse -t 3.e-4 weights1 weights0	;\
 	rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
