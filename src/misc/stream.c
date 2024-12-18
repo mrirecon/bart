@@ -690,6 +690,10 @@ static struct list_s* stream_get_events_at_index(struct stream* s, long index);
 
 static bool stream_receive_idx_locked(stream_t s)
 {
+
+	s->busy = true;
+	bart_unlock(s->lock);
+
 	bool raw_received = false;
 	long offset = -1;
 	struct stream_msg msg = { .type = STREAM_MSG_INVALID };
@@ -767,17 +771,19 @@ static bool stream_receive_idx_locked(stream_t s)
 		return false;
 
 
+	bart_lock(s->lock);
+
 	s->data->synced[offset] = true;
 
 	while ((s->data->index < s->data->tot - 1) && (s->data->synced[s->data->index + 1]))
 		s->data->index++;
 
-	bart_cond_notify_all(s->cond);
-
 	// if receiving, save timestamp after finished receiving!
 	stream_log_index(s, offset, timestamp());
 
 	debug_printf(DP_DEBUG3, "data offset rcvd: %ld\n", s->data->index);
+
+	s->busy = false;
 
 	return true;
 }
@@ -853,23 +859,6 @@ static bool stream_send_index_locked(stream_t s, long index)
 	return true;
 }
 
-static void lock_stream(stream_t s)
-{
-	bart_lock(s->lock);
-
-	while (s->busy)
-		bart_cond_wait(s->cond, s->lock);
-
-	s->busy = true;
-	bart_unlock(s->lock);
-}
-
-static void unlock_stream(stream_t s)
-{
-	s->busy = false;
-	bart_cond_notify_all(s->cond);
-}
-
 static bool stream_sync_index(stream_t s, long index, bool all)
 {
 	if (all) {
@@ -879,23 +868,37 @@ static bool stream_sync_index(stream_t s, long index, bool all)
 				return false;
 	}
 
-	lock_stream(s);
+	bart_lock(s->lock);
 
 	if (s->input) {
 
-		while (!s->data->synced[index])
+		while (!s->data->synced[index]) {
+
+			// While other thread receiving and requested index missing, wait:
+			while (s->busy && !s->data->synced[index])
+				bart_cond_wait(s->cond, s->lock);
+
+			// Requested index received by other thread?
+			if (s->data->synced[index])
+				break;
+
+			// (not busy) and (not synced) -> receive.
 			if (!stream_receive_idx_locked(s))
 				break;
+
+			bart_cond_notify_all(s->cond);
+		}
 	} else {
 
-		while (!s->data->synced[index])
-			if (!stream_send_index_locked(s, index))
-				break;
+		if (!s->data->synced[index])
+			stream_send_index_locked(s, index);
 	}
 
-	unlock_stream(s);
+	bool synced = s->data->synced[index];
 
-	return s->data->synced[index];
+	bart_unlock(s->lock);
+
+	return synced;
 }
 
 bool stream_sync_slice_try(stream_t s, int N, const long dims[N], unsigned long flags, const long _pos[N])
@@ -946,9 +949,21 @@ void stream_sync(stream_t s, int N, long pos[N])
 
 void stream_fetch(stream_t s)
 {
-	lock_stream(s);
+	assert(s->input);
+
+	bart_lock(s->lock);
+
+	if (s->busy) {
+
+		// bart condition variables have no spurious wakeups
+		bart_cond_wait(s->cond, s->lock);
+		bart_unlock(s->lock);
+		return;
+	}
+
 	stream_receive_idx_locked(s);
-	unlock_stream(s);
+
+	bart_unlock(s->lock);
 }
 
 
