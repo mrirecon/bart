@@ -284,31 +284,57 @@ static bool test_md_next(void)
 UT_REGISTER_TEST(test_md_next);
 
 
-static bool test_md_next_permuted(void)
+static bool test_md_next_permuted_1(void)
 {
-	const long dims[] = { 2, 3 };
+	const long dims[] = { 2, 4, 3 };
 
-	const int order[] = { 1, 0 };
+	const int order[] = { 2, 0, 1 };
 
-	const long good[6][2] = {
-		{ 0, 0 }, { 0, 1 }, { 0, 2 },
-		{ 1, 0 }, { 1, 1 }, { 1, 2 }
+	const long good[6][3] = {
+		{ 0, 0, 0 }, { 0, 0, 1 }, { 0, 0, 2 },
+		{ 1, 0, 0 }, { 1, 0, 1 }, { 1, 0, 2 }
 	};
 
-	long pos[2] = { 0 };
+	long pos[3] = { 0 };
 
 	int i = 0;
 
 	do {
-		UT_RETURN_ON_FAILURE(md_check_equal_dims(2, good[i++], pos, 3UL));
+		UT_RETURN_ON_FAILURE(md_check_equal_dims(3, good[i++], pos, 7UL));
 
-	} while (md_next_permuted(2, order, dims, 3UL, pos));
+	} while (md_next_permuted(3, order, dims, 5UL, pos));
 
 	return true;
 }
 
-UT_REGISTER_TEST(test_md_next_permuted);
+UT_REGISTER_TEST(test_md_next_permuted_1);
 
+static bool test_md_next_permuted_2(void)
+{
+	const long dims[] = { 2, 4, 3 };
+
+	const int order[] = { 2, 0, 1 };
+
+	const long good[8][3] = {
+		{ 0, 0, 0 }, { 1, 0, 0 }, 
+		{ 0, 1, 0 }, { 1, 1, 0 },
+		{ 0, 2, 0 }, { 1, 2, 0 },
+		{ 0, 3, 0 }, { 1, 3, 0 }
+	};
+
+	long pos[3] = { 0 };
+
+	int i = 0;
+
+	do {
+		UT_RETURN_ON_FAILURE(md_check_equal_dims(3, good[i++], pos, 7UL));
+
+	} while (md_next_permuted(3, order, dims, 3UL, pos));
+
+	return true;
+}
+
+UT_REGISTER_TEST(test_md_next_permuted_2);
 
 static bool test_md_permute_dims_inverse(void)
 {

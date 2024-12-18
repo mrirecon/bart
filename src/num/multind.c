@@ -341,7 +341,7 @@ bool md_next_permuted(int D, const int order[D], const long dims[D], unsigned lo
 
 	int inv_order[D];
 	md_permute_invert(D, inv_order, order);
-	md_permute_dims(D, order, pos, pos2);
+	md_permute_dims(D, inv_order, pos, pos2);
 
 	return next;
 }
