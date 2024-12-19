@@ -62,7 +62,7 @@ static bool test_md_zfmacc2(void)
 
 	for (unsigned long flags = 0UL; flags < 16UL; flags++) {
 
-		debug_printf(DP_DEBUG1, "Testing md_zfmacc2_flags with flags=%d\n", flags);
+		debug_printf(DP_DEBUG1, "Testing md_zfmacc2_flags with flags=%lu\n", flags);
 
 		ret &= test_md_zfmacc2_flags(4, idims, flags, test_md_in0, test_md_in1, test_md_zfmacc2_out[flags]);
 	}
@@ -102,7 +102,7 @@ static bool test_md_zwavg(void)
 
 	for (unsigned long flags = 0UL; flags < 16UL; flags++) {
 
-		debug_printf(DP_DEBUG1, "Testing md_zwavg_flags with flags=%d\n", flags);
+		debug_printf(DP_DEBUG1, "Testing md_zwavg_flags with flags=%lu\n", flags);
 
 		ret &= test_md_zavg_flags(4, idims, flags, test_md_in0, test_md_zwavg_out[flags], wavg);
 	}
@@ -120,7 +120,7 @@ static bool test_md_zavg(void)
 
 	for (unsigned long flags = 0UL; flags < 16UL; flags++) {
 
-		debug_printf(DP_DEBUG1, "Testing md_zavg_flags with flags=%d\n", flags);
+		debug_printf(DP_DEBUG1, "Testing md_zavg_flags with flags=%lu\n", flags);
 
 		ret &= test_md_zavg_flags(4, idims, flags, test_md_in0, test_md_zavg_out[flags], wavg);
 	}
