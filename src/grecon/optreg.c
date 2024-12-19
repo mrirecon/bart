@@ -233,7 +233,12 @@ bool opt_reg(void* ptr, char c, const char* optarg)
 
 		// Duplicate the regularization type for ASL for the difference image
 
-		if (p->asl) {
+		if (p->asl && regs[r].xform == ICTGV) {
+
+			// For ICTGV only use the difference term due to computational complexity
+			regs[r].asl = true;
+
+		} else if (p->asl) {
 
 			regs[r+1].xform = regs[r].xform;
 			regs[r+1].xflags = regs[r].xflags;
@@ -388,8 +393,8 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 		assert(2 == img_dims[asl_dim]);
 
-		if ((0 < ropts->r) && !(TV == regs[0].xform))
-			error("ASL is only supported for TV.\n");
+		if ((0 < ropts->r) && !(TV == regs[0].xform || TGV == regs[0].xform || ICTV == regs[0].xform || ICTGV == regs[0].xform))
+			error("ASL is only supported for TV, TGV, ICTV, and ICTGV regularization.\n");
 	}
 
 	// compute needed supporting variables
@@ -408,19 +413,19 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 		case TGV:
 
-			ropts->svars += bitcount(regs[nr].xflags) * md_calc_size(N, img_dims);
+			ropts->svars += bitcount(regs[nr].xflags) * md_calc_size(N, tmp_dims);
 			ropts->sr++;
 			break;
 
 		case ICTV:
 
-			ropts->svars += md_calc_size(N, img_dims);
+			ropts->svars += md_calc_size(N, tmp_dims);
 			ropts->sr++;
 			break;
 		
 		case ICTGV:
 
-			ropts->svars += (2*bitcount(regs[nr].xflags) + 1) * md_calc_size(N, img_dims);
+			ropts->svars += (2*bitcount(regs[nr].xflags) + 1) * md_calc_size(N, tmp_dims);
 			ropts->sr += 3;
 			break;
 
@@ -574,7 +579,8 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 			debug_printf(DP_INFO, "TGV regularization: %f\n", regs[nr].lambda);
 
-			struct reg2 reg2 = tgv_reg(regs[nr].xflags, tgvflags, regs[nr].lambda, DIMS, img_dims, md_calc_size(N, img_dims) + ropts->svars, &ext_shift, ropts->alpha, ropts->tvscales_N, ropts->tvscales);
+			struct reg2 reg2 = tgv_reg(regs[nr].xflags, tgvflags, regs[nr].lambda, DIMS, img_dims, md_calc_size(N, img_dims) + ropts->svars, &ext_shift,
+						   ropts->alpha, ropts->tvscales_N, ropts->tvscales, lop_asl);
 
 			trafos[nr] = reg2.linop[0];
 			prox_ops[nr] = reg2.prox[0];
@@ -585,8 +591,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 			if (NULL != sdims) {
 
 				PTR_ALLOC(long[N + 1], dims);
-				md_copy_dims(N, *dims, img_dims);
-				(*dims)[N] = bitcount(regs[nr].xflags);
+				md_copy_dims(N + 1, *dims, linop_codomain(trafos[nr_penalties])->dims);
 				sdims[nr_penalties] = PTR_PASS(dims);
 			}
 
@@ -598,7 +603,8 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 			debug_printf(DP_INFO, "ICTV regularization: %f\n", regs[nr].lambda);
 
-			struct reg2 reg2 = ictv_reg(regs[nr].xflags, regs[nr].jflags | MD_BIT(DIMS), regs[nr].lambda, N, img_dims, md_calc_size(N, img_dims) + ropts->svars, &ext_shift, ropts->gamma, ropts->tvscales_N, ropts->tvscales, ropts->tvscales2_N, ropts->tvscales2);
+			struct reg2 reg2 = ictv_reg(regs[nr].xflags, regs[nr].jflags | MD_BIT(DIMS), regs[nr].lambda, N, img_dims, md_calc_size(N, img_dims) + ropts->svars, &ext_shift,
+						    ropts->gamma, ropts->tvscales_N, ropts->tvscales, ropts->tvscales2_N, ropts->tvscales2, lop_asl);
 
 			trafos[nr] = reg2.linop[0];
 			prox_ops[nr] = reg2.prox[0];
@@ -609,7 +615,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 			if (NULL != sdims) {
 
 				PTR_ALLOC(long[N + 1], dims);
-				md_copy_dims(N, *dims, img_dims);
+				md_copy_dims(N + 1, *dims, linop_codomain(trafos[nr_penalties])->dims);
 				(*dims)[N] = 1;
 				sdims[nr_penalties] = PTR_PASS(dims);
 			}
@@ -626,7 +632,8 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 			unsigned int ictgvflags = regs[nr].jflags | MD_BIT(DIMS) | MD_BIT(DIMS - 1);
 
-			struct reg4 reg4 = ictgv_reg(regs[nr].xflags, ictgvflags, regs[nr].lambda, N, img_dims, md_calc_size(N, img_dims) + ropts->svars, &ext_shift, ropts->alpha, ropts->gamma, ropts->tvscales_N, ropts->tvscales, ropts->tvscales2_N, ropts->tvscales2);
+			struct reg4 reg4 = ictgv_reg(regs[nr].xflags, ictgvflags, regs[nr].lambda, N, img_dims, md_calc_size(N, img_dims) + ropts->svars, &ext_shift,
+						     ropts->alpha, ropts->gamma, ropts->tvscales_N, ropts->tvscales, ropts->tvscales2_N, ropts->tvscales2, lop_asl);
 
 			trafos[nr] = reg4.linop[0];
 			prox_ops[nr] = reg4.prox[0];
@@ -637,8 +644,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 			if (NULL != sdims) {
 
 				PTR_ALLOC(long[N + 1], dims);
-				md_copy_dims(N, *dims, img_dims);
-				(*dims)[N] = bitcount(regs[nr].xflags);
+				md_copy_dims(N + 1, *dims, linop_codomain(trafos[nr_penalties])->dims);
 				sdims[nr_penalties] = PTR_PASS(dims);
 			}
 
@@ -650,7 +656,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 			if (NULL != sdims) {
 
 				PTR_ALLOC(long[N + 1], dims);
-				md_copy_dims(N, *dims, img_dims);
+				md_copy_dims(N  + 1, *dims, linop_codomain(trafos[nr_penalties])->dims);
 				(*dims)[N] = 1;
 				sdims[nr_penalties] = PTR_PASS(dims);
 			}
@@ -663,8 +669,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 			if (NULL != sdims) {
 
 				PTR_ALLOC(long[N + 1], dims);
-				md_copy_dims(N, *dims, img_dims);
-				(*dims)[N] = bitcount(regs[nr].xflags);
+				md_copy_dims(N  + 1, *dims, linop_codomain(trafos[nr_penalties])->dims);
 				sdims[nr_penalties] = PTR_PASS(dims);
 			}
 

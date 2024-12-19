@@ -88,8 +88,10 @@ int main_ictv(int argc, char* argv[argc])
 
 	out_dims[DIMS - 1] = 2;
 
+	const struct linop_s* lop_trafo = NULL;
+
 	long ext_shift = md_calc_size(DIMS, in_dims);
-	struct reg2 reg2 = ictv_reg(flags, /*MD_BIT(DIMS - 1) |*/ MD_BIT(DIMS), lambda, DIMS, in_dims, 2 * ext_shift, &ext_shift, gamma, tvscales_N, tvscales, tvscales2_N, tvscales2);
+	struct reg2 reg2 = ictv_reg(flags, /*MD_BIT(DIMS - 1) |*/ MD_BIT(DIMS), lambda, DIMS, in_dims, 2 * ext_shift, &ext_shift, gamma, tvscales_N, tvscales, tvscales2_N, tvscales2, lop_trafo);
 
 
 	complex float* out_data = create_cfl(out_file, DIMS, out_dims);

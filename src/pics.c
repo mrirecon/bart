@@ -298,6 +298,7 @@ int main_pics(int argc, char* argv[argc])
 		OPT_SET('e', &eigen, "Scale stepsize based on max. eigenvalue"),
 		OPTL_SET(0, "adaptive-stepsize", &(pridu.adaptive_stepsize), "PRIDU adaptive step size"),
 		OPTL_SET(0, "asl", &(ropts.asl), "ASL reconstruction"),
+		OPTL_SET(0, "teasl", &(ropts.teasl), "Time-encoded ASL reconstruction"),
 		OPTL_FLVEC2(0, "theta", &ropts.theta, "theta1:theta2", "PWI weight for ASL reconstruction"),
 		OPTL_FLVECN(0, "tvscales", ropts.tvscales, "Scaling of derivatives in TV or TGV regularization"),
 		OPTL_FLVECN(0, "tvscales2", ropts.tvscales2, "Scaling of secondary derivatives in ICTV reconstruction"),
@@ -400,6 +401,9 @@ int main_pics(int argc, char* argv[argc])
 
                 debug_printf(DP_INFO, "SMS reconstruction: MB = %ld\n", ksp_dims[SLICE_DIM]);
         }
+
+	if (ropts.asl && ropts.teasl)
+		error("Use either TE-ASL or ASL reconstruction.\n");
 
 	if (ropts.asl && 2 != ksp_dims[ITER_DIM])
 		error("ASL reconstruction requires two slices (label and control) along ITER_DIM.\n");
@@ -743,6 +747,11 @@ int main_pics(int argc, char* argv[argc])
 		pridu.sigma_tau_ratio = scaling;
 	}
 
+	if (ropts.teasl) {
+
+		const struct linop_s* hadamard_op = linop_hadamard_create(DIMS, img_dims, ITER_DIM, LEVEL_DIM);
+		forward_op = linop_chain_FF(hadamard_op, forward_op);
+	}
 
 	complex float* image = create_cfl(out_file, DIMS, img_dims);
 	md_clear(DIMS, img_dims, image, CFL_SIZE);

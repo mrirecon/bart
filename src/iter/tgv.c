@@ -129,11 +129,13 @@ struct reg tv_reg(unsigned long flags, unsigned long jflags, float lambda, int N
  * @param alpha       Array of size 2 specifying the regularization parameters \f$ \alpha_1 \f$ and \f$ \alpha_0 \f$.
  * @param tvscales_N  Number of TV scales.
  * @param tvscales    Array of size tvscales_N specifying the scaling of the derivatives.
+ * @param lop_trafo   The linear operator that transforms the input data.
  * @return            A structure containing the TGV regularization operator, which contains
  * 		      two linear operators for the gradient and the symmetric gradient
  * 		      and two proximal operators for the thresholding.
  */
-struct reg2 tgv_reg(unsigned long flags, unsigned long jflags, float lambda, int N, const long in_dims[N], long isize, long* ext_shift, const float alpha[2], int tvscales_N, const float tvscales[tvscales_N])
+struct reg2 tgv_reg(unsigned long flags, unsigned long jflags, float lambda, int N, const long in_dims[N], long isize, long* ext_shift, const float alpha[2], 
+		    int tvscales_N, const float tvscales[tvscales_N], const struct linop_s* lop_trafo)
 {
 	assert(1 <= N);
 
@@ -142,7 +144,21 @@ struct reg2 tgv_reg(unsigned long flags, unsigned long jflags, float lambda, int
 	while ((0 < tvscales_N) && (0. == tvscales[tvscales_N - 1]))
 		tvscales_N--;
 
-	const struct linop_s* grad1 = linop_grad_create(N, in_dims, N, flags);
+	long in2_dims[N];
+
+	if (NULL != lop_trafo) {
+
+		assert(N == linop_domain(lop_trafo)->N);
+		assert(md_check_equal_dims(N, in_dims, linop_domain(lop_trafo)->dims, ~0UL));
+
+		assert(N == linop_codomain(lop_trafo)->N);
+		md_copy_dims(N, in2_dims, linop_codomain(lop_trafo)->dims);
+	} else {
+
+		md_copy_dims(N, in2_dims, in_dims);
+	}
+
+	const struct linop_s* grad1 = linop_grad_create(N, in2_dims, N, flags);
 
 	long grd_dims[N + 2];
 	md_copy_dims(N + 1, grd_dims, linop_codomain(grad1)->dims);
@@ -175,6 +191,15 @@ struct reg2 tgv_reg(unsigned long flags, unsigned long jflags, float lambda, int
 
 	auto iov = linop_domain(grad1);
 	auto grad1b = linop_extract_create(1, MD_DIMS(0), MD_DIMS(md_calc_size(N, in_dims)), MD_DIMS(isize));
+
+	if (NULL != lop_trafo) {
+
+		auto iov = linop_codomain(grad1b);
+		auto trafo_flat = linop_reshape_in(lop_trafo, iov->N, iov->dims);
+
+		grad1b = linop_chain_FF(grad1b, trafo_flat);
+	}
+
 	auto grad1c = linop_reshape_out_F(grad1b, iov->N, iov->dims);
 	auto grad1d = linop_chain_FF(grad1c, grad1);
 
@@ -220,11 +245,13 @@ struct reg2 tgv_reg(unsigned long flags, unsigned long jflags, float lambda, int
  * @param tvscales2_N  Number of TV scales for the second gradient.
  * @param tvscales2    Array of size tvscales2_N specifying the scaling of the derivatives
  * 		       of \f$ | \Delta(x + z) \| \f$.
+ * @param lop_trafo    The linear operator that transforms the input data.
  * @return             A structure containing the ICTV regularization operator, which contains
  * 		       two linear operators for the gradients and two proximal operators for the thresholding.
  */
 
-struct reg2 ictv_reg(unsigned long flags, unsigned long jflags, float lambda, int N, const long in_dims[N], long isize, long* ext_shift, const float gamma[2], int tvscales_N, const float tvscales[tvscales_N], int tvscales2_N, const float tvscales2[tvscales2_N])
+struct reg2 ictv_reg(unsigned long flags, unsigned long jflags, float lambda, int N, const long in_dims[N], long isize, long* ext_shift, const float gamma[2], 
+		     int tvscales_N, const float tvscales[tvscales_N], int tvscales2_N, const float tvscales2[tvscales2_N], const struct linop_s* lop_trafo)
 {
 	struct reg2 reg2;
 
@@ -234,18 +261,41 @@ struct reg2 ictv_reg(unsigned long flags, unsigned long jflags, float lambda, in
 	while ((0 < tvscales2_N) && (0. == tvscales2[tvscales2_N - 1]))
 		tvscales2_N--;
 
+	long in2_dims[N];
+
+	if (NULL != lop_trafo) {
+
+		assert(N == linop_domain(lop_trafo)->N);
+		assert(md_check_equal_dims(N, in_dims, linop_domain(lop_trafo)->dims, ~0UL));
+
+		assert(N == linop_codomain(lop_trafo)->N);
+		md_copy_dims(N, in2_dims, linop_codomain(lop_trafo)->dims);
+	} else {
+
+		md_copy_dims(N, in2_dims, in_dims);
+	}
+
 	assert(0 != (flags & FFT_FLAGS));
 	assert(0 != (flags & ~FFT_FLAGS));
 
-	auto grad1b = linop_extract_create(1, MD_DIMS(0), MD_DIMS(md_calc_size(N, in_dims)), MD_DIMS(isize));
-	grad1b = linop_reshape_out_F(grad1b, N, in_dims);
+	auto grad1b = linop_extract_create(1, MD_DIMS(0), MD_DIMS(md_calc_size(N, in_dims)), MD_DIMS(isize));	
+	
+	if (NULL != lop_trafo) {
 
-	auto grad1c = linop_extract_create(1, MD_DIMS(*ext_shift), MD_DIMS(md_calc_size(N, in_dims)), MD_DIMS(isize));
-	grad1c = linop_reshape_out_F(grad1c, N, in_dims);
+		auto iov = linop_codomain(grad1b);
+		auto trafo_flat = linop_reshape_in(lop_trafo, iov->N, iov->dims);
+
+		grad1b = linop_chain_FF(grad1b, trafo_flat);
+	}
+
+	grad1b = linop_reshape_out_F(grad1b, N, in2_dims);
+
+	auto grad1c = linop_extract_create(1, MD_DIMS(*ext_shift), MD_DIMS(md_calc_size(N, in2_dims)), MD_DIMS(isize));
+	grad1c = linop_reshape_out_F(grad1c, N, in2_dims);
 
 	auto grad1d = linop_plus_FF(grad1b, grad1c);
 
-	const struct linop_s* grad1 = linop_grad_create(N, in_dims, N, flags);
+	const struct linop_s* grad1 = linop_grad_create(N, in2_dims, N, flags);
 	
 	if (0 < tvscales_N) {
 
@@ -265,7 +315,7 @@ struct reg2 ictv_reg(unsigned long flags, unsigned long jflags, float lambda, in
 
 	reg2.linop[0] = linop_chain_FF(grad1d, grad1);
 
-	const struct linop_s* grad2 = linop_grad_create(N, in_dims, N, flags);
+	const struct linop_s* grad2 = linop_grad_create(N, in2_dims, N, flags);
 
 	if (0 < tvscales2_N) {
 
@@ -281,15 +331,15 @@ struct reg2 ictv_reg(unsigned long flags, unsigned long jflags, float lambda, in
 			linop_cdiag_create(N + 1, linop_codomain(grad2)->dims, MD_BIT(N), ztvscales2));
 	}
 
-	auto grad2e = linop_extract_create(1, MD_DIMS(*ext_shift), MD_DIMS(md_calc_size(N, in_dims)), MD_DIMS(isize));
-	grad2e = linop_reshape_out_F(grad2e, N, in_dims);
+	auto grad2e = linop_extract_create(1, MD_DIMS(*ext_shift), MD_DIMS(md_calc_size(N, in2_dims)), MD_DIMS(isize));
+	grad2e = linop_reshape_out_F(grad2e, N, in2_dims);
 
 	reg2.linop[1] = linop_chain_FF(grad2e, grad2);
 
 	reg2.prox[0] = prox_thresh_create(N + 1, linop_codomain(reg2.linop[0])->dims, lambda*gamma[0], jflags);
 	reg2.prox[1] = prox_thresh_create(N + 1, linop_codomain(reg2.linop[1])->dims, lambda*gamma[1], jflags);
 
-	*ext_shift += md_calc_size(N, in_dims);
+	*ext_shift += md_calc_size(N, in2_dims);
 
 	return reg2;
 }
@@ -326,13 +376,14 @@ struct reg2 ictv_reg(unsigned long flags, unsigned long jflags, float lambda, in
  * @param tvscales2_N  Number of TV scales for the second TGV regularization.
  * @param tvscales2    Array of size tvscales2_N specifying the scaling of the derivative in 
  * 		       \f$ \text{TGV} (z) \f$.
+ * @param lop_trafo    The linear operator that transforms the input data.
  * @return             A structure containing the ICTGV regularization operator, which contains
  * 		       four linear operators for the two gradients and two symmetric gradients,
  * 		       and four proximal operators for the thresholding.
  */
 
 struct reg4 ictgv_reg(unsigned long flags, unsigned long jflags, float lambda, int N, const long in_dims[N], long isize, long* ext_shift, const float alpha[2], 
-			const float gamma[2], int tvscales_N, const float tvscales[tvscales_N], int tvscales2_N, const float tvscales2[tvscales2_N])
+		      const float gamma[2], int tvscales_N, const float tvscales[tvscales_N], int tvscales2_N, const float tvscales2[tvscales2_N], const struct linop_s* lop_trafo)
 {
 	struct reg4 reg4;
 
@@ -345,7 +396,21 @@ struct reg4 ictgv_reg(unsigned long flags, unsigned long jflags, float lambda, i
 	while ((0 < tvscales2_N) && (0. == tvscales2[tvscales2_N - 1]))
 		tvscales2_N--;
 
-	const struct linop_s* grad1 = linop_grad_create(N, in_dims, N, flags);
+	long in2_dims[N];
+
+	if (NULL != lop_trafo) {
+
+		assert(N == linop_domain(lop_trafo)->N);
+		assert(md_check_equal_dims(N, in_dims, linop_domain(lop_trafo)->dims, ~0UL));
+
+		assert(N == linop_codomain(lop_trafo)->N);
+		md_copy_dims(N, in2_dims, linop_codomain(lop_trafo)->dims);
+	} else {
+
+		md_copy_dims(N, in2_dims, in_dims);
+	}
+
+	const struct linop_s* grad1 = linop_grad_create(N, in2_dims, N, flags);
 
 	if (0 < tvscales_N) {
 
@@ -366,16 +431,16 @@ struct reg4 ictgv_reg(unsigned long flags, unsigned long jflags, float lambda, i
 	grd_dims[N + 1] = 1;
 
 	auto iov = linop_domain(grad1);
-	auto grad1b = linop_extract_create(1, MD_DIMS(*ext_shift), MD_DIMS(md_calc_size(N, in_dims)), MD_DIMS(isize));
+	auto grad1b = linop_extract_create(1, MD_DIMS(*ext_shift), MD_DIMS(md_calc_size(N, grd_dims)), MD_DIMS(isize));
 	auto grad1c = linop_reshape_out_F(grad1b, iov->N, iov->dims);
 
 	// \Delta ( z )
 	auto grad1d = linop_chain_FF(grad1c, grad1);
 
-	*ext_shift += md_calc_size(N, in_dims);
+	*ext_shift += md_calc_size(N, grd_dims);
 
 	// \Delta ( x ) + u
-	struct reg2 reg_tgv1 = tgv_reg(flags, jflags, lambda*gamma[0], N, in_dims, isize, ext_shift, alpha, tvscales_N, tvscales);
+	struct reg2 reg_tgv1 = tgv_reg(flags, jflags, lambda*gamma[0], N, in_dims, isize, ext_shift, alpha, tvscales_N, tvscales, lop_trafo);
 
 	// \Delta ( z + x ) + u
 	reg4.linop[0] = linop_plus_FF(grad1d, reg_tgv1.linop[0]);
@@ -386,7 +451,7 @@ struct reg4 ictgv_reg(unsigned long flags, unsigned long jflags, float lambda, i
 	reg4.prox[0] = reg_tgv1.prox[0];
 	reg4.prox[1] = reg_tgv1.prox[1];
 
-	struct reg2 reg_tgv2 = tgv_reg(flags, jflags, lambda*gamma[1], N, in_dims, isize, ext_shift, alpha, tvscales_N, tvscales);
+	struct reg2 reg_tgv2 = tgv_reg(flags, jflags, lambda*gamma[1], N, in_dims, isize, ext_shift, alpha, tvscales_N, tvscales, lop_trafo);
 
 	// \Delta ( z )
 	reg4.linop[2] = reg_tgv2.linop[0];
