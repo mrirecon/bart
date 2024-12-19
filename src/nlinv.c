@@ -195,7 +195,7 @@ int main_nlinv(int argc, char* argv[argc])
 
 	if (1 != ksp_dims[SLICE_DIM]) {
 
-		debug_printf(DP_INFO, "SMS-NLINV reconstruction. Multiband factor: %d\n", ksp_dims[SLICE_DIM]);
+		debug_printf(DP_INFO, "SMS-NLINV reconstruction. Multiband factor: %ld\n", ksp_dims[SLICE_DIM]);
 
 		if (use_compat_to_version("v0.9.00") && (!conf.noncart || (NULL != trajectory))) {
 

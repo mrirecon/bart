@@ -91,7 +91,7 @@ struct linop_s* linop_noir_weights_create(int N, const long img_dims[N], const l
 
 		os_dims[i] = lround(img_dims[i] * (MD_IS_SET(flags, i) ? fabs(factor_fov) : 1.));
 		if (fabs(img_dims[i] * (MD_IS_SET(flags, i) ? fabs(factor_fov) : 1.) - os_dims[i]) > 0.0001)
-			debug_printf(DP_WARN, "Sobolev oversampling factor %f is incompatible with grid size %d!\n", factor_fov, img_dims[i]);
+			debug_printf(DP_WARN, "Sobolev oversampling factor %f is incompatible with grid size %ld!\n", factor_fov, img_dims[i]);
 	}
 
 	long wgh_dims[N];

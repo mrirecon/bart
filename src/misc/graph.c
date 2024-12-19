@@ -413,7 +413,7 @@ static const char* print_edge(struct vertex_s a, struct vertex_s b)
 
 const char* print_internl_graph(graph_t graph, bool get_ext_nodes, int N, const char* ext_nodes[N])
 {
-	auto result = ptr_printf("");
+	auto result = ptr_printf("%s", "");
 
 	for (int i = 0; i < list_count(graph->nodes); i++) {
 

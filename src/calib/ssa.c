@@ -204,7 +204,7 @@ extern void ssa_fary(	const long kernel_dims[3],
 	long U_dims[2] = { N, N };
 	complex float* UH = md_alloc(2, U_dims, CFL_SIZE);
 
-	debug_printf(DP_DEBUG3, "SVD of %dx%d matrix...", AAH_dims[0], AAH_dims[1]);
+	debug_printf(DP_DEBUG3, "SVD of %ldx%ld matrix...", AAH_dims[0], AAH_dims[1]);
 
 	lapack_svd(N, N, (complex float (*)[N])U, (complex float (*)[N])UH, S_square, (complex float (*)[N])AAH); // NOTE: Lapack destroys AAH!
 
@@ -334,7 +334,7 @@ void ssa_fary_econ(	const long kernel_dims[3],
 	long VH_dims[2] = { MIN(M, N), M };
 	complex float* VH = md_alloc(2, VH_dims, CFL_SIZE);
 
-	debug_printf(DP_DEBUG3, "SVD of %dx%d matrix...", N, M);
+	debug_printf(DP_DEBUG3, "SVD of %ldx%ld matrix...", N, M);
 
 	long S_dims[2] = { MIN(M, N), 1 };
 

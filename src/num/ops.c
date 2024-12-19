@@ -1479,7 +1479,7 @@ static void dup_apply(const operator_data_t* _data, int N, void* args[N])
 	auto data = CAST_DOWN(operator_dup_s, _data);
 
 	debug_printf(DP_DEBUG4, "dup apply: duplicating %d-%d from %d (io flags: %d)\n",
-				data->a, data->b, N + 1, data->x->io_flags);
+				data->a, data->b, N + 1, data->x->io_flags[0]); //FIXME: properly print io_flags
 
 	void* args2[N + 1];
 
@@ -1593,7 +1593,7 @@ static void link_apply(const operator_data_t* _data, int N, void* args[N])
 	auto data = CAST_DOWN(operator_link_s, _data);
 
 	debug_printf(DP_DEBUG4, "link apply: linking %d-%d of %d (io flags: %d)\n",
-				data->a, data->b, N + 2, data->x->io_flags);
+				data->a, data->b, N + 2, data->x->io_flags[0]); //FIXME: properly print io_flags
 
 	void* args2[N + 2];
 
@@ -2415,7 +2415,7 @@ const struct operator_s* operator_chainN(int N, const struct operator_s* x[N])
 			auto a = x[i];
 			auto b = x[i + 1];
 
-			debug_printf(DP_DEBUG4, "\t[%d] in [%d]:\n\t", i, i + 1, N);
+			debug_printf(DP_DEBUG4, "\t[%d] in [%d]:\n\t", i, i + 1); // FIXME: print N?
 			debug_print_dims(DP_DEBUG4, a->domain[0]->N, a->domain[0]->dims);
 			debug_printf(DP_DEBUG4, "\t");
 			debug_print_dims(DP_DEBUG4, b->domain[1]->N, b->domain[1]->dims);

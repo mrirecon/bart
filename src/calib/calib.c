@@ -730,7 +730,7 @@ static long number_of_kernels(const struct ecalib_conf* conf, long N, const floa
 	if (val[0] <= 0.)
 		error("No signal.\n");
 
-	debug_printf(DP_DEBUG1, "Using %d/%ld kernels (%.2f%%, last SV: %f%s).\n", n, N, (float)n / (float)N * 100., (n > 0) ? (val[n - 1] / val[0]) : 1., conf->weighting ? ", weighted" : "");
+	debug_printf(DP_DEBUG1, "Using %ld/%ld kernels (%.2f%%, last SV: %f%s).\n", n, N, (float)n / (float)N * 100., (n > 0) ? (val[n - 1] / val[0]) : 1., conf->weighting ? ", weighted" : "");
 
 	float tr = 0.;
 
@@ -757,7 +757,7 @@ void compute_kernels(const struct ecalib_conf* conf, long nskerns_dims[5], compl
 	nskerns_dims[2] = conf->kdims[2];
 	nskerns_dims[3] = caldims[3];
 
-	int N = (int)md_calc_size(4, nskerns_dims);
+	long N = md_calc_size(4, nskerns_dims);
 
 	assert(N > 0);
 	nskerns_dims[4] = N;

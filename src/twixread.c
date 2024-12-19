@@ -457,13 +457,13 @@ static enum adc_return siemens_adc_read(bool vd, int fd, bool linectr, bool part
 
 		if (dims[READ_DIM] != mdh.samples) {
 
-			debug_printf(DP_WARN, "Wrong number of samples: %d != %d.\n", dims[READ_DIM], mdh.samples);
+			debug_printf(DP_WARN, "Wrong number of samples: %ld != %d.\n", dims[READ_DIM], mdh.samples);
 			return ADC_ERROR;
 		}
 
 		if ((0 != mdh.channels) && (dims[COIL_DIM] != mdh.channels)) {
 
-			debug_printf(DP_WARN, "Wrong number of channels: %d != %d.\n", dims[COIL_DIM], mdh.channels);
+			debug_printf(DP_WARN, "Wrong number of channels: %ld != %d.\n", dims[COIL_DIM], mdh.channels);
 			return ADC_ERROR;
 		}
 
@@ -501,13 +501,13 @@ static bool siemens_adc_noise(bool vd, int fd, const long dims[DIMS], complex fl
 
 		if (dims[READ_DIM] != mdh.samples) {
 
-			debug_printf(DP_WARN, "Wrong number of samples: %d != %d.\n", dims[READ_DIM], mdh.samples);
+			debug_printf(DP_WARN, "Wrong number of samples: %ld != %d.\n", dims[READ_DIM], mdh.samples);
 			return false;
 		}
 
 		if ((0 != mdh.channels) && (dims[COIL_DIM] != mdh.channels)) {
 
-			debug_printf(DP_WARN, "Wrong number of channels: %d != %d.\n", dims[COIL_DIM], mdh.channels);
+			debug_printf(DP_WARN, "Wrong number of channels: %ld != %d.\n", dims[COIL_DIM], mdh.channels);
 			return false;
 		}
 
@@ -624,7 +624,7 @@ int main_twixread(int argc, char* argv[argc])
 			}
 		}
 
-		debug_printf(DP_DEBUG2, "found %d adcs\n", adcs);
+		debug_printf(DP_DEBUG2, "found %ld adcs\n", adcs);
 
 		for (int i = 0; i < DIMS; i++) {
 
@@ -676,7 +676,7 @@ int main_twixread(int argc, char* argv[argc])
 	complex float* out = create_cfl(out_file, DIMS, odims);
 	md_clear(DIMS, odims, out, CFL_SIZE);
 
-	debug_printf(DP_DEBUG1, "___ reading measured data (%d adcs).\n", adcs);
+	debug_printf(DP_DEBUG1, "___ reading measured data (%ld adcs).\n", adcs);
 
 	long adc_dims[DIMS];
 	md_select_dims(DIMS, READ_FLAG|COIL_FLAG, adc_dims, dims);
@@ -745,8 +745,8 @@ int main_twixread(int argc, char* argv[argc])
 
 				if (1 == call) {
 
-					debug_printf(DP_INFO, "RAGA Spokes: %d\n", dims[PHS1_DIM]);
-					debug_printf(DP_INFO, "RAGA Increment is: %d\n", pos[PHS1_DIM]);
+					debug_printf(DP_INFO, "RAGA Spokes: %ld\n", dims[PHS1_DIM]);
+					debug_printf(DP_INFO, "RAGA Increment is: %ld\n", pos[PHS1_DIM]);
 				}
 
 				// Reorder to temporal scheme for RAGA sampling

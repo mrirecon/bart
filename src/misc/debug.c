@@ -330,7 +330,7 @@ const char* debug_good_backtrace_string(int skip)
 	rewind(fp);
 
 	char tmp[1024];
-	const char* ret = ptr_printf("");
+	const char* ret = ptr_printf("%s", "");
 
 	while (NULL != fgets(tmp, 1023, fp)) {
 

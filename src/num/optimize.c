@@ -739,7 +739,7 @@ out:
 
 	if (cnst_ok) {
 
-		debug_printf(DP_DEBUG4, "MD constant buffer Io: %d Cnst: %d Size %ld.\n", io, cnst_flags, cnst_size);
+		debug_printf(DP_DEBUG4, "MD constant buffer Io: %lu Cnst: %lu Size %ld.\n", io, cnst_flags, cnst_size);
 
 		for (int i = 0; i < N; i++) {
 
@@ -767,7 +767,7 @@ out:
 	int skip = min_blockdim(N, ND, tdims, nstr1, sizes);
 	unsigned long flags = 0;
 
-	debug_printf(DP_DEBUG4, "MD-Fun. Io: %d Input: ", io);
+	debug_printf(DP_DEBUG4, "MD-Fun. Io: %lu Input: ", io);
 	debug_print_dims(DP_DEBUG4, D, dim);
 
 #ifdef USE_CUDA

@@ -275,7 +275,7 @@ long get_cfl_loop_index()
 	if (MAX_WORKER < worker_id)
 		error("Worker id exceeds maximum supported workers!\n");
 
-	debug_printf(DP_DEBUG2, "loop index: %d\n", cfl_loop_index[worker_id]);
+	debug_printf(DP_DEBUG2, "loop index: %ld\n", cfl_loop_index[worker_id]);
 	return cfl_loop_index[worker_id];
 }
 

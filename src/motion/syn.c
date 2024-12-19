@@ -100,7 +100,7 @@ static void _iterate(int iter, int d, unsigned long flags, int N, const long dim
 	complex float loss;
 	md_copy(1, MD_DIMS(1), &loss, scalar, CFL_SIZE);
 
-	debug_printf(DP_DEBUG1, "Loss[%d]: %e\n", iter, loss);
+	debug_printf(DP_DEBUG1, "Loss[%d]: %e\n", iter, crealf(loss));
 
 	complex float* bw_stp = md_alloc_sameplace(N, dims, CFL_SIZE, scalar);
 	complex float* fw_stp = md_alloc_sameplace(N, dims, CFL_SIZE, scalar);

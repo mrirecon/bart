@@ -417,7 +417,7 @@ static nn_t loss_measure_create(const struct loss_config_s* config, int N, const
 
 		while (0 < nn_get_nr_unnamed_out_args(tmp_loss)) {
 
-			auto name = ptr_printf("dice sim (label %d)", labels++);
+			auto name = ptr_printf("dice sim (label %ld)", labels++);
 			tmp_loss = nn_set_out_type_F(tmp_loss, 0, NULL, OUT_OPTIMIZE);
 			tmp_loss = nn_set_output_name_F(tmp_loss, 0, name);
 			xfree(name);

@@ -145,7 +145,7 @@ int main_lrmatrix(int argc, char* argv[argc])
 	if (noise)
 		add_lrnoiseblk(&levels, blkdims, idims);
 
-	debug_printf(DP_INFO, "Number of levels: %ld\n", levels);
+	debug_printf(DP_INFO, "Number of levels: %d\n", levels);
 
 	// Get outdims
 	md_copy_dims(DIMS, odims, idims);

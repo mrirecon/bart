@@ -737,7 +737,7 @@ int main_bench(int argc, char* argv[argc])
 		if (threads) {
 
 			num_set_num_threads((int)pos[THREADS_IND] + 1);
-			debug_printf(DP_INFO, "%02d threads. ", pos[THREADS_IND] + 1);
+			debug_printf(DP_INFO, "%02ld threads. ", pos[THREADS_IND] + 1);
 		}
 
 		do_test(dims, &MD_ACCESS(BENCH_DIMS, strs, pos, out), pos[SCALE_IND] + 1,

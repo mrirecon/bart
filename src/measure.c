@@ -149,7 +149,7 @@ int main_measure(int argc, char* argv[argc])
 		if (print_name) {
 
 			for (int i = 0; i < nn_get_nr_out_args(nn_measure); i++)
-				bart_printf("%s:%*s%e\n", nn_measure->out_names[i], 24 - strlen(nn_measure->out_names[i]), "", crealf(res[i]));
+				bart_printf("%s:%*s%e\n", nn_measure->out_names[i],  24 - (int) strlen(nn_measure->out_names[i]), "", crealf(res[i]));
 
 		} else {
 

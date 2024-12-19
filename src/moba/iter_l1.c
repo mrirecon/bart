@@ -422,7 +422,7 @@ static const struct operator_p_s* T1inv_p_create(const struct mdb_irgnm_l1_conf*
         // jointly penalize the first few maps
         long penalized_dims = MAX(1, img_dims[COEFF_DIM] - conf->not_wav_maps);
 
-        debug_printf(DP_DEBUG2, "nr. of penalized maps: %d\n", penalized_dims);
+        debug_printf(DP_DEBUG2, "nr. of penalized maps: %ld\n", penalized_dims);
 
         img_dims[COEFF_DIM] = penalized_dims;
 

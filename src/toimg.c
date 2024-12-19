@@ -129,7 +129,7 @@ static void toimg_stack(const char* name, bool dicom, bool dim_names, bool singl
 
 	assert(md_calc_size(DIMS, loop_dims) == num_imgs);
 
-	debug_printf(DP_INFO, "Writing %d image(s)...", num_imgs);
+	debug_printf(DP_INFO, "Writing %ld image(s)...", num_imgs);
 
 #pragma omp parallel for
 	for (long i = 0; i < num_imgs; i++) {
@@ -171,7 +171,7 @@ static void toimg_stack(const char* name, bool dicom, bool dim_names, bool singl
 		xfree(name_i);
 	}
 
-	debug_printf(DP_INFO, "done.\n", num_imgs);
+	debug_printf(DP_INFO, "done.\n");
 }
 
 

@@ -160,7 +160,7 @@ static const char* compute_val_monitors(struct monitor_iter6_default_s* monitor,
 {
 	create_record(monitor, epoch, num_batches);
 
-	const char* result = ptr_printf("");
+	const char* result = ptr_printf("%s", "");
 
 	long rpos[4] = { epoch, batch, 0, 2 };
 
@@ -224,19 +224,19 @@ static void monitor6_default_fun(struct monitor_iter6_s* _monitor, int epoch, in
 	bool print_loss = true;
 	bool print_overwrite = true;
 
-	const char* str_progress = (print_progress) ? print_progress_bar(10, batch, numbatches) :  ptr_printf("");
+	const char* str_progress = (print_progress) ? print_progress_bar(10, batch, numbatches) :  ptr_printf("%s", "");
 
 	double time = timestamp() - monitor->start_time;
 	double est_time = time + (double)(numbatches - batch - 1) * time / (double)(batch + 1);
-	const char* str_time = (print_time) ? print_time_string(time, est_time) : ptr_printf("");
+	const char* str_time = (print_time) ? print_time_string(time, est_time) : ptr_printf("%s", "");
 
 	monitor->average_obj = ((float)batch * monitor->average_obj + objective) / ((float)batch + 1);
 
-	const char* str_loss = (print_loss) ? ptr_printf(" loss: %e;", monitor->print_average_obj ? monitor->average_obj: objective) :  ptr_printf("");
+	const char* str_loss = (print_loss) ? ptr_printf(" loss: %e;", monitor->print_average_obj ? monitor->average_obj: objective) :  ptr_printf("%s", "");
 
 	const char* str_val_monitor = compute_val_monitors(monitor, epoch, batch, numbatches, NI, x);
 
-	const char* str_overwrite = (print_overwrite) ? ptr_printf("\33[2K\r") : ptr_printf("");
+	const char* str_overwrite = (print_overwrite) ? ptr_printf("\33[2K\r") : ptr_printf("%s", "");
 
 
 	debug_printf(DP_INFO, "%s#%d->%d/%d;%s%s%s%s%s", str_overwrite, epoch + 1, batch + 1, numbatches,
@@ -401,7 +401,7 @@ static const char* monitor_iter6_nlop_print(const monitor_iter6_value_data_t* _d
 {
 	const auto d = CAST_DOWN(monitor_iter6_nlop_s, _data);
 
-	const char* result = ptr_printf("");
+	const char* result = ptr_printf("%s", "");
 
 	if (NULL == d->names)
 		return result;
@@ -522,7 +522,7 @@ static const char* monitor_iter6_function_print(const monitor_iter6_value_data_t
 	const auto d = CAST_DOWN(monitor_iter6_function_s, _data);
 
 	if (NULL == d->name)
-		return ptr_printf("");
+		return ptr_printf("%s", "");
 
 	if (0. == cimagf(d->last_result))
 		return ptr_printf(" %s: %.3e;", d->name, crealf(d->last_result));

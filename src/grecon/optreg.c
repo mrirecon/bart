@@ -445,7 +445,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 			debug_printf(DP_DEBUG3, "Total wavelet dimensions: \n[");
 
 			for (int i = 0; i < DIMS; i++)
-				debug_printf(DP_DEBUG3,"%d ", wav_dims[i]);
+				debug_printf(DP_DEBUG3,"%ld ", wav_dims[i]);
 
 			debug_printf(DP_DEBUG3, "]\n");
 

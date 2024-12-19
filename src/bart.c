@@ -472,7 +472,7 @@ int main_bart(int argc, char* argv[argc])
 				return bart_exit(1, NULL); // not really needed, error calls abort()
 			}
 
-			debug_printf(DP_DEBUG3, "Trying: %s\n", cmd);
+			debug_printf(DP_DEBUG3, "Trying: %s\n", *cmd);
 
 			if (-1 == execv(*cmd, argv)) {
 
