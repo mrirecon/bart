@@ -24,7 +24,7 @@ extern _Bool debug_logging;
 enum debug_levels { DP_ERROR, DP_WARN, DP_INFO, DP_DEBUG1, DP_DEBUG2, DP_DEBUG3, DP_DEBUG4, DP_TRACE, DP_ALL };
 
 
-extern void debug_printf(int level, const char* fmt, ...);
+extern void debug_printf(int level, const char* fmt, ...) __attribute__((format(printf,2,3)));
 extern void debug_vprintf(int level, const char* fmt, va_list ap);
 
 #ifdef REDEFINE_PRINTF_FOR_TRACE
@@ -37,7 +37,7 @@ extern void debug_vprintf(int level, const char* fmt, va_list ap);
 extern void debug_printf_trace(const char* func_name,
 			       const char* file,
 			       int line,
-			       int level, const char* fmt, ...);
+			       int level, const char* fmt, ...) __attribute__((format(printf,5,6)));
 extern void debug_vprintf_trace(const char* func_name,
 				const char* file,
 				int line,
