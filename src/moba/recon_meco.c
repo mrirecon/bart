@@ -334,8 +334,7 @@ void meco_recon(const struct moba_conf* moba_conf,
 
 			inv_op = NULL;
 
-		} else 
-		if (ALGO_ADMM == algo) {
+		} else if (ALGO_ADMM == algo) {
 
 			debug_printf(DP_DEBUG2, " >> linearized problem solved by ADMM ");
 
