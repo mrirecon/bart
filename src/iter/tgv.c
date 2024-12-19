@@ -56,17 +56,37 @@
  * @param img_dims    Array of size N specifying the input dimensions.
  * @param tvscales_N  Number of TV scales.
  * @param tvscales    Array of size tvscales_N specifying the scaling of the derivatives.
+ * @param lop_trafo   The linear operator that transforms the input data.
  * @return            A structure containing the TV regularization operator, which contains
  * 					  a linear operator for the gradient and a proximal operator for the thresholding.
  */
-struct reg tv_reg(unsigned long flags, unsigned long jflags, float lambda, int N, const long img_dims[N], int tvscales_N, const float tvscales[tvscales_N])
+struct reg tv_reg(unsigned long flags, unsigned long jflags, float lambda, int N, const long img_dims[N], int tvscales_N, const float tvscales[tvscales_N], const struct linop_s* lop_trafo)
 {
 	struct reg reg;
 
 	while ((0 < tvscales_N) && (0. == tvscales[tvscales_N - 1]))
 		tvscales_N--;
 
-	reg.linop = linop_grad_create(N, img_dims, N, flags);
+	long in2_dims[N];
+
+	if (NULL != lop_trafo) {
+
+		assert(N == linop_domain(lop_trafo)->N);
+		assert(md_check_equal_dims(N, img_dims, linop_domain(lop_trafo)->dims, ~0UL));
+
+		assert(N == linop_codomain(lop_trafo)->N);
+		md_copy_dims(N, in2_dims, linop_codomain(lop_trafo)->dims);
+	} else {
+
+		md_copy_dims(N, in2_dims, img_dims);
+	}
+
+	reg.linop = linop_grad_create(N, in2_dims, N, flags);
+
+	if (NULL != lop_trafo) {
+
+		reg.linop = linop_chain_FF(lop_trafo, reg.linop);
+	}
 
 	if (0 < tvscales_N) {
 

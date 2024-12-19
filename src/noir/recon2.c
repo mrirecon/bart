@@ -289,7 +289,7 @@ void noir2_recon(const struct noir2_conf_s* conf, struct noir2_s* noir_ops,
 	const long (*sdims[NUM_REGS])[N + 1] = { NULL };
 
 	if (!((NULL == conf->regs) || (0 == conf->regs->r)))
-		opt_reg_configure(N, img_dims, conf->regs, prox_ops, trafos, sdims, 0, 1, "dau2", conf->gpu);
+		opt_reg_configure(N, img_dims, conf->regs, prox_ops, trafos, sdims, 0, 1, "dau2", conf->gpu, DIMS-1);
 
 	long skip = md_calc_size(N, img_dims);
 

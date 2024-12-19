@@ -27,6 +27,7 @@
 #include "iter/prox2.h"
 #include "iter/thresh.h"
 #include "iter/tgv.h"
+#include "iter/asl.h"
 
 #include "linops/linop.h"
 #include "linops/someops.h"
@@ -85,7 +86,10 @@ bool opt_reg(void* ptr, char c, const char* optarg)
 	const int r = p->r;
 	const float lambda = p->lambda;
 
-	assert(r < NUM_REGS);
+	if (p->asl)
+		assert(r + 1 < NUM_REGS);
+	else
+		assert(r < NUM_REGS);
 
 	char rt[5];
 
@@ -225,6 +229,23 @@ bool opt_reg(void* ptr, char c, const char* optarg)
 			error("Unrecognized regularization type: \"%s\" (-Rh for help).\n", rt);
 		}
 
+		regs[r].asl = false;
+
+		// Duplicate the regularization type for ASL for the difference image
+
+		if (p->asl) {
+
+			regs[r+1].xform = regs[r].xform;
+			regs[r+1].xflags = regs[r].xflags;
+			regs[r+1].jflags = regs[r].jflags;
+			regs[r+1].lambda = regs[r].lambda * p->theta[1];
+
+			regs[r].lambda *= p->theta[0];
+			regs[r+1].asl = true;
+
+			p->r++;
+		}
+
 		p->r++;
 		break;
 	}
@@ -275,11 +296,16 @@ bool opt_reg_init(struct opt_reg_s* ropts)
 		ropts->tvscales2[i] = 0.0;
 	}
 
+	ropts->asl = false;
+
 	ropts->alpha[0] = 1.0;
 	ropts->alpha[1] = sqrtf(3.);
 
 	ropts->gamma[0] = 1.0;
 	ropts->gamma[1] = 1.0;
+
+	ropts->theta[0] = 1.0;
+	ropts->theta[1] = 1.0;
 
 	return false;
 }
@@ -335,7 +361,7 @@ void opt_precond_configure(struct opt_reg_s* ropts, const struct operator_p_s* p
 	ropts->sr++;
 }
 
-void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], const long (*sdims[NUM_REGS])[N + 1], int llr_blk, int shift_mode, const char* wtype_str, bool use_gpu)
+void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, const struct operator_p_s* prox_ops[NUM_REGS], const struct linop_s* trafos[NUM_REGS], const long (*sdims[NUM_REGS])[N + 1], int llr_blk, int shift_mode, const char* wtype_str, bool use_gpu, int asl_dim)
 {
 	float lambda = ropts->lambda;
 	bool randshift = (1 == shift_mode);
@@ -357,10 +383,26 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 		regs[0].lambda = lambda;
 		ropts->r = 1;
 	}
+	
+	if (ropts->asl) {
+
+		assert(2 == img_dims[asl_dim]);
+
+		if ((0 < ropts->r) && !(TV == regs[0].xform))
+			error("ASL is only supported for TV.\n");
+	}
 
 	// compute needed supporting variables
 
 	for (int nr = 0; nr < ropts->r; nr++) {
+
+		// for asl, the second regularization term only has half the size of the first
+
+		long tmp_dims[DIMS];
+		if (ropts->asl && regs[nr].asl)
+			get_asl_dims(DIMS, asl_dim, tmp_dims, img_dims);
+		else
+			md_copy_dims(DIMS, tmp_dims, img_dims);
 
 		switch (regs[nr].xform) {
 
@@ -426,6 +468,17 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 		long img_strs[N];
 
 		assert(nr_penalties < NUM_REGS);
+
+		// do not allow regularization between asl control and label images
+
+		if (ropts->asl)
+			assert(!MD_IS_SET(regs[nr].xflags, asl_dim));
+
+		const struct linop_s* lop_asl = NULL;
+		if (ropts->asl && regs[nr].asl)	{
+
+			lop_asl = linop_asl_create(DIMS, img_dims, asl_dim);
+		}
 
 		switch (regs[nr].xform) {
 
@@ -508,7 +561,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 			debug_printf(DP_INFO, "TV regularization: %f\n", regs[nr].lambda);
 
-			struct reg reg = tv_reg(regs[nr].xflags, regs[nr].jflags, regs[nr].lambda, DIMS, img_dims, ropts->tvscales_N, ropts->tvscales);
+			struct reg reg = tv_reg(regs[nr].xflags, regs[nr].jflags, regs[nr].lambda, DIMS, img_dims, ropts->tvscales_N, ropts->tvscales, lop_asl);
 			
 			trafos[nr] = reg.linop;
 			prox_ops[nr] = reg.prox;

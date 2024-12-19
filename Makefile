@@ -786,10 +786,11 @@ UTARGETS += test_geom
 MODULES_test_geom += -lgeom
 
 # lib iter
-UTARGETS += test_iter test_prox test_prox2
+UTARGETS += test_iter test_prox test_prox2 test_asl
 MODULES_test_iter += -liter -lnlops -llinops
 MODULES_test_prox += -liter -llinops
 MODULES_test_prox2 += -liter -llinops -lnlops
+MODULES_test_asl += -liter -llinops -lnlops
 
 # lib nn
 ifeq ($(TENSORFLOW),1)
