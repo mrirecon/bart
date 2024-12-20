@@ -58,7 +58,7 @@ int main_signal(int argc, char* argv[argc])
 	long dims[DIMS] = { [0 ... DIMS - 1] = 1 };
 	dims[TE_DIM] = 100;
 
-	enum seq_type { BSSFP, FLASH, TSE, TSE_GEN, SE, MOLLI, MGRE, IR_MGRE };
+	enum seq_type { BSSFP, FLASH, TSE, TSE_GEN, SE, MOLLI, MGRE, IR_MGRE, ASL };
 	enum seq_type seq = FLASH;
 
 	bool IR = false;
@@ -86,6 +86,13 @@ int main_signal(int argc, char* argv[argc])
 	int freq_samples = -1;
 	int NE = -1;
 
+	// ASL
+	bool pulsed = false;
+	float lambda = -1.;
+	float delta_t = -1.;
+	bool acquisition_only = false;
+	float f_range[3] = { 60., 60., 1. };
+
 	const struct opt_s opts[] = {
 
 		OPT_SELECT('F', enum seq_type, &seq, FLASH, "FLASH"),
@@ -95,6 +102,7 @@ int main_signal(int argc, char* argv[argc])
 		OPT_SELECT('M', enum seq_type, &seq, MOLLI, "MOLLI"),
 		OPT_SELECT('G', enum seq_type, &seq, MGRE, "MGRE"),
 		OPT_SELECT('C', enum seq_type, &seq, IR_MGRE, "IR MGRE"),
+		OPT_SELECT('A', enum seq_type, &seq, ASL, "ASL"),
 		OPTL_SET(0, "fat", &fat, "Simulate additional fat component."),
 		OPT_SET('I', &IR, "inversion recovery"),
 		OPT_SET('s', &IR_SS, "inversion recovery starting from steady state"),
@@ -105,6 +113,7 @@ int main_signal(int argc, char* argv[argc])
 		OPT_FLVEC3('3', &Ms, "min:max:N", "range of Mss"),
 		OPT_FLVEC3('4', &t1_fat, "min:max:N", "range of T1 values for fat [s]"),
 		OPT_FLVEC3('5', &FA_range, "min:max:N", "range of FA values [°]"),
+		OPT_FLVEC3('6', &f_range, "min:max:N", "range of CBF values [ml/100g/min]"),
 		OPT_FLOAT('r', &TR, "TR", "repetition time"),
 		OPT_FLOAT('e', &TE, "TE", "echo time"),
 		OPT_FLOAT('i', &TI, "TI", "inversion time"),
@@ -116,6 +125,10 @@ int main_signal(int argc, char* argv[argc])
                 OPTL_INT(0, "av-spokes", &averaged_spokes, "", "Number of averaged consecutive spokes"),
 		OPT_INT('m', &NE, "multi echos", "number of multi gradient echos"),
 		OPTL_INT(0, "freq-samples", &freq_samples, "", "Samples in frequency-/z-domain for FSE model based on generating function formalism"),
+		OPTL_SET(0, "pulsed", &pulsed, "Pulsed Arterial Spin Labeling"),
+		OPT_FLOAT('l', &lambda, "lambda", "Blood-brain partition coefficient"),
+		OPT_FLOAT('a', &delta_t, "Delta t", "Arterial transit time (ATT) in Buxton model"),
+		OPTL_SET(0, "acquisition-only", &acquisition_only, "only return the Buxton model signal during image acquisition")
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -133,6 +146,7 @@ int main_signal(int argc, char* argv[argc])
 	case SE:    parm = signal_SE_defaults; break;
 	case MOLLI: parm = signal_looklocker_defaults; break;
 	case IR_MGRE: parm = signal_ir_multi_grad_echo_fat_defaults; break;
+	case ASL: parm = pulsed ? signal_buxton_pulsed : signal_buxton_defaults; break;
 
 	default: error("sequence type not supported\n");
 	}
@@ -170,11 +184,20 @@ int main_signal(int argc, char* argv[argc])
 	if (-1 != freq_samples)
 		parm.freq_samples = freq_samples;
 
+	if (-1 != lambda)
+		parm.lambda = lambda;
+
+	if (-1 != delta_t)
+		parm.delta_t = delta_t;
+
+	parm.acquisition_only = acquisition_only;
+
 	dims[COEFF_DIM] = truncf(T1[2]);
 	dims[COEFF2_DIM] = (1 != Ms[2]) ? truncf(Ms[2]) : truncf(T2[2]);
 	dims[ITER_DIM] = truncf(off_reson[2]);
 	dims[CSHIFT_DIM] = truncf(t1_fat[2]);
 	dims[TIME_DIM] = MAX(1, (long)truncf(FA_range[2]));
+	dims[TIME2_DIM] = truncf(f_range[2]);
 
 	if ((dims[TE_DIM] < 1) || (dims[COEFF_DIM] < 1) || (dims[COEFF2_DIM] < 1) || (dims[TIME_DIM] < 1))
 		error("invalid parameter range\n");
@@ -206,6 +229,8 @@ int main_signal(int argc, char* argv[argc])
 
 		parm.t1_fat = t1_fat[0] + (t1_fat[1] - t1_fat[0]) / t1_fat[2] * (float)pos[CSHIFT_DIM];
 
+		parm.f = f_range[0] + (f_range[1] - f_range[0]) / f_range[2] * (float)pos[TIME2_DIM];
+
                 complex float mxy[N_all];
 
 		switch (seq) {
@@ -218,6 +243,7 @@ int main_signal(int argc, char* argv[argc])
 		case SE:    SE_model(&parm, N_all, mxy); break;
 		case MOLLI: MOLLI_model(&parm, N_all, mxy); break;
 		case IR_MGRE: ir_multi_grad_echo_model(&parm, NE, N_all, mxy); break;
+		case ASL: buxton_model(&parm, N_all, mxy); break;
 
 		default: assert(0);
 		}

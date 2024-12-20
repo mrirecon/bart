@@ -141,3 +141,104 @@ static bool test_IR_bSSFP(void)
 }
 
 UT_REGISTER_TEST(test_IR_bSSFP);
+
+
+static bool test_buxton(void)
+{
+	struct signal_model data = signal_buxton_defaults;
+
+	float timepoints = 200;
+
+	long dims[DIMS] = { [0 ... DIMS - 1] = 1 };
+	dims[TE_DIM] = timepoints;
+
+	complex float* signal = md_alloc(DIMS, dims, CFL_SIZE);
+
+	buxton_model(&data, timepoints, signal);
+
+	if (1E-5 < (cabsf(signal[0]) - 0.0))
+		return 0;
+
+	if (1E-5 < (cabsf(signal[50]) - 0.0))
+		return 0;
+
+	if (1E-5 < (cabsf(signal[100]) - 0.005850))
+		return 0;
+
+	if (1E-5 < (cabsf(signal[199]) - 0.012706))
+		return 0;
+
+	md_free(signal);
+
+	return 1;
+}
+
+UT_REGISTER_TEST(test_buxton);
+
+
+
+static bool test_buxton_pulsed(void)
+{
+	struct signal_model data = signal_buxton_pulsed;
+
+	float timepoints = 200;
+
+	long dims[DIMS] = { [0 ... DIMS - 1] = 1 };
+	dims[TE_DIM] = timepoints;
+
+	complex float* signal = md_alloc(DIMS, dims, CFL_SIZE);
+
+	buxton_model(&data, timepoints, signal);
+
+	if (1E-5 < (cabsf(signal[0]) - 0.0))
+		return 0;
+
+	if (1E-5 < (cabsf(signal[50]) - 0.0))
+		return 0;
+
+	if (1E-5 < (cabsf(signal[100]) - 0.005766))
+		return 0;
+
+	if (1E-5 < (cabsf(signal[199]) - 0.004581))
+		return 0;
+
+	md_free(signal);
+
+	return 1;
+}
+
+UT_REGISTER_TEST(test_buxton_pulsed);
+
+
+static bool test_buxton_after_labeling(void)
+{
+	struct signal_model data = signal_buxton_defaults;
+	data.acquisition_only = true;
+
+	float timepoints = 200;
+
+	long dims[DIMS] = { [0 ... DIMS - 1] = 1 };
+	dims[TE_DIM] = timepoints;
+
+	complex float* signal = md_alloc(DIMS, dims, CFL_SIZE);
+
+	buxton_model(&data, timepoints, signal);
+
+	if (1E-5 < (cabsf(signal[0]) - 0.014021))
+		return 0;
+
+	if (1E-5 < (cabsf(signal[50]) - 0.009755))
+		return 0;
+
+	if (1E-5 < (cabsf(signal[100]) - 0.006788))
+		return 0;
+
+	if (1E-5 < (cabsf(signal[199]) - 0.003310))
+		return 0;
+
+	md_free(signal);
+
+	return 1;
+}
+
+UT_REGISTER_TEST(test_buxton_after_labeling);

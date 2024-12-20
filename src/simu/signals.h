@@ -39,6 +39,15 @@ struct signal_model {
 	int freq_samples;
 
         int averaged_spokes;
+
+	bool pulsed;
+	float t1b;
+	float f;
+	float lambda;
+	float tau;
+	float alpha;
+	float delta_t;
+	bool acquisition_only;
 };
 
 
@@ -85,6 +94,12 @@ extern void multi_grad_echo_model(const struct signal_model* data, int N, comple
 extern const struct signal_model signal_ir_multi_grad_echo_fat_defaults;
 
 extern void ir_multi_grad_echo_model(const struct signal_model* data, int NE, int N, complex float out[N]);
+
+
+extern const struct signal_model signal_buxton_defaults;
+extern const struct signal_model signal_buxton_pulsed;
+
+extern void buxton_model(const struct signal_model* data, int N, complex float out[N]);
 
 #endif
 

@@ -464,3 +464,130 @@ void ir_multi_grad_echo_model(const struct signal_model* data, int NE, int N, co
 		for (int ind_i = 0; ind_i < NI; ind_i++)
 			out[ind_i + NI * ind_e] = signal_ir_multi_grad_echo(data, ind_e, ind_i);
 }
+
+
+
+
+/*
+ * Alsop DC, Detre JA, Golay X, Günther M, Hendrikse J, Hernandez-Garcia L, 
+ * Lu H, MacIntosh BJ, Parkes LM, Smits M, van Osch MJ, Wang DJJ, Wong EC, 
+ * Zaharchuk G. 
+ * Recommended implementation of arterial spin-labeled perfusion MRI for clinical applications: 
+ * A consensus of the ISMRM perfusion study group and the European consortium for ASL in dementia. 
+ * Magn Reson Med 73:102–116 (2015) 
+ * doi: 10.1002/mrm.25197 
+ * 
+ * Herscovitch P, Raichle ME. 
+ * What is the correct value for the brain—blood partition coefficient for water? 
+ * J Cereb Blood Flow Metab 5:65–69 (1985) 
+ * 
+ * Cerebral blood flow, blood volume and oxygen utilization. Normal values and effect of age
+ * K. L. Leenders, D. Perani, A. A. Lammertsma, J. D. Heather, P. Buckingham, M. J. Healy, 
+ * J. M. Gibbs, R. J. Wise, J. Hatazawa & S. Herold.
+ * Brain: a journal of neurology, Volume 113, Issue 1, Pages 27–47 (February 1990)
+ */
+// Default: continuous (CASL) or pseudo-continuous ASL (pCASL)
+const struct signal_model signal_buxton_defaults = {
+
+	.m0 = 1.,
+	.tr = 0.01,					// Time between PLDs in s
+	.t1b = 1.65, 				// Relaxation time of blood in s at 3T
+	.t1 = 1.4, 					// Relaxation time of tissue in s at 3T
+	.f = 60., 					// Typical cerebal blood flow in gray matter in ml/100g/min
+	.delta_t = 1.8,				// Arterial transit time (ATT) in s
+	.lambda = 0.9,				// Brain-blood partition coefficient in ml/g for whole brain
+	.acquisition_only = false, 	// Only signal during the acquisition is returned
+	.pulsed = false, 			// Continuous ASL
+	.tau = 1.8,					// Labeling duration in s
+	.alpha = 0.85				// Labeling efficiency
+};
+
+// Default values for Pulsed ASL (PASL)
+const struct signal_model signal_buxton_pulsed = {
+
+	.m0 = 1.,
+	.tr = 0.01,					// Time between PLDs in s
+	.t1b = 1.65, 				// Relaxation time of blood in s at 3T
+	.t1 = 1.4, 					// Relaxation time of tissue in s at 3T
+	.f = 60., 					// Typical cerebal blood flow in gray matter in ml/100g/min
+	.delta_t = 1.8,				// Arterial transit time (ATT) in s
+	.lambda = 0.9, 				// Brain-blood partition coefficient in ml/g for whole brain
+	.acquisition_only = false, 	// Only signal during the acquisition is returned
+	.pulsed = true,				// Pulsed ASL
+	.tau = 0.8, 				// Labeling duration in s
+	.alpha = 0.98,				// Labeling efficiency
+};
+
+/*
+ * Buxton RB, Frank LR, Wong EC, Siewert B, Warach S, Edelman RR. 
+ * A general kinetic model for quantitative perfusion imaging with arterial spin labeling. 
+ * Magn Reson Med 40:383–396 (1998) 
+ */
+static float signal_buxton(const struct signal_model* data, int ind)
+{
+	float m0 = data->m0;
+	float lambda = data->lambda;
+	float t1 = data->t1;
+	float t1b = data->t1b;
+	float tau = data->tau;
+	float alpha = data->alpha;
+	float delta_t = data->delta_t;
+	float f = data->f / 6000; // ml/100g/min -> ml/g/s
+
+	float t = ind * data->tr;
+
+	// Return only the part of the signal during the acquisition
+
+	if (data->acquisition_only)
+		t += delta_t + tau;
+
+
+	float m0_b = m0 / lambda;
+	float t1_p = 1 / (1 / t1 + f / lambda);
+	float k = 1 / t1b - 1 / t1_p;
+
+	float q = 0;
+	float delta_M = 0;
+
+	if (data->pulsed) {
+
+		if (t <= delta_t) {
+
+			delta_M = 0;
+
+		} else if (t < delta_t + tau) {
+
+			q = (expf(k * t) * (expf(-k * delta_t) - expf(-k * t))) / (k * (t - delta_t));
+			delta_M = 2 * m0_b * alpha * f * (t - delta_t) * expf(-t / t1b) * q;
+
+		} else {
+
+			q = (expf(k * t) * (expf(-k * delta_t) - expf(-k * (tau + delta_t)))) / (k * tau);
+			delta_M = 2 * m0_b * alpha * f * tau * expf(-t / t1b) * q;
+		}
+	} else {
+
+		if (t < delta_t) {
+
+			delta_M = 0;
+
+		} else if (t <= delta_t + tau) {
+
+			q = 1 - expf(-(t - delta_t) / t1_p);
+			delta_M = 2 * m0_b * alpha * f * t1_p * expf(-delta_t / t1b) * q;
+
+		} else {
+
+			q = 1 - expf(-tau / t1_p);
+			delta_M = 2 * m0_b * alpha * f * t1_p * expf(-delta_t / t1b) * expf(-(t - tau - delta_t) / t1_p) * q;
+		}
+	}
+
+	return delta_M;
+}
+
+void buxton_model(const struct signal_model* data, int N, complex float out[N])
+{
+	for (int ind = 0; ind < N; ind++)
+		out[ind] = signal_buxton(data, ind);
+}
