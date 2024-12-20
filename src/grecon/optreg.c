@@ -393,8 +393,8 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 		assert(2 == img_dims[asl_dim]);
 
-		if ((0 < ropts->r) && !(TV == regs[0].xform || TGV == regs[0].xform || ICTV == regs[0].xform || ICTGV == regs[0].xform))
-			error("ASL is only supported for TV, TGV, ICTV, and ICTGV regularization.\n");
+		if ((0 < ropts->r) && !(L1IMG == regs[0].xform || TV == regs[0].xform || TGV == regs[0].xform || ICTV == regs[0].xform || ICTGV == regs[0].xform))
+			error("ASL is only supported for L1, TV, TGV, ICTV, and ICTGV regularization.\n");
 	}
 
 	// compute needed supporting variables
@@ -782,8 +782,25 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 			debug_printf(DP_INFO, "l1 regularization: %f\n", regs[nr].lambda);
 
-			trafos[nr] = linop_identity_create(DIMS, img_dims);
-			prox_ops[nr] = prox_thresh_create(DIMS, img_dims, regs[nr].lambda, regs[nr].jflags);
+			long in2_dims[DIMS];
+			if (NULL != lop_asl) {
+
+				assert(DIMS == linop_domain(lop_asl)->N);
+				assert(md_check_equal_dims(DIMS, img_dims, linop_domain(lop_asl)->dims, ~0UL));
+
+				assert(DIMS == linop_codomain(lop_asl)->N);
+				md_copy_dims(DIMS, in2_dims, linop_codomain(lop_asl)->dims);
+			} else {
+
+				md_copy_dims(DIMS, in2_dims, img_dims);
+			}
+
+			trafos[nr] = linop_identity_create(DIMS, in2_dims);
+			
+			if (NULL != lop_asl)
+				trafos[nr] = linop_chain_FF(lop_asl, trafos[nr]);
+
+			prox_ops[nr] = prox_thresh_create(DIMS, in2_dims, regs[nr].lambda, regs[nr].jflags);
 			break;
 
 		case POS:
