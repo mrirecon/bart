@@ -749,7 +749,7 @@ int main_pics(int argc, char* argv[argc])
 
 	if (ropts.teasl) {
 
-		const struct linop_s* hadamard_op = linop_hadamard_create(DIMS, img_dims, ITER_DIM, LEVEL_DIM);
+		const struct linop_s* hadamard_op = linop_hadamard_create(DIMS, img_dims, ITER_DIM);
 		forward_op = linop_chain_FF(hadamard_op, forward_op);
 	}
 

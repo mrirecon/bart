@@ -383,6 +383,11 @@ Tamir JI, Uecker M, Chen W, Lai P, Alley MT, Vasanawala SS, Lustig M.
 T2 shuffling: Sharp, multicontrast, volumetric fast spin‐echo imaging.
 Magn Reson Med 2017; 77:180-195.
 
+Sylvester JJ.
+Thoughts on inverse orthogonal matrices, simultaneous sign successions, 
+and tessellated pavements in two or more colours, with applications to Newton’s 
+rule, ornamental tile-work, and the theory of numbers.
+Philosophical Magazine 1867; 34:461-475.
 
 
 - sparsity transforms, variational penalties, regularization -

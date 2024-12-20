@@ -66,3 +66,39 @@ static bool test_asl(void)
 }
 
 UT_REGISTER_TEST(test_asl);
+
+
+static bool test_hadamard_encoding(void)
+{
+	enum { N = 4 };
+	long idims[N] = { 2, 2, 4, 1 };
+
+	int had_dim = 2;
+	
+	complex float* src = md_alloc(N, idims, CFL_SIZE);
+	complex float* dst = md_alloc(N, idims, CFL_SIZE);
+
+	md_zfill(N, idims, src, 1.);
+	
+	complex float* ref = md_alloc(N, idims, CFL_SIZE);
+	md_zfill(N, idims, ref, 0.0f + 0.0f * I);
+
+	ref[0] = -2.0f + 0.0f * I;
+	ref[1] = -2.0f + 0.0f * I;
+	ref[2] = -2.0f + 0.0f * I;
+	ref[3] = -2.0f + 0.0f * I;
+
+	struct linop_s* op = linop_hadamard_create(N, idims, had_dim);
+	linop_forward(op, N, idims, dst, N, idims, src);
+	linop_free(op);
+
+	float err = md_znrmse(N, idims, dst, ref);
+
+	md_free(src);
+	md_free(dst);
+	md_free(ref);
+
+	UT_RETURN_ASSERT(UT_TOL > err);
+}
+
+UT_REGISTER_TEST(test_hadamard_encoding);

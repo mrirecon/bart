@@ -74,5 +74,7 @@ extern struct linop_s* linop_matrix_altcreate(int N, const long out_dims[__VLA(N
 
 extern struct linop_s* linop_matrix_chain(const struct linop_s* a, const struct linop_s* b);
 
+extern struct linop_s* linop_hadamard_create(int N, const long in_dims[__VLA(N)], int hadamard_dim);
+
 #include "misc/cppwrap.h"
 #endif // __SOMEOPS_H

@@ -5,6 +5,14 @@
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: Martin Uecker, Jonathan Tamir, Moritz Blumenthal
+ *
+ * Publications:
+ * 
+ * Sylvester JJ.
+ * Thoughts on inverse orthogonal matrices, simultaneous sign successions, 
+ * and tessellated pavements in two or more colours, with applications to Newton’s 
+ * rule, ornamental tile-work, and the theory of numbers.
+ * Philosophical Magazine 1867; 34:461-475.
  */
 
 
@@ -30,6 +38,7 @@
 #include "linops/linop.h"
 
 #include "someops.h"
+#include "linops/fmac.h"
 
 
 struct cdiag_s {
@@ -2131,3 +2140,75 @@ struct linop_s* linop_conv_gaussian_create(int N, enum conv_type ctype, const lo
 }
 
 
+/**
+ * This function creates a Hadamard operator for multiplying input data with
+ * a negative normalized Hadamard matrix.
+ * It uses a temporary dimension N for multiplying the input data with the
+ * Hadamard matrix and then reshapes the output to the original dimensions.
+ *
+ * @param N             Number of dimensions
+ * @param in_dims       Input dimensions
+ * @param hadamard_dim  Dimension to apply Hadamard transform (must be power of 2)
+ */
+struct linop_s* linop_hadamard_create(int N, const long in_dims[N], int hadamard_dim)
+{
+	int size = in_dims[hadamard_dim];
+
+	// size has to be a power of two
+
+	debug_printf(DP_DEBUG2, "Hadamard size: %d\n", size);
+
+	assert((size > 1) && ((size & (size - 1)) == 0));
+
+	long in2_dims[N + 1];
+	md_copy_dims(N, in2_dims, in_dims);
+	in2_dims[N] = 1;
+	
+	long matr_dims[N + 1];
+	md_select_dims(N + 1, MD_BIT(hadamard_dim), matr_dims, in2_dims);
+	matr_dims[N] = size;
+
+	complex float* matrix = md_alloc(N + 1, matr_dims, CFL_SIZE);
+
+	md_zfill(N + 1, matr_dims, matrix, 0.0f);
+
+	// sylvester's construction
+	
+	matrix[0] = 1.0f;
+
+	for (int n = 1; n < size; n *= 2) {
+
+		for (int i = 0; i < n; i++) {
+
+			for (int j = 0; j < n; j++) {
+
+				matrix[(i + n) * size + j] = matrix[i * size + j];
+				matrix[i * size + (j + n)] = matrix[i * size + j];
+				matrix[(i + n) * size + (j + n)] = -matrix[i * size + j];
+			}
+		}
+	}
+
+	// normalize matrix
+
+	md_zsmul(N + 1, matr_dims, matrix, matrix, -1.0f / sqrtf((float)size));
+
+	long out_dims[N + 1];
+	md_select_dims(N + 1, ~MD_BIT(hadamard_dim), out_dims, in2_dims);
+	out_dims[N] = size;
+
+	auto lop_reshape = linop_reshape_create(N + 1, in2_dims, N, in_dims);
+	auto lop_hadamard = (struct linop_s *)linop_fmac_dims_create(N + 1, out_dims, in2_dims, matr_dims, matrix);
+	lop_hadamard = linop_chain_FF(lop_reshape, lop_hadamard);
+
+	// transpose so output dimensions are input dimensions
+
+	auto lop_transpose = linop_transpose_create(N + 1, N, hadamard_dim, linop_codomain(lop_hadamard)->dims);
+
+	lop_hadamard = linop_chain_FF(lop_hadamard, lop_transpose);
+	lop_hadamard = linop_reshape_out_F(lop_hadamard, N, in_dims);
+
+	md_free(matrix);
+
+	return lop_hadamard;
+}
