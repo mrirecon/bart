@@ -897,7 +897,7 @@ const struct vec_ops cpu_ops = {
 	.exp = vec_exp,
 	.log = vec_log,
 
-	.pdf_gauss=pdf_gauss,
+	.pdf_gauss = pdf_gauss,
 
 	.real = vec_real,
 	.imag = vec_imag,
@@ -907,7 +907,7 @@ const struct vec_ops cpu_ops = {
 
 	.zfill = vec_zfill,
 
-	.zsetnanzero=zsetnanzero,
+	.zsetnanzero = zsetnanzero,
 };
 
 

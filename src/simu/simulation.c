@@ -1140,9 +1140,10 @@ void bloch_simulation2(const struct sim_data* _data, int R, int pools, float (*m
 
 		prepare_sim(&data, N, P, &mte[0], &mtr);
 
-		if ( (SEQ_CEST == data.seq.seq_type ) && (data.cest.ref_scan) ) {
+		if ((SEQ_CEST == data.seq.seq_type ) && data.cest.ref_scan) {
 
 			cest_seq(&data, h, tol, N, P, xp, data.cest.ref_scan_ppm * 2 * M_PI * data.cest.b0 * data.cest.gamma);
+
 			ref_scan = xp[0][2];
 			reset_xp(N, data.voxel.P, xp, data.voxel.m0);
 		}
