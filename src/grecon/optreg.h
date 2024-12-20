@@ -47,6 +47,7 @@ struct opt_reg_s {
 	float tvscales2[NUM_TV_SCALES];
 
 	_Bool asl;
+	_Bool teasl;
 
 	float theta[2];
 

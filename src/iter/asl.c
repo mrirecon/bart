@@ -5,6 +5,12 @@
 
 #include "linops/linop.h"
 #include "linops/fmac.h"
+#include "linops/someops.h"
+
+#include "iter/tgv.h"
+
+#include "misc/debug.h"
+#include "misc/misc.h"
 
 #include "asl.h"
 
@@ -50,3 +56,100 @@ const struct linop_s* linop_asl_create(int N, const long img_dims[N], int asl_di
 
 	return linop_fmac_dims_create(N, asl_img_dims, img_dims, tdims, tensor);
 }
+
+
+/**
+ * This function extracts the size of the label image for TE-ASL
+ * from an input array of dimensions.
+ * 
+ * @param N                Number of dimensions.
+ * @param teasl_dim        Dimension along which to separate label and PWI images.
+ * @param teasl_label_dims Array of size N to store the dimensions of the label image.
+ * @param in_dims          Array of size N specifying the size of each input dimension.
+ */
+void get_teasl_label_dims(int N, int teasl_dim, long teasl_label_dims[N], const long in_dims[N])
+{
+	assert(1 < in_dims[teasl_dim]);
+	md_copy_dims(N, teasl_label_dims, in_dims);
+	teasl_label_dims[teasl_dim] = 1;
+}
+
+
+/**
+ * This function extracts the size of the perfusion-weighted images (PWIs) for TE-ASL
+ * from an input array of dimensions.
+ * 
+ * @param N                Number of dimensions.
+ * @param teasl_dim        Dimension along which to separate label and PWI.
+ * @param teasl_label_dims Array of size N to store the dimensions of the PWI.
+ * @param in_dims          Array of size N specifying the size of each input dimension.
+ */
+void get_teasl_pwi_dims(int N, int teasl_dim, long teasl_pwi_dims[N], const long in_dims[N])
+{
+	assert(1 < in_dims[teasl_dim]);
+	md_copy_dims(N, teasl_pwi_dims, in_dims);
+	teasl_pwi_dims[teasl_dim]--;
+}
+
+
+/**
+ * This function creates a linear operator that extracts the label image from the first position
+ * of the specified teasl_dim dimension.
+ * 
+ * For regularization, the label needs to be separated from the PWI images. This is because the 
+ * gradient from the label image to the first PWI image is very high and would influence the
+ * regularization of the PWI images.
+ *
+ * @param N         Number of dimensions.
+ * @param img_dims  Array of size N specifying the size of each dimension.
+ * @param teasl_dim Dimension from which to extract the label image.
+ * @return          Pointer to the created linear operator structure.
+ */
+const struct linop_s* linop_teasl_extract_label(int N, const long img_dims[N], int teasl_dim)
+{
+	assert(1 < img_dims[teasl_dim]);
+	
+	long label_img_dims[N];
+	get_teasl_label_dims(N, teasl_dim, label_img_dims, img_dims);
+
+	debug_print_dims(DP_DEBUG3, N, label_img_dims);
+
+	long pos0[N];
+	for (int i = 0; i < N; i++)
+		pos0[i] = 0;
+	pos0[teasl_dim] = 0;
+
+	return linop_extract_create(N, pos0, label_img_dims, img_dims);
+}
+
+
+/**
+ * This function creates a linear operator that extracts the perfusion-weighted image from the
+ * 1-Nth positions of the specified teasl_dim dimension.
+ * 
+ * For regularization, the label needs to be separated from the PWI images. This is because the 
+ * gradient from the label image to the first PWI image is very high and would influence the
+ * regularization of the PWI images.
+ *
+ * @param N         Number of dimensions.
+ * @param img_dims  Array of size N specifying the size of each dimension.
+ * @param teasl_dim Dimension from which to extract the label image.
+ * @return          Pointer to the created linear operator structure.
+ */
+const struct linop_s* linop_teasl_extract_pwi(int N, const long img_dims[N], int teasl_dim)
+{
+	assert(1 < img_dims[teasl_dim]);
+
+	long pwi_img_dims[N];
+	get_teasl_pwi_dims(N, teasl_dim, pwi_img_dims, img_dims);
+
+	debug_print_dims(DP_DEBUG3, N, pwi_img_dims);
+
+	long pos1[N];
+	for (int i = 0; i < N; i++)
+		pos1[i] = 0;
+	pos1[teasl_dim] = 1;
+
+	return linop_extract_create(N, pos1, pwi_img_dims, img_dims);
+}
+

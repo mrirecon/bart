@@ -86,7 +86,7 @@ bool opt_reg(void* ptr, char c, const char* optarg)
 	const int r = p->r;
 	const float lambda = p->lambda;
 
-	if (p->asl)
+	if (p->asl || p->teasl)
 		assert(r + 1 < NUM_REGS);
 	else
 		assert(r < NUM_REGS);
@@ -232,13 +232,14 @@ bool opt_reg(void* ptr, char c, const char* optarg)
 		regs[r].asl = false;
 
 		// Duplicate the regularization type for ASL for the difference image
+		// and for TE-ASL for the separate label and PWI images
 
 		if (p->asl && regs[r].xform == ICTGV) {
 
 			// For ICTGV only use the difference term due to computational complexity
 			regs[r].asl = true;
 
-		} else if (p->asl) {
+		} else if (p->asl || p->teasl) {
 
 			regs[r+1].xform = regs[r].xform;
 			regs[r+1].xflags = regs[r].xflags;
@@ -302,6 +303,7 @@ bool opt_reg_init(struct opt_reg_s* ropts)
 	}
 
 	ropts->asl = false;
+	ropts->teasl = false;
 
 	ropts->alpha[0] = 1.0;
 	ropts->alpha[1] = sqrtf(3.);
@@ -397,6 +399,12 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 			error("ASL is only supported for L1, TV, TGV, ICTV, and ICTGV regularization.\n");
 	}
 
+	if (ropts->teasl) {
+
+		if ((0 < ropts->r) && !(L1IMG == regs[0].xform || TGV == regs[0].xform || TV == regs[0].xform))
+			error("TE-ASL is only supported for L1, TV or TGV regularization.\n");
+	}
+
 	// compute needed supporting variables
 
 	for (int nr = 0; nr < ropts->r; nr++) {
@@ -406,6 +414,10 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 		long tmp_dims[DIMS];
 		if (ropts->asl && regs[nr].asl)
 			get_asl_dims(DIMS, asl_dim, tmp_dims, img_dims);
+		else if (ropts->teasl && !(regs[nr].asl))
+			get_teasl_label_dims(DIMS, asl_dim, tmp_dims, img_dims);
+		else if (ropts->teasl && regs[nr].asl)
+			get_teasl_pwi_dims(DIMS, asl_dim, tmp_dims, img_dims);
 		else
 			md_copy_dims(DIMS, tmp_dims, img_dims);
 
@@ -483,6 +495,14 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 		if (ropts->asl && regs[nr].asl)	{
 
 			lop_asl = linop_asl_create(DIMS, img_dims, asl_dim);
+		}
+
+		if (ropts->teasl) {
+
+			if (regs[nr].asl)
+				lop_asl = linop_teasl_extract_pwi(DIMS, img_dims, asl_dim);
+			else
+				lop_asl = linop_teasl_extract_label(DIMS, img_dims, asl_dim);
 		}
 
 		switch (regs[nr].xform) {
