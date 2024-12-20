@@ -14,6 +14,7 @@
 #include "linops/someops.h"
 #include "linops/linop.h"
 #include "linops/lintest.h"
+#include "linops/grad.h"
 
 #include "misc/misc.h"
 #include "misc/debug.h"
@@ -371,3 +372,39 @@ static bool test_linop_reshape(void)
 }
 
 UT_REGISTER_TEST(test_linop_reshape);
+
+
+static bool test_linop_gradient(void)
+{
+	enum { N = 2 };
+	long idims[N] = { 2, 2 };
+	unsigned long flags = MD_BIT(0) | MD_BIT(1);
+
+	auto lop_grad = linop_grad_create(N, idims, N, flags);
+	long odims[N+1] = { 2, 2, 2 };
+
+	complex float src[] = { 5.20e+01+7.80e+01i, 1.00e+01+3.00e+00i, 8.20e+01+0.00e+00i, 1.50e+01+0.00e+00i };
+	const complex float ref1[] = { -4.20e+01-7.50e+01i, 4.20e+01+7.50e+01i, -6.70e+01+0.00e+00i, 6.70e+01+0.00e+00i, 3.00e+01-7.80e+01i, 5.00e+00-3.00e+00i, -3.00e+01+7.80e+01i, -5.00e+00+3.00e+00i };
+
+	complex float dst1[8] = { 0. };
+
+	linop_forward(lop_grad, N+1, odims, dst1, N, idims, src);
+
+	float err = md_znrmse(N+1, odims, ref1, dst1);
+	bool ok = UT_TOL > err;
+
+	complex float dst2[4] = { 0. };
+	const complex float ref2[] = { 2.40e+01+3.06e+02i, -9.40e+01-1.44e+02i, 1.94e+02-1.56e+02i, -1.24e+02-6.00e+00i };
+
+	linop_adjoint(lop_grad, N, idims, dst2, N+1, odims, dst1);
+
+	err = md_znrmse(N, idims, ref2, dst2);
+	ok &= (UT_TOL > err);
+
+	linop_free(lop_grad);
+
+	UT_RETURN_ASSERT(ok);
+}
+
+
+UT_REGISTER_TEST(test_linop_gradient);
