@@ -385,6 +385,49 @@ nn_t nn_permute_outputs_F(nn_t op, int O2, const int perm[O2])
 	return result;
 }
 
+static void compute_permutation(int N, int ord[N], const char* names[N])
+{
+	__block const char** namesp = names; // clang workaround
+
+	for (int i = 0; i < N; i++)
+		ord[i] = i;
+
+	NESTED(int, cmp_names, (int a, int b))
+	{
+		const char* na = namesp[a];
+		const char* nb = namesp[b];
+
+		if (NULL == na && NULL == nb)
+			return a - b;
+
+		if (NULL == nb)
+			return 1;
+
+		if (NULL == na)
+			return -1;
+
+		return strcmp(na, nb);
+	};
+
+	quicksort(N, ord, cmp_names);
+}
+
+
+nn_t nn_sort_args_F(nn_t op)
+{
+	int II = nn_get_nr_in_args(op);
+	int iperm[II];
+	compute_permutation(II, iperm, nn_get_in_names(op));
+
+	op = nn_permute_inputs_F(op, II, iperm);
+
+	int OO = nn_get_nr_out_args(op);
+	int operm[OO];
+	compute_permutation(OO, operm, nn_get_out_names(op));
+
+	return nn_permute_outputs_F(op, OO, operm);
+}
+
 /**
  * Combine two nn_t's to one.
  *
@@ -1546,7 +1589,7 @@ nn_t nn_stack_multigpu_F(int N , nn_t x[N], int stack_dim)
 
 	long ltot = 0;
 	long lwgh[N];
-	
+
 	for (int i = 0; i < N; i++) {
 
 		assert(II == nn_get_nr_in_args(x[i]));
@@ -1598,7 +1641,7 @@ nn_t nn_stack_multigpu_F(int N , nn_t x[N], int stack_dim)
 
 			if (-1 == stack_dim)
 				in_stack_dim[i] = nlop_generic_domain(nlops[0], i)->N - 1;
-			else 
+			else
 				in_stack_dim[i] = stack_dim;
 		}
 	}
@@ -1607,14 +1650,14 @@ nn_t nn_stack_multigpu_F(int N , nn_t x[N], int stack_dim)
 
 		if (-1 == stack_dim)
 			out_stack_dim[i] = nlop_generic_codomain(nlops[0], i)->N - 1;
-		else 
+		else
 			out_stack_dim[i] = stack_dim;
 
 		out_stack_dim[i] = (OUT_OPTIMIZE == x[0]->out_types[i]) ? 0 : stack_dim;
 	}
-	
+
 	auto nlop = nlop_stack_multiple_F(N, nlops, II, in_stack_dim, OO, out_stack_dim, true, true);
-	
+
 	complex float wgh[N];
 	for (int i = 0; i < N; i++)
 		wgh[i] = (float)lwgh[i] / (float)ltot;
@@ -1632,6 +1675,6 @@ nn_t nn_stack_multigpu_F(int N , nn_t x[N], int stack_dim)
 
 	for (int i = 0; i < N; i++)
 		nn_free(x[i]);
-	
+
 	return result;
 }
