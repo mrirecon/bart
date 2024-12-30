@@ -369,6 +369,15 @@ void gaussian_rand_vec(long N, float* dst)
 	//This does not need to be scaled as md_gaussian_rand has (complex) variance 2!
 }
 
+void uniform_rand_vec(long N, float* dst)
+{
+	complex float* tmp = md_alloc_sameplace(1, MD_DIMS(N), sizeof(complex float), dst);
+
+	md_uniform_rand(1, MD_DIMS(N), tmp);
+	md_copy2(1, MD_DIMS(N), MD_DIMS(sizeof(float)), dst, MD_DIMS(sizeof(complex float)), tmp, sizeof(float));
+
+	md_free(tmp);
+}
 
 static void md_gaussian_obsolete_rand(int D, const long dims[D], complex float* dst)
 {

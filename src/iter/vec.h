@@ -36,6 +36,7 @@ struct vec_iter_s {
 	void (*zsmax)(long N, float val, _Complex float* dst, const _Complex float* src1);
 
 	void (*rand)(long N, float* dst);
+	void (*uniform)(long N, float* dst);
 
 	void (*xpay_bat)(long Bi, long N, long Bo, const float* beta, float* a, const float* x);
 	void (*dot_bat)(long Bi, long N, long Bo, float* dst, const float* src1, const float* src2);

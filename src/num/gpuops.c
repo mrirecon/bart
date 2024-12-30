@@ -605,6 +605,7 @@ struct vec_iter_s {
 	void (*zsmax)(long N, float val, complex float* dst, const complex float* src1);
 
 	void (*rand)(long N, float* dst);
+	void (*uniform)(long N, float* dst);
 
 	void (*xpay_bat)(long Bi, long N, long Bo, const float* beta, float* a, const float* x);
 	void (*dot_bat)(long Bi, long N, long Bo, float* dst, const float* src1, const float* src2);
@@ -631,6 +632,7 @@ const struct vec_iter_s gpu_iter_ops = {
 	.swap = cuda_swap,
 	.zmul = cuda_zmul,
 	.rand = gaussian_rand_vec,
+	.uniform = uniform_rand_vec,
 	.mul = cuda_mul,
 	.fmac = cuda_fmac,
 	.div = cuda_div,

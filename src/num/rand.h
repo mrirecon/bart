@@ -11,6 +11,7 @@ extern void md_uniform_rand(int D, const long dims[__VLA(D)], _Complex float* ds
 extern void md_rand_one(int D, const long dims[__VLA(D)], _Complex float* dst, double p);
 
 extern void gaussian_rand_vec(long N, float* dst);
+extern void uniform_rand_vec(long N, float* dst);
 
 extern void num_rand_init(unsigned long long seed);
 
