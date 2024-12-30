@@ -287,7 +287,7 @@ TCALIB+=ecalib ecaltwo caldir walsh cc ccapply rovir calmat svd estvar whiten rm
 TMRI+=homodyne poisson twixread fakeksp looklocker upat fovshift seq
 TSIM+=phantom traj signal epg sim pulse raga stl bloch grid trajcor coils
 TIO+=tee toimg toraw multicfl trx
-TNN+=reconet nnet onehotenc measure mnist tensorflow nlinvnet sample
+TNN+=reconet nnet onehotenc measure mnist tensorflow nlinvnet sample cunet
 TMOTION+=affinereg interpolate estmotion
 
 TBASE:=$(sort $(TBASE))
@@ -359,6 +359,7 @@ MODULES_mnist = -lnetworks -lnn -lnlops -llinops -liter
 MODULES_nnet = -lgrecon -lnetworks -lnoncart -lnn -lnlops -llinops -liter
 MODULES_tensorflow = -lnn -lnlops -llinops -liter
 MODULES_sample = -lnetworks -lnn -lnlops -llinops -liter
+MODULES_cunet = -lnetworks -lgrecon -lnn -lnlops -llinops -liter
 MODULES_measure = -lgrecon -lnetworks -lnoncart -lnn -lnlops -llinops -liter
 MODULES_onehotenc = -lnn
 MODULES_sim = -lseq -lsimu
