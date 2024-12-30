@@ -174,7 +174,7 @@ nn_t nn_append_convcorr_layer(nn_t network, int o, const char* oname, const char
 nn_t nn_append_transposed_convcorr_layer(nn_t network, int o, const char* oname, const char* ker_name, int channels, long const kernel_size[3], bool conv, bool adjoint, enum PADDING conv_pad, bool channel_first, const long strides[3], const long dilations[3], const struct initializer_s* init)
 {
 	o = nn_get_out_arg_index(network, o, oname);
-	auto nlop = append_transposed_convcorr_layer(nlop_clone(nn_get_nlop(network)), o, channels, kernel_size, conv, conv_pad, adjoint, channel_first, strides, dilations);
+	auto nlop = append_transposed_convcorr_layer(nlop_clone(nn_get_nlop(network)), o, channels, kernel_size, conv, adjoint, conv_pad, channel_first, strides, dilations);
 	auto result = nn_from_nlop_F(nlop);
 	nn_clone_args(result, network);
 
