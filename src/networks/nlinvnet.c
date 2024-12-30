@@ -98,7 +98,7 @@ struct nlinvnet_s nlinvnet_config_opts = {
 
 	.conv_time = 0,
 	.conv_padding = PAD_SAME,
-	
+
 	// NLINV configuration
 	.conf = NULL,
 	.model = NULL,
@@ -255,13 +255,13 @@ static nn_t nlinvnet_network_create(const struct nlinvnet_s* nlinvnet, int N, co
 
 		const struct linop_s* lop_prep = NULL;
 		long pos = 0; //position of the feed through frame (residual network)
-		
+
 		if (PAD_CAUSAL == nlinvnet->conv_padding) {
 
 			pos = nlinvnet->conv_time - 1;
 			lop_prep = linop_padding_create_onedim(N, _img_dims, PAD_CAUSAL, TIME_DIM, nlinvnet->conv_time - 1, 0);
 		}
-		
+
 		if (PAD_SAME == nlinvnet->conv_padding) {
 
 			assert(1 == nlinvnet->conv_time % 2);
@@ -270,7 +270,7 @@ static nn_t nlinvnet_network_create(const struct nlinvnet_s* nlinvnet, int N, co
 		}
 
 		lop_prep = linop_chain_FF(lop_prep, linop_hankelization_create(N, linop_codomain(lop_prep)->dims, TIME_DIM, window_dim, nlinvnet->conv_time));
-		
+
 		const struct nlop_s* nlop_prep = nlop_from_linop_F(lop_prep);
 
 		lop_prep = linop_transpose_create(N, TIME_DIM, window_dim, nlop_generic_codomain(nlop_prep, 0)->dims);
@@ -315,7 +315,7 @@ static nn_t nlinvnet_get_network_step(const struct nlinvnet_s* nlinvnet, struct 
 	long img_dims[N];
 	noir2_net_get_img_dims(model, N, img_dims);
 
-	if (nlinvnet->ref_init_img) 
+	if (nlinvnet->ref_init_img)
 		img_dims[COIL_DIM] *= 2;
 
 	auto network = nlinvnet_network_create(nlinvnet, N, img_dims, status);
@@ -354,7 +354,7 @@ static nn_t nlinvnet_get_network_step(const struct nlinvnet_s* nlinvnet, struct 
 
 		auto dummy = nn_from_nlop_F(nlop_del_out_create(N, img_one_dims));
 		dummy = nn_set_input_name_F(dummy, 0, "ref_img");
-		network = nn_combine_FF(network, dummy);		
+		network = nn_combine_FF(network, dummy);
 	}
 
 	nn_t join = nn_from_nlop_F(noir_join_create(model));
@@ -379,11 +379,11 @@ static nn_t nlinvnet_get_network_step(const struct nlinvnet_s* nlinvnet, struct 
 		auto dom = nn_generic_domain(join, 1, NULL);
 		auto dummy = nn_from_nlop_F(nlop_del_out_create(dom->N, dom->dims));
 		dummy = nn_set_input_name_F(dummy, 0, "ref_col");
-		
+
 		complex float zero[1] = { 0. };
 
 		join = nn_set_input_const_F2(join, 1, NULL, dom->N, dom->dims, MD_SINGLETON_STRS(dom->N), true, zero);
-		join = nn_combine_FF(dummy, join);	
+		join = nn_combine_FF(dummy, join);
 	}
 
 	network = nn_chain2_FF(network, 0, NULL, join, 0, NULL);
@@ -441,10 +441,10 @@ static nn_t nlinvnet_gn_reg(const struct nlinvnet_s* nlinvnet, struct noir2_net_
 	nn_get_in_names_copy(N_in_names_net, in_names + N_in_names_gn, network);
 
 	auto nlop_reg = noir_join_create(model);
-		
+
 	auto dom = nlop_generic_domain(nlop_reg, 0);
 	nlop_reg = nlop_prepend_FF(nlop_from_linop_F(linop_repmat_create(dom->N, dom->dims, ~0UL)), nlop_reg, 0);
-		
+
 	dom = nlop_generic_domain(nlop_reg, 1);
 	nlop_reg = nlop_prepend_FF(nlop_from_linop_F(linop_repmat_create(dom->N, dom->dims, ~0UL)), nlop_reg, 1);
 
@@ -565,13 +565,13 @@ static nn_t nlinvnet_create(const struct nlinvnet_s* nlinvnet, struct noir2_net_
 		nlop_init_reco = noir_rtnlinv_iter_create(model, nlinvnet->iter_conf, (int)nlinvnet->conf->iter - nlinvnet->iter_net, 0, nlinvnet->conf->redu, nlinvnet->conf->alpha_min, nlinvnet->temp_damp);
 	else
 		nlop_init_reco = noir_gauss_newton_iter_create_create(model, nlinvnet->iter_conf, (int)nlinvnet->conf->iter - nlinvnet->iter_net, nlinvnet->conf->redu, nlinvnet->conf->alpha_min);
-	
+
 	nlop_init_reco = nlop_set_input_scalar_F(nlop_init_reco, 2, 0);
 
 	auto dom_alp = nlop_generic_domain(nlop_init_reco, 2);
 	nlop_init_reco = nlop_prepend_FF(nlop_from_linop_F(linop_repmat_create(dom_alp->N, dom_alp->dims, ~0UL)), nlop_init_reco, 2);
 	nlop_init_reco = nlop_reshape_in_F(nlop_init_reco, 2, 1, MD_DIMS(1));
-	
+
 
 	auto nn_init_reco = nn_from_nlop_F(nlop_init_reco);
 	nn_init_reco = nn_set_input_name_F(nn_init_reco, 0, "y");
@@ -596,7 +596,7 @@ static nn_t nlinvnet_create(const struct nlinvnet_s* nlinvnet, struct noir2_net_
 	nlop_init = nlop_set_input_const_F2(nlop_init, 0, dom->N, dom->dims, MD_SINGLETON_STRS(dom->N), true, &one);
 	dom = nlop_generic_domain(nlop_init, 0);
 	nlop_init = nlop_set_input_const_F2(nlop_init, 0, dom->N, dom->dims, MD_SINGLETON_STRS(dom->N), true, &zero);
-	
+
 	auto d1 = nlop_generic_codomain(nlop_init, 0);
 	auto d2 = nn_generic_domain(result, 0, NULL);
 
@@ -611,7 +611,7 @@ static nn_t nlinvnet_create(const struct nlinvnet_s* nlinvnet, struct noir2_net_
 	long cim_dims[N];
 	long sdims[N];
 
-	noir2_net_get_cim_dims(model, N, cim_dims);	
+	noir2_net_get_cim_dims(model, N, cim_dims);
 	md_select_dims(N, BATCH_FLAG, sdims, cim_dims);
 
 	const struct nlop_s* nlop_scale = NULL;
@@ -666,7 +666,7 @@ static nn_t nlinvnet_create(const struct nlinvnet_s* nlinvnet, struct noir2_net_
 
 	result = nn_reshape_out_F(result, 0, NULL, 2, cdims);
 	result = nn_chain2_FF(result, 0, NULL, nn_from_nlop_F(nlop_tenmul_create(2, cdims, cdims, (long[2]){ 1, sdims[BATCH_DIM] })), 0, NULL);
-	result = nn_link_F(result, 0, "scale_sqrt", 0, NULL); 
+	result = nn_link_F(result, 0, "scale_sqrt", 0, NULL);
 	result = nn_reshape_out_F(result, 0, NULL, 2, tdims);
 
 	return result;
@@ -748,7 +748,7 @@ static nn_t nlinvnet_train_loss_create(const struct nlinvnet_s* nlinvnet, int Nb
 		if ((-1. != nlinvnet->time_mask[0]) || (-1. != nlinvnet->time_mask[1])) {
 
 			long time = nlop_generic_domain(nlop_reg, 1)->dims[TIME_DIM];
-			
+
 			int N = nlop_generic_domain(nlop_reg, 1)->N;
 
 			long tdims[N];
@@ -929,7 +929,7 @@ void train_nlinvnet(struct nlinvnet_s* nlinvnet, int Nb, struct named_data_list_
 
 		if (NULL != use_reco)
 			unmap_cfl(DIMS, use_reco_dims, use_reco);
-			
+
 		auto split_op = nn_from_nlop_F(nlop_rand_split);
 		split_op = nn_set_output_name_F(split_op, 0, "pat_trn");
 		split_op = nn_set_output_name_F(split_op, 0, "pat_ref");
@@ -973,7 +973,7 @@ void train_nlinvnet(struct nlinvnet_s* nlinvnet, int Nb, struct named_data_list_
 	struct bat_gen_conf_s batgen_config = bat_gen_conf_default;
 	batgen_config.seed = nlinvnet->train_conf->batch_seed;
 	batgen_config.type = nlinvnet->train_conf->batchgen_type;
-	
+
 	auto batch_generator = nn_batchgen_create(&batgen_config, nn_train, train_data);
 
 	//setup for iter algorithm
@@ -1004,6 +1004,8 @@ void train_nlinvnet(struct nlinvnet_s* nlinvnet, int Nb, struct named_data_list_
 
 		case IN_BATCH:
 		case IN_UNDEFINED:
+		case IN_UNIFORM_RAND:
+		case IN_GAUSSIAN_RAND:
 			error("Intype of arg %d not supported!\n", i);
 			break;
 

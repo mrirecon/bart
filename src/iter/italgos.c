@@ -1230,6 +1230,12 @@ void sgd(	int epochs, int batches,
 			N_batch_gen += 1;
 			break;
 
+		case IN_GAUSSIAN_RAND:
+		case IN_UNIFORM_RAND:
+
+			x[i] = vops->allocate(isize[i]);
+			break;
+
 		default:
 
 			error("unknown flag\n");
@@ -1256,6 +1262,16 @@ void sgd(	int epochs, int batches,
 		iter_dump(dump, epoch, NI, x2);
 
 		for (int i_batch = 0; i_batch < N_total / N_batch; i_batch++) {
+
+			for (int i = 0; i < NI; i++) {
+
+				if (IN_GAUSSIAN_RAND == in_type[i])
+					vops->rand(isize[i], x[i]);
+
+				if (IN_UNIFORM_RAND == in_type[i])
+					vops->uniform(isize[i], x[i]);
+			}
+
 
 			if (0 != N_batch_gen)
 				iter_nlop_call(nlop_batch_gen, N_batch_gen, x_batch_gen);
@@ -1319,7 +1335,9 @@ void sgd(	int epochs, int batches,
 		if (NULL != dxs[i])
 			vops->del(dxs[i]);
 
-		if (IN_BATCH_GENERATOR == in_type[i]) {
+		if (   (IN_BATCH_GENERATOR == in_type[i])
+		    || (IN_GAUSSIAN_RAND == in_type[i])
+		    || (IN_UNIFORM_RAND == in_type[i])) {
 
 			vops->del(x[i]);
 			x[i] = NULL;

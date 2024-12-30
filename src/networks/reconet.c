@@ -1012,6 +1012,8 @@ void train_reconet(	struct reconet_s* config,
 			src[i] = NULL;
 			break;
 
+		case IN_UNIFORM_RAND:
+		case IN_GAUSSIAN_RAND:
 		case IN_BATCH:
 		case IN_UNDEFINED:
 		case IN_STATIC:
