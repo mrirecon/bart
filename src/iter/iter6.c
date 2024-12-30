@@ -178,7 +178,7 @@ static void iter6_op_arr_fun_deradj(iter_op_data* _o, int NO, unsigned long ofla
 
 	for (int i = 0; i < data->NI; i++) {
 
-		if (!MD_IS_SET(iflags, i))
+		if (NULL == src[i])
 			continue;
 
 		assert(-1 == i_index);
@@ -193,7 +193,7 @@ static void iter6_op_arr_fun_deradj(iter_op_data* _o, int NO, unsigned long ofla
 
 	for (int o = 0; o < NO; o++) {
 
-		if (!MD_IS_SET(oflags, o))
+		if (NULL == dst[o])
 			continue;
 
 		op_arr[NO_t] = data->ops[o * data->NI + i_index];
@@ -212,6 +212,7 @@ static const struct iter_dump_s* iter6_dump_default_create(const char* base_file
 {
 	int D[NI];
 	const long* dims[NI];
+	bool save_array[NI];
 
 	bool guess_save_flag = (0UL == save_flag);
 
@@ -220,11 +221,17 @@ static const struct iter_dump_s* iter6_dump_default_create(const char* base_file
 		D[i] = nlop_generic_domain(nlop, i)->N;
 		dims[i] = nlop_generic_domain(nlop, i)->dims;
 
-		if ((guess_save_flag) && ((IN_OPTIMIZE == in_type[i]) || (IN_BATCHNORM == in_type[i]) || (IN_STATIC == in_type[i])))
-			save_flag = MD_SET(save_flag, i);
+		if (guess_save_flag) {
+
+			save_array[i] = ((IN_OPTIMIZE == in_type[i]) || (IN_BATCHNORM == in_type[i]) || (IN_STATIC == in_type[i]));
+		} else {
+
+			assert(i < 8 * (long)sizeof(save_flag));
+			save_array[i] = MD_IS_SET(save_flag, i);
+		}
 	}
 
-	return iter_dump_default_create(base_filename, save_mod, NI, save_flag, D, dims);
+	return iter_dump_default_create(base_filename, save_mod, NI, save_array, D, dims);
 }
 
 static const struct operator_p_s* get_update_operator(const iter6_conf* conf, int N, const long dims[N], long numbatches)

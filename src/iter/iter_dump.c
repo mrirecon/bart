@@ -35,7 +35,7 @@ struct iter_dump_default_s {
 
 	struct iter_dump_s super;
 
-	unsigned long save_flag;
+	bool* save_flag;
 
 	int N;
 	int* D;
@@ -56,7 +56,7 @@ static void iter_dump_default_fun(const struct iter_dump_s* _data, long epoch, l
 	const complex float* args[data->N];
 
 	for (int i = 0, ip = 0; i < NI; i++)
-		if (MD_IS_SET(data->save_flag, i))
+		if (data->save_flag[i])
 			args[ip++] = (const complex float*)x[i];
 
 	const char* file = ptr_printf("%s_%ld", data->super.base_filename, epoch);
@@ -75,32 +75,35 @@ static void iter_dump_default_free(const struct iter_dump_s* _data)
 
 	xfree(data->dims);
 	xfree(data->D);
+	xfree(data->save_flag);
 
 	xfree(_data);
 }
 
-const struct iter_dump_s* iter_dump_default_create(const char* base_filename, long save_mod, long NI, unsigned long save_flag, int D[NI], const long* dims[NI])
+const struct iter_dump_s* iter_dump_default_create(const char* base_filename, long save_mod, long NI, bool save_flag[NI], int D[NI], const long* dims[NI])
 {
 	PTR_ALLOC(struct iter_dump_default_s, result);
 	SET_TYPEID(iter_dump_default_s, result);
-
-	save_flag = save_flag & (MD_BIT(NI) - 1);
 
 	result->super.fun = iter_dump_default_fun;
 	result->super.free = iter_dump_default_free;
 	result->super.base_filename = base_filename;
 
 	result->save_mod = save_mod;
-	result->save_flag = save_flag;
+	result->save_flag = ARR_CLONE(bool[NI], save_flag);
 
-	result->N = bitcount(save_flag);
+	result->N = 0;
+
+	for(int i = 0; i < NI; i++)
+		result->N += save_flag[i] ? 1 : 0;
+
 	PTR_ALLOC(int[result->N], nD);
 	PTR_ALLOC(const long*[result->N], ndims);
 
 	int ip = 0;
 	for(int i = 0; i < NI; i++) {
 
-		if (MD_IS_SET(save_flag, i)) {
+		if (save_flag[i]) {
 
 			(*nD)[ip] = D[i];
 

@@ -1198,7 +1198,9 @@ static void getgrad(int NI, unsigned long in_optimize_flag, long isize[NI], floa
 {
 	float* one = vops->allocate(2);
 	float one_var[2] = { 1., 0. };	// complex
-	const float* one_arr[] = { one };
+	const float* one_arr[NO];
+	for (int i = 0; i < NO; i++)
+		one_arr[i] = MD_IS_SET(out_optimize_flag, i) ? one_var : NULL;
 
 	vops->copy(2, one, one_var);
 
