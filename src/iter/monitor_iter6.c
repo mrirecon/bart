@@ -382,7 +382,7 @@ static void monitor_iter6_nlop_fun(const monitor_iter6_value_data_t* data, long 
 	for (int i = 0; i < NI; i++)
 		tmp_args[NO + i] = (void*)args[i];
 
-	nlop_generic_apply_select_derivative_unchecked(d->nlop, NI + NO, tmp_args, 0, 0);
+	nlop_generic_apply_no_derivative_unchecked(d->nlop, NI + NO, tmp_args);
 
 	md_copy(1, MD_DIMS(d->super.N_vals), d->last_result, tmp_args[0], CFL_SIZE);
 	md_copy(1, MD_DIMS(d->super.N_vals), vals, tmp_args[0], CFL_SIZE);

@@ -37,13 +37,13 @@ struct iter5_altmin_s {
 DEF_TYPEID(iter5_altmin_s);
 
 
-static void altmin_nlop(iter_op_data* _o, int N, float* args[N], unsigned long der_out, unsigned long der_in)
+static void altmin_nlop(iter_op_data* _o, int OO, int II, float* args[OO + II], bool /*oflags*/[OO], bool /*iflags*/[II])
 {
 	const auto data = CAST_DOWN(iter5_altmin_s, _o);
 
-	assert(N == operator_nr_args(data->nlop->op));
+	assert(OO + II == operator_nr_args(data->nlop->op));
 
-	nlop_generic_apply_select_derivative_unchecked(data->nlop, N, (void*)args, der_out, der_in);
+	nlop_generic_apply_unchecked(data->nlop, OO + II, (void*)args);
 }
 
 static void altmin_normal(iter_op_data* _o, float* dst, const float* src)

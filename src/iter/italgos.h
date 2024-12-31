@@ -29,9 +29,9 @@ struct iter_dump_s;
 typedef struct iter_op_data_s { TYPEID* TYPEID; } iter_op_data;
 #endif
 typedef void (*iter_op_fun_t)(iter_op_data* data, float* dst, const float* src);
-typedef void (*iter_nlop_fun_t)(iter_op_data* data, int N, float* args[N], unsigned long der_out, unsigned long der_in);
+typedef void (*iter_nlop_fun_t)(iter_op_data* data, int OO, int II, float* args[OO + II], _Bool der_out[OO], _Bool der_in[II]);
 typedef void (*iter_op_p_fun_t)(iter_op_data* data, float rho, float* dst, const float* src);
-typedef void (*iter_op_arr_fun_t)(iter_op_data* data, int NO, unsigned long oflags, float* dst[NO], int NI, unsigned long iflags, const float* src[NI]);
+typedef void (*iter_op_arr_fun_t)(iter_op_data* data, int NO, float* dst[NO], int NI, const float* src[NI]);
 
 struct iter_op_s {
 
@@ -62,14 +62,14 @@ inline void iter_op_call(struct iter_op_s op, float* dst, const float* src)
 	op.fun(op.data, dst, src);
 }
 
-inline void iter_nlop_call(struct iter_nlop_s op, int N, float* args[N])
+inline void iter_nlop_call(struct iter_nlop_s op, int OO, int II, float* args[OO + II])
 {
-	op.fun(op.data, N, args, ~0ul, ~0ul);
+	op.fun(op.data, OO, II, args, NULL, NULL);
 }
 
-inline void iter_nlop_call_select_der(struct iter_nlop_s op, int N, float* args[N], unsigned long der_out, unsigned long der_in)
+inline void iter_nlop_call_select_der(struct iter_nlop_s op, int OO, int II, float* args[OO + II], _Bool der_out[OO], _Bool der_in[II])
 {
-	op.fun(op.data, N, args, der_out, der_in);
+	op.fun(op.data, OO, II, args, der_out, der_in);
 }
 
 inline void iter_op_p_call(struct iter_op_p_s op, float rho, float* dst, const float* src)
@@ -77,9 +77,9 @@ inline void iter_op_p_call(struct iter_op_p_s op, float rho, float* dst, const f
 	op.fun(op.data, rho, dst, src);
 }
 
-inline void iter_op_arr_call(struct iter_op_arr_s op, int NO, unsigned long oflags, float* dst[NO], int NI, unsigned long iflags, const float* src[NI])
+inline void iter_op_arr_call(struct iter_op_arr_s op, int NO, float* dst[NO], int NI, const float* src[NI])
 {
-	op.fun(op.data, NO, oflags, dst, NI, iflags, src);
+	op.fun(op.data, NO, dst, NI, src);
 }
 
 

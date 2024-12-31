@@ -147,13 +147,19 @@ struct iter6_nlop_s {
 
 DEF_TYPEID(iter6_nlop_s);
 
-static void iter6_nlop(iter_op_data* _o, int N, float* args[N], unsigned long der_out, unsigned long der_in)
+static void iter6_nlop(iter_op_data* _o, int OO, int II, float* args[OO + II], bool der_out[OO], bool der_in[II])
 {
 	const auto data = CAST_DOWN(iter6_nlop_s, _o);
 
-	assert(N == operator_nr_args(data->nlop->op));
+	assert(OO + II == operator_nr_args(data->nlop->op));
 
-	nlop_generic_apply_select_derivative_unchecked(data->nlop, N, (void*)args, der_out, der_in);
+	bool der[II?:1][OO?:1];
+
+	for (int i = 0; i < II; i++)
+		for (int o = 0; o < OO; o++)
+			der[i][o] = ((NULL == der_out) || der_out[o]) && ((NULL == der_in) || der_in[i]);
+
+	nlop_generic_apply_select_derivative_array_unchecked(data->nlop, OO, II, (void*)args, der);
 }
 
 struct iter6_op_arr_s {
@@ -168,12 +174,12 @@ struct iter6_op_arr_s {
 
 DEF_TYPEID(iter6_op_arr_s);
 
-static void iter6_op_arr_fun_deradj(iter_op_data* _o, int NO, unsigned long oflags, float* dst[NO], int NI, unsigned long iflags, const float* src[NI])
+static void iter6_op_arr_fun_deradj(iter_op_data* _o, int NO, float* dst[NO], int NI, const float* src[NI])
 {
 	const auto data = CAST_DOWN(iter6_op_arr_s, _o);
 
 	assert(NO == data->NO);
-	assert(1 == NI);
+	assert(NI == data->NI);
 	int i_index = -1;
 
 	for (int i = 0; i < data->NI; i++) {
@@ -265,7 +271,7 @@ static void get_learning_rate_schedule_cosine_annealing(int epochs, int numbatch
 
 	for (int ie = 0; ie < epochs; ie++)
 		for (int ib = 0; ib < numbatches; ib++)
-			(*result)[ie][ib] = min_learning_rate + 0.5 * (learning_rate - min_learning_rate) 
+			(*result)[ie][ib] = min_learning_rate + 0.5 * (learning_rate - min_learning_rate)
 								* (1. + cosf(M_PI * (float)(ie % epoch_mod) / (float)(epoch_mod - 1)));
 }
 
@@ -292,11 +298,11 @@ static void learning_rate_schedule_add_warmup(int epochs, int numbatches, float 
 {
 	if (0 == epochs_warmup)
 		return;
-	
+
 	for (int ie = epochs_warmup; ie < epochs; ie++)
 		for (int ib = 0; ib < numbatches; ib++)
 			(*schedule)[ie][ib] = (*schedule)[ie - epochs_warmup][ib];
-	
+
 	for (int ie = 0; ie < epochs_warmup; ie++)
 		for (int ib = 0; ib < numbatches; ib++)
 			(*schedule)[ie][ib] = learning_rate / (float)(epochs_warmup * numbatches) * (float)(ie * numbatches + ib);

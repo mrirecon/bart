@@ -54,10 +54,10 @@
 #include "misc/types.h"
 
 extern inline void iter_op_call(struct iter_op_s op, float* dst, const float* src);
-extern inline void iter_nlop_call(struct iter_nlop_s op, int N, float* args[N]);
-extern inline void iter_nlop_call_select_der(struct iter_nlop_s op, int N, float* args[N], unsigned long der_out, unsigned long der_in);
+extern inline void iter_nlop_call(struct iter_nlop_s op, int OO, int II, float* args[OO + II]);
+extern inline void iter_nlop_call_select_der(struct iter_nlop_s op, int OO, int II, float* args[OO + II], bool der_out[OO], bool der_in[II]);
 extern inline void iter_op_p_call(struct iter_op_p_s op, float rho, float* dst, const float* src);
-extern inline void iter_op_arr_call(struct iter_op_arr_s op, int NO, unsigned long oflags, float* dst[NO], int NI, unsigned long iflags, const float* src[NI]);
+extern inline void iter_op_arr_call(struct iter_op_arr_s op, int NO, float* dst[NO], int NI, const float* src[NI]);
 
 
 
@@ -837,7 +837,7 @@ void altmin(int iter, float alpha, float redu,
 
 		for (int j = 0; j < NI; ++j) {
 
-			iter_nlop_call(op, 1 + NI, args); 	// r = F x
+			iter_nlop_call(op, 1, NI, args); 	// r = F x
 
 			vops->xpay(N, -1., r, y);		// r = y - F x
 
@@ -846,7 +846,7 @@ void altmin(int iter, float alpha, float redu,
 			iter_op_p_call(min_ops[j], alpha, x[j], y);
 
 			if (NULL != callback.fun)
-				iter_nlop_call(callback, NI, x);
+				iter_nlop_call(callback, 0, NI, x);
 		}
 
 		alpha /= redu;
@@ -1164,13 +1164,13 @@ void chambolle_pock(float alpha, int maxiter, float epsilon, float tau, float si
  * @param der_in_flag only information to compute derivatives with respect to selected inputs are stores
  * @param vops vector operators
  **/
-static float compute_objective(int NO, int NI, struct iter_nlop_s nlop, float* args[NO + NI], unsigned long out_optimize_flag, unsigned long der_in_flag, const struct vec_iter_s* vops)
+static float compute_objective(int NO, int NI, struct iter_nlop_s nlop, float* args[NO + NI], bool out_optimize[NO], bool in_optimize[NI], const struct vec_iter_s* vops)
 {
 	float result = 0;
-	iter_nlop_call_select_der(nlop, NO + NI, args, out_optimize_flag, der_in_flag); 	// r = F x
+	iter_nlop_call_select_der(nlop, NO, NI, args, out_optimize, in_optimize); 	// r = F x
 
 	for (int o = 0; o < NO; o++) {
-		if (MD_IS_SET(out_optimize_flag, o)) {
+		if (out_optimize[o]) {
 
 			float tmp;
 			vops->copy(1, &tmp, args[o]);
@@ -1194,41 +1194,46 @@ static float compute_objective(int NO, int NI, struct iter_nlop_s nlop, float* a
  * @param adj array of adjoint operators
  * @param vops vector operators
  **/
-static void getgrad(int NI, unsigned long in_optimize_flag, long isize[NI], float* grad[NI], int NO, unsigned long out_optimize_flag, struct iter_op_arr_s adj, const struct vec_iter_s* vops)
+static void getgrad(int NI, bool in_optimize_flag[NI], long isize[NI], float* grad[NI], int NO, bool out_optimize_flag[NO], struct iter_op_arr_s adj, const struct vec_iter_s* vops)
 {
 	float* one = vops->allocate(2);
 	float one_var[2] = { 1., 0. };	// complex
-	const float* one_arr[NO];
-	for (int i = 0; i < NO; i++)
-		one_arr[i] = MD_IS_SET(out_optimize_flag, i) ? one_var : NULL;
-
 	vops->copy(2, one, one_var);
 
 	float* tmp_grad[NI];
+	const float* tmp_ones[NO];
 
-	for (int i = 0; i < NI; i++) // analyzer false positive
-		tmp_grad[i] = NULL;
-
-	for (int i = 0; i < NI; i++)
-		if ((1 < NO) && MD_IS_SET(in_optimize_flag, i))
-			tmp_grad[i] = vops->allocate(isize[i]);
+	for (int i = 0; i < NO; i++)
+		tmp_ones[i] = NULL;
 
 	for (int o = 0, count = 0; o < NO; o++) {
 
-		if (!MD_IS_SET(out_optimize_flag, o))
+		if (!out_optimize_flag[o])
 			continue;
 
-		iter_op_arr_call(adj, NI, in_optimize_flag, (0 == count) ? grad : tmp_grad, 1, MD_BIT(o), one_arr);
+		for (int i = 0; i < NI; i++) {
 
-		for (int i = 0; i < NI; i++)
-			if ((0 < count) && MD_IS_SET(in_optimize_flag, i))
+			if (in_optimize_flag[i])
+				tmp_grad[i] = (0 == count) ? grad[i] : vops->allocate(isize[i]);
+			else
+			 	tmp_grad[i] = NULL;
+		}
+
+		tmp_ones[o] = one;
+		iter_op_arr_call(adj, NI, (0 == count) ? grad : tmp_grad, NO, tmp_ones);
+		tmp_ones[o] = NULL;
+
+		for (int i = 0; i < NI; i++) {
+
+			if ((0 < count) && in_optimize_flag[i]) {
+
 				vops->add(isize[i], grad[i], grad[i], tmp_grad[i]);
+				vops->del(tmp_grad[i]);
+			}
+		}
+
 		count += 1;
 	}
-
-	for (int i = 0; i < NI; i++)
-		if ((1 < NO) && MD_IS_SET(in_optimize_flag, i))
-			vops->del(tmp_grad[i]);
 
 	vops->del(one);
 }
@@ -1282,8 +1287,8 @@ void sgd(	int epochs, int batches,
 	float* x_batch_gen[NI]; //arrays which are filled by batch generator
 	long N_batch_gen = 0;
 
-	unsigned long in_optimize_flag = 0;
-	unsigned long out_optimize_flag = 0;
+	bool in_optimize_flag[NI];
+	bool out_optimize_flag[NO];
 
 	if (batches != N_total / N_batch)
 		error("Wrong number of batches!\n");
@@ -1292,6 +1297,8 @@ void sgd(	int epochs, int batches,
 
 		grad[i] = NULL;
 		dxs[i] = NULL;
+
+		in_optimize_flag[i] = false;
 
 		switch (in_type[i]) {
 
@@ -1306,7 +1313,7 @@ void sgd(	int epochs, int batches,
 			grad[i] = vops->allocate(isize[i]);
 			dxs[i] = vops->allocate(isize[i]);
 
-			in_optimize_flag = MD_SET(in_optimize_flag, i);
+			in_optimize_flag[i] = true;
 
 			if (NULL != prox[i].fun)
 				iter_op_p_call(prox[i], 0, x[i], x[i]); //project to constraint
@@ -1343,8 +1350,7 @@ void sgd(	int epochs, int batches,
 
 		args[o] = vops->allocate(osize[o]);
 
-		if (OUT_OPTIMIZE == out_type[o])
-			out_optimize_flag = MD_SET(out_optimize_flag, o);
+		out_optimize_flag[o] = (OUT_OPTIMIZE == out_type[o]);
 	}
 
 	const float *x2[NI];
@@ -1368,7 +1374,7 @@ void sgd(	int epochs, int batches,
 
 
 			if (0 != N_batch_gen)
-				iter_nlop_call(nlop_batch_gen, N_batch_gen, x_batch_gen);
+				iter_nlop_call(nlop_batch_gen, N_batch_gen, 0, x_batch_gen);
 
 			float r0 = compute_objective(NO, NI, nlop, args, out_optimize_flag, in_optimize_flag, vops); // update graph and compute loss
 
@@ -1506,7 +1512,8 @@ void iPALM(	long NI, long isize[NI], enum IN_TYPE in_type[NI], float* x[const NI
 	float* tmp[NI];
 	float* grad[NI];
 
-	unsigned long out_optimize_flag = 0;
+	bool out_optimize_flag[NO];
+	bool in_optimize_flag[NI];
 
 	for (int i = 0; i < NI; i++) {
 
@@ -1517,6 +1524,7 @@ void iPALM(	long NI, long isize[NI], enum IN_TYPE in_type[NI], float* x[const NI
 		z[i] = NULL;
 		tmp[i] = NULL;
 		grad[i] = NULL;
+		in_optimize_flag[i] = false;
 
 		switch (in_type[i]) {
 
@@ -1575,8 +1583,7 @@ void iPALM(	long NI, long isize[NI], enum IN_TYPE in_type[NI], float* x[const NI
 
 		args[o] = vops->allocate(osize[o]);
 
-		if (OUT_OPTIMIZE == out_type[o])
-			out_optimize_flag = MD_SET(out_optimize_flag, o);
+		out_optimize_flag[o] = (OUT_OPTIMIZE == out_type[o]);
 	}
 
 	const float *x2[NI];
@@ -1590,7 +1597,7 @@ void iPALM(	long NI, long isize[NI], enum IN_TYPE in_type[NI], float* x[const NI
 		for (int batch = 0; batch < N_batch; batch++) {
 
 			if (0 != N_batch_gen)
-				iter_nlop_call(nlop_batch_gen, N_batch_gen, x_batch_gen);
+				iter_nlop_call(nlop_batch_gen, N_batch_gen, 0, x_batch_gen);
 
 			float r_old = compute_objective(NO, NI, nlop, args, out_optimize_flag, 0, vops);
 
@@ -1600,6 +1607,9 @@ void iPALM(	long NI, long isize[NI], enum IN_TYPE in_type[NI], float* x[const NI
 
 				if (IN_OPTIMIZE != in_type[i])
 					continue;
+
+				for (int j = 0; j < NI; j++)
+					in_optimize_flag[j] = (j == i);
 
 				grad[i] = vops->allocate(isize[i]);
 				tmp[i] = vops->allocate(isize[i]);
@@ -1621,11 +1631,11 @@ void iPALM(	long NI, long isize[NI], enum IN_TYPE in_type[NI], float* x[const NI
 
 					args[NO + i] = z[i];
 
-					r_z = compute_objective(NO, NI, nlop, args, out_optimize_flag, MD_BIT(i), vops);
+					r_z = compute_objective(NO, NI, nlop, args, out_optimize_flag, in_optimize_flag, vops);
 
 					vops->del(z[i]);
 
-					getgrad(NI, MD_BIT(i), isize, grad, NO, out_optimize_flag, adj, vops);
+					getgrad(NI, in_optimize_flag, isize, grad, NO, out_optimize_flag, adj, vops);
 				}
 
 				//backtracking
@@ -1643,11 +1653,11 @@ void iPALM(	long NI, long isize[NI], enum IN_TYPE in_type[NI], float* x[const NI
 
 						args[NO + i] = z[i];
 
-						r_z = compute_objective(NO, NI, nlop, args, out_optimize_flag, MD_BIT(i), vops);
+						r_z = compute_objective(NO, NI, nlop, args, out_optimize_flag, in_optimize_flag, vops);
 
 						vops->del(z[i]);
 
-						getgrad(NI, MD_BIT(i), isize, grad, NO, out_optimize_flag, adj, vops);
+						getgrad(NI, in_optimize_flag, isize, grad, NO, out_optimize_flag, adj, vops);
 					}
 
 
