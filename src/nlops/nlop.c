@@ -579,6 +579,26 @@ void nlop_generic_apply_unchecked(const struct nlop_s* op, int N, void* args[N])
 	operator_generic_apply_unchecked(op->op, N, args);
 }
 
+void nlop_generic_apply_select_derivative_array_unchecked(const struct nlop_s* op, int OO, int II, void* args[OO + II], bool select_der[II][OO])
+{
+	assert(II == nlop_get_nr_in_args(op));
+	assert(OO == nlop_get_nr_out_args(op));
+
+	bool select_all[II?:1][OO?:1];
+
+	for(int o = 0; o < OO; o++)
+		for(int i = 0; i < II; i++)
+			select_all[i][o] = true;
+
+	nlop_clear_derivatives(op);
+	nlop_unset_derivatives(op);
+	nlop_set_derivatives(op, II, OO, select_der);
+
+	nlop_generic_apply_unchecked(op, OO + II, args);
+
+	nlop_set_derivatives(op, II, OO, select_all);
+}
+
 void nlop_generic_apply_select_derivative_unchecked(const struct nlop_s* op, int N, void* args[N], unsigned long out_der_flag, unsigned long in_der_flag)
 {
 	int II = nlop_get_nr_in_args(op);
@@ -588,23 +608,12 @@ void nlop_generic_apply_select_derivative_unchecked(const struct nlop_s* op, int
 	assert((unsigned int)OO <= CHAR_BIT * sizeof(in_der_flag));
 
 	bool select_der[II?:1][OO?:1];
-	bool select_all[II?:1][OO?:1];
 
-	for(int o = 0; o < OO; o++) {
-		for(int i = 0; i < II; i++) {
-
+	for(int o = 0; o < OO; o++)
+		for(int i = 0; i < II; i++)
 			select_der[i][o] = MD_IS_SET(out_der_flag, o) && MD_IS_SET(in_der_flag, i);
-			select_all[i][o] = true;
-		}
-	}
 
-	nlop_clear_derivatives(op);
-	nlop_unset_derivatives(op);
-	nlop_set_derivatives(op, II, OO, select_der);
-
-	nlop_generic_apply_unchecked(op, N, args);
-
-	nlop_set_derivatives(op, II, OO, select_all);
+	nlop_generic_apply_select_derivative_array_unchecked(op, OO, II, args, select_der);
 }
 
 void nlop_generic_apply_no_derivative_unchecked(const struct nlop_s* op, int N, void* args[N])
