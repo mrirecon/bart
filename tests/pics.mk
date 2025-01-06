@@ -376,6 +376,21 @@ tests/test-pics-tgv: phantom slice noise fft ones pics tgv slice nrmse
 	touch $@
 
 
+tests/test-pics-tgv-denoising: phantom slice noise fft ones pics denoising slice nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/phantom -s2 x.ra							;\
+	$(TOOLDIR)/slice 3 0 x.ra x0.ra							;\
+	$(TOOLDIR)/noise -n 1000000. x0.ra x0n.ra					;\
+	$(TOOLDIR)/fft -u 3 x0n.ra k0n.ra						;\
+	$(TOOLDIR)/ones 2 128 128 o.ra							;\
+	$(TOOLDIR)/pics -w1. -i100 -u0.1 -S -RG:3:0:750. k0n.ra o.ra x.ra		;\
+	$(TOOLDIR)/denoising -w1. -i100 -u0.1 -S -RG:3:0:750. x0n.ra xg.ra		;\
+	$(TOOLDIR)/slice 15 0 xg.ra xg0.ra						;\
+	$(TOOLDIR)/nrmse -t 0.000001 xg0.ra x.ra					;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
 tests/test-pics-tgv2: phantom slice noise fft ones pics tgv slice nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/phantom -s2 x.ra							;\
@@ -675,7 +690,7 @@ TESTS += tests/test-pics-warmstart
 TESTS += tests/test-pics-timedim tests/test-pics-bp-noncart
 TESTS += tests/test-pics-basis tests/test-pics-basis-noncart tests/test-pics-basis-noncart-memory tests/test-pics-basis-noncart2
 #TESTS += tests/test-pics-lowmem
-TESTS += tests/test-pics-noncart-sms tests/test-pics-psf tests/test-pics-tgv tests/test-pics-tgv2
+TESTS += tests/test-pics-noncart-sms tests/test-pics-psf tests/test-pics-tgv tests/test-pics-tgv-denoising tests/test-pics-tgv2
 TESTS += tests/test-pics-wavl1-dau2 tests/test-pics-wavl1-cdf44 tests/test-pics-wavl1-haar
 TESTS += tests/test-pics-noncart-lowmem tests/test-pics-noncart-lowmem-stack0 tests/test-pics-noncart-lowmem-stack1 tests/test-pics-noncart-lowmem-stack2 tests/test-pics-noncart-lowmem-no-toeplitz
 TESTS += tests/test-pics-phase
