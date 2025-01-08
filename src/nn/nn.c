@@ -841,6 +841,8 @@ nn_t nn_optimize_graph_F(nn_t op)
 	for (int i = 0; i < nn_get_nr_out_args(result); i++)
 		nn_clone_arg_o_from_o(result, i, op, i);
 
+	nn_free(op);
+
 	return result;
 }
 
