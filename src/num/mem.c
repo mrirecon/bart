@@ -273,6 +273,8 @@ bool mem_ondevice(const void* ptr)
 	return false;
 }
 
+static long cuda_host_size = 0;
+
 void mem_device_free(void* ptr, void (*device_free)(const void* ptr, bool host))
 {
 	for (int i = 0; i < CUDA_MAX_STREAMS + 1; i++) {
@@ -292,6 +294,12 @@ void mem_device_free(void* ptr, void (*device_free)(const void* ptr, bool host))
 
 		assert(NULL != nptr);
 		assert(nptr->ptr == ptr);
+
+		if (nptr->host) {
+
+#pragma 		omp atomic
+			cuda_host_size -= nptr->len;
+		}
 
 		if (memcache && !nptr->host) {
 
@@ -324,6 +332,15 @@ void* mem_device_malloc(size_t size2, void* (*device_alloc)(size_t), bool host)
 {
 	int stream = cuda_get_stream_id();
 	long size = (long)size2;
+
+	if (host) {
+
+#pragma 	omp atomic
+		cuda_host_size += size2;
+
+		debug_printf(DP_WARN, "HOST_SIZE: %ld Byte\n", cuda_host_size);
+	}
+
 
 	struct mem_s* nptr = host ? NULL : find_free(size, stream);
 
