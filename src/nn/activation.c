@@ -287,6 +287,21 @@ static void relu_apply(const nlop_data_t* _data, complex float* _dst, const comp
 
 	md_smax(N, dims, dst, src, 0.);
 
+	if (!nlop_der_requested(_data, 0, 0)) {
+
+		md_free(d->der);
+		d->der = NULL;
+
+		if (0 != d->slope_param) {
+
+			md_smul(N, dims, dst, dst, 1. / d->slope_param);
+			md_add(N, dims, dst, dst, src);
+			md_smul(N, dims, dst, dst, d->slope_param);
+		}
+
+		return;
+	}
+
 	float* der = md_alloc_sameplace(N, dims, FL_SIZE, src);
 
 	if ((0 == d->slope_param) && (NULL != der))
