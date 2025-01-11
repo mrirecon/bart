@@ -267,6 +267,9 @@ static void scale_free(const linop_data_t* _data)
 
 struct linop_s* linop_scale_create(int N, const long dims[N], const complex float scale)
 {
+	if (1 == scale)
+		return linop_identity_create(N, dims);
+
 	PTR_ALLOC(struct scale_s, data);
 	SET_TYPEID(scale_s, data);
 
