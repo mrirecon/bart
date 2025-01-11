@@ -54,6 +54,7 @@ extern struct nlop_s* nlop_create2(	int ON, const long odims[__VLA(ON)], const l
 					int IN, const long idims[__VLA(IN)], const long istrs[__VLA(IN)], nlop_data_t* data,
 					nlop_fun_t forward, nlop_der_fun_t deriv, nlop_der_fun_t adjoint, nlop_der_fun_t normal, nlop_p_fun_t norm_inv, nlop_del_fun_t);
 
+extern struct nlop_s* nlop_from_ops(const struct operator_s* op, int OO, int II, const struct linop_s* der[II][OO]);
 
 extern struct nlop_s* nlop_clone(const struct nlop_s* op);
 extern void nlop_free(const struct nlop_s* op);

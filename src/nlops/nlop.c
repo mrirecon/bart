@@ -408,6 +408,27 @@ struct nlop_s* nlop_create(int ON, const long odims[ON], int IN, const long idim
 }
 
 
+struct nlop_s* nlop_from_ops(const struct operator_s* op, int OO, int II, const struct linop_s* der[II][OO])
+{
+	assert(II == operator_nr_in_args(op));
+	assert(OO == operator_nr_out_args(op));
+
+	PTR_ALLOC(struct nlop_s, n);
+
+	const struct linop_s* (*nder)[II?:1][OO?:1] = TYPE_ALLOC(const struct linop_s*[II?:1][OO?:1]);
+	n->derivative = &(*nder)[0][0];
+
+	for (int i = 0; i < II; i++)
+		for (int o = 0; o < OO; o++)
+			(*nder)[i][o] = linop_clone(der[i][o]);
+
+	n->op = operator_ref(op);
+
+	return PTR_PASS(n);
+}
+
+
+
 int nlop_get_nr_in_args(const struct nlop_s* op)
 {
 	return operator_nr_in_args(op->op);
