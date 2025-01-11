@@ -166,7 +166,7 @@ static void checkpoint_fun(const nlop_data_t* _data, int N, complex float* args[
 	checkpoint_free_der(data);
 }
 
-static void checkpoint_re_evaluate(struct checkpoint_s* d, long idx) 
+static void checkpoint_re_evaluate(struct checkpoint_s* d, long idx)
 {
 	bool (*der_requested)[d->II][d->OO] = (void*)d->der_requested;
 	nlop_set_derivatives(d->nlop, d->II, d->OO, (*der_requested));
@@ -175,7 +175,7 @@ static void checkpoint_re_evaluate(struct checkpoint_s* d, long idx)
 
 	for (int j = 0; j < d->OO; j++)
 		args[j] = md_alloc_sameplace(d->DO[j], d->odims[j], CFL_SIZE, d->inputs[0]);
-	
+
 	for (int j = 0; j < d->II; j++)
 		args[d->OO + j] = d->inputs[j] + idx * d->in_offsets[j];
 
@@ -226,7 +226,7 @@ static void checkpoint_eval_der(struct checkpoint_s* d, int i, const complex flo
 		if (d->clear_mem || (1 < d->loop_size))
 			nlop_clear_derivatives(d->nlop);
 	}
-} 
+}
 
 
 static void checkpoint_der(const nlop_data_t* _data, int o, int i, complex float* dst, const complex float* src)
@@ -235,7 +235,7 @@ static void checkpoint_der(const nlop_data_t* _data, int o, int i, complex float
 
 	if (   (NULL == d->der_in[i])
 	    || (NULL == d->der_out[i + d->II * o])
-	    || (0. != md_zrmse(d->DI[i], d->idims[i], d->der_in[i], src))) {
+	    || (!md_compare(d->DI[i], d->idims[i], d->der_in[i], src, CFL_SIZE))) {
 
 		checkpoint_eval_der(d, i, src);
 	}
@@ -281,10 +281,10 @@ static void checkpoint_eval_adj(struct checkpoint_s* d, int o, const complex flo
 		if (NULL == d->adj_out[j + d->II * o])
 			d->adj_out[j + d->II * o] = md_alloc_sameplace(d->DI[j], d->idims[j], CFL_SIZE, src);
 
-		
+
 		der_ops[num_ops_par] = nlop_get_derivative(d->nlop, o, j)->adjoint;
 		offset[num_ops_par] = d->in_offsets[j];
-		
+
 		if ((0 == d->in_offsets[j]) && (1 < d->loop_size)) {
 
 			adj_out_tmp_loop[num_ops_par] = md_alloc_sameplace(d->DI[j], d->idims[j], CFL_SIZE, src);
@@ -315,9 +315,9 @@ static void checkpoint_eval_adj(struct checkpoint_s* d, int o, const complex flo
 				auto iov = operator_codomain(der_ops[k]);
 				md_zadd(iov->N, iov->dims, adj_out_tmp[k], adj_out_tmp[k], adj_out_tmp_loop[k]);
 			}
-				
+
 		}
-			
+
 		if (d->clear_mem || (1 < d->loop_size))
 			nlop_clear_derivatives(d->nlop);
 	}
@@ -325,7 +325,7 @@ static void checkpoint_eval_adj(struct checkpoint_s* d, int o, const complex flo
 	for (int k = 0; k < num_ops_par; k++)
 		if (MD_IS_SET(sum_flag, k))
 			md_free(adj_out_tmp_loop[k]);
-} 
+}
 
 
 static void checkpoint_adj(const nlop_data_t* _data, int o, int i, complex float* dst, const complex float* src)
@@ -334,9 +334,9 @@ static void checkpoint_adj(const nlop_data_t* _data, int o, int i, complex float
 
 	if (   (NULL == d->adj_in[o])
 	    || (NULL == d->adj_out[i + d->II * o])
-	    || (0. != md_zrmse(d->DO[o], d->odims[o], src, src))
-	    || (0. != md_zrmse(d->DO[o], d->odims[o], d->adj_in[o], d->adj_in[o]))
-	    || (0. != md_zrmse(d->DO[o], d->odims[o], d->adj_in[o], src))) {
+	    || !md_compare(d->DO[o], d->odims[o], src, src, CFL_SIZE)
+	    || !md_compare(d->DO[o], d->odims[o], d->adj_in[o], d->adj_in[o], CFL_SIZE)
+	    || !md_compare(d->DO[o], d->odims[o], d->adj_in[o], src, CFL_SIZE)) {
 
 		checkpoint_eval_adj(d, o, src);
 	}
@@ -430,7 +430,7 @@ static const struct nlop_s* nlop_checkpoint_loop_create(const struct nlop_s* nlo
 
 		PTR_ALLOC(long[iov->N], tdims);
 		md_copy_dims(iov->N, *tdims, iov->dims);
-		
+
 		if (1 < loop_size) {
 
 			assert(1 == (*tdims)[oloop_dim[i]]);
@@ -645,7 +645,7 @@ bool nlop_is_checkpoint(const struct nlop_s* nlop)
 		return false;
 
 	auto data = CAST_MAYBE(checkpoint_s, _data);
-	
+
 	return NULL != data;
 }
 
@@ -654,7 +654,7 @@ const struct nlop_s* nlop_loop_generic_F(int N, const struct nlop_s* nlop, int I
 	auto result = nlop_checkpoint_loop_create(nlop, true, true, N, II, iloop_dim, OO, oloop_dim);
 
 	nlop_free(nlop);
-	
+
 	return result;
 }
 
@@ -668,11 +668,11 @@ const struct nlop_s* nlop_loop_F(int N, const struct nlop_s* nlop, unsigned long
 	int ildim[II];
 	for(int i = 0; i < II; i++)
 		ildim[i] = MD_IS_SET(dup_flag, i) ? -1 : loop_dim;
-	
+
 	int oldim[OO];
 	for(int i = 0; i < OO; i++)
 		oldim[i] = loop_dim;
-	
+
 	return nlop_loop_generic_F(N, nlop, II, ildim, OO, oldim);
 }
 
