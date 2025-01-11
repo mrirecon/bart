@@ -16,6 +16,7 @@
 #include "num/flpmath.h"
 
 #include "linops/linop.h"
+#include "linops/someops.h"
 
 #include "misc/misc.h"
 
@@ -175,6 +176,9 @@ const struct linop_s* linop_scaled_sum_create(int N, const long imgd_dims[N], un
 
 const struct linop_s* linop_avg_create(int N, const long imgd_dims[N], unsigned long flags)
 {
+	if (0UL == (flags & md_nontriv_dims(N, imgd_dims)))
+		return linop_identity_create(N, imgd_dims);
+
 	struct sum_data* data = sum_create_data(N, imgd_dims, flags);
 	data->levels = data->levels * data->levels;
 
@@ -251,6 +255,9 @@ static void repmat_apply_adjoint(const linop_data_t* _data, complex float* dst, 
 
 const struct linop_s* linop_repmat_create(int N, const long odims[N], unsigned long flags)
 {
+	if (0UL == (flags & md_nontriv_dims(N, odims)))
+		return linop_identity_create(N, odims);
+
 	struct repmat_data* data = repmat_create_data(N, odims, flags);
 
 	return linop_create(N, data->odims, N, data->idims,
