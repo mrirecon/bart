@@ -1840,11 +1840,23 @@ bool md_compare2(int D, const long dims[D], const long str1[D], const void* src1
 
 	const long (*nstr[2])[D] = { (const long (*)[D])str1, (const long (*)[D])str2 };
 
+#ifdef USE_CUDA
+	bool gpu = cuda_ondevice(src1);
+#endif
+
 	NESTED(void, nary_cmp, (struct nary_opt_data_s* opt_data, void* ptrs[]))
 	{
 		size_t size2 = (size_t)((long)size * opt_data->size);
 
-		bool eq2 = (0 == memcmp(ptrs[0], ptrs[1], size2));
+		bool eq2;
+#ifdef USE_CUDA
+		if (gpu)
+			eq2 = cuda_memequal((long)size2, ptrs[0], ptrs[1]);
+		else
+#endif
+		eq2 = (0 == memcmp(ptrs[0], ptrs[1], size2));
+
+
 #pragma 	omp atomic
 		eq &= eq2;
 	};
@@ -2537,7 +2549,7 @@ long md_ravel_index(int D, const long pos[D], unsigned long flags, const long di
 
 		if (!MD_IS_SET(flags, d - 1))
 			continue;
-		
+
 		ind *= dims[d - 1];
 		ind += pos[d - 1];
 	}

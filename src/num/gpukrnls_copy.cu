@@ -3,6 +3,7 @@
  * a BSD-style license which can be found in the LICENSE file.
  */
 
+#include <cstdint>
 #include <stdbool.h>
 #include <assert.h>
 
@@ -320,4 +321,46 @@ extern "C" void cuda_compress(long stride, long N, void* dst, long istrs, const 
 	compress_kern<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(stride, N, dst, istrs, index, dcstrs, src, size);
 	CUDA_KERNEL_ERROR;
 }
+
+template <typename T>
+__global__ void kern_memequal(long N, bool* dst, const T* src1, const T* src2)
+{
+	int start = threadIdx.x + blockDim.x * blockIdx.x;
+	int stride = blockDim.x * gridDim.x;
+
+	for (long i = start; i < N; i += stride) {
+
+		if (src1[i] != src2[i])
+			dst[0] = false;
+	}
+}
+
+bool is_aligned(const void* ptr, size_t alignment)
+{
+    return 0 == ((uintptr_t)ptr % alignment);
+}
+
+extern "C" bool cuda_memequal(long size, const void* src1, const void* src2)
+{
+	bool ret_cpu = true;
+	bool* ret_gpu = (bool*)cuda_malloc(sizeof(bool));
+	cuda_memcpy((long)sizeof(bool), ret_gpu, &ret_cpu);
+
+	if ((0 == size % 8) && is_aligned(src1, 8) && is_aligned(src2, 8))
+		kern_memequal<uint64_t><<<gridsize(size / 8), blocksize(size / 8), 0, cuda_get_stream()>>>(size / 8, ret_gpu, (const uint64_t*)src1, (const uint64_t*)src2);
+	else if ((0 == size % 4) && is_aligned(src1, 4) && is_aligned(src2, 4))
+		kern_memequal<uint32_t><<<gridsize(size / 4), blocksize(size / 4), 0, cuda_get_stream()>>>(size / 4, ret_gpu, (const uint32_t*)src1, (const uint32_t*)src2);
+	else if ((0 == size % 2) && is_aligned(src1, 2) && is_aligned(src2, 2))
+		kern_memequal<uint16_t><<<gridsize(size / 2), blocksize(size / 2), 0, cuda_get_stream()>>>(size / 2, ret_gpu, (const uint16_t*)src1, (const uint16_t*)src2);
+	else
+		kern_memequal<uint8_t><<<gridsize(size / 1), blocksize(size / 1), 0, cuda_get_stream()>>>(size / 1, ret_gpu, (const uint8_t*)src1, (const uint8_t*)src2);
+
+	CUDA_KERNEL_ERROR;
+
+	cuda_memcpy((long)sizeof(bool), &ret_cpu, ret_gpu);
+	cuda_free(ret_gpu);
+	return ret_cpu;
+}
+
+
 
