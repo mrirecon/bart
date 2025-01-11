@@ -10,6 +10,7 @@
 
 #include "linops/linop.h"
 #include "linops/someops.h"
+#include "linops/sum.h"
 
 #include "misc/types.h"
 #include "misc/misc.h"
@@ -40,11 +41,14 @@ struct zaxpbz_s {
 
 	int N;
 	const long* dims;
+	const long* idims1;
+	const long* idims2;
 
 	const long* ostrs;
 	const long* istrs1;
 	const long* istrs2;
 
+	bool unfold;
 	complex float scale1;
 	complex float scale2;
 };
@@ -64,22 +68,28 @@ static void zaxpbz_fun(const nlop_data_t* _data, int N, complex float* args[N])
 	assert((cuda_ondevice(dst) == cuda_ondevice(src1)) && (cuda_ondevice(src1) == cuda_ondevice(src2)));
 #endif
 
-	src1 = md_alloc_sameplace(data->N, data->dims, CFL_SIZE, args[1]);
-	src2 = md_alloc_sameplace(data->N, data->dims, CFL_SIZE, args[2]);
+	const long* istrs1 = data->istrs1;
+	const long* istrs2 = data->istrs2;
 
-	md_copy2(data->N, data->dims, data->ostrs, src1, data->istrs1, args[1], CFL_SIZE);
-	md_copy2(data->N, data->dims, data->ostrs, src2, data->istrs2, args[2], CFL_SIZE);
+	if (data->unfold && 1. != data->scale1) {
 
-	const long* istrs1 = data->ostrs;
-	const long* istrs2 = data->ostrs;
+		src1 = md_alloc_sameplace(data->N, data->idims1, CFL_SIZE, args[1]);
+		md_zsmul(data->N, data->idims1, src1, args[1], data->scale1);
+	}
+
+	if (data->unfold && 1. != data->scale2) {
+
+		src2 = md_alloc_sameplace(data->N, data->idims2, CFL_SIZE, args[2]);
+		md_zsmul(data->N, data->idims2, src2, args[2], data->scale2);
+	}
 
 
-
-	if ((1. == data->scale1) && (1. == data->scale2)) {
+	if (data->unfold || ((1. == data->scale1) && (1. == data->scale2))) {
 
 		md_zadd2(data->N, data->dims, data->ostrs, dst, istrs1, src1, istrs2, src2);
 		goto cleanup;
 	}
+
 
 	if ((1. == data->scale1) && (-1. == data->scale2)) {
 
@@ -133,6 +143,8 @@ static void zaxpbz_del(const nlop_data_t* _data)
 	xfree(data->ostrs);
 	xfree(data->istrs1);
 	xfree(data->istrs2);
+	xfree(data->idims1);
+	xfree(data->idims2);
 
 	xfree(data);
 }
@@ -165,6 +177,10 @@ const struct nlop_s* nlop_zaxpbz2_create(int N, const long dims[N], unsigned lon
 	data->istrs1 = *PTR_PASS(istrs1);
 	data->istrs2 = *PTR_PASS(istrs2);
 
+	data->idims1 = ARR_CLONE(long[N], idims1);
+	data->idims2 = ARR_CLONE(long[N], idims2);
+
+	data->unfold = !(md_check_equal_dims(N, idims1, dims, ~0UL) && md_check_equal_dims(N, idims2, dims, ~0UL));
 	data->scale1 = scale1;
 	data->scale2 = scale2;
 
@@ -177,8 +193,20 @@ const struct nlop_s* nlop_zaxpbz2_create(int N, const long dims[N], unsigned lon
 	md_select_dims(N, flags2, nl_idims[1], dims);
 
 
-	return nlop_generic_create(1, N, nl_odims, 2, N, nl_idims, CAST_UP(PTR_PASS(data)),
+	const struct nlop_s* tmp = nlop_generic_create(1, N, nl_odims, 2, N, nl_idims, CAST_UP(PTR_PASS(data)),
 		zaxpbz_fun, (nlop_der_fun_t[2][1]){ { scale_apply }, { scale_apply } }, (nlop_der_fun_t[2][1]){ { scale_adjoint }, { scale_adjoint } }, NULL, NULL, zaxpbz_del);
+
+	const struct linop_s* der[2][1];
+	der[0][0] = linop_chain_FF(linop_scale_create(N, idims1, scale1), linop_repmat_create(N, dims, ~flags1));
+	der[1][0] = linop_chain_FF(linop_scale_create(N, idims2, scale2), linop_repmat_create(N, dims, ~flags2));
+
+	const struct nlop_s* ret = nlop_from_ops(tmp->op, 1, 2, der);
+	nlop_free(tmp);
+
+	linop_free(der[0][0]);
+	linop_free(der[1][0]);
+
+	return ret;
 }
 
 const struct nlop_s* nlop_zaxpbz_create(int N, const long dims[N], complex float scale1, complex float scale2)
