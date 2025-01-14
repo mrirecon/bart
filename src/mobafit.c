@@ -43,6 +43,7 @@
 #include "moba/T1fun.h"
 #include "moba/blochfun.h"
 #include "moba/moba.h"
+#include "moba/lorentzian.h"
 
 #include "simu/signals.h"
 
@@ -144,9 +145,10 @@ int main_mobafit(int argc, char* argv[argc])
 	bounds.min = bound_min;
 	bounds.max = bound_max;
 
-	enum seq_type { /* BSSFP, FLASH, MOLLI, */ TSE, MGRE, DIFF, IR_LL, IR, SIM } seq = MGRE;
+	enum seq_type { /* BSSFP, FLASH, MOLLI, */ TSE, MGRE, DIFF, IR_LL, IR, SIM, MPL } seq = MGRE;
 
 	int mgre_model = MECO_WFR2S;
+	int num_lorentzian_pools = 0;
 
 	int iter = 5;
 
@@ -253,6 +255,7 @@ int main_mobafit(int argc, char* argv[argc])
 		OPT_PINT('m', &mgre_model, "model", "Select the MGRE model from enum { WF = 0, WFR2S, WF2R2S, R2S, PHASEDIFF } [default: WFR2S]"),
 		OPT_SET('a', &use_magn, "fit magnitude of signal model to data"),
 		OPT_PINT('i', &iter, "iter", "Number of IRGNM steps"),
+		OPT_PINT('M', &num_lorentzian_pools, "num_lorentzian_pools", "Multi-Pool-Lorentzian - Number of pools"),
 		OPT_SET('g', &bart_use_gpu, "use gpu"),
 		OPT_INFILE('B', &basis_file, "file", "temporal (or other) basis"),
 		OPTL_FLVECN(0, "init", init0, "Initial values of parameters in model-based reconstruction"),
@@ -274,10 +277,15 @@ int main_mobafit(int argc, char* argv[argc])
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
+
+	if (num_lorentzian_pools > 0)
+		seq = MPL;
+	
 	num_init_gpu_support();
 
 	long bas_dims[DIMS];
 	complex float* basis = NULL;
+
 
 	if (NULL != basis_file) {
 
@@ -329,6 +337,9 @@ int main_mobafit(int argc, char* argv[argc])
 	long x_dims[DIMS];
 	md_select_dims(DIMS, ~(TE_FLAG | COEFF_FLAG), x_dims, y_dims);
 
+
+
+
 	switch (seq) {
 
 	case IR:
@@ -363,7 +374,12 @@ int main_mobafit(int argc, char* argv[argc])
 		x_dims[COEFF_DIM] = (1 == sim.voxel.P) ? 4 : (5 * sim.voxel.P) - 1;
 		break;
 
+	case MPL:
+		x_dims[COEFF_DIM] = 1 + 3 * num_lorentzian_pools;
+		break;
+
 	default:
+		debug_printf(DP_DEBUG2, "Sequence Type %c \n", seq);
 
 		error("sequence type not supported\n");
 	}
@@ -372,7 +388,6 @@ int main_mobafit(int argc, char* argv[argc])
 	complex float* x = create_cfl(coeff_file, DIMS, x_dims);
 
 	md_zfill(DIMS, x_dims, x, 1.);
-
 
 	long y_patch_dims[DIMS];
 	long x_patch_dims[DIMS];
@@ -455,6 +470,15 @@ int main_mobafit(int argc, char* argv[argc])
 			nlop = nlop_flatten(nl);
 			nlop_free(nl);
 		}
+		break;
+
+	case MPL:
+
+		assert(md_check_equal_dims(DIMS, y_patch_dims, y_patch_sig_dims, ~0UL));
+		md_copy_dims(DIMS, dims, y_patch_dims);
+		dims[COEFF_DIM] = enc_dims[COEFF_DIM];
+
+		nlop = nlop_lorentzian_multi_pool_create(DIMS, y_patch_dims, x_patch_dims, enc_dims, enc);
 		break;
 
 	case SIM:
