@@ -84,7 +84,7 @@ int main_interpolate(int argc, char* argv[argc])
 	complex float* mot_ptr = NULL;
 
 	if (NULL != motion_file) {
-	
+
 		mot_ptr = load_cfl(motion_file, DIMS, mdims);
 	} else {
 
@@ -127,12 +127,12 @@ int main_interpolate(int argc, char* argv[argc])
 				error("Affine interpolation only supports the first three dimensions and flags must be set to 7.\nUse bart looping for higher dimensions.\n");
 
 			affine_interpolate(order, affine, odims, out_ptr, dims, src_ptr);
-		}		
+		}
 	}
 
 	unmap_cfl(DIMS, mdims, mot_ptr);
 	unmap_cfl(DIMS, dims, src_ptr);
-	unmap_cfl(DIMS, dims, out_ptr);
+	unmap_cfl(DIMS, odims, out_ptr);
 
 	return 0;
 }
