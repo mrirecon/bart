@@ -100,7 +100,7 @@ int main_tee(int argc, char* argv[argc])
 
 		if (strm) {
 
-			stream_sync_try(strm, DIMS, dims);
+			stream_sync_slice_try(strm, DIMS, dims, 0, (long [DIMS]){ 0 });
 			stream_free(strm);
 		}
 
