@@ -34,8 +34,10 @@ GPU=""
 TRAJ=""
 BASIS=""
 COEFFS=0
+NCONF=""
+LCONF=""
 
-while getopts "hgB:t:Mp:" opt; do
+while getopts "hgB:t:Mp:N:L:" opt; do
         case $opt in
         g)
 		GPU=" -g"
@@ -48,6 +50,12 @@ while getopts "hgB:t:Mp:" opt; do
         ;;
         M)
 		COEFFS=1
+        ;;
+        N)
+		NCONF="$OPTARG"
+        ;;
+        L)
+		LCONF="$OPTARG"
         ;;
         B)
 		BASIS="-B $(readlink -f "$OPTARG")"
@@ -104,13 +112,13 @@ else
 
 	DIMS="$(bart show -d 0 $pos):$(bart show -d 1 $pos):$(bart show -d 2 $pos)"
 	bart nufftbase $DIMS $TRAJ pat
-	bart nufft $BASIS -p pat -i -x$DIMS $TRAJ $sig cim
+	bart $LCONF nufft $NCONF $BASIS $GPU -p pat -i -x$DIMS $TRAJ $sig cim
 
 	bart fmac cim $pos ipos
 	bart fmac cim $neg ineg
 
-	bart nufft $BASIS -ppat $TRAJ ipos pos
-	bart nufft $BASIS -ppat $TRAJ ineg neg
+	bart $LCONF nufft $BASIS $GPU -ppat $TRAJ ipos pos
+	bart $LCONF nufft $BASIS $GPU -ppat $TRAJ ineg neg
 fi
 
 bart rovir pos neg compress
