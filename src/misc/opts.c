@@ -500,14 +500,14 @@ static void process_option(char c, const char* optarg, const char* name, const c
 		if (opt_dispatch(opts[i].type, opts[i].ptr, opts[i].conv, c, optarg)) {
 
 			print_usage(stderr, name, usage_str, n, opts);
-			error("process_option: failed to convert value\n");
+			error("process_option %c: failed to convert value\n", c);
 		}
 
 		return;
 	}
 
 	print_usage(stderr, name, usage_str, n, opts);
-	error("process_option: unknown option\n");
+	error("process_option: unknown option %c\n", c);
 }
 
 
