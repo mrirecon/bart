@@ -181,7 +181,7 @@ void calc_base_angles(double base_angle[DIMS], int Y, int E, struct traj_conf co
 	double angle_t = 0.;
 
 	if (conf.turns > 1)
-		angle_t = angle_atom / conf.turns / conf.mb * (conf.full_circle ? 2 : 1);
+		angle_t = angle_atom / conf.turns * (conf.full_circle ? 2 : 1);
 
 	/* radial multi-echo multi-spoke sampling
 	 *
