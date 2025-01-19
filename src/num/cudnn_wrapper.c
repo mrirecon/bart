@@ -93,7 +93,7 @@ static cudnnHandle_t get_handle(void)
 
 static cudnnTensorDescriptor_t bart_to_cudnn_float_tensor_descriptor(int D, const long dims[D], const long str[D])
 {
-	int nbDims = MAX(D, 3u);
+	int nbDims = MAX(D, 3);
 	int dimA[nbDims];
 	int strideA[nbDims];
 
@@ -104,7 +104,7 @@ static cudnnTensorDescriptor_t bart_to_cudnn_float_tensor_descriptor(int D, cons
 	}
 
 	dimA[D - 1] = dims[0];
-	strideA[D - 1] = str[0] ? str[0] / FL_SIZE : 1;
+	strideA[D - 1] = str[0] ? str[0] / (long)FL_SIZE : 1;
 
 	for (int i = 1; i < (int)D; i++) {
 
@@ -165,7 +165,7 @@ static int flag_to_index(unsigned long flag)
 
 	for (int i = 0; i < 8 * sizeof(flag); i++)
 		if (MD_IS_SET(flag, i))
-			return i;
+			return (int)i;
 	return -1;
 }
 
@@ -264,7 +264,7 @@ static struct conv_desc_s create_conv_desc(	int N,
 		result.channel_out_flags =  MD_BIT(0);
 		result.channel_in_flags =   MD_BIT(1);
 	    }
-	
+
 	if (   (0 == result.channel_in_flags)
 	    && (MD_BIT(0) == result.channel_out_flags)
 	    && !MD_IS_SET(non_singleton_flags, 1)
@@ -286,7 +286,7 @@ static struct conv_desc_s create_conv_desc(	int N,
 
 		result.batch_flags =  MD_BIT(N - 1);
 	}
-	
+
 	// cudnn does not ignore strides of singleton dims
 	// using packed strides improve detection of optimized kernels
 	result.ostrs[0] = (1 == result.odims[0]) ? (long)FL_SIZE : result.ostrs[0];
@@ -320,7 +320,7 @@ static struct cudnn_filter_s get_filter_descriptor(struct conv_desc_s conv_desc,
 	struct cudnn_filter_s result;
 	result.format = format;
 
-	result.size_transformed = md_calc_size(conv_desc.N, conv_desc.kdims) * FL_SIZE;
+	result.size_transformed = (size_t)md_calc_size(conv_desc.N, conv_desc.kdims) * FL_SIZE;
 
 	assert(1 >= bitcount(conv_desc.channel_in_flags));
 	assert(1 >= bitcount(conv_desc.channel_out_flags));
@@ -343,10 +343,10 @@ static struct cudnn_filter_s get_filter_descriptor(struct conv_desc_s conv_desc,
 	int filterStrA[MAX(4, nbDims)];
 
 	filterDimA[0] = (-1 == out_channel_index) ? 1 : conv_desc.kdims[out_channel_index];
-	filterStrA[0] = (-1 == out_channel_index) ? 1 : conv_desc.kstrs[out_channel_index] / FL_SIZE;
+	filterStrA[0] = (-1 == out_channel_index) ? 1 : conv_desc.kstrs[out_channel_index] / (long)FL_SIZE;
 
 	filterDimA[1] = (-1 == in_channel_index) ? 1 : conv_desc.kdims[in_channel_index];
-	filterStrA[1] = (-1 == in_channel_index) ? 1 : conv_desc.kstrs[in_channel_index] / FL_SIZE;
+	filterStrA[1] = (-1 == in_channel_index) ? 1 : conv_desc.kstrs[in_channel_index] / (long)FL_SIZE;
 
 	for (int i = 0, ir = nbDims - 1; ir >= 2; i++) {
 
@@ -354,7 +354,7 @@ static struct cudnn_filter_s get_filter_descriptor(struct conv_desc_s conv_desc,
 			continue;
 
 		filterDimA[ir] = conv_desc.kdims[i];
-		filterStrA[ir] = conv_desc.kstrs[i] / FL_SIZE;
+		filterStrA[ir] = conv_desc.kstrs[i] / (long)FL_SIZE;
 
 		ir--;
 	}
@@ -429,7 +429,7 @@ static struct cudnn_tensor_s get_tensor_descriptor(struct conv_desc_s conv_desc,
 	long* dims = output ? conv_desc.odims : conv_desc.idims;
 	long* strs = output ? conv_desc.ostrs : conv_desc.istrs;
 
-	result.size_transformed = md_calc_size(conv_desc.N, dims) * FL_SIZE;
+	result.size_transformed = (size_t)md_calc_size(conv_desc.N, dims) * FL_SIZE;
 
 	assert(1 >= bitcount(channel_flags));
 	assert(1 <= bitcount(conv_desc.conv_flags));
@@ -452,10 +452,10 @@ static struct cudnn_tensor_s get_tensor_descriptor(struct conv_desc_s conv_desc,
 	int strA[MAX(4, nbDims)];
 
 	dimA[0] = (-1 == batch_index) ? 1 : dims[batch_index];
-	strA[0] = (-1 == batch_index) ? 1 : strs[batch_index] / FL_SIZE;
+	strA[0] = (-1 == batch_index) ? 1 : strs[batch_index] / (long)FL_SIZE;
 
 	dimA[1] = (-1 == channel_index) ? 1 : dims[channel_index];
-	strA[1] = (-1 == channel_index) ? 1 : strs[channel_index] / FL_SIZE;
+	strA[1] = (-1 == channel_index) ? 1 : strs[channel_index] / (long)FL_SIZE;
 
 	for (int i = 0, ir = nbDims - 1; ir >= 2; i++) {
 
@@ -463,7 +463,7 @@ static struct cudnn_tensor_s get_tensor_descriptor(struct conv_desc_s conv_desc,
 			continue;
 
 		dimA[ir] = dims[i];
-		strA[ir] = strs[i] / FL_SIZE;
+		strA[ir] = strs[i] / (long)FL_SIZE;
 
 		ir--;
 	}
@@ -741,7 +741,7 @@ static void cudnn_tensor_transform_split_complex(float alpha, float beta, cudnnT
 	for (int i = 0; i < nbDims; i++) {
 
 		dims[i] = dimA_comp[i];
-		strs[i] = strA_comp[i] * FL_SIZE;
+		strs[i] = strA_comp[i] * (long)FL_SIZE;
 
 		decomp_bart = decomp_bart && ((1 == dimA_comp[i]) || (0 == strA_comp[i] % 2));
 
@@ -794,7 +794,7 @@ static void cudnn_tensor_transform_combine_complex(float alpha, float beta, cudn
 	for (int i = 0; i < nbDims; i++) {
 
 		dims[i] = dimA_comp[i];
-		strs[i] = strA_comp[i] * FL_SIZE;
+		strs[i] = strA_comp[i] * (long)FL_SIZE;
 
 		decomp_bart = decomp_bart && ((1 == dimA_comp[i]) || (0 == strA_comp[i] % 2));
 
@@ -1073,7 +1073,7 @@ static bool cudnn_convcorr_fwd(
 	struct cudnn_filter_s krn_desc = get_filter_descriptor(bcd, format);
 
 	const float* krn_tmp = krn;
-	
+
 	if (krn_desc.transform_needed) {
 
 		float* tmp = md_alloc_gpu(bcd.N, bcd.kdims, FL_SIZE);
@@ -1419,12 +1419,12 @@ static bool cudnn_zconvcorr_bwd_krn_kernel(
 		return false;
 
 	if (0 == bitcount(bcd.channel_out_flags))
-		for (unsigned int i = 0; (i < bcd.N) && (0 == bcd.channel_out_flags); i++)
+		for (int i = 0; (i < bcd.N) && (0 == bcd.channel_out_flags); i++)
 			if ((1 == bcd.odims[i]) && (1 == bcd.idims[i]) && (1 == bcd.kdims[i]))
 				bcd.channel_out_flags = MD_BIT(i);
 
 	if (0 == bitcount(bcd.channel_in_flags))
-		for (unsigned int i = 0; (i < bcd.N) && (0 == bcd.channel_in_flags); i++)
+		for (int i = 0; (i < bcd.N) && (0 == bcd.channel_in_flags); i++)
 			if ((1 == bcd.odims[i]) && (1 == bcd.idims[i]) && (1 == bcd.kdims[i]) && !(MD_IS_SET(bcd.channel_out_flags, i)))
 				bcd.channel_in_flags = MD_BIT(i);
 
