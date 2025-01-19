@@ -91,7 +91,7 @@ void tf_shared_graph_list_operations(const struct tf_shared_graph_s* /*x*/)
 #else
 
 
-static int product(int n, const int64_t ar[n])
+static int64_t product(int n, const int64_t ar[n])
 {
 	int64_t result = 1;
 
@@ -484,7 +484,7 @@ void tf_shared_graph_list_operations(const struct tf_shared_graph_s*x)
 
 const struct tf_shared_graph_s* tf_shared_graph_create(const char* path, const char* signature_key)
 {
-	int plen = strlen(path) + 20;
+	size_t plen = strlen(path) + 20;
 
 	//reduce logging level of TensorFlow
 	if (debug_level <= DP_INFO)
@@ -492,7 +492,7 @@ const struct tf_shared_graph_s* tf_shared_graph_create(const char* path, const c
 
 	char graph_path[plen];
 	int rlen = snprintf(graph_path, plen, "%s.pb", path);
-	assert(rlen < plen);
+	assert(rlen < (int)plen);
 
 	TF_Status* status = TF_NewStatus();
 
@@ -726,7 +726,7 @@ static TF_Tensor* tensor_allocate(const struct tf_shared_graph_s* graph, const c
 		if (-1 == tdims[i])
 			tdims[i] = batch_size;
 
-	size_t size = product(N, tdims) * ((type == TF_FLOAT) ? FL_SIZE : CFL_SIZE);
+	size_t size = (size_t)product(N, tdims) * ((type == TF_FLOAT) ? FL_SIZE : CFL_SIZE);
 
 	return TF_AllocateTensor(type, tdims, N, size);
 }
@@ -815,7 +815,7 @@ static void tf_forward(const nlop_data_t* _data, int N, complex float* args[N])
 	}
 }
 
-static void tf_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*i*/, complex float* /*dst*/, const complex float* /*src*/)
+static void tf_der(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* /*dst*/, const complex float* /*src*/)
 {
 	auto data = CAST_DOWN(tf_s, _data);
 
@@ -824,7 +824,7 @@ static void tf_der(const nlop_data_t* _data, unsigned int /*o*/, unsigned int /*
 	(void)data;
 }
 
-static void tf_adj(const nlop_data_t* _data, unsigned int o, unsigned int i, complex float* dst, const complex float* src)
+static void tf_adj(const nlop_data_t* _data, int o, int i, complex float* dst, const complex float* src)
 {
 	auto data = CAST_DOWN(tf_s, _data);
 
