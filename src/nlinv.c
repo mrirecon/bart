@@ -105,13 +105,15 @@ int main_nlinv(int argc, char* argv[argc])
 	bool pattern_for_each_coil = false;
 	float oversampling_coils = -1.;
 
+	const char *rR = use_compat_to_version("v0.9.00") ? "R " : " R";
+
 	const struct opt_s opts[] = {
 
 		OPT_UINT('i', &conf.iter, "iter", "Number of Newton steps"),
-		OPT_FLOAT('r', &conf.redu, "", "(reduction factor)"),
+		OPTL_FLOAT(rR[0], "reduction-factor", &conf.redu, "q", "reduction factor"),
 		OPTL_FLOAT(0, "alpha", &conf.alpha, "val", "(alpha in first iteration)"),
 		OPT_FLOAT('M', &conf.alpha_min, "", "(minimum for regularization)"),
-		{ 'R', NULL, true, OPT_SPECIAL, opt_reg, conf.regs, "<T>:A:B:C", "generalized regularization options (-Rh for help)" },
+		{ rR[1], NULL, true, OPT_SPECIAL, opt_reg, conf.regs, "<T>:A:B:C", "generalized regularization options (-Rh for help)" },
 		OPTL_INT(0, "reg-iter", &conf.iter_reg, "iter", "Number of Newton steps with regularization (-1 means all)"),
 		OPT_INT('d', &debug_level, "level", "Debug level"),
 		OPT_SET('c', &conf.rvc, "Real-value constraint"),

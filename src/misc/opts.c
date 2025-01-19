@@ -450,7 +450,8 @@ static void check_options(int n, const struct opt_s opts[n ?: 1])
 		if (f[c])
 			error("duplicate option: %c\n", opts[i].c);
 
-		f[c] = true;
+		if (c)
+			f[c] = true;
 
 		if ((OPT_SPECIAL != opts[i].type) && (NULL != opts[i].conv))
 			error("Custom conversion functions are only allowed in OPT_SPECIAL\n");
