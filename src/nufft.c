@@ -23,6 +23,7 @@
 #include "num/flpmath.h"
 #include "num/init.h"
 #include "num/ops.h"
+#include "num/vptr.h"
 
 #include "linops/linop.h"
 
@@ -118,9 +119,14 @@ int main_nufft(int argc, char* argv[argc])
 	long coilim_dims[DIMS] = { 0 };
 	md_copy_dims(3, coilim_dims, coilim_vec);
 
+	if (0 != bart_mpi_split_flags)
+		error("Use MPI-looping instead of md functions to parallelize nufft!\n");
+
+	struct vptr_hint_s* hint = bart_delayed_computations ? hint_delayed_create(bart_delayed_loop_flags) : NULL;
+
 	// Read trajectory
 	long traj_dims[DIMS];
-	complex float* traj = load_cfl(traj_file, DIMS, traj_dims);
+	complex float* traj = load_cfl_wrap(traj_file, DIMS, traj_dims, hint);
 
 	assert(3 == traj_dims[0]);
 
@@ -141,7 +147,7 @@ int main_nufft(int argc, char* argv[argc])
 
 	if (NULL != basis_file) {
 
-		basis = load_cfl(basis_file, DIMS, basis_dims);
+		basis = load_cfl_wrap(basis_file, DIMS, basis_dims, hint);
 		assert(!md_check_dimensions(DIMS, basis_dims, COEFF_FLAG | TE_FLAG));
 	}
 
@@ -149,13 +155,13 @@ int main_nufft(int argc, char* argv[argc])
 	complex float* pattern = NULL;
 
 	if (NULL != pattern_file)
-		pattern = load_cfl(pattern_file, DIMS, pattern_dims);
+		pattern = load_cfl_wrap(pattern_file, DIMS, pattern_dims, hint);
 
 
 	if (inverse || adjoint) {
 
 		long ksp_dims[DIMS];
-		const complex float* ksp = load_cfl(in_file, DIMS, ksp_dims);
+		const complex float* ksp = load_cfl_wrap(in_file, DIMS, ksp_dims, hint);
 
 		assert(1 == ksp_dims[0]);
 		assert(md_check_compat(DIMS, ~(PHS1_FLAG|PHS2_FLAG), ksp_dims, traj_dims));
@@ -181,7 +187,7 @@ int main_nufft(int argc, char* argv[argc])
 			coilim_dims[TE_DIM] = 1;
 		}
 
-		complex float* img = create_cfl(out_file, DIMS, coilim_dims);
+		complex float* img = create_cfl_wrap(out_file, DIMS, coilim_dims, hint);
 
 		md_clear(DIMS, coilim_dims, img, CFL_SIZE);
 
@@ -240,7 +246,7 @@ int main_nufft(int argc, char* argv[argc])
 	} else {
 
 		// Read image data
-		const complex float* img = load_cfl(in_file, DIMS, coilim_dims);
+		const complex float* img = load_cfl_wrap(in_file, DIMS, coilim_dims, hint);
 
 		// Initialize kspace data
 		long ksp_dims[DIMS];
@@ -253,7 +259,7 @@ int main_nufft(int argc, char* argv[argc])
 			ksp_dims[COEFF_DIM] = 1;
 		}
 
-		complex float* ksp = create_cfl(out_file, DIMS, ksp_dims);
+		complex float* ksp = create_cfl_wrap(out_file, DIMS, ksp_dims, hint);
 
 		const struct linop_s* nufft_op;
 
@@ -287,6 +293,8 @@ int main_nufft(int argc, char* argv[argc])
 		unmap_cfl(DIMS, pattern_dims, pattern);
 
 	debug_printf(DP_DEBUG1, "Done.\n");
+
+	vptr_hint_free(hint);
 
 	return 0;
 }
