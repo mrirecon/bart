@@ -369,6 +369,9 @@ void* mem_device_malloc(size_t size2, void* (*device_alloc)(size_t), bool host)
 		_nptr->backtrace = NULL;
 
 		nptr = PTR_PASS(_nptr);
+
+		if (!host)
+			debug_printf(DP_WARN, "GLOBAL_SIZE: %ld Byte\n", used_memory[stream] + unused_memory[stream] + size);
 	}
 
 	if (!host)
