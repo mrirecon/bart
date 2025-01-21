@@ -61,6 +61,9 @@ int main_nufft(int argc, char* argv[argc])
 	const char* basis_file = NULL;
 	const char* pattern_file = NULL;
 
+	const char* fieldmap_file = NULL;
+	const char* timemap_file = NULL;
+
 	struct nufft_conf_s conf = nufft_conf_defaults;
 	struct iter_conjgrad_conf cgconf = iter_conjgrad_defaults;
 
@@ -92,6 +95,8 @@ int main_nufft(int argc, char* argv[argc])
 		OPT_INFILE('p', &pattern_file, "file", "weighting of nufft"),
 		OPTL_FLOAT('o', "oversampling", &(conf.os), "o", "oversample grid by factor (default: o=2; required for Toeplitz)"),
 		OPTL_FLOAT('w', "width", &(conf.width), "w", "width of Kaiser-Bessel window (default: w=6)"),
+		OPT_INFILE('F', &fieldmap_file, "file", "b0 inhomogeneity fieldmap"),
+		OPT_INFILE('T', &timemap_file, "file", "timemap for conjugate phase reconstruction"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -132,6 +137,31 @@ int main_nufft(int argc, char* argv[argc])
 					"\tDid you scale your trajectory correctly?\n"
 					"\tThe unit of measurement is pixel_size / FOV.\n",
 					coilest_dims[0], coilest_dims[1], coilest_dims[2]);
+	}
+
+	// Read fieldmap and timemap for B0 Inhomogeneity correction
+	long fieldmap_dims[DIMS];
+	complex float* fieldmap = NULL;
+
+	long timemap_dims[DIMS];
+	complex float* timemap = NULL;
+
+	if (NULL != fieldmap_file) {
+
+		if (NULL == timemap_file) {
+			error("No timemap provided -> fieldmap ignored, can't perform B0 correction");
+
+		} else {
+
+			fieldmap = load_cfl(fieldmap_file, DIMS, fieldmap_dims);
+			timemap = load_cfl(timemap_file, DIMS, timemap_dims);
+
+			assert(md_check_compat(DIMS, 1u, timemap_dims, traj_dims));
+
+			assert(md_check_compat(DIMS, 4u, coilest_dims, fieldmap_dims)); 
+
+			assert(1 == dft); /* only implemented for dft for now */
+		}
 	}
 
 	long basis_dims[DIMS];
@@ -209,7 +239,7 @@ int main_nufft(int argc, char* argv[argc])
 			assert(NULL == basis);
 			assert(NULL == pattern);
 
-			nufft_op = nudft_create(DIMS, FFT_FLAGS, ksp_dims, coilim_dims, traj_dims, traj);
+			nufft_op = nudft_create(DIMS, FFT_FLAGS, ksp_dims, coilim_dims, traj_dims, traj, fieldmap_dims, fieldmap, timemap_dims, timemap);
 		}
 
 
@@ -262,7 +292,7 @@ int main_nufft(int argc, char* argv[argc])
 		if (!dft)
 			nufft_op = nufft_create2(DIMS, ksp_dims, coilim_dims, traj_dims, traj, pattern_dims, pattern, basis_dims, basis, conf);
 		else
-			nufft_op = nudft_create(DIMS, FFT_FLAGS, ksp_dims, coilim_dims, traj_dims, traj);
+			nufft_op = nudft_create(DIMS, FFT_FLAGS, ksp_dims, coilim_dims, traj_dims, traj, fieldmap_dims, fieldmap, timemap_dims, timemap);
 
 		if (bart_use_gpu) {
 
@@ -286,6 +316,12 @@ int main_nufft(int argc, char* argv[argc])
 
 	if (NULL != pattern)
 		unmap_cfl(DIMS, pattern_dims, pattern);
+
+	if (NULL != timemap)
+		unmap_cfl(DIMS, timemap_dims, timemap);
+
+	if (NULL != fieldmap)
+		unmap_cfl(DIMS, fieldmap_dims, fieldmap);
 
 	debug_printf(DP_DEBUG1, "Done.\n");
 

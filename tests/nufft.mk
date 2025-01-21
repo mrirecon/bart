@@ -397,8 +397,51 @@ tests/test-nufft-no-precomp-inverse: traj scale phantom nufft nrmse
 	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra						;\
 	$(TOOLDIR)/phantom -t traj2.ra ksp.ra						;\
 	$(TOOLDIR)/nufft -m5 -r -i traj2.ra ksp.ra reco1.ra				;\
-	$(TOOLDIR)/nufft -m5 --no-precomp -r -i traj2.ra ksp.ra reco2.ra			;\
+	$(TOOLDIR)/nufft -m5 --no-precomp -r -i traj2.ra ksp.ra reco2.ra		;\
 	$(TOOLDIR)/nrmse -t 0.00006 reco1.ra reco2.ra					;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+# test application of a sample fieldmap,
+# as a field map for testing a coil sensitivity map is used and scaled to produce visible distortion 
+# without aliasing that can't be corrected for.
+tests/test-nufft-fieldmap-correction: traj phantom creal normalize scale index reshape transpose nufft nrmse resize copy
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TEST_TMP)								;\
+	$(TOOLDIR)/traj -x64 -y64 traj_fm.ra									;\
+	$(TOOLDIR)/phantom -S 1 coil_sensitivity_map_pre.ra							;\
+	$(TOOLDIR)/resize -c 0 64 1 64 coil_sensitivity_map_pre.ra coil_sensitivity_map.ra			;\
+	$(TOOLDIR)/phantom shepplogan_pre.ra									;\
+	$(TOOLDIR)/resize -c 0 64 1 64 shepplogan_pre.ra shepplogan.ra						;\
+	$(TOOLDIR)/creal coil_sensitivity_map.ra fieldmap.ra							;\
+	$(TOOLDIR)/normalize 7 coil_sensitivity_map.ra fieldmap.ra						;\
+	$(TOOLDIR)/scale 1e-2 fieldmap.ra fieldmap.ra								;\
+	$(TOOLDIR)/index 2 4096 timemap.ra									;\
+	$(TOOLDIR)/reshape 7 1 64 64 timemap.ra timemap.ra							;\
+	$(TOOLDIR)/transpose 1 2 timemap.ra timemap.ra								;\
+	$(TOOLDIR)/nufft -s -F fieldmap.ra -T timemap.ra traj_fm.ra shepplogan.ra ksp_fm.ra			;\
+	$(TOOLDIR)/nufft -s -a -F fieldmap.ra -T timemap.ra traj_fm.ra ksp_fm.ra img_fm.ra			;\
+	$(TOOLDIR)/nrmse -t 0.02 img_fm.ra shepplogan.ra							;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-nufft-fieldmap-constant-circshift: traj ones phantom creal normalize scale index reshape transpose ones saxpy nufft circshift nrmse resize
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TEST_TMP)								;\
+	$(TOOLDIR)/traj -x64 -y64 traj_fm.ra									;\
+	$(TOOLDIR)/phantom -S 1 coil_sensitivity_map_pre.ra							;\
+	$(TOOLDIR)/resize -c 0 64 1 64 coil_sensitivity_map_pre.ra coil_sensitivity_map.ra			;\
+	$(TOOLDIR)/phantom shepplogan_pre.ra									;\
+	$(TOOLDIR)/resize -c 0 64 1 64 shepplogan_pre.ra shepplogan.ra						;\
+	$(TOOLDIR)/ones 2 64 64 fieldmap_ones.ra								;\
+	$(TOOLDIR)/scale 0.09817477042468103 fieldmap_ones.ra fieldmap_const_1px_shift.ra			;\
+	$(TOOLDIR)/index 2 4096 timemap.ra									;\
+	$(TOOLDIR)/reshape 7 1 64 64 timemap.ra timemap.ra							;\
+	$(TOOLDIR)/transpose 1 2 timemap.ra timemap.ra								;\
+	$(TOOLDIR)/ones 3 1 64 64 ones.ra									;\
+	$(TOOLDIR)/saxpy -- -32 ones.ra timemap.ra timemap.ra							;\
+	$(TOOLDIR)/nufft -s -F fieldmap_const_1px_shift.ra -T timemap.ra traj_fm.ra shepplogan.ra ksp_fm.ra	;\
+	$(TOOLDIR)/nufft -s -a traj_fm.ra ksp_fm.ra img_fm_shifted.ra						;\
+	$(TOOLDIR)/circshift 1 63 shepplogan.ra shepplogan_shifted.ra						;\
+	$(TOOLDIR)/nrmse -t 0.00002 img_fm_shifted.ra shepplogan_shifted.ra					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
@@ -412,6 +455,7 @@ TESTS += tests/test-nufft-lowmem-adjoint tests/test-nufft-lowmem-inverse tests/t
 TESTS += tests/test-nufft-inverse2 tests/test-nufft-inverse3
 TESTS += tests/test-nufft-lowmem-zero-mem tests/test-nufft-lowmem-zero-mem
 TESTS += tests/test-nufft-adjoint-os tests/test-nufft-forward-os
+TESTS += tests/test-nufft-fieldmap-correction tests/test-nufft-fieldmap-constant-circshift
 
 TESTS_GPU += tests/test-nufft-gpu-inverse tests/test-nufft-gpu-adjoint tests/test-nufft-gpu-forward
 TESTS_GPU += tests/test-nufft-gpu-inverse-lowmem tests/test-nufft-gpu-adjoint-lowmem tests/test-nufft-gpu-forward-lowmem
