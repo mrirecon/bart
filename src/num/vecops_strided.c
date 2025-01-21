@@ -1288,8 +1288,8 @@ bool simple_zadd(int N, const long dims[N], const long ostrs[N], complex float* 
 	struct simple_z3op_check strided_calls[] = {
 		OPT_Z3OP(check_unfold,		zadd_gpu_unfold, true, false, false, false, true),
 #ifdef NON_DETERMINISTIC
-		OPT_Z3OP(check_reduce_outer,	reduce_zadd_outer_gpu, true, false, false, true, false),
-		OPT_Z3OP(check_reduce_inner,	reduce_zadd_inner_gpu, true, false, false, true, false),
+		OPT_Z3OP(check_reduce_outer,	reduce_zadd_outer_gpu, true, false, false, true, true),
+		OPT_Z3OP(check_reduce_inner,	reduce_zadd_inner_gpu, true, false, false, true, true),
 #endif
 		OPT_Z3OP(check_reduce_outer,	reduce_zadd_gemv, true, true, false, true, false),
 		OPT_Z3OP(check_reduce_inner,	reduce_zadd_gemv, true, true, false, true, false),
@@ -1310,8 +1310,8 @@ bool simple_add(int N, const long dims[N], const long ostrs[N], float* out, cons
 	struct simple_3op_check strided_calls[] = {
 		OPT_3OP(check_unfold,	add_gpu_unfold, true, false, false, false, true),
 #ifdef NON_DETERMINISTIC
-		OPT_3OP(check_reduce_outer,	reduce_add_outer_gpu, true, false, false, true, false),
-		OPT_3OP(check_reduce_inner,	reduce_add_inner_gpu, true, false, false, true, false),
+		OPT_3OP(check_reduce_outer,	reduce_add_outer_gpu, true, false, false, true, true),
+		OPT_3OP(check_reduce_inner,	reduce_add_inner_gpu, true, false, false, true, true),
 #endif
 		OPT_3OP(check_reduce_outer,	reduce_add_gemv, true, true, false, true, false),
 		OPT_3OP(check_reduce_inner,	reduce_add_gemv, true, true, false, true, false),
