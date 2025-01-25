@@ -105,7 +105,7 @@ int main_nlinv(int argc, char* argv[argc])
 	bool pattern_for_each_coil = false;
 	float oversampling_coils = -1.;
 
-	const char *rR = use_compat_to_version("v0.9.00") ? "R " : " R";
+	const char *rR = use_compat_to_version("v0.9.00") ? "R\0" : "\0R";
 
 	const struct opt_s opts[] = {
 

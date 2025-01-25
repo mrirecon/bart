@@ -370,6 +370,9 @@ static void print_help(const char* help_str_prefix, const char* help_str, bool d
 
 			if (NULL == opts[i].s) {
 
+				if (!isprint(opts[i].c))
+					continue;
+
 				written = fprintf(stdout, short_only_format, opts[i].c, add_sep(sep, opts[i].arg), opts[i].argname);
 
 			} else {
@@ -539,16 +542,16 @@ int options(int* argcp, char* argv[*argcp], const char* usage_str, const char* h
 
 	for (int i = 0; i < n; i++) {
 
+		// overwrite c with an unprintable char
+		if (0 == wopts[i].c) {
+
+			while (isprint(++lc)) // increment and skip over printable chars
+				;
+
+			wopts[i].c = lc;
+		}
+
 		if (NULL != wopts[i].s) {
-
-			// if it is only longopt, overwrite c with an unprintable char
-			if (0 == wopts[i].c) {
-
-				while (isprint(++lc)) // increment and skip over printable chars
-					;
-
-				wopts[i].c = lc;
-			}
 
 			longopts[nlong++] = (struct option){ wopts[i].s, wopts[i].arg, NULL, wopts[i].c };
 
