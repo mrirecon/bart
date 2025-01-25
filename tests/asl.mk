@@ -18,10 +18,10 @@ tests/test-asl-denoising: phantom slice signal fmac saxpy scale repmat join nois
 	$(TOOLDIR)/repmat 6 4 pwi.ra pwi.ra								;\
 	$(TOOLDIR)/repmat 5 10 p.ra c.ra								;\
 	$(TOOLDIR)/repmat 6 4 c.ra c.ra									;\
-	$(TOOLDIR)/saxpy -- -1. pwi.ra c.ra l.ra						;\
+	$(TOOLDIR)/saxpy -- -1. pwi.ra c.ra l.ra							;\
 	$(TOOLDIR)/join 8 c.ra l.ra o.ra								;\
-	$(TOOLDIR)/noise -n 0.00001 o.ra on.ra							;\
-	$(TOOLDIR)/denoising --asl -i100 --theta 1:2.5 --tvscales 1:1:1:15 -RT:99:0:0.0002 on.ra or.ra		;\
+	$(TOOLDIR)/noise -n 0.00001 o.ra on.ra								;\
+	$(TOOLDIR)/denoising --asl -i50 -C10 --theta 1:2.5 --tvscales 1:1:1:15 -RT:99:0:0.0002 on.ra or.ra	;\
 	$(TOOLDIR)/slice 8 0 or.ra c_r.ra								;\
 	$(TOOLDIR)/slice 8 1 or.ra l_r.ra								;\
 	$(TOOLDIR)/saxpy -- -1. l_r.ra c_r.ra pwi_r.ra					;\
