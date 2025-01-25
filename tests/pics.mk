@@ -376,15 +376,15 @@ tests/test-pics-tgv: phantom slice noise fft ones pics tgv slice nrmse
 	touch $@
 
 
-tests/test-pics-tgv-denoising: phantom slice noise fft ones pics denoising slice nrmse
+tests/test-pics-tgv-denoising: phantom slice noise fft ones pics denoise slice nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/phantom -s2 x.ra							;\
 	$(TOOLDIR)/slice 3 0 x.ra x0.ra							;\
 	$(TOOLDIR)/noise -n 1000000. x0.ra x0n.ra					;\
 	$(TOOLDIR)/fft -u 3 x0n.ra k0n.ra						;\
 	$(TOOLDIR)/ones 2 128 128 o.ra							;\
-	$(TOOLDIR)/pics -w1. -i100 -u0.1 -S -RG:3:0:750. k0n.ra o.ra x.ra		;\
-	$(TOOLDIR)/denoising -w1. -i100 -u0.1 -S -RG:3:0:750. x0n.ra xg.ra		;\
+	$(TOOLDIR)/pics -w1. -i30 -C10 -u0.1 -S -RG:3:0:750. k0n.ra o.ra x.ra		;\
+	$(TOOLDIR)/denoise -w1. -i30 -C10 -u0.1 -S -RG:3:0:750. x0n.ra xg.ra		;\
 	$(TOOLDIR)/slice 15 0 xg.ra xg0.ra						;\
 	$(TOOLDIR)/nrmse -t 0.000001 xg0.ra x.ra					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
