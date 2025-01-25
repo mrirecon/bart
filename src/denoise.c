@@ -42,7 +42,7 @@
 
 static const char help_str[] = "Perform image denoising with regularization.\n";
 
-int main_denoising(int argc, char* argv[argc])
+int main_denoise(int argc, char* argv[argc])
 {
 	const char* img_file = NULL;
 	const char* out_file = NULL;

@@ -3,7 +3,7 @@
 # PWI is created by multiplying slices of a brain phantom with the gray and white matter signals
 # Control - PWI = Label
 # Control and label image are denoised, PWI is calculated and compared to original
-tests/test-asl-denoising: phantom slice signal fmac saxpy scale repmat join noise denoising nrmse
+tests/test-asl-denoise: phantom slice signal fmac saxpy scale repmat join noise denoise nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/phantom --BRAIN p.ra									;\
 	$(TOOLDIR)/phantom --BRAIN -b pb.ra								;\
@@ -21,7 +21,7 @@ tests/test-asl-denoising: phantom slice signal fmac saxpy scale repmat join nois
 	$(TOOLDIR)/saxpy -- -1. pwi.ra c.ra l.ra							;\
 	$(TOOLDIR)/join 8 c.ra l.ra o.ra								;\
 	$(TOOLDIR)/noise -n 0.00001 o.ra on.ra								;\
-	$(TOOLDIR)/denoising --asl -i50 -C10 --theta 1:2.5 --tvscales 1:1:1:15 -RT:99:0:0.0002 on.ra or.ra	;\
+	$(TOOLDIR)/denoise --asl -i50 -C10 --theta 1:2.5 --tvscales 1:1:1:15 -RT:99:0:0.0002 on.ra or.ra	;\
 	$(TOOLDIR)/slice 8 0 or.ra c_r.ra								;\
 	$(TOOLDIR)/slice 8 1 or.ra l_r.ra								;\
 	$(TOOLDIR)/saxpy -- -1. l_r.ra c_r.ra pwi_r.ra					;\
@@ -30,6 +30,6 @@ tests/test-asl-denoising: phantom slice signal fmac saxpy scale repmat join nois
 	touch $@
 
 
-TESTS += tests/test-asl-denoising
+TESTS += tests/test-asl-denoise
 
 
