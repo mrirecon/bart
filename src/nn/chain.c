@@ -169,7 +169,9 @@ nn_t nn_reshape_in(nn_t op, int i, const char* iname, int N, const long idims[N]
 	auto iov = nlop_generic_domain(op->nlop, i);
 
 	auto init_tmp = init_reshape_create(iov->N, iov->dims, result->initializers[i]);
+
 	initializer_free(result->initializers[i]);
+
 	result->initializers[i] = init_tmp;
 
 	if (NULL != result->prox_ops[i])
@@ -249,6 +251,7 @@ nn_t nn_append_singleton_dim_out_F(nn_t op, int o, const char* oname)
 {
 	auto iov = nn_generic_codomain(op, o, oname);
 	long dims[iov->N + 1];
+
 	md_copy_dims(iov->N, dims, iov->dims);
 	dims[iov->N] = 1;
 
@@ -1401,8 +1404,8 @@ nn_t nn_append_singleton_dim_in_if_exists_F(nn_t op, const char* iname)
 
 	if (nn_is_name_in_in_args(op, iname))
 		return nn_append_singleton_dim_in_F(op, 0, iname);
-	else
-		return op;
+
+	return op;
 }
 
 /**
@@ -1419,8 +1422,8 @@ nn_t nn_append_singleton_dim_out_if_exists_F(nn_t op, const char* oname)
 {
 	if (nn_is_name_in_out_args(op, oname))
 		return nn_append_singleton_dim_out_F(op, 0, oname);
-	else
-		return op;
+
+	return op;
 }
 
 
@@ -1440,8 +1443,8 @@ nn_t nn_mark_dup_if_exists_F(nn_t x, const char* name)
 {
 	if (nn_is_name_in_in_args(x, name))
 		return nn_mark_dup_F(x, name);
-	else
-		return x;
+
+	return x;
 }
 
 /**
@@ -1460,8 +1463,8 @@ nn_t nn_mark_stack_input_if_exists_F(nn_t x, const char* name)
 {
 	if (nn_is_name_in_in_args(x, name))
 		return nn_mark_stack_input_F(x, name);
-	else
-		return x;
+
+	return x;
 }
 
 /**
@@ -1480,8 +1483,8 @@ nn_t nn_mark_stack_output_if_exists_F(nn_t x, const char* name)
 {
 	if (nn_is_name_in_out_args(x, name))
 		return nn_mark_stack_output_F(x, name);
-	else
-		return x;
+
+	return x;
 }
 
 /**
@@ -1585,9 +1588,11 @@ nn_t nn_stack_multigpu_F(int N , nn_t x[N], int stack_dim)
 
 	for (int i = 0; i < II; i++) {
 
-		if (IN_OPTIMIZE == x[0]->in_types[i])
+		if (IN_OPTIMIZE == x[0]->in_types[i]) {
+
 			in_stack_dim[i] = -1;
-		else {
+
+		} else {
 
 			if (-1 == stack_dim)
 				in_stack_dim[i] = nlop_generic_domain(nlops[0], i)->N - 1;
