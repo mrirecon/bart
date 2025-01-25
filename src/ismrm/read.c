@@ -388,28 +388,32 @@ void ismrm_read(const char* datafile, struct isrmrm_config_s* config, int N, lon
 		if (MD_IS_SET(acq.head.flags, (ISMRMRD_ACQ_IS_NOISE_MEASUREMENT - 1))) {
 
 			if (NULL != buf)
-				debug_printf(DP_DEBUG1, "Aqcuisition %d is noise measurement! -> Skipped\n", i);
+				debug_printf(DP_DEBUG1, "Acquisition %d is noise measurement! -> Skipped\n", i);
+
 			skip = true;
 		}
 		
 		if (MD_IS_SET(acq.head.flags, (ISMRMRD_ACQ_IS_PARALLEL_CALIBRATION - 1))) {
 
 			if (NULL != buf)
-				debug_printf(DP_DEBUG1, "Aqcuisition %d is calibration measurement! -> Skipped\n", i);
+				debug_printf(DP_DEBUG1, "Acquisition %d is calibration measurement! -> Skipped\n", i);
+
 			skip = true;
 		}
 
 		if (MD_IS_SET(acq.head.flags, (ISMRMRD_ACQ_IS_NAVIGATION_DATA - 1))) {
 
 			if (NULL != buf)
-				debug_printf(DP_DEBUG1, "Aqcuisition %d is navigation measurement! -> Skipped\n", i);
+				debug_printf(DP_DEBUG1, "Acquisition %d is navigation measurement! -> Skipped\n", i);
+
 			skip = true;
 		}
 
 		if (MD_IS_SET(acq.head.flags, (ISMRMRD_ACQ_IS_PHASECORR_DATA - 1))) {
 
 			if (NULL != buf)
-				debug_printf(DP_DEBUG1, "Aqcuisition %d is phase correction measurement! -> Skipped\n", i);
+				debug_printf(DP_DEBUG1, "Acquisition %d is phase correction measurement! -> Skipped\n", i);
+
 			skip = true;
 		}
 				
@@ -420,7 +424,7 @@ void ismrm_read(const char* datafile, struct isrmrm_config_s* config, int N, lon
 			if (warn && (NULL != buf)) {
 
 				warn = false;
-				debug_printf(DP_WARN, "Aqcuisition %d is reverse! This is probably not handled correctly! Further warnings will be suppressed!\n", i);
+				debug_printf(DP_WARN, "Acquisition %d is reverse! This is probably not handled correctly! Further warnings will be suppressed!\n", i);
 			}
 		}
 

@@ -336,7 +336,7 @@ numpy_farray_t load_cfl_python(const std::string& name)
 	  }
 	  else {
 	       debug_printf(DP_DEBUG4,
-			    "     re-using existing Python capsule as base "
+			    "     reusing existing Python capsule as base "
 			    "object\n");
 	  }
 
