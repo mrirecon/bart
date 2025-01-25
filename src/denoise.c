@@ -3,18 +3,11 @@
  * a BSD-style license which can be found in the LICENSE file.
  */
 
-#include <assert.h>
-#include <stdbool.h>
 #include <complex.h>
-#include <stdio.h>
-#include <math.h>
 
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/init.h"
-#include "num/ops_p.h"
-#include "num/ops.h"
-#include "num/mpi_ops.h"
 
 #include "iter/misc.h"
 #include "iter/iter.h"
@@ -25,20 +18,12 @@
 
 #include "misc/debug.h"
 #include "misc/mri.h"
-#include "misc/mri2.h"
-#include "misc/utils.h"
 #include "misc/mmio.h"
-#include "misc/misc.h"
 #include "misc/opts.h"
-
-#include "motion/displacement.h"
 
 #include "grecon/optreg.h"
 #include "grecon/italgo.h"
 
-#include "num/iovec.h"
-#include "num/ops.h"
-#include "num/vptr.h"
 
 static const char help_str[] = "Perform image denoising with regularization.\n";
 
@@ -323,3 +308,4 @@ int main_denoise(int argc, char* argv[argc])
 
 	return 0;
 }
+
