@@ -240,9 +240,17 @@ static const char* trim_space(const char* str)
 
 static bool show_option_p(const struct opt_s opt)
 {
-	return     (NULL != opt.descr)
-		&& !(   ('(' == trim_space(opt.descr)[0])
-		     && (')' == opt.descr[strlen(opt.descr) - 1]));
+	// hide options whose descriptions is entirely in parentheses ()
+	if ((NULL == opt.descr)
+		|| (('(' == trim_space(opt.descr)[0])
+		     && (')' == opt.descr[strlen(opt.descr) - 1])))
+		return false;
+	// Hide short-only options with unprintable characters
+	// These are effectively inaccessible anyway.
+	if ((NULL == opt.s) && !isprint(opt.c))
+		return false;
+
+	return true;
 }
 
 
@@ -369,9 +377,6 @@ static void print_help(const char* help_str_prefix, const char* help_str, bool d
 			int written = 0;
 
 			if (NULL == opts[i].s) {
-
-				if (!isprint(opts[i].c))
-					continue;
 
 				written = fprintf(stdout, short_only_format, opts[i].c, add_sep(sep, opts[i].arg), opts[i].argname);
 
