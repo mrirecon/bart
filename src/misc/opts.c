@@ -451,9 +451,8 @@ static void check_options(int n, const struct opt_s opts[n ?: 1])
 
 	for (int i = 0; i < n; i++) {
 
-		int c = opts[i].c;
+		int c = (unsigned char) opts[i].c;
 
-		assert(256 > c);
 
 		if (f[c])
 			error("duplicate option: %c\n", opts[i].c);
@@ -539,7 +538,7 @@ int options(int* argcp, char* argv[*argcp], const char* usage_str, const char* h
 	memset(longopts, 0, sizeof longopts);
 
 
-	char lc = 0;
+	unsigned char lc = 0;
 	int nlong = 0;
 
 	// add (hidden) interface option
@@ -553,7 +552,7 @@ int options(int* argcp, char* argv[*argcp], const char* usage_str, const char* h
 			while (isprint(++lc)) // increment and skip over printable chars
 				;
 
-			wopts[i].c = lc;
+			wopts[i].c = (char) lc;
 		}
 
 		if (NULL != wopts[i].s) {
@@ -563,7 +562,7 @@ int options(int* argcp, char* argv[*argcp], const char* usage_str, const char* h
 			// Ensure that we only used unprintable characters
 			// and that the last entry of the array is only zeros
 			if ((nlong >= max_num_long_opts) || (lc >= max_num_long_opts))
-				error("Too many long options specified, aborting...");
+				error("Too many long options specified, aborting...\n");
 		}
 	}
 
