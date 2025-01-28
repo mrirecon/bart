@@ -124,9 +124,12 @@ int main_reshape(int argc, char* argv[argc])
 		long ipos[DIMS] = { };
 		long opos[DIMS] = { };
 
+		bool stream_loop = (strm_in && !cfl_loop_desc_active());
+		long idx_count = 0;
+
 		do {
-			if (NULL != strm_in)
-				stream_sync_slice(strm_in, DIMS, in_dims, iflags, ipos);
+			if (stream_loop && !stream_receive_pos(strm_in, idx_count++, DIMS, ipos))
+				break;
 
 			do {
 				long index = md_ravel_index(DIMS, ipos, flags, in_dims);
@@ -161,7 +164,7 @@ int main_reshape(int argc, char* argv[argc])
 				if (MD_IS_SET(flags & ~iflags, i))
 					ipos[i] = 0;
 
-		} while (md_next(DIMS, in_dims, iflags, ipos));
+		} while (stream_loop || md_next(DIMS, in_dims, iflags, ipos));
 
 		md_free(buf);
 	}
