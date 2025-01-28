@@ -126,7 +126,7 @@ int main_reshape(int argc, char* argv[argc])
 
 		do {
 			if (NULL != strm_in)
-				stream_sync(strm_in, DIMS, ipos);
+				stream_sync_slice(strm_in, DIMS, in_dims, iflags, ipos);
 
 			do {
 				long index = md_ravel_index(DIMS, ipos, flags, in_dims);
@@ -151,7 +151,9 @@ int main_reshape(int argc, char* argv[argc])
 				if (cont)
 					continue;
 
-				stream_sync(strm_out, DIMS, opos);
+				long opos2[DIMS];
+				md_select_strides(DIMS, oflags, opos2, opos);
+				stream_sync_slice(strm_out, DIMS, out_dims, oflags, opos2);
 
 			} while (md_next(DIMS, in_dims, flags & ~iflags, ipos));
 
