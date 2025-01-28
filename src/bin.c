@@ -22,6 +22,7 @@
 #include "misc/mri.h"
 #include "misc/opts.h"
 #include "misc/debug.h"
+#include "misc/stream.h"
 
 #include "calib/bin.h"
 
@@ -136,7 +137,8 @@ int main_bin(int argc, char* argv[argc])
 	bool amplitude = false;
 	struct bin_conf_s conf = bin_defaults;
 	long zero_fill[2] = { 0, 1 };
-	
+	bool is_stream = false;
+
 	const char* label_file = NULL;
 	const char* src_file = NULL;
 	const char* dst_file = NULL;
@@ -162,6 +164,7 @@ int main_bin(int argc, char* argv[argc])
 		OPT_STRING('x', &conf.card_out, "file", "(Output filtered cardiac EOFs)"), // To reproduce SSA-FARY paper
 		OPT_SET('M', &conf.amplitude, "Amplitude binning"),
 		OPTL_VEC2(0, "zero-fill", &zero_fill, "<dim>:<num_of_frames>", "Specify dimension and number of zero filled frames. Zero-filling according to order in label_file."),
+		OPTL_SET(0, "stream", &is_stream, "Stream input/output."),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -173,12 +176,13 @@ int main_bin(int argc, char* argv[argc])
 	complex float* labels = load_cfl(label_file, DIMS, labels_dims);
 
 	long src_dims[DIMS];
-	complex float* src = load_cfl(src_file, DIMS, src_dims);
+	complex float* src = (is_stream ? load_async_cfl : load_cfl)(src_file, DIMS, src_dims);
+	stream_t strm_src = stream_lookup(src);
 
 	enum { BIN_QUADRATURE, BIN_LABEL, BIN_REORDER, BIN_ZEROFILL } bin_type;
 
 	if (amplitude) {
-		
+
 		assert(conf.cluster_dim != -1);
 		assert(conf.mavg_window == 0);
 	}
@@ -226,6 +230,9 @@ int main_bin(int argc, char* argv[argc])
 
 		error("No bin type specified!\n");
 	}
+
+	if (is_stream && (BIN_REORDER != bin_type))
+		error("Streaming currently only supported with BIN_REORDER.\n");
 
 	long bins_dims[DIMS];
 	float* bins = NULL;
@@ -339,7 +346,13 @@ int main_bin(int argc, char* argv[argc])
 			debug_print_dims(DP_DEBUG3, DIMS, dst_dims);
 		}
 
-		complex float* dst = create_cfl(dst_file, DIMS, dst_dims);
+		complex float* dst;
+		if (is_stream)
+			dst = create_async_cfl(dst_file, MD_BIT(dim), DIMS, dst_dims);
+		else
+			dst = create_cfl(dst_file, DIMS, dst_dims);
+
+		stream_t strm_dst = stream_lookup(dst);
 
 		md_clear(DIMS, dst_dims, dst, CFL_SIZE);
 
@@ -382,8 +395,14 @@ int main_bin(int argc, char* argv[argc])
 				pos_dst[dim] = i;
 			}
 
+			if (is_stream && strm_src)
+				stream_sync_slice(strm_src, DIMS, src_dims, MD_BIT(dim), pos_src);
+
 			md_copy_block(DIMS, pos_src, singleton_dims, singleton, src_dims, src, CFL_SIZE);
 			md_copy_block(DIMS, pos_dst, dst_dims, dst, singleton_dims, singleton, CFL_SIZE);
+
+			if (is_stream && strm_dst)
+				stream_sync_slice(strm_dst, DIMS, dst_dims, MD_BIT(dim), pos_dst);
 
 			if (0 == i % ((10 >= N) ? 1 : N / 10))
 				debug_printf(DP_DEBUG3, "Binning: %f\n", 100. * i / (double)N);
