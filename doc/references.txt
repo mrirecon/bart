@@ -385,9 +385,11 @@ Magn Reson Med 2017; 77:180-195.
 
 Sylvester JJ.
 Thoughts on inverse orthogonal matrices, simultaneous sign successions, 
-and tessellated pavements in two or more colours, with applications to Newton’s 
-rule, ornamental tile-work, and the theory of numbers.
+and tessellated pavements in two or more colours, with applications to
+Newton’s rule, ornamental tile-work, and the theory of numbers.
 Philosophical Magazine 1867; 34:461-475.
+
+
 
 
 - sparsity transforms, variational penalties, regularization -
@@ -424,12 +426,16 @@ Magn Reson Med 2010; 65:480-491.
 
 Holler M, Kunisch K. 
 On Infimal Convolution of TV-Type Functionals and Applications 
-to Video and Image Reconstruction. 
-SIAM J. Imaging Sci. 2014; 7, 2258-2300.
+to Video and Image Reconstruction.
+SIAM J Imaging Sci 2014; 7:2258-2300.
 
 Schloegl M, Holler M, Schwarzl A, Bredies K, Stollberger R. 
-Infimal convolution of total generalized variation functionals for dynamic MRI. 
-Magn Reson Med 2017;78(1):142-155.
+Infimal convolution of total generalized variation functionals
+for dynamic MRI. 
+Magn Reson Med 2017; 78:142-155.
+
+
+
 
 - sampling schemes -
 (commands: traj, poisson, wave, wavepsf)
@@ -454,6 +460,11 @@ Wundrak S, Paul J, Ulrici J, Hell E, Geibel M-A, Bernhardt P, Rottbauer W,
 Rasche V.
 Golden ratio sparse MRI using tiny golden angles.
 Magn Reson Med 2016; 75:2372-2378.
+
+Scholand N, Graf C, Mackner D, Holme HCM, Uecker M.
+Rational Approximation of Golden Angles: Accelerated reconstructions for
+radial MRI.
+Magn Reson Med 2025; 93:51-66.
 
 
 
@@ -553,6 +564,15 @@ Kingma DP and Ba J.
 Adam: A Method for Stochastic Optimization.
 arXiv preprint 2014, arXiv:1412.6980
 
+Blumenthal M, Luo G, Schilling M, Holme HCM, Uecker M.
+Deep, Deep Learning with BART.
+Magn Reson Med 2023; 89:678-693.
+
+Blumenthal M, Fantinato C, Unterberg-Buchwald C, Haltmeier M, Wang X, Uecker M.
+Self Supervised Learning for Improved Calibrationless Radial MRI
+with NLINV-Net.
+Magn Reson Med 2024; 92:2447-2463.
+
 
 
 - random numbers -
@@ -566,3 +586,4 @@ Computing, Networking, Storage and Analysis; DOI: 10.1145/2063384.2063405
 Lemire D.
 Fast Random Integer Generation in an Interval
 arXiv preprint 2018, arXiv:1805.10941
+
