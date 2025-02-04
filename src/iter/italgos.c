@@ -510,7 +510,7 @@ cleanup:
  * @param x initial estimate
  * @param b observations
  */
-void conjgrad_batch(int maxiter, float l2lambda, float epsilon,
+void conjgrad_batch(int maxiter, float l2lambda, float* l2lambda_bat, float epsilon,
 	long N, long Bi, long Bo,
 	const struct vec_iter_s* vops,
 	struct iter_op_s linop,
@@ -560,7 +560,10 @@ void conjgrad_batch(int maxiter, float l2lambda, float epsilon,
 		debug_printf(DP_DEBUG3, "#%d: %f\n", i, (double)sqrtf(vops->norm(Bo * Bi, rsnew) / (float)(Bo * Bi)));
 
 		iter_op_call(linop, Ap, p);	// Ap = A p
-		vops->axpy(Bo * Bi * N, Ap, l2lambda, p);
+		vops->axpy(2 * Bo * Bi * N, Ap, l2lambda, p);
+
+		if (NULL != l2lambda_bat)
+			vops->axpy_bat(Bi, N, Bo, Ap, l2lambda_bat, p);
 
 		vops->dot_bat(Bi, N, Bo, pAp, p, Ap);
 

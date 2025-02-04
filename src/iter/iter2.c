@@ -228,7 +228,7 @@ void iter2_conjgrad(const iter_conf* _conf,
 
 		assert(0 == size % (Bo * Bi));
 
-		conjgrad_batch(conf->maxiter, conf->super.alpha * conf->l2lambda, conf->tol, size / (Bo * Bi * 2), Bi, Bo, select_vecops(image_adj),
+		conjgrad_batch(conf->maxiter, conf->super.alpha * conf->l2lambda, NULL, conf->tol, size / (Bo * Bi * 2), Bi, Bo, select_vecops(image_adj),
 			OPERATOR2ITOP(normaleq_op), image, image_adj, monitor);
 	}
 
