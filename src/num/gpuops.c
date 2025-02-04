@@ -614,6 +614,12 @@ struct vec_iter_s {
 };
 
 
+static void cuda_sadd_inpl(long N, float* dst, float val)
+{
+	cuda_sadd(N, val, dst, dst);
+}
+
+
 extern const struct vec_iter_s gpu_iter_ops;
 const struct vec_iter_s gpu_iter_ops = {
 
@@ -639,7 +645,7 @@ const struct vec_iter_s gpu_iter_ops = {
 	.sqrt = cuda_sqrt,
 	.smax = cuda_smax,
 	.smin = NULL,
-	.sadd = NULL,
+	.sadd = cuda_sadd_inpl,
 	.sdiv = NULL,
 	.le = cuda_le,
 	.zsmax = cuda_zsmax,
