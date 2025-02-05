@@ -1,6 +1,6 @@
 /* Copyright 2013-2014. The Regents of the University of California.
  * Copyright 2016-2019. Martin Uecker.
- * All rights reserved. Use of this source code is governed by 
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
@@ -26,6 +26,7 @@
 DEF_TYPEID(iter3_irgnm_conf);
 DEF_TYPEID(iter3_landweber_conf);
 DEF_TYPEID(iter3_lbfgs_conf);
+DEF_TYPEID(iter3_levenberg_marquardt_conf);
 
 const struct iter3_irgnm_conf iter3_irgnm_defaults = {
 
@@ -62,9 +63,20 @@ const struct iter3_lbfgs_conf iter3_lbfgs_defaults = {
 	.c1 = 1.e-4,
 	.c2 = 0.95,
 	.ftol = 1.e-4,
-	.gtol = 1.e-4, 
+	.gtol = 1.e-4,
 };
 
 
+const struct iter3_levenberg_marquardt_conf iter3_levenberg_marquardt_defaults = {
+
+	.super.TYPEID = &TYPEID2(iter3_levenberg_marquardt_conf),
+
+	.iter = 15,
+	.cgiter = 50,
+	.redu = 0.1,
+	.Bi = 1,
+	.Bo = 1,
+	.l2lambda = 0.1,
+};
 
 

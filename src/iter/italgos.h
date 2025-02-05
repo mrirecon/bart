@@ -216,6 +216,16 @@ void irgnm2(int iter, float alpha, float alpha_min, float alpha0, float redu,
 	struct iter_op_s callback,
 	struct iter_monitor_s* monitor);
 
+void levenberg_marquardt(int maxiter, int cgiter, float l2lambda, float redu,
+	long N, long M, long Bi, long Bo,
+	const struct vec_iter_s* vops,
+	struct iter_op_s op,
+	struct iter_op_s adj,
+	struct iter_op_s nrm,
+	float* x, const float* y,
+	struct iter_op_s callback,
+	struct iter_monitor_s* monitor);
+
 void altmin(int iter, float alpha, float redu,
 	long N,
 	const struct vec_iter_s* vops,

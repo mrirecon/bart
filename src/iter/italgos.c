@@ -29,8 +29,8 @@
  *
  * Chambolle A, Pock, T. A First-Order Primal-Dual Algorithm for Convex Problems
  * with Applications to Imaging. J. Math. Imaging Vis. 2011; 40, 120-145.
- * 
- * Bredies K, Holler M. A TGV-Based Framework for Variational Image Decompression, 
+ *
+ * Bredies K, Holler M. A TGV-Based Framework for Variational Image Decompression,
  * Zooming, and Reconstruction. Part II: Numerics. SIAM J. Imaging Sci. 2015; 8, 2851-2886.
  */
 
@@ -727,6 +727,87 @@ void irgnm2(int iter, float alpha, float alpha_min, float alpha_min0, float redu
 }
 
 
+/**
+ * (Batched) Levenberg-Marquardt
+ *
+ */
+void levenberg_marquardt(int maxiter, int cgiter, float l2lambda, float redu,
+	long N, long M, long Bi, long Bo,
+	const struct vec_iter_s* vops,
+	struct iter_op_s op,
+	struct iter_op_s adj,
+	struct iter_op_s nrm,
+	float* x, const float* y,
+	struct iter_op_s callback,
+	struct iter_monitor_s* monitor)
+{
+	long NT = 2 * N * Bi * Bo;
+	long MT = 2 * M * Bi * Bo;
+
+	float* r = vops->allocate(MT);
+	float* b = vops->allocate(NT);
+	float* d = vops->allocate(NT);
+	float* xt = vops->allocate(NT);
+
+	float* rold = vops->allocate(Bo * Bi);
+	float* rnew = vops->allocate(Bo * Bi);
+	float* valid = vops->allocate(Bo * Bi);
+	float* l2arr = vops->allocate(Bo * Bi);
+
+	vops->clear(Bo * Bi, l2arr);
+	vops->sadd(Bo * Bi, l2arr, l2lambda);
+
+	for (int i = 0; i < maxiter; i++) {
+
+		iter_monitor(monitor, vops, x);
+
+		iter_op_call(op, r, x);			// r = F x
+
+		vops->xpay(MT, -1., r, y);	// r = y - F x
+
+		vops->dot_bat(Bi, M, Bo, rold, r, r);
+
+		debug_printf(DP_DEBUG1, "Step: %d, Res: %f\n", i, vops->norm(MT, r));
+
+		iter_op_call(adj, b, r);
+
+		vops->clear(NT, d);
+
+		conjgrad_batch(cgiter, 0, l2arr, 0, N, Bi, Bo, vops, nrm, d, b, NULL);
+
+		vops->add(NT, xt, x, d);
+
+		if (NULL != callback.fun)
+			iter_op_call(callback, xt, xt);
+
+		iter_op_call(op, r, xt);		// r = F x
+		vops->xpay(MT, -1., r, y);		// r = y - F x
+		vops->dot_bat(Bi, M, Bo, rnew, r, r);
+
+		vops->le(Bo * Bi, valid, rnew, rold);
+
+		//only update if rnew <= rold
+		vops->sub(NT, d, xt, x);
+		vops->axpy_bat(Bi, N, Bo, x, valid, d);
+
+		//l2arr *= redu if rnew <= rold, /=redu else
+		vops->smul(Bo * Bi, (redu - 1./redu), valid, valid);
+		vops->sadd(Bo * Bi, valid, 1. / redu);
+		vops->mul(Bo * Bi, l2arr, l2arr, valid);
+	}
+
+	vops->del(d);
+	vops->del(b);
+	vops->del(r);
+	vops->del(xt);
+
+	vops->del(rold);
+	vops->del(rnew);
+	vops->del(valid);
+	vops->del(l2arr);
+}
+
+
 
 /**
  * Alternating Minimization
@@ -849,7 +930,7 @@ double power(int maxiter,
  * @param x initial estimate
  * @param monitor callback function
  */
-void chambolle_pock(float alpha, int maxiter, float epsilon, float tau, float sigma, 
+void chambolle_pock(float alpha, int maxiter, float epsilon, float tau, float sigma,
 	float sigma_tau_ratio, float theta, float decay, bool adapt_stepsize,
 	int O, long N, long M[O],
 	const struct vec_iter_s* vops,
@@ -972,11 +1053,11 @@ void chambolle_pock(float alpha, int maxiter, float epsilon, float tau, float si
 		* norm_x = || x_new ||_2
 		*/
 		if (adapt_stepsize) {
-			
+
 			vops->sub(N, x_new, x, x_old);
 
 			float norm_Kx = 0;
-			
+
 			// || A( x - x_old ) ||_2
 
 			for (int j = 0; j < O; j++) {
@@ -1008,7 +1089,7 @@ void chambolle_pock(float alpha, int maxiter, float epsilon, float tau, float si
 			if (0 != norm_Kx) {
 
 				float ratio = norm_x / norm_Kx;
-				
+
 				float sigma_tau_sqrt = sqrtf(sigma * tau);
 
 				float threshold = 0.95f * sigma_tau_sqrt;
@@ -1027,14 +1108,14 @@ void chambolle_pock(float alpha, int maxiter, float epsilon, float tau, float si
 
 					temp = sigma_tau_sqrt;
 				}
-				
+
 				sigma = temp * sigma_tau_ratio;
 				tau = temp / sigma_tau_ratio;
 
 				debug_printf(DP_DEBUG3, "#Step sizes %03d: sigma: %f, tau: %f  \n", i, sigma, tau);
 
 			} else {
-				
+
 				debug_printf(DP_DEBUG3, "#Step sizes unchanged.\n");
 			}
 		}

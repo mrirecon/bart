@@ -254,4 +254,32 @@ void iter4_lbfgs(const iter3_conf* _conf,
 }
 
 
+void iter4_levenberg_marquardt(const iter3_conf* _conf,
+		const struct nlop_s* nlop,
+		long N, float* dst, const float* ref,
+		long M, const float* src,
+		const struct operator_p_s* lsqr,
+		struct iter_op_s cb)
+{
+	struct iter4_nlop_s data = { { &TYPEID(iter4_nlop_s) }, *nlop };
+
+	assert(NULL == ref);
+	assert(NULL == lsqr);
+
+	auto cd = nlop_codomain(nlop);
+	auto dm = nlop_domain(nlop);
+
+	assert(M * (long)sizeof(float) == md_calc_size(cd->N, cd->dims) * (long)cd->size);
+	assert(N * (long)sizeof(float) == md_calc_size(dm->N, dm->dims) * (long)dm->size);
+
+	auto conf = CAST_DOWN(iter3_levenberg_marquardt_conf, _conf);
+
+	struct iter_op_s frw = { nlop_for_iter, CAST_UP(&data) };
+	struct iter_op_s adj = { nlop_adj_iter, CAST_UP(&data) };
+	struct iter_op_s nrm = { nlop_nrm_iter, CAST_UP(&data) };
+
+	levenberg_marquardt(conf->iter, MIN(conf->cgiter, N / conf->Bi / conf->Bo), conf->l2lambda, conf->redu,
+				N / 2 / conf->Bi / conf->Bo, M / 2 / conf->Bi / conf->Bo, conf->Bi, conf->Bo,
+				select_vecops(dst), frw, adj, nrm, dst, src, cb, NULL);
+}
 
