@@ -787,6 +787,28 @@ static const struct nlop_s* nlop_sense_model_set_data_noncart_create(int N, cons
 	return result;
 }
 
+const struct nlop_s* nlop_sense_model_set_data_noncart_batch_create(int N, const long dims[N], int Nb, struct sense_model_s* models[Nb])
+{
+	assert(N >= models[0]->config->N);
+	assert(dims[BATCH_DIM] == Nb);
+
+	long dims2[N];
+	md_select_dims(N, ~BATCH_FLAG, dims2, dims);
+
+	const struct nlop_s* nlops[Nb];
+
+	for (int i = 0; i < Nb; i++)
+		nlops[i] = nlop_sense_model_set_data_noncart_create(N, dims2, models[i], false);
+
+	if (1 == Nb)
+		return nlops[0];
+
+	int ostack_dim[] = { BATCH_DIM };
+	int istack_dim[] = { BATCH_DIM, BATCH_DIM, BATCH_DIM, BATCH_DIM };
+
+	return nlop_stack_multiple_F(Nb, nlops, 4, istack_dim, 1, ostack_dim, true , multigpu);
+}
+
 
 /**
  * Returns: Adjoint SENSE model
