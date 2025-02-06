@@ -82,6 +82,7 @@ struct reconet_s reconet_config_opts = {
 	.dc_scale_max_eigen = false,
 	.dc_proxmap = false,
 	.dc_max_iter = 10,
+	.dc_none = false,
 
 	//network initialization
 	.normalize = false,
@@ -117,6 +118,12 @@ static void reconet_init_default(struct reconet_s* reconet) {
 	reconet->init_max_iter = (-1 == reconet->init_max_iter) ? (reconet->dc_proxmap ? reconet->dc_max_iter : 30) : reconet->init_max_iter;
 	reconet->init_lambda_fixed = (-2 == reconet->init_lambda_fixed) ? (reconet->dc_proxmap ? reconet->dc_lambda_fixed : 0) : reconet->init_lambda_fixed;
 	reconet->init_lambda_init = (-1 == reconet->init_lambda_init) ? (reconet->dc_proxmap ? reconet->dc_lambda_init : 0.1) : reconet->init_lambda_init;
+
+	if (reconet->dc_none) {
+
+		reconet->dc_gradient = false;
+		reconet->dc_proxmap = false;
+	}
 }
 
 void reconet_init_modl_default(struct reconet_s* reconet)

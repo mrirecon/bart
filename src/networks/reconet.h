@@ -27,6 +27,7 @@ struct reconet_s {
 	_Bool dc_scale_max_eigen;
 	_Bool dc_proxmap;
 	int dc_max_iter;
+	_Bool dc_none;
 
 	//network initialization
 	_Bool normalize;

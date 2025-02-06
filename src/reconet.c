@@ -88,6 +88,7 @@ int main_reconet(int argc, char* argv[argc])
 		OPTL_SET(0, "gradient-max-eigen", &(config.dc_scale_max_eigen), "scale stepsize by inverse max eigen value of A^HA"),
 		OPTL_SET(0, "proximal-mapping", &(config.dc_proxmap), "use proximal mapping for data-consistency"),
 		OPTL_INT(0, "max-cg-iter", &(config.dc_max_iter), "d", "number of cg steps for proximal mapping"),
+		OPTL_SET(0, "none", &(config.dc_none), "do not use any data-consistency"),
 	};
 
 	struct opt_s init_opts[] = {
