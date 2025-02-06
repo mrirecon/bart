@@ -18,6 +18,7 @@
 #include "num/ops_graph.h"
 #include "num/iovec.h"
 #include "num/flpmath.h"
+#include "num/mpi_ops.h"
 
 #include "linops/linop.h"
 #include "linops/someops.h"
@@ -28,6 +29,7 @@
 #include "misc/debug.h"
 #include "misc/list.h"
 #include "misc/graph.h"
+#include "misc/mmio.h"
 
 #include "nlops/stack.h"
 #include "nlops/chain.h"
@@ -1483,10 +1485,10 @@ void nlop_generic_apply2(const struct nlop_s* op,
 
 
 
-void nlop_generic_apply_loop_sameplace(const struct nlop_s* op, unsigned long loop_flags,
+void nlop_generic_apply_loop_sameplace_mpi(const struct nlop_s* op, unsigned long loop_flags,
 	int NO, int DO[NO], const long* odims[NO], complex float* dst[NO],
 	int NI, int DI[NI], const long* idims[NI], const complex float* src[NI],
-	const void* ref)
+	const void* ref, bool mpi)
 {
 	int D = 0;
 
@@ -1540,6 +1542,9 @@ void nlop_generic_apply_loop_sameplace(const struct nlop_s* op, unsigned long lo
 	md_singleton_strides(D, pos);
 
 	do {
+		if (mpi && (mpi_get_rank() != md_ravel_index(D, pos, loop_flags, loop_dims) % mpi_get_num_procs()))
+			continue;
+
 		complex float* ndst[NO];
 		const complex float* nsrc[NI];
 
@@ -1556,6 +1561,21 @@ void nlop_generic_apply_loop_sameplace(const struct nlop_s* op, unsigned long lo
 
 	} while (md_next(D, loop_dims, loop_flags, pos));
 
+	md_singleton_strides(D, pos);
+
+	do {
+		if (!mpi || (1 == mpi_get_num_procs()))
+			continue;
+
+		assert(!cfl_loop_desc_active());
+
+		int send = md_ravel_index(D, pos, loop_flags, loop_dims) % mpi_get_num_procs();
+
+		for (int i = 0; i < NO; i++)
+			mpi_bcast2(DO[i], nodims[i], ostrs[i], &(MD_ACCESS(DO[i], ostrs[i], pos, dst[i])), CFL_SIZE, send);
+
+	} while (md_next(D, loop_dims, loop_flags, pos));
+
 	for (int i = 0; i < NO; i++) {
 
 		xfree(nodims[i]);
@@ -1567,6 +1587,14 @@ void nlop_generic_apply_loop_sameplace(const struct nlop_s* op, unsigned long lo
 		xfree(nidims[i]);
 		xfree(istrs[i]);
 	}
+}
+
+void nlop_generic_apply_loop_sameplace(const struct nlop_s* op, unsigned long loop_flags,
+	int NO, int DO[NO], const long* odims[NO], complex float* dst[NO],
+	int NI, int DI[NI], const long* idims[NI], const complex float* src[NI],
+	const void* ref)
+{
+	nlop_generic_apply_loop_sameplace_mpi(op, loop_flags, NO, DO, odims, dst, NI, DI, idims, src, ref, false);
 }
 
 void nlop_generic_apply_loop(const struct nlop_s* op, unsigned long loop_flags,
@@ -1760,7 +1788,7 @@ const struct nlop_s* nlop_vptr_wrapper(struct vptr_hint_s* hint, const struct nl
 
 
 
-const struct nlop_s* nlop_vptr_set_dims_wrapper(const struct nlop_s* op, int OO, const void* oref[OO], int II, const void* iref[II], struct vptr_hint_s* hint) 
+const struct nlop_s* nlop_vptr_set_dims_wrapper(const struct nlop_s* op, int OO, const void* oref[OO], int II, const void* iref[II], struct vptr_hint_s* hint)
 {
 	PTR_ALLOC(struct nlop_s, n);
 

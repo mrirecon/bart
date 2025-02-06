@@ -148,6 +148,11 @@ extern void nlop_generic_apply_loop_sameplace(const struct nlop_s* op, unsigned 
 	int NI, int DI[NI], const long* idims[NI], const complex float* src[NI],
 	const void* ref);
 
+extern void nlop_generic_apply_loop_sameplace_mpi(const struct nlop_s* op, unsigned long loop_flags,
+	int NO, int DO[NO], const long* odims[NO], complex float* dst[NO],
+	int NI, int DI[NI], const long* idims[NI], const complex float* src[NI],
+	const void* ref, _Bool mpi);
+
 extern void nlop_export_graph(const char* filename, const struct nlop_s* op);
 
 extern const struct nlop_s* nlop_copy_wrapper(int OO, const long* ostrs[OO], int II, const long* istrs[II], const struct nlop_s* nlop);

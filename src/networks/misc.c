@@ -492,7 +492,7 @@ static void network_data_compute_init_noprecomp(struct network_data_s* nd, compl
 		complex float* dst[1] = { nd->initialization };
 		const complex float* src[4] = { nd->kspace, nd->coil, nd->pattern, nd->trajectory };
 
-		nlop_generic_apply_loop_sameplace(nlop, nd->batch_flags, 1, DO, odims, dst, 4, DI, idims, src, ref);
+		nlop_generic_apply_loop_sameplace_mpi(nlop, nd->batch_flags, 1, DO, odims, dst, 4, DI, idims, src, ref, !cfl_loop_desc_active());
 
 		nlop_free(nlop);
 
