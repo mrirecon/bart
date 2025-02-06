@@ -80,6 +80,8 @@ int main_reconet(int argc, char* argv[argc])
 	const char* filename_mask = NULL;
 	const char* filename_mask_val = NULL;
 
+	bool precomp_init = true;
+
 	struct opt_s dc_opts[] = {
 
 		OPTL_FLOAT(0, "fix-lambda", &(config.dc_lambda_fixed), "f", "fix lambda to specified value (-1 means train lambda)"),
@@ -183,6 +185,7 @@ int main_reconet(int argc, char* argv[argc])
 
 		OPTL_SET(0, "ksp-training", &(config.ksp_training), "Train network on k-space data"),
 		OPTL_CLEAR(0, "no-precomp", &(config.precomp), "Don't precompute adjoint and psf"),
+		OPTL_CLEAR(0, "no-precomp-init", &(precomp_init), "Don't precompute initialization"),
 	};
 
 	const char* filename_weights;
@@ -285,7 +288,7 @@ int main_reconet(int argc, char* argv[argc])
 
 	Nb = MIN(Nb, network_data_get_tot(&data));
 
-	if (config.sense_init && (-1. != config.init_lambda_fixed) && config.precomp) {
+	if (config.sense_init && (-1. != config.init_lambda_fixed) && precomp_init) {
 
 		network_data_compute_init(&data, config.init_lambda_fixed, config.init_max_iter);
 		config.external_initialization = true;
@@ -314,7 +317,7 @@ int main_reconet(int argc, char* argv[argc])
 		load_network_data(&valid_data);
 		network_data_slice_dim_to_batch_dim(&valid_data);
 
-		if (config.sense_init && (-1. != config.init_lambda_fixed) && config.precomp)
+		if (config.sense_init && (-1. != config.init_lambda_fixed) && precomp_init)
 			network_data_compute_init(&valid_data, config.init_lambda_fixed, config.init_max_iter);
 
 		if (config.normalize)

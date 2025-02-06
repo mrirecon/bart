@@ -787,10 +787,13 @@ static nn_t reconet_create(const struct reconet_s* config, int Nb, enum NETWORK_
 		nn_set_data = nn_set_input_name_F(nn_set_data, 1, "coil");
 		nn_set_data = nn_set_input_name_F(nn_set_data, 1, "psf");
 
-		network = nn_chain2_swap_FF(nn_set_data, 0, NULL, network, 0, "adjoint");
-		network = nn_set_input_name_F(network, 0, "adjoint");
+		const char* inname = nn_is_name_in_in_args(network, "adjoint") ? "adjoint" : "initialization";
+
+		network = nn_chain2_swap_FF(nn_set_data, 0, NULL, network, 0, inname);
+		network = nn_set_input_name_F(network, 0, inname);
 		network = nn_stack_dup_by_name_F(network);
-	} else {
+
+	} else if (nn_is_name_in_in_args(network, "adjoint")) {
 
 		auto nn_adjoint = nn_from_nlop_F(nlop_sense_adjoint_create(Nb, models, false));
 
@@ -802,6 +805,17 @@ static nn_t reconet_create(const struct reconet_s* config, int Nb, enum NETWORK_
 			nn_adjoint = nn_set_input_name_F(nn_adjoint, 0, "trajectory");
 
 		network = nn_chain2_swap_FF(nn_adjoint, 0, NULL, network, 0, "adjoint");
+	} else {
+
+		auto nn_set_data = nn_from_nlop_F(nlop_sense_model_set_data_noncart_batch_create(N, img_dims, Nb, models));
+
+		nn_set_data = nn_set_input_name_F(nn_set_data, 1, "coil");
+		nn_set_data = nn_set_input_name_F(nn_set_data, 1, "pattern");
+		nn_set_data = nn_set_input_name_F(nn_set_data, 1, "trajectory");
+
+		network = nn_chain2_swap_FF(nn_set_data, 0, NULL, network, 0, "initialization");
+		network = nn_set_input_name_F(network, 0, "initialization");
+		network = nn_stack_dup_by_name_F(network);
 	}
 
 	network = nn_set_output_name_F(network, 0 , "reconstruction");

@@ -440,10 +440,77 @@ static void network_data_compute_init_precomp(struct network_data_s* nd, complex
 	nlop_free(nlop_normal_inv);
 }
 
+static void network_data_compute_init_noprecomp(struct network_data_s* nd, complex float lambda, int cg_iter)
+{
+	assert(NULL == nd->initialization);
+	nd->initialization = anon_cfl("", nd->N, nd->img_dims);
+
+	if (NULL != nd->filename_trajectory) {
+
+		long ksp_dims_s[DIMS];
+		long img_dims_s[DIMS];
+		long cim_dims_s[DIMS];
+		long trj_dims_s[DIMS];
+		long pat_dims_s[DIMS];
+		long col_dims_s[DIMS];
+
+		md_select_dims(DIMS, ~nd->batch_flags, ksp_dims_s, nd->ksp_dims);
+		md_select_dims(DIMS, ~nd->batch_flags, img_dims_s, nd->img_dims);
+		md_select_dims(DIMS, ~nd->batch_flags, cim_dims_s, nd->cim_dims);
+		md_select_dims(DIMS, ~nd->batch_flags, trj_dims_s, nd->trj_dims);
+		md_select_dims(DIMS, ~nd->batch_flags, pat_dims_s, nd->pat_dims);
+		md_select_dims(DIMS, ~nd->batch_flags, col_dims_s, nd->col_dims);
+
+		struct nufft_conf_s nufft_conf = *(nd->nufft_conf);
+		nufft_conf.toeplitz = true;
+
+		struct config_nlop_mri_s* conf = sense_model_config_noncart_create(nd->N, trj_dims_s, pat_dims_s, ksp_dims_s, cim_dims_s, img_dims_s, col_dims_s, nd->bas_dims, nd->basis, nufft_conf);
+		struct sense_model_s* model[1] = { sense_model_create(conf) };
+
+		struct iter_conjgrad_conf iter_conf = iter_conjgrad_defaults;
+		iter_conf.l2lambda = 0;
+		iter_conf.maxiter = cg_iter;
+
+		const struct nlop_s* nlop = nlop_sense_normal_inv_create(1, model, &iter_conf, 0UL);
+		nlop = nlop_set_input_scalar_F(nlop, 1, lambda);
+
+		nlop = nlop_append_FF(nlop_sense_adjoint_create(1, model, false), 0, nlop);
+
+		complex float* ref = NULL;
+
+		#ifdef USE_CUDA
+		if (nd->gpu && !use_compat_to_version("v0.8.00"))
+			ref = md_alloc_gpu(1, MD_DIMS(1), CFL_SIZE);
+		#endif
+
+		int DO[1] = { nd->N };
+		int DI[4] = { nd->N, nd->N, nd->N, nd->N };
+
+		const long* odims[1] = { nd->img_dims };
+		const long* idims[4] = { nd->ksp_dims, nd->col_dims, nd->pat_dims, nd->trj_dims };
+
+		complex float* dst[1] = { nd->initialization };
+		const complex float* src[4] = { nd->kspace, nd->coil, nd->pattern, nd->trajectory };
+
+		nlop_generic_apply_loop_sameplace(nlop, nd->batch_flags, 1, DO, odims, dst, 4, DI, idims, src, ref);
+
+		nlop_free(nlop);
+
+		md_free(ref);
+		sense_model_config_free(conf);
+		sense_model_free(model[0]);
+	} else {
+
+		error("Combination of no precomputed psf, Cartesian imaging and precomputed initialization is not supported!\n");
+	}
+}
+
 void network_data_compute_init(struct network_data_s* nd, complex float lambda, int cg_iter)
 {
-	assert(nd->precomp);
-	network_data_compute_init_precomp(nd, lambda, cg_iter);
+	if (nd->precomp)
+		network_data_compute_init_precomp(nd, lambda, cg_iter);
+	else
+		network_data_compute_init_noprecomp(nd, lambda, cg_iter);
 }
 
 void network_data_normalize(struct network_data_s* nd)

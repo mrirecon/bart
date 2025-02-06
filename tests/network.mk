@@ -166,7 +166,7 @@ tests/test-reconet-nnmodl-train: nrmse reconet $(TRN_REF_IMG) $(TRN_KSP) $(TRN_C
 
 tests/test-reconet-nnmodl-train-ksp: nrmse reconet $(TRN_REF_KSP) $(TRN_KSP) $(TRN_COL) $(TST_REF_IMG) $(TST_KSP) $(TST_COL)
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP); export OMP_NUM_THREADS=2 ;\
-	$(TOOLDIR)/reconet --network modl --test --no-precomp --ksp-training -t --train-algo  e=1 -b2 $(TRN_KSP) $(TRN_COL) weights0  $(TRN_REF_KSP)			;\
+	$(TOOLDIR)/reconet --network modl --test --no-precomp --ksp-training -t --train-algo e=1 -b2 $(TRN_KSP) $(TRN_COL) weights0  $(TRN_REF_KSP)			;\
 	$(TOOLDIR)/reconet --network modl --test --no-precomp --ksp-training -t --train-algo e=5 -b2 $(TRN_KSP) $(TRN_COL) weights01 $(TRN_REF_KSP)			;\
 	$(TOOLDIR)/reconet --network modl --test --no-precomp --ksp-training -t -lweights01 --train-algo e=5 -b2 $(TRN_KSP) $(TRN_COL) weights1 $(TRN_REF_KSP)		;\
 	$(TOOLDIR)/reconet --network modl --test -a $(TST_KSP) $(TST_COL) weights0 out0.ra										;\
@@ -189,6 +189,24 @@ tests/test-reconet-nnmodl-train-noncart: nrmse reconet $(TRN_REF_CIM) $(TRN_KSP_
 	$(TOOLDIR)/reconet --network modl --test --no-precomp -t -lweights01 --train-algo e=5 -b2 --trajectory=$(TRN_TRJ) $(TRN_KSP_NC) $(TRN_COL) weights1  $(TRN_REF_CIM)	;\
 	$(TOOLDIR)/reconet --network modl --test -a --trajectory=$(TST_TRJ) $(TST_KSP_NC) $(TST_COL) weights0 out0.ra							;\
 	$(TOOLDIR)/reconet --network modl --test -a --trajectory=$(TST_TRJ) $(TST_KSP_NC) $(TST_COL) weights1 out1.ra							;\
+	$(TOOLDIR)/nrmse -t 0.25 out0.ra $(TST_REF_IMG) 														;\
+	$(TOOLDIR)/nrmse -t 0.2 out1.ra $(TST_REF_IMG)															;\
+	echo "Ratio Error: $$( echo "`$(TOOLDIR)/nrmse out1.ra $(TST_REF_IMG)`" / `$(TOOLDIR)/nrmse out0.ra $(TST_REF_IMG)` | bc -l )"					;\
+	if [ 1 == $$( echo "`$(TOOLDIR)/nrmse out0.ra $(TST_REF_IMG)` <= 0.9 * `$(TOOLDIR)/nrmse out1.ra $(TST_REF_IMG)`" | bc ) ] ; then 				 \
+		echo "untrained error: `$(TOOLDIR)/nrmse out0.ra $(TST_REWF_IMG)`"											;\
+		echo   "trained error: `$(TOOLDIR)/nrmse out1.ra $(TST_REWF_IMG)`"											;\
+		false																			;\
+	fi																				;\
+	rm *.ra ; rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-reconet-nnmodl-train-noncart-init-sense: nrmse reconet $(TRN_REF_CIM) $(TRN_KSP_NC) $(TRN_COL) $(TST_REF_IMG) $(TST_KSP_NC) $(TST_COL) $(TRN_TRJ) $(TST_TRJ)
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP); export OMP_NUM_THREADS=2 ;\
+	$(TOOLDIR)/reconet --network modl --initial-reco=sense,fix-lambda=0. --data-consistency=none --test --no-precomp -t --train-algo e=1 -b2 --trajectory=$(TRN_TRJ) $(TRN_KSP_NC) $(TRN_COL) weights0  $(TRN_REF_CIM)		;\
+	$(TOOLDIR)/reconet --network modl --initial-reco=sense,fix-lambda=0. --data-consistency=none --test --no-precomp -t --train-algo e=5 -b2 -I1 --trajectory=$(TRN_TRJ) $(TRN_KSP_NC) $(TRN_COL) weights01 $(TRN_REF_CIM)	;\
+	$(TOOLDIR)/reconet --network modl --initial-reco=sense,fix-lambda=0. --data-consistency=none --test --no-precomp -t -lweights01 --train-algo e=5 -b2 --trajectory=$(TRN_TRJ) $(TRN_KSP_NC) $(TRN_COL) weights1  $(TRN_REF_CIM)	;\
+	$(TOOLDIR)/reconet --network modl --initial-reco=sense,fix-lambda=0. --data-consistency=none --test -a --trajectory=$(TST_TRJ) $(TST_KSP_NC) $(TST_COL) weights0 out0.ra							;\
+	$(TOOLDIR)/reconet --network modl --initial-reco=sense,fix-lambda=0. --data-consistency=none --test -a --trajectory=$(TST_TRJ) $(TST_KSP_NC) $(TST_COL) weights1 out1.ra							;\
 	$(TOOLDIR)/nrmse -t 0.25 out0.ra $(TST_REF_IMG) 														;\
 	$(TOOLDIR)/nrmse -t 0.2 out1.ra $(TST_REF_IMG)															;\
 	echo "Ratio Error: $$( echo "`$(TOOLDIR)/nrmse out1.ra $(TST_REF_IMG)`" / `$(TOOLDIR)/nrmse out0.ra $(TST_REF_IMG)` | bc -l )"					;\
@@ -224,6 +242,42 @@ tests/test-reconet-nnmodl-train-ksp-noncart: nrmse reconet $(TRN_REF_KSP_NC) $(T
 	$(TOOLDIR)/reconet --network modl --test --no-precomp --ksp-training -t -lweights01 --train-algo e=5 -b2 --trajectory=$(TRN_TRJ) $(TRN_KSP_NC) $(TRN_COL) weights1 $(TRN_REF_KSP_NC)	;\
 	$(TOOLDIR)/reconet --network modl --test -a --trajectory=$(TST_TRJ) $(TST_KSP_NC) $(TST_COL) weights0 out0.ra										;\
 	$(TOOLDIR)/reconet --network modl --test -a --trajectory=$(TST_TRJ) $(TST_KSP_NC) $(TST_COL) weights1 out1.ra										;\
+	$(TOOLDIR)/nrmse -t 0.25 out0.ra $(TST_REF_IMG) 														;\
+	$(TOOLDIR)/nrmse -t 0.2 out1.ra $(TST_REF_IMG)															;\
+	echo "Ratio Error: $$( echo "`$(TOOLDIR)/nrmse out1.ra $(TST_REF_IMG)`" / `$(TOOLDIR)/nrmse out0.ra $(TST_REF_IMG)` | bc -l )"					;\
+	if [ 1 == $$( echo "`$(TOOLDIR)/nrmse out0.ra $(TST_REF_IMG)` <= 0.9 * `$(TOOLDIR)/nrmse out1.ra $(TST_REF_IMG)`" | bc ) ] ; then 				 \
+		echo "untrained error: `$(TOOLDIR)/nrmse out0.ra $(TESTS_OUT)/test_ref.ra`"										;\
+		echo   "trained error: `$(TOOLDIR)/nrmse out1.ra $(TESTS_OUT)/test_ref.ra`"										;\
+		false																			;\
+	fi																				;\
+	rm *.ra ; rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-reconet-nnmodl-train-ksp-noncart-init-sense: nrmse reconet $(TRN_REF_KSP_NC) $(TRN_KSP_NC) $(TRN_COL) $(TST_REF_IMG) $(TST_KSP_NC) $(TST_COL) $(TRN_TRJ) $(TST_TRJ)
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP); export OMP_NUM_THREADS=2 														;\
+	$(TOOLDIR)/reconet --network modl --initial-reco=sense,fix-lambda=0. --test --no-precomp --ksp-training -t --train-algo  e=1 -b2            --trajectory=$(TRN_TRJ) $(TRN_KSP_NC) $(TRN_COL) weights0  $(TRN_REF_KSP_NC)	;\
+	$(TOOLDIR)/reconet --network modl --initial-reco=sense,fix-lambda=0. --test --no-precomp --ksp-training -t --train-algo e=5 -b2             --trajectory=$(TRN_TRJ) $(TRN_KSP_NC) $(TRN_COL) weights01 $(TRN_REF_KSP_NC)	;\
+	$(TOOLDIR)/reconet --network modl --initial-reco=sense,fix-lambda=0. --test --no-precomp --ksp-training -t -lweights01 --train-algo e=5 -b2 --trajectory=$(TRN_TRJ) $(TRN_KSP_NC) $(TRN_COL) weights1 $(TRN_REF_KSP_NC)	;\
+	$(TOOLDIR)/reconet --network modl --initial-reco=sense,fix-lambda=0. --test -a --trajectory=$(TST_TRJ) $(TST_KSP_NC) $(TST_COL) weights0 out0.ra										;\
+	$(TOOLDIR)/reconet --network modl --initial-reco=sense,fix-lambda=0. --test -a --trajectory=$(TST_TRJ) $(TST_KSP_NC) $(TST_COL) weights1 out1.ra										;\
+	$(TOOLDIR)/nrmse -t 0.25 out0.ra $(TST_REF_IMG) 														;\
+	$(TOOLDIR)/nrmse -t 0.2 out1.ra $(TST_REF_IMG)															;\
+	echo "Ratio Error: $$( echo "`$(TOOLDIR)/nrmse out1.ra $(TST_REF_IMG)`" / `$(TOOLDIR)/nrmse out0.ra $(TST_REF_IMG)` | bc -l )"					;\
+	if [ 1 == $$( echo "`$(TOOLDIR)/nrmse out0.ra $(TST_REF_IMG)` <= 0.9 * `$(TOOLDIR)/nrmse out1.ra $(TST_REF_IMG)`" | bc ) ] ; then 				 \
+		echo "untrained error: `$(TOOLDIR)/nrmse out0.ra $(TESTS_OUT)/test_ref.ra`"										;\
+		echo   "trained error: `$(TOOLDIR)/nrmse out1.ra $(TESTS_OUT)/test_ref.ra`"										;\
+		false																			;\
+	fi																				;\
+	rm *.ra ; rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-reconet-nnmodl-train-ksp-noncart-init-sense-no-dc: nrmse reconet $(TRN_REF_KSP_NC) $(TRN_KSP_NC) $(TRN_COL) $(TST_REF_IMG) $(TST_KSP_NC) $(TST_COL) $(TRN_TRJ) $(TST_TRJ)
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP); export OMP_NUM_THREADS=2 														;\
+	$(TOOLDIR)/reconet --network modl --initial-reco=sense,fix-lambda=0. --data-consistency=none --test --no-precomp --ksp-training -t --train-algo  e=1 -b2            --trajectory=$(TRN_TRJ) $(TRN_KSP_NC) $(TRN_COL) weights0  $(TRN_REF_KSP_NC)	;\
+	$(TOOLDIR)/reconet --network modl --initial-reco=sense,fix-lambda=0. --data-consistency=none --test --no-precomp --ksp-training -t --train-algo e=5 -b2             --trajectory=$(TRN_TRJ) $(TRN_KSP_NC) $(TRN_COL) weights01 $(TRN_REF_KSP_NC)	;\
+	$(TOOLDIR)/reconet --network modl --initial-reco=sense,fix-lambda=0. --data-consistency=none --test --no-precomp --ksp-training -t -lweights01 --train-algo e=5 -b2 --trajectory=$(TRN_TRJ) $(TRN_KSP_NC) $(TRN_COL) weights1 $(TRN_REF_KSP_NC)	;\
+	$(TOOLDIR)/reconet --network modl --initial-reco=sense,fix-lambda=0. --data-consistency=none --test -a --trajectory=$(TST_TRJ) $(TST_KSP_NC) $(TST_COL) weights0 out0.ra										;\
+	$(TOOLDIR)/reconet --network modl --initial-reco=sense,fix-lambda=0. --data-consistency=none --test -a --trajectory=$(TST_TRJ) $(TST_KSP_NC) $(TST_COL) weights1 out1.ra										;\
 	$(TOOLDIR)/nrmse -t 0.25 out0.ra $(TST_REF_IMG) 														;\
 	$(TOOLDIR)/nrmse -t 0.2 out1.ra $(TST_REF_IMG)															;\
 	echo "Ratio Error: $$( echo "`$(TOOLDIR)/nrmse out1.ra $(TST_REF_IMG)`" / `$(TOOLDIR)/nrmse out0.ra $(TST_REF_IMG)` | bc -l )"					;\
@@ -475,6 +529,9 @@ TESTS += tests/test-reconet-nnmodl-train-basis
 TESTS += tests/test-reconet-nnmodl-train-basis-precomp
 TESTS += tests/test-reconet-nnvn-train-max-eigen
 TESTS += tests/test-reconet-nnmodl-train-delayed-noncart
+TESTS += tests/test-reconet-nnmodl-train-noncart-init-sense
+TESTS += tests/test-reconet-nnmodl-train-ksp-noncart-init-sense
+TESTS += tests/test-reconet-nnmodl-train-ksp-noncart-init-sense-no-dc
 
 TESTS_GPU += tests/test-reconet-nnvn-train-gpu
 TESTS_GPU += tests/test-reconet-nnmodl-train-gpu
