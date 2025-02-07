@@ -144,7 +144,13 @@ static bool cuda_try_init(int device)
 		for (int i = 0; i < CUDA_MAX_STREAMS; i++)
 			CUDA_ERROR(cudaStreamCreate(&(cuda_streams[i])));
 
-		memcache_init();
+		size_t byte_tot;
+		size_t byte_free;
+
+		CUDA_ERROR(cudaMemGetInfo(&byte_free, &byte_tot));
+		memcache_init((long)byte_free);
+
+
 		cublas_init();
 #ifdef USE_CUDNN
 		cudnn_init();

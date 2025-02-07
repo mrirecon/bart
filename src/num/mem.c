@@ -39,6 +39,8 @@ void memcache_off(void)
 }
 
 static bool mem_init = false;
+static long device_size = 0;
+static long free_limit = 0;
 
 static long unused_memory[CUDA_MAX_STREAMS + 1] = { 0 };
 static long used_memory[CUDA_MAX_STREAMS + 1] = { 0 };
@@ -48,6 +50,9 @@ static tree_t mem_cache[CUDA_MAX_STREAMS + 1] = { NULL };
 
 static const void* min_ptr[CUDA_MAX_STREAMS + 1] = { NULL };
 static const void* max_ptr[CUDA_MAX_STREAMS + 1] = { NULL };
+
+static long free_size = 0;
+static long used_size = 0;
 
 struct mem_s {
 
@@ -82,7 +87,7 @@ static int size_cmp(const void* _a, const void* _b)
 	return (a->len > b->len) ? 1 : -1;
 }
 
-void memcache_init(void)
+void memcache_init(long size)
 {
 	for (int i = 0; i < CUDA_MAX_STREAMS + 1; i++) {
 
@@ -94,6 +99,9 @@ void memcache_init(void)
 	}
 
 	mem_init = true;
+
+	device_size = size;
+	free_limit = 0.95 * device_size;
 }
 
 bool memcache_is_empty(void)
@@ -218,7 +226,13 @@ static struct mem_s* find_free(ssize_t size, int i)
 
 	ssize_t cmp[2] = { size, (0 == size) ? INT64_MAX : 4 * size };
 
-	return tree_find_min(mem_cache[i], &cmp, find_free_p, true);
+	struct mem_s* ret = tree_find_min(mem_cache[i], &cmp, find_free_p, true);
+
+	if (NULL != ret)
+#pragma 	omp atomic
+		free_size -= ret->len;
+
+	return ret;
 }
 
 
@@ -299,11 +313,17 @@ void mem_device_free(void* ptr, void (*device_free)(const void* ptr, bool host))
 
 #pragma 		omp atomic
 			cuda_host_size -= nptr->len;
+		} else {
+
+#pragma			omp atomic
+			used_size -= nptr->len;
 		}
 
 		if (memcache && !nptr->host) {
 
 			tree_insert(mem_cache[i], nptr);
+#pragma			omp atomic
+			free_size += nptr->len;
 
 #pragma			omp atomic
 			unused_memory[i] += nptr->len_used;
@@ -353,6 +373,12 @@ void* mem_device_malloc(size_t size2, void* (*device_alloc)(size_t), bool host)
 
 	} else {
 
+		if (size + used_size + free_size > free_limit) {
+
+			cuda_memcache_clear();
+			free_limit = MAX(used_size + size + (device_size / 4), (device_size * 95) / 100);
+		}
+
 		void* ptr = device_alloc(size2);
 
 #pragma 	omp critical
@@ -374,9 +400,13 @@ void* mem_device_malloc(size_t size2, void* (*device_alloc)(size_t), bool host)
 			debug_printf(DP_WARN, "GLOBAL_SIZE: %ld Byte\n", used_memory[stream] + unused_memory[stream] + size);
 	}
 
-	if (!host)
+	if (!host) {
+
 #pragma 	omp atomic
 		used_memory[stream] += size;
+#pragma 	omp atomic
+		used_size += nptr->len;
+	}
 
 	//use for debugging memcache
 	//nptr->backtrace = debug_good_backtrace_string(2);

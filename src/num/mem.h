@@ -1,6 +1,6 @@
 
 
-extern void memcache_init(void);
+extern void memcache_init(long size);
 extern void memcache_destroy(void);
 extern void memcache_off(void);
 
