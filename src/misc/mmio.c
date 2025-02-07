@@ -682,7 +682,7 @@ static complex float* create_pipe(const char* name, int D, long dimensions[D], u
 {
 	long T;
 
-	const char* stream_name = ptr_printf("out_%s", name);
+	const char* stream_name = stream_mangle_name(name, false);
 
 	stream_t strm = stream_lookup_name(stream_name);
 
@@ -972,7 +972,7 @@ static complex float* load_cfl_internal(const char* name, int D, long dimensions
 
 			assert(1 == mpi_get_num_procs());
 
-			stream_name = ptr_printf("in_%s", name);
+			stream_name = stream_mangle_name(name, true);
 
 			strm = stream_lookup_name(stream_name);
 

@@ -296,6 +296,17 @@ stream_t stream_lookup_name(const char* name)
 	return s;
 }
 
+const char* stream_mangle_name(const char* name, bool in)
+{
+	assert (0 != strcmp(name, "in_-"));
+	assert (0 != strcmp(name, "out_-"));
+
+	const char* prefix = "";
+	if (0 == strcmp("-", name))
+		prefix = in ? "in_" : "out_";
+
+	return ptr_printf("%s%s", prefix, name);
+}
 
 
 static void stream_del(const struct shared_obj_s* sptr);
@@ -467,7 +478,7 @@ stream_t stream_load_file(const char* name, int D, long dims[D], char **datname)
 	if (NULL == *datname)
 		binary = true;
 
-	const char* stream_name = ptr_printf("in_%s", name);
+	const char* stream_name = stream_mangle_name(name, true);
 
 	stream_t strm = stream_create(D, dims, NULL, fd, true, false, binary, 0, stream_name, false);
 
@@ -536,7 +547,7 @@ stream_t stream_create_file(const char* name, int D, long dims[D], unsigned long
 	if (-1 == write_stream_header(fd, dataname, D, dims))
 		error("Writing header of %s\n", name);
 
-	const char* stream_name = ptr_printf("out_%s", name);
+	const char* stream_name = stream_mangle_name(name, false);
 
 	stream_t strm = stream_create(D, dims, NULL, fd, false, false, binary, stream_flags, stream_name, call_msync);
 
