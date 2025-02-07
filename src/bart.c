@@ -230,6 +230,9 @@ static void parse_bart_opts(int* argcp, char*** argvp)
 				error("--ref-file is a stream, this is currently incompatible with --loop and --parallel-loop options!\n");
 
 			flags = stream_get_flags(s);
+
+			// - delete from io_lookup table, for the bart cmd to be called, this file does not yet 'exit;.
+			io_close(ref_file);
 		}
 
 		assert(-1 == param_end[0]);
