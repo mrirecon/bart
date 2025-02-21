@@ -210,18 +210,28 @@ void cuda_swap(long size, float* a, float* b)
 static bool cpulock_init = false;
 static omp_nest_lock_t cpulock;
 
+#ifdef BLAS_THREADSAFE
+static bool blas_threadsafe = true;
+#else
+static bool blas_threadsafe = false;
+#endif
+
 static void blas_cpu_set_lock(void)
 {
 	if (!cpulock_init) {
-	
+
 #pragma 	omp critical(cpulock_init)
 		{
 			if (!cpulock_init) {
 
 #ifdef USE_OPENBLAS
-				//set num threads to ne if openblas is built with pthreads
+				//pthreaded version of openblas is not necessarily copatible with openmp
+				//we should recommend openmp threading model of openblas!
 				if (1 == openblas_get_parallel())
-					openblas_set_num_threads(1);
+					blas_threadsafe = false;
+
+				if (2 == openblas_get_parallel())
+					blas_threadsafe = true;
 #endif
 
 				omp_init_nest_lock(&cpulock);
@@ -230,22 +240,18 @@ static void blas_cpu_set_lock(void)
 		}
 	}
 
-	if (!omp_in_parallel())
+	if (blas_threadsafe || !omp_in_parallel())
 		return;
 
-#ifndef BLAS_THREADSAFE
 	omp_set_nest_lock(&cpulock);
-#endif
 }
 
 static void blas_cpu_unset_lock(void)
 {
-	if (!omp_in_parallel())
+	if (blas_threadsafe || !omp_in_parallel())
 		return;
 
-#ifndef BLAS_THREADSAFE
 	omp_unset_nest_lock(&cpulock);
-#endif
 }
 
 #define BLAS_CALL(x)	({ blas_cpu_set_lock(); (x); blas_cpu_unset_lock(); })
