@@ -58,11 +58,11 @@ void batch_svthresh(int M, int N, int num_blocks, float lambda, complex float ds
 #pragma omp for
 	for (int b = 0; b < num_blocks; b++) {
 
+		#if 0
 		// Compute upper bound | A^T A |_inf
 
 		// FIXME: this is based on gratuitous guess-work about the obscure
 		// API of this FORTRAN from ancient times... Is it really worth it?
-
 		blas_csyrk('U', (N <= M) ? 'T' : 'N', (N <= M) ? N : M, (N <= M) ? M : N, 1., M, dst[b], 0., minMN, *AA);
 
 		// lambda_max( A ) <= max_i sum_j | a_i^T a_j |
@@ -88,6 +88,7 @@ void batch_svthresh(int M, int N, int num_blocks, float lambda, complex float ds
 			mat_zero(N, M, dst[b]);
 			continue;
 		}
+#endif
 
 		lapack_svd_econ(M, N, *U, *VT, *S, dst[b]);
 
