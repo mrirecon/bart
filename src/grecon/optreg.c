@@ -1,6 +1,6 @@
 /* Copyright 2015-2017. The Regents of the University of California.
  * Copyright 2015-2022. Martin Uecker.
- * Copyright 2022-2025. Institute of Biomedical Imaging. TU Graz.
+ * Copyright 2022-2026. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -745,11 +745,8 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 			trafos[nr] = linop_identity_create(DIMS, img_dims);
 			prox_ops[nr] = lrthresh_create(img_dims, randshift, regs[nr].xflags, (const long (*)[DIMS])blkdims, regs[nr].lambda, false, remove_mean, overlapping_blocks);
 
-			if (use_gpu) {
-
-				prox_ops[nr] = operator_p_cpu_wrapper_F(prox_ops[nr]);
+			if (use_gpu)
 				debug_printf(DP_WARN, "Lowrank regularization is not GPU accelerated.\n");
-			}
 
 			break;
 
