@@ -2408,7 +2408,7 @@ void md_circ_shift2(int D, const long dimensions[D], const long center[D], const
 
 	if (dst == src) {
 
-		assert(str1 == str2);
+		assert(md_check_equal_dims(D, str1, str2, ~0UL));
 		assert(0 < D);
 
 		md_circ_shift_inpl2(D, dimensions, pos, str1, dst, size);
