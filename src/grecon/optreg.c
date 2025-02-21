@@ -577,11 +577,8 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 			trafos[nr] = linop_identity_create(DIMS, img_dims);
 			prox_ops[nr] = lrthresh_create(img_dims, randshift, regs[nr].xflags, (const long (*)[DIMS])blkdims, regs[nr].lambda, false, remove_mean, overlapping_blocks);
 
-			if (use_gpu) {
-
-				prox_ops[nr] = operator_p_cpu_wrapper_F(prox_ops[nr]);
+			if (use_gpu)
 				debug_printf(DP_WARN, "Lowrank regularization is not GPU accelerated.\n");
-			}
 
 		}	break;
 
