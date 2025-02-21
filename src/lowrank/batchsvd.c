@@ -11,6 +11,7 @@
 #include <math.h>
 #include <complex.h>
 
+#include "misc/debug.h"
 #include "misc/misc.h"
 
 #include "num/blas.h"
@@ -45,6 +46,9 @@ void batch_svthresh(int M, int N, int num_blocks, float lambda, complex float ds
 
 		return;
 	}
+
+	static double time = 0.;
+	time -= timestamp();
 
 #pragma omp parallel
     {
@@ -106,5 +110,8 @@ void batch_svthresh(int M, int N, int num_blocks, float lambda, complex float ds
 	PTR_FREE(S);
 	PTR_FREE(AA);
     } // #pragma omp parallel
+
+    time += timestamp();
+    debug_printf(DP_INFO, "time batchthresh = %e\n", time);
 }
 
