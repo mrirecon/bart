@@ -282,6 +282,14 @@ static bool is_image_adc(uint64_t adc_flag)
 	return true;
 }
 
+static bool adc_to_skip(bool noise, uint64_t adc_flag)
+{
+	if (noise)
+		return !(adc_flag & MD_BIT(NOISEADJSCAN));
+
+	return !is_image_adc(adc_flag);
+}
+
 static void debug_print_flags(int dblevel, uint64_t adc_flag)
 {
 	debug_printf(dblevel, "-------------\n");
@@ -332,7 +340,7 @@ static enum adc_return skip_to_next(const char* hdr, int fd, off_t offset)
 }
 
 
-static enum adc_return siemens_bounds(bool vd, int fd, long min[DIMS], long max[DIMS])
+static enum adc_return siemens_bounds(bool vd, bool noise, int fd, long min[DIMS], long max[DIMS])
 {
 	char scan_hdr[vd ? 192 : 0];
 	size_t size = sizeof(scan_hdr);
@@ -362,7 +370,7 @@ static enum adc_return siemens_bounds(bool vd, int fd, long min[DIMS], long max[
 			return ADC_END;
 
 
-		if (!is_image_adc(mdh.evalinfo))
+		if (adc_to_skip(noise, mdh.evalinfo))
 			return skip_to_next(vd ? scan_hdr : chan_hdr, fd, offset);
 
 
@@ -410,7 +418,7 @@ static enum adc_return siemens_bounds(bool vd, int fd, long min[DIMS], long max[
 }
 
 
-static enum adc_return siemens_adc_read(bool vd, int fd, bool linectr, bool partctr, bool radial, const long dims[DIMS], long pos[DIMS], complex float* buf)
+static enum adc_return siemens_adc_read(bool vd, int fd, bool noise, bool linectr, bool partctr, bool radial, const long dims[DIMS], long pos[DIMS], complex float* buf)
 {
 	char scan_hdr[vd ? 192 : 0];
 	xread(fd, scan_hdr, sizeof(scan_hdr));
@@ -426,7 +434,7 @@ static enum adc_return siemens_adc_read(bool vd, int fd, bool linectr, bool part
 		if (MD_IS_SET(mdh.evalinfo, ACQEND))
 			return ADC_END;
 
-		if (!is_image_adc(mdh.evalinfo)
+		if (adc_to_skip(noise, mdh.evalinfo)
 			|| (dims[READ_DIM] != mdh.samples)) {
 
 			ssize_t offset = sizeof(scan_hdr) + sizeof(chan_hdr);
@@ -474,48 +482,6 @@ static enum adc_return siemens_adc_read(bool vd, int fd, bool linectr, bool part
 	return ADC_OK;
 }
 
-
-static bool siemens_adc_noise(bool vd, int fd, const long dims[DIMS], complex float* noise)
-{
-
-	char scan_hdr[vd ? 192 : 0];
-	xread(fd, scan_hdr, sizeof(scan_hdr));
-
-	for (long coil = 0; coil < dims[COIL_DIM]; coil++) {
-
-		char chan_hdr[vd ? 32 : 128];
-		xread(fd, chan_hdr, sizeof(chan_hdr));
-
-		struct mdh2 mdh;
-		memcpy(&mdh, vd ? (scan_hdr + 40) : (chan_hdr + 20), sizeof(mdh));
-
-		while (!MD_IS_SET(mdh.evalinfo, NOISEADJSCAN) || (dims[READ_DIM] != mdh.samples)) {
-
-			assert(!(MD_IS_SET(mdh.evalinfo, ACQEND)));
-
-			long offset = sizeof(scan_hdr) + sizeof(chan_hdr);
-			skip_to_next(vd ? scan_hdr : chan_hdr, fd, offset);
-
-			memcpy(&mdh, vd ? (scan_hdr + 40) : (chan_hdr + 20), sizeof(mdh));
-		}
-
-		if (dims[READ_DIM] != mdh.samples) {
-
-			debug_printf(DP_WARN, "Wrong number of samples: %ld != %d.\n", dims[READ_DIM], mdh.samples);
-			return false;
-		}
-
-		if ((0 != mdh.channels) && (dims[COIL_DIM] != mdh.channels)) {
-
-			debug_printf(DP_WARN, "Wrong number of channels: %ld != %d.\n", dims[COIL_DIM], mdh.channels);
-			return false;
-		}
-
-		xread(fd, noise + coil * dims[READ_DIM], (size_t)dims[READ_DIM] * CFL_SIZE);
-	}
-
-	return true;
-}
 
 
 
@@ -609,7 +575,7 @@ int main_twixread(int argc, char* argv[argc])
 		while (ADC_END != sar) {
 
 
-			sar = siemens_bounds(vd, ifd, min, max);
+			sar = siemens_bounds(vd, noise, ifd, min, max);
 
 			if (ADC_SKIP == sar) {
 
@@ -640,19 +606,6 @@ int main_twixread(int argc, char* argv[argc])
 		siemens_meas_setup(ifd, &hdr); // reset
 	}
 
-	if (noise) {
-
-		long odims[DIMS];
-		md_select_dims(DIMS, READ_FLAG | COIL_FLAG, odims, dims);
-
-		complex float* out = create_cfl(out_file, DIMS, odims);
-		md_clear(DIMS, odims, out, CFL_SIZE);
-
-		siemens_adc_noise(vd, ifd, odims, out);
-
-		unmap_cfl(DIMS, odims, out);
-		return 0;
-	}
 
 	long odims[DIMS];
 	md_copy_dims(DIMS, odims, dims);
@@ -695,7 +648,7 @@ int main_twixread(int argc, char* argv[argc])
 
 		long pos[DIMS] = { [0 ... DIMS - 1] = 0 };
 
-		sar = siemens_adc_read(vd, ifd, linectr, partctr, radial, dims, pos, buf);
+		sar = siemens_adc_read(vd, ifd, noise, linectr, partctr, radial, dims, pos, buf);
 
 		if (ADC_ERROR == sar) {
 
