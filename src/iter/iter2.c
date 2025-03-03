@@ -394,7 +394,7 @@ void iter2_chambolle_pock(const iter_conf* _conf,
 
 	const struct operator_p_s* prox_G = NULL;
 
-	if ((NULL == ops[0]) || linop_is_identity(ops[0])) {
+	if ((0 < D) && ((NULL == ops[0]) || linop_is_identity(ops[0]))) {
 
 		prox_G = operator_p_ref(prox_ops[0]);
 		D--;
