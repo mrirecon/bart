@@ -56,6 +56,7 @@ struct network_data_s network_data_empty = {
 	.filename_coil = NULL,
 	.filename_out = NULL,
 	.filename_basis = NULL,
+	.filename_init = NULL,
 
 	.filename_adjoint = NULL,
 	.filename_psf = NULL,
@@ -507,6 +508,15 @@ static void network_data_compute_init_noprecomp(struct network_data_s* nd, compl
 
 void network_data_compute_init(struct network_data_s* nd, complex float lambda, int cg_iter)
 {
+	if (NULL != nd->filename_init) {
+
+		long tdims[DIMS];
+		nd->initialization = load_cfl(nd->filename_init, DIMS, tdims);
+		assert(md_check_equal_dims(DIMS, tdims, nd->img_dims, ~0UL));
+
+		return;
+	}
+
 	if (nd->precomp)
 		network_data_compute_init_precomp(nd, lambda, cg_iter);
 	else

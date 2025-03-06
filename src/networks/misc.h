@@ -26,6 +26,7 @@ struct network_data_s {
 	const char* filename_coil;
 	const char* filename_basis;
 	const char* filename_out;
+	const char* filename_init;
 
 	_Bool export;
 	const char* filename_adjoint;
