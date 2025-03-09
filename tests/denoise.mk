@@ -4,8 +4,8 @@ tests/test-ictv-denoise: phantom noise denoise nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)							;\
 	$(TOOLDIR)/phantom -s2 x.ra									;\
 	$(TOOLDIR)/noise -n 1000000. x.ra xn.ra								;\
-	$(TOOLDIR)/denoise -w1. -i30 -C5 -u0.1 --tvscales2 2:2:5 -S -RC:67:0:750. xn.ra xg.ra		;\
-	$(TOOLDIR)/nrmse -t 0.035 xg.ra x.ra								;\
+	$(TOOLDIR)/denoise -w1. -i30 -C5 -u0.1 --tvscales 2:2:5 --tvscales2 1:1:0.5 -S -RC:67:0:750. xn.ra xg.ra		;\
+	$(TOOLDIR)/nrmse -t 0.034 xg.ra x.ra								;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
@@ -13,8 +13,8 @@ tests/test-ictgv-denoise: phantom noise denoise nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)							;\
 	$(TOOLDIR)/phantom -s2 x.ra									;\
 	$(TOOLDIR)/noise -n 1000000. x.ra xn.ra								;\
-	$(TOOLDIR)/denoise -w1. -i30 -C5 -u0.1 --tvscales2 2:2:5 -S -RV:67:0:750. xn.ra xg.ra		;\
-	$(TOOLDIR)/nrmse -t 0.037 xg.ra x.ra								;\
+	$(TOOLDIR)/denoise -w1. -i30 -C5 -u0.1 --tvscales 2:2:5 --tvscales2 1:1:0.5 -S -RV:67:0:750. xn.ra xg.ra		;\
+	$(TOOLDIR)/nrmse -t 0.040 xg.ra x.ra								;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 

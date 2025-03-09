@@ -451,7 +451,7 @@ struct reg4 ictgv_reg(unsigned long flags, unsigned long jflags, float lambda, i
 	reg4.prox[0] = reg_tgv1.prox[0];
 	reg4.prox[1] = reg_tgv1.prox[1];
 
-	struct reg2 reg_tgv2 = tgv_reg(flags, jflags, lambda*gamma[1], N, in_dims, isize, ext_shift, alpha, tvscales_N, tvscales, lop_trafo);
+	struct reg2 reg_tgv2 = tgv_reg(flags, jflags, lambda*gamma[1], N, in_dims, isize, ext_shift, alpha, tvscales2_N, tvscales2, lop_trafo);
 
 	// \Delta ( z )
 	reg4.linop[2] = reg_tgv2.linop[0];
