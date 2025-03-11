@@ -532,7 +532,7 @@ static int check_dot(int N, long ndims[N], long nostrs[N], long nistrs1[N], long
 			|| (0 != tistrs1[0] % (long)size) || (0 >= tistrs1[0])
 			|| (0 != tistrs2[0] % (long)size) || (0 >= tistrs2[0]) ))
 		return -1;
-	
+
 	//FIXME: due to bug in openBLAS
 	if ((long)size != tistrs1[0] || (long)size != tistrs2[0])
 		return -1;
@@ -703,7 +703,7 @@ static int check_unfold(int N, long ndims[N], long nostrs[N], long nistrs1[N], l
 
 	if ((1 == i) && ((long)size == nostrs[0]) && ((long)size == nistrs1[0]) && ((long)size == nistrs2[0]))
 		return -1; // simple vecop case
-	
+
 	return MIN(3, i);
 }
 
@@ -1074,20 +1074,20 @@ static bool simple_z3op(int N_checks, struct simple_z3op_check strided_calls[N_c
 	while ((N > 1) && (1 == dims[N - 1]))
 		N--;
 
-	debug_printf(DP_DEBUG3, "%s optimized by %s: \n Old dims/strides:\n", fun_name, strided_call.name);
-	debug_print_dims(DP_DEBUG3, N, dims);
-	debug_print_dims(DP_DEBUG3, N, ostrs);
-	debug_print_dims(DP_DEBUG3, N, istrs1);
-	debug_print_dims(DP_DEBUG3, N, istrs2);
-	
+	debug_printf(DP_DEBUG4, "%s optimized by %s: \n Old dims/strides:\n", fun_name, strided_call.name);
+	debug_print_dims(DP_DEBUG4, N, dims);
+	debug_print_dims(DP_DEBUG4, N, ostrs);
+	debug_print_dims(DP_DEBUG4, N, istrs1);
+	debug_print_dims(DP_DEBUG4, N, istrs2);
+
 	while ((N > 1) && (1 == ndims[N - 1]))
 		N--;
 
-	debug_printf(DP_DEBUG3, "optimized dims/strides (N=%d by strided kernel):\n", N_in);
-	debug_print_dims(DP_DEBUG3, N, ndims);
-	debug_print_dims(DP_DEBUG3, N, nostrs);
-	debug_print_dims(DP_DEBUG3, N, nistrs1);
-	debug_print_dims(DP_DEBUG3, N, nistrs2);
+	debug_printf(DP_DEBUG4, "optimized dims/strides (N=%d by strided kernel):\n", N_in);
+	debug_print_dims(DP_DEBUG4, N, ndims);
+	debug_print_dims(DP_DEBUG4, N, nostrs);
+	debug_print_dims(DP_DEBUG4, N, nistrs1);
+	debug_print_dims(DP_DEBUG4, N, nistrs2);
 
 	return true;
 }
@@ -1226,24 +1226,24 @@ static bool simple_3op(int N_checks, struct simple_3op_check strided_calls[N_che
 	optimized_threeop_oii(	N - N_in, ndims + N_in,
 				nostrs + N_in, (void*)out, nistrs1 + N_in, (void*)tin1, nistrs2 + N_in, (void*)tin2,
 				(size_t[3]){ (size_t)osize, (size_t)isize1, (size_t)isize2 }, nary_inner_3op);
-	
+
 	while ((N > 1) && (1 == dims[N - 1]))
 		N--;
 
-	debug_printf(DP_DEBUG3, "%s optimized by %s: \n Old dims/strides:\n", fun_name, strided_call.name);
-	debug_print_dims(DP_DEBUG3, N, dims);
-	debug_print_dims(DP_DEBUG3, N, ostrs);
-	debug_print_dims(DP_DEBUG3, N, istrs1);
-	debug_print_dims(DP_DEBUG3, N, istrs2);
-	
+	debug_printf(DP_DEBUG4, "%s optimized by %s: \n Old dims/strides:\n", fun_name, strided_call.name);
+	debug_print_dims(DP_DEBUG4, N, dims);
+	debug_print_dims(DP_DEBUG4, N, ostrs);
+	debug_print_dims(DP_DEBUG4, N, istrs1);
+	debug_print_dims(DP_DEBUG4, N, istrs2);
+
 	while ((N > 1) && (1 == ndims[N - 1]))
 		N--;
 
-	debug_printf(DP_DEBUG3, "optimized dims/strides (N=%d by strided kernel):\n", N_in);
-	debug_print_dims(DP_DEBUG3, N, ndims);
-	debug_print_dims(DP_DEBUG3, N, nostrs);
-	debug_print_dims(DP_DEBUG3, N, nistrs1);
-	debug_print_dims(DP_DEBUG3, N, nistrs2);
+	debug_printf(DP_DEBUG4, "optimized dims/strides (N=%d by strided kernel):\n", N_in);
+	debug_print_dims(DP_DEBUG4, N, ndims);
+	debug_print_dims(DP_DEBUG4, N, nostrs);
+	debug_print_dims(DP_DEBUG4, N, nistrs1);
+	debug_print_dims(DP_DEBUG4, N, nistrs2);
 
 	return true;
 }
