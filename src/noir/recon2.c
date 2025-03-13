@@ -289,7 +289,7 @@ void noir2_recon(const struct noir2_conf_s* conf, struct noir2_s* noir_ops,
 	const long (*sdims[NUM_REGS])[N + 1] = { NULL };
 
 	if (!((NULL == conf->regs) || (0 == conf->regs->r)))
-		opt_reg_configure(N, img_dims, conf->regs, prox_ops, trafos, sdims, 0, 1, "dau2", conf->gpu, DIMS-1);
+		opt_reg_configure(N, img_dims, conf->regs, prox_ops, trafos, sdims, 8, 1, "dau2", conf->gpu, DIMS-1);
 
 	long skip = md_calc_size(N, img_dims);
 
@@ -581,7 +581,7 @@ void noir2_recon_noncart(
 		if (conf->realtime) {
 
 			pos_trj[TIME_DIM] = pos_trj[TIME_DIM] % trj_dims[TIME_DIM];
-			
+
 			if (NULL != weights)
 				pos_wgh[TIME_DIM] = pos_wgh[TIME_DIM] % wgh_dims[TIME_DIM];
 
@@ -606,7 +606,7 @@ void noir2_recon_noncart(
 
 			if (NULL != img_ref)
 				md_slice(N, loop_flags, pos, img_dims, l_img_ref, img_ref, CFL_SIZE);
-			
+
 			if (NULL != sens_ref)
 				md_slice(N, loop_flags, pos, kco_dims, l_sens_ref, sens_ref, CFL_SIZE);
 		}
@@ -620,18 +620,18 @@ void noir2_recon_noncart(
 			md_slice(N, loop_flags, pos_wgh, wgh_dims, l_wgh, weights, CFL_SIZE);
 
 		noir2_noncart_update(&noir_ops, N, ltrj_dims, l_trj, lwgh_dims, l_wgh, bas_dims, basis);
-		
+
 		noir2_recon(conf, &noir_ops, N, limg_dims, l_img, l_img_ref, lcol_dims, l_sens, lkco_dims, l_ksens, l_sens_ref, lksp_dims, l_kspace);
 
 		if (NULL != sens)
 			md_copy_block(N, pos, col_dims, sens, lcol_dims, l_sens, CFL_SIZE);
-	
+
 		md_copy_block(N, pos, kco_dims, ksens, lkco_dims, l_ksens, CFL_SIZE);
 		md_copy_block(N, pos, img_dims, img, limg_dims, l_img, CFL_SIZE);
 
 		if (NULL != strm_img)
 			stream_sync(strm_img, N, pos);
-	
+
 	} while (md_next(N, ksp_dims, loop_flags, pos));
 
 	md_free(l_img);
@@ -650,7 +650,7 @@ void noir2_recon_noncart(
 void noir2_recon_cart(
 	const struct noir2_conf_s* conf, int N,
 	const long img_dims[N], complex float* img, const complex float* img_ref,
-	const long col_dims[N], complex float* sens, 
+	const long col_dims[N], complex float* sens,
 	const long kco_dims[N], complex float* ksens, const complex float* sens_ref,
 	const long ksp_dims[N], const complex float* kspace,
 	const long pat_dims[N], const complex float* pattern,
@@ -718,7 +718,7 @@ void noir2_recon_cart(
 
 		if (l_pattern != pattern)
 			noir2_cart_update(&noir_ops, N,lpat_dims, l_pattern, bas_dims, basis);
-		
+
 		noir2_recon(conf, &noir_ops, N, limg_dims, l_img, l_img_ref, lcol_dims, l_sens, lkco_dims, l_ksens, l_sens_ref, lksp_dims, l_kspace);
 
 	} while (md_next(N, ksp_dims, conf->loop_flags, pos));
