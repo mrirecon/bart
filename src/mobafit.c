@@ -99,6 +99,7 @@ static void mobafit_bound(iter_op_data* _data, float* dst, const float* src)
 
 		if (MD_IS_SET(data->max_norm_flags, pos[COEFF_DIM])) {
 
+			md_zabs2(N, map_dims, MD_STRIDES(N, map_dims, CFL_SIZE), tmp_map, strs, map);
 			md_zdiv2(N, map_dims, strs, map, strs, map, MD_STRIDES(N, map_dims, CFL_SIZE), tmp_map);
 			md_zsmin2(N, map_dims, MD_STRIDES(N, map_dims, CFL_SIZE), tmp_map, MD_STRIDES(N, map_dims, CFL_SIZE), tmp_map, data->max[pos[COEFF_DIM]]);
 			md_zmul2(N, map_dims, strs, map, strs, map, MD_STRIDES(N, map_dims, CFL_SIZE), tmp_map);
