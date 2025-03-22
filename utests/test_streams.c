@@ -90,7 +90,8 @@ static bool test_stream_transceive(void)
 	struct stream_msg msg_default = { .type = STREAM_MSG_INVALID };
 
 	int pipefds[2];
-	pipe(pipefds);
+	if (0 != pipe(pipefds))
+		UTEST_ERR;
 
 	msg_ref = (struct stream_msg){ .type = STREAM_MSG_INDEX, .data.offset = 2 };
 	msg_recv = msg_default;
@@ -119,7 +120,9 @@ static bool test_stream_transceive(void)
 static bool test_comm_msg2(void)
 {
 	int pipefds[2];
-	pipe(pipefds);
+
+	if (0 != pipe(pipefds))
+		UTEST_ERR;
 
 	complex float a[3] = { 1, 2, 3 };
 	complex float b[3] = { 0, 0, 0 };
@@ -156,7 +159,9 @@ static bool test_comm_msg2(void)
 static bool test_comm_followup(void)
 {
 	int pipefds[2];
-	pipe(pipefds);
+
+	if (0 != pipe(pipefds))
+		UTEST_ERR;
 
 	struct stream_msg msg_ref = { .type = STREAM_MSG_INDEX, .data.offset = 2 };
 	struct stream_msg msg_recv;
@@ -215,7 +220,9 @@ static bool test_stream_registry(void)
 static bool test_stream_sync(void)
 {
 	int pipefds[2];
-	pipe(pipefds);
+
+	if (0 != pipe(pipefds))
+		UTEST_ERR;
 
 	complex float in[1];
 	complex float out[1];
@@ -257,7 +264,9 @@ static bool test_stream_sync(void)
 static bool test_binary_stream(void)
 {
 	int pipefds[2];
-	pipe(pipefds);
+
+	if (0 != pipe(pipefds))
+		UTEST_ERR;
 
 	long dims[2] = { 1, 3 };
 	complex float out[3] = { 1, 2, 3 };
@@ -305,7 +314,9 @@ static bool test_binary_stream(void)
 static bool test_stream_events(void)
 {
 	int pipefds[2];
-	pipe(pipefds);
+
+	if (0 != pipe(pipefds))
+		UTEST_ERR;
 
 	complex float in[2];
 	complex float out[2];
