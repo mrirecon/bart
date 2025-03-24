@@ -21,7 +21,7 @@
 
 struct rvc_s {
 
-	INTERFACE(linop_data_t);
+	linop_data_t super;
 
 	int N;
 	const long* dims;

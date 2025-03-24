@@ -14,7 +14,7 @@ struct iter_op_s;
 
 struct iter3_irgnm_conf {
 
-	INTERFACE(iter3_conf);
+	iter3_conf super;
 
 	int iter;
 	float alpha;
@@ -30,7 +30,7 @@ struct iter3_irgnm_conf {
 
 struct iter3_lbfgs_conf {
 
-	INTERFACE(iter3_conf);
+	iter3_conf super;
 
 	int iter;
 	int M;
@@ -47,7 +47,7 @@ struct iter3_lbfgs_conf {
 
 struct iter3_landweber_conf {
 
-	INTERFACE(iter3_conf);
+	iter3_conf super;
 
 	int iter;
 	float alpha;

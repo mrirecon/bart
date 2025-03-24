@@ -344,7 +344,7 @@ void fftshift(int N, const long dimensions[N], unsigned long flags, complex floa
 
 struct fft_plan_s {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	fftwf_plan fftw;
 	const struct operator_s* fft_flags_only;

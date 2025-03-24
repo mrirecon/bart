@@ -21,7 +21,7 @@
 
 struct zsinh_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 };
 
 DEF_TYPEID(zsinh_s);
@@ -54,7 +54,7 @@ struct nlop_s* nlop_zsinh_create(int N, const long dims[N])
 
 struct zcosh_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 };
 
 DEF_TYPEID(zcosh_s);

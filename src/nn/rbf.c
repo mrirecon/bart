@@ -25,7 +25,7 @@
 
 struct rbf_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	int N;				// N = 3
 	const struct iovec_s* zdom;	// (Nf, Nb, 1 ) index convention: (i, k, j)

@@ -27,7 +27,7 @@
 
 struct adadelta_update_s {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	const struct iovec_s* dom;
 	float* floating_dx;
@@ -113,7 +113,7 @@ const struct operator_p_s* operator_adadelta_update_create(int N, const long dim
 
 struct adam_update_s {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	const struct iovec_s* dom;
 	float* first_mom;
@@ -208,7 +208,7 @@ const struct operator_p_s* operator_adam_update_create(int N, const long dims[N]
 
 struct clip_s {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	const struct iovec_s* dom;
 
@@ -265,7 +265,7 @@ const struct operator_s* operator_clip_create(int N, const long dims[N], float c
 
 struct sgd_update_s {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	const struct iovec_s* dom;
 };

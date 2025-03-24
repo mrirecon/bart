@@ -31,7 +31,7 @@ typedef italgo_fun_f* italgo_fun_t;
 
 struct iter_conjgrad_conf {
 
-	INTERFACE(iter_conf);
+	iter_conf super;
 
 	int maxiter;
 	float l2lambda;
@@ -45,7 +45,7 @@ struct iter_conjgrad_conf {
 
 struct iter_landweber_conf {
 
-	INTERFACE(iter_conf);
+	iter_conf super;
 
 	int maxiter;
 	float step;
@@ -55,7 +55,7 @@ struct iter_landweber_conf {
 
 struct iter_ist_conf {
 
-	INTERFACE(iter_conf);
+	iter_conf super;
 
 	int maxiter;
 	float step;
@@ -67,7 +67,7 @@ struct iter_ist_conf {
 
 struct iter_eulermaruyama_conf {
 
-	INTERFACE(iter_conf);
+	iter_conf super;
 
 	int maxiter;
 	float step;
@@ -78,7 +78,7 @@ struct iter_eulermaruyama_conf {
 
 struct iter_fista_conf {
 
-	INTERFACE(iter_conf);
+	iter_conf super;
 
 	int maxiter;
 	float step;
@@ -96,7 +96,7 @@ struct iter_fista_conf {
 
 struct iter_chambolle_pock_conf {
 
-	INTERFACE(iter_conf);
+	iter_conf super;
 
 	int maxiter;
 	float tau;
@@ -113,7 +113,7 @@ struct iter_chambolle_pock_conf {
 
 struct iter_admm_conf {
 
-	INTERFACE(iter_conf);
+	iter_conf super;
 
 	int maxiter;
 	int maxitercg;
@@ -143,14 +143,14 @@ struct iter_admm_conf {
 
 struct iter_pocs_conf {
 
-	INTERFACE(iter_conf);
+	iter_conf super;
 
 	int maxiter;
 };
 
 struct iter_niht_conf {
 
-	INTERFACE(iter_conf);
+	iter_conf super;
 
 	int maxiter;
 	float tol;
@@ -182,7 +182,7 @@ italgo_fun_f iter_call_iter2;
 
 struct iter_call_s {
 
-	INTERFACE(iter_conf);
+	iter_conf super;
 
 	italgo_fun_t fun;
 	iter_conf* _conf;

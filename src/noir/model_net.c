@@ -710,7 +710,8 @@ const struct nlop_s* noir_set_col_create(struct noir2_net_s* model)
 
 struct noir_adjoint_fft_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
+
 	struct noir2_s* model;
 };
 
@@ -886,7 +887,8 @@ const struct nlop_s* noir_fft_create(struct noir2_net_s* model)
 
 struct noir_nufft_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
+
 	const struct linop_s* nufft;
 
 	struct noir2_s* model;
@@ -1153,7 +1155,7 @@ const struct nlop_s* noir_nlinv_average_coils_create(struct noir2_net_s* model, 
 
 struct noir_nlop_debug_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	const struct nlop_s* frw;
 	const struct nlop_s* der;

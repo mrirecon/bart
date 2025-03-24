@@ -34,7 +34,7 @@
 
 struct sense_data {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	long sens_dims[DIMS];
 	long sens_strs[DIMS];

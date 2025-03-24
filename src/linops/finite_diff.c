@@ -42,7 +42,7 @@
  */
 struct fdiff_s {
 
-	INTERFACE(linop_data_t);
+	linop_data_t super;
 
 	int D;
 
@@ -377,7 +377,7 @@ void fd_proj_noninc(const struct linop_s* o, complex float* optr, const complex 
  */
 struct zfinitediff_data {
 
-	INTERFACE(linop_data_t);
+	linop_data_t super;
 
 	int D;
 	int dim_diff;

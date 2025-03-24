@@ -33,7 +33,7 @@ void iter_dump(const struct iter_dump_s* data, long epoch, long NI, const float*
 
 struct iter_dump_default_s {
 
-	INTERFACE(struct iter_dump_s);
+	struct iter_dump_s super;
 
 	unsigned long save_flag;
 
@@ -59,7 +59,7 @@ static void iter_dump_default_fun(const struct iter_dump_s* _data, long epoch, l
 		if (MD_IS_SET(data->save_flag, i))
 			args[ip++] = (const complex float*)x[i];
 
-	const char* file = ptr_printf("%s_%ld", data->INTERFACE.base_filename, epoch);
+	const char* file = ptr_printf("%s_%ld", data->super.base_filename, epoch);
 
 	dump_multi_cfl(file, data->N, data->D, data->dims, args);
 
@@ -86,9 +86,9 @@ const struct iter_dump_s* iter_dump_default_create(const char* base_filename, lo
 
 	save_flag = save_flag & (MD_BIT(NI) - 1);
 
-	result->INTERFACE.fun = iter_dump_default_fun;
-	result->INTERFACE.free = iter_dump_default_free;
-	result->INTERFACE.base_filename = base_filename;
+	result->super.fun = iter_dump_default_fun;
+	result->super.free = iter_dump_default_free;
+	result->super.base_filename = base_filename;
 
 	result->save_mod = save_mod;
 	result->save_flag = save_flag;

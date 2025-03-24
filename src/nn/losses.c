@@ -41,7 +41,7 @@
 
 struct znorm_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	int N;
 	const long* ridims;
@@ -208,7 +208,7 @@ const struct nlop_s* nlop_nrmse_create(int N, const long dims[N], unsigned long 
 
 struct zasum_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	int N;
 	const long* rdims;
@@ -300,7 +300,7 @@ const struct nlop_s* nlop_mad_create(int N, const long dims[N], unsigned long me
 
 struct mpsnr_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	int N;
 	const long* dims;
@@ -543,7 +543,7 @@ const struct nlop_s* nlop_mssim_create(int N, const long dims[N], const long wdi
 
 struct cce_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	int N;
 	float scaling;
@@ -721,7 +721,7 @@ const struct nlop_s* nlop_cce_create(int N, const long dims[N], unsigned long ba
 
 struct accuracy_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	int N;
 	const struct iovec_s* dom;
@@ -808,7 +808,7 @@ const struct nlop_s* nlop_accuracy_create(int N, const long dims[N], int class_i
 
 struct frequency_compensation_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	int N;
 	unsigned long batch_flag;
@@ -898,7 +898,7 @@ const struct nlop_s* nlop_weighted_cce_create(int N, const long dims[N], unsigne
 
 struct dice_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	int N;
 

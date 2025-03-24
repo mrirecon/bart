@@ -78,7 +78,7 @@ static struct multiplace_array_s* compute_precond(int N, const long* pre_dims, c
  */
 struct nufft_precond_data {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	int N;
 	struct multiplace_array_s* pre; ///< Preconditioner

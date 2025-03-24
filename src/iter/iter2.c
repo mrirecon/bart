@@ -222,13 +222,13 @@ void iter2_conjgrad(const iter_conf* _conf,
 		if (checkeps(eps))
 			goto cleanup;
 
-		conjgrad(conf->maxiter, conf->INTERFACE.alpha * conf->l2lambda, eps * conf->tol, size, select_vecops(image_adj),
+		conjgrad(conf->maxiter, conf->super.alpha * conf->l2lambda, eps * conf->tol, size, select_vecops(image_adj),
 				OPERATOR2ITOP(normaleq_op), image, image_adj, monitor);
 	} else {
 
 		assert(0 == size % (Bo * Bi));
 
-		conjgrad_batch(conf->maxiter, conf->INTERFACE.alpha * conf->l2lambda, conf->tol, size / (Bo * Bi * 2), Bi, Bo, select_vecops(image_adj),
+		conjgrad_batch(conf->maxiter, conf->super.alpha * conf->l2lambda, conf->tol, size / (Bo * Bi * 2), Bi, Bo, select_vecops(image_adj),
 			OPERATOR2ITOP(normaleq_op), image, image_adj, monitor);
 	}
 
@@ -269,7 +269,7 @@ void iter2_ist(const iter_conf* _conf,
 	// Let's see whether somebody uses it...
 	assert(!conf->hogwild);
 
-	ist(conf->maxiter, eps * conf->tol, conf->INTERFACE.alpha * conf->step, size, select_vecops(image_adj),
+	ist(conf->maxiter, eps * conf->tol, conf->super.alpha * conf->step, size, select_vecops(image_adj),
 		NULL, OPERATOR2ITOP(normaleq_op), OPERATOR_P2ITOP(prox_ops[0]), image, image_adj, monitor);
 
 cleanup:
@@ -298,7 +298,7 @@ void iter2_eulermaruyama(const iter_conf* _conf,
 
 	auto conf = CAST_DOWN(iter_eulermaruyama_conf, _conf);
 
-	eulermaruyama(conf->maxiter, conf->INTERFACE.alpha, conf->step, size, select_vecops(image_adj),
+	eulermaruyama(conf->maxiter, conf->super.alpha, conf->step, size, select_vecops(image_adj),
 		OPERATOR2ITOP(normaleq_op), &OPERATOR_P2ITOP(prox_ops[0]), image, image_adj, monitor);
 }
 
@@ -361,7 +361,7 @@ void iter2_fista(const iter_conf* _conf,
 	if (0 != conf->maxeigen_iter)
 		maxeigen = estimate_maxeigenval_sameplace(normaleq_op, conf->maxeigen_iter, image_adj);
 
-	fista(conf->maxiter, eps * conf->tol, conf->step / maxeigen, conf->INTERFACE.alpha , conf->last,
+	fista(conf->maxiter, eps * conf->tol, conf->step / maxeigen, conf->super.alpha , conf->last,
 		(struct ravine_conf){ conf->p, conf->q, conf->r }, size, select_vecops(image_adj),
 		continuation, OPERATOR2ITOP(normaleq_op), OPERATOR_P2ITOP(prox_ops[0]), image, image_adj, monitor);
 
@@ -461,8 +461,8 @@ void iter2_chambolle_pock(const iter_conf* _conf,
 	}
 
 
-	// FIXME: conf->INTERFACE.alpha * c
-	chambolle_pock(conf->INTERFACE.alpha, conf->maxiter, eps * conf->tol, conf->tau / sqrtf(maxeigen), conf->sigma / sqrtf(maxeigen),
+	// FIXME: conf->super.alpha * c
+	chambolle_pock(conf->super.alpha, conf->maxiter, eps * conf->tol, conf->tau / sqrtf(maxeigen), conf->sigma / sqrtf(maxeigen),
 			conf->sigma_tau_ratio, conf->theta, conf->decay, conf->adapt_stepsize, D, size, M, select_vecops(image),
 			OPERATOR2ITOP(normaleq_op), lop_frw, lop_adj, it_prox, OPERATOR_P2ITOP(prox_G),
 			image, image_adj, monitor);
@@ -505,7 +505,7 @@ void iter2_admm(const iter_conf* _conf,
 		.ABSTOL = conf->ABSTOL,
 		.RELTOL = conf->RELTOL,
 		.alpha = conf->alpha,
-		.lambda = conf->INTERFACE.alpha,
+		.lambda = conf->super.alpha,
 		.tau = conf->tau,
 		.tau_max = conf->tau_max,
 		.mu = conf->mu,

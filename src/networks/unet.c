@@ -50,20 +50,20 @@ DEF_TYPEID(network_unet_s);
 
 struct network_unet_s network_unet_default_reco = {
 
-	.INTERFACE.TYPEID = &TYPEID2(network_unet_s),
+	.super.TYPEID = &TYPEID2(network_unet_s),
 
-	.INTERFACE.create = network_unet_create,
+	.super.create = network_unet_create,
 
-	.INTERFACE.low_mem = false,
+	.super.low_mem = false,
 
-	.INTERFACE.norm = NORM_NONE,
-	.INTERFACE.norm_batch_flag = MD_BIT(4),
+	.super.norm = NORM_NONE,
+	.super.norm_batch_flag = MD_BIT(4),
 
-	.INTERFACE.debug = false,
-	.INTERFACE.bart_to_channel_first = true,
+	.super.debug = false,
+	.super.bart_to_channel_first = true,
 
-	.INTERFACE.prefix = NULL,
-	.INTERFACE.loopdim = -1,
+	.super.prefix = NULL,
+	.super.loopdim = -1,
 
 	.N = 5,
 	.kdims = { [0 ... DIMS - 1] = 0 },
@@ -111,20 +111,20 @@ struct network_unet_s network_unet_default_reco = {
 
 	.combine_method = UNET_COMBINE_ADD,
 
-	.INTERFACE.residual = true,
+	.super.residual = true,
 
 	.adjoint = false,
 };
 
 struct network_unet_s network_unet_default_segm = {
 
-	.INTERFACE.TYPEID = &TYPEID2(network_unet_s),
-	.INTERFACE.create = network_unet_create,
-	.INTERFACE.low_mem = false,
+	.super.TYPEID = &TYPEID2(network_unet_s),
+	.super.create = network_unet_create,
+	.super.low_mem = false,
 
-	.INTERFACE.debug = false,
-	.INTERFACE.bart_to_channel_first = false,
-	.INTERFACE.loopdim = -1,
+	.super.debug = false,
+	.super.bart_to_channel_first = false,
+	.super.loopdim = -1,
 
 	.N = 5,
 
@@ -172,7 +172,7 @@ struct network_unet_s network_unet_default_segm = {
 
 	.combine_method = UNET_COMBINE_STACK,
 
-	.INTERFACE.residual = false,
+	.super.residual = false,
 
 	.adjoint = false,
 
@@ -182,13 +182,13 @@ struct network_unet_s network_unet_default_segm = {
 
 struct network_unet_s network_nnunet_default_segm = {
 
-	.INTERFACE.TYPEID = &TYPEID2(network_unet_s),
-	.INTERFACE.create = network_unet_create,
-	.INTERFACE.low_mem = false,
+	.super.TYPEID = &TYPEID2(network_unet_s),
+	.super.create = network_unet_create,
+	.super.low_mem = false,
 
-	.INTERFACE.debug = false,
-	.INTERFACE.bart_to_channel_first = false,
-	.INTERFACE.loopdim = -1,
+	.super.debug = false,
+	.super.bart_to_channel_first = false,
+	.super.loopdim = -1,
 
 	.N = 5,
 
@@ -236,7 +236,7 @@ struct network_unet_s network_nnunet_default_segm = {
 
 	.combine_method = UNET_COMBINE_STACK,
 
-	.INTERFACE.residual = false,
+	.super.residual = false,
 
 	.adjoint = false,
 

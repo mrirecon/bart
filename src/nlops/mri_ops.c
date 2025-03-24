@@ -406,7 +406,7 @@ void sense_model_get_cim_dims(struct sense_model_s* model, int N, long cim_dims[
 
 struct sense_model_set_data_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	bool output_psf;
 
@@ -1182,7 +1182,7 @@ const struct nlop_s* nlop_mri_normal_max_eigen_create(int N, const long max_dims
 
 struct mri_scale_rss_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 	int N;
 
 	unsigned long rss_flag;

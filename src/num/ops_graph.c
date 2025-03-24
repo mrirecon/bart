@@ -22,7 +22,7 @@
 
 struct node_operator_s {
 
-	INTERFACE(struct node_s);
+	struct node_s super;
 	const struct operator_s* op;
 };
 
@@ -57,12 +57,12 @@ static node_t node_operator_create(const struct operator_s* op, const char* name
 	PTR_ALLOC(struct node_operator_s, node);
 	SET_TYPEID(node_operator_s, node);
 
-	node_init(&(node->INTERFACE), operator_nr_args(op), node_operator_is_output, name, false, NULL);
+	node_init(&(node->super), operator_nr_args(op), node_operator_is_output, name, false, NULL);
 
 	node->op = operator_ref(op);
 
-	node->INTERFACE.node_del = node_operator_del;
-	node->INTERFACE.node_clone = node_operator_clone;
+	node->super.node_del = node_operator_del;
+	node->super.node_clone = node_operator_clone;
 
 	return CAST_UP(PTR_PASS(node));
 }
@@ -73,12 +73,12 @@ static node_t node_operator_container_create(const struct operator_s* op, const 
 	PTR_ALLOC(struct node_operator_s, node);
 	SET_TYPEID(node_operator_s, node);
 
-	node_init(&(node->INTERFACE), operator_nr_args(op), node_operator_is_output, name, false, subgraph);
+	node_init(&(node->super), operator_nr_args(op), node_operator_is_output, name, false, subgraph);
 
 	node->op = operator_ref(op);
 
-	node->INTERFACE.node_del = node_operator_del;
-	node->INTERFACE.node_clone = node_operator_clone;
+	node->super.node_del = node_operator_del;
+	node->super.node_clone = node_operator_clone;
 
 	return CAST_UP(PTR_PASS(node));
 }
@@ -95,7 +95,7 @@ const struct operator_s* get_operator_from_node(const struct node_s* _node)
 
 struct node_arg_s {
 
-	INTERFACE(struct node_s);
+	struct node_s super;
 
 	const struct iovec_s* iov;
 	bool output;
@@ -156,16 +156,16 @@ static node_t node_arg_create(bool output, const struct iovec_s* iov)
 	PTR_ALLOC(struct node_arg_s, node);
 	SET_TYPEID(node_arg_s, node);
 
-	node_init(&(node->INTERFACE), 1, node_arg_is_output, NULL, true, NULL);
+	node_init(&(node->super), 1, node_arg_is_output, NULL, true, NULL);
 
 
-	node->INTERFACE.node_print = print_node_arg;
+	node->super.node_print = print_node_arg;
 
 	node->output = output;
 	node->iov = iovec_create2(iov->N, iov->dims, iov->strs, iov->size);
 
-	node->INTERFACE.node_del = node_arg_del;
-	node->INTERFACE.node_clone = node_arg_clone;
+	node->super.node_del = node_arg_del;
+	node->super.node_clone = node_arg_clone;
 
 	return CAST_UP(PTR_PASS(node));
 }
@@ -622,7 +622,7 @@ graph_t operator_graph_optimize_linops_F(graph_t graph, node_cmp_t linop_identif
 
 struct operator_graph_s {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 	graph_t graph;
 };
 

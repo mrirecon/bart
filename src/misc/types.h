@@ -30,7 +30,7 @@ extern __attribute__((noreturn)) void error(const char* str, ...);
 	__typeof__(x) __tmp = (x); \
 	extern __typeof__(*__tmp->TYPEID) T ## _TYPEID; \
 	((NULL != __tmp) && (__tmp->TYPEID == &T ## _TYPEID)) ? \
-		CONTAINER_OF(__tmp, struct T, INTERFACE)\
+		CONTAINER_OF(__tmp, struct T, super)\
 		: NULL;	\
 })
 #define CAST_DOWN(T, x)	({ \
@@ -38,18 +38,17 @@ extern __attribute__((noreturn)) void error(const char* str, ...);
 	extern __typeof__(*__tmp->TYPEID) T ## _TYPEID; \
 	if (__tmp->TYPEID != &T ## _TYPEID) \
 		error("%s:%d run-time type check failed: %s\n", __FILE__, __LINE__, #T); \
-	CONTAINER_OF(__tmp, struct T, INTERFACE);	\
+	CONTAINER_OF(__tmp, struct T, super);	\
 })
-#define CAST_UP(x) (&(x)->INTERFACE)
-
-#define INTERFACE(X) X INTERFACE
+#define INTERFACE(X) X super
+#define CAST_UP(x) (&(x)->super)
 
 typedef const struct typeid_s { int size; const char* name; } TYPEID;
 
 #define TYPEID2(T) (T ## _TYPEID)
 #define TYPEID(T) (*({ extern TYPEID T ## _TYPEID; &T ## _TYPEID; }))
 #define DEF_TYPEID(T) TYPEID T ## _TYPEID = { .size = sizeof(struct T), .name = "" #T "" };
-#define SET_TYPEID(T, x) (TYPE_CHECK(struct T*, x)->INTERFACE.TYPEID = &TYPEID(T))
+#define SET_TYPEID(T, x) (TYPE_CHECK(struct T*, x)->super.TYPEID = &TYPEID(T))
 
 #define SIZEOF(x) (size_t)((x)->TYPEID->size)
 

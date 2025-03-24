@@ -47,7 +47,7 @@
 
  struct proj_pos_real_s {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 	long N;
 	const long* dims;
 
@@ -131,7 +131,7 @@ const struct operator_p_s* operator_project_min_real_create(long N, const long d
 
 struct proj_mean_free_s {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 	long N;
 	const long* dims;
 	unsigned long bflag;
@@ -208,7 +208,7 @@ const struct operator_p_s* operator_project_mean_free_create(long N, const long 
 
 struct proj_sphere_s {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 	long N;
 	const long* dims;
 	unsigned long bflag;

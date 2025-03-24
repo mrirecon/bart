@@ -102,7 +102,7 @@ struct admm_plan_s {
  */
 struct admm_history_s {
 
-	INTERFACE(iter_history_t);
+	iter_history_t super;
 
 	int numiter;
 	int nr_invokes;

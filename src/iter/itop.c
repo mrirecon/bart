@@ -27,7 +27,7 @@
 
 struct itop_s {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	italgo_fun2_t italgo;
 	iter_conf* iconf;

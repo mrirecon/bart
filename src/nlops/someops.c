@@ -38,7 +38,7 @@
 
 struct zaxpbz_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	int N;
 	const long* dims;
@@ -197,7 +197,7 @@ const struct nlop_s* nlop_zsadd_create(int N, const long dims[N], complex float 
 
 struct dump_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	int N;
 	const long* dims;
@@ -302,7 +302,7 @@ const struct nlop_s* nlop_dump_create(int N, const long dims[N], const char* fil
 
 struct zinv_reg_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	complex float epsilon;
 };
@@ -370,7 +370,7 @@ const struct nlop_s* nlop_zdiv_create(int N, const long dims[N])
 
 struct zmax_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	int N;
 	unsigned long flags;
@@ -473,7 +473,10 @@ const struct nlop_s* nlop_zmax_create(int N, const long dims[N], unsigned long f
 
 
 
-struct zsqrt_s { INTERFACE(nlop_data_t); };
+struct zsqrt_s {
+
+	nlop_data_t super;
+};
 
 DEF_TYPEID(zsqrt_s);
 
@@ -549,7 +552,8 @@ const struct nlop_s* nlop_zrss_create(int N, const long dims[N], unsigned long f
 
 struct zspow_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
+
 	complex float exp;
 };
 

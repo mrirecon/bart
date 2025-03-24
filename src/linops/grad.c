@@ -158,7 +158,7 @@ static void grad_adjoint(md_zfdiff_core_t grad, int D, const long dims[D], int d
 
 struct grad_s {
 
-	INTERFACE(linop_data_t);
+	linop_data_t super;
 
 	md_zfdiff_core_t grad;
 

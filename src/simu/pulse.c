@@ -70,10 +70,10 @@ static complex float pulse_sinc_eval(const struct pulse* _ps, float t)
 
 const struct pulse_sinc pulse_sinc_defaults = {
 
-	.INTERFACE.duration = 0.001,
-	.INTERFACE.flipangle = 1.,
-	.INTERFACE.eval = pulse_sinc_eval,
-	.INTERFACE.TYPEID = &TYPEID2(pulse_sinc),
+	.super.duration = 0.001,
+	.super.flipangle = 1.,
+	.super.eval = pulse_sinc_eval,
+	.super.TYPEID = &TYPEID2(pulse_sinc),
 	// .pulse.phase = 0.,
 
 	.alpha = 0.46,
@@ -86,9 +86,9 @@ const struct pulse_sinc pulse_sinc_defaults = {
 // 	- Ensure windowed sinc leads to 90 deg rotation if its integral is pi/2
 void pulse_sinc_init(struct pulse_sinc* ps, float duration, float angle /*[deg]*/, float phase, float bwtp, float alpha)
 {
-	ps->INTERFACE.duration = duration;
-	ps->INTERFACE.flipangle = angle;
-	ps->INTERFACE.eval = pulse_sinc_eval;
+	ps->super.duration = duration;
+	ps->super.flipangle = angle;
+	ps->super.eval = pulse_sinc_eval;
 	(void)phase;
 //	ps->pulse.phase = phase;
 
@@ -107,8 +107,8 @@ void pulse_sinc_init(struct pulse_sinc* ps, float duration, float angle /*[deg]*
 
 void pulse_rect_init(struct pulse_rect* pr, float duration, float angle /*[deg]*/, float phase)
 {
-	pr->INTERFACE.duration = duration;
-	pr->INTERFACE.flipangle = angle;
+	pr->super.duration = duration;
+	pr->super.flipangle = angle;
 
 	assert(0. == phase);
 //	pulse->phase = phase;		// [rad]
@@ -131,10 +131,10 @@ static complex float pulse_rect_eval(const struct pulse* _pr, float t)
 
 const struct pulse_rect pulse_rect_defaults = {
 
-	.INTERFACE.duration = 0.001,
-	.INTERFACE.flipangle = 1.,
-	.INTERFACE.eval = pulse_rect_eval,
-	.INTERFACE.TYPEID = &TYPEID2(pulse_rect),
+	.super.duration = 0.001,
+	.super.flipangle = 1.,
+	.super.eval = pulse_rect_eval,
+	.super.TYPEID = &TYPEID2(pulse_rect),
 	// .pulse.phase = 0.,
 
 	.A = 1.,
@@ -187,10 +187,10 @@ static complex float pulse_hypsec_eval(const struct pulse* _pr, float t)
 
 const struct pulse_hypsec pulse_hypsec_defaults = {
 
-	.INTERFACE.duration = 0.01,
-	.INTERFACE.flipangle = 180.,
-	.INTERFACE.eval = pulse_hypsec_eval,
-	.INTERFACE.TYPEID = &TYPEID2(pulse_hypsec),
+	.super.duration = 0.01,
+	.super.flipangle = 180.,
+	.super.eval = pulse_hypsec_eval,
+	.super.TYPEID = &TYPEID2(pulse_hypsec),
 //	.pulse.phase = 0.,
 
 	.a0 = 13000.,

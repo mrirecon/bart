@@ -4,7 +4,7 @@ struct tf_shared_graph_s;
 
 struct network_tensorflow_s {
 
-	INTERFACE(network_t);
+	network_t super;
 
 	const char* model_path;
 

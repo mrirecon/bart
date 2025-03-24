@@ -57,7 +57,7 @@
 
 struct nlop_wrapper2_s {
 
-	INTERFACE(struct iter_op_data_s);
+	struct iter_op_data_s super;
 
 	long split;
 

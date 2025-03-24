@@ -159,7 +159,7 @@ static bool test_rf_pulse_ode(void)
 
 			data.pulse = simdata_pulse_defaults;
 			data.pulse.sinc = pulse_sinc_defaults;
-			data.pulse.sinc.INTERFACE.flipangle = angle;
+			data.pulse.sinc.super.flipangle = angle;
 			data.pulse.rf_end = trf;
 
 			data.grad = simdata_grad_defaults;
@@ -186,7 +186,7 @@ static bool test_rf_pulse_ode(void)
 			if (sim_angle < 0.)
 				sim_angle += 360.;
 
-			float delta = 180.f - fabsf(fabsf(sim_angle - data.pulse.sinc.INTERFACE.flipangle) - 180.f);
+			float delta = 180.f - fabsf(fabsf(sim_angle - data.pulse.sinc.super.flipangle) - 180.f);
 
 			if (1E-3 < fabs(delta)) {
 
@@ -225,13 +225,13 @@ static bool test_hypsec_rf_pulse_ode(void)
 
         data.pulse = simdata_pulse_defaults;
 	data.pulse.sinc = pulse_sinc_defaults;
-        data.pulse.sinc.INTERFACE.flipangle = 0.;      // Turn off flipangle -> do not influence inversion efficiency
+        data.pulse.sinc.super.flipangle = 0.;      // Turn off flipangle -> do not influence inversion efficiency
         data.pulse.rf_end = 0.01;
 
         // Hyperbolic Secant Characteristics
         data.pulse.hs = pulse_hypsec_defaults;
         data.pulse.type = PULSE_HS;
-        data.pulse.hs.INTERFACE.duration = data.pulse.rf_end;
+        data.pulse.hs.super.duration = data.pulse.rf_end;
 
         data.grad = simdata_grad_defaults;
 

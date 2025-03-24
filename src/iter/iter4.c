@@ -28,7 +28,7 @@
 
 struct iter4_nlop_s {
 
-	INTERFACE(iter_op_data);
+	iter_op_data super;
 
 	struct nlop_s nlop;
 };
@@ -71,7 +71,7 @@ static void nlop_nrm_iter(iter_op_data* _o, float* _dst, const float* _src)
 
 struct irgnm_s {
 
-	INTERFACE(iter_op_data);
+	iter_op_data super;
 
 	struct iter_op_s der;
 	struct iter_op_s adj;

@@ -43,7 +43,7 @@
 
 struct cdiag_s {
 
-	INTERFACE(linop_data_t);
+	linop_data_t super;
 
 	int N;
 	const long* dims;
@@ -216,7 +216,7 @@ void linop_gdiag_set_diag_ref(const struct linop_s* lop, int N, const long ddims
 
 struct scale_s {
 
-	INTERFACE(linop_data_t);
+	linop_data_t super;
 
 	int N;
 	const long* dims;
@@ -289,7 +289,7 @@ struct linop_s* linop_scale_create(int N, const long dims[N], const complex floa
 
 struct zconj_s {
 
-	INTERFACE(linop_data_t);
+	linop_data_t super;
 
 	int N;
 	const long* dims;
@@ -331,7 +331,7 @@ struct linop_s* linop_zconj_create(int N, const long dims[N])
 
 struct zreal_s {
 
-	INTERFACE(linop_data_t);
+	linop_data_t super;
 
 	int N;
 	const long* dims;
@@ -397,7 +397,7 @@ bool linop_is_identity(const struct linop_s* lop)
 
 struct copy_block_s {
 
-	INTERFACE(linop_data_t);
+	linop_data_t super;
 
 	int N;
 
@@ -500,7 +500,7 @@ struct linop_s* linop_expand_create(int N, const long out_dims[N], const long in
 
 struct padding_op_s {
 
-	INTERFACE(linop_data_t);
+	linop_data_t super;
 
 	int N;
 	const long* strs_out;
@@ -794,7 +794,7 @@ struct linop_s* linop_padding_create(int N, const long dims[N], enum PADDING pad
 
 struct extract_op_s {
 
-	INTERFACE(linop_data_t);
+	linop_data_t super;
 
 	int N;
 	const long* pos;
@@ -885,7 +885,7 @@ struct linop_s* linop_reshape_create(int A, const long out_dims[A], int B, const
 
 struct reshape_flagged_s {
 
-	INTERFACE(linop_data_t);
+	linop_data_t super;
 
 	int N;
 	unsigned long flags;
@@ -954,7 +954,7 @@ struct linop_s* linop_reshape2_create(int N, unsigned long flags, const long out
 
 struct permute_op_s {
 
-	INTERFACE(linop_data_t);
+	linop_data_t super;
 
 	int N;
 	const long* idims;
@@ -1040,7 +1040,7 @@ extern struct linop_s* linop_permute_create(int N, const int order[N], const lon
 
 struct transpose_op_s {
 
-	INTERFACE(linop_data_t);
+	linop_data_t super;
 
 	int N;
 	int a;
@@ -1142,7 +1142,7 @@ struct linop_s* linop_shift_create(int N, const long dims[N], int shift_dim, lon
 
 struct flip_op_s {
 
-	INTERFACE(linop_data_t);
+	linop_data_t super;
 
 	int N;
 	unsigned long flags;
@@ -1191,7 +1191,7 @@ struct linop_s* linop_flip_create(int N, const long dims[N], unsigned long flags
 
 struct add_strided_s {
 
-	INTERFACE(linop_data_t);
+	linop_data_t super;
 
 	int N;
 	
@@ -1290,7 +1290,7 @@ struct linop_s* linop_hankelization_create(int N, const long dims[N], int dim, i
 
 struct operator_matrix_s {
 
-	INTERFACE(linop_data_t);
+	linop_data_t super;
 
 	const complex float* mat;
 	const complex float* mat_gram; // A^H A
@@ -1717,7 +1717,7 @@ struct linop_s* linop_matrix_chain(const struct linop_s* a, const struct linop_s
 
 struct fft_linop_s {
 
-	INTERFACE(linop_data_t);
+	linop_data_t super;
 
 	const struct operator_s* frw;
 	const struct operator_s* adj;
@@ -1963,7 +1963,7 @@ struct linop_s* linop_ifft_generic_create(int N, const long dims[N], unsigned lo
 
 struct linop_cdf97_s {
 
-	INTERFACE(linop_data_t);
+	linop_data_t super;
 
 	int N;
 	const long* dims;
@@ -2032,7 +2032,7 @@ struct linop_s* linop_cdf97_create(int N, const long dims[N], unsigned long flag
 
 struct conv_data_s {
 
-	INTERFACE(linop_data_t);
+	linop_data_t super;
 
 	struct conv_plan* plan;
 };

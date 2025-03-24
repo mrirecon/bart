@@ -744,7 +744,7 @@ void md_resample(unsigned long flags, int ord, int N, const long _odims[N], comp
 
 struct lop_interp_s {
 
-	INTERFACE(linop_data_t);
+	linop_data_t super;
 
 	int N;
 	long* idims;
@@ -810,7 +810,7 @@ const struct linop_s* linop_interpolate_create(int d, unsigned long flags, int o
 
 struct nlop_interp_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	int N;
 	long* idims;

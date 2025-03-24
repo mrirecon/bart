@@ -49,8 +49,8 @@ DEF_TYPEID(iter_call_s);
 
 const struct iter_conjgrad_conf iter_conjgrad_defaults = {
 
-	.INTERFACE.TYPEID = &TYPEID2(iter_conjgrad_conf),
-	.INTERFACE.alpha = 1.,
+	.super.TYPEID = &TYPEID2(iter_conjgrad_conf),
+	.super.alpha = 1.,
 
 	.maxiter = 50,
 	.l2lambda = 0.,
@@ -62,8 +62,8 @@ const struct iter_conjgrad_conf iter_conjgrad_defaults = {
 
 const struct iter_landweber_conf iter_landweber_defaults = {
 
-	.INTERFACE.TYPEID = &TYPEID2(iter_landweber_conf),
-	.INTERFACE.alpha = 1.,
+	.super.TYPEID = &TYPEID2(iter_landweber_conf),
+	.super.alpha = 1.,
 
 	.maxiter = 50,
 	.step = 0.95,
@@ -72,8 +72,8 @@ const struct iter_landweber_conf iter_landweber_defaults = {
 
 const struct iter_ist_conf iter_ist_defaults = {
 
-	.INTERFACE.TYPEID = &TYPEID2(iter_ist_conf),
-	.INTERFACE.alpha = 1.,
+	.super.TYPEID = &TYPEID2(iter_ist_conf),
+	.super.alpha = 1.,
 
 	.maxiter = 50,
 	.step = 0.95,
@@ -84,8 +84,8 @@ const struct iter_ist_conf iter_ist_defaults = {
 
 const struct iter_eulermaruyama_conf iter_eulermaruyama_defaults = {
 
-	.INTERFACE.TYPEID = &TYPEID2(iter_eulermaruyama_conf),
-	.INTERFACE.alpha = 1.,
+	.super.TYPEID = &TYPEID2(iter_eulermaruyama_conf),
+	.super.alpha = 1.,
 
 	.maxiter = 50,
 	.step = 0.95,
@@ -93,8 +93,8 @@ const struct iter_eulermaruyama_conf iter_eulermaruyama_defaults = {
 
 const struct iter_fista_conf iter_fista_defaults = {
 
-	.INTERFACE.TYPEID = &TYPEID2(iter_fista_conf),
-	.INTERFACE.alpha = 1.,
+	.super.TYPEID = &TYPEID2(iter_fista_conf),
+	.super.alpha = 1.,
 
 	.maxiter = 50,
 	.step = 0.95,
@@ -111,8 +111,8 @@ const struct iter_fista_conf iter_fista_defaults = {
 
 const struct iter_admm_conf iter_admm_defaults = {
 
-	.INTERFACE.TYPEID = &TYPEID2(iter_admm_conf),
-	.INTERFACE.alpha = 1.,
+	.super.TYPEID = &TYPEID2(iter_admm_conf),
+	.super.alpha = 1.,
 
 	.maxiter = 50,
 	.maxitercg = 10,
@@ -140,8 +140,8 @@ const struct iter_admm_conf iter_admm_defaults = {
 
 const struct iter_pocs_conf iter_pocs_defaults = {
 
-	.INTERFACE.TYPEID = &TYPEID2(iter_pocs_conf),
-	.INTERFACE.alpha = 1.,
+	.super.TYPEID = &TYPEID2(iter_pocs_conf),
+	.super.alpha = 1.,
 
 	.maxiter = 50,
 };
@@ -149,8 +149,8 @@ const struct iter_pocs_conf iter_pocs_defaults = {
 
 const struct iter_niht_conf iter_niht_defaults = {
 
-	.INTERFACE.TYPEID = &TYPEID2(iter_niht_conf),
-	.INTERFACE.alpha = 1.,
+	.super.TYPEID = &TYPEID2(iter_niht_conf),
+	.super.alpha = 1.,
 
 	.maxiter = 50,
 	.tol = 1e-8,
@@ -159,8 +159,8 @@ const struct iter_niht_conf iter_niht_defaults = {
 
 const struct iter_chambolle_pock_conf iter_chambolle_pock_defaults = {
 
-	.INTERFACE.TYPEID = &TYPEID2(iter_chambolle_pock_conf),
-	.INTERFACE.alpha = 1.,
+	.super.TYPEID = &TYPEID2(iter_chambolle_pock_conf),
+	.super.alpha = 1.,
 
 	.maxiter = 50,
 	.tol = 1e-8,
@@ -224,7 +224,7 @@ void iter_landweber(iter_conf* _conf,
 
 	assert(NULL == thresh_prox);
 
-	landweber_sym(conf->maxiter, 1.E-3 * eps, conf->INTERFACE.alpha * conf->step, size, select_vecops(image_adj),
+	landweber_sym(conf->maxiter, 1.E-3 * eps, conf->super.alpha * conf->step, size, select_vecops(image_adj),
 			OPERATOR2ITOP(normaleq_op), image, image_adj, monitor);
 
 cleanup:

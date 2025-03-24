@@ -40,7 +40,7 @@
 
 struct nlop_wrapper_s {
 
-	INTERFACE(struct iter_op_data_s);
+	struct iter_op_data_s super;
 
 	struct noir_s* noir;
 	long split;

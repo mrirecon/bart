@@ -38,7 +38,7 @@
 
 struct s_data {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	long size;
 };

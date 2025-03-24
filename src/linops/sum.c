@@ -25,7 +25,7 @@
 
 struct sum_data {
 
-	INTERFACE(linop_data_t);
+	linop_data_t super;
 
 	int N;
 	long *imgd_dims;
@@ -186,7 +186,7 @@ const struct linop_s* linop_avg_create(int N, const long imgd_dims[N], unsigned 
 
 struct repmat_data {
 
-	INTERFACE(linop_data_t);
+	linop_data_t super;
 
 	int N;
 	long *odims;

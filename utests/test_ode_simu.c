@@ -55,7 +55,7 @@ static bool test_ode_bloch_simulation_gradients(void)
 
 	sim_data.pulse = simdata_pulse_defaults;
 	sim_data.pulse.sinc = pulse_sinc_defaults;
-	sim_data.pulse.sinc.INTERFACE.flipangle = 45.;
+	sim_data.pulse.sinc.super.flipangle = 45.;
 	sim_data.pulse.rf_end = 0.001;
 
 	sim_data.grad = simdata_grad_defaults;
@@ -182,7 +182,7 @@ static bool test_stm_bloch_simulation_gradients(void)
 
 	sim_data.pulse = simdata_pulse_defaults;
 	sim_data.pulse.sinc = pulse_sinc_defaults;
-	sim_data.pulse.sinc.INTERFACE.flipangle = 45.;
+	sim_data.pulse.sinc.super.flipangle = 45.;
 	sim_data.pulse.rf_end = 0.001;
 
 	sim_data.grad = simdata_grad_defaults;
@@ -331,7 +331,7 @@ static bool test_ode_irbssfp_simulation(void)
 
 	sim_data.pulse = simdata_pulse_defaults;
 	sim_data.pulse.sinc = pulse_sinc_defaults;
-	sim_data.pulse.sinc.INTERFACE.flipangle = angle;
+	sim_data.pulse.sinc.super.flipangle = angle;
 
         // Choose close to hard-pulse approximation -> same assumptions as analytical model
 	sim_data.pulse.rf_end = 0.00001;
@@ -433,7 +433,7 @@ static bool test_rot_irbssfp_simulation(void)
 
 	sim_data.pulse = simdata_pulse_defaults;
 	sim_data.pulse.sinc = pulse_sinc_defaults;
-	sim_data.pulse.sinc.INTERFACE.flipangle = angle;
+	sim_data.pulse.sinc.super.flipangle = angle;
 
         // Choose close to hard-pulse approximation -> same assumptions as analytical model
 	sim_data.pulse.rf_end = 0.;
@@ -522,7 +522,7 @@ static bool test_stm_ode_bssfp_comparison(void)
 
 	sim_data.pulse = simdata_pulse_defaults;
 	sim_data.pulse.sinc = pulse_sinc_defaults;
-	sim_data.pulse.sinc.INTERFACE.flipangle = 45.;
+	sim_data.pulse.sinc.super.flipangle = 45.;
         sim_data.pulse.rf_end = 0.001;
 
 	sim_data.grad = simdata_grad_defaults;
@@ -622,7 +622,7 @@ static bool test_stm_ode_flash_comparison(void)
 
 	sim_data.pulse = simdata_pulse_defaults;
 	sim_data.pulse.sinc = pulse_sinc_defaults;
-	sim_data.pulse.sinc.INTERFACE.flipangle = 8.;
+	sim_data.pulse.sinc.super.flipangle = 8.;
         sim_data.pulse.rf_end = 0.001;
 
 	sim_data.grad = simdata_grad_defaults;
@@ -715,7 +715,7 @@ static bool test_ode_simu_offresonance(void)
 
 	sim_data.pulse = simdata_pulse_defaults;
 	sim_data.pulse.sinc = pulse_sinc_defaults;
-	sim_data.pulse.sinc.INTERFACE.flipangle = 90.;
+	sim_data.pulse.sinc.super.flipangle = 90.;
 	sim_data.pulse.rf_end = 1.E-8;	// Close to Hard-Pulses
 
         sim_data.grad = simdata_grad_defaults;
@@ -768,7 +768,7 @@ static bool test_stm_simu_offresonance(void)
 
 	sim_data.pulse = simdata_pulse_defaults;
 	sim_data.pulse.sinc = pulse_sinc_defaults;
-	sim_data.pulse.sinc.INTERFACE.flipangle = 90.;
+	sim_data.pulse.sinc.super.flipangle = 90.;
 	sim_data.pulse.rf_end = 1.E-8;	// Close to Hard-Pulses
 
         sim_data.grad = simdata_grad_defaults;
@@ -820,7 +820,7 @@ static bool test_ode_simu_gradient(void)
 
 	sim_data.pulse = simdata_pulse_defaults;
 	sim_data.pulse.sinc = pulse_sinc_defaults;
-	sim_data.pulse.sinc.INTERFACE.flipangle = 90.;
+	sim_data.pulse.sinc.super.flipangle = 90.;
 	sim_data.pulse.rf_end = 1.E-8;	// Close to Hard-Pulses
 
 	sim_data.grad = simdata_grad_defaults;
@@ -873,7 +873,7 @@ static bool test_stm_simu_gradient(void)
 
 	sim_data.pulse = simdata_pulse_defaults;
 	sim_data.pulse.sinc = pulse_sinc_defaults;
-	sim_data.pulse.sinc.INTERFACE.flipangle = 90.;
+	sim_data.pulse.sinc.super.flipangle = 90.;
 	sim_data.pulse.rf_end = 1.E-8;	// Close to Hard-Pulses
 
 	sim_data.grad = simdata_grad_defaults;
@@ -971,7 +971,7 @@ static bool test_ode_epg_relation(void)
 
 	sim_data.pulse = simdata_pulse_defaults;
 	sim_data.pulse.sinc = pulse_sinc_defaults;
-	sim_data.pulse.sinc.INTERFACE.flipangle = 8.;
+	sim_data.pulse.sinc.super.flipangle = 8.;
 	sim_data.pulse.rf_end = 1E-8;	// Close to Hard-Pulses
 
 	sim_data.grad = simdata_grad_defaults;
@@ -1002,7 +1002,7 @@ static bool test_ode_epg_relation(void)
 	complex float signal[T];
 	complex float states[3][M][T]; // 3 -> dims: Fn,F-n,Zn; M: k-states; T: repetition
 
-	flash_epg_der(T, M, signal, states, NULL, NULL, sim_data.pulse.sinc.INTERFACE.flipangle,
+	flash_epg_der(T, M, signal, states, NULL, NULL, sim_data.pulse.sinc.super.flipangle,
 			sim_data.seq.tr, 1000000., 1000000., 1., sim_data.voxel.w, 0L);
 
 	float tol = 1.E-4;
@@ -1054,7 +1054,7 @@ static bool test_hp_irbssfp_simulation(void)
 
 	sim_data.pulse = simdata_pulse_defaults;
 	sim_data.pulse.sinc = pulse_sinc_defaults;
-	sim_data.pulse.sinc.INTERFACE.flipangle = angle;
+	sim_data.pulse.sinc.super.flipangle = angle;
 
         // Choose HARD-PULSE approximation
         // -> same assumptions as analytical model
@@ -1131,7 +1131,7 @@ static bool test_hp_simu_offresonance(void)
 
 	sim_data.pulse = simdata_pulse_defaults;
 	sim_data.pulse.sinc = pulse_sinc_defaults;
-	sim_data.pulse.sinc.INTERFACE.flipangle = 90.;
+	sim_data.pulse.sinc.super.flipangle = 90.;
 	sim_data.pulse.rf_end = 0.;	// Here: HARD PULSE!
 
         sim_data.grad = simdata_grad_defaults;
@@ -1183,7 +1183,7 @@ static bool test_hp_simu_gradient(void)
 
 	sim_data.pulse = simdata_pulse_defaults;
 	sim_data.pulse.sinc = pulse_sinc_defaults;
-	sim_data.pulse.sinc.INTERFACE.flipangle = 90.;
+	sim_data.pulse.sinc.super.flipangle = 90.;
 	sim_data.pulse.rf_end = 0.;	// Here: HARD PULSE!
 
 	sim_data.grad = simdata_grad_defaults;
@@ -1237,7 +1237,7 @@ static bool test_ode_z_gradient_refocus(void)
 
 	sim_data.pulse = simdata_pulse_defaults;
 	sim_data.pulse.sinc = pulse_sinc_defaults;
-	sim_data.pulse.sinc.INTERFACE.flipangle = 45.;
+	sim_data.pulse.sinc.super.flipangle = 45.;
 
 	sim_data.pulse.rf_end = 0.001;
 
@@ -1302,7 +1302,7 @@ static bool test_stm_z_gradient_refocus(void)
 
 	sim_data.pulse = simdata_pulse_defaults;
 	sim_data.pulse.sinc = pulse_sinc_defaults;
-	sim_data.pulse.sinc.INTERFACE.flipangle = 45.;
+	sim_data.pulse.sinc.super.flipangle = 45.;
 
 	sim_data.pulse.rf_end = 0.001;
 
@@ -1356,7 +1356,7 @@ static bool test_ode_inversion(void)
 
         data.pulse = simdata_pulse_defaults;
 	data.pulse.sinc = pulse_sinc_defaults;
-        data.pulse.sinc.INTERFACE.flipangle = 0.;
+        data.pulse.sinc.super.flipangle = 0.;
         data.pulse.rf_end = 0.01;
 
         data.grad = simdata_grad_defaults;
@@ -1397,7 +1397,7 @@ static bool test_stm_matrix_creation(void)
 
 	sim_data.pulse = simdata_pulse_defaults;
 	sim_data.pulse.sinc = pulse_sinc_defaults;
-	sim_data.pulse.sinc.INTERFACE.flipangle = 90.;
+	sim_data.pulse.sinc.super.flipangle = 90.;
 
         sim_data.grad = simdata_grad_defaults;
         sim_data.grad.gb[2] = 2. * M_PI * 1000.;	// [rad/s]
@@ -1405,7 +1405,7 @@ static bool test_stm_matrix_creation(void)
         sim_data.other = simdata_other_defaults;
 
         // Prepare RF pulse to have correct flip angle
-        pulse_sinc_init(&sim_data.pulse.sinc, sim_data.pulse.rf_end - sim_data.pulse.rf_start, sim_data.pulse.sinc.INTERFACE.flipangle, 
+        pulse_sinc_init(&sim_data.pulse.sinc, sim_data.pulse.rf_end - sim_data.pulse.rf_start, sim_data.pulse.sinc.super.flipangle, 
 			sim_data.pulse.phase, sim_data.pulse.sinc.bwtp, sim_data.pulse.sinc.alpha);
 
 
@@ -1489,7 +1489,7 @@ static bool test_ode_bloch_mcc_simulation_gradients(void)
 	sim_data.voxel.Om[1] = 100.;
 	sim_data.voxel.P = 2;
 
-	sim_data.pulse.sinc.INTERFACE.flipangle = 45.;
+	sim_data.pulse.sinc.super.flipangle = 45.;
 	sim_data.pulse.rf_end = 0.001;
 
 	int R = sim_data.seq.rep_num;
@@ -1724,7 +1724,7 @@ static bool test_bmc_ode_irbssfp_signal(void)
 			sim_data.voxel.k[p] = 0.;
 	}
 
-	sim_data.pulse.sinc.INTERFACE.flipangle = 45.;
+	sim_data.pulse.sinc.super.flipangle = 45.;
 	sim_data.pulse.rf_end = 0.001;
 
 	int R = sim_data.seq.rep_num;
@@ -1822,7 +1822,7 @@ static bool test_ode_bmc_5pool(void)
 			sim_data.voxel.k[i] = 10.;
 	}
 
-	sim_data.pulse.sinc.INTERFACE.flipangle = 45.;
+	sim_data.pulse.sinc.super.flipangle = 45.;
 	sim_data.pulse.rf_end = 0.001;
 
 	int R = sim_data.seq.rep_num;

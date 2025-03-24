@@ -23,7 +23,7 @@
 
 struct decompose_complex_s {
 
-	INTERFACE(linop_data_t);
+	linop_data_t super;
 
 	int N;
 	int D;

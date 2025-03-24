@@ -15,7 +15,7 @@ typedef struct superclass_s { TYPEID* TYPEID; } superclass;
 
 struct class1 {
 
-	INTERFACE(superclass);
+	superclass super;
 };
 
 DEF_TYPEID(class1);
@@ -43,7 +43,7 @@ UT_REGISTER_TEST(test_cast_down_pos);
 
 struct class2 {
 
-	INTERFACE(superclass);
+	superclass super;
 };
 
 DEF_TYPEID(class2);

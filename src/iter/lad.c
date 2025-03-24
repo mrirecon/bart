@@ -104,7 +104,7 @@ void lad(	int N, const struct lad_conf* conf,
 
 struct lad_s {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	const struct lad_conf* conf;
 	italgo_fun2_t italgo;

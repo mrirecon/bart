@@ -27,7 +27,7 @@
 
 struct kb_rolloff_s {
 
-	INTERFACE(linop_data_t);
+	linop_data_t super;
 
 	int N;
 	const long* dims;
@@ -123,7 +123,7 @@ struct linop_s* linop_kb_rolloff_create(int N, const long dims[N], unsigned long
 
 struct kb_iterpolate_s {
 
-	INTERFACE(linop_data_t);
+	linop_data_t super;
 
 	int N;
 	const long* tdims;

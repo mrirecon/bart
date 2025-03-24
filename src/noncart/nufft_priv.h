@@ -10,7 +10,7 @@ struct multiplace_array_s;
  */
 struct nufft_data {
 
-	INTERFACE(linop_data_t);
+	linop_data_t super;
 
 	struct nufft_conf_s conf;	///< NUFFT configuration structure
 	struct grid_conf_s grid_conf;

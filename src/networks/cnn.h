@@ -41,7 +41,7 @@ extern _Bool network_is_diagonal(const struct network_s* config);
 
 struct network_resnet_s {
 
-	INTERFACE(network_t);
+	network_t super;
 
 	int N;
 
@@ -74,7 +74,7 @@ extern struct network_resnet_s network_resnet_default;
 
 struct network_varnet_s {
 
-	INTERFACE(network_t);
+	network_t super;
 
 	long Kx;
 	long Ky;

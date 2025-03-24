@@ -21,14 +21,14 @@ typedef struct iter_op_data_s { TYPEID* TYPEID; } iter_op_data;
 
 struct iter_op_op {
 
-	INTERFACE(iter_op_data);
+	iter_op_data super;
 	const struct operator_s* op;
 };
 
 
 struct iter_op_p_op {
 
-	INTERFACE(iter_op_data);
+	iter_op_data super;
 	const struct operator_p_s* op;
 };
 
@@ -77,7 +77,7 @@ italgo_fun2_f iter2_call_iter;
 
 struct iter2_call_s {
 
-	INTERFACE(iter_conf);
+	iter_conf super;
 
 	italgo_fun2_t fun;
 	iter_conf* _conf;

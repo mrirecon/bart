@@ -29,7 +29,7 @@ DEF_TYPEID(iter3_lbfgs_conf);
 
 const struct iter3_irgnm_conf iter3_irgnm_defaults = {
 
-	.INTERFACE.TYPEID = &TYPEID2(iter3_irgnm_conf),
+	.super.TYPEID = &TYPEID2(iter3_irgnm_conf),
 
 	.iter = 8,
 	.alpha = 1.,
@@ -45,7 +45,7 @@ const struct iter3_irgnm_conf iter3_irgnm_defaults = {
 
 const struct iter3_landweber_conf iter3_landweber_defaults = {
 
-	.INTERFACE.TYPEID = &TYPEID2(iter3_landweber_conf),
+	.super.TYPEID = &TYPEID2(iter3_landweber_conf),
 
 	.iter = 8,
 	.alpha = 1.,
@@ -54,7 +54,7 @@ const struct iter3_landweber_conf iter3_landweber_defaults = {
 
 const struct iter3_lbfgs_conf iter3_lbfgs_defaults = {
 
-	.INTERFACE.TYPEID = &TYPEID2(iter3_lbfgs_conf),
+	.super.TYPEID = &TYPEID2(iter3_lbfgs_conf),
 
 	.iter = -1,
 	.M = 6,

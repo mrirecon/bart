@@ -40,7 +40,7 @@ struct nlop_norm_inv_conf nlop_norm_inv_default = {
 
 struct norm_inv_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	const struct nlop_s* normal_op;
 
@@ -161,7 +161,7 @@ static void norm_inv_fun(const nlop_data_t* _data, int Narg, complex float* args
 	for (int i = 1; i < d->II; i++)
 		md_copy(d->dom[i]->N, d->dom[i]->dims, d->in_args[i], args[i + 1], CFL_SIZE);
 
-	d->iter_conf.INTERFACE.alpha = 0;
+	d->iter_conf.super.alpha = 0;
 
 	norm_inv_set_ops(d, MD_BIT(0));
 	norm_inv(d, dst, src);

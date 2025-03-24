@@ -47,7 +47,7 @@ int ir_meco_get_num_of_coeff(enum meco_model sel_model)
 
 struct ir_meco_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	int N;
 

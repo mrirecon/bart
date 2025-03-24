@@ -162,12 +162,11 @@ static const struct nlop_s* append_activation_bias_internal(const struct nlop_s*
 
 struct bias_op_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	int N;
 	const long* dims;
 	const long* bdims;
-
 };
 
 DEF_TYPEID(bias_op_s);
@@ -262,7 +261,7 @@ const struct nlop_s* nlop_bias_create(int N, const long dims[N], const long bdim
 
 struct relu_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	int N;
 	const long* rdims;
@@ -400,7 +399,7 @@ const struct nlop_s* nlop_relu_create(int N, const long dims[N])
 
 struct softmax_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	complex float* tmp;
 	unsigned long batch_flag;
@@ -532,7 +531,7 @@ const struct nlop_s* nlop_softmax_create(int N, const long dims[N], unsigned lon
 
 struct sigmoid_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 };
 
 DEF_TYPEID(sigmoid_s);

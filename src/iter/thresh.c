@@ -41,7 +41,7 @@
  */
 struct thresh_s {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	float lambda; //for soft thresholding
         int k; // for hard thresholding

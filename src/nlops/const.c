@@ -22,7 +22,7 @@
 
 struct const_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	int N;
 	const long* dims;
@@ -228,7 +228,7 @@ struct nlop_s* nlop_set_input_scalar_F(const struct nlop_s* a, int i, complex fl
 
 struct del_out_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 };
 
 DEF_TYPEID(del_out_s);

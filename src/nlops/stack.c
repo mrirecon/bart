@@ -33,7 +33,7 @@
 
 struct stack_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	int N;
 	int II;
@@ -220,7 +220,7 @@ struct nlop_s* nlop_destack_create(int N, const long odims1[N], const long odims
 
 struct stack_container_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	int Nnlops;
 
@@ -809,7 +809,7 @@ const struct nlop_s* nlop_stack_multigpu_create_F(int N, const struct nlop_s* nl
 
 struct stack_flatten_trafo_s {
 
-	INTERFACE(linop_data_t);
+	linop_data_t super;
 
 	long isize;
 	long osize;

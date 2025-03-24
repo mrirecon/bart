@@ -95,7 +95,7 @@ static void rand_perm_batches(struct bart_rand_state* rand_state, long N, long p
 
 struct batch_gen_data_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	long D; //number of arrays
 	long N;	//rank of arrays

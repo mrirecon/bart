@@ -29,7 +29,7 @@
 
 struct checkpoint_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	const struct nlop_s* nlop;
 

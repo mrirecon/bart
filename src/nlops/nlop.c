@@ -112,7 +112,7 @@ static void nlop_der_free(const struct nlop_der_s* der_data)
 
 struct nlop_op_data_s {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	nlop_data_t* data;
 	nlop_del_fun_t del;
@@ -130,7 +130,7 @@ static DEF_TYPEID(nlop_op_data_s);
 
 struct nlop_linop_data_s {
 
-	INTERFACE(linop_data_t);
+	linop_data_t super;
 
 	nlop_data_t* data;
 	nlop_del_fun_t del;
@@ -781,7 +781,7 @@ const struct nlop_s* nlop_attach(const struct nlop_s* nop, void* ptr, void (*del
 
 struct flatten_graph_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	long* off;
 	const struct nlop_s* op;
@@ -999,7 +999,7 @@ static struct nlop_s* nlop_flatten_graph(const struct nlop_s* op)
 
 struct flatten_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	long* off;
 	const struct nlop_s* op;
@@ -1691,7 +1691,7 @@ const struct nlop_s* nlop_gpu_wrapper_F(const struct nlop_s* op)
 
 struct op_p_nlop_wrapper {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	const struct nlop_s* nlop;
 };

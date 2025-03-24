@@ -44,21 +44,21 @@ struct iter_op_s;
 
 struct iter6_sgd_conf {
 
-	INTERFACE(iter6_conf);
+	iter6_conf super;
 
 	float momentum;
 };
 
 struct iter6_adadelta_conf {
 
-	INTERFACE(iter6_conf);
+	iter6_conf super;
 
 	float rho;
 };
 
 struct iter6_adam_conf {
 
-	INTERFACE(iter6_conf);
+	iter6_conf super;
 
 	long reset_epoch;
 
@@ -69,7 +69,7 @@ struct iter6_adam_conf {
 
 struct iter6_iPALM_conf {
 
-	INTERFACE(iter6_conf);
+	iter6_conf super;
 
 	float Lmin;
 	float Lmax;

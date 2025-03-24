@@ -210,7 +210,7 @@ const struct nlop_s* nlop_affine_to_grid_F(const struct nlop_s* affine, const lo
 
 struct affine_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	int idx; // for rotation
 

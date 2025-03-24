@@ -28,7 +28,7 @@
 
 struct block_diag_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	int II;
 	int OO;
@@ -56,7 +56,7 @@ DEF_TYPEID(block_diag_s);
 
 struct diag_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	nlop_zrdiag_fun_t zrdiag_fun;
 	nlop_zdiag_fun_t zdiag_fun;
@@ -71,7 +71,7 @@ DEF_TYPEID(diag_s);
 
 struct block_diag_simple_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	nlop_zrblock_diag_fun_t zrblock_diag_fun;
 	nlop_zblock_diag_fun_t zblock_diag_fun;
@@ -1188,7 +1188,7 @@ void linop_compute_matrix_zrblock_diag(const struct linop_s* lop, int N, const l
 
 struct precomp_jacobian_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	const struct nlop_s* nlop;
 };

@@ -142,7 +142,7 @@ static void construct_mask(
 
 struct kern_s {
 
-	INTERFACE(linop_data_t);
+	linop_data_t super;
 
 	unsigned int N;
 
@@ -468,7 +468,7 @@ static const struct linop_s* linop_kern_create(bool gpu_flag,
 
 struct multc_s {
 
-	INTERFACE(linop_data_t);
+	linop_data_t super;
 
 	unsigned int nc;
 	unsigned int md;

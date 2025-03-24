@@ -35,7 +35,7 @@
 
 struct stats_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	unsigned long flags;
 	const struct iovec_s* dom;
@@ -181,7 +181,7 @@ const struct nlop_s* nlop_stats_create(int N, const long dims[N], unsigned long 
 
 struct normalize_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	const struct iovec_s* dom;
 	const struct iovec_s* statdom;
@@ -380,7 +380,7 @@ const struct nlop_s* nlop_normalize_stats_create(int N, const long dims[N], unsi
 
 struct bn_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	unsigned long flags;
 	const struct iovec_s* dom;

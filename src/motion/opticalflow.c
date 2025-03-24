@@ -61,7 +61,7 @@ static void zentral_differences(int D, const long dims[D], int d, unsigned long 
  */
 struct prox_img_data {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	float lambda;
 

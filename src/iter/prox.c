@@ -50,7 +50,7 @@
  */
 struct prox_weighted_leastsquares_data {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	int N;
 
@@ -178,7 +178,7 @@ const struct operator_p_s* prox_leastsquares_create(int N, const long dims[N], f
  */
 struct prox_l2norm_data {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	float lambda;
 	long size;
@@ -247,7 +247,7 @@ const struct operator_p_s* prox_l2norm_create(int N, const long dims[N], float l
  */
 struct prox_l2ball_data {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	struct multiplace_array_s* y;
 	float eps;
@@ -401,7 +401,7 @@ const struct operator_p_s* prox_thresh_create(unsigned int N, const long dims[N]
  */
 struct prox_zero_data {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	long size;
 };
@@ -458,7 +458,7 @@ const struct operator_p_s* prox_zero_create(int N, const long dims[N])
  */
 struct prox_ineq_data {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	const float* b;
 	float a;
@@ -553,7 +553,7 @@ const struct operator_p_s* prox_zsmax_create(int N, const long dims[N], float a)
 
 struct prox_rvc_data {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	long size;
 };

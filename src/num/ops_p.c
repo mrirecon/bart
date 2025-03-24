@@ -94,7 +94,7 @@ void operator_p_free(const struct operator_p_s* x)
 
 struct op_p_data_s {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	operator_data_t* data;
 	operator_p_fun_t apply;
@@ -400,7 +400,7 @@ const struct operator_p_s* operator_p_flatten_F(const struct operator_p_s* op)
 
 struct scale_s {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	long size;
 };

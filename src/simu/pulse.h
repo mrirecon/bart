@@ -19,7 +19,7 @@ struct pulse {
 
 struct pulse_sinc {
 
-	INTERFACE(struct pulse);
+	struct pulse super;
 
 	float alpha;		/* windows of pulse (0: normal sinc, 0.5: Hanning, 0.46: Hamming) */
 	float A;		/* amplitude */
@@ -38,7 +38,7 @@ inline complex float pulse_eval(const struct pulse* p, float t)
 
 struct pulse_rect {
 
-	INTERFACE(struct pulse);
+	struct pulse super;
 
 	float A;		/* amplitude */
 };
@@ -50,7 +50,7 @@ extern void pulse_rect_init(struct pulse_rect* pr, float duration, float angle /
 
 struct pulse_hypsec {
 
-	INTERFACE(struct pulse);
+	struct pulse super;
 
 	float a0;
 	float beta;

@@ -60,7 +60,7 @@
 
 struct T1inv_s {
 
-	INTERFACE(iter_op_data);
+	iter_op_data super;
 
 	const struct nlop_s* nlop;
 	const struct mdb_irgnm_l1_conf* conf;
@@ -356,7 +356,7 @@ static const struct operator_p_s* create_prox(const long img_dims[DIMS], unsigne
 
 struct T1inv2_s {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	struct T1inv_s data;
 };
@@ -486,7 +486,7 @@ static const struct operator_p_s* T1inv_p_create(const struct mdb_irgnm_l1_conf*
 
 struct pu_data {
 
-	INTERFACE(iter_op_data);
+	iter_op_data super;
 
 	int N;
 	const long* dims;
@@ -590,7 +590,7 @@ void mdb_irgnm_l1(const struct mdb_irgnm_l1_conf* conf,
 
 	struct pu_data pu_data = {
 
-		.INTERFACE.TYPEID = &TYPEID(pu_data),
+		.super.TYPEID = &TYPEID(pu_data),
 		.N = dm->N,
 		.dims = dm->dims,
 		.tmp = tmp,

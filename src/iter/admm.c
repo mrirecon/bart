@@ -60,7 +60,7 @@ DEF_TYPEID(admm_history_s);
 
 struct admm_normaleq_data {
 
-	INTERFACE(iter_op_data);
+	iter_op_data super;
 
 	long N;
 	int num_funs;
@@ -110,7 +110,7 @@ static void admm_normaleq(iter_op_data* _data, float* dst, const float* src)
 
 struct cg_xupdate_s {
 
-	INTERFACE(iter_op_data);
+	iter_op_data super;
 
 	long N;
 	const struct vec_iter_s* vops;
@@ -195,7 +195,7 @@ void admm(const struct admm_plan_s* plan,
 
 	struct admm_normaleq_data ndata = {
 
-		.INTERFACE.TYPEID = &TYPEID(admm_normaleq_data),
+		.super.TYPEID = &TYPEID(admm_normaleq_data),
 		.N = N,
 		.num_funs = num_funs,
 		.ops = plan->ops,
@@ -210,7 +210,7 @@ void admm(const struct admm_plan_s* plan,
 
 	struct cg_xupdate_s cg_xupdate_data = {
 
-		.INTERFACE.TYPEID = &TYPEID(cg_xupdate_s),
+		.super.TYPEID = &TYPEID(cg_xupdate_s),
 		.N = N,
 		.vops = vops,
 		.maxitercg = plan->maxitercg,

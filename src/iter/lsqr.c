@@ -37,7 +37,7 @@ const struct lsqr_conf lsqr_defaults = { .lambda = 0., .it_gpu = false, .warmsta
 
 struct lsqr_data {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	float l2_lambda;
 	long size;

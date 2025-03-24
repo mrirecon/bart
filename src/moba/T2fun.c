@@ -27,7 +27,7 @@
 
 struct T2_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	int N;
 

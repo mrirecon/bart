@@ -30,7 +30,7 @@
 
 struct fmac_data {
 
-	INTERFACE(linop_data_t);
+	linop_data_t super;
 
 	int N;
 	long *dims;

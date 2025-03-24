@@ -54,7 +54,7 @@
 
 struct mobafit_bound_s {
 
-	INTERFACE(iter_op_data);
+	iter_op_data super;
 
 	int N;
 	long* dims;
@@ -201,7 +201,7 @@ int main_mobafit(int argc, char* argv[argc])
 
 		/* Pulse Specific Parameters */
 		OPTL_FLOAT(0, "Trf", &(sim.pulse.rf_end), "float", "Pulse Duration [s]"), /* Assumes to start at t=0 */
-		OPTL_FLOAT(0, "FA", &(sim.pulse.sinc.INTERFACE.flipangle), "float", "Flipangle [deg]"),
+		OPTL_FLOAT(0, "FA", &(sim.pulse.sinc.super.flipangle), "float", "Flipangle [deg]"),
 		OPTL_FLOAT(0, "BWTP", &(sim.pulse.sinc.bwtp), "float", "Bandwidth-Time-Product"),
 
 		/* Voxel Specific Parameters */

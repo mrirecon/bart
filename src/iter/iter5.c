@@ -25,7 +25,7 @@
 
 struct iter5_altmin_s {
 
-	INTERFACE(iter_op_data);
+	iter_op_data super;
 
 	struct nlop_s* nlop;
 

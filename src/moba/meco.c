@@ -37,7 +37,7 @@
 
 struct meco_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	int N;
 	long model;

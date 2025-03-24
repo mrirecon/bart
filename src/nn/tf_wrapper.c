@@ -736,7 +736,7 @@ static TF_Tensor* tensor_allocate(const struct tf_shared_graph_s* graph, const c
 
 struct tf_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	int nr_inputs;
 	int nr_outputs;
@@ -1156,7 +1156,7 @@ static const struct nlop_s* nlop_tf_shared_grad_create(const struct tf_shared_gr
 
 struct tf_jac_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	const struct tf_shared_graph_s* graph;
 

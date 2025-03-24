@@ -33,7 +33,7 @@ void iter_history(struct iter_monitor_s* monitor, const struct iter_history_s* h
 
 struct monitor_default_s {
 
-	INTERFACE(iter_monitor_t);
+	iter_monitor_t super;
 
 	long N;
 	const float* image_truth;
@@ -74,8 +74,8 @@ static void monitor_default_fun(struct iter_monitor_s* _data, const struct vec_i
 
 	debug_printf(DP_INFO, "[Iter %04d] Objective: %f, Error: %f\n", ++iter, obj, err);
 
-	data->INTERFACE.obj = obj;
-	data->INTERFACE.err = err;
+	data->super.obj = obj;
+	data->super.err = err;
 }
 
 struct iter_monitor_s* iter_monitor_create(long N, const float* image_truth, void* data, float (*objective)(const void* data, const float* x))
@@ -89,10 +89,10 @@ struct iter_monitor_s* iter_monitor_create(long N, const float* image_truth, voi
 	monitor->data = data;
 	monitor->objective = objective;
 
-	monitor->INTERFACE.fun = monitor_default_fun;
-	monitor->INTERFACE.record = NULL;
-	monitor->INTERFACE.obj = -1.;
-	monitor->INTERFACE.err = -1.;
+	monitor->super.fun = monitor_default_fun;
+	monitor->super.record = NULL;
+	monitor->super.obj = -1.;
+	monitor->super.err = -1.;
 
 	return CAST_UP(PTR_PASS(monitor));
 }

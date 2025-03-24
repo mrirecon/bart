@@ -38,7 +38,7 @@
 
 struct lrthresh_data_s {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	float lambda;
 	bool randshift;

@@ -34,7 +34,7 @@
 
 struct convcorr_geom_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	long N;
 

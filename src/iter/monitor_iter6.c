@@ -50,7 +50,7 @@ struct monitor_value_s {
 
 struct monitor_iter6_default_s {
 
-	INTERFACE(struct monitor_iter6_s);
+	struct monitor_iter6_s super;
 
 	bool print_time;
 	bool print_progress;
@@ -311,8 +311,8 @@ struct monitor_iter6_s* monitor_iter6_create(bool progressbar, bool record, int 
 	PTR_ALLOC(struct monitor_iter6_default_s, monitor);
 	SET_TYPEID(monitor_iter6_default_s, monitor);
 
-	monitor->INTERFACE.fun = monitor6_default_fun;
-	monitor->INTERFACE.free = monitor6_default_free;
+	monitor->super.fun = monitor6_default_fun;
+	monitor->super.free = monitor6_default_free;
 
 	monitor->print_time = true;
 	monitor->print_progress = progressbar;
@@ -348,7 +348,7 @@ struct monitor_iter6_s* monitor_iter6_create(bool progressbar, bool record, int 
 
 struct monitor_iter6_nlop_s {
 
-	INTERFACE(monitor_iter6_value_data_t);
+	monitor_iter6_value_data_t super;
 
 	const struct nlop_s* nlop;
 	bool eval_each_batch;
@@ -366,11 +366,11 @@ static void monitor_iter6_nlop_fun(const monitor_iter6_value_data_t* data, long 
 
 	int NO = nlop_get_nr_out_args(d->nlop);
 
-	assert(N == d->INTERFACE.N_vals);
+	assert(N == d->super.N_vals);
 
 	void* tmp_args[NI + NO];
 
-	tmp_args[0] = md_alloc_sameplace(1, MD_DIMS(d->INTERFACE.N_vals), CFL_SIZE, args[0]);
+	tmp_args[0] = md_alloc_sameplace(1, MD_DIMS(d->super.N_vals), CFL_SIZE, args[0]);
 
 	for (int o = 1; o < NO; o++) {
 
@@ -384,8 +384,8 @@ static void monitor_iter6_nlop_fun(const monitor_iter6_value_data_t* data, long 
 
 	nlop_generic_apply_select_derivative_unchecked(d->nlop, NI + NO, tmp_args, 0, 0);
 
-	md_copy(1, MD_DIMS(d->INTERFACE.N_vals), d->last_result, tmp_args[0], CFL_SIZE);
-	md_copy(1, MD_DIMS(d->INTERFACE.N_vals), vals, tmp_args[0], CFL_SIZE);
+	md_copy(1, MD_DIMS(d->super.N_vals), d->last_result, tmp_args[0], CFL_SIZE);
+	md_copy(1, MD_DIMS(d->super.N_vals), vals, tmp_args[0], CFL_SIZE);
 
 	md_free(tmp_args[0]);
 }
@@ -406,7 +406,7 @@ static const char* monitor_iter6_nlop_print(const monitor_iter6_value_data_t* _d
 	if (NULL == d->names)
 		return result;
 
-	for (int i = 0; i < d->INTERFACE.N_vals; i++) {
+	for (int i = 0; i < d->super.N_vals; i++) {
 
 		auto tmp = result;
 
@@ -427,7 +427,7 @@ static void monitor_iter6_nlop_free(const monitor_iter6_value_data_t* _data)
 
 	nlop_free(d->nlop);
 
-	for (int i = 0; i < d->INTERFACE.N_vals; i++)
+	for (int i = 0; i < d->super.N_vals; i++)
 		xfree(d->names[i]);
 
 	xfree(d->names);
@@ -444,17 +444,17 @@ struct monitor_value_s* monitor_iter6_nlop_create(const struct nlop_s* nlop, boo
 	data->nlop = nlop_clone(nlop);
 	data->eval_each_batch = eval_each_batch;
 
-	data->INTERFACE.N_vals = 0;
+	data->super.N_vals = 0;
 
 	for (int i = 0; i < nlop_get_nr_out_args(nlop); i++)
-		data->INTERFACE.N_vals += md_calc_size(nlop_generic_codomain(nlop, i)->N, nlop_generic_codomain(nlop, i)->dims);
+		data->super.N_vals += md_calc_size(nlop_generic_codomain(nlop, i)->N, nlop_generic_codomain(nlop, i)->dims);
 
-	data->last_result = md_alloc(1, MD_DIMS(data->INTERFACE.N_vals), CFL_SIZE);
+	data->last_result = md_alloc(1, MD_DIMS(data->super.N_vals), CFL_SIZE);
 	data->names = NULL;
 
 	if (NULL != print_name) {
 
-		assert(N == data->INTERFACE.N_vals);
+		assert(N == data->super.N_vals);
 
 		PTR_ALLOC(const char*[N], tmp_names);
 
@@ -489,7 +489,7 @@ struct monitor_value_s* monitor_iter6_nlop_create(const struct nlop_s* nlop, boo
 
 struct monitor_iter6_function_s {
 
-	INTERFACE(monitor_iter6_value_data_t);
+	monitor_iter6_value_data_t super;
 
 	monitor_iter6_value_by_function_t fun;
 
@@ -544,7 +544,7 @@ struct monitor_value_s* monitor_iter6_function_create(monitor_iter6_value_by_fun
 	PTR_ALLOC(struct monitor_iter6_function_s, data);
 	SET_TYPEID(monitor_iter6_function_s, data);
 
-	data->INTERFACE.N_vals = 1;
+	data->super.N_vals = 1;
 
 	data->fun = fun;
 	data->eval_each_batch = eval_each_batch;

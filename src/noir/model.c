@@ -56,7 +56,7 @@ struct noir_model_conf_s noir_model_conf_defaults = {
 
 struct noir_op_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	long dims[DIMS];
 

@@ -131,15 +131,16 @@ void nlinvnet_init(struct nlinvnet_s* nlinvnet, int N,
 	const long col_dims[N])
 {
 	nlinvnet->iter_conf_net = TYPE_ALLOC(struct iter_conjgrad_conf);
-	*(nlinvnet->iter_conf_net) = iter_conjgrad_defaults;
-	nlinvnet->iter_conf_net->INTERFACE.alpha = 0.;
+
+	*nlinvnet->iter_conf_net = iter_conjgrad_defaults;
+	nlinvnet->iter_conf_net->super.alpha = 0.;
 	nlinvnet->iter_conf_net->l2lambda = 0.;
 	nlinvnet->iter_conf_net->maxiter = nlinvnet->conf->cgiter;
 	nlinvnet->iter_conf_net->tol = 0.;
 
 	nlinvnet->iter_conf = TYPE_ALLOC(struct iter_conjgrad_conf);
-	*(nlinvnet->iter_conf) = iter_conjgrad_defaults;
-	nlinvnet->iter_conf->INTERFACE.alpha = 0.;
+	*nlinvnet->iter_conf = iter_conjgrad_defaults;
+	nlinvnet->iter_conf->super.alpha = 0.;
 	nlinvnet->iter_conf->l2lambda = 0.;
 	nlinvnet->iter_conf->maxiter = nlinvnet->conf->cgiter;
 	nlinvnet->iter_conf->tol = nlinvnet->cgtol;

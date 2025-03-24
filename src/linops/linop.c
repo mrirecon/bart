@@ -35,7 +35,7 @@
 
 struct shared_data_s {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	linop_data_t* data;
 	del_fun_t del;
@@ -710,7 +710,7 @@ struct linop_s* linop_stack_FF(int D, int E, const struct linop_s* a, const stru
 
 struct stack_op_s {
 
-	INTERFACE(linop_data_t);
+	linop_data_t super;
 
 	int N;
 	const struct linop_s** lops;

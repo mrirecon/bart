@@ -683,7 +683,7 @@ UT_REGISTER_TEST(test_nlop_reshape);
 
 struct count_op_s {
 
-	INTERFACE(linop_data_t);
+	linop_data_t super;
 	int* counter;
 };
 

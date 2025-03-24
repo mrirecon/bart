@@ -156,20 +156,20 @@ const char* resnet_sorted_weight_names[] = {
 
 struct network_resnet_s network_resnet_default = {
 
-	.INTERFACE.TYPEID = &TYPEID2(network_resnet_s),
+	.super.TYPEID = &TYPEID2(network_resnet_s),
 
-	.INTERFACE.create = network_resnet_create,
+	.super.create = network_resnet_create,
 
-	.INTERFACE.low_mem = false,
-	.INTERFACE.norm = NORM_NONE,
-	.INTERFACE.norm_batch_flag = MD_BIT(4),
-	.INTERFACE.residual = true,
+	.super.low_mem = false,
+	.super.norm = NORM_NONE,
+	.super.norm_batch_flag = MD_BIT(4),
+	.super.residual = true,
 
-	.INTERFACE.debug = false,
-	.INTERFACE.bart_to_channel_first = true,
+	.super.debug = false,
+	.super.bart_to_channel_first = true,
 
-	.INTERFACE.prefix = NULL,
-	.INTERFACE.loopdim = -1,
+	.super.prefix = NULL,
+	.super.loopdim = -1,
 
 	.N = 5,
 
@@ -417,20 +417,20 @@ const char* varnet_sorted_weight_names[] = {"conv", "rbf"};
 
 struct network_varnet_s network_varnet_default = {
 
-	.INTERFACE.TYPEID = &TYPEID2(network_varnet_s),
+	.super.TYPEID = &TYPEID2(network_varnet_s),
 
-	.INTERFACE.create = network_varnet_create,
+	.super.create = network_varnet_create,
 
-	.INTERFACE.low_mem = false,
+	.super.low_mem = false,
 
-	.INTERFACE.norm = NORM_NONE,
-	.INTERFACE.norm_batch_flag = MD_BIT(4),
+	.super.norm = NORM_NONE,
+	.super.norm_batch_flag = MD_BIT(4),
 
-	.INTERFACE.debug = false,
-	.INTERFACE.bart_to_channel_first = true,
+	.super.debug = false,
+	.super.bart_to_channel_first = true,
 
-	.INTERFACE.prefix = NULL,
-	.INTERFACE.loopdim = -1,
+	.super.prefix = NULL,
+	.super.loopdim = -1,
 
 	.Nf = 24,
 	.Nw = 31,
@@ -442,7 +442,7 @@ struct network_varnet_s network_varnet_default = {
 	.Imax = 1.,
 	.Imin = -1.,
 
-	.INTERFACE.residual = true,
+	.super.residual = true,
 
 	.init_scale_mu = 0.04,
 };

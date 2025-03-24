@@ -471,7 +471,7 @@ void noir2_free(struct noir2_s* model)
 
 struct noir2_opt_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	int N;
 	const long* max_dims;

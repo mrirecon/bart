@@ -373,7 +373,7 @@ const struct iovec_s* operator_codomain(const struct operator_s* op)
 
 struct identity_s {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	const struct iovec_s* domain;
 	const struct iovec_s* codomain;
@@ -446,7 +446,7 @@ const struct operator_s* operator_reshape_create(int A, const long out_dims[A], 
 
 struct op_reshape_s {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	const struct operator_s* x;
 };
@@ -542,7 +542,7 @@ const struct operator_s* get_in_reshape(const struct operator_s* op) {
 
 struct zero_s {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	const struct iovec_s* codomain;
 };
@@ -585,7 +585,7 @@ const struct operator_s* operator_zero_create(int N, const long dims[N])
 
 struct null_s {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 };
 
 static DEF_TYPEID(null_s);
@@ -693,7 +693,7 @@ void operator_apply(const struct operator_s* op, int ON, const long odims[ON], c
 
 struct attach_data_s {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	const struct operator_s* op;
 
@@ -753,7 +753,7 @@ const struct operator_s* operator_attach(const struct operator_s* op, void* ptr,
 
 struct op_bind_s {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	int D;
 	int arg;
@@ -848,7 +848,7 @@ const struct operator_s* operator_bind2(const struct operator_s* op, int arg,
 
 struct op_loop_s {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	int N;
 	int D;
@@ -1004,7 +1004,7 @@ enum COPY_LOCATION { CL_SAMEPLACE, CL_DEVICE, CL_CPU };
 
 struct copy_data_s {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	const struct operator_s* op;
 
@@ -1261,7 +1261,7 @@ const struct operator_s* operator_gpu_wrapper(const struct operator_s* op)
 
 struct vptr_wrapper_s {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	const struct operator_s* op;
 	struct vptr_hint_s* hint;
@@ -1347,7 +1347,7 @@ const struct operator_s* operator_vptr_wrapper(const struct operator_s* op, stru
 
 struct operator_combi_s {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	int N;
 	const struct operator_s** x;
@@ -1464,7 +1464,7 @@ const struct operator_s* operator_combi_create_FF(int N, const struct operator_s
 
 struct operator_dup_s {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	int a;
 	int b;
@@ -1578,7 +1578,7 @@ const struct operator_s* operator_dup_create_F(const struct operator_s* op, int 
 // FIXME: we should reimplement link in terms of dup and bind (caveat: gpu; io_flags)
 struct operator_link_s {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	int a;
 	int b;
@@ -1727,7 +1727,7 @@ const struct operator_s* operator_link_create_F(const struct operator_s* op, int
 
 struct permute_data_s {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	const int* perm;
 	const struct operator_s* op;
@@ -1847,7 +1847,7 @@ const struct operator_s* operator_sort_args_F(const struct operator_s* op)
 
 struct extract_data_s {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	int a;
 	off_t off;
@@ -2158,7 +2158,7 @@ bool operator_zero_or_null_p(const struct operator_s* op)
 
 struct operator_sum_s {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	int II;
 
@@ -2236,7 +2236,7 @@ bool operator_is_zadd(const struct operator_s* op)
 
 struct operator_plus_s {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	const struct operator_s* a;
 	const struct operator_s* b;
@@ -2340,7 +2340,7 @@ static const struct operator_plus_s* get_plus_data(const struct operator_s* plus
 
 struct operator_chain_s {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	int N;
 	const struct operator_s** x;

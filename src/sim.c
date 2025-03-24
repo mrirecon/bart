@@ -169,7 +169,7 @@ int main_sim(int argc, char* argv[argc])
 
 		/* Pulse Specific Parameters */
 		OPTL_FLOAT(0, "Trf", &(data.pulse.rf_end), "float", "Pulse Duration [s]"), /* Assumes to start at t=0 */
-		OPTL_FLOAT(0, "FA", &(data.pulse.sinc.INTERFACE.flipangle), "float", "Flipangle [deg]"),
+		OPTL_FLOAT(0, "FA", &(data.pulse.sinc.super.flipangle), "float", "Flipangle [deg]"),
 		OPTL_FLOAT(0, "BWTP", &(data.pulse.sinc.bwtp), "float", "Bandwidth-Time-Product"),
 
 		/* Voxel Specific Parameters */

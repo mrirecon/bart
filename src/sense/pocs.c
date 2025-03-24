@@ -45,7 +45,7 @@
 
 struct data {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	const struct linop_s* sense_op;
 	complex float* tmp;

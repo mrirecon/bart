@@ -41,7 +41,7 @@
  */
 struct prox_normaleq_data {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	const struct linop_s* op;
 	void* cgconf;
@@ -147,7 +147,7 @@ const struct operator_p_s* prox_normaleq_create(const struct linop_s* op, const 
  */
 struct prox_lineq_data {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	const struct linop_s* op;
 	complex float* adj;
@@ -202,7 +202,7 @@ const struct operator_p_s* prox_lineq_create(const struct linop_s* op, const com
  */
 struct prox_nlgrad_data {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	const struct nlop_s* op;
 
@@ -283,7 +283,7 @@ extern const struct operator_p_s* prox_nlgrad_create(const struct nlop_s* op, in
 
 struct auto_norm_s {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	enum norm norm;
 

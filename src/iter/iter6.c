@@ -54,29 +54,29 @@ DEF_TYPEID(iter6_adam_conf);
 DEF_TYPEID(iter6_iPALM_conf);
 
 #define ITER6_DEFAULT \
-	.INTERFACE.epochs = 1, \
-	.INTERFACE.clip_norm = 0., \
-	.INTERFACE.clip_val = 0., \
-	.INTERFACE.weight_decay = 0., \
-	.INTERFACE.history_filename = NULL, \
-	.INTERFACE.dump_filename = NULL, \
-	.INTERFACE.dump_mod = -1, \
-	.INTERFACE.batchnorm_momentum = .95, \
-	.INTERFACE.batchgen_type = BATCH_GEN_SAME, \
-	.INTERFACE.batch_seed = 123, \
-	.INTERFACE.dump_flag = 0, \
-	.INTERFACE.min_learning_rate = 0.,\
-	.INTERFACE.epochs_warmup = 0.,\
-	.INTERFACE.monitor_averaged_objective = false,\
-	.INTERFACE.learning_rate_epoch_mod = 0,
+	.super.epochs = 1, \
+	.super.clip_norm = 0., \
+	.super.clip_val = 0., \
+	.super.weight_decay = 0., \
+	.super.history_filename = NULL, \
+	.super.dump_filename = NULL, \
+	.super.dump_mod = -1, \
+	.super.batchnorm_momentum = .95, \
+	.super.batchgen_type = BATCH_GEN_SAME, \
+	.super.batch_seed = 123, \
+	.super.dump_flag = 0, \
+	.super.min_learning_rate = 0.,\
+	.super.epochs_warmup = 0.,\
+	.super.monitor_averaged_objective = false,\
+	.super.learning_rate_epoch_mod = 0,
 
 const struct iter6_sgd_conf iter6_sgd_conf_defaults = {
 
-	.INTERFACE.TYPEID = &TYPEID2(iter6_sgd_conf),
+	.super.TYPEID = &TYPEID2(iter6_sgd_conf),
 
 	ITER6_DEFAULT
 
-	.INTERFACE.learning_rate = 0.001,
+	.super.learning_rate = 0.001,
 
 	.momentum = 0.
 };
@@ -84,22 +84,22 @@ const struct iter6_sgd_conf iter6_sgd_conf_defaults = {
 
 const struct iter6_adadelta_conf iter6_adadelta_conf_defaults = {
 
-	.INTERFACE.TYPEID = &TYPEID2(iter6_adadelta_conf),
+	.super.TYPEID = &TYPEID2(iter6_adadelta_conf),
 
 	ITER6_DEFAULT
 
-	.INTERFACE.learning_rate = 1.,
+	.super.learning_rate = 1.,
 
 	.rho = 0.95
 };
 
 const struct iter6_adam_conf iter6_adam_conf_defaults = {
 
-	.INTERFACE.TYPEID = &TYPEID2(iter6_adam_conf),
+	.super.TYPEID = &TYPEID2(iter6_adam_conf),
 
 	ITER6_DEFAULT
 
-	.INTERFACE.learning_rate = .001,
+	.super.learning_rate = .001,
 
 	.reset_epoch = -1,
 
@@ -112,11 +112,11 @@ const struct iter6_adam_conf iter6_adam_conf_defaults = {
 
 const struct iter6_iPALM_conf iter6_iPALM_conf_defaults = {
 
-	.INTERFACE.TYPEID = &TYPEID2(iter6_iPALM_conf),
+	.super.TYPEID = &TYPEID2(iter6_iPALM_conf),
 
 	ITER6_DEFAULT
 
-	.INTERFACE.learning_rate = 1.,
+	.super.learning_rate = 1.,
 
 	.Lmin = 1.e-10,
 	.Lmax = 1.e+10,
@@ -140,7 +140,7 @@ const struct iter6_iPALM_conf iter6_iPALM_conf_defaults = {
 
 struct iter6_nlop_s {
 
-	INTERFACE(iter_op_data);
+	iter_op_data super;
 
 	const struct nlop_s* nlop;
 };
@@ -158,7 +158,7 @@ static void iter6_nlop(iter_op_data* _o, int N, float* args[N], unsigned long de
 
 struct iter6_op_arr_s {
 
-	INTERFACE(iter_op_data);
+	iter_op_data super;
 
 	long NO;
 	long NI;
@@ -527,9 +527,9 @@ void iter6_iPALM(	const iter6_conf* _conf,
 
 	for (int i = 0; i < NI; i++) {
 
-		if ((0 != conf->INTERFACE.weight_decay) && (NULL == prox_ops[i]) && (IN_OPTIMIZE == in_type[i])) {
+		if ((0 != conf->super.weight_decay) && (NULL == prox_ops[i]) && (IN_OPTIMIZE == in_type[i])) {
 
-			prox_ops_weight_decay[i] = prox_leastsquares_create(nlop_generic_domain(nlop, i)->N, nlop_generic_domain(nlop, i)->dims, conf->INTERFACE.weight_decay, NULL);
+			prox_ops_weight_decay[i] = prox_leastsquares_create(nlop_generic_domain(nlop, i)->N, nlop_generic_domain(nlop, i)->dims, conf->super.weight_decay, NULL);
 			prox_ops[i] = prox_ops_weight_decay[i];
 
 		} else {
@@ -578,7 +578,7 @@ void iter6_iPALM(	const iter6_conf* _conf,
 	float lipshitz_constants[NI];
 
 	for (int i = 0; i < NI; i++)
-		lipshitz_constants[i] = 1. / conf->INTERFACE.learning_rate;
+		lipshitz_constants[i] = 1. / conf->super.learning_rate;
 
 	bool free_monitor = (NULL == monitor);
 
@@ -590,24 +590,24 @@ void iter6_iPALM(	const iter6_conf* _conf,
 
 	const struct iter_dump_s* dump = NULL;
 
-	if (   (NULL != conf->INTERFACE.dump_filename)
-	    && (0 < conf->INTERFACE.dump_mod))
-		dump = iter6_dump_default_create(conf->INTERFACE.dump_filename,conf->INTERFACE.dump_mod, nlop, conf->INTERFACE.dump_flag, NI, in_type);
+	if (   (NULL != conf->super.dump_filename)
+	    && (0 < conf->super.dump_mod))
+		dump = iter6_dump_default_create(conf->super.dump_filename,conf->super.dump_mod, nlop, conf->super.dump_flag, NI, in_type);
 
 	iPALM(	NI, isize, in_type, dst, x_old,
 		NO, osize, out_type,
-		numbatches, 0, conf->INTERFACE.epochs,
+		numbatches, 0, conf->super.epochs,
 		select_vecops(gpu_ref),
 		alpha, beta, convex, conf->trivial_stepsize, conf->reduce_momentum,
 		lipshitz_constants, conf->Lmin, conf->Lmax, conf->Lshrink, conf->Lincrease,
 		nlop_iter, adj_op_arr,
 		prox_iter,
-		conf->INTERFACE.batchnorm_momentum,
+		conf->super.batchnorm_momentum,
 		nlop_batch_gen_iter,
 		(struct iter_op_s){ NULL, NULL }, monitor, dump);
 
-	if (NULL != conf->INTERFACE.history_filename)
-		monitor_iter6_dump_record(monitor, conf->INTERFACE.history_filename);
+	if (NULL != conf->super.history_filename)
+		monitor_iter6_dump_record(monitor, conf->super.history_filename);
 
 	if (free_monitor)
 		monitor_iter6_free(monitor);

@@ -29,7 +29,7 @@
 
 struct wavelet_thresh_s {
 
-	INTERFACE(operator_data_t);
+	operator_data_t super;
 
 	int N;
 	const long* dims;

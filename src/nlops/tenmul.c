@@ -28,7 +28,7 @@
 
 struct tenmul_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	int N;
 	const long* dims;
@@ -222,7 +222,7 @@ struct nlop_s* nlop_tenmul_create2(int N, const long dims[N], const long ostr[N]
 
 struct tenmul_block_diag_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 };
 
 DEF_TYPEID(tenmul_block_diag_s);

@@ -31,15 +31,15 @@ DEF_TYPEID(network_tensorflow_s);
 
 struct network_tensorflow_s network_tensorflow_default = {
 
-	.INTERFACE.TYPEID = &TYPEID2(network_tensorflow_s),
-	.INTERFACE.create = network_tensorflow_create,
-	.INTERFACE.low_mem = false,
-	.INTERFACE.norm = NORM_NONE,
-	.INTERFACE.norm_batch_flag = MD_BIT(4),
-	.INTERFACE.debug = false,
-	.INTERFACE.prefix = NULL,
-	.INTERFACE.residual = false,
-	.INTERFACE.bart_to_channel_first = false,
+	.super.TYPEID = &TYPEID2(network_tensorflow_s),
+	.super.create = network_tensorflow_create,
+	.super.low_mem = false,
+	.super.norm = NORM_NONE,
+	.super.norm_batch_flag = MD_BIT(4),
+	.super.debug = false,
+	.super.prefix = NULL,
+	.super.residual = false,
+	.super.bart_to_channel_first = false,
 
 	.model_path = NULL,
 	.tf_graph = NULL,

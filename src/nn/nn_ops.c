@@ -76,7 +76,7 @@ const struct nlop_s* nlop_maxpool_create(int N, const long dims[N], const long p
 
 struct rand_mask_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	int N;
 	float p;
@@ -147,7 +147,7 @@ const struct nlop_s* nlop_rand_split_create(int N, const long dims[N], unsigned 
 
 struct rand_mask_fixed_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	int N;
 	long* dims;
@@ -304,7 +304,7 @@ const struct nlop_s* nlop_dropout_create(int N, const long dims[N], float p, uns
 
 struct noise_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	int N;
 
@@ -404,7 +404,7 @@ const struct nlop_s* nlop_add_noise_create(int N, const long dims[N], float var,
 
 struct norm_max_abs_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	int N;
 	const long* dims;
@@ -510,7 +510,7 @@ const struct nlop_s* nlop_norm_max_abs_create(int N, const long dims[N], unsigne
 
 struct norm_znorm_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	int N;
 	const long* dims;

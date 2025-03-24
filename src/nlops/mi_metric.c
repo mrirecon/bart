@@ -37,7 +37,7 @@ static inline float cubic_spline_derivative(float x);
 // Mutual Information metric with Parzan joint histogram
 struct mi_metric_s {
 
-	INTERFACE(nlop_data_t);
+	nlop_data_t super;
 
 	int nbins;
 	int padding;
