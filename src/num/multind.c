@@ -2524,6 +2524,27 @@ void md_unravel_index(int D, long pos[D], unsigned long flags, const long dims[D
 }
 
 /**
+ * Convert flat index to pos with according order 
+ *
+ */
+void md_unravel_index_permuted(int D, const int order[D], long pos[D], unsigned long flags, const long dims[D], long index)
+{
+	long dims2[D];
+	md_permute_dims(D, order, dims2, dims);
+
+	long pos2[D];
+	md_permute_dims(D, order, pos2, pos);
+
+	unsigned long flags2 = md_permute_flags(D, order, flags);
+
+	md_unravel_index(D, pos2, flags2, dims2, index);
+
+	int inv_order[D];
+	md_permute_invert(D, inv_order, order);
+	md_permute_dims(D, inv_order, pos, pos2);
+}
+
+/**
  * Convert pos to flat index
  *
  */

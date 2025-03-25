@@ -367,3 +367,25 @@ static bool test_md_permute_flags(void)
 
 UT_REGISTER_TEST(test_md_permute_flags);
 
+
+static bool test_md_unravel_index_permuted(void)
+{
+	const long dims[] = { 2, 4, 3 };
+
+	const int order[] = { 2, 0, 1 };
+
+	const long good[3] = { 0, 1, 2 };
+
+	long pos[3] = { 0 };
+
+	long idx = 8;
+
+	md_unravel_index_permuted(3, order, pos, 7UL, dims, idx);
+	
+	UT_RETURN_ON_FAILURE(md_check_equal_dims(3, good, pos, 7UL));
+
+	return true;
+}
+
+UT_REGISTER_TEST(test_md_unravel_index_permuted);
+
