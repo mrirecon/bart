@@ -39,6 +39,8 @@
 
 #include "lowrank/lrthresh.h"
 
+#include "nlops/nlop.h"
+
 #include "nn/tf_wrapper.h"
 
 #include "misc/misc.h"
@@ -292,13 +294,13 @@ bool opt_reg_init(struct opt_reg_s* ropts)
 
 	ropts->tvscales_N = NUM_TV_SCALES;
 	for (int i = 0; i < ropts->tvscales_N; i++) {
-		
+
 		ropts->tvscales[i] = 0.0;
 	}
 
 	ropts->tvscales2_N = NUM_TV_SCALES;
 	for (int i = 0; i < ropts->tvscales2_N; i++) {
-		
+
 		ropts->tvscales2[i] = 0.0;
 	}
 
@@ -390,7 +392,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 		regs[0].lambda = lambda;
 		ropts->r = 1;
 	}
-	
+
 	if (ropts->asl) {
 
 		assert(2 == img_dims[asl_dim]);
@@ -434,7 +436,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 			ropts->svars += md_calc_size(N, tmp_dims);
 			ropts->sr++;
 			break;
-		
+
 		case ICTGV:
 
 			ropts->svars += (2*bitcount(regs[nr].xflags) + 1) * md_calc_size(N, tmp_dims);
@@ -587,7 +589,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 			debug_printf(DP_INFO, "TV regularization: %f\n", regs[nr].lambda);
 
 			struct reg reg = tv_reg(regs[nr].xflags, regs[nr].jflags, regs[nr].lambda, DIMS, img_dims, ropts->tvscales_N, ropts->tvscales, lop_asl);
-			
+
 			trafos[nr] = reg.linop;
 			prox_ops[nr] = reg.prox;
 
@@ -660,7 +662,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 			trafos[nr_penalties] = reg4.linop[1];
 			prox_ops[nr_penalties] = reg4.prox[1];
-			
+
 			if (NULL != sdims) {
 
 				PTR_ALLOC(long[N + 1], dims);
@@ -669,7 +671,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 			}
 
 			nr_penalties++;
-			
+
 			trafos[nr_penalties] = reg4.linop[2];
 			prox_ops[nr_penalties] = reg4.prox[2];
 
@@ -816,7 +818,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 			}
 
 			trafos[nr] = linop_identity_create(DIMS, in2_dims);
-			
+
 			if (NULL != lop_asl)
 				trafos[nr] = linop_chain_FF(lop_asl, trafos[nr]);
 
@@ -854,6 +856,20 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 			trafos[nr] = linop_identity_create(DIMS, img_dims);
 
 			const struct nlop_s* tf_ops = nlop_tf_create(regs[nr].graph_file);
+			auto dom = nlop_domain(tf_ops);
+
+			if (!md_check_equal_dims(MIN(DIMS, dom->N), dom->dims, img_dims, ~0UL)) {
+
+				debug_printf(DP_WARN, "TF-dims: ");
+				debug_print_dims(DP_INFO, dom->N, dom->dims);
+
+				debug_printf(DP_WARN, "img dims:");
+				debug_print_dims(DP_INFO, DIMS, img_dims);
+
+				error("Dimensions of TF graph and image are not compatible!\n");
+			}
+
+			tf_ops = nlop_reshape_in_F(tf_ops, 0, DIMS, img_dims);
 
 			// with one step, this only does one gradient descent step
 
