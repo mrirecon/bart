@@ -114,7 +114,7 @@ int main_tee(int argc, char* argv[argc])
 	long slice_dims[DIMS];
 	md_select_dims(DIMS, ~stream_flags, slice_dims, dims);
 
-#pragma omp parallel for
+#pragma omp parallel for num_threads(count)
 	for (int i = 0; i < count; i++) {
 
 		const char* name = ((0 == i) && !no_stdout) ? "-" : out_files[i - files_offset];
