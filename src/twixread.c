@@ -49,8 +49,8 @@ struct entry_s {
 	uint32_t fileid;
 	uint64_t offset;
 	uint64_t length;
-        char patient[64];
-        char protocol[64];
+	char patient[64];
+	char protocol[64];
 };
 
 static void xread(int fd, void* buf, size_t size)
@@ -62,7 +62,7 @@ static void xread(int fd, void* buf, size_t size)
 
 static void xseek(int fd, off_t pos)
 {
-        if (-1 == lseek(fd, pos, SEEK_SET))
+	if (-1 == lseek(fd, pos, SEEK_SET))
 		error("seeking\n");
 }
 
@@ -561,9 +561,9 @@ int main_twixread(int argc, char* argv[argc])
 
 	debug_print_dims(DP_DEBUG1, DIMS, dims);
 
-        int ifd;
-        if (-1 == (ifd = open(dat_file, O_RDONLY)))
-                error("error opening file.\n");
+	int ifd;
+	if (-1 == (ifd = open(dat_file, O_RDONLY)))
+		error("error opening file.\n");
 
 	struct hdr_s hdr;
 	bool vd = siemens_meas_setup(ifd, &hdr);
@@ -643,7 +643,7 @@ int main_twixread(int argc, char* argv[argc])
 	complex float pmu_val;
 
 	if (pmu_out) {
-		
+
 		pmu = create_cfl(pmu_file, DIMS, pmu_dims);
 		md_clear(DIMS, pmu_dims, pmu, CFL_SIZE);
 	}
@@ -713,7 +713,7 @@ int main_twixread(int argc, char* argv[argc])
 				debug_print_dims(DP_WARN, DIMS, pos);
 				continue;
 			}
-			
+
 			if (pmu_out)
 				md_copy_block(DIMS, pos, pmu_dims, pmu, MD_SINGLETON_DIMS(DIMS), &pmu_val, CFL_SIZE);
 
