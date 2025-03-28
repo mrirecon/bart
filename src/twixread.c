@@ -348,7 +348,7 @@ static enum adc_return siemens_bounds(bool vd, bool noise, int fd, long min[DIMS
 	if (size != (size_t)read(fd, scan_hdr, size))
 		return ADC_ERROR;
 
-	long pos[DIMS] = { 0 };
+	long pos[DIMS] = { };
 
 	for (pos[COIL_DIM] = 0; pos[COIL_DIM] < max[COIL_DIM]; pos[COIL_DIM]++) {
 
@@ -563,12 +563,12 @@ int main_twixread(int argc, char* argv[argc])
 	bool vd = siemens_meas_setup(ifd, &hdr);
 
 	enum adc_return sar = ADC_OK;
-	long off[DIMS] = { 0 };
+	long off[DIMS] = { };
 
 	if (autoc | noise) {
 
 		long max[DIMS] = { [COIL_DIM] = 1000 };
-		long min[DIMS] = { 0 }; // min is always 0
+		long min[DIMS] = { }; // min is always 0
 
 		adcs = 0;
 

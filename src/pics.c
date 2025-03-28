@@ -416,7 +416,7 @@ int main_pics(int argc, char* argv[argc])
 
 
 
-	long basis_dims[DIMS] = { 0 }; // analyzer false positive
+	long basis_dims[DIMS] = { }; // analyzer false positive
 	complex float* basis = NULL;
 
 	if (NULL != basis_file) {
@@ -426,7 +426,7 @@ int main_pics(int argc, char* argv[argc])
 		assert(!md_check_dimensions(DIMS, basis_dims, COEFF_FLAG | TE_FLAG));
 	}
 
-	long motion_dims[DIMS] = { 0 };
+	long motion_dims[DIMS] = { };
 	complex float* motion = NULL;
 	unsigned long motion_flags = 0;
 

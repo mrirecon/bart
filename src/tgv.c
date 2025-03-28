@@ -94,7 +94,7 @@ int main_tgv(int argc, char* argv[argc])
 
 	complex float* out_data = create_cfl(out_file, DIMS, out_dims);
 
-	auto id = linop_extract_create(DIMS, (long[DIMS]){ 0 }, in_dims, out_dims);
+	auto id = linop_extract_create(DIMS, (long[DIMS]){ }, in_dims, out_dims);
 
 	struct iter_admm_conf conf = iter_admm_defaults;
 

@@ -109,7 +109,8 @@ static void normal(iter_op_data* _data, float* _dst, const float* _src)
 	long map_dims[DIMS];
 	md_select_dims(DIMS, ~COEFF_FLAG, map_dims, img_dims);
 	
-	long pos[DIMS] = { 0 };
+	long pos[DIMS] = { };
+
 	for (pos[COEFF_DIM] = 0; pos[COEFF_DIM] < img_dims[COEFF_DIM]; pos[COEFF_DIM]++) {
 
 		complex float* map_dst = &MD_ACCESS(DIMS, img_strs, pos, dst);
@@ -146,7 +147,7 @@ static void pos_value(iter_op_data* _data, float* dst, const float* src)
 	long dims1[DIMS];
 	md_select_dims(DIMS, FFT_FLAGS, dims1, img_dims);
 	
-	long pos[DIMS] = { 0 };
+	long pos[DIMS] = { };
 
 	do {
 		if (!((1UL << pos[COEFF_DIM]) & (unsigned long)data->conf->constrained_maps))

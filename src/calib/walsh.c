@@ -58,7 +58,7 @@ void walsh(const long bsize[3], const long dims[DIMS], complex float* sens, cons
 #if 0
 	md_resizec(DIMS, odims, tmp, dims1, sens, CFL_SIZE);
 #else
-	long cen[DIMS] = { 0 };
+	long cen[DIMS] = { };
 
 	for (int i = 0; i < 3; i++)
 		cen[i] = (odims[i] - dims[i] + 1) / 2;

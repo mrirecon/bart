@@ -136,7 +136,7 @@ complex float* calibration_matrix_mask2(long calmat_dims[2], const long kdims[3]
 #if 0
 static void circular_patch_mask(const long kdims[3], int channels, complex float mask[channels * md_calc_size(3, kdims)])
 {
-	long kpos[3] = { 0 };
+	long kpos[3] = { };
 	long kcen[3];
 
 	for (int i = 0; i < 3; i++)

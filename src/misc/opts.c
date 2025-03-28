@@ -445,7 +445,7 @@ static void print_interface(FILE* fp, const char* name, const char* usage_str, c
 
 static void check_options(int n, const struct opt_s opts[n ?: 1])
 {
-	bool f[256] = { 0 };
+	bool f[256] = { };
 	f[0] = true; // interface
 	f['h'] = true; // help
 
@@ -1118,7 +1118,7 @@ void cmdline(int* argcp, char* argv[*argcp], int m, const struct arg_s args[m], 
 	int max_args = 0;
 
 	enum { bufsize = 1024 };
-	char buf[bufsize] = { 0 };
+	char buf[bufsize] = { };
 
 	int pos = 0;
 

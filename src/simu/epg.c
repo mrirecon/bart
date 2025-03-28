@@ -134,7 +134,7 @@ void epg_pulse_der(complex float T[3][3], int num_cols, complex float states[3][
 		// derivatives	
 		long dims_dstates[3] = { num_cols, 3, 4 };
 		long dims_dT[3] = { 3, 3, 4 };
-		long pos[3] = { 0 };
+		long pos[3] = { };
 
 		complex float der[3][num_cols];
 		long dims_der[3] = { num_cols, 3, 1 };
@@ -184,7 +184,7 @@ void epg_relax_der(complex float ee[3][3], int num_cols, complex float states[3]
 		// derivatives
 		long dims_dstates[3] = { num_cols, 3, 4 };
 		long dims_dee[3] = { 3, 3, 4 };
-		long pos[3] = { 0 };
+		long pos[3] = { };
 
 		complex float der[3][num_cols];
 		long dims_der[3] = { num_cols, 3, 1 };

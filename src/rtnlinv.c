@@ -416,7 +416,7 @@ int main_rtnlinv(int argc, char* argv[argc])
 		for (int i = 0; i < turns; ++i) {
 
 			// pick trajectory for current frame
-			long pos[DIMS] = { 0 };
+			long pos[DIMS] = { };
 			pos[TIME_DIM] = i;
 			md_slice(DIMS, TIME_FLAG, pos, trj_dims, traj1, traj, CFL_SIZE);
 
@@ -451,7 +451,7 @@ int main_rtnlinv(int argc, char* argv[argc])
 		debug_printf(DP_DEBUG1, "Reconstructing frame %d\n", frame);
 
 		// pick k-space and pattern for current frame
-		long pos[DIMS] = { 0 };
+		long pos[DIMS] = { };
 		pos[TIME_DIM] = frame;
 
 		md_slice(DIMS, TIME_FLAG, pos, ksp_dims, kspace1, kspace, CFL_SIZE);
@@ -528,7 +528,7 @@ int main_rtnlinv(int argc, char* argv[argc])
 			md_zsmul(DIMS, img_output1_dims, img_output1, img_output1, 1. / scaling);
 
 		// Copy frame to correct position in output array
-		long pos2[DIMS] = { 0 };
+		long pos2[DIMS] = { };
 		pos2[TIME_DIM] = frame;
 
 		md_copy_block(DIMS, pos2, img_output_dims, img_output, img_output1_dims, img_output1, CFL_SIZE);

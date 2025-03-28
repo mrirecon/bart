@@ -130,11 +130,11 @@ int main_mobafit(int argc, char* argv[argc])
 		ARG_OUTFILE(false, &coeff_file, "coefficients"),
 	};
 
-	float _init[DIMS] = { 0 };
+	float _init[DIMS] = { };
 	float _scale[DIMS] = { [0 ... DIMS - 1] = 1. };
 
-	float bound_min[DIMS] = { 0 };
-	float bound_max[DIMS] = { 0 };
+	float bound_min[DIMS] = { };
+	float bound_max[DIMS] = { };
 
 	struct mobafit_bound_s bounds;
 	SET_TYPEID(mobafit_bound_s, &bounds);
@@ -576,7 +576,7 @@ int main_mobafit(int argc, char* argv[argc])
 	}
 
 
-	long pos[DIMS] = { 0 };
+	long pos[DIMS] = { };
 
 	do {
 		md_copy_block(DIMS, pos, y_patch_dims, y_patch, y_dims, y, CFL_SIZE);

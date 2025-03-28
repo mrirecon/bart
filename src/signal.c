@@ -207,7 +207,7 @@ int main_signal(int argc, char* argv[argc])
 	long dims1[DIMS];
 	md_select_dims(DIMS, TE_FLAG, dims1, dims);
 
-	long pos[DIMS] = { 0 };
+	long pos[DIMS] = { };
 	int N = dims[TE_DIM];
         int N_all = dims[TE_DIM] * parm.averaged_spokes;
 

@@ -105,7 +105,7 @@ static bool check_valid_time(const long singleton_dims[DIMS], complex float* sin
 	int idx_0 = floor(singleton_dims[TIME_DIM] / 2.);
 	int idx_1 = idx_0 + 1;
 
-	long pos[DIMS] = { 0 };
+	long pos[DIMS] = { };
 
 	pos[TIME2_DIM] = labels_idx[0];
 	md_copy_block(DIMS, pos, singleton_dims, singleton, labels_dims, labels, CFL_SIZE);
@@ -193,7 +193,7 @@ static void moving_average(const long state_dims[DIMS], complex float* state, co
 
 	complex float* singleton = md_alloc(DIMS, singleton_dims, CFL_SIZE);
 
-	long pos[DIMS] = { 0 };
+	long pos[DIMS] = { };
 	md_copy_block(DIMS, pos, singleton_dims, singleton, state_dims, state, CFL_SIZE); // Get first value of array
 
 	long start = labs((pad_dims[TIME_DIM] / 2) - (state_dims[TIME_DIM] / 2));
@@ -263,7 +263,7 @@ extern int bin_quadrature(const long bins_dims[DIMS], float* bins,
 
 	bool valid_time_resp = check_valid_time(resp_state_singleton_dims, resp_state_singleton, labels_dims, labels, conf.resp_labels_idx);
 
-	long pos[DIMS] = { 0 };
+	long pos[DIMS] = { };
 
 	for (int i = 0; i < 2; i++){
 

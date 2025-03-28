@@ -216,7 +216,7 @@ void debug_vprintf_trace(const char* func_name,
 	(void)line;
 	debug_vprintf(level, fmt, ap);
 #else
-	char tmp[1024] = { 0 };
+	char tmp[1024] = { };
 	vsnprintf(tmp, 1023, fmt, ap);
 
 	// take care of the trailing newline often present...

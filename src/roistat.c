@@ -143,7 +143,7 @@ int main_roistat(int argc, char* argv[argc])
 	complex float* var;
 	complex float* tmp;
 
-	long pos[DIMS] = { 0 };
+	long pos[DIMS] = { };
 
 	if (COUNT == stat)
 		goto out1;

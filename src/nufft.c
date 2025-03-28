@@ -64,7 +64,7 @@ int main_nufft(int argc, char* argv[argc])
 	struct nufft_conf_s conf = nufft_conf_defaults;
 	struct iter_conjgrad_conf cgconf = iter_conjgrad_defaults;
 
-	long coilim_vec[3] = { 0 };
+	long coilim_vec[3] = { };
 
 	float lambda = 0.;
 	bool precomp = true;
@@ -113,7 +113,7 @@ int main_nufft(int argc, char* argv[argc])
 	if (!inverse)
 		conf.toeplitz = false;
 
-	long coilim_dims[DIMS] = { 0 };
+	long coilim_dims[DIMS] = { };
 	md_copy_dims(3, coilim_dims, coilim_vec);
 
 	// Read trajectory

@@ -714,7 +714,7 @@ int main_bench(int argc, char* argv[argc])
 
 	long dims[BENCH_DIMS] = MD_INIT_ARRAY(BENCH_DIMS, 1);
 	long strs[BENCH_DIMS];
-	long pos[BENCH_DIMS] = { 0 };
+	long pos[BENCH_DIMS] = { };
 
 	dims[REPETITION_IND] = 5;
 	dims[THREADS_IND] = threads ? 8 : 1;

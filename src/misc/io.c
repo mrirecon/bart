@@ -653,7 +653,7 @@ int write_multi_cfl_header(int fd, const char* filename, long num_ele, int D, in
 int read_multi_cfl_header(int fd, char** file, int D_max, int n_max, int n[D_max], long dimensions[D_max][n_max])
 {
 	*file = NULL;
-	char header[IO_MAX_HDR_SIZE + 1] = { 0 };
+	char header[IO_MAX_HDR_SIZE + 1] = { };
 
 	long dims[1];
 	int max = read_cfl_header2(IO_MAX_HDR_SIZE, header, fd, file, 1, dims);

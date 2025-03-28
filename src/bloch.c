@@ -76,7 +76,7 @@ int main_bloch(int argc, char* argv[argc])
 	complex float* signal = create_cfl(out_signal, DIMS, dims);
 	complex float* zmagn = create_cfl(out_zmagn, DIMS, dims);
 
-	long pos[DIMS] = { 0 };
+	long pos[DIMS] = { };
 
 	struct pulse_sinc ps = pulse_sinc_defaults;
 	pulse_sinc_init(&ps, 0.001, 90., 0., 4., ps.alpha);

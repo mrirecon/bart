@@ -67,7 +67,7 @@ void init_meco_maps(const long maps_dims[DIMS], complex float* maps, enum meco_m
 		md_clear(DIMS, maps_dims, maps, CFL_SIZE);
 
 		long NCOEFF = maps_dims[COEFF_DIM];
-		long pos[DIMS] = { 0 };
+		long pos[DIMS] = { };
 
 		long map1_dims[DIMS];
 		md_select_dims(DIMS, ~COEFF_FLAG, map1_dims, maps_dims);
@@ -147,8 +147,8 @@ void meco_recon(const struct moba_conf* moba_conf,
 {
 	// setup pointer
 
-	long frame_pos[DIMS] = { 0 };
-	long P_pos[DIMS] = { 0 };
+	long frame_pos[DIMS] = { };
+	long P_pos[DIMS] = { };
 
 	complex float* maps_ptr = (void*)maps + md_calc_offset(DIMS, MD_STRIDES(DIMS, maps_dims, CFL_SIZE), frame_pos);
 	complex float* sens_ptr = (void*)sens + md_calc_offset(DIMS, MD_STRIDES(DIMS, sens_dims, CFL_SIZE), frame_pos);

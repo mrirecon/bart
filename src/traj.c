@@ -158,7 +158,7 @@ int main_traj(int argc, char* argv[argc])
 	int N = X * tot_sp / conf.accel * Z;
 
 
-	long dims[DIMS] = { [0 ... DIMS - 1] = 1  };
+	long dims[DIMS] = { [0 ... DIMS - 1] = 1 };
 	dims[0] = 3;
 	dims[1] = X;
 	dims[2] = (conf.radial ? Y : (Y / conf.accel)) * Z;
@@ -262,7 +262,7 @@ int main_traj(int argc, char* argv[argc])
 	calc_base_angles(base_angle, Y, E, conf);
 
 	int p = 0;
-	long pos[DIMS] = { 0 };
+	long pos[DIMS] = { };
 	double phin1 = 0;
 
 	do {

@@ -287,7 +287,7 @@ int main_sim(int argc, char* argv[argc])
 
 	// Run all simulations and store signal and optional derivatives
 
-	long pos[DIMS] = { 0 };
+	long pos[DIMS] = { };
 
 	// Starting time of simulation
 	double start = timestamp();

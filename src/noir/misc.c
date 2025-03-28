@@ -112,7 +112,7 @@ void scale_psf_k(const long pat_dims[DIMS], complex float* pattern, const long k
 
 	// Extract first frame
 	complex float* no_sp_1stFrame_tot = md_alloc(DIMS, no_spf_s_dims_singleFramePart, CFL_SIZE);
-	long posF[DIMS] = { 0 };
+	long posF[DIMS] = { };
 	md_copy_block(DIMS, posF, no_spf_s_dims_singleFramePart, no_sp_1stFrame_tot, no_spf_s_dims_singlePart, no_spf_tot, CFL_SIZE);
 
 	complex float* ksp_scaleFactor = md_alloc(DIMS, no_spf_s->dims_full, CFL_SIZE);

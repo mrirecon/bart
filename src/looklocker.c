@@ -68,7 +68,7 @@ int main_looklocker(int argc, char* argv[argc])
 	long ostrs[DIMS];
 	md_calc_strides(DIMS, ostrs, odims, CFL_SIZE);
 
-	long pos[DIMS] = { 0 };
+	long pos[DIMS] = { };
 
 	do {
 		complex float Ms = MD_ACCESS(DIMS, istrs, (pos[COEFF_DIM] = 0, pos), in_data);

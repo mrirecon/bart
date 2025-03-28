@@ -83,7 +83,7 @@ int main_raga(int argc, char* argv[argc])
 	md_clear(DIMS, dims, indices, CFL_SIZE);
 
 	int p = 0;
-	long pos[DIMS] = { 0 };
+	long pos[DIMS] = { };
 
 	do {
 		int j = pos[PHS2_DIM];

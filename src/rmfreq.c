@@ -76,7 +76,7 @@ int main_rmfreq(int argc, char* argv[argc])
 		error("k-space and trajectory inconsistent!\n");
 
 	// Modulation file
-	long mod_dims[DIMS] = { 0 };	// analyzer false positive
+	long mod_dims[DIMS] = { };	// analyzer false positive
 	const complex float* mod = NULL;
 
 	if (NULL != mod_file) {
@@ -98,7 +98,7 @@ int main_rmfreq(int argc, char* argv[argc])
 
 	complex float* t1 = md_alloc(DIMS, t1_dims, CFL_SIZE);
 
-	md_slice(DIMS, MD_BIT(1), (long[DIMS]){ 0 }, t_dims, t1, t, CFL_SIZE);
+	md_slice(DIMS, MD_BIT(1), (long[DIMS]){ }, t_dims, t1, t, CFL_SIZE);
 
 	int N = 1;
 	for (int i = 0; i < DIMS; i++)
@@ -125,7 +125,7 @@ int main_rmfreq(int argc, char* argv[argc])
 	complex float* n_singleton = md_alloc(DIMS, angles_dims, CFL_SIZE);
 	complex float* angles1 = md_alloc(DIMS, angles_dims, CFL_SIZE);
 
-	long pos[DIMS] = { 0 };
+	long pos[DIMS] = { };
 
 	int count = 0;
 
@@ -207,7 +207,7 @@ int main_rmfreq(int argc, char* argv[argc])
 
 	complex float* k_cor = create_cfl(kcor_file, DIMS, k_dims);
 
-	long pos1[DIMS] = { 0 };
+	long pos1[DIMS] = { };
 
 	// Coil-by-coil, Partition-by-Partition correction
 	for (int c = 0; c < k_dims[COIL_DIM]; c++) {

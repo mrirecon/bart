@@ -54,7 +54,7 @@ void radial_self_delays(int N, float shifts[N], const float phi[N], const long d
 	complex float* tmp1 = md_alloc(DIMS, dims1, CFL_SIZE);
 	complex float* tmp2 = md_alloc(DIMS, dims1, CFL_SIZE);
 
-	long pos[DIMS] = { 0 };
+	long pos[DIMS] = { };
 
 	for (int i = 0; i < dims[d]; i++) {
 
@@ -210,8 +210,8 @@ static void calc_intersections(int Nint, int N, int no_intersec_sp, bool b0, flo
 	complex float* spoke_i = md_alloc(DIMS, spoke_dims, CFL_SIZE);
 	complex float* spoke_j = md_alloc(DIMS, spoke_dims, CFL_SIZE);
 
-	long pos_i[DIMS] = { 0 };
-	long pos_j[DIMS] = { 0 };
+	long pos_i[DIMS] = { };
+	long pos_j[DIMS] = { };
 
 	int ROI = kc_dims[PHS1_DIM];
 
@@ -412,7 +412,7 @@ void ring(const struct ring_conf* conf, float S[3], int N, const float angles[N]
 
 	complex float* kc = md_alloc(DIMS, kc_dims, CFL_SIZE);
 
-	long pos[DIMS] = { 0 };
+	long pos[DIMS] = { };
 	pos[PHS1_DIM] = pad_dims[PHS1_DIM] / 2 - (c_region / 2);
 
 	md_copy_block(DIMS, pos, kc_dims, kc, pad_dims, pad, CFL_SIZE);

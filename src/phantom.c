@@ -211,7 +211,7 @@ int main_phantom(int argc, char* argv[argc])
 	}
 
 	long sdims[DIMS];
-	long sstrs[DIMS] = { 0 };
+	long sstrs[DIMS] = { };
 	complex float* samples = NULL;
 
 	if (NULL != traj_file) {

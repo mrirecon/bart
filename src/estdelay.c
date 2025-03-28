@@ -51,7 +51,7 @@ static void traj_radial_angles(int N, float angles[N], const long tdims[DIMS], c
 
 	complex float* traj1 = md_alloc(DIMS, tdims1, CFL_SIZE);
 
-	md_slice(DIMS, MD_BIT(1), (long[DIMS]){ 0 }, tdims, traj1, traj, CFL_SIZE);
+	md_slice(DIMS, MD_BIT(1), (long[DIMS]){ }, tdims, traj1, traj, CFL_SIZE);
 
 	for (int i = 0; i < N; i++)
 		angles[i] = M_PI + atan2f(crealf(traj1[3 * i + 0]), crealf(traj1[3 * i + 1]));
@@ -188,7 +188,7 @@ int main_estdelay(int argc, char* argv[argc])
 
 	complex float* in = md_alloc(DIMS, dims, CFL_SIZE);
 
-	long pos[DIMS] = { 0 };
+	long pos[DIMS] = { };
 	md_copy_block(DIMS, pos, dims, in, full_dims, full_in, CFL_SIZE);
 
 	// FIXME: more checks

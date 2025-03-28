@@ -50,7 +50,7 @@ int main_interpolate(int argc, char* argv[argc])
 
 	bool nearest_neighbour = false;
 	bool cubic = false;
-	long out_dims[3] = { 0 };
+	long out_dims[3] = { };
 
 	enum INTERPOLATION_TYPE interp_type = INTP_COORDS;
 

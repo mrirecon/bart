@@ -99,7 +99,7 @@ void error(const char* fmt, ...)
 	debug_vprintf(DP_ERROR, fmt, ap);
 #endif
 #else
-	char err[1024] = { 0 };
+	char err[1024] = { };
 
 	if (NULL == PyErr_Occurred()) {
 

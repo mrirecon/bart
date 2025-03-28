@@ -817,10 +817,10 @@ void calc_cfl_geom(const long dims[DIMS], complex float* out, bool kspace, const
 {
 	bool coeff = (dims[COEFF_DIM] > 1);
 
-	long cstrs[DIMS] = { 0 };
+	long cstrs[DIMS] = { };
 	md_calc_strides(DIMS, cstrs, hdims[0], sizeof(complex float));
 
-	long mstrs[DIMS] = { 0 };
+	long mstrs[DIMS] = { };
 	md_calc_strides(DIMS, mstrs, hdims[1], sizeof(complex float));
 
 	int N = hdims[0][0];

@@ -96,7 +96,7 @@ int main_ictv(int argc, char* argv[argc])
 
 	complex float* out_data = create_cfl(out_file, DIMS, out_dims);
 
-	auto id = linop_extract_create(DIMS, (long[DIMS]){ 0 }, in_dims, out_dims);
+	auto id = linop_extract_create(DIMS, (long[DIMS]){ }, in_dims, out_dims);
 	id = linop_reshape_out_F(id, 1, MD_DIMS(2 * md_calc_size(DIMS, in_dims)));
 
 

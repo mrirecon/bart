@@ -40,8 +40,8 @@ void memcache_off(void)
 
 static bool mem_init = false;
 
-static long unused_memory[CUDA_MAX_STREAMS + 1] = { 0 };
-static long used_memory[CUDA_MAX_STREAMS + 1] = { 0 };
+static long unused_memory[CUDA_MAX_STREAMS + 1] = { };
+static long used_memory[CUDA_MAX_STREAMS + 1] = { };
 
 static tree_t mem_allocs[CUDA_MAX_STREAMS + 1] = { NULL };
 static tree_t mem_cache[CUDA_MAX_STREAMS + 1] = { NULL };

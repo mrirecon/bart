@@ -37,17 +37,17 @@
 
 struct network_data_s network_data_empty = {
 
-	.ksp_dims = { 0 },
-	.col_dims = { 0 },
-	.psf_dims = { 0 },
-	.img_dims = { 0 },
-	.max_dims = { 0 },
-	.cim_dims = { 0 },
-	.out_dims = { 0 },
-	.pat_dims = { 0 },
-	.trj_dims = { 0 },
-	.bas_dims = { 0 },
-	.scl_dims = { 0 },
+	.ksp_dims = { },
+	.col_dims = { },
+	.psf_dims = { },
+	.img_dims = { },
+	.max_dims = { },
+	.cim_dims = { },
+	.out_dims = { },
+	.pat_dims = { },
+	.trj_dims = { },
+	.bas_dims = { },
+	.scl_dims = { },
 
 	.filename_trajectory = NULL,
 	.filename_pattern = NULL,

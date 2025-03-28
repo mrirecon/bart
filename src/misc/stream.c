@@ -567,7 +567,7 @@ void stream_get_raw(int pipefd, long n, long dims[n], long str[n], long el, void
 
 bool stream_get_msg(int pipefd, struct stream_msg* msg)
 {
-	char buffer[MSG_HDR_SIZE + 1] = { 0 };
+	char buffer[MSG_HDR_SIZE + 1] = { };
 
 	xread(pipefd, MSG_HDR_SIZE, buffer);
 

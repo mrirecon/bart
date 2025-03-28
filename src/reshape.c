@@ -121,8 +121,8 @@ int main_reshape(int argc, char* argv[argc])
 
 		void* buf = md_alloc(DIMS, slc_dims, CFL_SIZE);
 
-		long ipos[DIMS] = { 0 };
-		long opos[DIMS] = { 0 };
+		long ipos[DIMS] = { };
+		long opos[DIMS] = { };
 
 		do {
 			if (NULL != strm_in)
@@ -134,7 +134,7 @@ int main_reshape(int argc, char* argv[argc])
 
 				md_slice(DIMS, flags, ipos, in_dims, buf, in_data, CFL_SIZE);
 
-				long zpos[DIMS] = { 0 };
+				long zpos[DIMS] = { };
 				md_move_block(DIMS, slc_dims, opos, out_dims, out_data, zpos, slc_dims, buf, CFL_SIZE);
 
 				bool cont = false;

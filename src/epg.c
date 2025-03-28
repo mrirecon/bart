@@ -223,7 +223,7 @@ int main_epg(int argc, char* argv[argc])
 		}
 	}
 
-	long pos[DIMS] = { 0 };
+	long pos[DIMS] = { };
 	md_copy_block(DIMS, pos, dims, signals, dims, out_signal, CFL_SIZE);
 
 	if (NULL != states_file)

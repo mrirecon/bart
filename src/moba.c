@@ -120,7 +120,7 @@ int main_moba(int argc, char* argv[argc])
 	struct opt_reg_s ropts;
 	conf.ropts = &ropts;
 
-	long img_vec[3] = { 0 };
+	long img_vec[3] = { };
 
         struct moba_conf_s data;
 

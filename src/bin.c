@@ -78,8 +78,8 @@ static void asgn_bins(const long bins_dims[DIMS], const float* bins, const long 
 
 	int T = (int)bins_dims[TIME_DIM]; // Number of time samples
 
-	long pos0[DIMS] = { 0 };
-	long pos1[DIMS] = { 0 };
+	long pos0[DIMS] = { };
+	long pos1[DIMS] = { };
 
 	for (int t = 0; t < T; t++) { // Iterate all spokes of input array
 
@@ -354,8 +354,8 @@ int main_bin(int argc, char* argv[argc])
 		for (int i = 0; i < n_clusters; i++)
 			idx[i] = 0;
 
-		long pos_src[DIMS] = { 0 };
-		long pos_dst[DIMS] = { 0 };
+		long pos_src[DIMS] = { };
+		long pos_dst[DIMS] = { };
 
 		for (int i = 0; i < N; i++) { // TODO: Speed but by direct copying
 
