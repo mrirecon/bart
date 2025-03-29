@@ -101,6 +101,7 @@ static void znorm_del(const nlop_data_t* _data)
 	const auto data = CAST_DOWN(znorm_s, _data);
 
 	md_free(data->tmp);
+
 	xfree(data->rodims);
 	xfree(data->ridims);
 	xfree(data);
@@ -391,6 +392,7 @@ const struct nlop_s* nlop_mpsnr_create(int N, const long dims[N], unsigned long 
 static const struct nlop_s* get_mean_op(int N, const long dims[N], long const kdims[N], unsigned long flags)
 {
 	long odims[N];
+
 	for (int i = 0; i < N; i++)
 		odims[i] = (MD_IS_SET(flags, i)) ? dims[i] - kdims[i] + 1 : dims[i];
 
@@ -1069,6 +1071,7 @@ static void dice_fun(const nlop_data_t* _data, int D, complex float* args[D])
 	//for derivative
 	md_zadd(N, d->dom->dims, d->min_src1, d->min_src1, tmp);
 	md_zadd(N, d->dom->dims, d->min_src2, d->min_src2, tmp);
+
 	md_free(tmp);
 }
 
@@ -1112,6 +1115,7 @@ static void dice_adj(const nlop_data_t* _data, int /*o*/, int i, complex float* 
 	dice_red_adj(d, tmp, tmp_src, (0 == i) ? d->src1_t2 : d->src2_t2);
 
 	md_zaxpy(N, d->dom->dims, dst, -1, tmp);
+
 	md_free(tmp);
 	md_free(tmp_src);
 }
@@ -1279,6 +1283,7 @@ const struct nlop_s* nlop_patched_cross_correlation_create(int N, const long dim
 	md_free(one);
 
 	const struct linop_s* lop_nrm = linop_cdiag_create(N, dims, flags, nrm);
+
 	md_free(nrm);
 
 	const struct nlop_s* avg_window1 = nlop_chain_FF(nlop_avg_window_create(N, dims, kdims, flags), nlop_from_linop(lop_nrm));

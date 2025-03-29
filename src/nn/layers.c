@@ -405,7 +405,7 @@ const struct nlop_s* append_convcorr_layer(const struct nlop_s* network, int o, 
 {
 	if (channel_first) {
 
-		long kernel[5] = {filters, kernel_size[0], kernel_size[1], kernel_size[2], 1};
+		long kernel[5] = { filters, kernel_size[0], kernel_size[1], kernel_size[2], 1 };
 		long dil_tmp[5] = { 1, 1, 1, 1, 1 };
 		long str_tmp[5] = { 1, 1, 1, 1, 1 };
 
@@ -645,7 +645,7 @@ const struct nlop_s* append_dropout_layer(const struct nlop_s* network, int o, f
 
 	const struct nlop_s* dropout_op = NULL;
 
-	if (status == STAT_TRAIN)
+	if (STAT_TRAIN == status)
 		dropout_op = nlop_dropout_create(N, idims, p, 0);
 	else
 		dropout_op = nlop_from_linop_F(linop_scale_create(N, idims, 1. - p));

@@ -5,6 +5,8 @@
  * Authors: Moritz Blumenthal
  */
 
+#include <math.h>
+
 #include "misc/misc.h"
 #include "misc/debug.h"
 
@@ -12,16 +14,14 @@
 #include "num/flpmath.h"
 #include "num/blas.h"
 #include "num/iovec.h"
-#include <math.h>
-
 #ifdef USE_CUDA
 #include "num/gpuops.h"
 #endif
 
 #include "nlops/nlop.h"
 
-
 #include "rbf.h"
+
 
 struct rbf_s {
 
@@ -51,11 +51,13 @@ static void rbf_init(struct rbf_s* data, const complex float* ref)
 
 		if (NULL == data->z)
 			data->dz = md_alloc_sameplace(data->N, data->zdom->dims, data->zdom->size, ref);
+
 		md_clear(data->N, data->zdom->dims, data->dz, data->zdom->size);
 
 	} else {
 
 		md_free(data->dz);
+
 		data->dz = NULL;
 	}
 
@@ -63,11 +65,13 @@ static void rbf_init(struct rbf_s* data, const complex float* ref)
 
 		if (NULL == data->z)
 			data->z = md_alloc_sameplace(data->N, data->zdom->dims, data->zdom->size, ref);
+
 		md_clear(data->N, data->zdom->dims, data->z, data->zdom->size);
 
 	} else {
 
 		md_free(data->z);
+
 		data->z = NULL;
 	}
 }
@@ -89,7 +93,6 @@ static void rbf_fun(const nlop_data_t* _data, int N_args, complex float* args[N_
 {
 	//dst_ik = sum_j w_ij * exp[-(z_ik-mu_j)^2/(s*sigma^2)]
 	//data->dz_ik = sum_j (mu_j - z_ik)/sigma^2 * w_ij * exp[-(z_ik-mu_j)^2/(s*sigma^2)]
-
 
 	assert(3 == N_args);
 	const auto data = CAST_DOWN(rbf_s, _data);
@@ -123,6 +126,7 @@ static void rbf_fun(const nlop_data_t* _data, int N_args, complex float* args[N_
 
 		md_copy(N, zdims, tmp_z, zsrc, FL_SIZE);
 		md_copy(N, wdims, tmp_w, wsrc, FL_SIZE);
+
 	} else {
 
 		md_real(N, zdims, tmp_z, zsrc);
@@ -142,6 +146,7 @@ static void rbf_fun(const nlop_data_t* _data, int N_args, complex float* args[N_
 		long wpos[N];
 		for (int i = 0; i < N; i++)
 			wpos[i] = 0;
+
 		wpos[data->idx_w] = j;
 
 		const float* wtmp = tmp_w + md_calc_offset(data->N, data->wdom->strs, wpos) / (long)FL_SIZE;
@@ -222,8 +227,10 @@ static void rbf_der2(const nlop_data_t* _data, int /*o*/, int /*i*/, complex flo
 		md_exp(N, zdims, tmp2, tmp2); // tmp2 = exp[-(z_ik-mu_j)²/(2*sigma²)]
 
 		long wpos[N];
+
 		for (int i = 0; i < N; i++)
 			wpos[i] = 0;
+
 		wpos[data->idx_w] = j;
 
 		const float* wtmp = real_src + md_calc_offset(N, wstrs, wpos) / (long)FL_SIZE;
@@ -278,13 +285,16 @@ static void rbf_adj2(const nlop_data_t* _data, int /*o*/, int /*i*/, complex flo
 		long wpos[N];
 		for (int i = 0; i < N; i++)
 			wpos[i] = 0;
+
 		wpos[data->idx_w] = j;
+
 		float* wtmp = real_dst + md_calc_offset(data->N, data->wdom->strs, wpos) / (long)FL_SIZE;
 
 		md_mul(N, zdims, tmp1, tmp1, real_src); // tmp1 = exp[-(z_ik-mu_j)²/(2*sigma²)] * phi_ik
 		md_add2(N, zdims, wstrs, wtmp, wstrs, wtmp, zstrs, tmp1);
 		//add is optimized for reductions -> change if fmac is optimized
 	}
+
 	md_free(real_src);
 	md_free(tmp1);
 

@@ -33,6 +33,7 @@
 const struct nn_weights_s* create_multi_md_array(int N, int D[N], const long* dimensions[N], const complex float* x[N], size_t sizes[N])
 {
 	const struct iovec_s* iovs[N];
+
 	for (int i = 0; i < N; i++)
 		iovs[i] = iovec_create(D[i], dimensions[i], sizes[i]);
 
@@ -70,6 +71,7 @@ nn_weights_t nn_weights_create(int N, const struct iovec_s* iovs[N])
 
 	result->iovs = *PTR_PASS(niov);
 	result->tensors = *PTR_PASS(ntensors);
+
 	return PTR_PASS(result);
 }
 
@@ -128,6 +130,7 @@ void dump_nn_weights(const char *name, nn_weights_t weights) {
 
 	int D[weights->N];
 	const long* dims[weights->N];
+
 	for (int i = 0; i < weights->N; i++) {
 
 		D[i] = weights->iovs[i]->N;
@@ -209,16 +212,16 @@ void nn_weights_free(nn_weights_t weights){
  */
 void nn_init(nn_t op, nn_weights_t weights)
 {
-	for (int i = 0, ip = 0; i < nn_get_nr_in_args(op); i++){
+	for (int i = 0, ip = 0; i < nn_get_nr_in_args(op); i++) {
 
-		if (NULL != op->initializers[i]) {
+		if (NULL == op->initializers[i])
+			continue;
 
-			assert(ip < weights->N);
+		assert(ip < weights->N);
 
-			auto iov = nlop_generic_domain(op->nlop, i);
-			iovec_check(weights->iovs[ip], iov->N, iov->dims, iov->strs);
-			initializer_apply(op->initializers[i], iov->N, iov->dims, weights->tensors[ip++]);
-		}
+		auto iov = nlop_generic_domain(op->nlop, i);
+		iovec_check(weights->iovs[ip], iov->N, iov->dims, iov->strs);
+		initializer_apply(op->initializers[i], iov->N, iov->dims, weights->tensors[ip++]);
 	}
 }
 
@@ -262,12 +265,14 @@ nn_t nn_get_wo_weights(nn_t op, nn_weights_t weights, bool copy)
 		if (OUT_BATCHNORM == op->out_types[i])
 			nlop_result = nlop_del_out_F(nlop_result, i);
 
-	for (int i = nn_get_nr_in_args(op) - 1, ip = weights->N - 1; i >= 0; i--)
+	for (int i = nn_get_nr_in_args(op) - 1, ip = weights->N - 1; i >= 0; i--) {
+
 		if ((IN_OPTIMIZE == op->in_types[i]) || (IN_BATCHNORM == op->in_types[i])) {
 
 			auto iov = weights->iovs[ip];
 			nlop_result = nlop_set_input_const_F(nlop_result, i, iov->N, iov->dims, copy, weights->tensors[ip--]);
 		}
+	}
 
 	auto result = nn_from_nlop_F(nlop_result);
 
@@ -275,6 +280,7 @@ nn_t nn_get_wo_weights(nn_t op, nn_weights_t weights, bool copy)
 
 		while ((IN_OPTIMIZE == op->in_types[j]) || (IN_BATCHNORM == op->in_types[j]))
 			j++;
+
 		nn_clone_arg_i_from_i(result, i, op, j);
 	}
 
@@ -282,6 +288,7 @@ nn_t nn_get_wo_weights(nn_t op, nn_weights_t weights, bool copy)
 
 		while (OUT_BATCHNORM == op->out_types[j])
 			j++;
+
 		nn_clone_arg_o_from_o(result, i, op, j);
 	}
 
@@ -372,10 +379,10 @@ void nn_weights_copy(nn_weights_t dst, nn_weights_t src)
 		for (int j = 0; j < iovd->N; j++)
 			assert((1 == iovs->dims[j] ) || (iovs->dims[j] == iovs->dims[j]));
 
-
 		md_copy2(iovd->N, iovd->dims,
 			MD_STRIDES(iovd->N, iovd->dims, iovd->size), dst->tensors[i],
 			MD_STRIDES(iovs->N, iovs->dims, iovs->size), src->tensors[i],
 			iovs->size);
 	}
 }
+

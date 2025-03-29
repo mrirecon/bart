@@ -444,7 +444,6 @@ static void tf_shared_graph_del(const struct shared_obj_s* sptr)
 		list_free(x->arg_name_map);
 	}
 
-
 	xfree(x);
 }
 
@@ -602,7 +601,9 @@ static bool arg_is_real(const struct tf_shared_graph_s* graph, const char* name)
 	if (NULL != graph->arg_name_map) {
 
 		const struct tf_arg_map_s* ma = list_get_first_item(graph->arg_name_map, name, cmp_arg_name, false);
+
 		return (NULL != ma) && ma->real;
+
 	} else {
 
 		return false;
@@ -634,8 +635,8 @@ static struct tf_arg process_arg(const struct tf_shared_graph_s* graph, const ch
 
 		if (required)
 			error("Graph operation %s missing.\n", name);
-		else
-			return arg;
+
+		return arg;
 	}
 
 	arg.N = TF_GraphGetTensorNumDims(graph->graph, arg.out, graph->status);
@@ -806,6 +807,7 @@ static void tf_forward(const nlop_data_t* _data, int N, complex float* args[N])
 	}
 
 	for (int i = 0; i < data->nr_inputs; i++) {
+
 		for (int o = 0; o < data->nr_outputs; o++) {
 
 			md_free(data->cached_gradient[o][i]);
@@ -847,15 +849,14 @@ static void tf_adj(const nlop_data_t* _data, int o, int i, complex float* dst, c
 			md_free(grad[i]);
 			grad[i] = NULL;
 
-			if (nlop_der_requested(_data, i, o)) {
+			if (!nlop_der_requested(_data, i, o))
+				continue;
 
-				if (!data->der_avail[i + data->nr_inputs * o] || !data->der_out_avail[o])
-					error("Gradient not available for input %d and output %d!\n", i, o);
+			if (!data->der_avail[i + data->nr_inputs * o] || !data->der_out_avail[o])
+				error("Gradient not available for input %d and output %d!\n", i, o);
 
-				grad[i] = md_alloc(data->nr_in_dim[i], data->in_dims_tf[i], CFL_SIZE);
-				grad_ops[N] = data->grad_op[i + data->nr_inputs * o];
-				N++;
-			}
+			grad[i] = md_alloc(data->nr_in_dim[i], data->in_dims_tf[i], CFL_SIZE);
+			grad_ops[N++] = data->grad_op[i + data->nr_inputs * o];
 		}
 
 		struct TF_Tensor* out_tensor[N];
@@ -873,16 +874,16 @@ static void tf_adj(const nlop_data_t* _data, int o, int i, complex float* dst, c
 
 		for (int i = 0, ip = 0; i < data->nr_inputs; i++) {
 
-			if (nlop_der_requested(_data, i, o)) {
+			if (!nlop_der_requested(_data, i, o))
+				continue;
 
-				if (CFL_SIZE != data->in_size[i])
-					md_clear(data->nr_in_dim[i], data->in_dims_tf[i], grad[i], CFL_SIZE);
+			if (CFL_SIZE != data->in_size[i])
+				md_clear(data->nr_in_dim[i], data->in_dims_tf[i], grad[i], CFL_SIZE);
 
-				md_copy2(data->nr_in_dim[i], data->in_dims_tf[i],
-						MD_STRIDES(data->nr_in_dim[i], data->in_dims_tf[i], CFL_SIZE), grad[i],
-						MD_STRIDES(data->nr_in_dim[i], data->in_dims_tf[i], data->in_size[i]), TF_TensorData(out_tensor[ip]), data->in_size[i]);
-				TF_DeleteTensor(out_tensor[ip++]);
-			}
+			md_copy2(data->nr_in_dim[i], data->in_dims_tf[i],
+					MD_STRIDES(data->nr_in_dim[i], data->in_dims_tf[i], CFL_SIZE), grad[i],
+					MD_STRIDES(data->nr_in_dim[i], data->in_dims_tf[i], data->in_size[i]), TF_TensorData(out_tensor[ip]), data->in_size[i]);
+			TF_DeleteTensor(out_tensor[ip++]);
 		}
 	}
 
@@ -1019,6 +1020,7 @@ static const struct nlop_s* nlop_tf_shared_grad_create(const struct tf_shared_gr
 			md_clear(arg_grad_y.N, arg_grad_y.dims, TF_TensorData((*input_tensors)[II + i]), CFL_SIZE);
 
 			xfree(arg_grad_y.dims);
+
 		} else {
 
 			grad_y_op_map[i] = -1;
@@ -1130,6 +1132,7 @@ static const struct nlop_s* nlop_tf_shared_grad_create(const struct tf_shared_gr
 	nlop_p_fun_t norm_inv[II][OO];
 
 	for (int i = 0; i < II; i++) {
+
 		for (int o = 0; o < OO; o++) {
 
 			deriv[i][o] = ders ? tf_der : NULL;
@@ -1141,7 +1144,6 @@ static const struct nlop_s* nlop_tf_shared_grad_create(const struct tf_shared_gr
 
 	const struct nlop_s* result = nlop_generic_create(	OO, ON, nl_odims, II, IN, nl_idims,
 								CAST_UP(PTR_PASS(data)), tf_forward, deriv, adjoint, normal, norm_inv, tf_del);
-
 	for (int i = 0; i < II; i++)
 		result = nlop_reshape_in_F(result, i, IN_arr[i], nl_idims[i]);
 
@@ -1356,7 +1358,4 @@ const struct nlop_s* nlop_tf_create(const char* path)
 }
 
 #endif
-
-
-
 

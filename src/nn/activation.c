@@ -148,11 +148,11 @@ static const struct nlop_s* append_activation_bias_internal(const struct nlop_s*
 
 	for (int i = 0; i < N; i++) {
 
-		if (MD_IS_SET(bflags, i)) {
+		if (!MD_IS_SET(bflags, i))
+			continue;
 
-			bdims_layer[j] = bdims[i];
-			j += 1;
-		}
+		bdims_layer[j] = bdims[i];
+		j += 1;
 	}
 
 	network = nlop_reshape_in_F(network, NI, j, bdims_layer);
@@ -332,6 +332,7 @@ static void relu_apply(const nlop_data_t* _data, complex float* _dst, const comp
 static void relu_free(const nlop_data_t* _data)
 {
 	struct relu_s* d = CAST_DOWN(relu_s, _data);
+
 	md_free(d->der);
 	xfree(d->rdims);
 

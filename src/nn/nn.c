@@ -18,6 +18,7 @@
 
 #include "nn/init.h"
 #include "nn/chain.h"
+
 #include "num/multind.h"
 #include "num/ops.h"
 #include "num/ops_p.h"
@@ -201,6 +202,7 @@ nn_t nn_clone(nn_t op)
 
 	for (int i = 0; i < nn_get_nr_in_args(result); i++)
 		nn_clone_arg_i_from_i(result, i, op, i);
+
 	for (int i = 0; i < nn_get_nr_out_args(result); i++)
 		nn_clone_arg_o_from_o(result, i, op, i);
 
@@ -216,6 +218,7 @@ void nn_clone_args(nn_t dst, nn_t src)
 
 	for (int i = 0; i < II; i++)
 		nn_clone_arg_i_from_i(result, i, src, i);
+
 	for (int i = 0; i < OO; i++)
 		nn_clone_arg_o_from_o(result, i, src, i);
 }
@@ -246,6 +249,7 @@ int nn_get_nr_named_in_args(nn_t op)
 	for (int i = 0; i < nlop_get_nr_in_args(op->nlop); i++)
 		if (NULL != op->in_names[i])
 			result++;
+
 	return result;
 }
 
@@ -256,6 +260,7 @@ int nn_get_nr_named_out_args(nn_t op)
 	for (int i = 0; i < nlop_get_nr_out_args(op->nlop); i++)
 		if (NULL != op->out_names[i])
 			result++;
+
 	return result;
 }
 
@@ -283,14 +288,20 @@ int nn_get_out_arg_index(nn_t op, int o, const char* oname)
 	if (NULL != oname) {
 
 		assert((-1 == o) || (0 == o)); // index is ignored anyway
+
 		o = get_index_from_name(nlop_get_nr_out_args(op->nlop), op->out_names, oname);
+
 		if (-1 == o)
 			error("Name %s not found!\n", oname);
+
 	} else {
+
 		assert(o >= -nn_get_nr_unnamed_out_args(op));
+
 		o = o + ((o < 0) ? nn_get_nr_unnamed_out_args(op) : 0);
 
 		assert(o < nn_get_nr_unnamed_out_args(op));
+
 		for (int i = 0; i <= o; i++)
 			if (NULL != op->out_names[i])
 				o++;
@@ -304,14 +315,20 @@ int nn_get_in_arg_index(nn_t op, int i, const char* iname)
 	if (NULL != iname) {
 
 		assert((-1 == i) || (0 == i)); // index is ignored anyway
+
 		i = get_index_from_name(nlop_get_nr_in_args(op->nlop), op->in_names, iname);
+
 		if (-1 == i)
 			error("Name %s not found!\n", iname);
+
 	} else {
+
 		assert(i >= -nn_get_nr_unnamed_in_args(op));
+
 		i = i + ((i < 0) ? nn_get_nr_unnamed_in_args(op) : 0);
 
 		assert(i < nn_get_nr_unnamed_in_args(op));
+
 		for (int ii = 0; ii <= i; ii++)
 			if (NULL != op->in_names[ii])
 				i++;
@@ -324,16 +341,20 @@ int nn_get_in_arg_index(nn_t op, int i, const char* iname)
 const char* nn_get_in_name_from_arg_index(nn_t op, int i, bool clone)
 {
 	assert(i < nlop_get_nr_in_args(op->nlop));
+
 	if (NULL == op->in_names[i])
 		return NULL;
+
 	return clone ? strdup(op->in_names[i]) : op->in_names[i];
 }
 
 const char* nn_get_out_name_from_arg_index(nn_t op, int o, bool clone)
 {
 	assert(o < nlop_get_nr_out_args(op->nlop));
+
 	if (NULL == op->out_names[o])
 		return NULL;
+
 	return clone ? strdup(op->out_names[o]) : op->out_names[o];
 }
 
@@ -368,8 +389,10 @@ int nn_get_out_index_from_arg_index(nn_t op, int o)
 static bool is_name_in_list(int N, const char* names[N], const char* name)
 {
 	bool result = false;
+
 	for (int i = 0; i < N; i++)
 		result |= (NULL == names[i]) ? false : (0 == strcmp(names[i], name));
+
 	return result;
 }
 
@@ -394,11 +417,13 @@ static int find_first_free_in_name_index(nn_t op, const char* prefix)
 {
 	int result = -1;
 	bool valid = false;
+
 	while (!valid) {
 
 		result++;
 		char tmp_name[strlen(prefix) + 10];
 		sprintf(tmp_name, "%s%d", prefix, result);
+
 		valid = !nn_is_name_in_in_args(op, tmp_name);
 	}
 
@@ -409,11 +434,13 @@ static int find_first_free_out_name_index(nn_t op, const char* prefix)
 {
 	int result = -1;
 	bool valid = false;
+
 	while (!valid) {
 
 		result++;
 		char tmp_name[strlen(prefix) + 10];
 		sprintf(tmp_name, "%s%d", prefix, result);
+
 		valid = !nn_is_name_in_out_args(op, tmp_name);
 	}
 
@@ -424,10 +451,12 @@ static int find_first_free_out_name_index(nn_t op, const char* prefix)
 static nn_t nn_set_input_name(nn_t op, int i, const char* name)
 {
 	char tmp_name[strlen(name) + 10];
+
 	if ('_' == name[strlen(name) - 1]) {
 
 		int index = find_first_free_in_name_index(op, name);
 		sprintf(tmp_name, "%s%d", name, index);
+
 	} else {
 
 		sprintf(tmp_name, "%s", name);
@@ -447,10 +476,12 @@ static nn_t nn_set_input_name(nn_t op, int i, const char* name)
 static nn_t nn_set_output_name(nn_t op, int o, const char* name)
 {
 	char tmp_name[strlen(name) + 10];
+
 	if ('_' == name[strlen(name) - 1]) {
 
 		int index = find_first_free_out_name_index(op, name);
 		sprintf(tmp_name, "%s%d", name, index);
+
 	} else {
 
 		sprintf(tmp_name, "%s", name);
@@ -487,10 +518,12 @@ nn_t nn_unset_input_name_F(nn_t op, const char* name)
 	auto result = nn_clone(op);
 
 	xfree(result->in_names[i]);
+
 	result->in_names[i] = NULL;
 	result = nn_shift_input_index_F(result, nn_get_nr_in_args(op) - 1, i);
 
 	nn_free(op);
+
 	return result;
 }
 
@@ -514,6 +547,7 @@ nn_t nn_rename_input_F(nn_t op, const char* nname, const char* oname)
 	auto result = nn_clone(op);
 
 	xfree(result->in_names[i]);
+
 	PTR_ALLOC(char[strlen(nname) + 1], nnname);
 	strcpy(*nnname, nname);
 	result->in_names[i] = *PTR_PASS(nnname);
@@ -530,6 +564,7 @@ nn_t nn_rename_output_F(nn_t op, const char* nname, const char* oname)
 	auto result = nn_clone(op);
 
 	xfree(result->out_names[o]);
+
 	PTR_ALLOC(char[strlen(nname) + 1], nnname);
 	strcpy(*nnname, nname);
 	result->out_names[o] = *PTR_PASS(nnname);
@@ -546,7 +581,6 @@ void nn_get_in_names_copy(int N, const char* names[N], nn_t op)
 	for (int i = 0, i_name= 0; i_name < N; i++)
 		if (NULL != op->in_names[i])
 			names[i_name++] = ptr_printf("%s", op->in_names[i]);
-
 }
 
 void nn_get_out_names_copy(int N, const char* names[N], nn_t op)
@@ -556,12 +590,12 @@ void nn_get_out_names_copy(int N, const char* names[N], nn_t op)
 	for (int i = 0, i_name= 0; i_name < N; i++)
 		if (NULL != op->out_names[i])
 			names[i_name++] = ptr_printf("%s", op->out_names[i]);
-
 }
 
 void nn_get_in_args_names(nn_t op, int II, const char* names[II], bool copy)
 {
 	assert(II == nn_get_nr_in_args(op));
+
 	for (int i = 0; i < II; i++)
 		names[i] = (NULL != op->in_names[i]) && copy ? strdup(op->in_names[i]) : op->in_names[i];
 }
@@ -569,6 +603,7 @@ void nn_get_in_args_names(nn_t op, int II, const char* names[II], bool copy)
 void nn_get_out_args_names(nn_t op, int OO, const char* names[OO], bool copy)
 {
 	assert(OO == nn_get_nr_out_args(op));
+
 	for (int i = 0; i < OO; i++)
 		names[i] = (NULL != op->out_names[i]) && copy ? strdup(op->out_names[i]) : op->out_names[i];
 }
@@ -578,10 +613,14 @@ nn_t nn_set_initializer_F(nn_t op, int i, const char* iname, const struct initia
 {
 	auto result = nn_clone(op);
 	i = nn_get_in_arg_index(result, i, iname);
+
 	if (NULL != result->initializers[i])
 		initializer_free(result->initializers[i]);
+
 	result->initializers[i] = ini;
+
 	nn_free(op);
+
 	return result;
 }
 
@@ -589,12 +628,17 @@ nn_t nn_set_prox_op_F(nn_t op, int i, const char* iname, const struct operator_p
 {
 	auto result = nn_clone(op);
 	i = nn_get_in_arg_index(result, i, iname);
+
 	if (NULL != result->prox_ops[i])
 		operator_p_free(result->prox_ops[i]);
+
 	auto iov = operator_p_domain(opp);
+
 	assert(iovec_check(nlop_generic_domain(op->nlop, i), iov->N, iov->dims, iov->strs));
 	result->prox_ops[i] = opp;
+
 	nn_free(op);
+
 	return result;
 }
 
@@ -612,6 +656,7 @@ const struct operator_p_s* nn_get_prox_op_arg_index(nn_t op, int i)
 void nn_get_prox_ops(nn_t op, int N, const struct operator_p_s* prox_ops[N])
 {
 	assert(N == nn_get_nr_in_args(op));
+
 	for (int i = 0; i < N; i++)
 		prox_ops[i] = op->prox_ops[i];
 }
@@ -620,12 +665,14 @@ nn_t nn_set_dup_F(nn_t op, int i, const char* iname, bool dup)
 {
 	i = nn_get_in_arg_index(op, i, iname);
 	op->dup[i] = dup;
+
 	return op;
 }
 
 bool nn_get_dup(nn_t op, int i, const char* iname)
 {
 	i = nn_get_in_arg_index(op, i, iname);
+
 	return op->dup[i];
 }
 
@@ -633,28 +680,34 @@ bool nn_get_dup(nn_t op, int i, const char* iname)
 nn_t nn_set_in_type_F(nn_t op, int i, const char* iname, enum IN_TYPE in_type)
 {
 	auto result = nn_clone(op);
+
 	i = nn_get_in_arg_index(result, i, iname);
 	result->in_types[i] = in_type;
+
 	nn_free(op);
+
 	return result;
 }
 
 nn_t nn_set_out_type_F(nn_t op, int o, const char* oname, enum OUT_TYPE out_type)
 {
 	auto result = nn_clone(op);
+
 	o = nn_get_out_arg_index(result, o, oname);
 	result->out_types[o] = out_type;
+
 	nn_free(op);
+
 	return result;
 }
 
-const char** nn_get_out_names(nn_t op) {
-
+const char** nn_get_out_names(nn_t op)
+{
 	return op->out_names;
 }
 
-const char** nn_get_in_names(nn_t op) {
-
+const char** nn_get_in_names(nn_t op)
+{
 	return op->in_names;
 }
 
@@ -679,8 +732,10 @@ void nn_debug(enum debug_levels dl, nn_t x)
 	for (int i = 0, index = 0; i < II; i++) {
 
 		auto io = nlop_generic_domain(x->nlop, i);
+
 		char index_name[17];
 		sprintf(index_name, "INDEX %d", index);
+
 		debug_printf(dl, "%-15s", (NULL == x->in_names[i]) ? index_name : x->in_names[i]);
 		debug_print_dims(dl, io->N, io->dims);
 
@@ -698,6 +753,7 @@ void nn_debug(enum debug_levels dl, nn_t x)
 
 		char index_name[17];
 		sprintf(index_name, "INDEX %d", index);
+
 		debug_printf(dl, "%-15s", (NULL == x->out_names[o]) ? index_name : x->out_names[o]);
 
 		debug_print_dims(dl, io->N, io->dims);
@@ -710,6 +766,7 @@ void nn_debug(enum debug_levels dl, nn_t x)
 int nn_get_nr_weights(nn_t op)
 {
 	int result = 0;
+
 	for (int i = 0; i < nn_get_nr_in_args(op); i++){
 
 		if (NULL == op->initializers[i])
@@ -717,6 +774,7 @@ int nn_get_nr_weights(nn_t op)
 		else
 			result++;
 	}
+
 	return result;
 }
 
@@ -742,6 +800,7 @@ nn_t nn_checkpoint_F(nn_t op, bool der_once, bool clear_mem)
 
 	for (int i = 0; i < nn_get_nr_in_args(result); i++)
 		nn_clone_arg_i_from_i(result, i, op, i);
+
 	for (int i = 0; i < nn_get_nr_out_args(result); i++)
 		nn_clone_arg_o_from_o(result, i, op, i);
 
@@ -753,18 +812,22 @@ nn_t nn_checkpoint_F(nn_t op, bool der_once, bool clear_mem)
 nn_t nn_dump_input_F(nn_t op, int i, const char* iname, const char* fname, bool frw, bool der, bool adj)
 {
 	i = nn_get_in_arg_index(op, i, iname);
+
 	auto dom = nlop_generic_domain(op->nlop, i);
 	auto nlop_dump = nlop_dump_create(dom->N, dom->dims, fname, frw, der, adj);
 	((struct nn_s*)op)->nlop = nlop_prepend_FF(nlop_dump, op->nlop, i);
+
 	return op;
 }
 
 nn_t nn_dump_out_F(nn_t op, int o, const char* oname, const char* fname, bool frw, bool der, bool adj)
 {
 	o = nn_get_out_arg_index(op, o, oname);
+
 	auto dom = nlop_generic_codomain(op->nlop, o);
 	auto nlop_dump = nlop_dump_create(dom->N, dom->dims, fname, frw, der, adj);
 	((struct nn_s*)op)->nlop = nlop_append_FF(op->nlop, o, nlop_dump);
+
 	return op;
 }
 
@@ -774,6 +837,7 @@ nn_t nn_optimize_graph_F(nn_t op)
 
 	for (int i = 0; i < nn_get_nr_in_args(result); i++)
 		nn_clone_arg_i_from_i(result, i, op, i);
+
 	for (int i = 0; i < nn_get_nr_out_args(result); i++)
 		nn_clone_arg_o_from_o(result, i, op, i);
 
@@ -789,10 +853,10 @@ void nn_export_graph(const char* filename, nn_t op)
 
 	graph_t graph = operator_get_graph(op->nlop->op);
 	const char* str = print_internl_graph(graph, true, II + OO, arg_nodes);
+
 	graph_free(graph);
 
-	FILE *fp;
-	fp = fopen(filename, "w+");
+	FILE *fp = fopen(filename, "w+");
 
 	assert(NULL != fp);
 
@@ -802,11 +866,13 @@ void nn_export_graph(const char* filename, nn_t op)
 	int counter_input = 0;
 	int counter_weight = 0;
 
-	for (int i = 0; i < II; i++)
+	for (int i = 0; i < II; i++) {
+
 		if ((IN_OPTIMIZE == op->in_types[i]) || (IN_BATCHNORM == op->in_types[i]))
 			counter_weight++;
 		else
 			counter_input++;
+	}
 
 	fprintf(fp, "{\nrank=same\n");
 
@@ -814,7 +880,8 @@ void nn_export_graph(const char* filename, nn_t op)
 	if (0 < counter_input) {
 
 		fprintf(fp, "subgraph cluster_inputs{\nlabel = \"Inputs\";\nrank=source;\n");
-		for (int i = 0; i < counter_input; i++, index ++) {
+
+		for (int i = 0; i < counter_input; i++, index++) {
 
 			while ((IN_OPTIMIZE == op->in_types[index]) || (IN_BATCHNORM == op->in_types[index]))
 				index++;
@@ -840,7 +907,7 @@ void nn_export_graph(const char* filename, nn_t op)
 
 		fprintf(fp, "subgraph cluster_weights{\n label = \"Weights\";\n rank=source;\n");
 
-		for (int i = 0; i < counter_weight; i++, index ++) {
+		for (int i = 0; i < counter_weight; i++, index++) {
 
 			while (!((IN_OPTIMIZE == op->in_types[index]) || (IN_BATCHNORM == op->in_types[index])))
 				index++;
@@ -848,6 +915,7 @@ void nn_export_graph(const char* filename, nn_t op)
 			auto iov = nlop_generic_domain(nn_get_nlop(op), index);
 			const char* tmp = ptr_print_dims(iov->N, iov->dims);
 			const char* str_dims = ptr_printf("\\n%s", tmp);
+
 			xfree(tmp);
 
 			if (NULL != op->in_names[index])
@@ -857,27 +925,33 @@ void nn_export_graph(const char* filename, nn_t op)
 
 			xfree(str_dims);
 		}
+
 		fprintf(fp, "}\n");
 	}
 
 	if (1 < II) {
 
 		fprintf(fp, "{\nedge[ style=invis];\n%s", arg_nodes[OO]);
+
 		for (int i = 1; i < counter_weight; i++)
 				fprintf(fp, " -> %s", arg_nodes[i + OO]);
+
 		fprintf(fp, "\n}\n");
 	}
+
 	fprintf(fp, "}\n");
 
 
 	if (0 < OO) {
 
 		fprintf(fp, "subgraph cluster_outputs{\nlabel = \"Outputs\";\nrank=sink;\n");
+
 		for (int i = 0; i < OO; i++) {
 
 			auto iov = nlop_generic_codomain(nn_get_nlop(op), i);
 			const char* tmp = ptr_print_dims(iov->N, iov->dims);
 			const char* str_dims = ptr_printf("\\n%s", tmp);
+
 			xfree(tmp);
 
 			if (NULL != op->out_names[i])
@@ -887,9 +961,12 @@ void nn_export_graph(const char* filename, nn_t op)
 
 			xfree(str_dims);
 		}
+
 		fprintf(fp, "}\n");
 	}
+
 	fprintf(fp, "}\n");
 
 	fclose(fp);
 }
+

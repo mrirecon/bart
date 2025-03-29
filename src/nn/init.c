@@ -624,7 +624,7 @@ static void init_stack_del(const init_t* conf_)
  */
 const struct initializer_s* init_stack_create(int N, int stack_dim, const long dimsa[N], const struct initializer_s* inita, const long dimsb[N], const struct initializer_s* initb)
 {
-	if (NULL == inita && NULL == initb)
+	if ((NULL == inita) && (NULL == initb))
 		return NULL;
 
 	PTR_ALLOC(struct initializer_stack_s, data);

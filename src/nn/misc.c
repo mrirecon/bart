@@ -22,11 +22,11 @@ void onehotenc_to_index(int N, const long odims[N], complex float* dst, const lo
 
 	for (int i = 0; i < N; i++) {
 
-		if (odims[i] != idims[i]) {
+		if (odims[i] == idims[i])
+			continue;
 
-			assert(-1 == class_index);
-			class_index = i;
-		}
+		assert(-1 == class_index);
+		class_index = i;
 	}
 
 	assert(-1 != class_index);
@@ -81,11 +81,11 @@ void index_to_onehotenc(int N, const long odims[N], complex float* dst, const lo
 
 	for (int i = 0; i < N; i++) {
 
-		if (odims[i] != idims[i]) {
+		if (odims[i] == idims[i])
+			continue;
 
-			assert(-1 == class_index);
-			class_index = i;
-		}
+		assert(-1 == class_index);
+		class_index = i;
 	}
 
 	assert(-1 != class_index);
@@ -221,18 +221,25 @@ extern void print_confusion_matrix(int N, const long dims[N], int class_index, c
 	int count_char = MAX(3, snprintf(NULL, 0, "%ld", N_pred));
 
 	printf("\npred \\ ref |");
+
 	for (int i = 0; i < classes; i++)
 		printf("%*d", count_char + 1, i);
+
 	printf("|%*s\n", (count_char + 1), "sum");
 
 	for (int i = 0; i < 11; i++)
 		printf("%c", '-');
+
 	printf("|");
+
 	for (int i = 0; i < (int)classes * (count_char + 1); i++)
 		printf("%c", '-');
+
 	printf("|");
+
 	for (int i = 0; i < (count_char + 1); i++)
 		printf("%c", '-');
+
 	printf("\n");
 
 	for (int i = 0; i < classes; i++) {
@@ -247,16 +254,24 @@ extern void print_confusion_matrix(int N, const long dims[N], int class_index, c
 
 	for (int i = 0; i < 11; i++)
 		printf("%c", '-');
+
 	printf("|");
+
 	for (int i = 0; i < (int)classes * (count_char + 1); i++)
 		printf("%c", '-');
+
 	printf("|");
+
 	for (int i = 0; i < (count_char + 1); i++)
 		printf("%c", '-');
+
 	printf("\n");
 
 	printf("%-11s|", "sum");
+
 	for (int i = 0; i < classes; i++)
 		printf("%*ld", count_char + 1, (long)crealf(ref_count[i]));
+
 	printf("|%*ld\n", count_char + 1, N_pred);
 }
+

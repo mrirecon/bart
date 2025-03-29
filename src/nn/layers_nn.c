@@ -112,9 +112,11 @@ nn_t nn_append_transposed_convcorr_layer_generic(
 nn_t nn_append_maxpool_layer_generic(nn_t network, int o, const char* oname, int N, const long pool_size[N], enum PADDING conv_pad)
 {
 	o = nn_get_out_arg_index(network, o, oname);
+
 	auto result = nn_from_nlop_F(append_maxpool_layer_generic(nlop_clone(nn_get_nlop(network)), o, N, pool_size, conv_pad));
 	nn_clone_args(result, network);
 	nn_free(network);
+
 	return result;
 }
 
@@ -249,6 +251,7 @@ nn_t nn_append_batchnorm_layer(nn_t network, int o, const char* oname, const cha
 	return result;
 }
 
+
 /**
  * Append normalization
  *
@@ -270,6 +273,7 @@ nn_t nn_append_normalize_layer(nn_t network, int o, unsigned long norm_flags, fl
 	return result;
 }
 
+
 /**
  * Append max-pooling layer
  *
@@ -283,11 +287,14 @@ nn_t nn_append_normalize_layer(nn_t network, int o, unsigned long norm_flags, fl
 nn_t nn_append_maxpool_layer(nn_t network, int o, const char* oname, const long pool_size[3], enum PADDING conv_pad, bool channel_first)
 {
 	o = nn_get_out_arg_index(network, o, oname);
+
 	auto result = nn_from_nlop_F(append_maxpool_layer(nlop_clone(nn_get_nlop(network)), o, pool_size, conv_pad, channel_first));
 	nn_clone_args(result, network);
 	nn_free(network);
+
 	return result;
 }
+
 
 /**
  * Append dropout layer
@@ -300,11 +307,14 @@ nn_t nn_append_maxpool_layer(nn_t network, int o, const char* oname, const long 
 nn_t nn_append_dropout_layer(nn_t network, int o, const char* oname, float p, enum NETWORK_STATUS status)
 {
 	o = nn_get_out_arg_index(network, o, oname);
+
 	auto result = nn_from_nlop_F(append_dropout_layer(nlop_clone(nn_get_nlop(network)), o, p, status));
 	nn_clone_args(result, network);
 	nn_free(network);
+
 	return result;
 }
+
 
 /**
  * Append flatten layer
@@ -317,11 +327,14 @@ nn_t nn_append_dropout_layer(nn_t network, int o, const char* oname, float p, en
 nn_t nn_append_flatten_layer(nn_t network, int o, const char* oname)
 {
 	o = nn_get_out_arg_index(network, o, oname);
+
 	auto result = nn_from_nlop_F(append_flatten_layer(nlop_clone(nn_get_nlop(network)), o));
 	nn_clone_args(result, network);
 	nn_free(network);
+
 	return result;
 }
+
 
 /**
  * Append padding layer
@@ -337,8 +350,11 @@ nn_t nn_append_flatten_layer(nn_t network, int o, const char* oname)
 nn_t nn_append_padding_layer(nn_t network, int o, const char* oname, long N, long pad_for[N], long pad_after[N], enum PADDING pad_type)
 {
 	o = nn_get_out_arg_index(network, o, oname);
+
 	auto result = nn_from_nlop_F(append_padding_layer(nlop_clone(nn_get_nlop(network)), o, N, pad_for, pad_after, pad_type));
 	nn_clone_args(result, network);
 	nn_free(network);
+
 	return result;
 }
+

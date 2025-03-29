@@ -131,15 +131,15 @@ extern const struct nlop_s* nn_batchgen_create(struct bat_gen_conf_s* config, nn
 	int D = 0;
 	int N = 0;
 
-	for (int i = 0; i < II; i ++) {
+	for (int i = 0; i < II; i++) {
 
-		if (IN_BATCH_GENERATOR == in_types[i]) {
+		if (IN_BATCH_GENERATOR != in_types[i])
+			continue;
 
-			assert(NULL != names[i]);
+		assert(NULL != names[i]);
 
-			N = MAX(N, nn_generic_domain(network, 0, names[i])->N);
-			D++;
-		}
+		N = MAX(N, nn_generic_domain(network, 0, names[i])->N);
+		D++;
 	}
 
 	long bat_dims[D][N];
@@ -148,24 +148,24 @@ extern const struct nlop_s* nn_batchgen_create(struct bat_gen_conf_s* config, nn
 
 	D = 0;
 
-	for (int i = 0; i < II; i ++) {
+	for (int i = 0; i < II; i++) {
 
-		if (IN_BATCH_GENERATOR == in_types[i]) {
+		if (IN_BATCH_GENERATOR != in_types[i])
+			continue;
 
-			const struct named_tensor_s* tensor = get_tensor_by_name(train_data, names[i]);
-			auto iov = nn_generic_domain(network, 0, names[i]);
+		const struct named_tensor_s* tensor = get_tensor_by_name(train_data, names[i]);
+		auto iov = nn_generic_domain(network, 0, names[i]);
 
-			assert(tensor->N == iov->N);
+		assert(tensor->N == iov->N);
 
-			md_singleton_dims(N, bat_dims[D]);
-			md_singleton_dims(N, tot_dims[D]);
-			
-			md_copy_dims(iov->N, bat_dims[D], iov->dims);
-			md_copy_dims(tensor->N, tot_dims[D], tensor->dims);
-			data[D] = tensor->data;
+		md_singleton_dims(N, bat_dims[D]);
+		md_singleton_dims(N, tot_dims[D]);
 
-			D++;
-		}
+		md_copy_dims(iov->N, bat_dims[D], iov->dims);
+		md_copy_dims(tensor->N, tot_dims[D], tensor->dims);
+		data[D] = tensor->data;
+
+		D++;
 	}
 
 	return batch_generator_create(config, D, N, bat_dims, tot_dims, data);
@@ -182,20 +182,20 @@ nn_t nn_valid_create(nn_t network, struct named_data_list_s* valid_data)
 	nn_get_in_args_names(network, II, names, true);
 	nn_get_in_types(network, II, in_types);
 
-	for (int i = 0; i < II; i ++) {
+	for (int i = 0; i < II; i++) {
 
-		if (IN_BATCH_GENERATOR == in_types[i]) {
+		if (IN_BATCH_GENERATOR != in_types[i])
+			continue;
 
-			const struct named_tensor_s* tensor = get_tensor_by_name(valid_data, names[i]);
-			auto iov = nn_generic_domain(network, 0, names[i]);
+		const struct named_tensor_s* tensor = get_tensor_by_name(valid_data, names[i]);
+		auto iov = nn_generic_domain(network, 0, names[i]);
 
-			network = nn_ignore_input_F(network, 0, names[i], tensor->N, tensor->dims, false, tensor->data);
+		network = nn_ignore_input_F(network, 0, names[i], tensor->N, tensor->dims, false, tensor->data);
 
-			assert(tensor->N == iov->N);
-		}
+		assert(tensor->N == iov->N);
 	}
 
-	for(int i = 0; i < II; i++)
+	for (int i = 0; i < II; i++)
 		if (NULL != names[i])
 			xfree(names[i]);
 
@@ -251,7 +251,7 @@ void nn_apply_named_list(nn_t nn_apply, struct named_data_list_s* data, const vo
 
 		assert(dom[i]->N == nn_generic_domain(nn_apply, 0, iname)->N);
 		loop_flags |= (md_nontriv_dims(DI[i], idims[i]) & (~md_nontriv_dims(DI[i], nn_generic_domain(nn_apply, 0, iname)->dims)));
-	
+
 		src[i] = get_tensor_by_name(data, iname)->data;
 	}
 

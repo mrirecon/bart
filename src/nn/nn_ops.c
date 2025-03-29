@@ -17,7 +17,6 @@
 #include "num/flpmath.h"
 #include "num/iovec.h"
 #include "num/rand.h"
-
 #ifdef USE_CUDA
 #include "num/gpuops.h"
 #endif
@@ -31,10 +30,9 @@
 #include "nlops/cast.h"
 #include "nlops/chain.h"
 #include "nlops/someops.h"
-#include "linops/someops.h"
-#include "nlops/cast.h"
 #include "nlops/const.h"
 #include "nlops/tenmul.h"
+
 #include "nn/layers.h"
 
 #include "nn_ops.h"
@@ -49,8 +47,6 @@ const struct nlop_s* nlop_maxpool_create(int N, const long dims[N], const long p
 	long odims[2 * N];
 
 	int perm[2 * N];
-
-
 
 	for (int i = 0; i < N; i++) {
 
@@ -94,12 +90,14 @@ static void rand_mask_fun(const nlop_data_t* _data, int N, complex float* args[N
 
 	if (update_random_state)
 		md_rand_one(data->N, data->dims, data->state, (1. - data->p));
+
 	md_copy(data->N, data->dims, args[0], data->state, CFL_SIZE);
 }
 
 static void rand_mask_del(const struct nlop_data_s* _data)
 {
 	const auto data = CAST_DOWN(rand_mask_s, _data);
+
 	md_free(data->state);
 	xfree(data->dims);
 	xfree(data);
@@ -200,10 +198,10 @@ static void rand_mask_fixed_fun(const nlop_data_t* _data, int D, complex float* 
 
 		for (int i = 0; i < ones; i++) {
 
-
 			md_unravel_index(N, pos, ~data->bat_flags, data->dims, 0);
 
 			long idx = rand_range_state(data->rand_state, (NV - i));
+
 			while ((0 < idx) || (1. == MD_ACCESS(N, strs, pos, data->state))) {
 
 				if (0. == MD_ACCESS(N, strs, pos, data->state))
@@ -217,16 +215,18 @@ static void rand_mask_fixed_fun(const nlop_data_t* _data, int D, complex float* 
 
 	} while (md_next(N, data->dims, data->bat_flags, pos));
 
-
 	md_copy(data->N, data->dims, args[0], data->state, CFL_SIZE);
 }
 
 static void rand_mask_fixed_del(const struct nlop_data_s* _data)
 {
 	const auto data = CAST_DOWN(rand_mask_fixed_s, _data);
+
+	md_free(data->state);
+
 	xfree(data->dims);
 	xfree(data->rand_state);
-	md_free(data->state);
+
 	xfree(data);
 }
 
@@ -240,6 +240,7 @@ const struct nlop_s* nlop_rand_mask_fixed_create(int N, const long dims[N], floa
 	data->p = p;
 	data->dims = *TYPE_ALLOC(long[N]);
 	md_copy_dims(N, data->dims, dims);
+
 	data->state = md_calloc(data->N, data->dims, CFL_SIZE);
 
 	data->rand_state = rand_state_create(123);
@@ -260,7 +261,9 @@ const struct nlop_s* nlop_rand_split_fixed_create(int N, const long dims[N], uns
 	md_select_dims(N, fix_flags, fix_dims, dims);
 
 	complex float* fix_first = md_alloc(N, fix_dims, CFL_SIZE);		// 0 if must be in first output
+
 	md_zfill(N, fix_dims, fix_first, 1);
+
 	if (NULL != _fix_first)
 		md_zsub(N, fix_dims, fix_first, fix_first, _fix_first);
 	
@@ -334,7 +337,6 @@ static void noise_fun(const nlop_data_t* _data, int Nargs, complex float* args[N
 	md_singleton_strides(data->N, pos);
 
 	do {
-
 		complex float* tmp2 = md_alloc_sameplace(data->N, noi_dims, CFL_SIZE, dst);
 
 		md_gaussian_rand(data->N, noi_dims, tmp2);
@@ -348,9 +350,7 @@ static void noise_fun(const nlop_data_t* _data, int Nargs, complex float* args[N
 
 		md_free(tmp2);
 
-
 	} while (md_next(data->N, data->noi_dims, ~(data->shared_var_flag), pos));
-
 
 	md_copy2(data->N, data->out_dims,
 			MD_STRIDES(data->N, data->out_dims, CFL_SIZE), dst,
@@ -489,6 +489,7 @@ const struct nlop_s* nlop_norm_max_abs_create(int N, const long dims[N], unsigne
 
 	PTR_ALLOC(long[N], ndims);
 	md_copy_dims(N, *ndims, dims);
+
 	PTR_ALLOC(long[N], sdims);
 	md_select_dims(N, batch_flag, *sdims, dims);
 
@@ -584,6 +585,7 @@ const struct nlop_s* nlop_norm_znorm_create(int N, const long dims[N], unsigned 
 
 	PTR_ALLOC(long[N], ndims);
 	md_copy_dims(N, *ndims, dims);
+
 	PTR_ALLOC(long[N], sdims);
 	md_select_dims(N, batch_flag, *sdims, dims);
 

@@ -5,7 +5,6 @@
  * Authors: Moritz Blumenthal
  */
 
-
 #include "iter/italgos.h"
 
 #include "num/iovec.h"
@@ -14,7 +13,6 @@
 #include "nlops/chain.h"
 
 #include "nn/losses.h"
-
 #include "nn/chain.h"
 #include "nn/nn.h"
 
@@ -57,6 +55,7 @@ nn_t nn_loss_cce_append(nn_t network, int o, const char* oname, unsigned long sc
 	result = nn_shift_input_index_F(result, 0, nn_get_nr_in_args(result) - 1);
 
 	result = nn_set_out_type_F(result, o, oname, OUT_OPTIMIZE);
+
 	return result;
 }
 
@@ -77,5 +76,6 @@ nn_t nn_loss_dice_append(nn_t network, int o, const char* oname, unsigned long l
 	result = nn_shift_input_index_F(result, 0, nn_get_nr_in_args(result) - 1);
 
 	result = nn_set_out_type_F(result, o, oname, OUT_OPTIMIZE);
+
 	return result;
 }

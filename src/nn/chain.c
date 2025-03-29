@@ -280,13 +280,14 @@ nn_t nn_permute_inputs(nn_t op, int I2, const int perm[I2])
 	for (int i = 0; i < II; i++)
 		nperm[i] = i;
 
-	if (nn_get_nr_unnamed_in_args(op) == I2) {
+	if (I2 == nn_get_nr_unnamed_in_args(op)) {
 
-		for(int i = 0; i < nn_get_nr_unnamed_in_args(op); i++)
+		for (int i = 0; i < nn_get_nr_unnamed_in_args(op); i++)
 			nperm[nn_get_in_arg_index(op, i, NULL)] = nn_get_in_arg_index(op, perm[i], NULL);
+
 	} else {
 
-		for(int i = 0; i < nn_get_nr_in_args(op); i++)
+		for (int i = 0; i < nn_get_nr_in_args(op); i++)
 			nperm[i] = perm[i];
 	}
 
@@ -323,13 +324,14 @@ nn_t nn_permute_outputs(nn_t op, int O2, const int perm[O2])
 	for (int i = 0; i < OO; i++)
 		nperm[i] = i;
 
-	if (nn_get_nr_unnamed_out_args(op) == O2) {
+	if (O2 == nn_get_nr_unnamed_out_args(op)) {
 
-		for(int i = 0; i < nn_get_nr_unnamed_out_args(op); i++)
+		for (int i = 0; i < nn_get_nr_unnamed_out_args(op); i++)
 			nperm[nn_get_out_arg_index(op, i, NULL)] = nn_get_out_arg_index(op, perm[i], NULL);
+
 	} else {
 
-		for(int i = 0; i < nn_get_nr_out_args(op); i++)
+		for (int i = 0; i < nn_get_nr_out_args(op); i++)
 			nperm[i] = perm[i];
 	}
 
@@ -493,24 +495,20 @@ nn_t nn_link(nn_t op, int o, const char* oname, int i, const char* iname)
 
 	auto result = nn_from_nlop_F(nlop_link(nn_get_nlop(op), o, i));
 
-	for (int ii = 0, ip = 0; ii < II; ii++) {
+	for (int ii = 0, ip = 0; ii < II; ii++, ip++) {
 
 		if (ii == i)
 			ip++;
 
 		nn_clone_arg_i_from_i(result, ii, op, ip);
-
-		ip++;
 	}
 
-	for (int ii = 0, ip = 0; ii < OO; ii++) {
+	for (int ii = 0, ip = 0; ii < OO; ii++, ip++) {
 
 		if (ii == o)
 			ip++;
 
 		nn_clone_arg_o_from_o(result, ii, op, ip);
-
-		ip++;
 	}
 
 	return result;
@@ -1097,6 +1095,7 @@ nn_t nn_shift_output_index_F(nn_t x, int n, int o)
 	assert(new_index < OO);
 
 	int perm[OO];
+
 	for (int i = 0, ip = 0; i < OO; i++, ip++) {
 
 		perm[i] = ip;
@@ -1328,7 +1327,7 @@ nn_t nn_sort_inputs_by_list_F(nn_t x, int N, const char* sorted_names[N])
 	const char* nnames[N];
 	int NN = names_remove_double(N, nnames, sorted_names);
 
-	for (int i = 0; i < II; i++){
+	for (int i = 0; i < II; i++) {
 
 		if (is_name_in_list(NN, nnames, nn_get_in_name_from_arg_index(x, i, false))) {
 
@@ -1368,7 +1367,7 @@ nn_t nn_sort_outputs_by_list_F(nn_t x, int N, const char* sorted_names[N])
 	const char* nnames[N?:1];
 	int NN = names_remove_double(N, nnames, sorted_names);
 
-	for (int i = 0; i < OO; i++){
+	for (int i = 0; i < OO; i++) {
 
 		if (is_name_in_list(NN, nnames, nn_get_out_name_from_arg_index(x, i, false))) {
 
@@ -1530,7 +1529,7 @@ nn_t nn_sort_outputs_F(nn_t x)
 
 	for (int i = 0; i < OO; i++) {
 
-		if (NULL == (x->out_names)[i])
+		if (NULL == x->out_names[i])
 			nperm[index_unnamed++] = i;
 		else
 			nperm[index_named++] = i;
@@ -1556,9 +1555,11 @@ nn_t nn_stack_multigpu_F(int N , nn_t x[N], int stack_dim)
 		for (int j = 0; j < II; j++) {
 
 			auto iov = nlop_generic_domain(x[i]->nlop, j);
+
 			assert((NULL == x[i]->in_names[j]) == (NULL == x[0]->in_names[j]));
 			assert(x[i]->in_types[j] == x[0]->in_types[j]);
 			assert(x[0]->in_types[j] != IN_BATCHNORM);
+
 			if (IN_OPTIMIZE != x[i]->in_types[j])
 				lwgh[i] = MAX(lwgh[i], iov->dims[stack_dim]);
 		}
