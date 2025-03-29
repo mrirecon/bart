@@ -98,7 +98,6 @@ nn_t network_tensorflow_create(const struct network_s* _config, int NO, const lo
 		nn_net = nn_set_input_name_F(nn_net, 1, wgh_name);
 	}
 
-
 	debug_printf(DP_DEBUG1, "TensorFlow Network created:\n");
 	nn_debug(DP_DEBUG1, nn_net);
 

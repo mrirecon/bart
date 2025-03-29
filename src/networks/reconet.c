@@ -284,28 +284,29 @@ static nn_t reconet_normalization(const struct reconet_s* config, nn_t network)
 
 		const char* name = norm_names_in[i];
 
-		if (nn_is_name_in_in_args(network, name)) {
+		if (!nn_is_name_in_in_args(network, name))
+			continue;
 
-			auto iov = nn_generic_domain(network, 0, name);
+		auto iov = nn_generic_domain(network, 0, name);
 
-			long sdims[iov->N];
-			md_select_dims(iov->N, config->mri_config->batch_flags, sdims, iov->dims);
+		long sdims[iov->N];
+		md_select_dims(iov->N, config->mri_config->batch_flags, sdims, iov->dims);
 
-			auto nn_scale = nn_from_nlop_F(nlop_tenmul_create(iov->N, iov->dims, iov->dims, sdims));
-			
-			nn_scale = nn_set_in_type_F(nn_scale, 1, NULL, IN_BATCH_GENERATOR);
-			nn_scale = nn_set_input_name_F(nn_scale, 1, "scale");
+		auto nn_scale = nn_from_nlop_F(nlop_tenmul_create(iov->N, iov->dims, iov->dims, sdims));
 
-			if (scale)
-				nn_scale = nn_mark_dup_F(nn_scale, "scale");
+		nn_scale = nn_set_in_type_F(nn_scale, 1, NULL, IN_BATCH_GENERATOR);
+		nn_scale = nn_set_input_name_F(nn_scale, 1, "scale");
 
-			nn_scale = nn_set_in_type_F(nn_scale, 0, NULL, IN_BATCH_GENERATOR);
-			nn_scale = nn_set_input_name_F(nn_scale, 0, name);
+		if (scale)
+			nn_scale = nn_mark_dup_F(nn_scale, "scale");
 
-			network = nn_chain2_FF(nn_scale, 0, NULL, network, 0, name);
-			network = nn_stack_dup_by_name_F(network);			
-			scale = true;
-		}
+		nn_scale = nn_set_in_type_F(nn_scale, 0, NULL, IN_BATCH_GENERATOR);
+		nn_scale = nn_set_input_name_F(nn_scale, 0, name);
+
+		network = nn_chain2_FF(nn_scale, 0, NULL, network, 0, name);
+		network = nn_stack_dup_by_name_F(network);
+
+		scale = true;
 	}
 
 	const char* norm_names_out[] = {
@@ -316,30 +317,31 @@ static nn_t reconet_normalization(const struct reconet_s* config, nn_t network)
 
 		const char* name = norm_names_out[i];
 
-		if (nn_is_name_in_out_args(network, name)) {
+		if (!nn_is_name_in_out_args(network, name))
+			continue;
 
-			auto iov = nn_generic_codomain(network, 0, name);
+		auto iov = nn_generic_codomain(network, 0, name);
 
-			long sdims[iov->N];
-			md_select_dims(iov->N, config->mri_config->batch_flags, sdims, iov->dims);
+		long sdims[iov->N];
+		md_select_dims(iov->N, config->mri_config->batch_flags, sdims, iov->dims);
 
-			auto nlop_scale = nlop_tenmul_create(iov->N, iov->dims, iov->dims, sdims);
-			nlop_scale = nlop_chain2_FF(nlop_zinv_create(iov->N, sdims), 0, nlop_scale, 1);
+		auto nlop_scale = nlop_tenmul_create(iov->N, iov->dims, iov->dims, sdims);
+		nlop_scale = nlop_chain2_FF(nlop_zinv_create(iov->N, sdims), 0, nlop_scale, 1);
 
-			auto nn_scale = nn_from_nlop_F(nlop_scale);
-			
-			nn_scale = nn_set_in_type_F(nn_scale, 1, NULL, IN_BATCH_GENERATOR);
-			nn_scale = nn_set_input_name_F(nn_scale, 1, "scale");
+		auto nn_scale = nn_from_nlop_F(nlop_scale);
 
-			if (scale)
-				nn_scale = nn_mark_dup_F(nn_scale, "scale");
+		nn_scale = nn_set_in_type_F(nn_scale, 1, NULL, IN_BATCH_GENERATOR);
+		nn_scale = nn_set_input_name_F(nn_scale, 1, "scale");
 
-			nn_scale = nn_set_output_name_F(nn_scale, 0, name);
+		if (scale)
+			nn_scale = nn_mark_dup_F(nn_scale, "scale");
 
-			network = nn_chain2_FF(network, 0, name, nn_scale, 0, NULL);
-			network = nn_stack_dup_by_name_F(network);			
-			scale = true;
-		}
+		nn_scale = nn_set_output_name_F(nn_scale, 0, name);
+
+		network = nn_chain2_FF(network, 0, name, nn_scale, 0, NULL);
+		network = nn_stack_dup_by_name_F(network);
+
+		scale = true;
 	}
 
 	return network;
@@ -837,6 +839,7 @@ static nn_t reconet_train_create(const struct reconet_s* config, int N, const lo
 		auto ret = reconet_train_create(config, N, max_dims2, ND, psf_dims2, valid);
 
 		nn_t tmp[mpi_get_num_procs()];
+
 		for (int i = 0; i < mpi_get_num_procs(); i++)
 			tmp[i] = nn_clone(ret);
 
@@ -1045,7 +1048,7 @@ void train_reconet(	struct reconet_s* config,
 			break;
 
 		case IN_OPTIMIZE:
-		case IN_BATCHNORM: ;
+		case IN_BATCHNORM:
 
 			auto iov_weight = config->weights->iovs[weight_index];
 			auto iov_train_op = nlop_generic_domain(nn_get_nlop(nn_train), i);

@@ -137,7 +137,6 @@ nn_t network_create(const struct network_s* config, int _NO, const long _odims[_
 		result = nn_reshape_out_F(result, 0, NULL, _NO, _odims);
 	}
 
-
 	return result;
 }
 
@@ -498,7 +497,7 @@ static nn_t network_varnet_create(const struct network_s* _config, int NO, const
 	nlop_result = nlop_chain2_FF(nlop_from_linop_F(linop_zconj_create(iov_ker->N, iov_ker->dims)), 0, nlop_result, 2); //in: rbf_w, u, conv_w
 	nlop_result = nlop_chain2_FF(nlop_result, 0, nlop_from_linop_F(linop_scale_create(5, idims, 1. / config->Nf)), 0); //in: rbf_w, u, conv_w
 
-	int perm [] = { 1, 2, 0 };
+	int perm[] = { 1, 2, 0 };
 	nlop_result = nlop_permute_inputs_F(nlop_result, 3, perm); //in: u, conv_w, rbf_w
 
 	auto nn_result = nn_from_nlop_F(nlop_result);

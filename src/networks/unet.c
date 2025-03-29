@@ -523,12 +523,12 @@ static nn_t unet_append_conv_block(	nn_t network, struct network_unet_s* unet,
 
 	long kdims_a[N];
 	md_copy_dims(N, kdims_a, kdims);
+
 	if (last_layer && unet->use_nnunet_last) {
 
-		for (int i = 0; i < N; i++) {
+		for (int i = 0; i < N; i++)
 			if (MD_IS_SET(unet->conv_flag, i))
 				kdims_a[i] = 1;
-		}
 
 		config.use_bias = false;
 		config.use_instnorm = false;
@@ -591,14 +591,12 @@ static nn_t unet_sample_conv_strided_create(struct network_unet_s* unet, int N, 
 			assert(0 == dims[i] % stride);
 			down_dims[i] = dims[i] / stride;
 			strides[i] = stride;
-
 		}
 
 		if (MD_IS_SET(unet->channel_flag, i)) {
 
 			kdims[i] = up ? dims[i] : (dims[i] * unet->channel_factor > unet->max_channels ? unet->max_channels : dims[i] * unet->channel_factor);
 			down_dims[i] = dims[i] * unet->channel_factor > unet->max_channels ? unet->max_channels : dims[i] * unet->channel_factor;
-
 		}
 
 		if (MD_IS_SET(unet->group_flag, i))
@@ -669,10 +667,8 @@ static nn_t nnunet_sample_conv_strided_create(struct network_unet_s* unet, int N
 			down_dims[i] = dims[i] * unet->channel_factor > unet->max_channels ? unet->max_channels : dims[i] * unet->channel_factor;
 		}
 
-		if (MD_IS_SET(unet->group_flag, i)) {
-
+		if (MD_IS_SET(unet->group_flag, i))
 			kdims[i] = dims[i];
-		}
 	}
 
 	struct nn_conv_block_s config;
@@ -941,6 +937,7 @@ static nn_t unet_level_create(struct network_unet_s* unet, int N, const long odi
 	long Nl_after = last_same ? unet->Nl_after : unet->Nl_after - 1;
 
 	if (0 == level) {
+
 		Nl_before = init_same ? unet->Nl_highest_before : unet->Nl_highest_before - 1;
 		Nl_after = last_same ? unet->Nl_highest_after : unet->Nl_highest_after - 1;
 	}
@@ -1078,6 +1075,6 @@ bool unet_is_diagonal(const struct network_s* config)
 {
 	auto unet = CAST_MAYBE(network_unet_s, config);
 
-	return ((NULL != unet) && (!unet->use_bn));
+	return (NULL != unet) && (!unet->use_bn);
 }
 

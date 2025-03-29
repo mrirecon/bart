@@ -205,7 +205,7 @@ static nn_t nlinvnet_sort_args_F(nn_t net)
 		if (nn_is_name_in_in_args(net, data_names[i]))
 			net = nn_set_in_type_F(net, 0, data_names[i], IN_BATCH_GENERATOR);
 
-	const char * out_names_nlinv[] = { "ksp", "cim", "img", "col" };
+	const char* out_names_nlinv[] = { "ksp", "cim", "img", "col" };
 
 	N = nn_get_nr_named_out_args(net);
 	const char* out_names[(int)ARRAY_SIZE(out_names_nlinv) + N];
@@ -226,14 +226,14 @@ static nn_t nlinvnet_sort_args_F(nn_t net)
 
 	if (nn_is_name_in_in_args(net, "lam")) {
 
-		auto iov = nn_generic_domain(net, 0, "lam");
+		const struct iovec_s* iov = nn_generic_domain(net, 0, "lam");
 		auto prox_conv = operator_project_pos_real_create(iov->N, iov->dims);
 		net = nn_set_prox_op_F(net, 0, "lam", prox_conv);
 	}
 
 	if (nn_is_name_in_in_args(net, "lam_sens")) {
 
-		auto iov = nn_generic_domain(net, 0, "lam_sens");
+		const struct iovec_s* iov = nn_generic_domain(net, 0, "lam_sens");
 		auto prox_conv = operator_project_pos_real_create(iov->N, iov->dims);
 		net = nn_set_prox_op_F(net, 0, "lam_sens", prox_conv);
 	}

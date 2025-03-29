@@ -166,12 +166,12 @@ static nn_t add_loss(nn_t loss, nn_t new_loss, bool combine) {
 	if (NULL == result) {
 
 		result = new_loss;
+
 	} else {
 
 		result = nn_combine_FF(result, new_loss);
 		result = nn_dup_F(result, 0, NULL, 2, NULL);
 		result = nn_dup_F(result, 1, NULL, 2, NULL);
-
 	}
 
 	while (combine) {
@@ -184,41 +184,43 @@ static nn_t add_loss(nn_t loss, nn_t new_loss, bool combine) {
 		enum OUT_TYPE out_types[OO];
 		nn_get_out_types(result, OO, out_types);
 
-		for (int i = 0; (-1 == j_loss) && (i < OO); i++)
-			if (OUT_OPTIMIZE == out_types[i]) {
+		for (int i = 0; (-1 == j_loss) && (i < OO); i++) {
 
-				if (-1 == i_loss)
-					i_loss = i;
-				else
-				 	j_loss = i;
-			}
+			if (OUT_OPTIMIZE != out_types[i])
+				continue;
 
-		if (-1 != j_loss) {
-
-			int i_index = nn_get_out_index_from_arg_index(result, i_loss);
-			int j_index = nn_get_out_index_from_arg_index(result, j_loss);
-			const char* i_name = nn_get_out_name_from_arg_index(result, i_loss, true);
-			const char* j_name = nn_get_out_name_from_arg_index(result, j_loss, true);
-
-			auto sum = nn_from_nlop_F(nlop_zaxpbz_create(1, MD_DIMS(1), 1, 1));
-			result = nn_combine_FF(sum, result);
-			result = nn_link_F(result, j_index, j_name, 0, NULL);
-			result = nn_link_F(result, i_index, i_name, 0, NULL);
-
-			const char* nname = ptr_printf("%s + %s", (NULL == i_name) ? "na" : i_name, (NULL == j_name) ? "na" : j_name);
-
-			result = nn_set_out_type_F(result, 0, NULL, OUT_OPTIMIZE);
-			result = nn_set_output_name_F(result, 0, nname);
-
-			xfree(nname);
-
-			if (NULL != i_name)
-				xfree(i_name);
-			if (NULL != j_name)
-				xfree(j_name);
-
-			combine = true;
+			if (-1 == i_loss)
+				i_loss = i;
+			else
+				j_loss = i;
 		}
+
+		if (-1 == j_loss)
+			continue;
+
+		int i_index = nn_get_out_index_from_arg_index(result, i_loss);
+		int j_index = nn_get_out_index_from_arg_index(result, j_loss);
+		const char* i_name = nn_get_out_name_from_arg_index(result, i_loss, true);
+		const char* j_name = nn_get_out_name_from_arg_index(result, j_loss, true);
+
+		auto sum = nn_from_nlop_F(nlop_zaxpbz_create(1, MD_DIMS(1), 1, 1));
+		result = nn_combine_FF(sum, result);
+		result = nn_link_F(result, j_index, j_name, 0, NULL);
+		result = nn_link_F(result, i_index, i_name, 0, NULL);
+
+		const char* nname = ptr_printf("%s + %s", (NULL == i_name) ? "na" : i_name, (NULL == j_name) ? "na" : j_name);
+
+		result = nn_set_out_type_F(result, 0, NULL, OUT_OPTIMIZE);
+		result = nn_set_output_name_F(result, 0, nname);
+
+		xfree(nname);
+
+		if (NULL != i_name)
+			xfree(i_name);
+		if (NULL != j_name)
+			xfree(j_name);
+
+		combine = true;
 	}
 
 	return result;
@@ -227,6 +229,7 @@ static nn_t add_loss(nn_t loss, nn_t new_loss, bool combine) {
 static const struct nlop_s* nlop_affine_transform_out_F(const struct nlop_s* nlop, complex float a, complex float b)
 {
 	assert(1 == nlop_get_nr_out_args(nlop));
+
 	int N = nlop_generic_codomain(nlop, 0)->N;
 	const long* dims = nlop_generic_codomain(nlop, 0)->dims;
 
@@ -242,17 +245,19 @@ static const struct nlop_s* nlop_affine_transform_out_F(const struct nlop_s* nlo
 	result = nlop_chain2_FF(nlop, 0, result, 0);
 
 	md_free(tmp);
+
 	return result;
 }
 
 static nn_t nlop_loss_to_nn_F(const struct nlop_s* nlop, const char* name, float weighting, bool measure)
 {
-	if (measure && 1 != weighting)
+	if (measure && (1 != weighting))
 		error("Scaling other than 0. and 1. is only allowed for losses!\n");
 
 	auto tmp_loss = nn_from_nlop_F(nlop_chain2_FF(nlop, 0, nlop_from_linop_F(linop_scale_create(1, MD_DIMS(1), weighting)), 0));
 	tmp_loss = nn_set_out_type_F(tmp_loss, 0, NULL, OUT_OPTIMIZE);
 	tmp_loss = nn_set_output_name_F(tmp_loss, 0, name);
+
 	return tmp_loss;
 }
 
@@ -411,6 +416,7 @@ static nn_t loss_measure_create(const struct loss_config_s* config, int N, const
 			dice = nlop_chain2_FF(dice, 0, nlop_destack_create(1, MD_DIMS(labels - 1), MD_DIMS(1), MD_DIMS(labels), 0), 0);
 			labels--;
 		}
+
 		labels = 0;
 
 		nn_t tmp_loss = nn_from_nlop_F(dice);
@@ -418,8 +424,10 @@ static nn_t loss_measure_create(const struct loss_config_s* config, int N, const
 		while (0 < nn_get_nr_unnamed_out_args(tmp_loss)) {
 
 			auto name = ptr_printf("dice sim (label %ld)", labels++);
+
 			tmp_loss = nn_set_out_type_F(tmp_loss, 0, NULL, OUT_OPTIMIZE);
 			tmp_loss = nn_set_output_name_F(tmp_loss, 0, name);
+
 			xfree(name);
 		}
 
@@ -459,7 +467,6 @@ static nn_t loss_measure_create(const struct loss_config_s* config, int N, const
 		result = add_loss(result, nlop_loss_to_nn_F(nlop_mse_scaled_create(N, dims, config->mse_mean_flags), "mse scaled", config->weighting_mse_scaled, measure), combine);
 	}
 
-
 	if (0 != config->mask_flags) {
 
 		long mask_dims[N];
@@ -477,7 +484,6 @@ static nn_t loss_measure_create(const struct loss_config_s* config, int N, const
 		result = nn_link_F(result, OO, NULL, 0, NULL);
 	}
 
-
 	return result;
 }
 
@@ -490,3 +496,4 @@ nn_t val_measure_create(const struct loss_config_s* config, int N, const long di
 {
 	return loss_measure_create(config, N, dims, false, true);
 }
+
