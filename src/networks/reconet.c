@@ -1048,7 +1048,7 @@ void train_reconet(	struct reconet_s* config,
 			break;
 
 		case IN_OPTIMIZE:
-		case IN_BATCHNORM:
+		case IN_BATCHNORM: ;
 
 			auto iov_weight = config->weights->iovs[weight_index];
 			auto iov_train_op = nlop_generic_domain(nn_get_nlop(nn_train), i);
