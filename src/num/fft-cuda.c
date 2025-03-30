@@ -52,7 +52,7 @@ struct iovec {
 	long os; 
 };
 
-static char* cufft_error_string(enum cufftResult_t err);
+static const char* cufft_error_string(enum cufftResult_t err);
 static void cufft_error(const char* file, int line, enum cufftResult_t code)
 {
 	const char* err_str = cufft_error_string(code);
@@ -319,7 +319,7 @@ void fft_cuda_exec(struct fft_cuda_plan_s* cuplan, complex float* dst, const com
 }
 
 
-static char* cufft_error_string(enum cufftResult_t err)
+static const char* cufft_error_string(enum cufftResult_t err)
 {
 	switch (err) {
 		case CUFFT_SUCCESS: 			return "CUFFT_SUCCESS"; break;

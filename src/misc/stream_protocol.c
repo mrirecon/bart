@@ -16,7 +16,7 @@
 enum stream_param { NO_PARAMS = 0, LONG_PARAM };
 
 struct typeinfo {
-	char* keyword;
+	const char* keyword;
 	unsigned int keylen;
 	bool ext;
 	enum stream_param param;

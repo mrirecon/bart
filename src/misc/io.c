@@ -388,9 +388,9 @@ int write_stream_header(int fd, const char* dataname, int D, const long dims[D])
 {
 	// determine header length first by writing it to /dev/null
 #ifdef _WIN32
-	char* null_file = "nul";
+	const char* null_file = "nul";
 #else
-	char* null_file = "/dev/null";
+	const char* null_file = "/dev/null";
 #endif
 	int null_fd = open(null_file, O_WRONLY);
 
