@@ -1,3 +1,7 @@
+/* Copyright 2025. Institute of Biomedical Imaging. TU Graz.
+ * All rights reserved. Use of this source code is governed by
+ * a BSD-style license which can be found in the LICENSE file.
+ */
 
 #include "num/ops.h"
 #include "num/iovec.h"
@@ -52,7 +56,7 @@ const struct linop_s* linop_asl_create(int N, const long img_dims[N], int asl_di
 	md_singleton_dims(N, tdims);
 	tdims[asl_dim] = 2;
 
-	complex float tensor[2] = { 1.0f, -1.0f };
+	complex float tensor[2] = { 1.f, -1.f };
 
 	return linop_fmac_dims_create(N, asl_img_dims, img_dims, tdims, tensor);
 }
@@ -70,6 +74,7 @@ const struct linop_s* linop_asl_create(int N, const long img_dims[N], int asl_di
 void get_teasl_label_dims(int N, int teasl_dim, long teasl_label_dims[N], const long in_dims[N])
 {
 	assert(1 < in_dims[teasl_dim]);
+
 	md_copy_dims(N, teasl_label_dims, in_dims);
 	teasl_label_dims[teasl_dim] = 1;
 }
@@ -87,6 +92,7 @@ void get_teasl_label_dims(int N, int teasl_dim, long teasl_label_dims[N], const 
 void get_teasl_pwi_dims(int N, int teasl_dim, long teasl_pwi_dims[N], const long in_dims[N])
 {
 	assert(1 < in_dims[teasl_dim]);
+
 	md_copy_dims(N, teasl_pwi_dims, in_dims);
 	teasl_pwi_dims[teasl_dim]--;
 }

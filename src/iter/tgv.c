@@ -1,4 +1,4 @@
-/* Copyright 2022. Institute of Medical Engineering. TU Graz.
+/* Copyright 2022-2025. Institute of Medical Engineering. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -73,9 +73,10 @@ struct reg tv_reg(unsigned long flags, unsigned long jflags, float lambda, int N
 
 		assert(N == linop_domain(lop_trafo)->N);
 		assert(md_check_equal_dims(N, img_dims, linop_domain(lop_trafo)->dims, ~0UL));
-
 		assert(N == linop_codomain(lop_trafo)->N);
+
 		md_copy_dims(N, in2_dims, linop_codomain(lop_trafo)->dims);
+
 	} else {
 
 		md_copy_dims(N, in2_dims, img_dims);
@@ -83,10 +84,8 @@ struct reg tv_reg(unsigned long flags, unsigned long jflags, float lambda, int N
 
 	reg.linop = linop_grad_create(N, in2_dims, N, flags);
 
-	if (NULL != lop_trafo) {
-
+	if (NULL != lop_trafo)
 		reg.linop = linop_chain_FF(lop_trafo, reg.linop);
-	}
 
 	if (0 < tvscales_N) {
 
@@ -95,11 +94,12 @@ struct reg tv_reg(unsigned long flags, unsigned long jflags, float lambda, int N
 		assert(tvscales_N == linop_codomain(reg.linop)->dims[N]);
 
 		complex float ztvscales[tvscales_N];
+
 		for (int i = 0; i < tvscales_N; i++)
 			ztvscales[i] = tvscales[i];
 
 		reg.linop = linop_chain_FF(reg.linop,
-			linop_cdiag_create(N + 1, linop_codomain(reg.linop)->dims, MD_BIT(N), ztvscales));
+				linop_cdiag_create(N + 1, linop_codomain(reg.linop)->dims, MD_BIT(N), ztvscales));
 	}
 
 	reg.prox = prox_thresh_create(N + 1,
@@ -150,9 +150,10 @@ struct reg2 tgv_reg(unsigned long flags, unsigned long jflags, float lambda, int
 
 		assert(N == linop_domain(lop_trafo)->N);
 		assert(md_check_equal_dims(N, in_dims, linop_domain(lop_trafo)->dims, ~0UL));
-
 		assert(N == linop_codomain(lop_trafo)->N);
+
 		md_copy_dims(N, in2_dims, linop_codomain(lop_trafo)->dims);
+
 	} else {
 
 		md_copy_dims(N, in2_dims, in_dims);
@@ -177,14 +178,15 @@ struct reg2 tgv_reg(unsigned long flags, unsigned long jflags, float lambda, int
 		assert(tvscales_N == linop_codomain(grad1)->dims[N]);
 
 		complex float ztvscales[tvscales_N];
+
 		for (int i = 0; i < tvscales_N; i++)
 			ztvscales[i] = tvscales[i];
 
 		grad1 = linop_chain_FF(grad1,
-			linop_cdiag_create(N + 1, linop_codomain(grad1)->dims, MD_BIT(N), ztvscales));
+				linop_cdiag_create(N + 1, linop_codomain(grad1)->dims, MD_BIT(N), ztvscales));
 
 		grad2 = linop_chain_FF(grad2,
-			linop_cdiag_create(N + 2, linop_codomain(grad2)->dims, MD_BIT(N + 1), ztvscales));
+				linop_cdiag_create(N + 2, linop_codomain(grad2)->dims, MD_BIT(N + 1), ztvscales));
 	}
 
 	grad2 = linop_chain_FF(grad2, linop_scale_create(N + 2, linop_codomain(grad2)->dims, 0.5f));
@@ -267,9 +269,10 @@ struct reg2 ictv_reg(unsigned long flags, unsigned long jflags, float lambda, in
 
 		assert(N == linop_domain(lop_trafo)->N);
 		assert(md_check_equal_dims(N, in_dims, linop_domain(lop_trafo)->dims, ~0UL));
-
 		assert(N == linop_codomain(lop_trafo)->N);
+
 		md_copy_dims(N, in2_dims, linop_codomain(lop_trafo)->dims);
+
 	} else {
 
 		md_copy_dims(N, in2_dims, in_dims);
@@ -304,6 +307,7 @@ struct reg2 ictv_reg(unsigned long flags, unsigned long jflags, float lambda, in
 		assert(tvscales_N == linop_codomain(grad1)->dims[N]);
 
 		complex float ztvscales[tvscales_N];
+
 		for (int i = 0; i < tvscales_N; i++)
 			ztvscales[i] = tvscales[i];
 
@@ -324,11 +328,12 @@ struct reg2 ictv_reg(unsigned long flags, unsigned long jflags, float lambda, in
 		assert(tvscales2_N == linop_codomain(grad2)->dims[N]);
 
 		complex float ztvscales2[tvscales2_N];
+
 		for (int i = 0; i < tvscales2_N; i++)
 			ztvscales2[i] = tvscales2[i];
 	
 		grad2 = linop_chain_FF(grad2,
-			linop_cdiag_create(N + 1, linop_codomain(grad2)->dims, MD_BIT(N), ztvscales2));
+				linop_cdiag_create(N + 1, linop_codomain(grad2)->dims, MD_BIT(N), ztvscales2));
 	}
 
 	auto grad2e = linop_extract_create(1, MD_DIMS(*ext_shift), MD_DIMS(md_calc_size(N, in2_dims)), MD_DIMS(isize));
@@ -343,6 +348,7 @@ struct reg2 ictv_reg(unsigned long flags, unsigned long jflags, float lambda, in
 
 	return reg2;
 }
+
 
 /**
  * This function creates an ICTGV (Infimal Convolution of Total Generalized Variation) regularization operator
@@ -404,7 +410,9 @@ struct reg4 ictgv_reg(unsigned long flags, unsigned long jflags, float lambda, i
 		assert(md_check_equal_dims(N, in_dims, linop_domain(lop_trafo)->dims, ~0UL));
 
 		assert(N == linop_codomain(lop_trafo)->N);
+
 		md_copy_dims(N, in2_dims, linop_codomain(lop_trafo)->dims);
+
 	} else {
 
 		md_copy_dims(N, in2_dims, in_dims);
@@ -419,11 +427,12 @@ struct reg4 ictgv_reg(unsigned long flags, unsigned long jflags, float lambda, i
 		assert(tvscales_N == linop_codomain(grad1)->dims[N]);
 
 		complex float ztvscales[tvscales_N];
+
 		for (int i = 0; i < tvscales_N; i++)
 			ztvscales[i] = tvscales[i];
 
 		grad1 = linop_chain_FF(grad1,
-			linop_cdiag_create(N + 1, linop_codomain(grad1)->dims, MD_BIT(N), ztvscales));
+				linop_cdiag_create(N + 1, linop_codomain(grad1)->dims, MD_BIT(N), ztvscales));
 	}
 
 	long grd_dims[N + 2];
@@ -464,5 +473,4 @@ struct reg4 ictgv_reg(unsigned long flags, unsigned long jflags, float lambda, i
 
 	return reg4;
 }
-
 

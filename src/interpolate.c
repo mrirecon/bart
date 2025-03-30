@@ -1,15 +1,12 @@
-/* Copyright 2024. TU Graz. Institute of Biomedical Imaging.
+/* Copyright 2024-2025. TU Graz. Institute of Biomedical Imaging.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: Moritz Blumenthal
  */
 
-#include <stdlib.h>
 #include <assert.h>
 #include <complex.h>
-#include <stdio.h>
-#include <strings.h>
 
 #include "misc/mri.h"
 #include "misc/mmio.h"
@@ -78,7 +75,8 @@ int main_interpolate(int argc, char* argv[argc])
 	assert(1 == dims[MOTION_DIM]);
 
 	md_copy_dims(DIMS, odims, dims);
-	if ( 0 != md_calc_size(3, out_dims) )
+
+	if (0 != md_calc_size(3, out_dims))
 		md_copy_dims(3, odims, out_dims);
 
 	complex float* mot_ptr = NULL;
@@ -86,11 +84,14 @@ int main_interpolate(int argc, char* argv[argc])
 	if (NULL != motion_file) {
 
 		mot_ptr = load_cfl(motion_file, DIMS, mdims);
+
 	} else {
 
 		md_copy_dims(DIMS, mdims, odims);
 		mdims[MOTION_DIM] = bitcount(flags);
+
 		mot_ptr = anon_cfl(NULL, DIMS, mdims);
+
 		md_positions(DIMS, MOTION_DIM, flags, dims, mdims, mot_ptr);
 	}
 
@@ -98,24 +99,28 @@ int main_interpolate(int argc, char* argv[argc])
 
 	switch (interp_type) {
 
+		const struct linop_s* lop_interp;
+
 		case INTP_COORDS:
-		{
-			const struct linop_s* lop_interp = linop_interpolate_create(MOTION_DIM, flags, order, DIMS, odims, mdims, mot_ptr, dims);
+
+			lop_interp = linop_interpolate_create(MOTION_DIM, flags, order, DIMS, odims, mdims, mot_ptr, dims);
+
 			linop_forward(lop_interp, DIMS, odims, out_ptr, DIMS, dims, src_ptr);
+
 			linop_free(lop_interp);
-		}
-		break;
+			break;
 
 		case INTP_DISPLACEMENT:
-		{
-			const struct linop_s* lop_interp = linop_interpolate_displacement_create(MOTION_DIM, flags, order, DIMS, dims, mdims, mot_ptr, dims);
+
+			lop_interp = linop_interpolate_displacement_create(MOTION_DIM, flags, order, DIMS, dims, mdims, mot_ptr, dims);
+
 			linop_forward(lop_interp, DIMS, odims, out_ptr, DIMS, dims, src_ptr);
+
 			linop_free(lop_interp);
-		}
-		break;
+			break;
 
 		case INTP_AFFINE:
-		{
+
 			assert(3 == md_nontriv_dims(DIMS, mdims));
 			assert((3 == mdims[0]) || (4 == mdims[0]));
 			assert(4 == mdims[1]);
@@ -127,7 +132,7 @@ int main_interpolate(int argc, char* argv[argc])
 				error("Affine interpolation only supports the first three dimensions and flags must be set to 7.\nUse bart looping for higher dimensions.\n");
 
 			affine_interpolate(order, affine, odims, out_ptr, dims, src_ptr);
-		}
+			break;
 	}
 
 	unmap_cfl(DIMS, mdims, mot_ptr);
@@ -136,3 +141,4 @@ int main_interpolate(int argc, char* argv[argc])
 
 	return 0;
 }
+

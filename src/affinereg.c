@@ -15,11 +15,8 @@
  * IEEE TMI 2023;22:120-8.
  */
 
-#include <stdlib.h>
 #include <assert.h>
 #include <complex.h>
-#include <stdio.h>
-#include <strings.h>
 
 #include "num/multind.h"
 #include "num/init.h"
@@ -125,9 +122,6 @@ int main_affinereg(int argc, char* argv[argc])
 	case AFFINE_TRANS:
 		trafo = (1 == rdims[2]) ? nlop_affine_translation_2D() : nlop_affine_translation_3D();
 		break;
-
-	default:
-		unreachable();
 	}
 
 	long aff_dims[DIMS] = { 3, 4, [ 2 ... DIMS - 1 ] = 1 };

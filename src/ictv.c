@@ -1,9 +1,6 @@
-/* Copyright 2022. Institute of Biomedical Imaging. TU Graz.
+/* Copyright 2022-2025. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
- *
- * Authors:
- * 2022 Martin Uecker
  */
 
 #include <stdlib.h>
@@ -47,12 +44,12 @@ int main_ictv(int argc, char* argv[argc])
 	const char* out_file = NULL;
 
 	int tvscales_N = 5;
-	float tvscales[5] = { 0.0, 0.0, 0.0, 0.0, 0.0 };
+	float tvscales[5] = { 0., 0., 0., 0., 0. };
 
 	int tvscales2_N = 5;
-	float tvscales2[5] = { 0.0, 0.0, 0.0, 0.0, 0.0 };
+	float tvscales2[5] = { 0., 0., 0., 0., 0. };
 	
-	float gamma[] = { 1.0, 1.0 };
+	float gamma[] = { 1., 1. };
 
 	struct iter_admm_conf conf = iter_admm_defaults;
 

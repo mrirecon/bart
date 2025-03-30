@@ -17,7 +17,9 @@
 #include "iter/iter6.h"
 
 #include "noncart/nufft.h"
+
 #include "linops/linop.h"
+#include "linops/someops.h"
 
 #include "nlops/nlop.h"
 
@@ -40,8 +42,6 @@
 #include "grecon/losses.h"
 #include "grecon/network.h"
 
-#include "linops/someops.h"
-
 #include "networks/cnn.h"
 #include "networks/unet.h"
 #include "networks/reconet.h"
@@ -52,8 +52,7 @@
 #include "noir/misc.h"
 
 
-static const char help_str[] =
-		"";
+static const char help_str[] = "Perform NLINV-Net reconstruction.";
 
 
 
@@ -243,6 +242,7 @@ int main_nlinvnet(int argc, char* argv[argc])
 	if (NULL != pat_file) {
 
 		pattern = load_cfl(pat_file, DIMS, pat_dims);
+
 	} else {
 
 		md_select_dims(DIMS, ~COIL_FLAG, pat_dims, ksp_dims);
@@ -290,7 +290,9 @@ int main_nlinvnet(int argc, char* argv[argc])
 	if (NULL != basis_file) {
 
 		basis = load_cfl(basis_file, DIMS, bas_dims);
+
 		assert(!md_check_dimensions(DIMS, bas_dims, COEFF_FLAG | TE_FLAG));
+
 	} else {
 
 		md_singleton_dims(DIMS, bas_dims);
@@ -352,6 +354,7 @@ int main_nlinvnet(int argc, char* argv[argc])
 	nlinvnet_init(&nlinvnet, DIMS, traj ? trj_dims_s : NULL, pat_dims_s, bas_dims, basis, ksp_dims_s,	cim_dims_s, img_dims_s,	col_dims_s);
 
 	long fil_dims[DIMS];
+
 	if (NULL != filename_filter) {
 
 		nlinvnet.filter = load_cfl(filename_filter, DIMS, fil_dims);
@@ -367,6 +370,7 @@ int main_nlinvnet(int argc, char* argv[argc])
 
 		long out_dims[DIMS];
 		complex float* ref = load_cfl(out_file, DIMS, out_dims);
+
 		assert(md_check_equal_dims(DIMS, nlinvnet.ksp_training ? ksp_dims : cim_dims, out_dims, ~0UL));
 
 		auto train_data_list = named_data_list_create();

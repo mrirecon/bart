@@ -1,5 +1,5 @@
 /* Copyright 2014,2019. The Regents of the University of California.
- * Copyright 2022. Institute of Biomedical Imaging. TU Graz.
+ * Copyright 2022-2025. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -50,9 +50,9 @@ int main_tgv(int argc, char* argv[argc])
 	const char* out_file = NULL;
 
 	int tvscales_N = 5;
-	float tvscales[5] = { 0.0, 0.0, 0.0, 0.0, 0.0 };
+	float tvscales[5] = { 0., 0., 0., 0., 0. };
 
-	float alpha[] = { 1.0, sqrtf(3.) };
+	float alpha[] = { 1., sqrtf(3.) };
 
 	struct arg_s args[] = {
 

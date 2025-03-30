@@ -33,8 +33,7 @@
 #endif
 
 
-static const char help_str[] = 
-	"";
+static const char help_str[] = "Measure image quality.";
 
 enum MEASURE {
 	
