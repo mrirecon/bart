@@ -418,7 +418,7 @@ static enum adc_return siemens_bounds(bool vd, bool noise, int fd, long min[DIMS
 }
 
 
-static enum adc_return siemens_adc_read(bool vd, int fd, bool noise, bool linectr, bool partctr, bool radial, const long dims[DIMS], long pos[DIMS], complex float* buf)
+static enum adc_return siemens_adc_read(bool vd, int fd, bool noise, bool linectr, bool partctr, bool radial, const long dims[DIMS], long pos[DIMS], complex float* buf, complex float* pmu_val)
 {
 	char scan_hdr[vd ? 192 : 0];
 	xread(fd, scan_hdr, sizeof(scan_hdr));
@@ -427,6 +427,10 @@ static enum adc_return siemens_adc_read(bool vd, int fd, bool noise, bool linect
 
 		char chan_hdr[vd ? 32 : 128];
 		xread(fd, chan_hdr, sizeof(chan_hdr));
+
+		struct mdh1 mdh_1;
+		memcpy(&mdh_1, vd ? scan_hdr : chan_hdr, sizeof(mdh_1));
+		*pmu_val = mdh_1.pmutime * 2.5; // 2.5ms temporal resolution of PMU
 
 		struct mdh2 mdh;
 		memcpy(&mdh, vd ? (scan_hdr + 40) : (chan_hdr + 20), sizeof(mdh));
@@ -493,11 +497,13 @@ int main_twixread(int argc, char* argv[argc])
 {
 	const char* dat_file = NULL;
 	const char* out_file = NULL;
+	const char* pmu_file = NULL;
 
 	struct arg_s args[] = {
 
 		ARG_INFILE(true, &dat_file, "dat file"),
 		ARG_OUTFILE(true, &out_file, "output"),
+		ARG_OUTFILE(false, &pmu_file, "pmu"),
 	};
 
 	long adcs = 0;
@@ -629,6 +635,20 @@ int main_twixread(int argc, char* argv[argc])
 	complex float* out = create_cfl(out_file, DIMS, odims);
 	md_clear(DIMS, odims, out, CFL_SIZE);
 
+	bool pmu_out = (NULL != pmu_file);
+
+	long pmu_dims[DIMS];
+	md_select_dims(DIMS, ~(READ_FLAG|COIL_FLAG), pmu_dims, dims);
+	complex float* pmu;
+	complex float pmu_val;
+
+	if (pmu_out) {
+		
+		pmu = create_cfl(pmu_file, DIMS, pmu_dims);
+		md_clear(DIMS, pmu_dims, pmu, CFL_SIZE);
+	}
+
+
 	debug_printf(DP_DEBUG1, "___ reading measured data (%ld adcs).\n", adcs);
 
 	long adc_dims[DIMS];
@@ -648,7 +668,7 @@ int main_twixread(int argc, char* argv[argc])
 
 		long pos[DIMS] = { [0 ... DIMS - 1] = 0 };
 
-		sar = siemens_adc_read(vd, ifd, noise, linectr, partctr, radial, dims, pos, buf);
+		sar = siemens_adc_read(vd, ifd, noise, linectr, partctr, radial, dims, pos, buf, &pmu_val);
 
 		if (ADC_ERROR == sar) {
 
@@ -693,6 +713,9 @@ int main_twixread(int argc, char* argv[argc])
 				debug_print_dims(DP_WARN, DIMS, pos);
 				continue;
 			}
+			
+			if (pmu_out)
+				md_copy_block(DIMS, pos, pmu_dims, pmu, MD_SINGLETON_DIMS(DIMS), &pmu_val, CFL_SIZE);
 
 			if (rational) {
 
@@ -722,6 +745,9 @@ int main_twixread(int argc, char* argv[argc])
 	md_free(buf);
 
 	unmap_cfl(DIMS, dims, out);
+
+	if (pmu_out)
+		unmap_cfl(DIMS, pmu_dims, pmu);
 
 	return 0;
 }
