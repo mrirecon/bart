@@ -107,7 +107,7 @@ int main_affinereg(int argc, char* argv[argc])
 		assert(md_check_equal_dims(DIMS, rdims, tdims, ~0ul));
 	} 
 
-	const struct nlop_s* trafo;
+	const struct nlop_s* trafo = NULL; // false positive
 
 	switch (aff) {
 
