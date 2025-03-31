@@ -52,10 +52,32 @@ struct iovec {
 	long os; 
 };
 
-static const char* cufft_error_string(enum cufftResult_t err);
+static const char* cufft_error_string[] = {
+#define ENTRY(X) [CUFFT_ ## X] = "CUFFT_" # X
+	ENTRY(SUCCESS),
+	ENTRY(INVALID_PLAN),
+	ENTRY(ALLOC_FAILED),
+	ENTRY(INVALID_TYPE),
+	ENTRY(INVALID_VALUE),
+	ENTRY(INTERNAL_ERROR),
+	ENTRY(EXEC_FAILED),
+	ENTRY(SETUP_FAILED),
+	ENTRY(INVALID_SIZE),
+	ENTRY(UNALIGNED_DATA),
+	ENTRY(INCOMPLETE_PARAMETER_LIST),
+	ENTRY(INVALID_DEVICE),
+	ENTRY(PARSE_ERROR),
+	ENTRY(NO_WORKSPACE),
+	ENTRY(NOT_IMPLEMENTED),
+	ENTRY(LICENSE_ERROR),
+	ENTRY(NOT_SUPPORTED),
+#undef	ENTRY
+	"unknown error",
+};
+
 static void cufft_error(const char* file, int line, enum cufftResult_t code)
 {
-	const char* err_str = cufft_error_string(code);
+	const char* err_str = cufft_error_string[MAX(ARRAY_SIZE(cufft_error_string) - 1, code)];
 	error("cuFFT Error: %s in %s:%d \n", err_str, file, line);
 }
 
@@ -319,29 +341,7 @@ void fft_cuda_exec(struct fft_cuda_plan_s* cuplan, complex float* dst, const com
 }
 
 
-static const char* cufft_error_string(enum cufftResult_t err)
-{
-	switch (err) {
-		case CUFFT_SUCCESS: 			return "CUFFT_SUCCESS"; break;
-		case CUFFT_INVALID_PLAN: 		return "CUFFT_INVALID_PLAN"; break;
-		case CUFFT_ALLOC_FAILED: 		return "CUFFT_ALLOC_FAILED"; break;
-		case CUFFT_INVALID_TYPE: 		return "CUFFT_INVALID_TYPE"; break;
-		case CUFFT_INVALID_VALUE: 		return "CUFFT_INVALID_VALUE"; break;
-		case CUFFT_INTERNAL_ERROR: 		return "CUFFT_INTERNAL_ERROR"; break;
-		case CUFFT_EXEC_FAILED: 		return "CUFFT_EXEC_FAILED"; break;
-		case CUFFT_SETUP_FAILED: 		return "CUFFT_SETUP_FAILED"; break;
-		case CUFFT_INVALID_SIZE: 		return "CUFFT_INVALID_SIZE"; break;
-		case CUFFT_UNALIGNED_DATA: 		return "CUFFT_UNALIGNED_DATA"; break;
-		case CUFFT_INCOMPLETE_PARAMETER_LIST: 	return "CUFFT_INCOMPLETE_PARAMETER_LIST"; break;
-		case CUFFT_INVALID_DEVICE: 		return "CUFFT_INVALID_DEVICE"; break;
-		case CUFFT_PARSE_ERROR: 		return "CUFFT_PARSE_ERROR"; break;
-		case CUFFT_NO_WORKSPACE: 		return "CUFFT_NO_WORKSPACE"; break;
-		case CUFFT_NOT_IMPLEMENTED: 		return "CUFFT_NOT_IMPLEMENTED"; break;
-		case CUFFT_LICENSE_ERROR: 		return "CUFFT_LICENSE_ERROR"; break;
-		case CUFFT_NOT_SUPPORTED: 		return "CUFFT_NOT_SUPPORTED"; break;
-		default: return "Not a valid error string!\n"; break;
-	}
-}
+
 
 #endif // USE_CUDA
 
