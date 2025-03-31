@@ -1,12 +1,8 @@
 /* Copyright 2013, 2015. The Regents of the University of California.
- * Copyright 2019. Uecker Lab, University Medical Center Göttingen.
+ * Copyright 2019-2022. Uecker Lab, University Medical Center Göttingen.
+ * Copyrgith 2023-2025. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
- *
- * Authors:
- * 2012-2019 Martin Uecker
- * Christian Holme
- *
  *
  * Internal interface to the CUFFT library used in fft.c.
  */
@@ -326,8 +322,10 @@ void fft_cuda_exec(struct fft_cuda_plan_s* cuplan, complex float* dst, const com
 	cufftHandle cufft = cuplan->cufft;
 
 	void* workspace = md_alloc_gpu(1, MAKE_ARRAY(1l), workspace_size);
+
 	CUDA_ERROR_PTR(dst, src, workspace);
 	CUFFT_ERROR(cufftSetWorkArea(cufft, workspace));
+
 	for (int i = 0; i < cuplan->batch; i++)
 		CUFFT_ERROR(cufftExecC2C(cufft,
 					 (cufftComplex*)src + i * cuplan->idist,
@@ -339,9 +337,6 @@ void fft_cuda_exec(struct fft_cuda_plan_s* cuplan, complex float* dst, const com
 	if (NULL != cuplan->chain)
 		fft_cuda_exec(cuplan->chain, dst, dst);
 }
-
-
-
 
 #endif // USE_CUDA
 
