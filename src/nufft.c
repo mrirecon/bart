@@ -192,13 +192,17 @@ int main_nufft(int argc, char* argv[argc])
 				complex float* traj_gpu = md_gpu_move(DIMS, traj_dims, traj, CFL_SIZE);
 
 				auto tmp = nufft_create2(DIMS, ksp_dims, coilim_dims, traj_dims, traj_gpu, pattern_dims, pattern, basis_dims, basis, conf);
-				nufft_op = linop_gpu_wrapper((struct linop_s*)tmp);
+				nufft_op = linop_gpu_wrapper(tmp);
 				linop_free(tmp);
 
 				md_free(traj_gpu);
-			} else 
+
+			} else {
+#else
+			{
 #endif
 				nufft_op = nufft_create2(DIMS, ksp_dims, coilim_dims, traj_dims, traj, pattern_dims, pattern, basis_dims, basis, conf);
+			}
 
 		} else {
 
@@ -288,5 +292,4 @@ int main_nufft(int argc, char* argv[argc])
 
 	return 0;
 }
-
 

@@ -353,7 +353,7 @@ static void* cuda_malloc_wrapper(size_t size)
 static void* cuda_malloc_host_wrapper(size_t size)
 {
 	void* ptr;
-	CUDA_ERROR(cudaMallocHost(&ptr, (size_t)size));
+	CUDA_ERROR(cudaMallocHost(&ptr, size));
 	return ptr;
 }
 
