@@ -137,7 +137,7 @@ static int bart_exit(int err_no, const char* exit_msg)
 }
 
 
-static void parse_bart_opts(int* argcp, char*** argvp, int order[DIMS])
+static void parse_bart_opts(int* argcp, char*** argvp, int order[DIMS], stream_t* ref_stream)
 {
 	int omp_threads = 1;
 	unsigned long flags = 0;
@@ -244,6 +244,9 @@ static void parse_bart_opts(int* argcp, char*** argvp, int order[DIMS])
 		for (int i = 0, ip = 0; i < DIMS; i++)
 			if (MD_IS_SET(flags, i))
 				param_end[ip++] = ref_dims[i];
+
+		if (!flags_set)
+			*ref_stream = s;
 	}
 
 	opt_free_strdup();
@@ -343,12 +346,9 @@ static int batch_wrapper(main_fun_t* dispatch_func, int argc, char *argv[argc], 
 	return ret;
 }
 
-static bool loop_step(long start, long total, long workers, long* idx, long *idx_p, int final_ret, const int order[DIMS])
+static bool loop_step(long start, long total, long workers, long* idx, long *idx_p, int final_ret, const int order[DIMS], stream_t ref_stream)
 {
-	debug_printf(DP_DEBUG4, "Enter BART loop_step: start=%ld idx=%ld, idx_p=%ld, final_ret=%d. Order: \n [ ", start, *idx, *idx_p, final_ret);
-	for(int i = 0; i < DIMS; i++)
-		debug_printf(DP_DEBUG4, "%d, ", order[i]);
-	debug_printf(DP_DEBUG4, "].\n");
+	debug_printf(DP_DEBUG3, "Enter BART loop_step: start=%ld idx=%ld, idx_p=%ld, final_ret=%d.\n", start, *idx, *idx_p, final_ret);
 
 	// initialization
 	if (-1 == *idx)
@@ -360,9 +360,49 @@ static bool loop_step(long start, long total, long workers, long* idx, long *idx
 	// continue?
 	if ((*idx >= total) || (0 != final_ret)) {
 
-		debug_printf(DP_DEBUG4, "BART loop_step finish: idx >= total: %d OR 0 != final_ret: %d.\n", (*idx >= total), (0 != final_ret));
+		debug_printf(DP_DEBUG3, "BART loop_step finish: idx >= total: %d OR 0 != final_ret: %d.\n", (*idx >= total), (0 != final_ret));
 		return false;
 	}
+
+	if (NULL != ref_stream) {
+
+	#ifdef USE_MPI
+
+		error("Non-Sequential loops not implemented for MPI.\n");
+	#endif
+
+		long dims[DIMS];
+		long stream_dims[DIMS];
+		long pos[DIMS];
+
+		unsigned long flags = cfl_loop_get_flags();
+		assert (flags == stream_get_flags(ref_stream));
+
+		md_set_dims(DIMS, pos, 0);
+
+		cfl_loop_get_dims(DIMS, dims);
+		stream_get_dimensions(ref_stream, DIMS, stream_dims);
+		assert(md_check_equal_dims(DIMS, dims, stream_dims, flags));
+
+		if (!stream_receive_pos(ref_stream, *idx, DIMS, pos)) {
+
+			debug_printf(DP_DEBUG3, "BART loop_step finish: stream.\n");
+			return false;
+		}
+
+		*idx_p = md_ravel_index(DIMS, pos, flags, dims);
+
+		debug_printf(DP_DEBUG3, "BART loop_step stream idx received: idx=%ld;  Pos: \n [ ", *idx);
+		for(int i = 0; i < DIMS; i++)
+			debug_printf(DP_DEBUG3, "%ld, ", pos[i]);
+		debug_printf(DP_DEBUG3, "].\n");
+
+		return true;
+	}
+
+	debug_printf(DP_DEBUG3, "BART loop_step order:\n [ ");
+	for(int i = 0; i < DIMS; i++)
+		debug_printf(DP_DEBUG3, "%d, ", order[i]);
 
 	// calculate permuted index
 	long dims[DIMS];
@@ -373,6 +413,7 @@ static bool loop_step(long start, long total, long workers, long* idx, long *idx
 	md_set_dims(DIMS, pos, 0);
 
 	cfl_loop_get_dims(DIMS, dims);
+
 	md_permute_dims(DIMS, order, pstr, MD_STRIDES(DIMS, dims, 1));
 	md_permute_dims(DIMS, order, pdims, dims);
 
@@ -382,13 +423,13 @@ static bool loop_step(long start, long total, long workers, long* idx, long *idx
 	*idx_p = md_calc_offset(DIMS, pstr, pos);
 
 
-	debug_printf(DP_DEBUG4, "Leave BART loop_step: start=%ld idx=%ld, idx_p=%ld, final_ret=%d.\n\n", start, *idx, *idx_p, final_ret);
+	debug_printf(DP_DEBUG3, "Leave BART loop_step: start=%ld idx=%ld, idx_p=%ld, final_ret=%d.\n\n", start, *idx, *idx_p, final_ret);
 
 
 	//FIXME : Loop Order breaks random number test.
 	#ifdef USE_MPI
 	if (*idx_p != *idx)
-		error("Loop Order for MPI not implemented.\n");
+		error("Non-Sequential loops not implemented for MPI.\n");
 	#endif
 
 	return true;
@@ -402,6 +443,8 @@ int main_bart(int argc, char* argv[argc])
 
 	int order[DIMS];
 
+	stream_t ref_stream = NULL;
+
 	char* bn = basename(argv[0]);
 
 	// only skip over initial bart or bart.exe. calling "bart bart" is an error.
@@ -414,7 +457,7 @@ int main_bart(int argc, char* argv[argc])
 		}
 
 		// This advances argv to behind the bart options
-		parse_bart_opts(&argc, &argv, order);
+		parse_bart_opts(&argc, &argv, order, &ref_stream);
 
 		bn = basename(argv[0]);
 	}
@@ -458,7 +501,7 @@ int main_bart(int argc, char* argv[argc])
 				long workers = cfl_loop_num_workers();
 				long idx = -1;
 				long idx_p = -1;
-				while(loop_step(start, total, workers, &idx, &idx_p, final_ret, order)) {
+				while(loop_step(start, total, workers, &idx, &idx_p, final_ret, order, ref_stream)) {
 
 					int ret = batch_wrapper(dispatch_func, argc, argv, idx_p);
 
@@ -481,7 +524,7 @@ int main_bart(int argc, char* argv[argc])
 
 			mpi_signoff_proc(cfl_loop_desc_active() && (mpi_get_rank() >= total));
 
-			while(loop_step(start, total, workers, &idx, &idx_p, final_ret, order)) {
+			while(loop_step(start, total, workers, &idx, &idx_p, final_ret, order, ref_stream)) {
 
 				int ret = batch_wrapper(dispatch_func, argc, argv, idx_p);
 
