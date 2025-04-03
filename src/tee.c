@@ -129,8 +129,9 @@ int main_tee(int argc, char* argv[argc])
 		long counter = 0;
 
 		do {
-			if (stream_in)
-				stream_sync(stream_in, DIMS, pos);
+
+			if (stream_in && !stream_receive_pos(stream_in, counter, DIMS, pos))
+				break;
 
 			md_move_block(DIMS, slice_dims, pos, dims, out_data, pos, dims, in_data, CFL_SIZE);
 
@@ -138,7 +139,7 @@ int main_tee(int argc, char* argv[argc])
 
 			// Output streams may disappear if the receiving process needs
 			// only part of the data.
-			if (stream_out && !stream_sync_try(stream_out, DIMS, pos)) {
+			if (stream_out && !stream_sync_slice_try(stream_out, DIMS, dims, stream_flags, pos)) {
 
 				stream_free(stream_out);
 				// if for whatever reason we didn't get sigpipe, terminate anyways if not keep_going
@@ -149,11 +150,13 @@ int main_tee(int argc, char* argv[argc])
 			}
 
 			if (timer)
-				fprintf(stderr, "frame %ld: %fs\n", counter++, timestamp() - time);
+				fprintf(stderr, "frame %ld: %fs\n", counter, timestamp() - time);
 
 			time = timestamp();
 
-		} while (md_next(DIMS, dims, stream_flags, pos));
+			counter++;
+
+		} while (stream_in || md_next(DIMS, dims, stream_flags, pos));
 
 		unmap_cfl(DIMS, dims, out_data);
 	}
