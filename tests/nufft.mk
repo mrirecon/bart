@@ -41,8 +41,7 @@ tests/test-nufft-nudft: traj nufft scale reshape nrmse $(TESTS_OUT)/shepplogan.r
 	$(TOOLDIR)/traj -r -x128 -y12 traj.ra						;\
 	$(TOOLDIR)/nufft -P traj.ra $(TESTS_OUT)/shepplogan.ra shepplogan_ksp1.ra	;\
 	$(TOOLDIR)/nufft -s traj.ra $(TESTS_OUT)/shepplogan.ra shepplogan_ksp2.ra	;\
-	$(TOOLDIR)/scale 128. shepplogan_ksp1.ra shepplogan_ksp3.ra			;\
-	$(TOOLDIR)/nrmse -t 0.00002 shepplogan_ksp2.ra shepplogan_ksp3.ra		;\
+	$(TOOLDIR)/nrmse -t 0.00002 shepplogan_ksp2.ra shepplogan_ksp1.ra		;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
