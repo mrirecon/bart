@@ -23,22 +23,23 @@
 #include <stdbool.h>
 #include <math.h>
 
+#include "misc/types.h"
+#include "misc/misc.h"
+
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/ops.h"
 #include "num/fft_plan.h"
-
-#include "num/mpi_ops.h"
 #include "num/vptr.h"
-
-#include "misc/misc.h"
-
-#include "fft.h"
+#include "num/vptr_fun.h"
 
 #ifdef USE_CUDA
 #include "num/gpuops.h"
 #include "num/gpukrnls.h"
 #endif
+
+
+#include "fft.h"
 
 
 void fftscale2(int N, const long dimensions[N], unsigned long flags, const long ostrides[N], complex float* dst, const long istrides[N], const complex float* src)
@@ -159,38 +160,11 @@ static void fftmod2_r(int N, const long dims[N], unsigned long flags, const long
 {
 	flags &= md_nontriv_dims(N, dims);
 
-	if (is_vptr(dst) || is_vptr(src)) {
-
-		unsigned long mpi_flags = vptr_block_loop_flags(N, dims, ostrs, dst, CFL_SIZE, false) | vptr_block_loop_flags(N, dims, istrs, src, CFL_SIZE, false);
-
-		long ldims[N];
-		long bdims[N];
-
-		md_select_dims(N, ~mpi_flags, bdims, dims);
-		md_select_dims(N, mpi_flags, ldims, dims);
-
-		long* bdimsp = &bdims[0];
-		const long * istrsp = &istrs[0];
-		const long * ostrsp = &ostrs[0];
-
-		NESTED(void, nary_mpi_fftmod, (void* ptr[]))
-		{
-			fftmod2_r(N, bdimsp, flags, ostrsp, ptr[0], istrsp, ptr[1], inv, phase);
-		};
-
-		md_nary(2, N, ldims, (const long*[2]){ ostrs, istrs }, (void*[2]){ dst, (void*)src }, nary_mpi_fftmod);
-
-		return;
-	}
-
 	if (0 == flags) {
 
 		md_zsmul2(N, dims, ostrs, dst, istrs, src, cexp(M_PI * 2.i * (inv ? -phase : phase)));
 		return;
 	}
-
-	dst = vptr_resolve(dst);
-	src = vptr_resolve(src);
 
 	if (   ((3 == flags) && md_check_equal_dims(2, ostrs, istrs, 3) && md_check_equal_dims(2, ostrs, MD_STRIDES(2, dims, CFL_SIZE), 3))
 	    || ((7 == flags) && md_check_equal_dims(3, ostrs, istrs, 7) && md_check_equal_dims(3, ostrs, MD_STRIDES(3, dims, CFL_SIZE), 7)) ){
@@ -249,6 +223,23 @@ static void fftmod2_r(int N, const long dims[N], unsigned long flags, const long
 	}
 }
 
+struct vptr_fftmod_s {
+
+	vptr_fun_data_t super;
+	unsigned long flags;
+	bool backwards;
+	double phase;
+};
+
+DEF_TYPEID(vptr_fftmod_s);
+
+static void fftmod_2_int(vptr_fun_data_t* _data, int N, int D, const long* dims[N], const long* strs[N], void* args[N])
+{
+	auto data = CAST_DOWN(vptr_fftmod_s, _data);
+
+	fftmod2_r(D, dims[0], data->flags, strs[0], args[0], strs[1], args[1], data->backwards, data->phase);
+}
+
 
 static unsigned long clear_singletons(int N, const long dims[N], unsigned long flags)
 {
@@ -273,7 +264,14 @@ void fftmod2(int N, const long dims[N], unsigned long flags, const long ostrs[N]
 		return;
 	}
 
-	fftmod2_r(N, dims, clear_singletons(N, dims, flags), ostrs, dst, istrs, src, false, 0.);
+	PTR_ALLOC(struct vptr_fftmod_s, _d);
+	SET_TYPEID(vptr_fftmod_s, _d);
+	_d->super.del = NULL;
+	_d->flags = clear_singletons(N, dims, flags);
+	_d->backwards = false;
+	_d->phase = 0;
+
+	exec_vptr_zfun(fftmod_2_int, CAST_UP(PTR_PASS(_d)), 2, N, ~flags, MD_BIT(0), MD_BIT(1), (const long*[2]) { dims, dims }, (const long*[2]) { ostrs, istrs }, (complex float*[2]) { dst, (void*) src});
 }
 
 
@@ -299,7 +297,14 @@ void ifftmod2(int N, const long dims[N], unsigned long flags, const long ostrs[N
 		return;
 	}
 
-	fftmod2_r(N, dims, clear_singletons(N, dims, flags), ostrs, dst, istrs, src, true, 0.);
+	PTR_ALLOC(struct vptr_fftmod_s, _d);
+	SET_TYPEID(vptr_fftmod_s, _d);
+	_d->super.del = NULL;
+	_d->flags = clear_singletons(N, dims, flags);
+	_d->backwards = true;
+	_d->phase = 0;
+
+	exec_vptr_zfun(fftmod_2_int, CAST_UP(PTR_PASS(_d)), 2, N, ~flags, MD_BIT(0), MD_BIT(1), (const long*[2]) { dims, dims }, (const long*[2]) { ostrs, istrs }, (complex float*[2]) { dst, (void*) src});
 }
 
 void fftmod(int N, const long dimensions[N], unsigned long flags, complex float* dst, const complex float* src)
@@ -359,70 +364,46 @@ void fftshift(int N, const long dimensions[N], unsigned long flags, complex floa
 	fftshift2(N, dimensions, flags, strs, dst, strs, src);
 }
 
+struct vptr_fft_s {
+
+	vptr_fun_data_t super;
+	unsigned long flags;
+	bool backwards;
+};
+
+DEF_TYPEID(vptr_fft_s);
+
+
+static void fft2_int(vptr_fun_data_t* _data, int N, int D, const long* dims[N], const long* strs[N], void* args[N])
+{
+	auto data = CAST_DOWN(vptr_fft_s, _data);
+
+	const struct operator_s* plan = fft_create2(D, dims[0], data->flags, strs[0], args[0], strs[1], args[1], data->backwards);
+	operator_apply_unchecked(plan, args[0], args[1]);
+	operator_free(plan);
+}
+
+
 void fft2(int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src)
 {
-	if (is_vptr(dst) || is_vptr(src)) {
+	PTR_ALLOC(struct vptr_fft_s, _d);
+	SET_TYPEID(vptr_fft_s, _d);
+	_d->super.del = NULL;
+	_d->flags = flags;
+	_d->backwards = false;
 
-		unsigned long mpi_flags =  vptr_block_loop_flags(D, dimensions, ostrides, dst, CFL_SIZE, false)
-					 | vptr_block_loop_flags(D, dimensions, istrides, src, CFL_SIZE, false);
-
-		assert(0 == (mpi_flags & flags));
-
-		long ldims[D];
-		long fdims[D];
-		md_select_dims(D, ~flags, ldims, dimensions);
-		md_select_dims(D,  flags, fdims, dimensions);
-
-		const long* fdims_p = fdims;
-		const long* ostrs_p = ostrides;
-		const long* istrs_p = istrides;
-
-		NESTED(void, nary_mpi_fft, (void* ptr[]))
-		{
-			fft2(D, fdims_p, flags, ostrs_p, ptr[0], istrs_p, ptr[1]);
-		};
-
-		md_nary(2, D, ldims, (const long*[2]){ ostrides, istrides }, (void*[2]){ dst, (void*)src }, nary_mpi_fft);
-
-		return;
-	}
-
-	const struct operator_s* plan = fft_create2(D, dimensions, flags, ostrides, dst, istrides, src, false);
-	operator_apply_unchecked(plan, dst, src);
-	operator_free(plan);
+	exec_vptr_zfun(fft2_int, CAST_UP(PTR_PASS(_d)), 2, D, ~flags, MD_BIT(0), MD_BIT(1), (const long*[2]) { dimensions, dimensions }, (const long*[2]) { ostrides, istrides }, (complex float*[2]) { dst, (void*) src});
 }
 
 void ifft2(int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src)
 {
-	if (is_vptr(dst) || is_vptr(src)) {
+	PTR_ALLOC(struct vptr_fft_s, _d);
+	SET_TYPEID(vptr_fft_s, _d);
+	_d->super.del = NULL;
+	_d->flags = flags;
+	_d->backwards = true;
 
-		unsigned long mpi_flags =  vptr_block_loop_flags(D, dimensions, ostrides, dst, CFL_SIZE, false)
-					 | vptr_block_loop_flags(D, dimensions, istrides, src, CFL_SIZE, false);
-
-		assert(0 == (mpi_flags & flags));
-
-		long ldims[D];
-		long fdims[D];
-		md_select_dims(D, ~flags, ldims, dimensions);
-		md_select_dims(D,  flags, fdims, dimensions);
-
-		const long* fdims_p = fdims;
-		const long* ostrs_p = ostrides;
-		const long* istrs_p = istrides;
-
-		NESTED(void, nary_mpi_fft, (void* ptr[]))
-		{
-			ifft2(D, fdims_p, flags, ostrs_p, ptr[0], istrs_p, ptr[1]);
-		};
-
-		md_nary(2, D, ldims, (const long*[2]){ ostrides, istrides }, (void*[2]){ dst, (void*)src }, nary_mpi_fft);
-
-		return;
-	}
-
-	const struct operator_s* plan = fft_create2(D, dimensions, flags, ostrides, dst, istrides, src, true);
-	operator_apply_unchecked(plan, dst, src);
-	operator_free(plan);
+	exec_vptr_zfun(fft2_int, CAST_UP(PTR_PASS(_d)), 2, D, ~flags, MD_BIT(0), MD_BIT(1), (const long*[2]) { dimensions, dimensions }, (const long*[2]) { ostrides, istrides }, (complex float*[2]) { dst, (void*) src});
 }
 
 void fft(int D, const long dimensions[D], unsigned long flags, complex float* dst, const complex float* src)
