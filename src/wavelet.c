@@ -1,14 +1,10 @@
 /* Copyright 2017. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
- *
- * Authors:
- * 2017 Martin Uecker
  */
 
 #include <stdbool.h>
 #include <complex.h>
-#include <assert.h>
 
 #include "num/flpmath.h"
 #include "num/multind.h"
@@ -70,7 +66,8 @@ int main_wavelet(int argc, char* argv[argc])
 
 	int n = adj ? bitcount(flags) : 0;
 
-	assert(n == count);
+	if (n != count)
+		error("Number of dimensions does not match");
 
 
 	const int N = DIMS;
@@ -89,7 +86,8 @@ int main_wavelet(int argc, char* argv[argc])
 			if (MD_IS_SET(flags, i))
 				dims[i] = adims[j++];
 
-		assert(j == n);
+		if (j != n)
+			error("Number of flagged dimensions does not match");
 	}
 
 	long minsize[N];

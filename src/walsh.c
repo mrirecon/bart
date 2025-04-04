@@ -55,10 +55,12 @@ int main_walsh(int argc, char* argv[argc])
 
 	complex float* in_data = load_cfl(in_file, DIMS, dims);
 
-	assert((dims[0] == 1) || (calsize[0] < dims[0]));
-	assert((dims[1] == 1) || (calsize[1] < dims[1]));
-	assert((dims[2] == 1) || (calsize[2] < dims[2]));
-	assert(1 == dims[MAPS_DIM]);
+	for (int i = 0; i < 2; i++)
+		if ((dims[i] != 1) && (calsize[i] >= dims[i]))
+			error("Incorrect size of dimension %d", i);
+
+	if (1 != dims[MAPS_DIM])
+		error("Maps dimension must have size one");
 
 	long caldims[DIMS];
 	complex float* cal_data = extract_calib(caldims, calsize, dims, in_data, false);

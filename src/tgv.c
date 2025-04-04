@@ -76,7 +76,8 @@ int main_tgv(int argc, char* argv[argc])
 
 	complex float* in_data = load_cfl(in_file, DIMS, in_dims);
 
-	assert(1 == in_dims[DIMS - 1]);
+	if (1 != in_dims[DIMS - 1])
+		error("Last dimension must have size 1");
 
 	long out_dims[DIMS];
 	md_copy_dims(DIMS, out_dims, in_dims);

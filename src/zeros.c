@@ -1,16 +1,9 @@
 /* Copyright 2013. The Regents of the University of California.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
- *
- * Authors:
- * 2012 Martin Uecker
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <assert.h>
 #include <complex.h>
-#include <string.h>
 
 #include "num/multind.h"
 #include "num/init.h"
@@ -47,11 +40,15 @@ int main_zeros(int argc, char* argv[argc])
 
 	num_init();
 
-	assert(N >= 0);
-	assert(count == N);
+	if (N < 0)
+		error("Number of dimensions not specified\n");
+
+	if (count != N)
+		error("Incorrect number of dimensions\n");
 
 	for (int i = 0; i < N; i++)
-		assert(dims[i] >= 1);
+		if (dims[i] <= 0)
+			error("Dimensions must be larger than zero\n");
 
 	complex float* x = create_cfl(out_file, N, dims);
 

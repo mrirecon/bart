@@ -10,7 +10,6 @@
 
 #include <complex.h>
 #include <stdbool.h>
-#include <stdio.h>
 
 #include "misc/mmio.h"
 #include "misc/mri.h"
@@ -75,7 +74,9 @@ int main_cc(int argc, char* argv[argc])
 
 	complex float* in_data = load_cfl(in_file, DIMS, in_dims);
 
-	assert(1 == in_dims[MAPS_DIM]);
+	if (1 != in_dims[MAPS_DIM])
+		error("MAPS dimension must be one");
+
 	long channels = in_dims[COIL_DIM];
 
 	if (0 == P)
@@ -181,5 +182,4 @@ int main_cc(int argc, char* argv[argc])
 
 	return 0;
 }
-
 

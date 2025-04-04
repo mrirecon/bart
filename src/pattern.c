@@ -7,8 +7,6 @@
  * 2016 Jonathan Tamir
  */
 
-#include <stdlib.h>
-#include <assert.h>
 #include <complex.h>
 #include <stdio.h>
 

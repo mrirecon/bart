@@ -1,16 +1,9 @@
 /* Copyright 2019. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
- *
- * Authors:
- * 2019 Martin Uecker
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <assert.h>
 #include <complex.h>
-#include <string.h>
 
 #include "num/multind.h"
 #include "num/init.h"
@@ -70,5 +63,4 @@ int main_upat(int argc, char* argv[argc])
 	unmap_cfl(DIMS, dims, pat);
 	return 0;
 }
-
 

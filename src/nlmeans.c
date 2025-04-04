@@ -6,7 +6,6 @@
  * 2023 Philip Schaten <philip.schaten@tugraz.at>
  */
 
-#include <assert.h>
 #include <complex.h>
 
 #include "num/nlmeans.h"

@@ -7,12 +7,8 @@
  */
 
 #define _GNU_SOURCE
-#include <stdlib.h>
-#include <assert.h>
 #include <stdbool.h>
 #include <complex.h>
-#include <stdio.h>
-#include <unistd.h>
 
 #include "num/multind.h"
 #include "num/flpmath.h"

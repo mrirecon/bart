@@ -6,10 +6,7 @@
  * 2016 Siddharth Iyer <sid8795@gmail.com>
  */
 
-#include <stdlib.h>
-#include <assert.h>
 #include <complex.h>
-#include <stdio.h>
 
 #include "num/init.h"
 #include "num/flpmath.h"

@@ -1,14 +1,7 @@
 /* Copyright 2013. The Regents of the University of California.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
- *
- * Authors:
- * 2012 Martin Uecker
  */
-
-#include <stdlib.h>
-#include <assert.h>
-#include <stdio.h>
 
 #include <complex.h>
 
@@ -69,8 +62,11 @@ int main_slice(int argc, char* argv[argc])
 
 	for (int i = 0; i < count; i++) {
 
-		assert(dims[i] < DIMS);
-		assert(poss[i] < in_dims[dims[i]]);
+		if ((0 > dims[i]) || (dims[i] >= DIMS))
+			error("Dimensions %d is out of range", i);
+
+		if ((0 > poss[i]) || (poss[i] >= in_dims[dims[i]]))
+			error("Position %d is out of range", i);
 
 		out_dims[dims[i]] = 1;
 		flags = MD_SET(flags, dims[i]);
@@ -91,5 +87,4 @@ int main_slice(int argc, char* argv[argc])
 
 	return 0;
 }
-
 

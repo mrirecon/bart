@@ -6,11 +6,8 @@
  * 2023 Nick Scholand <scholand@tugraz.at>
  */
 
-#include <stdlib.h>
-#include <assert.h>
 #include <stdbool.h>
 #include <complex.h>
-#include <stdio.h>
 
 #include "num/multind.h"
 #include "num/flpmath.h"

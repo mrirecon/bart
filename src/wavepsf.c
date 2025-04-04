@@ -12,7 +12,6 @@
  * 2015 Jun 1;73(6):2152-62.
  */
 
-#include <assert.h>
 #include <complex.h>
 #include <math.h>
 
@@ -87,7 +86,8 @@ int main_wavepsf(int argc, char* argv[argc])
 
 	num_init();
 
-	assert(0 == adc % 10);					// Scanners require ADC_duration to be a multiple of 10.
+	if (0 != adc % 10)
+		error("ADC duraction must be a multiple of 10.");
 
 	int wavepoints = adc / 10;				// Number of points in the gradient wave.
 	float T = (float)wavepoints * dt / (float)ncyc;		// Time period of the sine wave.

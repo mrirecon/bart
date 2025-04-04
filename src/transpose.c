@@ -6,11 +6,8 @@
  * 2012 Martin Uecker
  */
 
-#include <stdlib.h>
-#include <assert.h>
 #include <stdbool.h>
 #include <complex.h>
-#include <stdio.h>
 
 #include "num/multind.h"
 #include "num/init.h"
@@ -47,8 +44,11 @@ int main_transpose(int argc, char* argv[argc])
 	int N = DIMS;
 	long idims[N];
 
-	assert((0 <= dim1) && (dim1 < N));
-	assert((0 <= dim2) && (dim2 < N));
+	if ((0 > dim1) || (dim1 >= N))
+		error("dim1 must be between 0 and %d", N - 1);
+
+	if ((0 > dim2) || (dim2 >= N))
+		error("dim2 must be between 0 and %d", N - 1);
 
 	complex float* idata = load_cfl(in_file, N, idims);
 

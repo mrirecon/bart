@@ -6,10 +6,7 @@
  * 2016 Jon Tamir
  */
 
-#include <stdlib.h>
-#include <assert.h>
 #include <complex.h>
-#include <stdio.h>
 
 #include "num/multind.h"
 #include "num/flpmath.h"

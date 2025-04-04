@@ -3,10 +3,7 @@
  * a BSD-style license which can be found in the LICENSE file.
  */
 
-#include <stdlib.h>
-#include <stdio.h>
 #include <complex.h>
-#include <assert.h>
 #include <math.h>
 
 #include "misc/debug.h"

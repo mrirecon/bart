@@ -7,10 +7,7 @@
  * 2016 Jon Tamir
  */
 
-#include <stdlib.h>
-#include <assert.h>
 #include <complex.h>
-#include <stdio.h>
 #include <math.h>
 
 #include "num/multind.h"
@@ -73,5 +70,4 @@ int main_invert(int argc, char* argv[argc])
 
 	return 0;
 }
-
 

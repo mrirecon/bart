@@ -8,10 +8,7 @@
  * 2018 Martin Uecker
  */
 
-#include <stdlib.h>
-#include <stdio.h>
 #include <complex.h>
-#include <assert.h>
 
 #include "num/multind.h"
 #include "num/flpmath.h"

@@ -1,17 +1,10 @@
 /* Copyright 2013. The Regents of the University of California.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
- *
- * Authors:
- * 2012 Martin Uecker
  */
 
-#include <stdlib.h>
-#include <assert.h>
 #include <stdbool.h>
 #include <complex.h>
-#include <stdio.h>
-#include <string.h>
 
 #include "num/multind.h"
 #include "num/init.h"
@@ -52,7 +45,8 @@ int main_circshift(int argc, char* argv[argc])
 	const int N = DIMS;
 	long dims[N];
 
-	assert((0 <= dim) && (dim < N));
+	if ((0 > dim) || (dim >= N))
+		error("Dimension out of range");
 
 	long center[N];
 	memset(center, 0, (size_t)(N * (int)sizeof(long)));

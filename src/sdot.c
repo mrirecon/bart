@@ -2,9 +2,6 @@
  * Copyright 2015. Martin Uecker.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
- *
- * Authors:
- * 2012, 2015 Martin Uecker
  */
 
 #include <complex.h>
@@ -51,7 +48,8 @@ int main_sdot(int argc, char* argv[argc])
 
 
 	for (int i = 0; i < N; i++)
-		assert(in1_dims[i] == in2_dims[i]);
+		if (in1_dims[i] != in2_dims[i])
+			error("Dimenions %d does not match", i);
 
 	// compute scalar product
 	complex float value = md_zscalar(N, in1_dims, in1_data, in2_data);
