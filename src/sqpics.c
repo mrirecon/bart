@@ -439,12 +439,12 @@ int main_sqpics(int argc, char* argv[argc])
 	// initialize forward_op and precond_op
 
 	const struct linop_s* forward_op = NULL;
-	const struct operator_s* precond_op = NULL;
+	struct operator_s* precond_op = NULL;
 
 	if (NULL == traj_file)
 		forward_op = sense_init(0UL, max_dims, FFT_FLAGS|COIL_FLAG|MAPS_FLAG, maps);
 	else
-		forward_op = sense_nc_init(max_dims, map_dims, maps, ksp_dims, traj_dims, traj, nuconf, (struct operator_s**) &precond_op);
+		forward_op = sense_nc_init(max_dims, map_dims, maps, ksp_dims, traj_dims, traj, nuconf, &precond_op);
 
 	// apply scaling
 
@@ -659,18 +659,21 @@ int main_sqpics(int argc, char* argv[argc])
 	if (warm_start) {
 
 		debug_printf(DP_DEBUG1, "Warm start: %s\n", image_start_file);
+
 		image_start = load_cfl(image_start_file, DIMS, img_start_dims);
+
 		assert(md_check_compat(DIMS, 0u, img_start_dims, img_dims));
+
 		md_copy(DIMS, img_dims, image, image_start, CFL_SIZE);
 
-		free((void*)image_start_file);
+		xfree(image_start_file);
+
 		unmap_cfl(DIMS, img_dims, image_start);
 
 		// if rescaling at the end, assume the input has also been rescaled
-		if (scale_im && scaling != 0.)
+		if (scale_im && (scaling != 0.))
 			md_zsmul(DIMS, img_dims, image, image, 1. /  scaling);
 	}
-
 
 	// initialize algorithm
 

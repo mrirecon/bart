@@ -73,7 +73,7 @@ static void mobafit_bound(iter_op_data* _data, float* dst, const float* src)
 {
 	assert(dst == src);
 
-	struct mobafit_bound_s* data = CAST_DOWN(mobafit_bound_s, _data);
+	const struct mobafit_bound_s* data = CAST_DOWN(mobafit_bound_s, _data);
 
 	int N = data->N;
 
@@ -130,8 +130,8 @@ int main_mobafit(int argc, char* argv[argc])
 		ARG_OUTFILE(false, &coeff_file, "coefficients"),
 	};
 
-	float _init[DIMS] = { };
-	float _scale[DIMS] = { [0 ... DIMS - 1] = 1. };
+	float init0[DIMS] = { };
+	float scale0[DIMS] = { [0 ... DIMS - 1] = 1. };
 
 	float bound_min[DIMS] = { };
 	float bound_max[DIMS] = { };
@@ -257,8 +257,8 @@ int main_mobafit(int argc, char* argv[argc])
 		OPT_PINT('i', &iter, "iter", "Number of IRGNM steps"),
 		OPT_SET('g', &bart_use_gpu, "use gpu"),
 		OPT_INFILE('B', &basis_file, "file", "temporal (or other) basis"),
-		OPTL_FLVECN(0, "init", _init, "Initial values of parameters in model-based reconstruction"),
-		OPTL_FLVECN(0, "scale", _scale, "Scaling"),
+		OPTL_FLVECN(0, "init", init0, "Initial values of parameters in model-based reconstruction"),
+		OPTL_FLVECN(0, "scale", scale0, "Scaling"),
 
 		OPTL_ULONG(0, "min-flag", &(bounds.min_flags), "flags", "Apply minimum constraint on selected maps"),
 		OPTL_ULONG(0, "max-flag", &(bounds.max_flags), "flags", "Apply maximum constraint on selected maps"),
@@ -310,6 +310,7 @@ int main_mobafit(int argc, char* argv[argc])
 
 			y_dims[COEFF_DIM] = bas_dims[COEFF_DIM];
 			y_dims[TE_DIM] = 1;
+
 			complex float* ny = anon_cfl(NULL, DIMS, y_dims);
 
 			md_ztenmul(DIMS, y_dims, ny, bas_dims, basis, y_sig_dims, y);
@@ -385,7 +386,7 @@ int main_mobafit(int argc, char* argv[argc])
 
 
 	// create signal model
-	struct nlop_s* nlop = NULL;
+	const struct nlop_s* nlop = NULL;
 	struct moba_conf_s *moba_conf;
 	moba_conf = xmalloc(sizeof(struct moba_conf_s));
 
@@ -393,19 +394,21 @@ int main_mobafit(int argc, char* argv[argc])
 
 		long dims[DIMS];
 
-	case IR: {
+	case IR:
 
 		assert(md_check_equal_dims(DIMS, y_patch_dims, y_patch_sig_dims, ~0UL));
+
 		md_copy_dims(DIMS, dims, y_patch_dims);
 		dims[COEFF_DIM] = enc_dims[COEFF_DIM];
 
-		nlop = (struct nlop_s*) nlop_ir_create(DIMS, dims, enc);
-	 }	break;
+		nlop = nlop_ir_create(DIMS, dims, enc);
+		break;
 
-	case IR_LL: {
+	case IR_LL: ;
 
 		long map_dims[DIMS];
 		md_select_dims(DIMS, ~(COEFF_FLAG | TE_FLAG), map_dims, x_patch_dims);
+
 		nlop = nlop_T1_create(DIMS, map_dims, y_patch_sig_dims, x_patch_dims, enc_dims, enc, 1, 1);
 
 		if (NULL != basis) {
@@ -416,44 +419,48 @@ int main_mobafit(int argc, char* argv[argc])
 			unsigned long oflags = ~md_nontriv_dims(DIMS, y_patch_dims);
 			unsigned long iflags = ~md_nontriv_dims(DIMS, y_patch_sig_dims);
 			unsigned long bflags = ~md_nontriv_dims(DIMS, bas_dims);
+
 			const struct nlop_s* nlop_bas = nlop_from_linop_F(linop_fmac_create(DIMS, max_dims, oflags, iflags, bflags, basis));
 			nlop = nlop_chain_FF(nlop, nlop_bas);
 
 			long tdims[DIMS];
 			md_transpose_dims(DIMS, 5, 6, tdims, y_patch_dims);
-			nlop = (struct nlop_s*)nlop_reshape_out_F(nlop, 0, DIMS, tdims);
+			nlop = nlop_reshape_out_F(nlop, 0, DIMS, tdims);
 			nlop = nlop_zrprecomp_jacobian_F(nlop);
-			nlop = (struct nlop_s*)nlop_reshape_out_F(nlop, 0, DIMS, y_patch_dims);
+			nlop = nlop_reshape_out_F(nlop, 0, DIMS, y_patch_dims);
 
 			auto tmp = linop_stack_FF(6, 6, linop_identity_create(DIMS, map_dims), linop_identity_create(DIMS, map_dims));
 			tmp = linop_stack_FF(6, 6, tmp, linop_zreal_create(DIMS, map_dims));
 			nlop = nlop_chain_FF(nlop_from_linop_F(tmp), nlop);
 		}
 
-	}	break;
+		break;
 
-	case MGRE: {
+	case MGRE: ;
 
-		float scale_fB0[2] = { 0., 1. };
+		static float scale_fB0[2] = { 0., 1. };
 		assert(md_check_equal_dims(DIMS, y_patch_dims, y_patch_sig_dims, ~0UL));
+
 		nlop = nlop_meco_create(DIMS, y_patch_dims, x_patch_dims, enc, mgre_model, false, FAT_SPEC_1, scale_fB0);
-	}	break;
+		break;
 
 	case TSE:
-	case DIFF: {
+	case DIFF:
 
 		assert(md_check_equal_dims(DIMS, y_patch_dims, y_patch_sig_dims, ~0UL));
+
 		md_copy_dims(DIMS, dims, y_patch_dims);
 		dims[COEFF_DIM] = enc_dims[COEFF_DIM];
 
-		auto nl = nlop_exp_create(DIMS, dims, enc);
-		nlop = nlop_flatten(nl);
-		nlop_free(nl);
-	}	break;
+		{
+			auto nl = nlop_exp_create(DIMS, dims, enc);
+			nlop = nlop_flatten(nl);
+			nlop_free(nl);
+		}
+		break;
 
-	case SIM: {
+	case SIM: ;
 
-		long map_dims[DIMS];
 		md_select_dims(DIMS, ~(COEFF_FLAG | TE_FLAG), map_dims, x_patch_dims);
 
 		const complex float *b1 = NULL;
@@ -473,8 +480,8 @@ int main_mobafit(int argc, char* argv[argc])
 
 		for (int i = 0; i < x_dims[COEFF_DIM]; i++) {
 
-			moba_conf->other.initval[i] = _init[i];
-			moba_conf->other.scale[i] = _scale[i];
+			moba_conf->other.initval[i] = init0[i];
+			moba_conf->other.scale[i] = scale0[i];
 		}
 
 		md_copy_dims(DIMS, bloch_dims, x_dims);
@@ -494,8 +501,9 @@ int main_mobafit(int argc, char* argv[argc])
 		md_select_dims(DIMS, FFT_FLAGS | COEFF_FLAG | TIME_FLAG | TIME2_FLAG, in_dims, bloch_dims);
 
 		moba_conf->sim.seq.rep_num = y_dims[TE_DIM];
+
 		nlop = nlop_bloch_create(DIMS, der_dims, map_dims, out_dims, in_dims, b1, b0, moba_conf);
-	}	break;
+		break;
 	}
 
 	if (use_magn) {
@@ -512,10 +520,10 @@ int main_mobafit(int argc, char* argv[argc])
 
 	for (long i = 0; i < x_dims[COEFF_DIM]; i++) {
 
-		init[i] = _init[i];
-		scale[i] = _scale[i];
-		bound_max[i] /= (_scale[i] ?: 1);
-		bound_min[i] /= (_scale[i] ?: 1);
+		init[i] = init0[i];
+		scale[i] = scale0[i];
+		bound_max[i] /= (scale0[i] ?: 1);
+		bound_min[i] /= (scale0[i] ?: 1);
 	}
 
 	long c_dims[DIMS];
@@ -538,6 +546,7 @@ int main_mobafit(int argc, char* argv[argc])
 		if (1. != scale[i]) {
 
 			auto lop_scale = linop_cdiag_create(DIMS, x_patch_dims, COEFF_FLAG, scale);
+
 			nlop = nlop_chain_FF(nlop_from_linop_F(lop_scale), nlop);
 			break;
 		}
@@ -596,6 +605,7 @@ int main_mobafit(int argc, char* argv[argc])
 		md_copy_block(DIMS, pos, x_dims, x, x_patch_dims, x_patch, CFL_SIZE);
 
 	} while (md_next(DIMS, y_dims, ~(FFT_FLAGS | TE_FLAG | COEFF_FLAG), pos));
+
 
 	md_free(x_patch);
 	md_free(y_patch);

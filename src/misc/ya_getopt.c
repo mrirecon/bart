@@ -47,7 +47,7 @@ static int reset_start_end = 0;
 
 static void ya_getopt_error(const char *optstring, const char *format, ...);
 static void check_gnu_extension(const char *optstring);
-static int ya_getopt_internal(int argc, char * const argv[], const char *optstring, const struct option *longopts, int *longindex, int long_only);
+static int ya_getopt_internal(int argc, char * argv[], const char *optstring, const struct option *longopts, int *longindex, int long_only);
 static int ya_getopt_shortopts(int argc, char * const argv[], const char *optstring, int long_only);
 static int ya_getopt_longopts(int argc, char * const argv[], char *arg, const char *optstring, const struct option *longopts, int *longindex, int *long_only_flag);
 
@@ -96,22 +96,22 @@ static int is_option(const char *arg)
     return arg[0] == '-' && arg[1] != '\0';
 }
 
-int ya_getopt(int argc, char * const argv[], const char *optstring)
+int ya_getopt(int argc, char * argv[], const char *optstring)
 {
     return ya_getopt_internal(argc, argv, optstring, NULL, NULL, 0);
 }
 
-int ya_getopt_long(int argc, char * const argv[], const char *optstring, const struct option *longopts, int *longindex)
+int ya_getopt_long(int argc, char * argv[], const char *optstring, const struct option *longopts, int *longindex)
 {
     return ya_getopt_internal(argc, argv, optstring, longopts, longindex, 0);
 }
 
-int ya_getopt_long_only(int argc, char * const argv[], const char *optstring, const struct option *longopts, int *longindex)
+int ya_getopt_long_only(int argc, char * argv[], const char *optstring, const struct option *longopts, int *longindex)
 {
     return ya_getopt_internal(argc, argv, optstring, longopts, longindex, 1);
 }
 
-static int ya_getopt_internal(int argc, char * const argv[], const char *optstring, const struct option *longopts, int *longindex, int long_only)
+static int ya_getopt_internal(int argc, char * argv[], const char *optstring, const struct option *longopts, int *longindex, int long_only)
 {
     static int start, end;
 
@@ -154,9 +154,9 @@ static int ya_getopt_internal(int argc, char * const argv[], const char *optstri
             char *arg = argv[end];
 
             for (i = end; i < last_pos; i++) {
-                ((char **)argv)[i] = argv[i + 1];
+                argv[i] = argv[i + 1];
             }
-            ((char const **)argv)[i] = arg;
+            argv[i] = arg;
             last_pos--;
         }
         start = 0;

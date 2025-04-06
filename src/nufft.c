@@ -267,11 +267,10 @@ int main_nufft(int argc, char* argv[argc])
 		if (bart_use_gpu) {
 
 			auto tmp = nufft_op;
-			nufft_op = linop_gpu_wrapper((struct linop_s*)tmp);
+			nufft_op = linop_gpu_wrapper(tmp);
 			linop_free(tmp);
 		}
 
-		// nufft
 		linop_forward(nufft_op, DIMS, ksp_dims, ksp, DIMS, coilim_dims, img);
 
 		linop_free(nufft_op);

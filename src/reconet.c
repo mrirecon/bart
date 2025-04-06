@@ -55,7 +55,7 @@ int main_reconet(int argc, char* argv[argc])
 	bool apply = false;
 	bool eval = false;
 
-	char* filename_weights_load = NULL;
+	const char* filename_weights_load = NULL;
 
 	long Nb = 0;
 
@@ -130,7 +130,7 @@ int main_reconet(int argc, char* argv[argc])
 
 		OPTL_SET('g', "gpu", &(bart_use_gpu), "run on gpu"),
 
-		OPTL_INFILE('l', "load", (const char**)(&(filename_weights_load)), "<weights-init>", "load weights for continuing training"),
+		OPTL_INFILE('l', "load", &(filename_weights_load), "<weights-init>", "load weights for continuing training"),
 		OPTL_LONG('b', "batch-size", &(Nb), "", "size of mini batches"),
 
 		OPTL_LONG('I', "iterations", &(config.Nt), "", "number of unrolled iterations"),

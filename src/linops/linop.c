@@ -1,10 +1,11 @@
 /* Copyright 2014. The Regents of the University of California.
  * Copyright 2016-2021. Uecker Lab. University Medical Center Göttingen.
+ * Copyright 2022-2025. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2014-2019 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2014-2019 Martin Uecker
  * 2014 Frank Ong <frankong@berkeley.edu>
  */
 
@@ -791,7 +792,7 @@ static void stack_cod_free(const linop_data_t* _data)
 }
 
 
-struct linop_s* linop_stack_cod(int N, struct linop_s* lops[N], int stack_dim)
+struct linop_s* linop_stack_cod(int N, const struct linop_s* lops[N], int stack_dim)
 {
 	PTR_ALLOC(struct stack_op_s, data);
 	SET_TYPEID(stack_op_s, data);
@@ -841,7 +842,7 @@ struct linop_s* linop_stack_cod(int N, struct linop_s* lops[N], int stack_dim)
 }
 
 
-struct linop_s* linop_stack_cod_F(int N, struct linop_s* lops[N], int stack_dim)
+struct linop_s* linop_stack_cod_F(int N, const struct linop_s* lops[N], int stack_dim)
 {
 	auto ret = linop_stack_cod(N, lops, stack_dim);
 	
@@ -914,7 +915,7 @@ struct linop_s* linop_loop_F(int D, const long dims[D], struct linop_s* op)
 	return result;
 }
 
-struct linop_s* linop_copy_wrapper2(int DI, const long istrs[DI], int DO, const long ostrs[DO],  struct linop_s* op)
+struct linop_s* linop_copy_wrapper2(int DI, const long istrs[DI], int DO, const long ostrs[DO], const struct linop_s* op)
 {
 	PTR_ALLOC(struct linop_s, op2);
 
@@ -933,12 +934,12 @@ struct linop_s* linop_copy_wrapper2(int DI, const long istrs[DI], int DO, const 
 	return PTR_PASS(op2);
 }
 
-struct linop_s* linop_copy_wrapper(int D, const long istrs[D], const long ostrs[D],  struct linop_s* op)
+struct linop_s* linop_copy_wrapper(int D, const long istrs[D], const long ostrs[D], const struct linop_s* op)
 {
 	return linop_copy_wrapper2(D, istrs, D, ostrs, op);
 }
 
-struct linop_s* linop_cpu_wrapper(struct linop_s* op)
+struct linop_s* linop_cpu_wrapper(const struct linop_s* op)
 {
 	PTR_ALLOC(struct linop_s, op2);
 
@@ -951,7 +952,7 @@ struct linop_s* linop_cpu_wrapper(struct linop_s* op)
 }
 
 
-struct linop_s* linop_gpu_wrapper(struct linop_s* op)
+struct linop_s* linop_gpu_wrapper(const struct linop_s* op)
 {
 	PTR_ALLOC(struct linop_s, op2);
 
@@ -963,7 +964,7 @@ struct linop_s* linop_gpu_wrapper(struct linop_s* op)
 	return PTR_PASS(op2);
 }
 
-struct linop_s* linop_vptr_wrapper(struct vptr_hint_s* hint, struct linop_s* op)
+struct linop_s* linop_vptr_wrapper(struct vptr_hint_s* hint, const struct linop_s* op)
 {
 	PTR_ALLOC(struct linop_s, op2);
 
@@ -974,6 +975,7 @@ struct linop_s* linop_vptr_wrapper(struct vptr_hint_s* hint, struct linop_s* op)
 
 	return PTR_PASS(op2);
 }
+
 
 /**
  * Free the linear operator and associated data,

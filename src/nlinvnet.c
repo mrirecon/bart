@@ -102,7 +102,7 @@ int main_nlinvnet(int argc, char* argv[argc])
 	unsigned long scl_flags = 0;
 	int Nb = 0;
 
-	char* filename_weights_load = NULL;
+	const char* filename_weights_load = NULL;
 
 	const char* val_file_kspace = NULL;
 	const char* val_file_reference = NULL;
@@ -180,7 +180,7 @@ int main_nlinvnet(int argc, char* argv[argc])
 
 		OPTL_SUBOPT(0, "valid-data", "...", "(provide validation data)", ARRAY_SIZE(valid_opts),valid_opts),
 
-		OPTL_INFILE('l', "load", (const char**)(&(filename_weights_load)), "<weights-init>", "load weights for continuing training"),
+		OPTL_INFILE('l', "load", &(filename_weights_load), "<weights-init>", "load weights for continuing training"),
 
 		OPTL_SUBOPT('T', "train-algo", "...", "configure general training parameters", N_iter6_opts, iter6_opts),
 		OPTL_SUBOPT(0, "adam", "...", "configure adam optimizer", N_iter6_adam_opts, iter6_adam_opts),

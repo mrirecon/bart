@@ -173,8 +173,8 @@ int main_pocsense(int argc, char* argv[argc])
 	mmconf.rho = admm_rho;
 
 	struct linop_s* eye = linop_identity_create(DIMS, ksp_dims);
-	struct linop_s* ops[3] = { eye, eye, eye };
-	struct linop_s** ops2 = NULL;
+	const struct linop_s* ops[3] = { eye, eye, eye };
+	const struct linop_s** ops2 = NULL;
 
 	if (use_admm) {
 
@@ -198,12 +198,12 @@ int main_pocsense(int argc, char* argv[argc])
 
 	if (bart_use_gpu)
 #ifdef USE_CUDA
-		pocs_recon_gpu2(italgo, iconf, (const struct linop_s**)ops2, dims, thresh_op, alpha, lambda, result, sens_maps, pattern, kspace_data);
+		pocs_recon_gpu2(italgo, iconf, ops2, dims, thresh_op, alpha, lambda, result, sens_maps, pattern, kspace_data);
 #else
 		assert(0);
 #endif
 	else
-		pocs_recon2(italgo, iconf, (const struct linop_s**)ops2, dims, thresh_op, alpha, lambda, result, sens_maps, pattern, kspace_data);
+		pocs_recon2(italgo, iconf, ops2, dims, thresh_op, alpha, lambda, result, sens_maps, pattern, kspace_data);
 
 	ifftmod(N, ksp_dims, FFT_FLAGS, result, result);
 

@@ -28,12 +28,12 @@
 
 static int cmp_float(const void* a, const void* b)
 {
-	return (*(float*)a - *(float*)b > 0.) ? 1. : -1.;
+	return (*(const float*)a - *(const float*)b > 0.) ? 1. : -1.;
 }
 
 static int cmp_complex_float(const void* a, const void* b) // gives sign for 0. (not 0)
 {
-	return (cabsf(*(complex float*)a) - cabsf(*(complex float*)b) > 0.) ? 1. : -1.;
+	return (cabsf(*(const complex float*)a) - cabsf(*(const complex float*)b) > 0.) ? 1. : -1.;
 }
 
 static void sort_floats(int N, float ar[N])

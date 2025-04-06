@@ -114,7 +114,7 @@ static void inverse(iter_op_data* _data, float alpha, float* dst, const float* s
 
 
 void iter4_irgnm(const iter3_conf* _conf,
-		struct nlop_s* nlop,
+		const struct nlop_s* nlop,
 		long N, float* dst, const float* ref,
 		long M, const float* src,
 		const struct operator_p_s* pinv,
@@ -149,7 +149,7 @@ void iter4_irgnm(const iter3_conf* _conf,
 
 
 void iter4_landweber(const iter3_conf* _conf,
-		struct nlop_s* nlop,
+		const struct nlop_s* nlop,
 		long N, float* dst, const float* ref,
 		long M, const float* src,
 		const struct operator_p_s* inv,
@@ -193,7 +193,7 @@ static void inverse2(iter_op_data* _data, float alpha, float* dst, const float* 
 
 
 void iter4_irgnm2(const iter3_conf* _conf,
-		struct nlop_s* nlop,
+		const struct nlop_s* nlop,
 		long N, float* dst, const float* ref,
 		long M, const float* src,
 		const struct operator_p_s* lsqr,
@@ -226,7 +226,7 @@ void iter4_irgnm2(const iter3_conf* _conf,
 }
 
 void iter4_lbfgs(const iter3_conf* _conf,
-		struct nlop_s* nlop,
+		const struct nlop_s* nlop,
 		long N, float* dst, const float* ref,
 		long M, const float* src,
 		const struct operator_p_s* lsqr,

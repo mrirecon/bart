@@ -235,7 +235,7 @@ static void kern_apply(const linop_data_t* _data, complex float* dst, const comp
 /* Collapse data table into the temporal basis for memory efficiency. */
 static void kern_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
-	struct kern_s* data = CAST_DOWN(kern_s, _data);
+	const struct kern_s* data = CAST_DOWN(kern_s, _data);
 
 	long wx = data->table_dims[0];
 	long sy = data->kernel_dims[1];
@@ -735,15 +735,12 @@ static struct linop_s* linop_multc_create(long nc, long md, const complex float*
 	data->maps = maps;
 	data->sc_op = sc_op;
 
-	long* op_inp_dims = (long*) linop_domain(sc_op)->dims;
-	long* op_out_dims = (long*) linop_codomain(sc_op)->dims;
-
 	long input_dims[] = { [0 ... DIMS - 1] = 1 };
-	md_copy_dims(DIMS, input_dims, op_inp_dims);
+	md_copy_dims(DIMS, input_dims, linop_domain(sc_op)->dims);
 	input_dims[MAPS_DIM] = md;
 
 	long output_dims[] = { [0 ... DIMS - 1] = 1 };
-	md_copy_dims(DIMS, output_dims, op_out_dims);
+	md_copy_dims(DIMS, output_dims, linop_codomain(sc_op)->dims);
 	output_dims[1] = nc;
 
 	struct linop_s* E = linop_create(DIMS, output_dims, DIMS, input_dims, CAST_UP(PTR_PASS(data)), multc_apply, multc_adjoint, multc_normal, NULL, multc_free);

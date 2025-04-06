@@ -155,7 +155,7 @@ static float compute_norm(const void* _data, const float* ksp)
 {
 	const struct data* data = _data;	// FIXME: CAST?
 
-	float norm = md_znorm(DIMS, data->dims_ksp, (complex float*)ksp);
+	float norm = md_znorm(DIMS, data->dims_ksp, (const complex float*)ksp);
 	//assert(isnormal(norm));
 	return norm;
 }

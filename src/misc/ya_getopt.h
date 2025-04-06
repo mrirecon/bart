@@ -48,10 +48,10 @@ struct option {
     int val;
 };
 
-int ya_getopt(int argc, char * const argv[], const char *optstring);
-int ya_getopt_long(int argc, char * const argv[], const char *optstring,
+int ya_getopt(int argc, char * argv[], const char *optstring);
+int ya_getopt_long(int argc, char * argv[], const char *optstring,
                    const struct option *longopts, int *longindex);
-int ya_getopt_long_only(int argc, char * const argv[], const char *optstring,
+int ya_getopt_long_only(int argc, char * argv[], const char *optstring,
                         const struct option *longopts, int *longindex);
 void ya_getopt_reset(void);
 

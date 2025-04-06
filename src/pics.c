@@ -123,7 +123,7 @@ static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long
 										traj + j * offset_traj, conf, n_wgs_dims, weights + j * offset_weights,
 										n_basis_dims, basis + j * offset_basis, NULL, shared_img_dims, lowmem_stack);
 				if (MD_IS_SET(shared_img_dims, i))
-					lop = linop_stack_cod_F(2, (struct linop_s*[2]){ (struct linop_s*)lop, (struct linop_s*)tmp }, i);
+					lop = linop_stack_cod_F(2, MAKE_ARRAY(lop, tmp), i);
 				else
 					lop = linop_stack_FF(i, i, lop, tmp);
 			}
@@ -176,7 +176,7 @@ static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long
 		long map_dims_slc[DIMS];
 		md_select_dims(DIMS, ~COIL_FLAG, map_dims_slc, map_dims);
 
-		struct linop_s* lops[map_dims[COIL_DIM]];
+		const struct linop_s* lops[map_dims[COIL_DIM]];
 
 		for (int i = 0; i < map_dims[COIL_DIM]; i++) {
 
@@ -693,7 +693,7 @@ int main_pics(int argc, char* argv[argc])
 #ifdef USE_CUDA
 	if (conf.gpu && (gpu_gridding || NULL == traj)) {
 
-		auto tmp = linop_gpu_wrapper((struct linop_s*)forward_op);
+		auto tmp = linop_gpu_wrapper(forward_op);
 		linop_free(forward_op);
 		forward_op = tmp;
 	}
@@ -701,7 +701,7 @@ int main_pics(int argc, char* argv[argc])
 
 	if (NULL != hint) {
 
-		auto tmp = linop_vptr_wrapper(hint, (struct linop_s*)forward_op);
+		auto tmp = linop_vptr_wrapper(hint, forward_op);
 		linop_free(forward_op);
 		forward_op = tmp;
 

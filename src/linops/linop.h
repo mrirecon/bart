@@ -95,8 +95,8 @@ extern struct linop_s* linop_chainN_F(int N, struct linop_s* x[N]);
 extern struct linop_s* linop_stack(int D, int E, const struct linop_s* a, const struct linop_s* b);
 extern struct linop_s* linop_stack_FF(int D, int E, const struct linop_s* a, const struct linop_s* b);
 
-extern struct linop_s* linop_stack_cod(int N, struct linop_s* lops[N], int stack_dim);
-extern struct linop_s* linop_stack_cod_F(int N, struct linop_s* lops[N], int stack_dim);
+extern struct linop_s* linop_stack_cod(int N, const struct linop_s* lops[N], int stack_dim);
+extern struct linop_s* linop_stack_cod_F(int N, const struct linop_s* lops[N], int stack_dim);
 
 
 struct iovec_s;
@@ -110,11 +110,11 @@ extern const struct linop_s* linop_get_normal(const struct linop_s* x);
 
 extern struct linop_s* linop_loop(int D, const long dims[D], struct linop_s* op);
 extern struct linop_s* linop_loop_F(int D, const long dims[D], struct linop_s* op);
-extern struct linop_s* linop_copy_wrapper2(int DI, const long istrs[DI], int DO, const long ostrs[DO],  struct linop_s* op);
-extern struct linop_s* linop_copy_wrapper(int D, const long istrs[D], const long ostrs[D], struct linop_s* op);
-extern struct linop_s* linop_cpu_wrapper(struct linop_s* op);
-extern struct linop_s* linop_gpu_wrapper(struct linop_s* op);
-extern struct linop_s* linop_vptr_wrapper(struct vptr_hint_s* hint, struct linop_s* op);
+extern struct linop_s* linop_copy_wrapper2(int DI, const long istrs[DI], int DO, const long ostrs[DO], const struct linop_s* op);
+extern struct linop_s* linop_copy_wrapper(int D, const long istrs[D], const long ostrs[D], const struct linop_s* op);
+extern struct linop_s* linop_cpu_wrapper(const struct linop_s* op);
+extern struct linop_s* linop_gpu_wrapper(const struct linop_s* op);
+extern struct linop_s* linop_vptr_wrapper(struct vptr_hint_s* hint, const struct linop_s* op);
 
 extern struct linop_s* linop_null_create2(int NO, const long odims[NO], const long ostrs[NO], int NI, const long idims[NI], const long istrs[NI]);
 extern struct linop_s* linop_null_create(int NO, const long odims[NO], int NI, const long idims[NI]);
