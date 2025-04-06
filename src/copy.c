@@ -87,7 +87,7 @@ int main_copy(int argc, char* argv[argc])
 			error("Output file must be a cfl if position is specified.\n");
 
 		// get dimensions
-		void* out_data = load_cfl(out_file, N, out_dims);
+		complex float* out_data = load_cfl(out_file, N, out_dims);
 
 		unmap_cfl(N, out_dims, out_data);
 

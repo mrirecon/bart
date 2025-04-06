@@ -72,8 +72,8 @@ int main_caldir(int argc, char* argv[argc])
 
 	md_free(cal_data);
 
-	unmap_cfl(DIMS, dims, (void*)out_data);
-	unmap_cfl(DIMS, dims, (void*)in_data);
+	unmap_cfl(DIMS, dims, out_data);
+	unmap_cfl(DIMS, dims, in_data);
 
 	return 0;
 }

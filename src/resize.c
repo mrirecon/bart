@@ -66,7 +66,7 @@ int main_resize(int argc, char* argv[argc])
 	long in_dims[N];
 	long out_dims[N];
 
-	void* in_data = load_cfl(in_file, N, in_dims);
+	complex float* in_data = load_cfl(in_file, N, in_dims);
 	md_copy_dims(N, out_dims, in_dims);
 	
 	for (int i = 0; i < count; i++) {
@@ -80,7 +80,7 @@ int main_resize(int argc, char* argv[argc])
 		out_dims[dim] = size;
 	}
 
-	void* out_data = create_cfl(out_file, N, out_dims);
+	complex float* out_data = create_cfl(out_file, N, out_dims);
 
 	switch (mode) {
 	case FRONT:
