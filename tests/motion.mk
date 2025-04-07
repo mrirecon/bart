@@ -64,11 +64,11 @@ tests/test-estmotion-optical-flow: traj phantom fovshift nufft estmotion interpo
 	$(TOOLDIR)/phantom -k -t t1 k1							;\
 	$(TOOLDIR)/phantom -k -t t2 kp							;\
 	$(TOOLDIR)/traj -x64 -y64 t1							;\
-	$(TOOLDIR)/fovshift -s 0.05:-0.02:0 -t t1 kp k2					;\
+	$(TOOLDIR)/fovshift -s 0.046875:-0.078125:0 -t t1 kp k2				;\
 	$(TOOLDIR)/nufft -a t1 k1 ph1							;\
 	$(TOOLDIR)/nufft -a t1 k2 ph2							;\
-	$(TOOLDIR)/estmotion -r0.1 --optical-flow --max-flow=3 3 ph1 ph2 disp		;\
-	$(TOOLDIR)/interpolate -D -C 3 ph2 disp ph3					;\
+	$(TOOLDIR)/estmotion -r0.3 --optical-flow 3 ph1 ph2 disp		;\
+	$(TOOLDIR)/interpolate -D -N 3 ph2 disp ph3					;\
 	$(TOOLDIR)/nrmse -t 0.35 ph3 ph1						;\
 	rm *.{cfl,hdr} ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@

@@ -6,6 +6,7 @@
  */
 
 #include <complex.h>
+#include <math.h>
 
 #include "misc/misc.h"
 
@@ -38,9 +39,9 @@ static void zentral_differences(int D, const long dims[D], int d, unsigned long 
 	md_select_dims(D, ~MD_BIT(d), idims, dims);
 
 	const struct linop_s* lop = linop_grad_zentral_create(D, idims, d, flags);
-	
+
 	linop_forward(lop, D, dims, out, D, idims, in);
-	
+
 	linop_free(lop);
 }
 
@@ -154,7 +155,7 @@ static void prox_img_l1_apply(const operator_data_t* _data, float mu, complex fl
 	complex float* case3 = md_alloc_sameplace(N, img_dims, CFL_SIZE, dst);
 
 	md_zgreatequal(N, img_dims, case2, rho, gnorm);
-	
+
 	md_zsmul(N, img_dims, gnorm, gnorm, -1.);
 
 	md_zgreatequal(N, img_dims, case1, gnorm, rho);
@@ -188,9 +189,9 @@ static void prox_img_del(const operator_data_t* _data)
 
 	multiplace_free(d->rho0);
 	multiplace_free(d->dimg_moved);
-	
+
 	xfree(d->dims);
-	
+
 	xfree(d);
 }
 
@@ -256,7 +257,7 @@ void optical_flow(bool l1_reg, unsigned long reg_flags, float lambda, float maxn
 
 	trafos[1] = linop_grad_create(N, dims, N, reg_flags);
 
-	if (l1_reg) 
+	if (l1_reg)
 		prox_ops[1] = prox_thresh_create(N + 1,	linop_codomain(trafos[1])->dims, lambda, 0);
 	else
 		prox_ops[1] = prox_leastsquares_create(N + 1,linop_codomain(trafos[1])->dims, lambda, NULL);
@@ -270,7 +271,8 @@ void optical_flow(bool l1_reg, unsigned long reg_flags, float lambda, float maxn
 	if (0 < maxnorm)
 		scale += 1.;
 
-	iconf.sigma /= scale;
+	iconf.sigma /= sqrtf(scale);
+	iconf.tau /= sqrtf(scale);
 
 	iter2_chambolle_pock(CAST_UP(&iconf), NULL, (0 < maxnorm ? 3 : 2), prox_ops, trafos, NULL, NULL, 2 * md_calc_size(N, dims), (float*)u, NULL, NULL);
 
@@ -290,7 +292,7 @@ void optical_flow_multiscale(bool l1_reg, unsigned long reg_flags, float lambda,
 			     int d, unsigned long flags, int N, const long _dims[N], const complex float* _img_static, const complex float* _img_moved, complex float* _u)
 {
 	assert(_dims[d] == bitcount(flags));
-	
+
 	long tdims[N];
 	md_select_dims(N, ~MD_BIT(d), tdims, _dims);
 
@@ -341,7 +343,7 @@ void optical_flow_multiscale(bool l1_reg, unsigned long reg_flags, float lambda,
 		for (int j = 0, jp = 0; j < N; j++)
 			if (MD_IS_SET(flags, j))
 				factors_cpu[jp++] = (float)dims[i -1][j] / (float)dims[i][j];
-		
+
 		md_copy(N, fdims, factors_sp, factors_cpu, CFL_SIZE);
 		md_zmul2(N, udims, MD_STRIDES(N, udims, CFL_SIZE), u, MD_STRIDES(N, udims, CFL_SIZE), u, MD_STRIDES(N, fdims, CFL_SIZE), factors_sp);
 	}
