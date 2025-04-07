@@ -1,10 +1,8 @@
 /* Copyright 2014. The Regents of the University of California.
- * Copyright 2015-2019. Martin Uecker.
+ * Copyright 2015-2021. Martin Uecker.
+ * Copyright 2022-2025. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
- *
- * Authors:
- * 2014-2019 Martin Uecker
  */
 
 #include <sys/types.h>
@@ -442,6 +440,7 @@ static enum adc_return siemens_adc_read(bool vd, int fd, bool noise, bool linect
 			|| (dims[READ_DIM] != mdh.samples)) {
 
 			ssize_t offset = sizeof(scan_hdr) + sizeof(chan_hdr);
+
 			return skip_to_next(vd ? scan_hdr : chan_hdr, fd, offset);
 		}
 
@@ -450,14 +449,17 @@ static enum adc_return siemens_adc_read(bool vd, int fd, bool noise, bool linect
 
 			pos[PHS1_DIM]	= mdh.sLC[0] - (linectr ? mdh.linectr - dims[PHS1_DIM] / 2 : 0);
 			pos[AVG_DIM]	= mdh.sLC[1];
+
 			if (radial) { // reorder for radial
 
 				pos[SLICE_DIM]	= mdh.sLC[3];
+
 			} else {
 
 				pos[SLICE_DIM]	= mdh.sLC[2];
 				pos[PHS2_DIM]	= mdh.sLC[3] - (partctr ? mdh.partctr - dims[PHS2_DIM] / 2 : 0);
 			}
+
 			pos[TE_DIM]	= mdh.sLC[4];
 			pos[COEFF_DIM]	= mdh.sLC[5];
 			pos[TIME_DIM]	= mdh.sLC[6];
@@ -580,16 +582,15 @@ int main_twixread(int argc, char* argv[argc])
 
 		while (ADC_END != sar) {
 
-
 			sar = siemens_bounds(vd, noise, ifd, min, max);
 
-			if (ADC_SKIP == sar) {
-
+			if (ADC_SKIP == sar)
 				continue;
-			} else if (ADC_ERROR == sar) {
 
+			if (ADC_ERROR == sar)
 				error("Could not automatically determine dimensions, adc read error!\n");
-			} else if (ADC_OK == sar) {
+
+			if (ADC_OK == sar) {
 
 				debug_print_dims(DP_DEBUG3, DIMS, max);
 				adcs++;
@@ -674,11 +675,15 @@ int main_twixread(int argc, char* argv[argc])
 
 			debug_printf(DP_WARN, "ADC read error, stopping\n");
 			break;
-		} else if (ADC_SKIP == sar) {
+		}
+
+		if (ADC_SKIP == sar) {
 
 			debug_printf(DP_DEBUG3, "Skipping.\n");
 			continue;
-		} else if (ADC_OK == sar) {
+		}
+
+		if (ADC_OK == sar) {
 
 			adcs--; // count ADC
 
@@ -737,11 +742,11 @@ int main_twixread(int argc, char* argv[argc])
 
 			call++;
 		}
-
 	}
 
 	if ((0 != adcs) && check_read)
 		error("Incorrect number of ADCs read! ADC count difference: %d != 0!\n", adcs);
+
 	md_free(buf);
 
 	unmap_cfl(DIMS, dims, out);
