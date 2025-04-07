@@ -1,7 +1,7 @@
 /* Copyright 2015. The Regents of the University of California.
  * Copyright 2015-2021. Martin Uecker.
  * Copyright 2018. Damien Nguyen.
- * Copyright 2023-2024. Institute of Biomedical Imaging. TU Graz.
+ * Copyright 2023-2025. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
@@ -323,14 +323,14 @@ static int batch_wrapper(main_fun_t* dispatch_func, int argc, char *argv[argc], 
 
 int main_bart(int argc, char* argv[argc])
 {
-	#ifdef __EMSCRIPTEN__
+#ifdef __EMSCRIPTEN__
 	wasm_fd_offset = 0;
-	#endif
+#endif
 
 	char* bn = basename(argv[0]);
 
 	// only skip over initial bart or bart.exe. calling "bart bart" is an error.
-	if (0 == strcmp(bn, "bart") || 0 == strcmp(bn, "bart.exe")) {
+	if ((0 == strcmp(bn, "bart")) || (0 == strcmp(bn, "bart.exe"))) {
 
 		if (1 == argc) {
 

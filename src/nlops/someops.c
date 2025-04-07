@@ -7,10 +7,10 @@
 
 #include <complex.h>
 #include <stdio.h>
-#include <string.h>
 
 #include "linops/linop.h"
 #include "linops/someops.h"
+
 #include "misc/types.h"
 #include "misc/misc.h"
 #include "misc/debug.h"
@@ -19,8 +19,6 @@
 #include "num/iovec.h"
 #include "num/flpmath.h"
 #include "num/ops.h"
-
-#include "linops/someops.h"
 
 #include "nlops/nlop.h"
 #include "nlops/chain.h"
@@ -62,9 +60,9 @@ static void zaxpbz_fun(const nlop_data_t* _data, int N, complex float* args[N])
 	complex float* src1 = args[1];
 	complex float* src2 = args[2];
 
-	#ifdef USE_CUDA
+#ifdef USE_CUDA
 	assert((cuda_ondevice(dst) == cuda_ondevice(src1)) && (cuda_ondevice(src1) == cuda_ondevice(src2)));
-	#endif
+#endif
 
 	src1 = md_alloc_sameplace(data->N, data->dims, CFL_SIZE, args[1]);
 	src2 = md_alloc_sameplace(data->N, data->dims, CFL_SIZE, args[2]);

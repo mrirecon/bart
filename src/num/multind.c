@@ -683,7 +683,7 @@ void md_max_dims(int D, unsigned long flags, long odims[D], const long idims1[D]
 void md_clear2(int D, const long dim[D], const long str[D], void* ptr, size_t size)
 {
 	const long (*nstr[1])[D] = { (const long (*)[D])str };
-#ifdef	USE_CUDA
+#ifdef USE_CUDA
 	bool use_gpu = cuda_ondevice(ptr);
 #endif
 	unsigned long flags = 0;
@@ -700,7 +700,7 @@ void md_clear2(int D, const long dim[D], const long str[D], void* ptr, size_t si
 	{
 		size_t size2 = (size_t)((long)size * opt_data->size);
 
-#ifdef 	USE_CUDA
+#ifdef USE_CUDA
 		if (use_gpu) {
 
 			cuda_clear((long)size2, ptr[0]);
@@ -864,7 +864,7 @@ void md_copy2(int D, const long dim[D], const long ostr[D], void* optr, const lo
 	iptr = vptr_resolve(iptr);
 	optr = vptr_resolve(optr);
 
-#ifdef	USE_CUDA
+#ifdef USE_CUDA
 	bool use_gpu = cuda_ondevice(optr) || cuda_ondevice(iptr);
 
 #if 1
@@ -1006,7 +1006,7 @@ out:	;
 	{
 		size_t size2 = (size_t)((long)size * opt_data->size);
 
-#ifdef  USE_CUDA
+#ifdef USE_CUDA
 		if (use_gpu) {
 
 			cuda_memcpy((long)size2, ptr[0], ptr[1]);
@@ -1107,7 +1107,7 @@ void md_circular_swap2(int M, int D, const long dims[D], const long* strs[M], vo
 
 		char* tmp = (size2 < 32) ? alloca(size2) : xmalloc(size2);
 
-#ifdef  USE_CUDA
+#ifdef USE_CUDA
 		assert(!cuda_ondevice(ptr[0]));
 		assert(!cuda_ondevice(ptr[1]));
 #endif

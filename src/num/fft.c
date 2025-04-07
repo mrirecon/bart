@@ -46,6 +46,7 @@ typedef void *fftwf_plan;
 #ifdef USE_CUDA
 #include "num/gpuops.h"
 #include "num/gpukrnls.h"
+
 #include "fft-cuda.h"
 #define LAZY_CUDA
 #endif
@@ -213,11 +214,11 @@ static void fftmod2_r(int N, const long dims[N], unsigned long flags, const long
  
 		NESTED(void, nary_zfftmod, (void* ptr[]))
 		{
-		#ifdef USE_CUDA
+#ifdef USE_CUDA
 			if (cuda_ondevice(dst))
 				cuda_zfftmod_3d(tptr, ptr[0], ptr[1], inv, phase);
 			else
-	 	#endif
+#endif
 				zfftmod_3d(tptr, ptr[0], ptr[1], inv, phase);
 		};
 
@@ -521,9 +522,9 @@ static void fft_apply(const operator_data_t* _plan, int N, void* args[N])
 	dst = vptr_resolve(dst);
 	src = vptr_resolve(src);
 
-#ifdef  USE_CUDA
+#ifdef USE_CUDA
 	if (cuda_ondevice(src)) {
-#ifdef	LAZY_CUDA
+#ifdef LAZY_CUDA
 
 #pragma 	omp critical(cufft_create_plan_in_threads)
 		if (NULL == plan->cuplan)
@@ -555,7 +556,7 @@ static void fft_free_plan(const operator_data_t* _data)
 	if (NULL != plan->fft_flags_only)
 		operator_free(plan->fft_flags_only);
 
-#ifdef	USE_CUDA
+#ifdef USE_CUDA
 	if (NULL != plan->cuplan)
 		fft_cuda_free_plan(plan->cuplan);
 #endif
@@ -605,7 +606,7 @@ static const struct operator_s* fft_measure_create_int(int D, const long dimensi
 	if (!inplace)
 		md_free(dst);
 
-#ifdef  USE_CUDA
+#ifdef USE_CUDA
 	plan->cuplan = NULL;
 #ifndef LAZY_CUDA
 	if (cuda_ondevice(src) && (0u != flags)
@@ -670,7 +671,7 @@ static const struct operator_s* fft_create2_int(int D, const long dimensions[D],
 	}
 
 
-#ifdef  USE_CUDA
+#ifdef USE_CUDA
 	plan->cuplan = NULL;
 #ifndef LAZY_CUDA
 	if (cuda_ondevice(src) && (0u != flags)

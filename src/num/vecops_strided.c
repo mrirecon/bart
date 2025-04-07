@@ -1269,11 +1269,11 @@ static bool simple_s2op(int N_checks, struct simple_s2op_check strided_calls[N_c
 		bool applicable = true;
 		strided_kernel = strided_calls[i].strided_kernel;
 
-	#ifdef USE_CUDA
+#ifdef USE_CUDA
 		if (cuda_ondevice(out))
 			applicable &= strided_calls[i].on_gpu;
 		else
-	#endif
+#endif
 			applicable &= strided_calls[i].on_cpu;
 		if (!applicable)
 			continue;
