@@ -360,6 +360,8 @@ int write_cfl_header(int fd, const char* filename, int n, const long dimensions[
 	if (NULL != command_line) {
 
 		written += xdprintf(fd, "# Command\n");
+		if (NULL != stdin_command_line)
+			written += xdprintf(fd, "%s| ", stdin_command_line);
 		written += xdprintf(fd, "%s\n", command_line);
 	}
 
@@ -450,7 +452,7 @@ static int parse_cfl_header_len(long N, const char header[N + 1])
 }
 
 
-int read_cfl_header2(int N, char header[N + 1], int fd, char **file, int n, long dimensions[n])
+int read_cfl_header2(int N, char header[N + 1], int fd, char **file, char** cmd, int n, long dimensions[n])
 {
 	*file = NULL;
 	memset(header, 0, (size_t)(N + 1));
@@ -476,23 +478,23 @@ int read_cfl_header2(int N, char header[N + 1], int fd, char **file, int n, long
 
 	assert(r <= M);
 
-	if (0 > parse_cfl_header(r, header, file, n, dimensions))
+	if (0 > parse_cfl_header(r, header, file, cmd, n, dimensions))
 		return -1;
 
 	return r;
 }
 
 
-int read_cfl_header(int fd, char** file, int n, long dimensions[n])
+int read_cfl_header(int fd, char** file, char** cmd, int n, long dimensions[n])
 {
 	char header[IO_MAX_HDR_SIZE + 1];
 
-	return read_cfl_header2(IO_MAX_HDR_SIZE, header, fd, file, n, dimensions);
+	return read_cfl_header2(IO_MAX_HDR_SIZE, header, fd, file, cmd, n, dimensions);
 }
 
 
 
-int parse_cfl_header(long N, const char header[N + 1], char **file, int n, long dimensions[n])
+int parse_cfl_header(long N, const char header[N + 1], char **file, char** cmd, int n, long dimensions[n])
 {
 	*file = NULL;
 
@@ -549,6 +551,21 @@ int parse_cfl_header(long N, const char header[N + 1], char **file, int n, long 
 			pos += delta;
 
 			*file = strdup(filename);
+
+		} else if (NULL != cmd && 0 == strcmp(keyword, "Command")) {
+
+			char* last_char = memchr(header + pos, '\n', (size_t)(N - pos));
+			assert(NULL != last_char);
+
+			delta = 1 + last_char - (header + pos);
+
+			*cmd = xmalloc((size_t)delta);
+
+			memcpy(*cmd, header + pos, (size_t)(delta - 1));
+
+			(*cmd)[delta - 1] = '\0';
+
+			pos += delta;
 		}
 
 		// skip lines not starting with '#'
@@ -656,7 +673,7 @@ int read_multi_cfl_header(int fd, char** file, int D_max, int n_max, int n[D_max
 	char header[IO_MAX_HDR_SIZE + 1] = { };
 
 	long dims[1];
-	int max = read_cfl_header2(IO_MAX_HDR_SIZE, header, fd, file, 1, dims);
+	int max = read_cfl_header2(IO_MAX_HDR_SIZE, header, fd, file, NULL, 1, dims);
 
 	if (-1 == max)
 		return -1;

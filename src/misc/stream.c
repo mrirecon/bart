@@ -494,8 +494,10 @@ stream_t stream_load_file(const char* name, int D, long dims[D], char **datname)
 	if (-1 == fd)
 		error("Opening FIFO %s\n", name);
 
+	assert (!is_stdin || NULL == stdin_command_line);
+
 	// read header from pipe
-	int hdr_bytes = read_cfl_header2(ARRAY_SIZE(hdr) - 1, hdr, fd, datname, D, dims);
+	int hdr_bytes = read_cfl_header2(ARRAY_SIZE(hdr) - 1, hdr, fd, datname, is_stdin ? &stdin_command_line : NULL, D, dims);
 
 	if (-1 == hdr_bytes)
 		error("Reading input from %s\n", name);
