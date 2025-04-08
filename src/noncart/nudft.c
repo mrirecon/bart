@@ -13,7 +13,6 @@
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/filter.h"
-#include "num/fft.h"
 #include "math.h"
 
 #include "linops/linop.h"
