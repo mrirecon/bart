@@ -1,8 +1,10 @@
 
 tests/test-affine-rigid: bart
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP) ; export BART_TOOLBOX_DIR=$(ROOTDIR)	;\
-	$(ROOTDIR)/bart traj -x64 -y64		-- - | $(ROOTDIR)/bart scale -- 0.8 - t1	;\
-	$(ROOTDIR)/bart traj -x64 -y64 -R5	-- - | $(ROOTDIR)/bart scale -- 0.8 - t2	;\
+	$(TOOLDIR)/traj -x64 -y64 t1a								;\
+	$(TOOLDIR)/scale -- 0.8 t1a t1								;\
+	$(TOOLDIR)/traj -x64 -y64 -R5 t2a							;\
+	$(TOOLDIR)/scale -- 0.8 t2a t2								;\
 	$(ROOTDIR)/bart phantom -k -t t1 k1							;\
 	$(ROOTDIR)/bart phantom -k -t t2 kp							;\
 	$(ROOTDIR)/bart traj -x64 -y64 t1							;\
@@ -21,8 +23,10 @@ tests/test-affine-rigid: bart
 
 tests/test-affine-affine: bart
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP) ; export BART_TOOLBOX_DIR=$(ROOTDIR)	;\
-	$(ROOTDIR)/bart traj -x64 -y64		-- - | $(ROOTDIR)/bart scale -- 0.8 - t1	;\
-	$(ROOTDIR)/bart traj -x64 -y64 -R5	-- - | $(ROOTDIR)/bart scale -- 0.9 - t2	;\
+	$(TOOLDIR)/traj -x64 -y64 t1a								;\
+	$(TOOLDIR)/scale -- 0.8 t1a t1								;\
+	$(TOOLDIR)/traj -x64 -y64 -R5 t2a							;\
+	$(TOOLDIR)/scale -- 0.9 t2a t2								;\
 	$(ROOTDIR)/bart phantom -k -t t1 k1							;\
 	$(ROOTDIR)/bart phantom -k -t t2 kp							;\
 	$(ROOTDIR)/bart traj -x64 -y64 t1							;\
@@ -40,8 +44,10 @@ tests/test-affine-affine: bart
 
 tests/test-estmotion: traj phantom fovshift nufft estmotion interpolate nrmse scale ones pics
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
-	$(TOOLDIR)/traj -x64 -y64		-- - | $(TOOLDIR)/scale -- 0.8 - t1	;\
-	$(TOOLDIR)/traj -x64 -y64 -R5		-- - | $(TOOLDIR)/scale -- 0.8 - t2	;\
+	$(TOOLDIR)/traj -x64 -y64 t1a							;\
+	$(TOOLDIR)/scale -- 0.8 t1a t1							;\
+	$(TOOLDIR)/traj -x64 -y64 -R5 t2a						;\
+	$(TOOLDIR)/scale -- 0.8 t2a t2							;\
 	$(TOOLDIR)/phantom -k -t t1 k1							;\
 	$(TOOLDIR)/phantom -k -t t2 kp							;\
 	$(TOOLDIR)/traj -x64 -y64 t1							;\
@@ -59,15 +65,13 @@ tests/test-estmotion: traj phantom fovshift nufft estmotion interpolate nrmse sc
 
 tests/test-estmotion-optical-flow: traj phantom fovshift nufft estmotion interpolate nrmse scale
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
-	$(TOOLDIR)/traj -x64 -y64		-- - | $(TOOLDIR)/scale -- 0.8 - t1	;\
-	$(TOOLDIR)/traj -x64 -y64		-- - | $(TOOLDIR)/scale -- 0.8 - t2	;\
-	$(TOOLDIR)/phantom -k -t t1 k1							;\
-	$(TOOLDIR)/phantom -k -t t2 kp							;\
 	$(TOOLDIR)/traj -x64 -y64 t1							;\
-	$(TOOLDIR)/fovshift -s 0.046875:-0.078125:0 -t t1 kp k2				;\
-	$(TOOLDIR)/nufft -a t1 k1 ph1							;\
-	$(TOOLDIR)/nufft -a t1 k2 ph2							;\
-	$(TOOLDIR)/estmotion -r0.3 --optical-flow 3 ph1 ph2 disp		;\
+	$(TOOLDIR)/scale -- 0.8 t1 t2							;\
+	$(TOOLDIR)/phantom -k -t t2 kp							;\
+	$(TOOLDIR)/fovshift -s 0.046875:-0.078125:0 -t t2 kp k2				;\
+	$(TOOLDIR)/nufft -a t2 kp ph1							;\
+	$(TOOLDIR)/nufft -a t2 k2 ph2							;\
+	$(TOOLDIR)/estmotion -r0.3 --optical-flow 3 ph1 ph2 disp			;\
 	$(TOOLDIR)/interpolate -D -N 3 ph2 disp ph3					;\
 	$(TOOLDIR)/nrmse -t 0.35 ph3 ph1						;\
 	rm *.{cfl,hdr} ; cd .. ; rmdir $(TESTS_TMP)
