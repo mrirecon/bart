@@ -65,7 +65,6 @@ int main_estmotion(int argc, char* argv[argc])
 	int nwarps[5] = { 10, 25, 100, 100, 100 };
 	bool l1reg = true;
 	bool l1dc = true;
-	long reg_flags = -1;
 	float maxnorm = 0.;
 	bool synalgo = true;
 
@@ -124,13 +123,14 @@ int main_estmotion(int argc, char* argv[argc])
 	if (NULL != imotion_file) {
 			
 		imot = my_alloc(DIMS, udims, CFL_SIZE);
+
 		md_clear(DIMS, udims, mot, CFL_SIZE);
 	}
 
 	if (synalgo)
 		syn(levels, sigmas, factors, nwarps, MOTION_DIM, flags, DIMS, udims, mot, imot, ref, mov);
 	else
-		optical_flow_multiscale(l1reg, (-1 == reg_flags) ? flags : (unsigned long)reg_flags, lambda, maxnorm, l1dc, levels, sigmas, factors, nwarps, MOTION_DIM, flags, DIMS, udims, ref, mov, mot);
+		optical_flow_multiscale(l1reg, flags, lambda, maxnorm, l1dc, levels, sigmas, factors, nwarps, MOTION_DIM, flags, DIMS, udims, ref, mov, mot);
 
 	md_free(mov);
 	md_free(ref);
@@ -144,10 +144,14 @@ int main_estmotion(int argc, char* argv[argc])
 	if (NULL != imotion_file) {
 
 		complex float* imot_ptr = create_cfl(imotion_file, DIMS, udims);
+
 		md_copy(DIMS, udims, imot_ptr, imot, CFL_SIZE);
+
 		unmap_cfl(DIMS, udims, mot_ptr);
+
 		md_free(imot);
 	}
 
 	return 0;
 }
+
