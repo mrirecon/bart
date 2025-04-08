@@ -13,6 +13,8 @@
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/filter.h"
+#include "num/fft.h"
+#include "math.h"
 
 #include "linops/linop.h"
 
@@ -79,6 +81,9 @@ void nudft_forward2(int N, unsigned long flags,
 
 	} while (md_next(N, tdims, ~MD_BIT(0), pos));
 
+	// scale to be unitary
+	float scale = 1. / sqrtf((float)md_calc_size(N, idims));
+	md_zsmul(N, kdims, ksp, ksp, scale);
 
 	md_free(tmp);
 }
@@ -121,6 +126,10 @@ void nudft_adjoint2(int N, unsigned long flags,
 		md_zfmacc2(N, idims, istrs, img, kstrs2, &MD_ACCESS(N, kstrs, pos, ksp), tmp_strs, tmp);
 
 	} while (md_next(N, tdims, ~MD_BIT(0), pos));
+
+	// scale to be unitary
+	float scale = 1. / sqrtf((float)md_calc_size(N, idims));
+	md_zsmul(N, idims, img, img, scale);
 
 
 	md_free(tmp);
