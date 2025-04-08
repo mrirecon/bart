@@ -43,9 +43,9 @@ struct fft_cuda_plan_s {
 
 struct iovec {
 
-	long n; 
-	long is; 
-	long os; 
+	long n;
+	long is;
+	long os;
 };
 
 static const char* cufft_error_string[] = {
@@ -128,7 +128,7 @@ static struct fft_cuda_plan_s* fft_cuda_plan0(int D, const long dimensions[D], u
 	struct iovec hmdims[N];
 
 	assert(0 != flags);
-	
+
 	// the cufft interface is strange, but we do our best...
 	int k = 0;
 	int l = 0;
@@ -141,7 +141,7 @@ static struct fft_cuda_plan_s* fft_cuda_plan0(int D, const long dimensions[D], u
 		if (MD_IS_SET(flags, i)) {
 
 			dims[k].n = dimensions[i];
-			dims[k].is = istrides[i] / CFL_SIZE; 
+			dims[k].is = istrides[i] / CFL_SIZE;
 			dims[k].os = ostrides[i] / CFL_SIZE;
 			k++;
 
@@ -186,7 +186,7 @@ static struct fft_cuda_plan_s* fft_cuda_plan0(int D, const long dimensions[D], u
 		cudims[k - 1 - i] = dims[i].n;
 		cuiemb[k - 1 - i] = dims[i].n;
 		cuoemb[k - 1 - i] = dims[i].n;
-	
+
 		lis = dims[i].n * dims[i].is;
 		los = dims[i].n * dims[i].os;
 	}
@@ -240,10 +240,9 @@ static struct fft_cuda_plan_s* fft_cuda_plan0(int D, const long dimensions[D], u
 	CUFFT_ERROR(cufftMakePlanMany(plan->cufft, k,
 				cudims, cuiemb, istride, idist,
 				cuoemb, ostride, odist, CUFFT_C2C, cubs, &(plan->workspace_size)));
-	CUFFT_ERROR(cufftSetStream(plan->cufft, cuda_get_stream()));
 
 	plan->cufft_initialized = true;
-	
+
 
 	return PTR_PASS(plan);
 
@@ -316,7 +315,7 @@ void fft_cuda_exec(struct fft_cuda_plan_s* cuplan, complex float* dst, const com
 	assert(cuda_ondevice(dst));
 	assert(NULL != cuplan);
 
-	
+
 	assert(cuplan->cufft_initialized);
 	size_t workspace_size = cuplan->workspace_size;
 	cufftHandle cufft = cuplan->cufft;
@@ -324,14 +323,19 @@ void fft_cuda_exec(struct fft_cuda_plan_s* cuplan, complex float* dst, const com
 	void* workspace = md_alloc_gpu(1, MAKE_ARRAY(1l), workspace_size);
 
 	CUDA_ERROR_PTR(dst, src, workspace);
-	CUFFT_ERROR(cufftSetWorkArea(cufft, workspace));
 
-	for (int i = 0; i < cuplan->batch; i++)
-		CUFFT_ERROR(cufftExecC2C(cufft,
-					 (cufftComplex*)src + i * cuplan->idist,
-					 (cufftComplex*)dst + i * cuplan->odist,
-					 (!cuplan->backwards) ? CUFFT_FORWARD : CUFFT_INVERSE));
-	
+#pragma omp critical(bart_cufft_streams)
+	{
+		CUFFT_ERROR(cufftSetStream(cufft, cuda_get_stream()));
+		CUFFT_ERROR(cufftSetWorkArea(cufft, workspace));
+
+		for (int i = 0; i < cuplan->batch; i++)
+			CUFFT_ERROR(cufftExecC2C(cufft,
+						 (cufftComplex*)src + i * cuplan->idist,
+						 (cufftComplex*)dst + i * cuplan->odist,
+						 (!cuplan->backwards) ? CUFFT_FORWARD : CUFFT_INVERSE));
+	}
+
 	md_free(workspace);
 
 	if (NULL != cuplan->chain)

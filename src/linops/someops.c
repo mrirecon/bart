@@ -7,10 +7,10 @@
  * Authors: Martin Uecker, Jonathan Tamir, Moritz Blumenthal
  *
  * Publications:
- * 
+ *
  * Sylvester JJ.
- * Thoughts on inverse orthogonal matrices, simultaneous sign successions, 
- * and tessellated pavements in two or more colours, with applications to Newton’s 
+ * Thoughts on inverse orthogonal matrices, simultaneous sign successions,
+ * and tessellated pavements in two or more colours, with applications to Newton’s
  * rule, ornamental tile-work, and the theory of numbers.
  * Philosophical Magazine 1867; 34:461-475.
  */
@@ -403,7 +403,7 @@ struct copy_block_s {
 
 	const long* odims;
 	const long* idims;
-	
+
 	const long* pos;
 };
 
@@ -590,7 +590,7 @@ struct linop_s* linop_padding_create_onedim(int N, const long dims[N], enum PADD
 		long pad_after_arr[N];
 
 		for (int i = 0; i < N; i++) {
-			
+
 			pad_for_arr[i] = (pad_dim == i) ? pad_for : 0;
 			pad_after_arr[i] = (pad_dim == i) ? pad_after : 0;
 		}
@@ -899,7 +899,7 @@ static void reshape_forward(const linop_data_t* _data, complex float* dst, const
 {
 	const auto d = CAST_DOWN(reshape_flagged_s, _data);
 	assert(dst != src);
-	
+
 	md_reshape(d->N, d->flags, d->odims, dst, d->idims, src, CFL_SIZE);
 }
 
@@ -1121,7 +1121,7 @@ struct linop_s* linop_transpose_create(int N, int a, int b, const long dims[N])
 struct linop_s* linop_shift_create(int N, const long dims[N], int shift_dim, long shift, enum PADDING pad_type)
 {
 	auto lop_pad = linop_padding_create_onedim(N, dims, pad_type, shift_dim, MAX(shift, 0), MAX(-shift, 0));
-	
+
 	long dims_exp[N];
 	md_copy_dims(N, dims_exp, dims);
 	dims_exp[shift_dim] += labs(shift);
@@ -1130,7 +1130,7 @@ struct linop_s* linop_shift_create(int N, const long dims[N], int shift_dim, lon
 	md_set_dims(N, pos, 0);
 	if (0 > shift)
 		pos[shift_dim] = -shift;
-	
+
 	auto lop_ext = linop_extract_create(N, pos, dims, dims_exp);
 
 	return linop_chain_FF(lop_pad, lop_ext);
@@ -1194,7 +1194,7 @@ struct add_strided_s {
 	linop_data_t super;
 
 	int N;
-	
+
 	const long* dims;
 
 	const long* istrs;
@@ -1202,10 +1202,10 @@ struct add_strided_s {
 
 	int OO;
 	const long* odims;
-	
+
 	int II;
 	const long* idims;
-	
+
 	long ooffset;
 	long ioffset;
 };
@@ -1223,7 +1223,7 @@ static void add_strided_forward(const linop_data_t* _data, complex float* dst, c
 static void add_strided_adjoint(const linop_data_t* _data, complex float* dst, const complex float* src)
 {
 	auto data = CAST_DOWN(add_strided_s, _data);
-	
+
 	md_clear(data->II, data->idims, dst, CFL_SIZE);
 	md_zadd2(data->N, data->dims, data->istrs, dst + data->ioffset, data->istrs, dst + data->ioffset, data->ostrs, src + data->ooffset);
 }
@@ -1719,12 +1719,10 @@ struct fft_linop_s {
 
 	linop_data_t super;
 
-	const struct operator_s* frw;
-	const struct operator_s* adj;
-
 	float nscale;
 
 	int N;
+	unsigned long flags;
 	long* dims;
 	long* strs;
 };
@@ -1735,44 +1733,29 @@ static void fft_linop_apply(const linop_data_t* _data, complex float* out, const
 {
 	const auto data = CAST_DOWN(fft_linop_s, _data);
 
-#ifdef USE_CUDA
-	if (cuda_ondevice(out)) {
-
-		operator_apply(data->frw, data->N, data->dims, out, data->N, data->dims, in);
-		return;
-	}
-#endif
-
+	//FIXME: copy is unnecessary now, as the plan is searched on the fly from cache.
+	//CAVEAT: tests/test-nlinv-pf-vcc fails on RISC-V if copy is removed.
 	if (in != out)
 		md_copy2(data->N, data->dims, data->strs, out, data->strs, in, CFL_SIZE);
 
-	operator_apply(data->frw, data->N, data->dims, out, data->N, data->dims, out);
+	fft(data->N, data->dims, data->flags, out, out);
 }
 
 static void fft_linop_adjoint(const linop_data_t* _data, complex float* out, const complex float* in)
 {
 	const auto data = CAST_DOWN(fft_linop_s, _data);
 
-#ifdef USE_CUDA
-	if (cuda_ondevice(out)) {
-
-		operator_apply(data->adj, data->N, data->dims, out, data->N, data->dims, in);
-		return;
-	}
-#endif
-
+	//FIXME: copy is unnecessary now, as the plan is searched on the fly from cache.
+	//CAVEAT: tests/test-nlinv-pf-vcc fails on RISC-V if copy is removed.
 	if (in != out)
 		md_copy2(data->N, data->dims, data->strs, out, data->strs, in, CFL_SIZE);
 
-	operator_apply(data->adj, data->N, data->dims, out, data->N, data->dims, out);
+	ifft(data->N, data->dims, data->flags, out, out);
 }
 
 static void fft_linop_free(const linop_data_t* _data)
 {
 	const auto data = CAST_DOWN(fft_linop_s, _data);
-
-	fft_free(data->frw);
-	fft_free(data->adj);
 
 	xfree(data->dims);
 	xfree(data->strs);
@@ -1796,30 +1779,12 @@ static void fft_linop_normal(const linop_data_t* _data, complex float* out, cons
  */
 struct linop_s* linop_fft_create(int N, const long dims[N], unsigned long flags)
 {
-	const struct operator_s* plan = NULL;
-	const struct operator_s* iplan = NULL;
-
-	if (use_fftw_wisdom) {
-
-		plan = fft_measure_create(N, dims, flags, true, false);
-		iplan = fft_measure_create(N, dims, flags, true, true);
-
-	} else {
-
-		complex float* tmp1 = md_alloc(N, dims, CFL_SIZE);
-
-		plan = fft_create(N, dims, flags, tmp1, tmp1, false);
-		iplan = fft_create(N, dims, flags, tmp1, tmp1, true);
-
-		md_free(tmp1);
-	}
 
 	PTR_ALLOC(struct fft_linop_s, data);
 	SET_TYPEID(fft_linop_s, data);
 
-	data->frw = plan;
-	data->adj = iplan;
 	data->N = N;
+	data->flags = flags;
 
 	data->dims = *TYPE_ALLOC(long[N]);
 	md_copy_dims(N, data->dims, dims);
@@ -2163,7 +2128,7 @@ struct linop_s* linop_hadamard_create(int N, const long in_dims[N], int hadamard
 	long in2_dims[N + 1];
 	md_copy_dims(N, in2_dims, in_dims);
 	in2_dims[N] = 1;
-	
+
 	long matr_dims[N + 1];
 	md_select_dims(N + 1, MD_BIT(hadamard_dim), matr_dims, in2_dims);
 	matr_dims[N] = size;
@@ -2173,7 +2138,7 @@ struct linop_s* linop_hadamard_create(int N, const long in_dims[N], int hadamard
 	md_zfill(N + 1, matr_dims, matrix, 0.0f);
 
 	// sylvester's construction
-	
+
 	matrix[0] = 1.0f;
 
 	for (int n = 1; n < size; n *= 2) {
