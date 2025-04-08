@@ -558,9 +558,12 @@ stream_t stream_create_file(const char* name, int D, long dims[D], unsigned long
 
 		struct stat statbuf;
 
-		if (0 != stat(name, &statbuf))
-			if (0 != mkfifo(name, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH))
-				error("Creating fifo: %s!\n", name);
+		if (0 != stat(name, &statbuf)) {
+
+			if (NULL != dataname)
+				unlink(dataname);
+			error("Fifo %s does not exist. Create manually before starting BART!\n", name);
+		}
 
 		fd = open(name, O_WRONLY);
 	}
