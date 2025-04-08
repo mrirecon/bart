@@ -63,19 +63,32 @@ tests/test-estmotion: traj phantom fovshift nufft estmotion interpolate nrmse sc
 	rm *.{cfl,hdr} ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-tests/test-estmotion-optical-flow: traj phantom fovshift nufft estmotion interpolate nrmse scale
+tests/test-estmotion-optical-flow-ksp: traj phantom fovshift nufft estmotion interpolate nrmse scale
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
-	$(TOOLDIR)/traj -x64 -y64 t1							;\
-	$(TOOLDIR)/scale -- 0.8 t1 t2							;\
+	$(TOOLDIR)/traj -x64 -y64 t2							;\
 	$(TOOLDIR)/phantom -k -t t2 kp							;\
-	$(TOOLDIR)/fovshift -s 0.046875:-0.078125:0 -t t2 kp k2				;\
+	$(TOOLDIR)/fovshift -s 0.02:-0.08:0 -t t2 kp k2					;\
 	$(TOOLDIR)/nufft -a t2 kp ph1							;\
 	$(TOOLDIR)/nufft -a t2 k2 ph2							;\
 	$(TOOLDIR)/estmotion -r0.3 --optical-flow 3 ph1 ph2 disp			;\
 	$(TOOLDIR)/interpolate -D -N 3 ph2 disp ph3					;\
-	$(TOOLDIR)/nrmse -t 0.35 ph3 ph1						;\
+	$(TOOLDIR)/nrmse -t 0.25 ph1 ph3						;\
+	rm *.{cfl,hdr} ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-estmotion-optical-flow-img: traj phantom circshift nufft estmotion interpolate nrmse scale
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/traj -x64 -y64 t2							;\
+	$(TOOLDIR)/phantom -k -t t2 kp							;\
+	$(TOOLDIR)/nufft -a t2 kp ph1							;\
+	$(TOOLDIR)/circshift 1 5 ph1 ph2						;\
+	$(TOOLDIR)/estmotion -r0.3 --optical-flow 3 ph1 ph2 disp			;\
+	$(TOOLDIR)/interpolate -D -N 3 ph2 disp ph3					;\
+	$(TOOLDIR)/nrmse -t 0.03 ph1 ph3						;\
 	rm *.{cfl,hdr} ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
 TESTS += tests/test-affine-rigid tests/test-affine-affine
-TESTS += tests/test-estmotion-optical-flow tests/test-estmotion
+TESTS += tests/test-estmotion-optical-flow-ksp tests/test-estmotion
+TESTS += tests/test-estmotion-optical-flow-img
+
