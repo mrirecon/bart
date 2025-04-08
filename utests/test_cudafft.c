@@ -31,12 +31,8 @@ static bool run_cuda_fft_test(const int D, const long* dims, const unsigned long
 	md_copy(D, dims, cpu_inout, in, CFL_SIZE);
 	md_copy(D, dims, gpu_inout, in, CFL_SIZE);
 
-	const struct operator_s* fftplan = fft_create(D, dims, flags, cpu_inout, cpu_inout, false);
-
-	fft_exec(fftplan, cpu_inout, cpu_inout);
-	fft_exec(fftplan, gpu_inout, gpu_inout);
-
-	fft_free(fftplan);
+	fft(D, dims, flags, cpu_inout, cpu_inout);
+	fft(D, dims, flags, gpu_inout, gpu_inout);
 
 	md_copy(D, dims, gpu_result, gpu_inout, CFL_SIZE);
 
@@ -109,7 +105,6 @@ static bool test_cuda_fftmod(void)
 
 	num_rand_init(5);
 
-	
 	enum { DIMS = 4 };
 	const long dims[DIMS] = {3, 5, 9, 3};
 	complex float* cpu1 = md_alloc(DIMS, dims, CFL_SIZE);
@@ -141,7 +136,6 @@ static bool test_cuda_fftmod2(void)
 
 	num_rand_init(5);
 
-	
 	enum { DIMS = 4 };
 	const long dims[DIMS] = {16, 4, 16, 3};
 	complex float* cpu1 = md_alloc(DIMS, dims, CFL_SIZE);

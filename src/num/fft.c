@@ -9,7 +9,7 @@
  * 2014 Frank Ong
  * 2018 Siddharth Iyer <ssi@mit.edu>
  *
- * 
+ *
  * FFT. It uses FFTW or CUFFT internally.
  *
  *
@@ -23,32 +23,21 @@
 #include <stdbool.h>
 #include <math.h>
 
-#ifndef NO_FFTW
-#include <fftw3.h>
-#else
-#include <stdio.h>
-typedef void *fftwf_plan;
-#endif
-
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/ops.h"
+#include "num/fft_plan.h"
 
 #include "num/mpi_ops.h"
 #include "num/vptr.h"
 
 #include "misc/misc.h"
-#include "misc/debug.h"
 
 #include "fft.h"
-#undef fft_plan_s
 
 #ifdef USE_CUDA
 #include "num/gpuops.h"
 #include "num/gpukrnls.h"
-
-#include "fft-cuda.h"
-#define LAZY_CUDA
 #endif
 
 
@@ -108,10 +97,10 @@ static void zfftmod_3d_4(const long dims[3], complex float* dst, const complex f
 
 	if ((1 != dims[0]) && (0 != dims[0] % 8))
 		scale_1 *= -1;
-	
+
 	if ((1 != dims[1]) && (0 != dims[1] % 8))
 		scale_1 *= -1;
-	
+
 	if ((1 != dims[2]) && (0 != dims[2] % 8))
 		scale_1 *= -1;
 
@@ -125,7 +114,7 @@ static void zfftmod_3d_4(const long dims[3], complex float* dst, const complex f
 
 				if (1 == x % 2)
 					scale = -scale;
-				
+
 				if (1 == y % 2)
 					scale = -scale;
 
@@ -133,8 +122,8 @@ static void zfftmod_3d_4(const long dims[3], complex float* dst, const complex f
 					scale = -scale;
 
 				long idx = x + dims[0] * y + dims[0] * dims[1] * z;
-				
-				dst[idx] = scale * src[idx];		
+
+				dst[idx] = scale * src[idx];
 			}
 }
 
@@ -155,14 +144,14 @@ static void zfftmod_3d(const long dims[3], complex float* dst, const complex flo
 
 				long pos[3] = { x, y, z };
 				long idx = x + dims[0] * y + dims[0] * dims[1] * z;
-				
+
 				double phase0 = phase;
 				for (int i = 2; i > 0; i--)
 					phase0 += fftmod_phase(dims[i], pos[i]);
-				
+
 				complex double scale = fftmod_phase2(dims[0], pos[0], inv, phase0);
 
-				dst[idx] = scale * src[idx];		
+				dst[idx] = scale * src[idx];
 			}
 }
 
@@ -170,12 +159,9 @@ static void fftmod2_r(int N, const long dims[N], unsigned long flags, const long
 {
 	flags &= md_nontriv_dims(N, dims);
 
-	if (is_mpi(dst) || is_mpi(src)) {
+	if (is_vptr(dst) || is_vptr(src)) {
 
 		unsigned long mpi_flags = vptr_block_loop_flags(N, dims, ostrs, dst, CFL_SIZE) | vptr_block_loop_flags(N, dims, istrs, src, CFL_SIZE);
-
-		assert(is_mpi(dst));
-		assert(is_mpi(src));
 
 		long ldims[N];
 		long bdims[N];
@@ -211,7 +197,7 @@ static void fftmod2_r(int N, const long dims[N], unsigned long flags, const long
 
 		long tdims[3] = { dims[0], dims[1], (7 == flags) ? dims[2] : 1 };
 		long* tptr = &(tdims[0]);
- 
+
 		NESTED(void, nary_zfftmod, (void* ptr[]))
 		{
 #ifdef USE_CUDA
@@ -259,7 +245,7 @@ static void fftmod2_r(int N, const long dims[N], unsigned long flags, const long
 		fftmod2_r(N, tdims, MD_CLEAR(flags, i),
 			ostrs, (void*)dst + j * ostrs[i], istrs, (void*)src + j * istrs[i],
 			inv, phase + fftmod_phase(dims[i], j));
-		
+
 	}
 }
 
@@ -343,417 +329,80 @@ void fftshift(int N, const long dimensions[N], unsigned long flags, complex floa
 	fftshift2(N, dimensions, flags, strs, dst, strs, src);
 }
 
-struct fft_plan_s {
-
-	operator_data_t super;
-
-	fftwf_plan fftw;
-	const struct operator_s* fft_flags_only;
-
-	int D;
-	unsigned long flags;
-	bool backwards;
-	const long* dims;
-	const long* istrs;
-	const long* ostrs;
-
-#ifdef  USE_CUDA
-	struct fft_cuda_plan_s* cuplan;
-#endif
-};
-
-static DEF_TYPEID(fft_plan_s);
-
-bool use_fftw_wisdom = false;
-
-static char* fftw_wisdom_name(int N, bool backwards, unsigned long flags, const long dims[N])
+void fft2(int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src)
 {
-	if (!use_fftw_wisdom)
-		return NULL;
+	if (is_vptr(dst) || is_vptr(src)) {
 
-	const char* tbpath = getenv("BART_TOOLBOX_PATH");
-	// support old environment variable:
-	if (NULL == tbpath)
-		tbpath = getenv("TOOLBOX_PATH");
+		unsigned long mpi_flags =  vptr_block_loop_flags(D, dimensions, ostrides, dst, CFL_SIZE)
+					 | vptr_block_loop_flags(D, dimensions, istrides, src, CFL_SIZE);
 
-	if (NULL == tbpath) {
+		assert(0 == (mpi_flags & flags));
 
-		debug_printf(DP_WARN, "FFTW wisdom only works with BART_TOOLBOX_PATH set!\n");
-		return NULL;
-	}
+		long ldims[D];
+		long fdims[D];
+		md_select_dims(D, ~flags, ldims, dimensions);
+		md_select_dims(D,  flags, fdims, dimensions);
 
-	// Space for path and null terminator.
-	int space = snprintf(NULL, 0, "%s/save/fftw/N_%d_BACKWARD_%d_FLAGS_%lu_DIMS", tbpath, N, backwards, flags);
-
-	// Space for dimensions.
-	for (int idx = 0; idx < N; idx ++)
-		space += snprintf(NULL, 0, "_%lu", dims[idx]);
-
-	// Space for extension.
-	space += snprintf(NULL, 0, ".fftw");
-	// Space for null terminator.
-	space += 1;
-
-	int len = space;
-	char* loc = calloc((size_t)space, sizeof(char));
-
-	if (NULL == loc)
-		error("memory out\n");
-
-	int ret = snprintf(loc, (size_t)len, "%s/save/fftw/N_%d_BACKWARD_%d_FLAGS_%lu_DIMS", tbpath, N, backwards, flags);
-
-	assert(ret < len);
-	len -= ret;
-
-	for (int idx = 0; idx < N; idx++) {
-
-		char tmp[64];
-		ret = sprintf(tmp, "_%lu", dims[idx]);
-		assert(ret < 64);
-		len -= ret;
-		strcat(loc, tmp);
-	}
-
-	strcat(loc, ".fftw");
-	len -= 5;
-	assert(1 == len);
-	assert('\0' == loc[space - 1]);
-
-	return loc;
-}
-
-
-#ifndef NO_FFTW
-static fftwf_plan fft_fftwf_plan(int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src, bool backwards, bool measure)
-{
-	fftwf_plan fftwf;
-
-	int N = D;
-	fftwf_iodim64 dims[N];
-	fftwf_iodim64 hmdims[N];
-	int k = 0;
-	int l = 0;
-
-	char* wisdom = fftw_wisdom_name(D, backwards, flags, dimensions);
-
-#pragma omp critical (bart_fftwf_plan)
-	{
-		if (NULL != wisdom)
-			fftwf_import_wisdom_from_filename(wisdom);
-
-
-		//FFTW seems to be fine with this
-		//assert(0 != flags); 
-
-		for (int i = 0; i < N; i++) {
-
-			if (MD_IS_SET(flags, i)) {
-
-				dims[k].n = dimensions[i];
-				dims[k].is = istrides[i] / (long)CFL_SIZE;
-				dims[k].os = ostrides[i] / (long)CFL_SIZE;
-				k++;
-
-			} else  {
-
-				hmdims[l].n = dimensions[i];
-				hmdims[l].is = istrides[i] / (long)CFL_SIZE;
-				hmdims[l].os = ostrides[i] / (long)CFL_SIZE;
-				l++;
-			}
-		}
-#ifndef NO_FFTW
-		fftwf = fftwf_plan_guru64_dft(k, dims, l, hmdims, (complex float*)src, dst,
-					backwards ? 1 : (-1), measure ? FFTW_MEASURE : FFTW_ESTIMATE);
-
-
-		if (NULL != wisdom) {
-
-			fftwf_export_wisdom_to_filename(wisdom);
-			xfree(wisdom);
-		}
-#else
-		assert(0);
-#endif
-	}
-
-	return fftwf;
-}
-#endif
-
-
-static void fft_apply(const operator_data_t* _plan, int N, void* args[N])
-{
-	complex float* dst = args[0];
-	const complex float* src = args[1];
-	const auto plan = CAST_DOWN(fft_plan_s, _plan);
-
-	assert(2 == N);
-
-	if (0u == plan->flags) {
-
-		md_copy2(plan->D, plan->dims, plan->ostrs, dst, plan->istrs, src, CFL_SIZE);
-		return;
-	}
-
-	if (is_mpi(dst) || is_mpi(src)) {
-
-		unsigned long mpi_flags =  vptr_block_loop_flags(plan->D, plan->dims, plan->ostrs, dst, CFL_SIZE)
-					 | vptr_block_loop_flags(plan->D, plan->dims, plan->istrs, src, CFL_SIZE);
-	
-		assert(0 == (mpi_flags & plan->flags));
-		
-		assert(is_mpi(dst));
-		assert(is_mpi(src));
-
-		long ldims[plan->D];
-		md_select_dims(plan->D, ~(plan->flags), ldims, plan->dims);
+		const long* fdims_p = fdims;
+		const long* ostrs_p = ostrides;
+		const long* istrs_p = istrides;
 
 		NESTED(void, nary_mpi_fft, (void* ptr[]))
 		{
-			operator_apply_unchecked(plan->fft_flags_only, ptr[0], ptr[1]);
+			fft2(D, fdims_p, flags, ostrs_p, ptr[0], istrs_p, ptr[1]);
 		};
 
-		md_nary(2, plan->D, ldims, (const long*[2]){ plan->ostrs, plan->istrs }, (void*[2]){ dst, (void*)src }, nary_mpi_fft);
+		md_nary(2, D, ldims, (const long*[2]){ ostrides, istrides }, (void*[2]){ dst, (void*)src }, nary_mpi_fft);
 
 		return;
 	}
 
-	dst = vptr_resolve(dst);
-	src = vptr_resolve(src);
-
-#ifdef USE_CUDA
-	if (cuda_ondevice(src)) {
-#ifdef LAZY_CUDA
-
-#pragma 	omp critical(cufft_create_plan_in_threads)
-		if (NULL == plan->cuplan)
-			plan->cuplan = fft_cuda_plan(plan->D, plan->dims, plan->flags, plan->ostrs, plan->istrs, plan->backwards);
-#endif
-		if (NULL == plan->cuplan)
-			error("Failed to plan a GPU FFT (too large?)\n");
-
-		fft_cuda_exec(plan->cuplan, dst, src);
-
-	} else 
-#endif
-	{
-		assert(NULL != plan->fftw);
-#ifndef NO_FFTW
-		fftwf_execute_dft(plan->fftw, (complex float*)src, dst);
-#endif
-	}
-}
-
-
-static void fft_free_plan(const operator_data_t* _data)
-{
-	const auto plan = CAST_DOWN(fft_plan_s, _data);
-#ifndef NO_FFTW
-	if (NULL != plan->fftw)
-		fftwf_destroy_plan(plan->fftw);
-#endif
-	if (NULL != plan->fft_flags_only)
-		operator_free(plan->fft_flags_only);
-
-#ifdef USE_CUDA
-	if (NULL != plan->cuplan)
-		fft_cuda_free_plan(plan->cuplan);
-#endif
-	xfree(plan->dims);
-	xfree(plan->istrs);
-	xfree(plan->ostrs);
-
-	xfree(plan);
-}
-
-
-static const struct operator_s* fft_measure_create_int(int D, const long dimensions[D], unsigned long flags, bool inplace, bool backwards, bool nested)
-{
-	flags &= md_nontriv_dims(D, dimensions);
-
-	PTR_ALLOC(struct fft_plan_s, plan);
-	SET_TYPEID(fft_plan_s, plan);
-
-	complex float* src = md_alloc(D, dimensions, CFL_SIZE);
-	complex float* dst = inplace ? src : md_alloc(D, dimensions, CFL_SIZE);
-
-	long strides[D];
-	md_calc_strides(D, strides, dimensions, CFL_SIZE);
-
-	plan->fftw = NULL;
-
-	bool measure = true;
-#ifdef __EMSCRIPTEN__
-	measure = false;
-#endif
-
-#ifndef NO_FFTW
-	if (0u != flags)
-		plan->fftw = fft_fftwf_plan(D, dimensions, flags, strides, dst, strides, src, backwards, measure);
-#endif
-	plan->fft_flags_only = NULL;
-
-	if (!nested) {
-
-		long tdims[D];
-		md_select_dims(D, flags, tdims, dimensions);
-		plan->fft_flags_only = fft_measure_create_int(D, tdims, flags, inplace, backwards, true);
-	}
-
-	md_free(src);
-
-	if (!inplace)
-		md_free(dst);
-
-#ifdef USE_CUDA
-	plan->cuplan = NULL;
-#ifndef LAZY_CUDA
-	if (cuda_ondevice(src) && (0u != flags)
-		plan->cuplan = fft_cuda_plan(D, dimensions, flags, strides, strides, backwards);
-#endif
-#endif
-	plan->D = D;
-	plan->flags = flags;
-	plan->backwards = backwards;
-
-	PTR_ALLOC(long[D], dims);
-	md_copy_dims(D, *dims, dimensions);
-	plan->dims = *PTR_PASS(dims);
-
-	PTR_ALLOC(long[D], istrs);
-	md_copy_strides(D, *istrs, strides);
-	plan->istrs = *PTR_PASS(istrs);
-
-	PTR_ALLOC(long[D], ostrs);
-	md_copy_strides(D, *ostrs, strides);
-	plan->ostrs = *PTR_PASS(ostrs);
-
-	return operator_create2(D, dimensions, strides, D, dimensions, strides, CAST_UP(PTR_PASS(plan)), fft_apply, fft_free_plan);
-}
-
-const struct operator_s* fft_measure_create(int D, const long dimensions[D], unsigned long flags, bool inplace, bool backwards)
-{
-	return fft_measure_create_int(D, dimensions, flags, inplace, backwards, false);
-}
-
-
-static const struct operator_s* fft_create2_int(int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src, bool backwards, bool nested)
-{
-	flags &= md_nontriv_dims(D, dimensions);
-
-	PTR_ALLOC(struct fft_plan_s, plan);
-	SET_TYPEID(fft_plan_s, plan);
-
-	plan->fftw = NULL;
-
-#ifndef NO_FFTW
-	if (0u != flags)
-		plan->fftw = fft_fftwf_plan(D, dimensions, flags, ostrides, dst, istrides, src, backwards, false);
-#endif
-	plan->fft_flags_only = NULL;
-
-	if (!nested) {
-
-		long tdims[D];
-		long tostrs[D];
-		long tistrs[D];
-
-		md_select_dims(D, flags, tdims, dimensions);
-		
-		for(int i = 0; i < D; i++) {
-
-			tostrs[i] = 1 < tdims[i] ? ostrides[i] : 0;
-			tistrs[i] = 1 < tdims[i] ? istrides[i] : 0;
-		}
-		
-		plan->fft_flags_only = fft_create2_int(D, tdims, flags, tostrs, dst, tistrs, src, backwards, true);
-	}
-
-
-#ifdef USE_CUDA
-	plan->cuplan = NULL;
-#ifndef LAZY_CUDA
-	if (cuda_ondevice(src) && (0u != flags)
-		plan->cuplan = fft_cuda_plan(D, dimensions, flags, ostrides, istrides, backwards);
-#endif
-#endif
-	plan->D = D;
-	plan->flags = flags;
-	plan->backwards = backwards;
-
-	PTR_ALLOC(long[D], dims);
-	md_copy_dims(D, *dims, dimensions);
-	plan->dims = *PTR_PASS(dims);
-
-	PTR_ALLOC(long[D], istrs);
-	md_copy_strides(D, *istrs, istrides);
-	plan->istrs = *PTR_PASS(istrs);
-
-	PTR_ALLOC(long[D], ostrs);
-	md_copy_strides(D, *ostrs, ostrides);
-	plan->ostrs = *PTR_PASS(ostrs);
-
-	return operator_create2(D, dimensions, ostrides, D, dimensions, istrides, CAST_UP(PTR_PASS(plan)), fft_apply, fft_free_plan);
-}
-
-const struct operator_s* fft_create2(int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src, bool backwards)
-{
-	return fft_create2_int(D, dimensions, flags, ostrides, dst, istrides, src, backwards, false);
-}
-
-
-const struct operator_s* fft_create(int D, const long dimensions[D], unsigned long flags, complex float* dst, const complex float* src, bool backwards)
-{
-	long strides[D];
-	md_calc_strides(D, strides, dimensions, CFL_SIZE);
-
-	return fft_create2(D, dimensions, flags, strides, dst, strides, src, backwards);
-}
-
-
-
-
-void fft_exec(const struct operator_s* o, complex float* dst, const complex float* src)
-{
-	operator_apply_unchecked(o, dst, src);
-}
-
-
-
-
-void fft_free(const struct operator_s* o)
-{
-	operator_free(o);
-}
-
-
-void fft2(int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src)
-{
 	const struct operator_s* plan = fft_create2(D, dimensions, flags, ostrides, dst, istrides, src, false);
-	fft_exec(plan, dst, src);
-	fft_free(plan);
+	operator_apply_unchecked(plan, dst, src);
+	operator_free(plan);
 }
 
 void ifft2(int D, const long dimensions[D], unsigned long flags, const long ostrides[D], complex float* dst, const long istrides[D], const complex float* src)
 {
+	if (is_vptr(dst) || is_vptr(src)) {
+
+		unsigned long mpi_flags =  vptr_block_loop_flags(D, dimensions, ostrides, dst, CFL_SIZE)
+					 | vptr_block_loop_flags(D, dimensions, istrides, src, CFL_SIZE);
+
+		assert(0 == (mpi_flags & flags));
+
+		long ldims[D];
+		long fdims[D];
+		md_select_dims(D, ~flags, ldims, dimensions);
+		md_select_dims(D,  flags, fdims, dimensions);
+
+		const long* fdims_p = fdims;
+		const long* ostrs_p = ostrides;
+		const long* istrs_p = istrides;
+
+		NESTED(void, nary_mpi_fft, (void* ptr[]))
+		{
+			ifft2(D, fdims_p, flags, ostrs_p, ptr[0], istrs_p, ptr[1]);
+		};
+
+		md_nary(2, D, ldims, (const long*[2]){ ostrides, istrides }, (void*[2]){ dst, (void*)src }, nary_mpi_fft);
+
+		return;
+	}
+
 	const struct operator_s* plan = fft_create2(D, dimensions, flags, ostrides, dst, istrides, src, true);
-	fft_exec(plan, dst, src);
-	fft_free(plan);
+	operator_apply_unchecked(plan, dst, src);
+	operator_free(plan);
 }
 
 void fft(int D, const long dimensions[D], unsigned long flags, complex float* dst, const complex float* src)
 {
-	const struct operator_s* plan = fft_create(D, dimensions, flags, dst, src, false);
-	fft_exec(plan, dst, src);
-	fft_free(plan);
+	fft2(D, dimensions, flags, MD_STRIDES(D, dimensions, CFL_SIZE), dst, MD_STRIDES(D, dimensions, CFL_SIZE), src);
 }
 
 void ifft(int D, const long dimensions[D], unsigned long flags, complex float* dst, const complex float* src)
 {
-	const struct operator_s* plan = fft_create(D, dimensions, flags, dst, src, true);
-	fft_exec(plan, dst, src);
-	fft_free(plan);
+	ifft2(D, dimensions, flags, MD_STRIDES(D, dimensions, CFL_SIZE), dst, MD_STRIDES(D, dimensions, CFL_SIZE), src);
 }
 
 void fftc(int D, const long dimensions[D], unsigned long flags, complex float* dst, const complex float* src)
@@ -830,24 +479,6 @@ void ifftuc2(int D, const long dimensions[D], unsigned long flags, const long os
 {
 	ifftc2(D, dimensions, flags, ostrides, dst, istrides, src);
 	fftscale2(D, dimensions, flags, ostrides, dst, ostrides, dst);
-}
-
-
-bool fft_threads_init = false;
-
-void fft_set_num_threads(int n)
-{
-#ifdef FFTWTHREADS
-#pragma omp critical
-	if (!fft_threads_init) {
-
-		fft_threads_init = true;
-		fftwf_init_threads();
-	}
-
-#pragma omp critical
-        fftwf_plan_with_nthreads(n);
-#endif
 }
 
 

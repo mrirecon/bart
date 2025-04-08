@@ -52,25 +52,6 @@ extern void ifftuc(int D, const long dimensions[__VLA(D)], unsigned long flags, 
 extern void fftuc2(int D, const long dimensions[__VLA(D)], unsigned long flags, const long ostrides[__VLA(D)], _Complex float* dst, const long istrides[__VLA(D)], const _Complex float* src);
 extern void ifftuc2(int D, const long dimensions[__VLA(D)], unsigned long flags, const long ostrides[__VLA(D)], _Complex float* dst, const long istrides[__VLA(D)], const _Complex float* src);
 
-
-
-
-struct operator_s;
-extern const struct operator_s* fft_create(int D, const long dimensions[__VLA(D)], unsigned long flags, _Complex float* dst, const _Complex float* src, _Bool backwards);
-extern const struct operator_s* fft_create2(int D, const long dimensions[__VLA(D)], unsigned long flags, const long ostrides[__VLA(D)], _Complex float* dst, const long istrides[__VLA(D)], const _Complex float* src, _Bool backwards);
-
-extern const struct operator_s* fft_measure_create(int D, const long dimensions[__VLA(D)], unsigned long flags, _Bool inplace, _Bool backwards);
-
-
-
-// interface using a plan
-extern void fft_exec(const struct operator_s* plan, _Complex float* dst, const _Complex float* src);
-extern void fft_free(const struct operator_s* plan);
-
-extern _Bool use_fftw_wisdom;
-extern void fft_set_num_threads(int n);
-
-
 #include "misc/cppwrap.h"
 
 #endif

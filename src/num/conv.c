@@ -31,11 +31,6 @@ struct conv_plan {
 	int N;
 	unsigned long flags;
 
-	const struct operator_s* fft1;
-	const struct operator_s* ifft1;
-	const struct operator_s* fft2;
-	const struct operator_s* ifft2;
-
 	long* idims;
 	long* odims;
 
@@ -192,11 +187,6 @@ struct conv_plan* conv_plan(int N, unsigned long flags, enum conv_type ctype, en
         md_zsmul(N, plan->kdims, kernel, kernel, 1. / U);
 	plan->kernel = multiplace_move_F(N, plan->kdims, CFL_SIZE, kernel);
 
-	plan->fft1 = fft_create(N, plan->dims1, plan->flags, NULL, NULL, false);
-	plan->ifft1 = fft_create(N, plan->dims1, plan->flags, NULL, NULL, true);
-	plan->fft2 = fft_create(N, plan->dims2, plan->flags, NULL, NULL, false);
-	plan->ifft2 = fft_create(N, plan->dims2, plan->flags, NULL, NULL, true);
-
 	return PTR_PASS(plan);
 }
 
@@ -205,10 +195,6 @@ struct conv_plan* conv_plan(int N, unsigned long flags, enum conv_type ctype, en
 
 void conv_free(struct conv_plan* plan)
 {
-	fft_free(plan->fft1);
-	fft_free(plan->ifft1);
-	fft_free(plan->fft2);
-	fft_free(plan->ifft2);
 
 	multiplace_free(plan->kernel);
 
@@ -232,12 +218,12 @@ static void conv_cyclic(struct conv_plan* plan, complex float* dst, const comple
 	// FIXME: optimize tmp away when possible
 	complex float* tmp = md_alloc_sameplace(plan->N, plan->dims1, CFL_SIZE, dst);
 
-	fft_exec(plan->ifft1, tmp, src);
+	ifft(plan->N, plan->dims1, plan->flags, tmp, src);
 
 	md_clear(plan->N, plan->dims2, dst, CFL_SIZE);
         md_zfmac2(plan->N, plan->dims, plan->str2, dst, plan->str1, tmp, plan->kstr, multiplace_read(plan->kernel, dst));
 
-	fft_exec(plan->fft2, dst, dst);
+	fft(plan->N, plan->dims1, plan->flags, dst, dst);
 
 	md_free(tmp);
 }
@@ -246,12 +232,12 @@ static void conv_cyclicH(struct conv_plan* plan, complex float* dst, const compl
 {
 	complex float* tmp = md_alloc_sameplace(plan->N, plan->dims2, CFL_SIZE, dst);
 
-	fft_exec(plan->ifft2, tmp, src);
+	ifft(plan->N, plan->dims2, plan->flags, tmp, src);
 
 	md_clear(plan->N, plan->dims1, dst, CFL_SIZE);
         md_zfmacc2(plan->N, plan->dims, plan->str1, dst, plan->str2, tmp, plan->kstr, multiplace_read(plan->kernel, dst));
 
-	fft_exec(plan->fft1, dst, dst);
+	fft(plan->N, plan->dims1, plan->flags, dst, dst);
 
 	md_free(tmp);
 }

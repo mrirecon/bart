@@ -12,6 +12,7 @@
 
 #define _GNU_SOURCE
 #include <stdlib.h>
+#include <stdbool.h>
 #include <fenv.h>
 #if 0
 #include <sys/resource.h>
@@ -25,7 +26,7 @@
 #include "misc/misc.h"
 #include "misc/mmio.h"
 
-#include "num/fft.h"
+#include "num/fft_plan.h"
 
 #ifdef USE_CUDA
 #include "num/gpuops.h"
