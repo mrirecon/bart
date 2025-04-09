@@ -333,17 +333,19 @@ extern const struct linop_s* linop_finitediff_create(int D, const long dim[D], c
 
 void fd_proj_noninc(const struct linop_s* o, complex float* optr, const complex float* iptr)
 {
-	struct fdiff_s* data = (struct fdiff_s*)linop_get_data(o);	// FIXME: CAST?
+	const struct fdiff_s* data = CAST_DOWN(fdiff_s, linop_get_data(o));
 	
 	dump_cfl("impre", data->D, data->dims, iptr);
 
 	complex float* tmp2 = md_alloc_sameplace(data->D, data->dims, CFL_SIZE, optr);
+
 	linop_forward_unchecked(o, tmp2, iptr);
 
 	long tmpdim = data->dims[0];
 	long dims2[data->D];
 	md_select_dims(data->D, ~0u, dims2, data->dims);
 	dims2[0] *= 2; 
+
 	dump_cfl("dxpre", data->D, data->dims, tmp2);
 
 	md_smin(data->D, dims2, (float*)optr, (float*)tmp2, 0.);
@@ -362,6 +364,7 @@ void fd_proj_noninc(const struct linop_s* o, complex float* optr, const complex 
 	}
 
 	dump_cfl("dxpost", data->D, data->dims, optr);
+
 	linop_norm_inv_unchecked(o, 0., optr, optr);
 	
 	dump_cfl("impost", data->D, data->dims, optr);

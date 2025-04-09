@@ -497,7 +497,10 @@ static void calc_moving_discs(const long dims[DIMS], complex float* out, bool ks
 			disc2[j].axis[1] = crealf(fourier_series(i / (float)dims[TIME_DIM], 3, disc[j].fourier_coeff_size[1]));
 		}
 
-		void* traj2 = (NULL == traj) ? NULL : ((void*)traj + i * tstrs[TIME_DIM]);
+		const void* traj2 = NULL;
+
+		if (traj)
+			traj = ((const void*)traj + i * tstrs[TIME_DIM]);
 
 		sample(dims1, (void*)out + i * strs[TIME_DIM], tstrs, traj2, &(struct krn2d_data){ kspace, coeff, popts->stype, N, disc2 }, krn2d, kspace);
 	}
@@ -928,7 +931,10 @@ void calc_phantom_arb(int N, const struct ellipsis_s* data /*[N]*/, const long d
 			data2[j].axis[1] = data[j].axis[1];
 		}
 
-		void* traj2 = (NULL == traj) ? NULL : ((void*)traj + (i - 1) * tstrs[TIME_DIM]);
+		const void* traj2 = NULL;
+
+		if (traj)
+		       traj2 = ((const void*)traj + (i - 1) * tstrs[TIME_DIM]);
 
 		sample(dims1, (void*)out + (i - 1) * strs[TIME_DIM], tstrs, traj2, &(struct krn2d_data){ kspace, coeff, popts->stype, N, data2 }, krn2d, kspace);
 	}

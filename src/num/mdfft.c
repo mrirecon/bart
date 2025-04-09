@@ -44,8 +44,8 @@ static void rot45z2(int D, int M,
 	md_copy_strides(D, istr2, istr);
 	istr2[M] *= 2;
 
-	md_zadd2(D, dims2, ostr2,         optr           , istr2, iptr, istr2, ((void*)iptr) + istr[M]);
-	md_zsub2(D, dims2, ostr2, ((void*)optr) + ostr[M], istr2, iptr, istr2, ((void*)iptr) + istr[M]);
+	md_zadd2(D, dims2, ostr2,         optr           , istr2, iptr, istr2, ((const void*)iptr) + istr[M]);
+	md_zsub2(D, dims2, ostr2, ((void*)optr) + ostr[M], istr2, iptr, istr2, ((const void*)iptr) + istr[M]);
 }
 
 

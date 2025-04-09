@@ -239,9 +239,9 @@ static void proj_sphere_real_fun(const struct operator_data_s* _data, unsigned i
 	md_copy_dims(data->N, rdims + 1, data->dims);
 	md_copy_dims(data->N, brdims + 1, bdims);
 
-	md_sqrt(data->N + 1, brdims, (float*)tmp, (float*)tmp);
+	md_sqrt(data->N + 1, brdims, (float*)tmp, (const float*)tmp);
 	md_copy2(data->N, data->dims, MD_STRIDES(data->N, data->dims, CFL_SIZE), dst, MD_STRIDES(data->N, bdims, CFL_SIZE), tmp, CFL_SIZE);
-	md_div(data->N + 1, rdims, (float*)dst, (float*)src, (float*)dst);
+	md_div(data->N + 1, rdims, (float*)dst, (const float*)src, (const float*)dst);
 	md_free(tmp);
 }
 

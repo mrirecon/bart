@@ -59,13 +59,13 @@ static void niht_imdom(const struct niht_conf_s* conf,  const struct vec_iter_s*
 
 		iter_op_p_call(thresh, 1.0, m, b);
 
-		vops->zmul(N / 2, (complex float*)x, (complex float*)b, (complex float*)m);
+		vops->zmul(N / 2, (complex float*)x, (const complex float*)b, (const complex float*)m);
 
 	} else {  // x_0 has an initial value, take support from x
 
 		iter_op_p_call(thresh, 1.0, m, x);
 
-		vops->zmul(N / 2, (complex float*)x, (complex float*)x, (complex float*)m);
+		vops->zmul(N / 2, (complex float*)x, (const complex float*)x, (const complex float*)m);
 	}
 	
 	for (iter = 0; iter < conf->maxiter; iter++) {
