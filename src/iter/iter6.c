@@ -444,6 +444,8 @@ void iter6_sgd_like(	const iter6_conf* conf,
 		operator_p_free(prox_ops_weight_decay[i]);
 		prox_ops[i] = NULL;
 	}
+
+	md_free(learning_rate_schedule);
 }
 
 
