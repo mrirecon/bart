@@ -903,6 +903,28 @@ const struct nlop_s* nlop_sense_dc_prox_create(int Nb, struct sense_model_s* mod
 	return result;
 }
 
+// Same as nlop_sense_dc_prox_create, but solving for update dx instead of x such that x = x0 + dx
+// Hence, initialization dx = 0 corresponds to warmstart with x = dx
+const struct nlop_s* nlop_sense_dc_prox_warmstart_create(int Nb, struct sense_model_s* models[Nb], struct iter_conjgrad_conf* iter_conf, unsigned long lambda_flags)
+{
+	auto result = nlop_sense_normal_inv_create(Nb, models, iter_conf, lambda_flags);
+	auto normal = nlop_sense_normal_create(Nb, models);
+
+	int N = models[0]->config->N;
+	long img_dims[N];
+	long lam_dims[N];
+
+	md_copy_dims(N, img_dims, nlop_generic_domain(result, 0)->dims);
+	md_copy_dims(N, lam_dims, nlop_generic_domain(result, 1)->dims);
+
+	result = nlop_chain2_swap_FF(nlop_zaxpbz_create(N, img_dims, -1, 1), 0, result, 0);	//in : AHAx0, AHy, lam; out: (AHA + lam)^(-1) (AHy - AHAx0)
+	result = nlop_prepend_FF(normal, result, 0); 						//in: x0, AHy, lam; out: (AHA + lam)^(-1) (AHy - AHAx0)
+	result = nlop_chain2_FF(result, 0, nlop_zaxpbz_create(N, img_dims, 1, 1), 0);		//in: x0, x0, AHy, lam; out: (AHA + lam)^(-1) (AHy - AHAx0) + x0
+	result = nlop_dup_F(result, 0, 1);							//in: x0, AHy, lam; out: (AHA + lam)^(-1) (AHy - AHAx0) + x0
+
+	return result;
+}
+
 const struct nlop_s* nlop_sense_dc_grad_create(int Nb, struct sense_model_s* models[Nb], unsigned long lambda_flags)
 {
 	auto result = nlop_sense_normal_create(Nb, models);

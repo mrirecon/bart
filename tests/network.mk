@@ -200,6 +200,16 @@ tests/test-reconet-nnmodl-train-noncart: nrmse reconet $(TRN_REF_CIM) $(TRN_KSP_
 	rm *.ra ; rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-reconet-nnmodl-train-noncart-warmstart: nrmse reconet $(TRN_REF_CIM) $(TRN_KSP_NC) $(TRN_COL) $(TST_REF_IMG) $(TST_KSP_NC) $(TST_COL) $(TRN_TRJ) $(TST_TRJ)
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP); export OMP_NUM_THREADS=2 ;\
+	$(TOOLDIR)/reconet --network modl --test --no-precomp -t --train-algo e=5 -b2 -I1 --trajectory=$(TRN_TRJ) $(TRN_KSP_NC) $(TRN_COL) weights01 $(TRN_REF_CIM)	;\
+	$(TOOLDIR)/reconet --network modl --test --no-precomp -t -lweights01 --train-algo e=5 -b2 --trajectory=$(TRN_TRJ) $(TRN_KSP_NC) $(TRN_COL) weights  $(TRN_REF_CIM)	;\
+	$(TOOLDIR)/reconet --network modl --data-consistency max-cg-iter=30 			       --test -a --trajectory=$(TST_TRJ) $(TST_KSP_NC) $(TST_COL) weights out0.ra							;\
+	$(TOOLDIR)/reconet --network modl --data-consistency max-cg-iter=30,proximal-mapping-warmstart --test -a --trajectory=$(TST_TRJ) $(TST_KSP_NC) $(TST_COL) weights out1.ra							;\
+	$(TOOLDIR)/nrmse -t 0.0001 out0.ra out1.ra 														;\
+	rm *.ra ; rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 tests/test-reconet-nnmodl-train-noncart-init-sense: nrmse reconet $(TRN_REF_CIM) $(TRN_KSP_NC) $(TRN_COL) $(TST_REF_IMG) $(TST_KSP_NC) $(TST_COL) $(TRN_TRJ) $(TST_TRJ)
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP); export OMP_NUM_THREADS=2 ;\
 	$(TOOLDIR)/reconet --network modl --initial-reco=sense,fix-lambda=0. --data-consistency=none --test --no-precomp -t --train-algo e=1 -b2 --trajectory=$(TRN_TRJ) $(TRN_KSP_NC) $(TRN_COL) weights0  $(TRN_REF_CIM)		;\
@@ -532,6 +542,7 @@ TESTS += tests/test-reconet-nnmodl-train-delayed-noncart
 TESTS += tests/test-reconet-nnmodl-train-noncart-init-sense
 TESTS += tests/test-reconet-nnmodl-train-ksp-noncart-init-sense
 TESTS += tests/test-reconet-nnmodl-train-ksp-noncart-init-sense-no-dc
+TESTS += tests/test-reconet-nnmodl-train-noncart-warmstart
 
 TESTS_GPU += tests/test-reconet-nnvn-train-gpu
 TESTS_GPU += tests/test-reconet-nnmodl-train-gpu

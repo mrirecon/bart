@@ -41,6 +41,7 @@ extern const struct nlop_s* nlop_sense_adjoint_create(int Nb, struct sense_model
 extern const struct nlop_s* nlop_sense_normal_create(int Nb, struct sense_model_s* models[Nb]);
 extern const struct nlop_s* nlop_sense_normal_inv_create(int Nb, struct sense_model_s* models[Nb], struct iter_conjgrad_conf* iter_conf, unsigned long lambda_flags);
 extern const struct nlop_s* nlop_sense_dc_prox_create(int Nb, struct sense_model_s* models[Nb], struct iter_conjgrad_conf* iter_conf, unsigned long lambda_flags);
+extern const struct nlop_s* nlop_sense_dc_prox_warmstart_create(int Nb, struct sense_model_s* models[Nb], struct iter_conjgrad_conf* iter_conf, unsigned long lambda_flags);
 extern const struct nlop_s* nlop_sense_dc_grad_create(int Nb, struct sense_model_s* models[Nb], unsigned long lambda_flags);
 extern const struct nlop_s* nlop_sense_scale_maxeigen_create(int Nb, struct sense_model_s* models[Nb], int N, const long dims[N]);
 

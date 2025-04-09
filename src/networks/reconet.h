@@ -28,6 +28,7 @@ struct reconet_s {
 	_Bool dc_proxmap;
 	int dc_max_iter;
 	_Bool dc_none;
+	_Bool dc_proxmap_warmstart;
 
 	//network initialization
 	_Bool normalize;

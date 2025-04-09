@@ -83,6 +83,7 @@ struct reconet_s reconet_config_opts = {
 	.dc_proxmap = false,
 	.dc_max_iter = 10,
 	.dc_none = false,
+	.dc_proxmap_warmstart = false,
 
 	//network initialization
 	.normalize = false,
@@ -371,7 +372,11 @@ static nn_t data_consistency_tikhonov_create(const struct reconet_s* config, int
 	iter_conf.l2lambda = 0.;
 	iter_conf.maxiter = config->dc_max_iter;
 
-	const struct nlop_s* nlop_dc = nlop_sense_dc_prox_create(Nb, models, &iter_conf, BATCH_FLAG); // in: input, adjoint, lambda; out: output
+	const struct nlop_s* nlop_dc;
+	if (config->dc_proxmap_warmstart)
+		nlop_dc = nlop_sense_dc_prox_warmstart_create(Nb, models, &iter_conf, BATCH_FLAG); // in: input, adjoint, lambda; out: output
+	else
+		nlop_dc = nlop_sense_dc_prox_create(Nb, models, &iter_conf, BATCH_FLAG); // in: input, adjoint, lambda; out: output
 
 	auto result = nn_from_nlop_F(nlop_dc);
 	result = nn_set_input_name_F(result, 1, "adjoint");
