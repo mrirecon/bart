@@ -26,6 +26,8 @@ void bart_lock(bart_lock_t* lock)
 {
 #ifdef _OPENMP
 	omp_set_lock(&lock->omp);
+#else
+	(void)lock;
 #endif
 }
 
@@ -33,6 +35,8 @@ void bart_unlock(bart_lock_t* lock)
 {
 #ifdef _OPENMP
 	omp_unset_lock(&lock->omp);
+#else
+	(void)lock;
 #endif
 }
 
@@ -70,12 +74,12 @@ bart_cond_t* bart_cond_create(void)
 
 void bart_cond_wait(bart_cond_t* cond, bart_lock_t* lock)
 {
+#ifdef _OPENMP
 	unsigned long counter;
 
 #pragma omp atomic read
 	counter = cond->counter;
 
-#ifdef _OPENMP
 	bart_unlock(lock);
 
 	unsigned long cnt2 = counter;
@@ -89,6 +93,9 @@ void bart_cond_wait(bart_cond_t* cond, bart_lock_t* lock)
 	}
 
 	bart_lock(lock);
+#else
+	(void)cond;
+	(void)lock;
 #endif
 }
 
