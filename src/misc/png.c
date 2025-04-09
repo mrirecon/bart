@@ -39,7 +39,8 @@ static int png_write_anyrgb(const char* name, int w, int h, int nbytes, bool rgb
 	if (setjmp(png_jmpbuf(structp)))
         	goto cleanup;
 
-	switch(nbytes){
+	switch (nbytes) {
+
 		case 3:
 			png_set_IHDR(structp, infop, (unsigned int)w, (unsigned int)h, 8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
 			break;
@@ -60,7 +61,10 @@ static int png_write_anyrgb(const char* name, int w, int h, int nbytes, bool rgb
 	row_size = png_get_rowbytes(structp, infop);
 
 	for (int i = 0; i < h; i++)
-		row_ptrs[i] = (png_bytep)(buf + row_size * i);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-qual"
+		row_ptrs[i] = (png_bytep)buf + row_size * i;
+#pragma GCC diagnostic pop
 
 	png_write_image(structp, row_ptrs);
 	png_write_end(structp, infop);
