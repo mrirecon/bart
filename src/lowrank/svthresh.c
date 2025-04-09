@@ -106,7 +106,7 @@ float svthresh_nomeanv(int M, int N, float lambda, complex float* dst, const com
  * @param lambda - regularization parameter
  * @param A - input/output matrix
  */
-float svthresh(long M, long N, float lambda, complex float* dst, const complex float* src) //FIXME: destroys input
+float svthresh(long M, long N, float lambda, complex float* dst, complex float* src) //FIXME: destroys input
 {
 	long minMN = MIN(M, N);
 	long dimsU[3] = { M, minMN, 1};
@@ -129,17 +129,17 @@ float svthresh(long M, long N, float lambda, complex float* dst, const complex f
 	
 
 	// SVD
-	lapack_svd_econ(M, N, (complex float (*) []) U, (complex float (*) []) VT, S, (complex float (*) [N])src);
+	lapack_svd_econ(M, N, (complex float (*)[])U, (complex float (*)[])VT, S, (complex float (*)[N])src);
 
 	// Thresh S
 	md_softthresh(3, dimsS, lambda, 0, S, S);
 
 	// VT = S * VT
-	md_mul2(3, dimsVT, strsVT, (float*) VT, strsVT, (float*) VT, strsS, S);
-	md_mul2(3, dimsVT, strsVT, ((float*) VT)+1, strsVT, ((float*) VT)+1, strsS, S);
+	md_mul2(3, dimsVT, strsVT, (float*)VT, strsVT, (float*)VT, strsS, S);
+	md_mul2(3, dimsVT, strsVT, (float*)VT + 1, strsVT, (float*)VT + 1, strsS, S);
 
 	// dst = U * VT
-	blas_matrix_multiply(M, N, minMN, (complex float (*) [N])dst, (const complex float (*) [minMN])U, (const complex float (*) [N])VT );
+	blas_matrix_multiply(M, N, minMN, (complex float (*)[N])dst, (const complex float (*)[minMN])U, (const complex float (*)[N])VT);
 
 	md_free(U);
 	md_free(VT);
@@ -152,7 +152,7 @@ float svthresh(long M, long N, float lambda, complex float* dst, const complex f
 
 
 
-float nuclearnorm(long M, long N, const complex float* d)
+float nuclearnorm(long M, long N, /* const */ complex float* d)
 { // FIXME: destroys input
 
 	long minMN = MIN(M,N);
@@ -179,7 +179,7 @@ float nuclearnorm(long M, long N, const complex float* d)
 }
 
 
-float maxsingular(long M, long N, const complex float* d)
+float maxsingular(long M, long N, /*const*/ complex float* d)
 {	// FIXME: destroys input
 	long dimsU[2] = { M, N };
 	long dimsV[2] = { N, N };
@@ -190,9 +190,9 @@ float maxsingular(long M, long N, const complex float* d)
 	float* S = xmalloc((size_t)(MIN(M, N) * (long)sizeof(float)));
 
 	// SVD
-	lapack_svd_econ(M, N, (complex float (*) []) U, 
-		 (complex float (*) []) VT, S, 
-		 (complex float (*) [N])d);
+	lapack_svd_econ(M, N, (complex float (*)[])U,
+		 (complex float (*)[]) VT, S,
+		 (complex float (*)[N])d);
 
 	float value = S[0];
 
@@ -224,9 +224,12 @@ struct svthresh_blockproc_data* svthresh_blockproc_create(unsigned long mflags, 
 	return data;
 }
 
-float svthresh_blockproc(const void* _data, const long blkdims[DIMS], complex float* dst, const complex float* src)
+float svthresh_blockproc(const void* _data, const long blkdims[DIMS], complex float* dst, const complex float* src0)
 {
 	const struct svthresh_blockproc_data* data = _data;
+
+	assert(dst == src0);
+	complex float* src = dst;
 
 	int M = 1;
 	int N = (int)md_calc_size(DIMS, blkdims);
@@ -259,21 +262,23 @@ float svthresh_blockproc(const void* _data, const long blkdims[DIMS], complex fl
 
 
 
-float nucnorm_blockproc(const void* _data, const long blkdims[DIMS], complex float* /*dst*/, const complex float* src)
+float nucnorm_blockproc(const void* _data, const long blkdims[DIMS], complex float* dst, const complex float* src0)
 {
 	const struct svthresh_blockproc_data* data = _data;
+
+	assert(dst == src0);
+	complex float* src = dst;
 
 	long M = 1;
 	long N = md_calc_size(DIMS, blkdims);
 
-
 	for (int i = 0; i < DIMS; i++) {
 
-		if (MD_IS_SET(data->mflags, i)) {
+		if (!MD_IS_SET(data->mflags, i))
+			continue;
 
-			M *= blkdims[i];
-			N /= blkdims[i];
-		}
+		M *= blkdims[i];
+		N /= blkdims[i];
 	}
 
 	float G = sqrtf(M) + sqrtf(N);
