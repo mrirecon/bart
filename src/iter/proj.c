@@ -56,20 +56,11 @@
 
 DEF_TYPEID(proj_pos_real_s);
 
-static void proj_pos_real_fun(const operator_data_t* _data, unsigned int N, void* args[N])
-{
-	assert(2 == N);
-	const auto data = CAST_DOWN(proj_pos_real_s, _data);
-
-	complex float* dst = args[0];
-	const complex float* src = args[1];
-
-	md_zsmax(data->N, data->dims, dst, src, data->min);
-}
-
 static void proj_pos_real_apply(const operator_data_t* _data, float /*mu*/, complex float* dst, const complex float* src)
 {
-	proj_pos_real_fun(_data, 2, MAKE_ARRAY((void*)dst, (void*)src));
+	const auto data = CAST_DOWN(proj_pos_real_s, _data);
+
+	md_zsmax(data->N, data->dims, dst, src, data->min);
 }
 
 static void proj_pos_real_del(const operator_data_t* _data)
@@ -139,13 +130,10 @@ struct proj_mean_free_s {
 
 DEF_TYPEID(proj_mean_free_s);
 
-static void proj_mean_free_fun(const operator_data_t* _data, unsigned int N, void* args[N])
-{
-	assert(2 == N);
-	const auto data = CAST_DOWN(proj_mean_free_s, _data);
 
-	complex float* dst = args[0];
-	const complex float* src = args[1];
+static void proj_mean_free_apply(const operator_data_t* _data, float /*mu*/, complex float* dst, const complex float* src)
+{
+	const auto data = CAST_DOWN(proj_mean_free_s, _data);
 
 	long batch_dims[data->N];
 	long mf_dims[data->N];
@@ -160,12 +148,6 @@ static void proj_mean_free_fun(const operator_data_t* _data, unsigned int N, voi
 
 	md_free(tmp);
 }
-
-static void proj_mean_free_apply(const operator_data_t* _data, float /*mu*/, complex float* dst, const complex float* src)
-{
-	proj_mean_free_fun(_data, 2, MAKE_ARRAY((void*)dst, (void*)src));
-}
-
 
 static void proj_mean_free_del(const operator_data_t* _data)
 {
@@ -216,14 +198,9 @@ struct proj_sphere_s {
 
 DEF_TYPEID(proj_sphere_s);
 
-static void proj_sphere_real_fun(const struct operator_data_s* _data, unsigned int N, void* args[N])
+static void proj_sphere_real_apply(const operator_data_t* _data, float /*mu*/, complex float* dst, const complex float* src)
 {
-	assert(2 == N);
-	assert(args[0] != args[1]);
 	const auto data = CAST_DOWN(proj_sphere_s, _data);
-
-	complex float* dst = args[0];
-	const complex float* src = args[1];
 
 	long bdims[data->N];
 	md_select_dims(data->N, data->bflag, bdims, data->dims);
@@ -245,14 +222,9 @@ static void proj_sphere_real_fun(const struct operator_data_s* _data, unsigned i
 	md_free(tmp);
 }
 
-static void proj_sphere_complex_fun(const struct operator_data_s* _data, unsigned int N, void* args[N])
+static void proj_sphere_complex_apply(const operator_data_t* _data, float /*mu*/, complex float* dst, const complex float* src)
 {
-	assert(2 == N);
-	assert(args[0] != args[1]);
 	const auto data = CAST_DOWN(proj_sphere_s, _data);
-
-	complex float* dst = args[0];
-	const complex float* src = args[1];
 
 	long bdims[data->N];
 	md_select_dims(data->N, data->bflag, bdims, data->dims);
@@ -269,16 +241,6 @@ static void proj_sphere_complex_fun(const struct operator_data_s* _data, unsigne
 	md_copy2(data->N, data->dims, MD_STRIDES(data->N, data->dims, CFL_SIZE), dst, MD_STRIDES(data->N, bdims, FL_SIZE), tmp, FL_SIZE);
 	md_zdiv(data->N, data->dims, dst, src, dst);
 	md_free(tmp);
-}
-
-static void proj_sphere_real_apply(const operator_data_t* _data, float /*mu*/, complex float* dst, const complex float* src)
-{
-	proj_sphere_real_fun(_data, 2, MAKE_ARRAY((void*)dst, (void*)src));
-}
-
-static void proj_sphere_complex_apply(const operator_data_t* _data, float /*mu*/, complex float* dst, const complex float* src)
-{
-	proj_sphere_complex_fun(_data, 2, MAKE_ARRAY((void*)dst, (void*)src));
 }
 
 static void proj_sphere_del(const operator_data_t* _data)
