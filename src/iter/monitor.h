@@ -44,6 +44,6 @@ struct monitor_iter6_s {
 	monitor_iter6_free_t free;
 };
 
-void monitor_iter6(struct monitor_iter6_s* monitor, int epoch, int batch, int num_batches, float objective, long NI, const float* x[NI], char* post_string);
+void monitor_iter6(struct monitor_iter6_s* monitor, int epoch, int batch, int num_batches, float objective, long NI, const float* x[const NI], char* post_string);
 
 #endif // __ITER_MONITOR_H

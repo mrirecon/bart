@@ -1,5 +1,5 @@
 /* Copyright 2021. Uecker Lab. University Medical Center Göttingen.
- * Copyright 2022-2023. Institute of Biomedical Imaging. TU Graz.
+ * Copyright 2022-2025. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -27,7 +27,6 @@
 #include "iter/iter6_ops.h"
 #include "iter/monitor_iter6.h"
 #include "iter/iter_dump.h"
-
 #include "iter/prox.h"
 
 #include "iter6.h"
@@ -53,21 +52,23 @@ DEF_TYPEID(iter6_adadelta_conf);
 DEF_TYPEID(iter6_adam_conf);
 DEF_TYPEID(iter6_iPALM_conf);
 
-#define ITER6_DEFAULT \
-	.super.epochs = 1, \
-	.super.clip_norm = 0., \
-	.super.clip_val = 0., \
-	.super.weight_decay = 0., \
-	.super.history_filename = NULL, \
-	.super.dump_filename = NULL, \
-	.super.dump_mod = -1, \
-	.super.batchnorm_momentum = .95, \
-	.super.batchgen_type = BATCH_GEN_SAME, \
-	.super.batch_seed = 123, \
-	.super.dump_flag = 0, \
-	.super.min_learning_rate = 0.,\
-	.super.epochs_warmup = 0.,\
-	.super.monitor_averaged_objective = false,\
+
+// needed because clang complains when overriding initialized members
+#define	ITER6_DEFAULT					\
+	.super.epochs = 1,				\
+	.super.clip_norm = 0.,				\
+	.super.clip_val = 0.,				\
+	.super.weight_decay = 0.,			\
+	.super.history_filename = NULL,			\
+	.super.dump_filename = NULL,			\
+	.super.dump_mod = -1,				\
+	.super.batchnorm_momentum = .95,		\
+	.super.batchgen_type = BATCH_GEN_SAME,		\
+	.super.batch_seed = 123,			\
+	.super.dump_flag = 0,				\
+	.super.min_learning_rate = 0.,			\
+	.super.epochs_warmup = 0.,			\
+	.super.monitor_averaged_objective = false,	\
 	.super.learning_rate_epoch_mod = 0,
 
 const struct iter6_sgd_conf iter6_sgd_conf_defaults = {
@@ -108,7 +109,6 @@ const struct iter6_adam_conf iter6_adam_conf_defaults = {
 	.beta1 = 0.9,
 	.beta2 = 0.999,
 };
-
 
 const struct iter6_iPALM_conf iter6_iPALM_conf_defaults = {
 
@@ -178,11 +178,11 @@ static void iter6_op_arr_fun_deradj(iter_op_data* _o, int NO, unsigned long ofla
 
 	for (int i = 0; i < data->NI; i++) {
 
-		if (MD_IS_SET(iflags, i)) {
+		if (!MD_IS_SET(iflags, i))
+			continue;
 
-			assert(-1 == i_index);
-			i_index = i;
-		}
+		assert(-1 == i_index);
+		i_index = i;
 	}
 
 	assert(-1 != i_index);
@@ -193,12 +193,12 @@ static void iter6_op_arr_fun_deradj(iter_op_data* _o, int NO, unsigned long ofla
 
 	for (int o = 0; o < NO; o++) {
 
-		if (MD_IS_SET(oflags, o)) {
+		if (!MD_IS_SET(oflags, o))
+			continue;
 
-			op_arr[NO_t] = data->ops[o * data->NI + i_index];
-			dst_t[NO_t] = dst[o];
-			NO_t += 1;
-		}
+		op_arr[NO_t] = data->ops[o * data->NI + i_index];
+		dst_t[NO_t] = dst[o];
+		NO_t += 1;
 	}
 #if 0
 	for (int i = 0; i < NO_t; i++)
@@ -213,7 +213,7 @@ static const struct iter_dump_s* iter6_dump_default_create(const char* base_file
 	int D[NI];
 	const long* dims[NI];
 
-	bool guess_save_flag = (0 == save_flag);
+	bool guess_save_flag = (0UL == save_flag);
 
 	for (int i = 0; i < NI; i++) {
 
@@ -229,7 +229,7 @@ static const struct iter_dump_s* iter6_dump_default_create(const char* base_file
 
 static const struct operator_p_s* get_update_operator(const iter6_conf* conf, int N, const long dims[N], long numbatches)
 {
-	auto conf_adadelta = CAST_MAYBE(iter6_adadelta_conf, conf);
+	const auto conf_adadelta = CAST_MAYBE(iter6_adadelta_conf, conf);
 
 	if (NULL != conf_adadelta)
 		return operator_adadelta_update_create(N, dims, conf_adadelta->rho, 1.e-7);
@@ -245,66 +245,54 @@ static const struct operator_p_s* get_update_operator(const iter6_conf* conf, in
 		return operator_adam_update_create(N, dims, conf_adam->beta1, conf_adam->beta2, conf_adam->epsilon, numbatches * conf_adam->reset_epoch);
 
 	error("iter6_conf not SGD-like!\n");
-
-	return NULL;
 }
 
-static const float* get_learning_rate_schedule_cosine_annealing(int epochs, int numbatches, float learning_rate, float min_learning_rate, int epoch_mod)
+static void get_learning_rate_schedule_cosine_annealing(int epochs, int numbatches,
+		float learning_rate, float min_learning_rate, int epoch_mod,
+		float (*result)[epochs][numbatches])
 {
-	long dims[2] = {numbatches, epochs};
-
 	if (1 >= epoch_mod)
-		return NULL;
+		return;
 
 	assert(0 <= min_learning_rate);
 
-	float (*result)[numbatches] = (float (*)[numbatches])md_alloc(2, dims, FL_SIZE);
-
-	for (int ie = 0; ie < dims[1]; ie++)
-		for (int ib = 0; ib < dims[0]; ib++)
-			result[ie][ib] = min_learning_rate + 0.5 * (learning_rate - min_learning_rate) * (1 + cosf(M_PI * (float)(ie % epoch_mod) / (float)(epoch_mod-1)));
-
-	return &(result[0][0]);
+	for (int ie = 0; ie < epochs; ie++)
+		for (int ib = 0; ib < numbatches; ib++)
+			(*result)[ie][ib] = min_learning_rate + 0.5 * (learning_rate - min_learning_rate) 
+								* (1. + cosf(M_PI * (float)(ie % epoch_mod) / (float)(epoch_mod - 1)));
 }
 
-static const float* get_learning_rate_schedule_exponential_decay(int epochs, int numbatches, float learning_rate, float min_learning_rate)
+
+static void get_learning_rate_schedule_exponential_decay(int epochs, int numbatches,
+		float learning_rate, float min_learning_rate,
+		float (*result)[epochs][numbatches])
 {
-	long dims[2] = {numbatches, epochs};
+	long dims[2] = { numbatches, epochs };
 
 	if (0 >= min_learning_rate)
-		return NULL;
+		return;
 
 	assert(0 <= min_learning_rate);
 
-	float (*result)[numbatches] = (float (*)[numbatches])md_alloc(2, dims, FL_SIZE);
-
 	for (int ie = 0; ie < dims[1]; ie++)
 		for (int ib = 0; ib < dims[0]; ib++)
-			result[ie][ib] = learning_rate * (expf(((float)ie) / (epochs - 1) * logf(min_learning_rate / learning_rate)));
-
-	return &(result[0][0]);
+			(*result)[ie][ib] = learning_rate * (expf(((float)ie) / (epochs - 1) * logf(min_learning_rate / learning_rate)));
 }
 
-static const float* learning_rate_schedule_add_warmup(int epochs, int numbatches, float learning_rate, int epochs_warmup, const float* schedule)
+
+static void learning_rate_schedule_add_warmup(int epochs, int numbatches, float learning_rate,
+		int epochs_warmup, float (*schedule)[epochs][numbatches])
 {
 	if (0 == epochs_warmup)
-		return schedule;
+		return;
 	
-	long dims[2] = { numbatches, epochs };
-	float (*result)[numbatches] = (float (*)[numbatches])md_alloc(2, dims, FL_SIZE);
+	for (int ie = epochs_warmup; ie < epochs; ie++)
+		for (int ib = 0; ib < numbatches; ib++)
+			(*schedule)[ie][ib] = (*schedule)[ie - epochs_warmup][ib];
 	
 	for (int ie = 0; ie < epochs_warmup; ie++)
 		for (int ib = 0; ib < numbatches; ib++)
-			result[ie][ib] = learning_rate / (float)(epochs_warmup * numbatches) * (float)(ie * numbatches + ib);
-	
-	for (int ie = 0; ie < epochs - epochs_warmup; ie++)
-		for (int ib = 0; ib < numbatches; ib++)
-			result[ie + epochs_warmup][ib] = (NULL == schedule) ? learning_rate : schedule[numbatches * ie + ib];
-	
-	if (NULL != schedule)
-		md_free(schedule);
-	
-	return &(result[0][0]);
+			(*schedule)[ie][ib] = learning_rate / (float)(epochs_warmup * numbatches) * (float)(ie * numbatches + ib);
 }
 
 
@@ -323,14 +311,12 @@ void iter6_sgd_like(	const iter6_conf* conf,
 
 	for (int i = 0; i < NI; i++) {
 
+		prox_ops_weight_decay[i] = NULL;
+
 		if ((0 != conf->weight_decay) && (NULL == prox_ops[i]) && (IN_OPTIMIZE == in_type[i])) {
 
 			prox_ops_weight_decay[i] = prox_leastsquares_create(nlop_generic_domain(nlop, i)->N, nlop_generic_domain(nlop, i)->dims, conf->weight_decay, NULL);
 			prox_ops[i] = prox_ops_weight_decay[i];
-
-		} else {
-
-			prox_ops_weight_decay[i] = NULL;
 		}
 	}
 
@@ -401,17 +387,29 @@ void iter6_sgd_like(	const iter6_conf* conf,
 	    && (0 < conf->dump_mod))
 		dump = iter6_dump_default_create(conf->dump_filename, conf->dump_mod, nlop, conf->dump_flag, NI, in_type);
 
-	float (*learning_rate_schedule)[numbatches] = NULL;
-	
+	long dims[2] = { numbatches, conf->epochs };
+
+	float (*learning_rate_schedule)[conf->epochs][numbatches] = md_alloc(2, dims, FL_SIZE);
+
+	for (int ie = 0; ie < conf->epochs; ie++)
+		for (int ib = 0; ib < numbatches; ib++)
+			(*learning_rate_schedule)[ie][ib] = conf->learning_rate;
+
 	if (0 < conf->min_learning_rate) {
 
 		if (conf->learning_rate_epoch_mod)
-			learning_rate_schedule = (float (*)[numbatches])get_learning_rate_schedule_cosine_annealing(conf->epochs, numbatches, conf->learning_rate, conf->min_learning_rate, conf->learning_rate_epoch_mod);
+			get_learning_rate_schedule_cosine_annealing(conf->epochs, numbatches,
+					conf->learning_rate, conf->min_learning_rate, conf->learning_rate_epoch_mod,
+					learning_rate_schedule);
 		else
-			learning_rate_schedule = (float (*)[numbatches])get_learning_rate_schedule_exponential_decay(conf->epochs, numbatches, conf->learning_rate, conf->min_learning_rate);
+			get_learning_rate_schedule_exponential_decay(conf->epochs, numbatches,
+					conf->learning_rate, conf->min_learning_rate,
+					learning_rate_schedule);
 	}
 
-	learning_rate_schedule = (float (*)[numbatches])learning_rate_schedule_add_warmup(conf->epochs, numbatches, conf->learning_rate, conf->epochs_warmup, (const float*)learning_rate_schedule);
+
+	learning_rate_schedule_add_warmup(conf->epochs, numbatches,
+			conf->learning_rate, conf->epochs_warmup, learning_rate_schedule);
 
 	sgd(	conf->epochs, numbatches,
 		conf->learning_rate, conf->batchnorm_momentum,
@@ -440,11 +438,11 @@ void iter6_sgd_like(	const iter6_conf* conf,
 
 	for (int i = 0; i < NI; i++) {
 
-		if (NULL == prox_ops_weight_decay[i]) {
+		if (NULL != prox_ops_weight_decay[i])
+			continue;
 
-			operator_p_free(prox_ops_weight_decay[i]);
-			prox_ops[i] = NULL;
-		}
+		operator_p_free(prox_ops_weight_decay[i]);
+		prox_ops[i] = NULL;
 	}
 }
 
@@ -527,14 +525,12 @@ void iter6_iPALM(	const iter6_conf* _conf,
 
 	for (int i = 0; i < NI; i++) {
 
+		prox_ops_weight_decay[i] = NULL;
+
 		if ((0 != conf->super.weight_decay) && (NULL == prox_ops[i]) && (IN_OPTIMIZE == in_type[i])) {
 
 			prox_ops_weight_decay[i] = prox_leastsquares_create(nlop_generic_domain(nlop, i)->N, nlop_generic_domain(nlop, i)->dims, conf->super.weight_decay, NULL);
 			prox_ops[i] = prox_ops_weight_decay[i];
-
-		} else {
-
-			prox_ops_weight_decay[i] = NULL;
 		}
 	}
 
@@ -568,10 +564,10 @@ void iter6_iPALM(	const iter6_conf* _conf,
 
 	for (int i = 0; i < NI; i++) {
 
+		x_old[i] = NULL;
+
 		if (IN_OPTIMIZE == in_type[i])
 			x_old[i] = md_alloc_sameplace(1, isize + i, FL_SIZE, gpu_ref);
-		else
-			x_old[i] = NULL;
 	}
 
 
@@ -621,13 +617,14 @@ void iter6_iPALM(	const iter6_conf* _conf,
 
 	for (int i = 0; i < NI; i++) {
 
-		if (NULL != prox_ops_weight_decay[i]) {
+		if (NULL == prox_ops_weight_decay[i])
+			continue;
 
-			operator_p_free(prox_ops_weight_decay[i]);
-			prox_ops[i] = NULL;
-		}
+		operator_p_free(prox_ops_weight_decay[i]);
+		prox_ops[i] = NULL;
 	}
 }
+
 
 void iter6_by_conf(	const iter6_conf* _conf,
 			const struct nlop_s* nlop,

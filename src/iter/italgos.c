@@ -1169,7 +1169,7 @@ static void getgrad(int NI, unsigned long in_optimize_flag, long isize[NI], floa
  */
 void sgd(	int epochs, int batches,
 		float learning_rate, float batchnorm_momentum,
-		float learning_rate_schedule[epochs][batches],
+		const float (*learning_rate_schedule)[epochs][batches],
 		int NI, long isize[NI], enum IN_TYPE in_type[NI], float* x[NI],
 		int NO, long osize[NO], enum OUT_TYPE out_type[NI],
 		int N_batch, int N_total,
@@ -1247,9 +1247,13 @@ void sgd(	int epochs, int batches,
 			out_optimize_flag = MD_SET(out_optimize_flag, o);
 	}
 
+	const float *x2[NI];
+	for (int i = 0; i < NI; i++)
+		x2[i] = x[i];
+
 	for (int epoch = 0; epoch < epochs; epoch++) {
 
-		iter_dump(dump, epoch, NI, (const float**)x);
+		iter_dump(dump, epoch, NI, x2);
 
 		for (int i_batch = 0; i_batch < N_total / N_batch; i_batch++) {
 
@@ -1263,7 +1267,7 @@ void sgd(	int epochs, int batches,
 			int batchnorm_counter = 0;
 
 			if (NULL != learning_rate_schedule)
-				learning_rate = learning_rate_schedule[epoch][i_batch];
+				learning_rate = (*learning_rate_schedule)[epoch][i_batch];
 
 			for (int i = 0; i < NI; i++) {
 
@@ -1299,7 +1303,7 @@ void sgd(	int epochs, int batches,
 				}
 			}
 
-			monitor_iter6(monitor, epoch, i_batch, N_total / N_batch, r0, NI, (const float**)x, NULL);
+			monitor_iter6(monitor, epoch, i_batch, N_total / N_batch, r0, NI, x2, NULL);
 		}
 
 		for (int i = 0; i < NI; i++)
@@ -1365,7 +1369,7 @@ void sgd(	int epochs, int batches,
  * @param callback UNUSED
  * @param monitor UNUSED
  */
-void iPALM(	long NI, long isize[NI], enum IN_TYPE in_type[NI], float* x[NI], float* x_old[NI],
+void iPALM(	long NI, long isize[NI], enum IN_TYPE in_type[NI], float* x[const NI], float* x_old[NI],
 		long NO, long osize[NO], enum OUT_TYPE out_type[NO],
 		int N_batch, int epoch_start, int epoch_end,
 		const struct vec_iter_s* vops,
@@ -1463,9 +1467,13 @@ void iPALM(	long NI, long isize[NI], enum IN_TYPE in_type[NI], float* x[NI], flo
 			out_optimize_flag = MD_SET(out_optimize_flag, o);
 	}
 
+	const float *x2[NI];
+	for (int i = 0; i < NI; i++)
+		x2[i] = x[i];
+
 	for (int epoch = epoch_start; epoch < epoch_end; epoch++) {
 
-		iter_dump(dump, epoch, NI, (const float**)x);
+		iter_dump(dump, epoch, NI, x2);
 
 		for (int batch = 0; batch < N_batch; batch++) {
 
@@ -1625,7 +1633,7 @@ void iPALM(	long NI, long isize[NI], enum IN_TYPE in_type[NI], float* x[NI], flo
 				if (IN_OPTIMIZE == in_type[i])
 					sprintf(post_string + strlen(post_string), "L[%d]=%.3e ", i, L[i]);
 
-			monitor_iter6(monitor, epoch, batch, N_batch, r_i, NI, (const float**)x, post_string);
+			monitor_iter6(monitor, epoch, batch, N_batch, r_i, NI, x2, post_string);
 		}
 	}
 

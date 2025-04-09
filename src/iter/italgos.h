@@ -132,7 +132,7 @@ void eulermaruyama(int maxiter, float alpha, float step,
 
 void sgd(int epochs, int batches,
 	float learning_rate, float batchnorm_momentum,
-	float learning_rate_schedule[epochs][batches],
+	const float (*learning_rate_schedule)[epochs][batches],
 	int NI, long isize[NI], enum IN_TYPE in_type[NI], float* x[NI],
 	int NO, long osize[NO], enum OUT_TYPE out_type[NI],
 	int N_batch, int N_total,

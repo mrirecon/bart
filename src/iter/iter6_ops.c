@@ -52,7 +52,7 @@ static void adadelta_update_apply(const operator_data_t* _data, float learning_r
 	}
 
 	float* dst = (float*)_dst;
-	float* src = (float*)_src;
+	const float* src = (const float*)_src;
 
 	//Accumulate E[g²]
 	md_smul(d->dom->N, d->dom->dims, d->floating_g, d->floating_g, d->rho / (1. - d->rho));
@@ -142,7 +142,7 @@ static void adam_update_apply(const operator_data_t* _data, float learning_rate,
 	}
 
 	float* dst = (float*)_dst;
-	float* src = (float*)_src;
+	const float* src = (const float*)_src;
 
 	//Accumulate first momentum
 	md_smul(d->dom->N, d->dom->dims, d->first_mom, d->first_mom, d->beta1);
@@ -277,7 +277,7 @@ static void sgd_update_apply(const operator_data_t* _data, float learning_rate, 
 	struct sgd_update_s* d = CAST_DOWN(sgd_update_s, _data);
 
 	float* dst = (float*)_dst;
-	float* src = (float*)_src;
+	const float* src = (const float*)_src;
 
 	md_smul(d->dom->N, d->dom->dims, dst, src, -learning_rate);
 }
