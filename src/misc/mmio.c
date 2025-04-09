@@ -748,7 +748,8 @@ static complex float* create_pipe(const char* name, int D, long dimensions[D], u
 
 	if (!getcwd(dir, BART_MAX_DIR_PATH_SIZE))
 		error("Directory pathname too long.\n");
-	abs_filename = (char*)ptr_printf("%s/%s", dir, filename);
+
+	abs_filename = ptr_printf("%s/%s", dir, filename);
 
 #ifdef __EMSCRIPTEN__
 	call_msync = true;
@@ -1268,7 +1269,7 @@ static int munmap_rounded(const complex float* x, long sz)
 {
 	complex float* trunc_ptr = (complex float*)((uintptr_t)x & ~4095UL);
 
-	ptrdiff_t pdiff = (void*)x - (void*)trunc_ptr;
+	ptrdiff_t pdiff = (const void*)x - (const void*)trunc_ptr;
 	assert(0 <= pdiff);
 	size_t offset = (size_t)pdiff;
 

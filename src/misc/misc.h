@@ -130,9 +130,9 @@ extern _Bool safe_isfinite(float x);
 
 extern long io_calc_size(int D, const long dims[__VLA(D?:1)], size_t size);
 
-extern const char* ptr_printf(const char* fmt, ...) __attribute__((format(printf,1,2)));
-extern const char* ptr_vprintf(const char* fmt, va_list ap);
-extern const char* ptr_print_dims(int D, const long dims[__VLA(D)]);
+extern char* ptr_printf(const char* fmt, ...) __attribute__((format(printf,1,2)));
+extern char* ptr_vprintf(const char* fmt, va_list ap);
+extern char* ptr_print_dims(int D, const long dims[__VLA(D)]);
 
 extern char* construct_filename(int D, const long loopdims[__VLA(D)], const long pos[__VLA(D)], const char* prefix, const char* ext);
 

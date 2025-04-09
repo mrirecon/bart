@@ -680,7 +680,7 @@ long io_calc_size(int D, const long dims[D?:1], size_t size)
 	return a * b;
 }
 
-const char* ptr_vprintf(const char* fmt, va_list ap)
+char* ptr_vprintf(const char* fmt, va_list ap)
 {
 	va_list ap1;
 	va_copy(ap1, ap);
@@ -699,7 +699,7 @@ const char* ptr_vprintf(const char* fmt, va_list ap)
 	return *PTR_PASS(result);
 }
 
-const char* ptr_printf(const char* fmt, ...)
+char* ptr_printf(const char* fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
@@ -711,20 +711,20 @@ const char* ptr_printf(const char* fmt, ...)
 	return result;
 }
 
-const char* ptr_print_dims(int D, const long dims[D])
+char* ptr_print_dims(int D, const long dims[D])
 {
-	const char* result = ptr_printf("[");
+	char* result = ptr_printf("[");
 
 	for (int i = 0; i < D; i++) {
 
-		const char* tmp = ptr_printf("%s%3ld ", result, dims[i]);
+		char* tmp = ptr_printf("%s%3ld ", result, dims[i]);
 
 		xfree(result);
 
 		result = tmp;
 	}
 
-	const char* tmp = ptr_printf("%s]", result);
+	char* tmp = ptr_printf("%s]", result);
 
 	xfree(result);
 

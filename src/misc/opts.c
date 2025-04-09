@@ -948,7 +948,7 @@ bool opt_subopt(void* _ptr, char /*c*/, const char* optarg)
 		}
 	}
 
-	const char* tokens[2 * ptr->n + 2];
+	/*const*/ char* tokens[2 * ptr->n + 2];
 
 	for (int i = 0; i < ptr->n; i++) {
 
