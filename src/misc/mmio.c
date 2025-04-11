@@ -678,14 +678,49 @@ complex float* create_zcoo(const char* name, int D, const long dimensions[D])
 }
 
 
+static complex float* stream_clone_if_exists(const char* name, stream_t* strm, bool in)
+{
+	const char* stream_name = stream_mangle_name(name, in);
+	*strm = stream_lookup_name(stream_name);
+	xfree(stream_name);
+
+	if (!(*strm))
+		return NULL;
+
+	stream_clone(*strm);
+	return stream_get_data(*strm);
+}
+
+static complex float* create_binary_pipe(const char* name, int D, long dimensions[D], unsigned long stream_flags)
+{
+	complex float* ptr;
+	stream_t strm;
+
+	if (NULL != (ptr = stream_clone_if_exists(name, &strm, false)))
+		return ptr;
+
+	io_register_output(name);
+
+	strm = stream_create_file(name, D, dimensions, stream_flags, NULL, false);
+
+	if (NULL == strm)
+		error("Creating stream");
+
+	if (NULL == (ptr = anon_cfl(NULL, D, dimensions)))
+		error("anon cfl\n");
+
+	stream_attach(strm, ptr, true, true);
+
+	if (cfl_loop_desc_active())
+		stream_clone(strm);
+
+	return ptr;
+}
+
 static complex float* create_pipe(const char* name, int D, long dimensions[D], unsigned long stream_flags)
 {
 	long T;
-
-	const char* stream_name = stream_mangle_name(name, false);
-
-	stream_t strm = stream_lookup_name(stream_name);
-
+	stream_t strm;
 	complex float* ptr;
 	char filename[] = "bart-XXXXXX";
 	int fd;
@@ -693,14 +728,11 @@ static complex float* create_pipe(const char* name, int D, long dimensions[D], u
 	char* abs_filename;
 	bool call_msync = false;
 
-	if (NULL != strm) {
+	if (NULL != (ptr = stream_clone_if_exists(name, &strm, false)))
+		return ptr;
 
-		strm = stream_clone(strm);
-
-		ptr = stream_get_data(strm);
-
-		goto out;
-	}
+	if (0 == strcmp("1", getenv("BART_BINARY_STREAM") ? : ""))
+		return create_binary_pipe(name, D, dimensions, stream_flags);
 
 	io_register_output(name);
 
@@ -746,10 +778,7 @@ static complex float* create_pipe(const char* name, int D, long dimensions[D], u
 	stream_attach(strm, ptr, true, true);
 
 	if (cfl_loop_desc_active())
-		stream_clone(stream_lookup_name(stream_name));
-
-out:
-	xfree(stream_name);
+		stream_clone(strm);
 
 	return ptr;
 }
