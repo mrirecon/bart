@@ -107,3 +107,10 @@ Embedding in JupyterLite:
 - jupyter lite build
 
 Plain pyodide repl works similar
+
+======
+
+Further Notes:
+
+- Several BART features are controlled via environment variables. However, webasm code running under node.js can not read the 'normal' environment
+  of the node process. To work around: echo "Module.preRun = () => {ENV.LANG = undefined};" > src/pre.js, and add "--pre-js src/pre.js" to LDFLAGS.

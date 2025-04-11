@@ -248,7 +248,7 @@ Build_wasm:
         "FFTW_BASE=$DEPS_FOLDER\n
         BLAS_BASE=$DEPS_FOLDER\n
         CC=emcc\n
-        LDFLAGS=-s EXPORTED_FUNCTIONS=_main,__Block_object_dispose -s ALLOW_MEMORY_GROWTH=1 -s MAXIMUM_MEMORY=4GB -s INITIAL_MEMORY=256MB -s TOTAL_STACK=64MB $DEPS_FOLDER/lib/libfftw3f.a $DEPS_FOLDER/lib/libopenblas.a $DEPS_FOLDER/usr/local/lib/libBlocksRuntime.a -lnodefs.js -lnoderawfs.js\n
+        LDFLAGS=-s EXPORTED_FUNCTIONS=_main,__Block_object_dispose -s ALLOW_MEMORY_GROWTH=1 -s MAXIMUM_MEMORY=4GB -s INITIAL_MEMORY=256MB -s TOTAL_STACK=64MB $DEPS_FOLDER/lib/libfftw3f.a $DEPS_FOLDER/lib/libopenblas.a $DEPS_FOLDER/usr/local/lib/libBlocksRuntime.a -lnodefs.js -lnoderawfs.js --pre-js src/pre.js\n
         OPENBLAS=1\n
         FORTRAN=0\n
         FFTWTHREADS=0\n
@@ -262,6 +262,10 @@ Build_wasm:
         CUDA=0\n
         CUDNN=0\n
         ISMRMRD=0\n" > Makefiles/Makefile.wasm
+    - echo -e
+        "Module.preRun = () => {\n
+          ENV.BART_BINARY_STREAM=process.env.BART_BINARY_STREAM;\n
+        };" > src/pre.js
     - bash -c "source /emsdk/emsdk_env.sh && make -j 4 DEBUG=0 DEBUG_DWARF=0 all"
   artifacts:
     paths:
@@ -272,6 +276,7 @@ Build_wasm:
       - "./src/*.o"
       - ./src/misc/version.inc
       - ./Makefiles/Makefile.wasm
+      - ./src/pre.js
     expire_in: 45 minutes
 
 
