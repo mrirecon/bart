@@ -30,7 +30,7 @@ extern const char* stream_mangle_name(const char* name, _Bool in);
 extern _Bool* stream_get_synced(stream_t s);
 
 
-extern stream_t stream_create(int N, const long dims[__VLA(N)], _Complex float* data, int pipefd, _Bool input, _Bool regist, _Bool binary, unsigned long flags, const char* name, _Bool call_msync);
+extern stream_t stream_create(int N, const long dims[__VLA(N)], int pipefd, _Bool input, _Bool binary, unsigned long flags, const char* name, _Bool call_msync);
 extern stream_t stream_clone(stream_t s);
 
 extern void stream_free(stream_t s);

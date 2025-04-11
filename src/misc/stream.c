@@ -346,7 +346,7 @@ static void stream_log_index(stream_t s, long index, double t);
  * Complex float memory shared between processes,
  * associated with a file descriptor used for synchronization and metainformation.
  */
-stream_t stream_create(int N, const long dims[N], complex float* data, int pipefd, bool input, bool regist, bool binary, unsigned long flags, const char* name, bool call_msync)
+stream_t stream_create(int N, const long dims[N], int pipefd, bool input, bool binary, unsigned long flags, const char* name, bool call_msync)
 {
 	PTR_ALLOC(struct stream, ret);
 
@@ -400,14 +400,9 @@ stream_t stream_create(int N, const long dims[N], complex float* data, int pipef
 	}
 
 	ret->D = N;
-	ret->data = pcfl_create(data, N, dims, flags);
+	ret->data = pcfl_create(NULL, N, dims, flags);
 
 	stream_init_log(ret);
-
-	assert(!(regist && (NULL == data)));
-
-	if (regist)
-		stream_register(ret);
 
 	return PTR_PASS(ret);
 
@@ -507,7 +502,7 @@ stream_t stream_load_file(const char* name, int D, long dims[D], char **datname)
 
 	const char* stream_name = stream_mangle_name(name, true);
 
-	stream_t strm = stream_create(D, dims, NULL, fd, true, false, binary, 0, stream_name, false);
+	stream_t strm = stream_create(D, dims, fd, true, binary, 0, stream_name, false);
 
 	xfree(stream_name);
 
@@ -576,7 +571,7 @@ stream_t stream_create_file(const char* name, int D, long dims[D], unsigned long
 
 	const char* stream_name = stream_mangle_name(name, false);
 
-	stream_t strm = stream_create(D, dims, NULL, fd, false, false, binary, stream_flags, stream_name, call_msync);
+	stream_t strm = stream_create(D, dims, fd, false, binary, stream_flags, stream_name, call_msync);
 
 	xfree(stream_name);
 

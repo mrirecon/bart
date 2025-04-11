@@ -194,11 +194,13 @@ static bool test_stream_registry(void)
 	complex float a[6];
 	stream_t s[6];
 
-	for (int i = 0; i < 5; i++)
-		s[i] = stream_create(N, dims, a + i, -1, true, true, false, 1, NULL, false);
+	for (int i = 0; i < 5; i++) {
 
-	s[5] = stream_create(N, dims, a + 5, -1, true, false, false, 1, NULL, false);
+		s[i] = stream_create(N, dims, -1, true, false, 1, NULL, false);
+		stream_attach(s[i], a + i, false);
+	}
 
+	s[5] = stream_create(N, dims, -1, true, false, 1, NULL, false);
 
 	for (int i = 0; i < 5; i++)
 		if (s[i] != stream_lookup(a + i))
@@ -224,17 +226,11 @@ static bool test_stream_sync(void)
 	if (0 != pipe(pipefds))
 		UTEST_ERR;
 
-	complex float in[1];
-	complex float out[1];
-
-	if (NULL == stream_create(1, (long[1]){ 1 }, out, pipefds[1], false, true, false, 1, NULL, false))
+	stream_t strm_in, strm_out;
+	if (!(strm_out = stream_create(1, (long[1]){ 1 }, pipefds[1], false, false, 1, NULL, false)))
 		UTEST_ERR;
-
-	if (NULL == stream_create(1, (long[1]){ 1 }, in, pipefds[0], true, true, false, 1, NULL, false))
+	if (!(strm_in = stream_create(1, (long[1]){ 1 }, pipefds[0], true, false, 1, NULL, false)))
 		UTEST_ERR;
-
-	stream_t strm_out = stream_lookup(out);
-	stream_t strm_in = stream_lookup(in);
 
 	bool *in_synced = stream_get_synced(strm_in);
 	bool *out_synced = stream_get_synced(strm_out);
@@ -272,27 +268,30 @@ static bool test_binary_stream(void)
 	complex float out[3] = { 1, 2, 3 };
 	complex float  in[3] = { 0, 0, 0 };
 
-	stream_t s0, s1;
+	stream_t strm_in, strm_out;
 	//write end of the pipe
-	if (NULL == (s1 = stream_create(2, dims, out, pipefds[1], false, false, true, 2, NULL, false)))
+	if (!(strm_out = stream_create(2, dims, pipefds[1], false, true, 2, NULL, false)))
 		UTEST_ERR;
 	// read end
-	if (NULL == (s0 = stream_create(2, dims, in, pipefds[0], true, false, true, 2, NULL, false)))
+	if (!(strm_in = stream_create(2, dims, pipefds[0], true, true, 2, NULL, false)))
 		UTEST_ERR;
 
-	bool *s0_synced = stream_get_synced(s0);
-	bool *s1_synced = stream_get_synced(s1);
+	stream_attach(strm_in, in, false);
+	stream_attach(strm_out, out, false);
+
+	bool *s0_synced = stream_get_synced(strm_in);
+	bool *s1_synced = stream_get_synced(strm_out);
 
 	if (s1_synced[0] || s0_synced[0])
 		UTEST_ERR;
 
-	stream_sync_slice(s1, 2, dims, 2, (long[2]){0, 0});
+	stream_sync_slice(strm_out, 2, dims, 2, (long[2]){0, 0});
 
-	stream_sync_slice(s1, 2, dims, 2, (long[2]){0, 2});
+	stream_sync_slice(strm_out, 2, dims, 2, (long[2]){0, 2});
 
-	stream_sync_slice(s0, 2, dims, 2, (long[2]){0, 0});
+	stream_sync_slice(strm_in, 2, dims, 2, (long[2]){0, 0});
 
-	stream_sync_slice(s0, 2, dims, 2, (long[2]){0, 2});
+	stream_sync_slice(strm_in, 2, dims, 2, (long[2]){0, 2});
 
 	if (out[0] != in[0])
 		UTEST_ERR;
@@ -303,8 +302,8 @@ static bool test_binary_stream(void)
 	if (out[2] != in[2])
 		UTEST_ERR;
 
-	stream_free(s0);
-	stream_free(s1);
+	stream_free(strm_in);
+	stream_free(strm_out);
 
 	close(pipefds[1]);
 	close(pipefds[0]);
@@ -318,20 +317,14 @@ static bool test_stream_events(void)
 	if (0 != pipe(pipefds))
 		UTEST_ERR;
 
-	complex float in[2];
-	complex float out[2];
-
-	if (NULL == stream_create(1, (long[1]){ ARRAY_SIZE(out) }, out, pipefds[1], false, true, false, 1, NULL, false))
+	stream_t strm_in, strm_out;
+	if (!(strm_out = stream_create(1, (long[1]){ 2 }, pipefds[1], false, false, 1, NULL, false)))
 		UTEST_ERR;
 
-	if (NULL == stream_create(1, (long[1]){ ARRAY_SIZE(in) }, in, pipefds[0], true, true, false, 1, NULL, false))
+	if (!(strm_in = stream_create(1, (long[1]){ 2 }, pipefds[0], true, false, 1, NULL, false)))
 		UTEST_ERR;
-
-	stream_t strm_out = stream_lookup(out);
-	stream_t strm_in = stream_lookup(in);
 
 	char teststr[][4] = { { "HFS" }, { "HFP" } };
-
 
 	// add 2 events
 	for (int i = 0; i < 2; i++)
