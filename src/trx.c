@@ -81,7 +81,7 @@ int main_trx(int argc, char* argv[argc])
 
 			free(dataname);
 
-			stream_attach(strm_in, data, true);
+			stream_attach(strm_in, data, true, true);
 		}
 
 		stream_flags = stream_get_flags(strm_in);
@@ -97,13 +97,13 @@ int main_trx(int argc, char* argv[argc])
 		data = create_async_cfl(outfile, stream_flags, N, dims);
 		strm_out = stream_lookup(data);
 
-		stream_attach(strm_in, data, false);
+		stream_attach(strm_in, data, false, false);
 
 	} else {
 
 		strm_out = stream_create_file(outfile, N, dims, stream_flags, NULL, false);
 
-		stream_attach(strm_out, data, false);
+		stream_attach(strm_out, data, false, false);
 	}
 
 	assert(strm_out);

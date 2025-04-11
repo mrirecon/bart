@@ -197,7 +197,7 @@ static bool test_stream_registry(void)
 	for (int i = 0; i < 5; i++) {
 
 		s[i] = stream_create(N, dims, -1, true, false, 1, NULL, false);
-		stream_attach(s[i], a + i, false);
+		stream_attach(s[i], a + i, false, true);
 	}
 
 	s[5] = stream_create(N, dims, -1, true, false, 1, NULL, false);
@@ -276,8 +276,8 @@ static bool test_binary_stream(void)
 	if (!(strm_in = stream_create(2, dims, pipefds[0], true, true, 2, NULL, false)))
 		UTEST_ERR;
 
-	stream_attach(strm_in, in, false);
-	stream_attach(strm_out, out, false);
+	stream_attach(strm_in, in, false, false);
+	stream_attach(strm_out, out, false, false);
 
 	bool *s0_synced = stream_get_synced(strm_in);
 	bool *s1_synced = stream_get_synced(strm_out);

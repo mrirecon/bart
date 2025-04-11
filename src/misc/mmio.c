@@ -743,7 +743,7 @@ static complex float* create_pipe(const char* name, int D, long dimensions[D], u
 		io_error("temp cfl %s\n", filename);
 #endif
 
-	stream_attach(strm, ptr, true);
+	stream_attach(strm, ptr, true, true);
 
 	if (cfl_loop_desc_active())
 		stream_clone(stream_lookup_name(stream_name));
@@ -990,23 +990,30 @@ static complex float* load_cfl_internal(const char* name, int D, long dimensions
 
 			strm = stream_load_file(name, D, dimensions, &filename);
 
-			if ((NULL == strm) || stream_is_binary(strm))
+			if (NULL == strm)
 				error("Creating stream\n");
 
-			addr = shared_cfl(D, dimensions, filename);
-			//FIXME: MAP_PRIVATE states: It is unspecified whether changes made to the file
-			//       after the mmap() call are visible in the mapped region.
-			//	 Hence, we always load files with MAP_SHARED and protect files which are read only.
-			//	 This will cause segfaults in tools like pics which uses the copy on write feature of MAP_PRIVATE!
-			if (priv)
-				mprotect(addr, (size_t)(io_calc_size(D, dimensions, sizeof(complex float))), PROT_READ);
+			if (stream_is_binary(strm)) {
 
-			stream_attach(strm, addr, true);
+				assert(NULL == filename);
+				addr = anon_cfl(NULL, D, dimensions);
+				stream_attach(strm, addr, true, true);
+			} else {
 
-			if (0 != unlink(filename))
-				error("Error unlinking temporary file %s\n", filename);
+				addr = shared_cfl(D, dimensions, filename);
+				//FIXME: MAP_PRIVATE states: It is unspecified whether changes made to the file
+				//       after the mmap() call are visible in the mapped region.
+				//	 Hence, we always load files with MAP_SHARED and protect files which are read only.
+				//	 This will cause segfaults in tools like pics which uses the copy on write feature of MAP_PRIVATE!
+				if (priv)
+					mprotect(addr, (size_t)(io_calc_size(D, dimensions, sizeof(complex float))), PROT_READ);
+				stream_attach(strm, addr, true, true);
 
-			free(filename);
+				if (0 != unlink(filename))
+					error("Error unlinking temporary file %s\n", filename);
+
+				free(filename);
+			}
 
 		loadcfl_stream_end:
 

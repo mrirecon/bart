@@ -201,26 +201,30 @@ static stream_t stream_ptr_streams[MAXSTREAMS] = { };
 static int stream_ptr_count = 0;
 
 
+static void stream_deregister(const struct stream* s);
+
 void stream_unmap_all(void)
 {
 	while (0 < stream_ptr_count) {
 
 		stream_t stream = stream_ptr_streams[0];
 
-		assert(!stream->binary);
+		assert(stream->ptr && stream->unmap);
 
 		int D = stream->data->D;
 		long dims[D];
 		pcfl_get_dimensions(stream->data, D, dims);
 
 		unmap_cfl(D, dims, stream->ptr);
+
+		stream_deregister(stream);
 	}
 }
 
 
 static void stream_register(stream_t s)
 {
-	assert(!s->binary);
+	assert(s->ptr);
 
 	int stream_ptr_pos = -1;
 
@@ -310,6 +314,7 @@ const char* stream_mangle_name(const char* name, bool in)
 
 	return ptr_printf("%s%s", prefix, name);
 }
+
 
 
 static void stream_del(const struct shared_obj_s* sptr);
@@ -439,14 +444,14 @@ stream_t stream_clone(stream_t s)
 	return s;
 }
 
-void stream_attach(stream_t s, complex float* x, bool unmap)
+void stream_attach(stream_t s, complex float* x, bool unmap, bool regist)
 {
 	assert(NULL == s->ptr);
 
 	s->ptr = x;
 	s->unmap = unmap;
 
-	if (!s->binary) {
+	if (regist) {
 
 		assert(NULL == stream_lookup(x));
 
@@ -711,6 +716,8 @@ static bool stream_receive_idx_locked2(stream_t s)
 				return false;
 
 		{
+			assert(s->ptr);
+
 			complex float* ptr = s->ptr;
 			int ND = s->data->D;
 			long xdims[s->data->D];
@@ -825,6 +832,7 @@ static bool stream_send_index_locked(stream_t s, long index)
 
 	if (s->binary) {
 
+		assert(s->ptr);
 		complex float* ptr = s->ptr;
 		int ND = s->data->D;
 		long xdims[ND];
