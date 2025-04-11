@@ -273,7 +273,7 @@ TRECO=pics pocsense sqpics itsense nlinv moba nufft nufftbase rof tgv ictv sake 
 TCALIB=ecalib ecaltwo caldir walsh cc ccapply rovir calmat svd estvar whiten rmfreq ssa bin psf ncalib
 TMRI=homodyne poisson twixread fakeksp looklocker upat fovshift
 TSIM=phantom traj signal epg sim raga
-TIO=toimg
+TIO=toimg tosnd
 TNN=reconet nnet onehotenc measure mnist tensorflow nlinvnet
 TMOTION=affinereg interpolate estmotion
 
