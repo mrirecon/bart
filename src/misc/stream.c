@@ -46,8 +46,6 @@ struct pcfl {
 	long sync_count;
 
 	bart_lock_t* sync_lock;
-
-	complex float* ptr;
 };
 
 struct stream {
@@ -58,7 +56,7 @@ struct stream {
 
 	const char* filename;
 
-	int D;
+	complex float* ptr;
 	struct pcfl* data;
 	bool call_msync;
 
@@ -91,7 +89,6 @@ struct stream_settings {
 
 /** Creates a struct for a partially written complex float array.
  *
- * @param x: pointer to full cfl memory. Standard strides are assumed.
  * @param D: number of dimensions
  * @param dims: dimensions
  * @param flags: flags selecting which dims are 'incomplete'
@@ -104,14 +101,13 @@ struct stream_settings {
  * checked/written using various pcfl_* functions.
  * Necessary state is kept in the struct returned from this function
  */
-static struct pcfl* pcfl_create(complex float* x, int D, const long dims[D], unsigned long flags)
+static struct pcfl* pcfl_create(int D, const long dims[D], unsigned long flags)
 {
 	assert(bitcount(flags) <= D);
 
 	PTR_ALLOC(struct pcfl, ret);
 
 	ret->D = D;
-	ret->ptr = x;
 	ret->stream_flags = flags;
 	ret->index = -1;
 	ret->dims = ARR_CLONE(long[D], dims);
@@ -186,13 +182,6 @@ void pcfl_get_latest_pos(struct pcfl* p, int N, long pos[N])
 }
 
 
-static
-complex float* pcfl_get_data(struct pcfl* p)
-{
-	return p->ptr;
-}
-
-
 static void pcfl_get_dimensions(struct pcfl* p, int N, long dims[N])
 {
 	assert(N == p->D);
@@ -220,11 +209,11 @@ void stream_unmap_all(void)
 
 		assert(!stream->binary);
 
-		int D = stream->D;
+		int D = stream->data->D;
 		long dims[D];
 		pcfl_get_dimensions(stream->data, D, dims);
 
-		unmap_cfl(D, dims, pcfl_get_data(stream->data));
+		unmap_cfl(D, dims, stream->ptr);
 	}
 }
 
@@ -245,7 +234,7 @@ static void stream_register(stream_t s)
 		error("Maximum number of streams exceeded.\n");
 
 	stream_ptr_streams[stream_ptr_pos] = s;
-	stream_ptr[stream_ptr_pos] = pcfl_get_data(s->data);
+	stream_ptr[stream_ptr_pos] = s->ptr;
 	stream_name[stream_ptr_pos] = s->filename;
 }
 
@@ -348,29 +337,21 @@ static void stream_log_index(stream_t s, long index, double t);
  */
 stream_t stream_create(int N, const long dims[N], int pipefd, bool input, bool binary, unsigned long flags, const char* name, bool call_msync)
 {
-	PTR_ALLOC(struct stream, ret);
-
-	ret->lock = bart_lock_create();
-	ret->pipefd = pipefd;
-	ret->input = input;
-	ret->binary = binary;
-	ret->call_msync = call_msync;
-
 	// msync only makes sense for output streams that are not binary.
 	assert(!call_msync || !(input || binary));
 
-	ret->data = NULL;
-	ret->unmap = false;
-	ret->events =  NULL;
-	ret->stream_ts = NULL;
-	ret->stream_logfile = NULL;
+	PTR_ALLOC(struct stream, ret);
 
-	ret->last_index = -1;
-
-	ret->filename = (NULL == name) ? NULL : strdup(name);
-
-	ret->busy = false;
-	ret->cond = bart_cond_create();
+	*ret = (struct stream) {
+		.lock = bart_lock_create(),
+		.pipefd = pipefd,
+		.input = input,
+		.binary = binary,
+		.call_msync = call_msync,
+		.last_index = -1,
+		.filename = (NULL == name) ? NULL : strdup(name),
+		.cond = bart_cond_create(),
+	};
 
 	shared_obj_init(&ret->sptr, stream_del);
 
@@ -399,8 +380,7 @@ stream_t stream_create(int N, const long dims[N], int pipefd, bool input, bool b
 		flags = settings.flags;
 	}
 
-	ret->D = N;
-	ret->data = pcfl_create(NULL, N, dims, flags);
+	ret->data = pcfl_create(N, dims, flags);
 
 	stream_init_log(ret);
 
@@ -433,12 +413,12 @@ static void stream_del(const struct shared_obj_s* sptr)
 
 	if (NULL != s->data) {
 
-		int D = s->D;
+		int D = s->data->D;
 		long dims[D];
 		pcfl_get_dimensions(s->data, D, dims);
 
 		if (s->unmap)
-			unmap_shared_cfl(D, dims, pcfl_get_data(s->data));
+			unmap_shared_cfl(D, dims, s->ptr);
 
 		pcfl_free(s->data);
 	}
@@ -461,9 +441,9 @@ stream_t stream_clone(stream_t s)
 
 void stream_attach(stream_t s, complex float* x, bool unmap)
 {
-	assert(NULL == pcfl_get_data(s->data));
+	assert(NULL == s->ptr);
 
-	s->data->ptr = x;
+	s->ptr = x;
 	s->unmap = unmap;
 
 	if (!s->binary) {
@@ -731,7 +711,7 @@ static bool stream_receive_idx_locked2(stream_t s)
 				return false;
 
 		{
-			complex float* ptr = pcfl_get_data(s->data);
+			complex float* ptr = s->ptr;
 			int ND = s->data->D;
 			long xdims[s->data->D];
 			long xstr[s->data->D];
@@ -845,8 +825,8 @@ static bool stream_send_index_locked(stream_t s, long index)
 
 	if (s->binary) {
 
-		complex float* ptr = pcfl_get_data(s->data);
-		int ND = s->D;
+		complex float* ptr = s->ptr;
+		int ND = s->data->D;
 		long xdims[ND];
 		long xstr[ND];
 		long size = sizeof(complex float);
@@ -866,7 +846,7 @@ static bool stream_send_index_locked(stream_t s, long index)
 
 	} else if (s->call_msync) {
 
-		if (0 != msync(s->data->ptr,
+		if (0 != msync(s->ptr,
 			       (size_t)(md_calc_size(s->data->D, s->data->dims) * (long)sizeof(complex float)), MS_SYNC))
 			return false;
 	}
@@ -930,7 +910,7 @@ static bool stream_sync_index(stream_t s, long index, bool all)
 bool stream_receive_pos(stream_t s, long count, long N, long pos[N])
 {
 	assert(s->input);
-	assert(N == s->D);
+	assert(N == s->data->D);
 
 	if (count >= s->data->tot)
 		return false;
@@ -1036,8 +1016,8 @@ void stream_fetch(stream_t s)
 	long count = s->data->sync_count;
 	bart_unlock(s->lock);
 
-	long pos[s->D];
-	stream_receive_pos(s, count, s->D, pos);
+	long pos[s->data->D];
+	stream_receive_pos(s, count, s->data->D, pos);
 }
 
 
@@ -1130,7 +1110,7 @@ extern bool stream_is_binary(stream_t s)
 
 complex float* stream_get_data(stream_t s)
 {
-	return pcfl_get_data(s->data);
+	return s->ptr;
 }
 
 void stream_get_dimensions(stream_t s, int N, long dims[N])
