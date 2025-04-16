@@ -73,6 +73,8 @@ struct isrmrm_config_s ismrm_default_config = {
 	.overwriting_idx = -1,
 	.measurement = -1,
 	.repetition = -1,
+
+	.ismrm_cpp_state = NULL,
 };
 
 
@@ -184,6 +186,16 @@ void ismrm_read_dims(const char* datafile, struct isrmrm_config_s* config, int N
 		ismrm_validate_limits(config);
 	}
 
+	ismrm_conf_merge_unmapped_dims(config);
+	ismrm_conf_to_dims(config, N, dims);
+}
+
+void ismrm_stream_read_dims(struct isrmrm_config_s* config, int N, long dims[N])
+{
+	assert(NULL != config->ismrm_cpp_state);
+
+	md_singleton_dims(N, dims);
+	ismrm_stream_read_meta(config);
 	ismrm_conf_merge_unmapped_dims(config);
 	ismrm_conf_to_dims(config, N, dims);
 }
@@ -515,6 +527,27 @@ static bool ismrmrd_convert_acquisition(struct isrmrm_config_s* config, const IS
 
 	return true;
 }
+
+long ismrm_stream_read(struct isrmrm_config_s* conf, int N, const long dims[N], long pos[N], complex float* out)
+{
+	assert(NULL != conf->ismrm_cpp_state);
+
+	ISMRMRD_Acquisition acq;
+	ismrmrd_init_acquisition(&acq);
+
+	long bytes = ismrm_stream_read_acquisition(conf, &acq);
+	if (0 == bytes)
+		return bytes;
+
+	long strs[N];
+	md_calc_strides(N, strs, dims, CFL_SIZE);
+
+	if(!ismrmrd_convert_acquisition(conf, &acq, N, dims, strs, pos, out))
+		debug_printf(DP_WARN, "SKIPPED ACQUISITION!\n");
+
+	return bytes;
+}
+
 
 
 void ismrm_print_xml(const char* filename)

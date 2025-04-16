@@ -1,17 +1,23 @@
-
 #include <stdbool.h>
+#include <stdexcept>
+
+#include <cassert>
+#include <climits>
+#include <ext/stdio_filebuf.h>
+#include <iostream>
+#include <fstream>
+
 #include "misc/misc.h"
 #include "misc/debug.h"
 
 #include "ismrmrd/ismrmrd.h"
 #include "ismrmrd/dataset.h"
+#include "ismrmrd/serialization.h"
+#include "ismrmrd/serialization_iostream.h"
 #include "ismrmrd/xml.h"
 
 #include "xml_wrapper.h"
-#include <cstdio>
-
-#include "ismrm/read.h"
-
+#include "read.h"
 
 
 
@@ -89,4 +95,113 @@ static void ismrm_read_encoding_limits_from_hdr(ISMRMRD::IsmrmrdHeader& h, struc
 	config->limits[ISMRMRD_SET_DIM] 		= get_limit(encoding.encodingLimits.set);
 	config->limits[ISMRMRD_SEGMENT_DIM] 		= get_limit(encoding.encodingLimits.segment);
 
+}
+
+struct ismrm_cpp_state {
+	std::istream* is;
+	ISMRMRD::IStreamView* rs;
+	ISMRMRD::ProtocolDeserializer* deserializer;
+};
+
+extern "C" struct ismrm_cpp_state* ismrm_stream_open(const char* file)
+{
+	struct ismrm_cpp_state* ret = (struct ismrm_cpp_state*) malloc(sizeof *ret);
+	ret->deserializer = NULL;
+	ret->rs = NULL;
+	ret->is = NULL;
+
+	std::istream* is;
+	if (0 != strcmp("-", file)) {
+
+		ret->is = new std::ifstream(file, std::ifstream::binary | std::ios::binary);
+		is = ret->is;
+	} else {
+
+		is = &std::cin;
+	}
+
+	ret->rs = new ISMRMRD::IStreamView(*is);
+	ret->deserializer = new ISMRMRD::ProtocolDeserializer(*ret->rs);
+
+	return ret;
+}
+
+extern "C" void ismrm_stream_close(struct ismrm_cpp_state* s)
+{
+	if (NULL != s->deserializer)
+		delete s->deserializer;
+	// idk
+	if (NULL != s->rs)
+		delete s->rs;
+	if (NULL != s->is)
+		delete s->is;
+
+}
+
+extern "C" void ismrm_stream_read_meta(struct isrmrm_config_s* config)
+{
+	struct ismrm_cpp_state* s = config->ismrm_cpp_state;
+
+	try {
+		auto type = s->deserializer->peek();
+
+		if (ISMRMRD::ISMRMRD_MESSAGE_CONFIG_FILE == type) {
+
+			ISMRMRD::ConfigFile conf;
+			s->deserializer->deserialize(conf);
+		} else if (ISMRMRD::ISMRMRD_MESSAGE_CONFIG_TEXT == type) {
+
+			ISMRMRD::ConfigText conf;
+			s->deserializer->deserialize(conf);
+
+		} else {
+			error("BART ISMRMRD Wrapper: No Config received.");
+		}
+
+		type = s->deserializer->peek();
+		if (type != ISMRMRD::ISMRMRD_MESSAGE_HEADER)
+			error("BART ISMRMRD Wrapper: No Header received.");
+
+		ISMRMRD::IsmrmrdHeader hdr;
+		s->deserializer->deserialize(hdr);
+
+		ismrm_read_encoding_limits_from_hdr(hdr, config);
+	}
+	catch(std::runtime_error& e) {
+		error("BART ISMRMRD Wrapper: Exception thrown: %s\n", e.what());
+	}
+}
+
+extern "C" long ismrm_stream_read_acquisition(struct isrmrm_config_s* config, ISMRMRD::ISMRMRD_Acquisition* c_acq)
+{
+	struct ismrm_cpp_state* s = config->ismrm_cpp_state;
+
+	try {
+		auto type = s->deserializer->peek();
+		if (ISMRMRD::ISMRMRD_MESSAGE_CLOSE == type) {
+
+			return 0;
+		} else if (ISMRMRD::ISMRMRD_MESSAGE_ACQUISITION != type) {
+
+			error("BART ISMRMRD Wrapper: Unexpected Non-Acquisition message.\n");
+		}
+
+		assert(ISMRMRD::ISMRMRD_MESSAGE_ACQUISITION == type);
+		ISMRMRD::Acquisition a;
+		s->deserializer->deserialize(a);
+
+		c_acq->head = a.getHead();
+
+		size_t data_size = a.getDataSize();
+		c_acq->data = (complex_float_t*)xmalloc(data_size);
+		memcpy(c_acq->data, a.getDataPtr(), data_size);
+
+		if (LONG_MAX < data_size)
+			error("BART ISMRMRD Wrapper: Too large acquisition.\n");
+
+		return (long)data_size;
+	}
+	catch(std::runtime_error& e) {
+		error("BART ISMRMRD Wrapper: Exception thrown: %s\n", e.what());
+	}
 }

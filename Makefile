@@ -381,7 +381,7 @@ LINKER ?= $(CC)
 
 
 ifeq ($(ISMRMRD),1)
-TMRI += ismrmrd
+TMRI += ismrmrd ismrmrds
 MODULES_bart += -lismrm
 endif
 
