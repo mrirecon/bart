@@ -12,11 +12,10 @@
 
 #include "ismrm/read.h"
 
-namespace ISMRMRD
-{
 
 
-static struct limit_s get_limit(Optional<Limit> src)
+
+static struct limit_s get_limit(ISMRMRD::Optional<ISMRMRD::Limit>& src)
 {
 	struct limit_s ret;
 	ret.size = 1;
@@ -29,7 +28,7 @@ static struct limit_s get_limit(Optional<Limit> src)
 	ret.min_hdr = -1;
 
 	if (src.is_present()) {
-		
+
 		ret.center = src.get().center;
 		ret.min_hdr = src.get().minimum;
 		ret.max_hdr = src.get().maximum;
@@ -43,21 +42,34 @@ static struct limit_s get_limit(Optional<Limit> src)
 
 extern "C" void ismrm_read_encoding_limits(const char* filename, struct isrmrm_config_s* config)
 {
-	ISMRMRD_Dataset d;
+	ISMRMRD::ISMRMRD_Dataset d;
 	ismrmrd_init_dataset(&d, filename, "/dataset");
 	ismrmrd_open_dataset(&d, false);
 
 	const char* xml =  ismrmrd_read_header(&d);
 
-	IsmrmrdHeader h;
-	deserialize(xml, h);
+	ismrm_read_encoding_limits_from_xml(xml, config);
 
 	xfree(xml);
 
+	ismrmrd_close_dataset(&d);
+}
+
+static void ismrm_read_encoding_limits_from_hdr(ISMRMRD::IsmrmrdHeader& h, struct isrmrm_config_s* config);
+
+extern "C" void ismrm_read_encoding_limits_from_xml(const char* xml, struct isrmrm_config_s* config)
+{
+	ISMRMRD::IsmrmrdHeader h;
+	deserialize(xml, h);
+    ismrm_read_encoding_limits_from_hdr(h, config);
+}
+
+static void ismrm_read_encoding_limits_from_hdr(ISMRMRD::IsmrmrdHeader& h, struct isrmrm_config_s* config)
+{
 	if (config->idx_encoding >= (int)h.encoding.size())
 		error("ISMRMD inconsistent number of encodings!\n");
 
-	Encoding encoding = h.encoding[config->idx_encoding];
+	ISMRMRD::Encoding& encoding = h.encoding[config->idx_encoding];
 
 	config->limits[ISMRMRD_READ_DIM].size		= encoding.encodedSpace.matrixSize.x;
 	config->limits[ISMRMRD_COIL_DIM].size		= 1;
@@ -76,7 +88,7 @@ extern "C" void ismrm_read_encoding_limits(const char* filename, struct isrmrm_c
 	config->limits[ISMRMRD_PHS2_DIM] 		= get_limit(encoding.encodingLimits.kspace_encoding_step_2);
 	config->limits[ISMRMRD_PHS2_DIM].size 		= encoding.encodedSpace.matrixSize.z;
 	config->limits[ISMRMRD_PHS2_DIM].size_hdr	= encoding.encodedSpace.matrixSize.z;
-	
+
 	config->limits[ISMRMRD_AVERAGE_DIM] 		= get_limit(encoding.encodingLimits.average);
 	config->limits[ISMRMRD_SLICE_DIM] 		= get_limit(encoding.encodingLimits.slice);
 	config->limits[ISMRMRD_CONTRAST_DIM] 		= get_limit(encoding.encodingLimits.contrast);
@@ -84,8 +96,5 @@ extern "C" void ismrm_read_encoding_limits(const char* filename, struct isrmrm_c
 	config->limits[ISMRMRD_REPETITION_DIM]		= get_limit(encoding.encodingLimits.repetition);
 	config->limits[ISMRMRD_SET_DIM] 		= get_limit(encoding.encodingLimits.set);
 	config->limits[ISMRMRD_SEGMENT_DIM] 		= get_limit(encoding.encodingLimits.segment);
-
-	ismrmrd_close_dataset(&d);
-}
 
 }

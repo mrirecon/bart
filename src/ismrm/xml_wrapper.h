@@ -1,14 +1,9 @@
-#ifdef __cplusplus
-namespace ISMRMRD {
-extern "C" {
-#endif
-
-
 struct isrmrm_config_s;
 
-extern void ismrm_read_encoding_limits(const char* filename, struct isrmrm_config_s* encoding);
+#include "misc/cppwrap.h"
 
-#ifdef __cplusplus
-}
-}
-#endif
+
+extern void ismrm_read_encoding_limits(const char* filename, struct isrmrm_config_s* encoding);
+extern void ismrm_read_encoding_limits_from_xml(const char* xml, struct isrmrm_config_s* config);
+
+#include "misc/cppwrap.h"

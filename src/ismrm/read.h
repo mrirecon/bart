@@ -1,11 +1,13 @@
-
 #include "misc/mri.h"
 
 #include "ismrmrd/ismrmrd.h"
 
+#include "misc/cppwrap.h"
+
 #ifdef __cplusplus
-namespace ISMRMRD {
-extern "C" {
+#define ISMRMRD_NS(x) ISMRMRD::x
+#else
+#define ISMRMRD_NS(x) x
 #endif
 
 struct limit_s {
@@ -23,7 +25,7 @@ struct limit_s {
 };
 
 enum ISMRMRD_mri_dims {
-	
+
 	ISMRMRD_READ_DIM,
 	ISMRMRD_COIL_DIM,
 
@@ -51,9 +53,9 @@ enum ISMRMRD_SLICE_ORDERING {
 struct isrmrm_config_s {
 
 	int idx_encoding;
-	int dim_mapping[ISMRMRD_NAMED_DIMS + ISMRMRD_USER_INTS];
+	int dim_mapping[ISMRMRD_NAMED_DIMS + ISMRMRD_NS(ISMRMRD_USER_INTS)];
 
-	struct limit_s limits[ISMRMRD_NAMED_DIMS + ISMRMRD_USER_INTS];
+	struct limit_s limits[ISMRMRD_NAMED_DIMS + ISMRMRD_NS(ISMRMRD_USER_INTS)];
 
 	enum ISMRMRD_SLICE_ORDERING slice_ord;
 
@@ -73,8 +75,4 @@ extern void ismrm_print_xml(const char* filename);
 extern void ismrm_read_dims(const char* datafile, struct isrmrm_config_s* config, int N, long dims[__VLA(N)]);
 extern void ismrm_read(const char* datafile, struct isrmrm_config_s* config, int N, long dims[__VLA(N)], _Complex float* buf);
 
-#ifdef __cplusplus
-}
-}
-#endif
-
+#include "misc/cppwrap.h"
