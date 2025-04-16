@@ -4207,6 +4207,19 @@ void md_zfdiff(int D, const long dims[D], int d, complex float* out, const compl
 }
 
 
+/**
+* Compute finite (forward) differences along selected dimension and set first pos to zero.
+*
+*/
+void md_zfdiff0(int D, const long dims[D], int d, complex float* out, const complex float* in)
+{
+	md_zfdiff(D, dims, d, out, in);
+
+	long zdims[D];
+	md_select_dims(D, ~MD_BIT(d), zdims, dims);
+
+	md_clear2(D, zdims, MD_STRIDES(D, dims, CFL_SIZE), out, sizeof(complex float));
+}
 
 /**
  * Compute finite (backward) differences along selected dimensions.
@@ -4220,6 +4233,24 @@ void md_zfdiff_backwards(int D, const long dims[D], int d, complex float* out, c
 	md_zfdiff_backwards2(D, dims, d, strs, out, strs, in);
 }
 
+/**
+* Compute finite (backward) differences along selected dimension and set last pos to zero.
+*
+*/
+void md_zfdiff_backwards0(int D, const long dims[D], int d, complex float* out, const complex float* in)
+{
+	md_zfdiff_backwards(D, dims, d, out, in);
+	
+	long zdims[D];
+	md_select_dims(D, ~MD_BIT(d), zdims, dims);
+
+	long pos[D];
+	for (int i = 0; i < D; i++)
+		pos[i] = 0;
+	pos[d] = dims[d] - 1;
+
+	md_clear2(D, zdims, MD_STRIDES(D, dims, CFL_SIZE), out + (md_calc_offset(D, MD_STRIDES(D, dims, CFL_SIZE), pos) / (long)CFL_SIZE), sizeof(complex float));
+}
 
 
 // DO NOT USE DIRECTLY - this is used internally by fftmod from fft.[ch]

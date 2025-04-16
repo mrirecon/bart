@@ -374,8 +374,10 @@ extern void md_fdiff_backwards(int D, const long dims[__VLA(D)], int d, float* o
 
 extern void md_zfdiff2(int D, const long dims[__VLA(D)], int d, const long ostr[__VLA(D)], _Complex float* out, const long istr[__VLA(D)], const _Complex float* in);
 extern void md_zfdiff(int D, const long dims[__VLA(D)], int d, _Complex float* out, const _Complex float* in);
+extern void md_zfdiff0(int D, const long dims[__VLA(D)], int d, _Complex float* out, const _Complex float* in);
 extern void md_zfdiff_backwards2(int D, const long dims[__VLA(D)], int d, const long ostr[__VLA(D)], _Complex float* out, const long istr[__VLA(D)], const _Complex float* in);
 extern void md_zfdiff_backwards(int D, const long dims[__VLA(D)], int d, _Complex float* out, const _Complex float* in);
+extern void md_zfdiff_backwards0(int D, const long dims[__VLA(D)], int d, _Complex float* out, const _Complex float* in);
 
 
 extern void md_zfftmod(int D, const long dim[__VLA(D)], _Complex float* optr, const _Complex float* iptr, bool inv, double phase);
