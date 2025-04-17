@@ -274,7 +274,7 @@ static void ismrm_conf_to_dims(const struct isrmrm_config_s* config, int N, long
 }
 
 inline static bool set_pos(struct isrmrm_config_s* config, int N, long pos[N], int map, int idx)
-{	
+{
 	assert(config->dim_mapping[map] < N);
 
 	if (-1 == config->limits[map].min_idx)
@@ -299,7 +299,7 @@ inline static bool set_pos(struct isrmrm_config_s* config, int N, long pos[N], i
 			case ISMRMRD_SLICE_INTERLEAVED:
 			{
 				long max = config->limits[map].size;
-			
+
 				if (0 == max % 2)
 					idx = (idx < max / 2) ? idx * 2 : 2 * idx - max + 1;
 				else
@@ -309,7 +309,7 @@ inline static bool set_pos(struct isrmrm_config_s* config, int N, long pos[N], i
 			case ISMRMRD_SLICE_INTERLEAVED_SIEMENS:
 			{
 				long max = config->limits[map].size;
-			
+
 				if (0 == max % 2)
 					idx = (idx < max / 2) ? idx * 2 + 1 : 2 * idx - max;
 				else
@@ -318,7 +318,7 @@ inline static bool set_pos(struct isrmrm_config_s* config, int N, long pos[N], i
 			break;
 		}
 	}
-	
+
 	if ((0 > idx) || (idx >= config->limits[map].size)) {
 
 		static bool warn = true;
@@ -326,13 +326,23 @@ inline static bool set_pos(struct isrmrm_config_s* config, int N, long pos[N], i
 		if (warn) {
 
 			warn = false;
-			debug_printf(DP_WARN, "Acquisition index %d out of bounds for \"%s\" (size=%d)! -> Skipped\n      Further warnings will be suppressed!\n", idx, ismrmrd_get_dim_string(map), config->limits[map].size);
+			debug_printf(DP_WARN, "Acquisition index %d out of bounds for \"%s\" (size=%ld)! -> Skipped\n      Further warnings will be suppressed!\n", idx, ismrmrd_get_dim_string((unsigned)map), config->limits[map].size);
 		}
 		return false;
 	}
 
 	if (MD_IS_SET(config->shift, map) && (-1 != config->limits[map].center))
 		idx += (config->limits[map].size / 2 - config->limits[map].center);
+
+	if (0 > config->dim_mapping[map]) {
+
+		if (0 == idx)
+			return true;
+
+		error("BART ISMRMRD read: Non-trivial idx for unmapped dimension.\n");
+	}
+
+	assert(0 <= config->dim_mapping[map]);
 
 	pos[config->dim_mapping[map]] = idx;
 	return true;
@@ -346,7 +356,7 @@ static bool ismrm_read_idx(struct isrmrm_config_s* config, struct ISMRMRD_Encodi
 	bool result = true;
 
 	for (int i = ISMRMRD_PHS1_DIM; i < ISMRMRD_NAMED_DIMS + ISMRMRD_USER_INTS; i++)
-		result = result && set_pos(config, N, pos, i, ismrmrd_get_idx(i, &idx));
+		result = result && set_pos(config, N, pos, i, ismrmrd_get_idx((unsigned)i, &idx));
 
 	return result;
 }
