@@ -52,6 +52,12 @@ enum ISMRMRD_SLICE_ORDERING {
 	ISMRMRD_SLICE_INTERLEAVED_SIEMENS,
 };
 
+struct ismrmrd_convert_state {
+	long counter;
+	long counter_flags[64];
+	int overwrite_counter;
+};
+
 struct isrmrm_config_s {
 
 	int idx_encoding;
@@ -69,6 +75,8 @@ struct isrmrm_config_s {
 	int measurement;
 	int repetition;
 	int overwriting_idx;
+
+	struct ismrmrd_convert_state convert_state;
 };
 
 extern struct isrmrm_config_s ismrm_default_config;

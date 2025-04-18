@@ -366,6 +366,7 @@ static bool ismrm_read_idx(struct isrmrm_config_s* config, struct ISMRMRD_Encodi
 	return result;
 }
 
+static bool ismrmrd_convert_acquisition(struct isrmrm_config_s* config, const ISMRMRD_Acquisition* acq, int N, const long dims[N], long strs[N], long pos[N], complex float* buf);
 
 void ismrm_read(const char* datafile, struct isrmrm_config_s* config, int N, long dims[N], complex float* buf)
 {
@@ -378,157 +379,129 @@ void ismrm_read(const char* datafile, struct isrmrm_config_s* config, int N, lon
 	long pos[N];
 	for (int i = 0; i < N; i++)
 		pos[i] = 0;
-	
+
 	long strs[N];
 	md_calc_strides(N, strs, dims, CFL_SIZE);
 
 	ISMRMRD_Acquisition acq;
 
-	long counter = 0;
-	long counter_flags[64];
-	for (int i = 0; i < 64; i++)
-		counter_flags[i] = 0;
-
-	int overwrite_counter = 0;
-
+	config->convert_state = (struct ismrmrd_convert_state){ 0 };
 
 	for (long i = 0; i < number_of_acquisitions; i++) {
 
 		ismrmrd_init_acquisition(&acq);
 		ismrmrd_read_acquisition(&d, i, &acq);
-
-		bool skip = false;
-
-		if ((-1 != config->measurement) && (counter_flags[ISMRMRD_ACQ_LAST_IN_MEASUREMENT - 1] != config->measurement))
-			skip = true;
-		
-
-		long flags[64];
-		for (int j = 0; j < 64; j++)  {
-
-			flags[j] = MD_IS_SET(acq.head.flags, j) ? 1 : 0;
-			counter_flags[j] += flags[j];
-		}
-
-		if (skip)
-			continue;
-
-
-		if (MD_IS_SET(acq.head.flags, (ISMRMRD_ACQ_IS_NOISE_MEASUREMENT - 1))) {
-
-			if (NULL != buf)
-				debug_printf(DP_DEBUG1, "Acquisition %ld is noise measurement! -> Skipped\n", i);
-
-			skip = true;
-		}
-		
-		if (MD_IS_SET(acq.head.flags, (ISMRMRD_ACQ_IS_PARALLEL_CALIBRATION - 1))) {
-
-			if (NULL != buf)
-				debug_printf(DP_DEBUG1, "Acquisition %ld is calibration measurement! -> Skipped\n", i);
-
-			skip = true;
-		}
-
-		if (MD_IS_SET(acq.head.flags, (ISMRMRD_ACQ_IS_NAVIGATION_DATA - 1))) {
-
-			if (NULL != buf)
-				debug_printf(DP_DEBUG1, "Acquisition %ld is navigation measurement! -> Skipped\n", i);
-
-			skip = true;
-		}
-
-		if (MD_IS_SET(acq.head.flags, (ISMRMRD_ACQ_IS_PHASECORR_DATA - 1))) {
-
-			if (NULL != buf)
-				debug_printf(DP_DEBUG1, "Acquisition %ld is phase correction measurement! -> Skipped\n", i);
-
-			skip = true;
-		}
-				
-		if (MD_IS_SET(acq.head.flags, (ISMRMRD_ACQ_IS_REVERSE  - 1))) {
-
-			static bool warn = true;
-
-			if (warn && (NULL != buf)) {
-
-				warn = false;
-				debug_printf(DP_WARN, "Acquisition %ld is reverse! This is probably not handled correctly! Further warnings will be suppressed!\n", i);
-			}
-		}
-
-		if (acq.head.encoding_space_ref != config->idx_encoding)
-			skip = true;
-
-		
-		skip = skip || !ismrm_read_idx(config, acq.head.idx, N, pos);
-
-		if (skip || (NULL == buf))
-			continue;
-		
-
-		long channels = acq.head.available_channels;
-		if (acq.head.available_channels != acq.head.active_channels)
-			error("All channels must be active, but (%d/%d) are active!\n", acq.head.active_channels, acq.head.available_channels);
-
-		long samples = acq.head.number_of_samples;
-
-		assert(channels == dims[config->dim_mapping[ISMRMRD_COIL_DIM]]);
-		assert(samples + acq.head.discard_post + acq.head.discard_pre == dims[config->dim_mapping[ISMRMRD_READ_DIM]]);
-		
-		long adc_dims[N];
-		long adc_strs[N];
-
-		md_singleton_dims(N, adc_dims);
-		assert(config->dim_mapping[ISMRMRD_READ_DIM] < config->dim_mapping[ISMRMRD_COIL_DIM]);
-		adc_dims[config->dim_mapping[ISMRMRD_READ_DIM]] = samples;
-		adc_dims[config->dim_mapping[ISMRMRD_COIL_DIM]] = channels;
-
-		md_calc_strides(N, adc_strs, adc_dims, CFL_SIZE);
-
-		if (0 != md_znorm2(N, adc_dims, strs, &MD_ACCESS(N, strs, pos, buf))) {
-
-			static bool warn = true;
-			
-			if  (-1 != config->overwriting_idx)
-				warn = false;
-
-			if (warn) {
-
-				warn = false;
-				debug_printf(DP_WARN, "Acquisition %ld would overwrite data! -> Skipped\n      Further warnings will be suppressed!\n", i);
-			}
-
-			if (overwrite_counter < config->overwriting_idx) {
-
-				md_clear(N, dims, buf, CFL_SIZE);
-				overwrite_counter++;
-			} else {
-
-				continue;
-			}
-		}
-
-		debug_printf(DP_DEBUG3, "Copy acquisition %ld\n", i);
-		debug_print_ISMRMRD_acq(DP_DEBUG3, acq.head);
-		debug_print_dims(DP_DEBUG3, N, pos);
-		debug_print_dims(DP_DEBUG3, N, dims);
-		debug_print_dims(DP_DEBUG3, N, strs);
-		debug_print_dims(DP_DEBUG3, N, adc_dims);
-		debug_print_dims(DP_DEBUG3, N, adc_strs);
-		
-		md_copy_block2(N, pos, dims, strs, buf, adc_dims, adc_strs, acq.data, CFL_SIZE);
-
-		debug_printf(DP_DEBUG3, "Copied %ld %u %u\n", i, acq.head.measurement_uid, acq.head.scan_counter);
-
-		counter++;
+		if ((!ismrmrd_convert_acquisition(config, &acq, N, dims, strs, pos, buf)) && (NULL != buf))
+			debug_printf(DP_WARN, "SKIPPED ACQUISITION %ld!\n", i);
 	}
 
 	debug_printf(DP_DEBUG2, "Counter flags: ");
-	debug_print_dims(DP_DEBUG2, 64, counter_flags);
+	debug_print_dims(DP_DEBUG2, 64, config->convert_state.counter_flags);
 
 	if (NULL != buf)
-		debug_printf(DP_DEBUG1, "In total %ld acquisitions copied!\n", counter);
+		debug_printf(DP_DEBUG1, "In total %ld acquisitions copied!\n", config->convert_state.counter);
+}
+
+
+static bool ismrmrd_convert_acquisition(struct isrmrm_config_s* config, const ISMRMRD_Acquisition* acq, int N, const long dims[N], long strs[N], long pos[N], complex float* buf)
+{
+	bool skip = false;
+
+	if ((-1 != config->measurement) && (config->convert_state.counter_flags[ISMRMRD_ACQ_LAST_IN_MEASUREMENT - 1] != config->measurement))
+		skip = true;
+
+	for (int j = 0; j < (int)ARRAY_SIZE(config->convert_state.counter_flags); j++)
+		config->convert_state.counter_flags[j] += MD_IS_SET(acq->head.flags, j) ? 1 : 0;
+
+	if (skip)
+		return false;
+
+
+	if (MD_IS_SET(acq->head.flags, (ISMRMRD_ACQ_IS_NOISE_MEASUREMENT - 1)))
+		return false;
+
+	if (MD_IS_SET(acq->head.flags, (ISMRMRD_ACQ_IS_PARALLEL_CALIBRATION - 1)))
+		return false;
+
+	if (MD_IS_SET(acq->head.flags, (ISMRMRD_ACQ_IS_NAVIGATION_DATA - 1)))
+		return false;
+
+	if (MD_IS_SET(acq->head.flags, (ISMRMRD_ACQ_IS_PHASECORR_DATA - 1)))
+		return false;
+
+	if (MD_IS_SET(acq->head.flags, (ISMRMRD_ACQ_IS_REVERSE  - 1))) {
+
+		static bool warn = true;
+
+		if (warn && (NULL != buf)) {
+
+			warn = false;
+			debug_printf(DP_WARN, "Acquisition is reverse! This is probably not handled correctly! Further warnings will be suppressed!\n");
+		}
+	}
+
+	if (acq->head.encoding_space_ref != config->idx_encoding)
+		return false;
+
+	if ((!ismrm_read_idx(config, acq->head.idx, N, pos)) || (NULL == buf))
+		return false;
+
+	long channels = acq->head.available_channels;
+	if (acq->head.available_channels != acq->head.active_channels)
+		error("All channels must be active, but (%d/%d) are active!\n", acq->head.active_channels, acq->head.available_channels);
+
+	long samples = acq->head.number_of_samples;
+
+	assert(channels == dims[config->dim_mapping[ISMRMRD_COIL_DIM]]);
+	assert(samples + acq->head.discard_post + acq->head.discard_pre == dims[config->dim_mapping[ISMRMRD_READ_DIM]]);
+
+	long adc_dims[N];
+	long adc_strs[N];
+
+	md_singleton_dims(N, adc_dims);
+	assert(config->dim_mapping[ISMRMRD_READ_DIM] < config->dim_mapping[ISMRMRD_COIL_DIM]);
+	adc_dims[config->dim_mapping[ISMRMRD_READ_DIM]] = samples;
+	adc_dims[config->dim_mapping[ISMRMRD_COIL_DIM]] = channels;
+
+	md_calc_strides(N, adc_strs, adc_dims, CFL_SIZE);
+
+	if (0 != md_znorm2(N, adc_dims, strs, &MD_ACCESS(N, strs, pos, buf))) {
+
+		static bool warn = true;
+
+		if  (-1 != config->overwriting_idx)
+			warn = false;
+
+		if (warn) {
+
+			warn = false;
+			debug_printf(DP_WARN, "Acquisition would overwrite data! -> Skipped\n      Further warnings will be suppressed!\n");
+		}
+
+		if (config->convert_state.overwrite_counter < config->overwriting_idx) {
+
+			md_clear(N, dims, buf, CFL_SIZE);
+			config->convert_state.overwrite_counter++;
+		} else {
+
+			return false;
+		}
+	}
+
+	debug_print_ISMRMRD_acq(DP_DEBUG3, acq->head);
+	debug_print_dims(DP_DEBUG3, N, pos);
+	debug_print_dims(DP_DEBUG3, N, dims);
+	debug_print_dims(DP_DEBUG3, N, strs);
+	debug_print_dims(DP_DEBUG3, N, adc_dims);
+	debug_print_dims(DP_DEBUG3, N, adc_strs);
+
+	md_copy_block2(N, pos, dims, strs, buf, adc_dims, adc_strs, acq->data, CFL_SIZE);
+
+	debug_printf(DP_DEBUG3, "Copied %u %u\n", acq->head.measurement_uid, acq->head.scan_counter);
+
+	config->convert_state.counter++;
+
+	return true;
 }
 
 
