@@ -169,6 +169,7 @@ static void debug_print_ISMRMRD_acq(int level, struct ISMRMRD_AcquisitionHeader 
 
 static void ismrm_conf_merge_unmapped_dims(struct isrmrm_config_s* config);
 static void ismrm_conf_to_dims(const struct isrmrm_config_s* config, int N, long dims[__VLA(N)]);
+static bool ismrm_validate_limits(struct isrmrm_config_s* config);
 
 void ismrm_read_dims(const char* datafile, struct isrmrm_config_s* config, int N, long dims[N])
 {
@@ -180,48 +181,59 @@ void ismrm_read_dims(const char* datafile, struct isrmrm_config_s* config, int N
 	if (config->check_dims_with_acquisition) {
 
 		ismrm_read(datafile, config, N, dims, NULL);
-
-		for (enum ISMRMRD_mri_dims i = ISMRMRD_PHS1_DIM; i < ISMRMRD_NAMED_DIMS + ISMRMRD_USER_INTS; i++) {
-
-			if ((1 != config->limits[i].size) && (config->limits[i].max_idx == config->limits[i].min_idx)) {
-
-				debug_printf(DP_WARN, "Dimension \"%s\" has size %ld but all acquisitions have the same index (%ld)!\n      => Set dimension to one!\n",
-							ismrmrd_get_dim_string(i), config->limits[i].size, config->limits[i].max_idx);
-
-				config->limits[i].size = 1;
-				config->merge_dims = MD_SET(config->merge_dims, i);
-			}
-
-			if ((1 == config->limits[i].size) && (config->limits[i].max_idx == config->limits[i].min_idx) && (0 < config->limits[i].max_idx)) {
-
-				debug_printf(DP_WARN, "Dimension \"%s\" has size %ld but all acquisitions have the same index (%ld)!\n      => Set indices to 0!\n",
-							ismrmrd_get_dim_string(i), config->limits[i].size, config->limits[i].max_idx);
-
-				config->limits[i].size = 1;
-				config->merge_dims = MD_SET(config->merge_dims, i);
-			}
-
-			if ((1 == config->limits[i].size) && (config->limits[i].max_idx > config->limits[i].min_idx)) {
-
-				debug_printf(DP_WARN, "Dimension \"%s\" has size %ld but acquisitions extend from %ld to %ld!\n      => All indices are set to 0, check for overwriting data!\n",
-							ismrmrd_get_dim_string(i), config->limits[i].size, config->limits[i].min_idx, config->limits[i].max_idx);
-
-				config->limits[i].size = 1;
-				config->merge_dims = MD_SET(config->merge_dims, i);
-			}
-
-			if ((!MD_IS_SET(config->shift, i)) && (config->limits[i].max_idx > config->limits[i].min_idx) && (config->limits[i].max_idx + 1 < config->limits[i].size)) {
-
-				debug_printf(DP_WARN, "Dimension \"%s\" has size %ld but acquisitions extend only to %ld!\n      => Dimension is reduced!\n",
-							ismrmrd_get_dim_string(i), config->limits[i].size, config->limits[i].max_idx);
-
-				config->limits[i].size = config->limits[i].max_idx + 1;
-			}
-		}
+		ismrm_validate_limits(config);
 	}
 
 	ismrm_conf_merge_unmapped_dims(config);
 	ismrm_conf_to_dims(config, N, dims);
+}
+
+static bool ismrm_validate_limits(struct isrmrm_config_s* config)
+{
+	bool changed = false;
+
+	for (enum ISMRMRD_mri_dims i = ISMRMRD_PHS1_DIM; i < ISMRMRD_NAMED_DIMS + ISMRMRD_USER_INTS; i++) {
+
+		if ((1 != config->limits[i].size) && (config->limits[i].max_idx == config->limits[i].min_idx)) {
+
+			debug_printf(DP_WARN, "Dimension \"%s\" has size %ld but all acquisitions have the same index (%ld)!\n      => Set dimension to one!\n",
+						ismrmrd_get_dim_string(i), config->limits[i].size, config->limits[i].max_idx);
+
+			config->limits[i].size = 1;
+			config->merge_dims = MD_SET(config->merge_dims, i);
+			changed = true;
+		}
+
+		if ((1 == config->limits[i].size) && (config->limits[i].max_idx == config->limits[i].min_idx) && (0 < config->limits[i].max_idx)) {
+
+			debug_printf(DP_WARN, "Dimension \"%s\" has size %ld but all acquisitions have the same index (%ld)!\n      => Set indices to 0!\n",
+						ismrmrd_get_dim_string(i), config->limits[i].size, config->limits[i].max_idx);
+
+			config->limits[i].size = 1;
+			config->merge_dims = MD_SET(config->merge_dims, i);
+			changed = true;
+		}
+
+		if ((1 == config->limits[i].size) && (config->limits[i].max_idx > config->limits[i].min_idx)) {
+
+			debug_printf(DP_WARN, "Dimension \"%s\" has size %ld but acquisitions extend from %ld to %ld!\n      => All indices are set to 0, check for overwriting data!\n",
+						ismrmrd_get_dim_string(i), config->limits[i].size, config->limits[i].min_idx, config->limits[i].max_idx);
+
+			config->limits[i].size = 1;
+			config->merge_dims = MD_SET(config->merge_dims, i);
+			changed = true;
+		}
+
+		if ((!MD_IS_SET(config->shift, i)) && (config->limits[i].max_idx > config->limits[i].min_idx) && (config->limits[i].max_idx + 1 < config->limits[i].size)) {
+
+			debug_printf(DP_WARN, "Dimension \"%s\" has size %ld but acquisitions extend only to %ld!\n      => Dimension is reduced!\n",
+						ismrmrd_get_dim_string(i), config->limits[i].size, config->limits[i].max_idx);
+
+			config->limits[i].size = config->limits[i].max_idx + 1;
+			changed = true;
+		}
+	}
+	return changed;
 }
 
 static void ismrm_conf_merge_unmapped_dims(struct isrmrm_config_s* config)
