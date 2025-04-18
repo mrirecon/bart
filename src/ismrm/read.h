@@ -24,6 +24,8 @@ struct limit_s {
 	long max_idx;	//maximum found in acquisitions
 };
 
+extern const struct limit_s ismrmrd_default_limit;
+
 enum ISMRMRD_mri_dims {
 
 	ISMRMRD_READ_DIM,

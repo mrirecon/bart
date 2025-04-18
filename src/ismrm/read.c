@@ -26,6 +26,17 @@
 
 #include "read.h"
 
+// constexpr
+#define ismrmrd_default_limit_macro (struct limit_s){ .size = 1,\
+					 .size_hdr = 1,\
+					 .max_hdr = -1,\
+					 .min_hdr = -1,\
+					 .max_idx = -1,\
+					 .min_idx = -1,\
+					 .center = -1 }
+
+const struct limit_s ismrmrd_default_limit = ismrmrd_default_limit_macro;
+
 // FIXME: does not deal correctly with repetitions (and others stuff)
 
 struct isrmrm_config_s ismrm_default_config = {
@@ -49,13 +60,7 @@ struct isrmrm_config_s ismrm_default_config = {
 	},
 
 	.limits = { [0 ... ISMRMRD_NAMED_DIMS + ISMRMRD_USER_INTS - 1]
-			= (struct limit_s){ .size = 1,
-					    .size_hdr = 1,
-					    .max_hdr = -1,
-					    .min_hdr = -1,
-					    .max_idx = -1,
-					    .min_idx = -1,
-					    .center = -1}
+			= ismrmrd_default_limit_macro
 		  },
 
 	.slice_ord = ISMRMRD_SLICE_ASCENDING,
@@ -138,14 +143,14 @@ static int ismrmrd_get_idx(enum ISMRMRD_mri_dims code, struct ISMRMRD_EncodingCo
 
 static void debug_print_ISMRMRD_index(int level, struct ISMRMRD_EncodingCounters idx)
 {
-	for (int i = 0; i < ISMRMRD_NAMED_DIMS + ISMRMRD_USER_INTS; i++)
+	for (enum ISMRMRD_mri_dims i = 0; i < ISMRMRD_NAMED_DIMS + ISMRMRD_USER_INTS; i++)
 		debug_printf(level, "%s: %d\n", ismrmrd_get_dim_string(i), ismrmrd_get_idx(i, &idx));
 }
 
 static void debug_print_ISMRMRD_acq(int level, struct ISMRMRD_AcquisitionHeader head)
 {
 	debug_printf(level, "%s: %u\n", "version", head.version);
-	debug_printf(level, "%s: %u\n", "flags", head.flags);
+	debug_printf(level, "%s: %lu\n", "flags", head.flags);
 	debug_printf(level, "%s: %u\n", "measurement_uid", head.measurement_uid);
 	debug_printf(level, "%s: %u\n", "scan_counter", head.scan_counter);
 	debug_printf(level, "%s: %u\n", "acquisition_time_stamp", head.acquisition_time_stamp);
@@ -176,11 +181,11 @@ void ismrm_read_dims(const char* datafile, struct isrmrm_config_s* config, int N
 
 		ismrm_read(datafile, config, N, dims, NULL);
 
-		for (int i = ISMRMRD_PHS1_DIM; i < ISMRMRD_NAMED_DIMS + ISMRMRD_USER_INTS; i++) {
+		for (enum ISMRMRD_mri_dims i = ISMRMRD_PHS1_DIM; i < ISMRMRD_NAMED_DIMS + ISMRMRD_USER_INTS; i++) {
 
 			if ((1 != config->limits[i].size) && (config->limits[i].max_idx == config->limits[i].min_idx)) {
 
-				debug_printf(DP_WARN, "Dimension \"%s\" has size %d but all acquisitions have the same index (%d)!\n      => Set dimension to one!\n",
+				debug_printf(DP_WARN, "Dimension \"%s\" has size %ld but all acquisitions have the same index (%ld)!\n      => Set dimension to one!\n",
 							ismrmrd_get_dim_string(i), config->limits[i].size, config->limits[i].max_idx);
 
 				config->limits[i].size = 1;
@@ -189,7 +194,7 @@ void ismrm_read_dims(const char* datafile, struct isrmrm_config_s* config, int N
 
 			if ((1 == config->limits[i].size) && (config->limits[i].max_idx == config->limits[i].min_idx) && (0 < config->limits[i].max_idx)) {
 
-				debug_printf(DP_WARN, "Dimension \"%s\" has size %d but all acquisitions have the same index (%d)!\n      => Set indices to 0!\n",
+				debug_printf(DP_WARN, "Dimension \"%s\" has size %ld but all acquisitions have the same index (%ld)!\n      => Set indices to 0!\n",
 							ismrmrd_get_dim_string(i), config->limits[i].size, config->limits[i].max_idx);
 
 				config->limits[i].size = 1;
@@ -198,7 +203,7 @@ void ismrm_read_dims(const char* datafile, struct isrmrm_config_s* config, int N
 
 			if ((1 == config->limits[i].size) && (config->limits[i].max_idx > config->limits[i].min_idx)) {
 
-				debug_printf(DP_WARN, "Dimension \"%s\" has size %d but acquisitions extend from %d to %d!\n      => All indices are set to 0, check for overwriting data!\n",
+				debug_printf(DP_WARN, "Dimension \"%s\" has size %ld but acquisitions extend from %ld to %ld!\n      => All indices are set to 0, check for overwriting data!\n",
 							ismrmrd_get_dim_string(i), config->limits[i].size, config->limits[i].min_idx, config->limits[i].max_idx);
 
 				config->limits[i].size = 1;
@@ -207,7 +212,7 @@ void ismrm_read_dims(const char* datafile, struct isrmrm_config_s* config, int N
 
 			if ((!MD_IS_SET(config->shift, i)) && (config->limits[i].max_idx > config->limits[i].min_idx) && (config->limits[i].max_idx + 1 < config->limits[i].size)) {
 
-				debug_printf(DP_WARN, "Dimension \"%s\" has size %d but acquisitions extend only to %d!\n      => Dimension is reduced!\n",
+				debug_printf(DP_WARN, "Dimension \"%s\" has size %ld but acquisitions extend only to %ld!\n      => Dimension is reduced!\n",
 							ismrmrd_get_dim_string(i), config->limits[i].size, config->limits[i].max_idx);
 
 				config->limits[i].size = config->limits[i].max_idx + 1;
@@ -221,11 +226,11 @@ void ismrm_read_dims(const char* datafile, struct isrmrm_config_s* config, int N
 
 static void ismrm_conf_merge_unmapped_dims(struct isrmrm_config_s* config)
 {
-	for (int i = ISMRMRD_PHS1_DIM; i < ISMRMRD_NAMED_DIMS + ISMRMRD_USER_INTS; i++) {
+	for (enum ISMRMRD_mri_dims i = ISMRMRD_PHS1_DIM; i < ISMRMRD_NAMED_DIMS + ISMRMRD_USER_INTS; i++) {
 
 		if ((1 != config->limits[i].size) && (-1 == config->dim_mapping[i])) {
 
-			debug_printf(DP_WARN, "Dimension \"%s\" has size %d but is not mapped to BART dimension!\n      => All indices are set to 0, check for overwriting data!\n",
+			debug_printf(DP_WARN, "Dimension \"%s\" has size %ld but is not mapped to BART dimension!\n      => All indices are set to 0, check for overwriting data!\n",
 						ismrmrd_get_dim_string(i), config->limits[i].size);
 
 			config->limits[i].size = 1;
@@ -412,7 +417,7 @@ void ismrm_read(const char* datafile, struct isrmrm_config_s* config, int N, lon
 		if (MD_IS_SET(acq.head.flags, (ISMRMRD_ACQ_IS_NOISE_MEASUREMENT - 1))) {
 
 			if (NULL != buf)
-				debug_printf(DP_DEBUG1, "Acquisition %d is noise measurement! -> Skipped\n", i);
+				debug_printf(DP_DEBUG1, "Acquisition %ld is noise measurement! -> Skipped\n", i);
 
 			skip = true;
 		}
@@ -420,7 +425,7 @@ void ismrm_read(const char* datafile, struct isrmrm_config_s* config, int N, lon
 		if (MD_IS_SET(acq.head.flags, (ISMRMRD_ACQ_IS_PARALLEL_CALIBRATION - 1))) {
 
 			if (NULL != buf)
-				debug_printf(DP_DEBUG1, "Acquisition %d is calibration measurement! -> Skipped\n", i);
+				debug_printf(DP_DEBUG1, "Acquisition %ld is calibration measurement! -> Skipped\n", i);
 
 			skip = true;
 		}
@@ -428,7 +433,7 @@ void ismrm_read(const char* datafile, struct isrmrm_config_s* config, int N, lon
 		if (MD_IS_SET(acq.head.flags, (ISMRMRD_ACQ_IS_NAVIGATION_DATA - 1))) {
 
 			if (NULL != buf)
-				debug_printf(DP_DEBUG1, "Acquisition %d is navigation measurement! -> Skipped\n", i);
+				debug_printf(DP_DEBUG1, "Acquisition %ld is navigation measurement! -> Skipped\n", i);
 
 			skip = true;
 		}
@@ -436,7 +441,7 @@ void ismrm_read(const char* datafile, struct isrmrm_config_s* config, int N, lon
 		if (MD_IS_SET(acq.head.flags, (ISMRMRD_ACQ_IS_PHASECORR_DATA - 1))) {
 
 			if (NULL != buf)
-				debug_printf(DP_DEBUG1, "Acquisition %d is phase correction measurement! -> Skipped\n", i);
+				debug_printf(DP_DEBUG1, "Acquisition %ld is phase correction measurement! -> Skipped\n", i);
 
 			skip = true;
 		}
@@ -448,7 +453,7 @@ void ismrm_read(const char* datafile, struct isrmrm_config_s* config, int N, lon
 			if (warn && (NULL != buf)) {
 
 				warn = false;
-				debug_printf(DP_WARN, "Acquisition %d is reverse! This is probably not handled correctly! Further warnings will be suppressed!\n", i);
+				debug_printf(DP_WARN, "Acquisition %ld is reverse! This is probably not handled correctly! Further warnings will be suppressed!\n", i);
 			}
 		}
 
@@ -491,7 +496,7 @@ void ismrm_read(const char* datafile, struct isrmrm_config_s* config, int N, lon
 			if (warn) {
 
 				warn = false;
-				debug_printf(DP_WARN, "Acquisition %d would overwrite data! -> Skipped\n      Further warnings will be suppressed!\n", i);
+				debug_printf(DP_WARN, "Acquisition %ld would overwrite data! -> Skipped\n      Further warnings will be suppressed!\n", i);
 			}
 
 			if (overwrite_counter < config->overwriting_idx) {
@@ -504,7 +509,7 @@ void ismrm_read(const char* datafile, struct isrmrm_config_s* config, int N, lon
 			}
 		}
 
-		debug_printf(DP_DEBUG3, "Copy acquisition %d\n", i);
+		debug_printf(DP_DEBUG3, "Copy acquisition %ld\n", i);
 		debug_print_ISMRMRD_acq(DP_DEBUG3, acq.head);
 		debug_print_dims(DP_DEBUG3, N, pos);
 		debug_print_dims(DP_DEBUG3, N, dims);
@@ -514,7 +519,7 @@ void ismrm_read(const char* datafile, struct isrmrm_config_s* config, int N, lon
 		
 		md_copy_block2(N, pos, dims, strs, buf, adc_dims, adc_strs, acq.data, CFL_SIZE);
 
-		debug_printf(DP_DEBUG3, "Copied %ld %ld %ld\n", i, acq.head.measurement_uid, acq.head.scan_counter);
+		debug_printf(DP_DEBUG3, "Copied %ld %u %u\n", i, acq.head.measurement_uid, acq.head.scan_counter);
 
 		counter++;
 	}
@@ -523,7 +528,7 @@ void ismrm_read(const char* datafile, struct isrmrm_config_s* config, int N, lon
 	debug_print_dims(DP_DEBUG2, 64, counter_flags);
 
 	if (NULL != buf)
-		debug_printf(DP_DEBUG1, "In total %d acquisitions copied!\n", counter);
+		debug_printf(DP_DEBUG1, "In total %ld acquisitions copied!\n", counter);
 }
 
 

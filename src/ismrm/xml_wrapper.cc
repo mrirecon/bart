@@ -17,15 +17,7 @@
 
 static struct limit_s get_limit(ISMRMRD::Optional<ISMRMRD::Limit>& src)
 {
-	struct limit_s ret;
-	ret.size = 1;
-	ret.center = -1;
-
-	ret.max_hdr = -1;
-	ret.min_hdr = -1;
-
-	ret.max_hdr = -1;
-	ret.min_hdr = -1;
+	struct limit_s ret = ismrmrd_default_limit;
 
 	if (src.is_present()) {
 
