@@ -54,9 +54,7 @@ int main_conv(int argc, char* argv[argc])
 	const complex float* krn = load_cfl(kern_file, N, krn_dims);
 	complex float* out = create_cfl(out_file, N, dims);
 
-	struct conv_plan* plan = conv_plan(N, flags, CONV_CYCLIC, CONV_SYMMETRIC, dims, dims, krn_dims, krn);
-	conv_exec(plan, out, in);
-	conv_free(plan);
+	conv(N, flags, CONV_CYCLIC, CONV_SYMMETRIC, dims, out, dims, in, krn_dims, krn);
 
 	unmap_cfl(N, dims, out);
 	unmap_cfl(N, krn_dims, krn);
