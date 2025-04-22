@@ -45,7 +45,7 @@ int main_copy(int argc, char* argv[argc])
 	int count = 0;
 	long* dims = NULL;
 	long* poss = NULL;
-	unsigned long stream_flags = 0;
+	unsigned long stream_flags = 0UL;
 
 	const char* in_file = NULL;
 	const char* out_file = NULL;
@@ -98,12 +98,7 @@ int main_copy(int argc, char* argv[argc])
 		md_copy_dims(N, out_dims, in_dims);
 	}
 
-	complex float* out_data = NULL;
-
-	if (0 == stream_flags)
-		out_data = create_cfl(out_file, N, out_dims);
-	else
-		out_data = create_async_cfl(out_file, stream_flags, N, out_dims);
+	complex float* out_data = create_async_cfl(out_file, stream_flags, N, out_dims);
 
 	long position[N];
 
@@ -163,5 +158,4 @@ int main_copy(int argc, char* argv[argc])
 
 	return 0;
 }
-
 

@@ -131,6 +131,7 @@ int main_join(int argc, char* argv[argc])
 
 			if ((NULL != strm) && (0 != (stream_get_flags(strm) & (~MD_BIT(dim)))))
 				error("Input %s is streamed along dims(flags: %lu) other than the one joined!\n", name, stream_get_flags(strm));
+
 		} else {
 
 			in_data[i] = load_cfl(name, N, in_dims[i]);
@@ -164,7 +165,7 @@ int main_join(int argc, char* argv[argc])
 	complex float* out_data = NULL;
 
 	if (stream)
-		out_data = create_async_cfl(out_file, MD_BIT(dim), N, out_dims);
+		out_data = create_async_cfl(out_file, stream ? MD_BIT(dim) : 0UL, N, out_dims);
 	else
 		out_data = create_cfl(out_file, N, out_dims);
 
@@ -176,22 +177,23 @@ int main_join(int argc, char* argv[argc])
 #pragma omp parallel for
 		for (int i = 0; i < count; i++) {
 
-			if (!(append && (0 == i))) {
+			if (append && (0 == i))
+				continue;
 
-				long pos[N];
-				md_singleton_strides(N, pos);
-				pos[dim] = offsets[i];
+			long pos[N];
+			md_singleton_strides(N, pos);
+			pos[dim] = offsets[i];
 
-				long istr[N];
-				md_calc_strides(N, istr, in_dims[i], CFL_SIZE);
+			long istr[N];
+			md_calc_strides(N, istr, in_dims[i], CFL_SIZE);
 
-				md_copy_block(N, pos, out_dims, out_data, in_dims[i], in_data[i], CFL_SIZE);
+			md_copy_block(N, pos, out_dims, out_data, in_dims[i], in_data[i], CFL_SIZE);
 
-				unmap_cfl(N, in_dims[i], in_data[i]);
+			unmap_cfl(N, in_dims[i], in_data[i]);
 
-				debug_printf(DP_DEBUG1, "done copying file %d\n", i);
-			}
+			debug_printf(DP_DEBUG1, "done copying file %d\n", i);
 		}
+
 	} else {
 
 		long opos[N];
@@ -230,5 +232,4 @@ int main_join(int argc, char* argv[argc])
 
 	return 0;
 }
-
 
