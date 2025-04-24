@@ -13,6 +13,7 @@
 #include "num/multind.h"
 #include "num/casorati.h"
 #include "num/filter.h"
+#include "num/flpmath.h"
 #include "num/init.h"
 
 #include "misc/mmio.h"
@@ -51,12 +52,20 @@ int main_filter(int argc, char* argv[argc])
 	int mavg = -1;
 	bool geom = false;
 
+	int diff = -1;
+	int back = -1;
+	bool zeroing = false;
+
 	const struct opt_s opts[] = {
 
 		OPT_INT('m', &med, "dim", "median filter along dimension dim"),
 		OPT_INT('l', &len, "len", "length of filter"),
 		OPT_SET('G', &geom, "geometric median"),
 		OPT_INT('a', &mavg, "dim", "Moving average filter along dimension dim"),
+
+		OPT_INT('d', &diff, "dim", "forward difference along dimension dim"),
+		OPT_INT('b', &back, "dim", "backward difference along dimension dim"),
+		OPT_SET('Z', &zeroing, "set first (forward diff) or last (backward) value to zero"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -65,7 +74,7 @@ int main_filter(int argc, char* argv[argc])
 
 	char filter_type = 0;
 
-	assert (med == -1 || mavg == -1);
+	assert ((med != -1) ^ (mavg != -1) ^ (diff != -1) ^ (back != -1));
 
 	if (med >= 0) {
 
@@ -76,6 +85,16 @@ int main_filter(int argc, char* argv[argc])
 
 		dim = mavg;
 		filter_type = 'a';
+	} else if (diff >= 0) {
+
+		len = 1;
+		dim = diff;
+		filter_type = 'd';
+	} else if (back >= 0) {
+
+		len = 1;
+		dim = back;
+		filter_type = 'b';
 	}
 
 	long in_dims[DIMS];
@@ -103,7 +122,7 @@ int main_filter(int argc, char* argv[argc])
 	tmp_strs[DIMS] = tmp_strs[dim];
 
 	long out_dims[DIMS];
-	md_copy_dims(DIMS, out_dims, tmp_dims);
+	md_copy_dims(DIMS, out_dims, ((diff >= 0) || (back >= 0)) ? in_dims : tmp_dims);
 
 	complex float* out_data = create_cfl(out_file, DIMS, out_dims);
 
@@ -117,6 +136,16 @@ int main_filter(int argc, char* argv[argc])
 	case 'a':
 
 		md_moving_avgz2(DIMS + 1, DIMS, tmp_dims, tmp2_strs, out_data, tmp_strs, in_data);
+		break;
+
+	case 'd':
+
+		(zeroing ? md_zfdiff0 : md_zfdiff)(DIMS, out_dims, dim, out_data, in_data);
+		break;
+		
+	case 'b':
+
+		(zeroing ? md_zfdiff_backwards0 : md_zfdiff_backwards)(DIMS, out_dims, dim, out_data, in_data);
 		break;
 
 	default:
