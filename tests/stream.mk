@@ -41,6 +41,20 @@ tests/test-stream3: phantom copy nrmse
 	rm *.ra	; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-stream4: phantom copy nrmse repmat
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)								;\
+	$(TOOLDIR)/phantom - | $(TOOLDIR)/repmat 10 100 - phantom.ra						;\
+	$(TOOLDIR)/copy --stream 1024 phantom.ra - | $(TOOLDIR)/copy - - | $(TOOLDIR)/nrmse -t0 - phantom.ra	;\
+	rm *.ra	; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-stream5: phantom copy nrmse repmat bart
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)									;\
+	$(TOOLDIR)/phantom - | $(TOOLDIR)/repmat 10 100 - phantom.ra							;\
+	$(TOOLDIR)/copy --stream 1024 phantom.ra - | $(ROOTDIR)/bart -r - copy - - | $(TOOLDIR)/nrmse -t0 - phantom.ra	;\
+	rm *.ra	; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 tests/test-stream-loop: bart
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)									;\
 	$(ROOTDIR)/bart mandelbrot -s 64 -n8 -I -- - | $(ROOTDIR)/bart -l4 -e8 resize -c -- 0 32 - - | 		\
@@ -81,7 +95,8 @@ tests/test-stream-binary2: phantom copy nrmse trx
 
 
 .PHONY: tests/test-stream
-tests/test-stream: tests/test-pipe tests/test-stream1 tests/test-stream2 tests/test-stream3 tests/test-stream-loop tests/test-stream-loop-ref tests/test-stream-binary tests/test-stream-binary2
+tests/test-stream: tests/test-pipe tests/test-stream1 tests/test-stream2 tests/test-stream3 tests/test-stream4 tests/test-stream5 \
+	tests/test-stream-loop tests/test-stream-loop-ref tests/test-stream-binary tests/test-stream-binary2
 
 
 TESTS += tests/test-stream

@@ -71,15 +71,17 @@ int main_copy(int argc, char* argv[argc])
 	num_init();
 
 
+	bool is_stream = 0 == stream_flags ? false : true;
+
 	int N = DIMS;
 
 	assert(count >= 0);
-	assert((0 == count) || (0 == stream_flags));
+	assert((0 == count) || (!is_stream));
 
 	long in_dims[N];
 	long out_dims[N];
 
-	complex float* in_data = load_async_cfl(in_file, N, in_dims);
+	complex float* in_data = (is_stream ? load_async_cfl : load_cfl)(in_file, N, in_dims);
 
 	if (count > 0) {
 
@@ -98,7 +100,11 @@ int main_copy(int argc, char* argv[argc])
 		md_copy_dims(N, out_dims, in_dims);
 	}
 
-	complex float* out_data = create_async_cfl(out_file, stream_flags, N, out_dims);
+	complex float* out_data = NULL;
+	if (!is_stream)
+		out_data = create_cfl(out_file, N, out_dims);
+	else
+		out_data = create_async_cfl(out_file, stream_flags, N, out_dims);
 
 	long position[N];
 
@@ -121,11 +127,9 @@ int main_copy(int argc, char* argv[argc])
 	long non_stream_odims[N];
 	md_set_dims(N, stream_pos, 0);
 
+	// these can both be non-Null despite 0 == stream_flags, because of looping.
 	stream_t strm_in = stream_lookup(in_data);
 	stream_t strm_out = stream_lookup(out_data);
-
-	if (strm_in)
-		stream_flags |= stream_get_flags(strm_in);
 
 	md_select_dims(N, ~stream_flags, non_stream_odims, out_dims);
 	md_select_dims(N, ~stream_flags, non_stream_idims, in_dims);
@@ -137,16 +141,16 @@ int main_copy(int argc, char* argv[argc])
 	md_calc_strides(N, istr, in_dims, CFL_SIZE);
 
 	do {
-		if (strm_in)
-			stream_sync(strm_in, N, stream_pos);
+		if (is_stream && strm_in)
+			stream_sync_slice(strm_in, N, in_dims, stream_flags, stream_pos);
 
 		md_copy_block2(N, position, non_stream_odims, ostr, &MD_ACCESS(N, ostr, stream_pos, out_data),
 					    non_stream_idims, istr, &MD_ACCESS(N, istr, stream_pos, in_data), CFL_SIZE);
 
 		delay_seconds(delay);
 
-		if (strm_out)
-			stream_sync(strm_out, N, stream_pos);
+		if (is_stream && strm_out)
+			stream_sync_slice(strm_out, N, out_dims, stream_flags, stream_pos);
 
 	} while (md_next(N, in_dims, stream_flags, stream_pos));
 

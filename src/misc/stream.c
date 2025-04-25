@@ -984,7 +984,13 @@ bool stream_sync_slice_try(stream_t s, int N, const long dims[N], unsigned long 
 		assert(!MD_IS_SET(flags, i) || (dims[i] == s->data->dims[i]));
 	}
 
+	// loop over all stream dimensions which are not set in the given flags.
 	unsigned long loop_flags = s->data->stream_flags & ~flags;
+
+	// for output streams, we'd rather need 'covered' slices instead of intersected slices.
+	// Thus just fail if this is attempted.
+	unsigned long lost_flags = flags & ~s->data->stream_flags;
+	assert(s->input || 0 == lost_flags);
 
 	do {
 		if (!stream_sync_index(s, pcfl_pos2offset(s->data, N, pos), false))
