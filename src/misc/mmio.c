@@ -887,15 +887,13 @@ complex float* create_cfl(const char* name, int D, const long dimensions[D])
 
 complex float* create_async_cfl(const char* name, const unsigned long flags, int D, const long dimensions[D])
 {
-	if (cfl_loop_desc_active()) {
+	if (!cfl_loop_desc_active())
+		return create_cfl_internal(name, D, dimensions, flags);
 
-		if (0 != (md_nontriv_dims(D, dimensions) & flags))
-			error("Creating stream %s: Cannot combine streaming and looping!\n", name);
+	if (0 != (md_nontriv_dims(D, dimensions) & flags))
+		error("Creating stream %s: Cannot combine streaming and looping!\n", name);
 
-		return create_cfl_internal(name, D, dimensions, 0);
-	}
-
-	return create_cfl_internal(name, D, dimensions, flags);
+	return create_cfl_internal(name, D, dimensions, 0UL);
 }
 
 
