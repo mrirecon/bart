@@ -1,11 +1,7 @@
-/* Copyright 2015. The Regents of the University of California.
-* Copyright 2015-2020. Martin Uecker.
-* All rights reserved. Use of this source code is governed by
-* a BSD-style license which can be found in the LICENSE file.
-*
-* Authors:
-* 2015-2020 Martin Uecker
-*/
+/* Copyright 2025. Institute of Biomedical Imaging. TU Graz.
+ * All rights reserved. Use of this source code is governed by
+ * a BSD-style license which can be found in the LICENSE file.
+ */
 
 #include <complex.h>
 #include <assert.h>
@@ -29,11 +25,11 @@
 static void rounded_div(int D, const long dims[D], float bound, complex float* out, const complex float* in)
 {
 	long size = md_calc_size(D, dims);
-	float d = 0;
+
 #pragma omp parallel for
 	for (long i = 0; i < size; i++) {
 
-		d = crealf(in[i]) / bound;
+		float d = crealf(in[i]) / bound;
 		out[i] = (d > 1.) ? - ceilf(d) : (d < -1.) ? - floorf(d) : 0.;
 	}
 }
@@ -42,7 +38,9 @@ static void unwrap(int D, const long dims[D], int d, float bounds,
 	complex float* optr, const complex float* iptr)
 {
 	md_zfdiff0(D, dims, d, optr, iptr);
+
 	rounded_div(D, dims, bounds, optr, optr);
+
 	md_zcumsum(D, dims, MD_BIT(d), optr, optr);
 	md_zsmul(D, dims, optr, optr, bounds);
 	md_zadd(D, dims, optr, optr, iptr);
