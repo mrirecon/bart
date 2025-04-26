@@ -1,9 +1,8 @@
-/* Copyright 2014. The Regents of the University of California.
+/* Copyright 2014-2016. The Regents of the University of California.
+ * Copyright 2016-2022. AG Uecker. University Medical Center Göttingen.
+ * Copyright 2021-2025. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
- *
- * Authors:
- * 2012 Martin Uecker
  */
 
 #include <complex.h>
@@ -47,6 +46,7 @@ int main_ismrmrd(int argc, char* argv[argc])
 		OPTL_SELECT(0, "interleaved-siemens",enum ISMRMRD_SLICE_ORDERING, &(config.slice_ord),ISMRMRD_SLICE_INTERLEAVED_SIEMENS, "interleaved slice ordering (1, 3, 5, 2, 4) / (2, 4, 1, 3)"),
 
 	};
+
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	if (NULL == out_file) {
@@ -78,7 +78,5 @@ int main_ismrmrd(int argc, char* argv[argc])
 
 	return 0;
 }
-
-
 
 
