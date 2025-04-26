@@ -405,7 +405,7 @@ tests/test-nufft-no-precomp-inverse: traj scale phantom nufft nrmse
 # test application of a sample fieldmap,
 # as a field map for testing a coil sensitivity map is used and scaled to produce visible distortion 
 # without aliasing that can't be corrected for.
-tests/test-nufft-fieldmap-correction: traj phantom creal normalize scale index reshape transpose nufft nrmse resize copy
+tests/test-nudft-fieldmap-correction: traj phantom creal normalize scale index reshape transpose nufft nrmse resize copy
 	set -e ; mkdir $(TESTS_TMP) ; cd $(TEST_TMP)								;\
 	$(TOOLDIR)/traj -x64 -y64 traj_fm.ra									;\
 	$(TOOLDIR)/phantom -S 1 coil_sensitivity_map_pre.ra							;\
@@ -424,7 +424,7 @@ tests/test-nufft-fieldmap-correction: traj phantom creal normalize scale index r
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-tests/test-nufft-fieldmap-constant-circshift: traj ones phantom creal normalize scale index reshape transpose ones saxpy nufft circshift nrmse resize
+tests/test-nudft-fieldmap-constant-circshift: traj ones phantom creal normalize scale index reshape transpose ones saxpy nufft circshift nrmse resize
 	set -e ; mkdir $(TESTS_TMP) ; cd $(TEST_TMP)								;\
 	$(TOOLDIR)/traj -x64 -y64 traj_fm.ra									;\
 	$(TOOLDIR)/phantom -S 1 coil_sensitivity_map_pre.ra							;\
@@ -455,7 +455,7 @@ TESTS += tests/test-nufft-lowmem-adjoint tests/test-nufft-lowmem-inverse tests/t
 TESTS += tests/test-nufft-inverse2 tests/test-nufft-inverse3
 TESTS += tests/test-nufft-lowmem-zero-mem tests/test-nufft-lowmem-zero-mem
 TESTS += tests/test-nufft-adjoint-os tests/test-nufft-forward-os
-TESTS += tests/test-nufft-fieldmap-correction tests/test-nufft-fieldmap-constant-circshift
+TESTS += tests/test-nudft-fieldmap-correction tests/test-nudft-fieldmap-constant-circshift
 
 TESTS_GPU += tests/test-nufft-gpu-inverse tests/test-nufft-gpu-adjoint tests/test-nufft-gpu-forward
 TESTS_GPU += tests/test-nufft-gpu-inverse-lowmem tests/test-nufft-gpu-adjoint-lowmem tests/test-nufft-gpu-forward-lowmem

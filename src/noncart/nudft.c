@@ -55,7 +55,7 @@ static void get_coord(int N, unsigned long flags, float coord[N], long pos[N], c
  *	this calculates the phase accrual for the whole grid at the given sample_time
  *	and returns the result in out.
  */
-static void phase_correction_term(int N, const long out_dims[N], const float sample_time, const complex float* field_map, complex float* out)
+static void phase_correction_term(int N, const long out_dims[N], complex float* out, const float sample_time, const complex float* field_map)
 {
 	// FIXME:  integrate into linear phase and do it inplace to be faster
 	md_zsmul(N, out_dims, out, field_map, sample_time);
@@ -102,16 +102,19 @@ void nudft_forward2(int N, unsigned long flags,
 	long pos[N];
 	for (int i = 0; i < N; i++)
 		pos[i] = 0;
+
 	do {
 		float coord[N];
 		get_coord(N, flags, coord, pos, tdims, tstrs, traj);
 
 		linear_phase(N, tmp_dims, coord, tmp);
-		if (NULL != fieldmap && NULL != timemap)
-		{
-			phase_correction_term(N, tmp_dims, MD_ACCESS(N, tmstrs, pos, timemap), fieldmap, tmp_pc);
+
+		if ((NULL != fieldmap) && (NULL != timemap)) {
+
+			phase_correction_term(N, tmp_dims, tmp_pc, MD_ACCESS(N, tmstrs, pos, timemap), fieldmap);
 			md_zmul(N, tmp_dims, tmp, tmp_pc, tmp);
 		}
+
 		md_zfmac2(N, idims, kstrs2, &MD_ACCESS(N, kstrs, pos, ksp), istrs, img, tmp_strs, tmp);
 
 	} while (md_next(N, tdims, ~MD_BIT(0), pos));
@@ -152,6 +155,7 @@ void nudft_adjoint2(int N, unsigned long flags,
 	long tmp_pc_strs[N];
 	md_select_dims(N, flags, tmp_pc_dims, idims);
 	md_calc_strides(N, tmp_pc_strs, tmp_pc_dims, CFL_SIZE);
+
 	complex float* tmp_pc = md_alloc(N, tmp_pc_dims, CFL_SIZE);
 
 	long kstrs2[N];
@@ -167,13 +171,13 @@ void nudft_adjoint2(int N, unsigned long flags,
 	do { /* iterates over ksp in all selected dimensions */
 
 		float coord[N];
-
 		get_coord(N, flags, coord, pos,	tdims, tstrs, traj);
- 		linear_phase(N, tmp_dims, coord, tmp);
+
+		linear_phase(N, tmp_dims, coord, tmp);
 
 		if ((NULL != fieldmap) && (NULL != timemap)) {
 
-			phase_correction_term(N, tmp_dims, MD_ACCESS(N, tmstrs, pos, timemap), fieldmap, tmp_pc);
+			phase_correction_term(N, tmp_dims, tmp_pc, MD_ACCESS(N, tmstrs, pos, timemap), fieldmap);
 			md_zmul(N, tmp_dims, tmp, tmp_pc, tmp);
 		}
 
@@ -307,11 +311,11 @@ const struct linop_s* nudft_create2(int N, unsigned long flags,
 
 	data->tdims = *TYPE_ALLOC(long[N]);
 	data->tstrs = *TYPE_ALLOC(long[N]);
-	
+
 	md_copy_dims(N, data->tdims, tdims);
 	md_calc_strides(N, data->tstrs, tdims, CFL_SIZE);
 
-	if (fieldmap != NULL) {
+	if (NULL != fieldmap) {
 
 		data->fmdims = *TYPE_ALLOC(long[N]);
 		data->fmstrs = *TYPE_ALLOC(long[N]);
@@ -332,7 +336,6 @@ const struct linop_s* nudft_create2(int N, unsigned long flags,
 
 		data->tmdims = NULL;
 		data->tmstrs = NULL;
-
 	}
 
 	return linop_create2(N, odims, ostrs, N, idims, istrs, &PTR_PASS(data)->base,

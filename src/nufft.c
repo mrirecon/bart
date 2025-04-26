@@ -149,6 +149,7 @@ int main_nufft(int argc, char* argv[argc])
 	if (NULL != fieldmap_file) {
 
 		if (NULL == timemap_file) {
+
 			error("No timemap provided -> fieldmap ignored, can't perform B0 correction");
 
 		} else {
@@ -157,9 +158,7 @@ int main_nufft(int argc, char* argv[argc])
 			timemap = load_cfl(timemap_file, DIMS, timemap_dims);
 
 			assert(md_check_compat(DIMS, 1u, timemap_dims, traj_dims));
-
 			assert(md_check_compat(DIMS, 4u, coilest_dims, fieldmap_dims)); 
-
 			assert(1 == dft); /* only implemented for dft for now */
 		}
 	}
