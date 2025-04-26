@@ -282,6 +282,8 @@ void io_unlink_if_opened(const char* name)
 
 		if ((0 == strcmp(name, iop->name)) && iop->open) {
 
+			debug_printf(DP_DEBUG1, "Unlinking file %s\n", name);
+
 			enum file_types_e type = file_type(name);
 
 			switch (type) {
