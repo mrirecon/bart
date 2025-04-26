@@ -310,7 +310,7 @@ int main_ncalib(int argc, char* argv[argc])
 	complex float* ksens = md_alloc_sameplace(DIMS, ksens_dims, CFL_SIZE, kspace);
 	complex float* sens = create_cfl(out_file, DIMS, sens_dims);
 
-	float norm_img = sqrt(md_calc_size(3, my_sens_dims)) / sqrtf(md_calc_size(3, img_dims));
+	float norm_img = sqrtf(md_calc_size(3, my_sens_dims)) / sqrtf(md_calc_size(3, img_dims));
 
 	md_zfill(DIMS, img_dims, img, norm_img);
 	md_clear(DIMS, ksens_dims, ksens, CFL_SIZE);
