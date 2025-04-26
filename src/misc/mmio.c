@@ -71,10 +71,11 @@ bool mmio_file_locking = true;
 int wasm_fds[WASM_MAX_FDS] = { };
 int wasm_fd_offset = 0;
 
-static void close_later(int fd)
+static void wasm_close_later(int fd)
 {
 	if (wasm_fd_offset >= WASM_MAX_FDS)
 		error("WASM close_later: too many files.\n");
+
 	wasm_fds[wasm_fd_offset++] = fd;
 }
 
@@ -85,6 +86,7 @@ void wasm_close_fds(void)
 	while (wasm_fd_offset > 0) {
 
 		int fd = wasm_fds[--wasm_fd_offset];
+
 		if (-1 == close(fd))
 			io_error("close_open_fds %d\n", fd);
 	}
@@ -535,7 +537,7 @@ static complex float* load_zra_internal(int fd, const char* name, int D, long di
 		io_error("Loading ra file %s\n", name);
 
 #ifdef __EMSCRIPTEN__
-	close_later(fd);
+	wasm_close_later(fd);
 #else
 	if (-1 == close(fd))
 		io_error("Loading ra file %s\n", name);
@@ -603,12 +605,11 @@ static complex float* create_zra_internal(int ofd, const char* name, int D, cons
 		error("Creating ra file %s\n", name);
 
 #ifdef __EMSCRIPTEN__
-	close_later(ofd);
-	return data;
-#endif
-
+	wasm_close_later(ofd);
+#else
 	if (-1 == close(ofd))
 		io_error("Creating ra file %s\n", name);
+#endif
 
 	return data;
 }
@@ -658,7 +659,7 @@ float* create_coo(const char* name, int D, const long dims[D])
 		error("Creating coo file %s\n", name);
 
 #ifdef __EMSCRIPTEN__
-	close_later(fd);
+	wasm_close_later(fd);
 #else
 	if (-1 == close(fd))
 		io_error("Creating coo file %s\n", name);
@@ -769,7 +770,7 @@ static complex float* create_pipe(const char* name, int D, long dimensions[D], u
 		error("temp cfl %s\n", filename);
 
 #ifdef __EMSCRIPTEN__
-	close_later(fd);
+	wasm_close_later(fd);
 #else
 	if (-1 == close(fd))
 		io_error("temp cfl %s\n", filename);
@@ -959,7 +960,7 @@ float* load_coo(const char* name, int D, long dims[D])
 		io_error("Loading coo file %s\n", name);
 
 #ifdef __EMSCRIPTEN__
-	close_later(fd);
+	wasm_close_later(fd);
 #else
 	if (-1 == close(fd))
 		io_error("Loading coo file %s\n", name);
@@ -1169,7 +1170,7 @@ complex float* shared_cfl(int D, const long dims[D], const char* name)
 		error("shared cfl %s\n", name);
 
 #ifdef __EMSCRIPTEN__
-	close_later(fd);
+	wasm_close_later(fd);
 #else
 	if (-1 == close(fd))
 		io_error("shared cfl %s\n", name);
@@ -1220,7 +1221,7 @@ void* private_raw(size_t* size, const char* name)
 		error("abort\n");
 
 #ifdef __EMSCRIPTEN__
-	close_later(fd);
+	wasm_close_later(fd);
 #else
 	if (-1 == close(fd))
 		error("abort\n");
@@ -1254,7 +1255,7 @@ complex float* private_cfl(int D, const long dims[D], const char* name)
 		io_error("private cfl %s\n", name);
 
 #ifdef __EMSCRIPTEN__
-	close_later(fd);
+	wasm_close_later(fd);
 #else
 	if (-1 == close(fd))
 		io_error("private cfl %s\n", name);
@@ -1380,7 +1381,7 @@ void create_multi_cfl(const char* name, int N, int D[N], const long* dimensions[
 		error("Creating multi cfl file %s\n", name);
 
 #ifdef __EMSCRIPTEN__
-	close_later(fd);
+	wasm_close_later(fd);
 #else
 	if (-1 == close(fd))
 		io_error("Creating multi cfl file %s\n", name);
@@ -1436,7 +1437,7 @@ static int load_multi_cfl_internal(const char* name, int N_max, int D_max, int D
 		error("Loading multi cfl file %s\n", name);
 
 #ifdef __EMSCRIPTEN__
-	close_later(fd);
+	wasm_close_later(fd);
 #else
 	if (-1 == close(fd))
 		io_error("Loading multi cfl file %s\n", name);
@@ -1530,3 +1531,4 @@ void unmap_multi_cfl(int N, int D[N], const long* dimensions[N], complex float* 
 		io_error("unmap multi cfl 3\n");
 #endif
 }
+
