@@ -242,7 +242,7 @@ struct nudft_s {
 
 static void nudft_apply(const linop_data_t* _data, complex float* out, const complex float* in)
 {
-	const struct nudft_s* data = CONTAINER_OF(_data, const struct nudft_s, base);
+	const struct nudft_s* data = CONTAINER_OF_CONST(_data, const struct nudft_s, base);
 	int N = data->N;
 
 	nudft_forward2(N, data->flags,
@@ -254,7 +254,7 @@ static void nudft_apply(const linop_data_t* _data, complex float* out, const com
 
 static void nudft_adj(const linop_data_t* _data, complex float* out, const complex float* in)
 {
-	const struct nudft_s* data = CONTAINER_OF(_data, const struct nudft_s, base);
+	const struct nudft_s* data = CONTAINER_OF_CONST(_data, const struct nudft_s, base);
 	int N = data->N;
 
 	nudft_adjoint2(N, data->flags,
@@ -266,7 +266,7 @@ static void nudft_adj(const linop_data_t* _data, complex float* out, const compl
 
 static void nudft_delete(const linop_data_t* _data)
 {
-	const struct nudft_s* data = CONTAINER_OF(_data, const struct nudft_s, base);
+	const struct nudft_s* data = CONTAINER_OF_CONST(_data, const struct nudft_s, base);
 
 	xfree(data->kdims);
 	xfree(data->idims);

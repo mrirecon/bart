@@ -587,8 +587,8 @@ static float klargest_complex_partsort(int N, int k, const complex float* ar)
 {
 	assert(k <= N);
 
-	complex float* tmp =  (complex float*)xmalloc((size_t)(N * (long)sizeof(complex float)));
-	copy(2 * N, (float*)tmp, (float*)ar);
+	complex float* tmp = xmalloc((size_t)(N * (long)sizeof(complex float)));
+	copy(2 * N, (float*)tmp, (const float*)ar);
 
 	float thr = quickselect_complex(tmp, N, k);
 

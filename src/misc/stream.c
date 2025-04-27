@@ -406,7 +406,7 @@ static void stream_event_list_free(list_t events);
 
 static void stream_del(const struct shared_obj_s* sptr)
 {
-	const struct stream* s = CONTAINER_OF(sptr, const struct stream, sptr);
+	const struct stream* s = CONTAINER_OF_CONST(sptr, const struct stream, sptr);
 
 	stream_deregister(s);
 
@@ -1200,7 +1200,7 @@ struct list_s* stream_get_events(struct stream* s, int N, long pos[N])
 static bool stream_event_id_eq(const void *item, const void* ref)
 {
 	const struct stream_event* ev = item;
-	long index = *((long*)ref);
+	long index = *((const long*)ref);
 
 	return (ev->index == index);
 }

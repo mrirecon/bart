@@ -24,6 +24,9 @@ extern __attribute__((noreturn)) void error(const char* str, ...);
 #define TYPE_CHECK(T, x)	(1 ? (x) : (T)0)
 #define CONTAINER_OF(x, T, member)	\
 	((T*)((char*)TYPE_CHECK(__typeof__(&((T*)0)->member), x) - offsetof(T, member)))
+#define CONTAINER_OF_CONST(x, T, member)	\
+	((T*)((const char*)TYPE_CHECK(__typeof__(&((T*)0)->member), x) - offsetof(T, member)))
+
 
 #define CAST_CONST(T, x)  ((T)TYPE_CHECK(const T, x))
 #define CAST_MAYBE(T, x)	({ \
