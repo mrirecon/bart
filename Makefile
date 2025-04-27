@@ -731,7 +731,7 @@ $(srcdir)/misc/version.o: $(srcdir)/misc/version.inc
 lib/libismrm.a: CPPFLAGS += $(ISMRM_H)
 
 # additional rules for lib box
-lib/libbox.a: CPPFLAGS += -DMAIN_LIST="$(XTARGETS:%=%,) ()" -include src/main.h
+lib/libbox.a: CPPFLAGS += -include src/main.h
 
 # lib calib
 UTARGETS += test_grog
@@ -834,11 +834,11 @@ all: .gitignore $(CTARGETS) bart
 
 # special targets
 
+$(shell echo "#define MAIN_LIST $(XTARGETS:%=%,) ()" > src/mainlist.inc)
 
-$(CTARGETS): CPPFLAGS += -DMAIN_LIST="$(XTARGETS:%=%,) ()" -include src/main.h
+$(CTARGETS): CPPFLAGS += -include src/main.h
 
-
-bart: CPPFLAGS += -DMAIN_LIST="$(XTARGETS:%=%,) ()" -include src/main.h
+bart: CPPFLAGS += -include src/main.h
 
 
 mat2cfl: $(srcdir)/mat2cfl.c -lnum -lmisc
@@ -1007,6 +1007,7 @@ allclean: clean
 	rm -f $(patsubst commands/%, %, $(CTARGETS))
 	rm -f $(CTARGETS)
 	rm -f $(srcdir)/misc/version.inc
+	rm -f $(srcdir)/mainlist.inc
 	rm -rf $(root)/tests/tmp/*/
 	rm -rf $(root)/stests/tmp/*/
 	rm -rf $(root)/doc/dx

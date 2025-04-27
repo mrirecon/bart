@@ -3,6 +3,7 @@
 
 #include "misc/cppmap.h"
 
+#include "mainlist.inc"
 
 #define DECLMAIN(x) \
 extern int main_ ## x(int argc, char* argv[argc]);
