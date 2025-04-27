@@ -526,10 +526,16 @@ static void grid_point_gen(int N, const long dims[VLA(N)], const long strs[VLA(N
 
 
 
-void grid_point(int ch, int N, const long dims[VLA(N)], const long strs[VLA(N)], const float pos[VLA(N)], complex float* dst, const complex float val[VLA(ch)], bool periodic, float width, int kb_size, const float kb_table[kb_size + 1])
+void grid_point(int ch, int N, const long dims[N], const long strs[N], const float pos[N], complex float* dst, const complex float val[ch], bool periodic, float width, int kb_size, const float kb_table[kb_size + 1])
 {
+	const long *_strs = strs;	// clang workaround
+	const complex float *_val = val;
+
 	NESTED(void, update, (long ind, float d))
 	{
+		const long *strs = _strs;
+		const complex float *val = _val;
+
 		for (int c = 0; c < ch; c++) {
 
 			// we are allowed to update real and imaginary part independently which works atomically
@@ -545,10 +551,16 @@ void grid_point(int ch, int N, const long dims[VLA(N)], const long strs[VLA(N)],
 
 
 
-void grid_pointH(int ch, int N, const long dims[VLA(N)], const long strs[VLA(N)], const float pos[VLA(N)], complex float val[VLA(ch)], const complex float* src, bool periodic, float width, int kb_size, const float kb_table[kb_size + 1])
+void grid_pointH(int ch, int N, const long dims[N], const long strs[N], const float pos[N], complex float val[ch], const complex float* src, bool periodic, float width, int kb_size, const float kb_table[kb_size + 1])
 {
+	const long *_strs = strs;	// clang workaround
+	complex float *_val = val;
+
 	NESTED(void, update, (long ind, float d))
 	{
+		const long *strs = _strs;
+		complex float *val = _val;
+
 		for (int c = 0; c < ch; c++) {
 
 			__real(val[c]) += __real(src[ind + c * strs[3] / (long)CFL_SIZE]) * d;

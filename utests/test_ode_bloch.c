@@ -67,7 +67,7 @@ static void bloch_pdp2(void* _data, float* out, float t, const float* in)
 
 static bool test_ode_bloch(void)
 {
-	struct bloch_s data = { 1. / WATER_T1, 1. / WATER_T2, { 0., 0., GAMMA_H1 * SKYRA_GRADIENT * 0.0001 } };
+	__block struct bloch_s data = { 1. / WATER_T1, 1. / WATER_T2, { 0., 0., GAMMA_H1 * SKYRA_GRADIENT * 0.0001 } };
 
 	float x[3] = { 1., 0., 0. };
 	float x0[3] = { 1., 0., 0. };
