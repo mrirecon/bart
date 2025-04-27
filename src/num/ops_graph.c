@@ -285,14 +285,6 @@ static const struct iovec_s* get_iovec_from_node(node_t _node, int idx)
 
 
 
-static inline void reduce_index(int a, int N, int index[N])
-{
-	for (int j = a + 1; j < N; j++)
-		index[j]--;
-}
-
-
-
 
 
 static bool cmp_identity_node(const void* data, const void* _ref) {

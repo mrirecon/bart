@@ -1151,43 +1151,6 @@ void debug_edges(enum debug_levels dl, list_t nodes)
 }
 
 
-static inline bool node_chainable(node_t node)
-{
-	return (2 == node->N_vertices) && (node_io_flag(node, 0)) && (!node_io_flag(node, 1));
-}
-
-
-
-// returns true if a node has only one following node
-// there might be multiple edges to different vertices of the node
-static inline bool node_one_child(node_t node, bool simple_only)
-{
-	if (node->external)
-		return false;
-
-	if (simple_only)
-		if (!((2 == node->N_vertices) && (node_io_flag(node, 0)) && (!node_io_flag(node, 1))))
-			return false;
-
-	node_t follow = NULL;
-
-	for (int i = 0; i < node->N_vertices; i++) {
-
-		if (!node_io_flag(node, i))
-			continue;
-
-		for (int j = 0; j < list_count(node->edges[i]); j++) {
-
-			if (NULL == follow)
-				follow = (vertices_get(node->edges[i], j))->node;
-
-			if (follow != (vertices_get(node->edges[i], j))->node)
-				return false;
-		}
-	}
-
-	return true;
-}
 
 
 
