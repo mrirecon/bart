@@ -816,7 +816,7 @@ static nn_t nlinvnet_train_loss_create(const struct nlinvnet_s* nlinvnet, int Nb
 	md_copy_dims(N, pat_dims, nn_generic_domain(nn_train, 0, "pat")->dims);
 
 	nn_t loss = train_loss_create(nlinvnet->train_loss, N, out_dims);
-	const char* loss_name = strdup(nn_get_out_name_from_arg_index(loss, 0, NULL));
+	char* loss_name = strdup(nn_get_out_name_from_arg_index(loss, 0, NULL));
 
 	if ((-1. != nlinvnet->time_mask[0]) || (-1. != nlinvnet->time_mask[1])) {
 
@@ -858,7 +858,7 @@ static nn_t nlinvnet_train_loss_create(const struct nlinvnet_s* nlinvnet, int Nb
 		nn_train = nn_set_output_name_F(nn_train, 0, loss_name);
 	}
 
-	xfree(loss_name);
+	free(loss_name);
 
 	nn_train = nlinvnet_sort_args_F(nn_train);
 
@@ -884,17 +884,17 @@ void train_nlinvnet(struct nlinvnet_s* nlinvnet, int Nb, struct named_data_list_
 	if (network_is_diagonal(nlinvnet->network))
 		M = Nb;
 
+	int R = mpi_get_num_procs();
+	assert(0 == M % R);
+
 	nn_t train_ops[M];
 
-	for (int i = 0; i < M; i++) {
+	for (int i = 0; i < M / R; i++) {
 
 		train_ops[i] = nlinvnet_train_loss_create(nlinvnet, Nb / M);
 
-		for (int j = 1; j < mpi_get_num_procs(); j++) {
-
-			i++;
-			train_ops[i] = nn_clone(train_ops[i - 1]);	
-		}
+		for (int j = 1; j < R; j++)
+			train_ops[R * i + j] = nn_clone(train_ops[R * i]);
 	}
 
 	auto nn_train = (1 == M) ? train_ops[0] : nn_stack_multigpu_F(M, train_ops, -1);
