@@ -355,9 +355,13 @@ inline static bool set_pos(struct isrmrm_config_s* config, int N, long pos[N], i
 		if (warn) {
 
 			warn = false;
-			debug_printf(DP_WARN, "Acquisition index %d out of bounds for \"%s\" (size=%ld)! -> Skipped\n      Further warnings will be suppressed!\n", idx, ismrmrd_get_dim_string((unsigned)map), config->limits[map].size);
+			debug_printf(DP_WARN, "Acquisition index %d out of bounds for \"%s\" (size=%ld)! -> set to 0.\n"
+						"Check for overwriting.\n"
+						"Further warnings will be suppressed!\n",
+					idx, ismrmrd_get_dim_string((unsigned)map), config->limits[map].size);
 		}
-		return false;
+
+		idx = 0;
 	}
 
 	if (MD_IS_SET(config->shift, map) && (-1 != config->limits[map].center))
@@ -429,6 +433,7 @@ void ismrm_read(const char* datafile, struct isrmrm_config_s* config, int N, lon
 
 static bool ismrmrd_convert_acquisition(struct isrmrm_config_s* config, const ISMRMRD_Acquisition* acq, int N, const long dims[N], long strs[N], long pos[N], complex float* buf)
 {
+	config->convert_state.attempts++;
 	bool skip = false;
 
 	if ((-1 != config->measurement) && (config->convert_state.counter_flags[ISMRMRD_ACQ_LAST_IN_MEASUREMENT - 1] != config->measurement))
@@ -543,7 +548,7 @@ long ismrm_stream_read(struct isrmrm_config_s* conf, int N, const long dims[N], 
 	md_calc_strides(N, strs, dims, CFL_SIZE);
 
 	if(!ismrmrd_convert_acquisition(conf, &acq, N, dims, strs, pos, out))
-		debug_printf(DP_WARN, "SKIPPED ACQUISITION!\n");
+		debug_printf(DP_WARN, "SKIPPED ACQUISITION %ld!\n", conf->convert_state.attempts);
 
 	return bytes;
 }

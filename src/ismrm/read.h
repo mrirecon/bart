@@ -56,6 +56,7 @@ struct ismrmrd_convert_state {
 	long counter;
 	long counter_flags[64];
 	int overwrite_counter;
+	long attempts;
 };
 
 struct isrmrm_config_s {

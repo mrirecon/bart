@@ -143,24 +143,31 @@ extern "C" void ismrm_stream_read_meta(struct isrmrm_config_s* config)
 	struct ismrm_cpp_state* s = config->ismrm_cpp_state;
 
 	try {
-		auto type = s->deserializer->peek();
 
-		if (ISMRMRD::ISMRMRD_MESSAGE_CONFIG_FILE == type) {
+		uint16_t type;
 
-			ISMRMRD::ConfigFile conf;
-			s->deserializer->deserialize(conf);
-		} else if (ISMRMRD::ISMRMRD_MESSAGE_CONFIG_TEXT == type) {
+		while (ISMRMRD::ISMRMRD_MESSAGE_HEADER != (type = s->deserializer->peek())) {
 
-			ISMRMRD::ConfigText conf;
-			s->deserializer->deserialize(conf);
+			if (ISMRMRD::ISMRMRD_MESSAGE_CONFIG_FILE == type) {
 
-		} else {
-			error("BART ISMRMRD Wrapper: No Config received.");
+				ISMRMRD::ConfigFile conf;
+				s->deserializer->deserialize(conf);
+			} else if (ISMRMRD::ISMRMRD_MESSAGE_CONFIG_TEXT == type) {
+
+				ISMRMRD::ConfigText conf;
+				s->deserializer->deserialize(conf);
+			} else if (ISMRMRD::ISMRMRD_MESSAGE_TEXT == type) {
+
+				ISMRMRD::TextMessage tm;
+				s->deserializer->deserialize(tm);
+				debug_printf(DP_WARN, "Message from ISMRM stream: %s", tm.message.c_str());
+			} else {
+
+				error("Unexpected message type: %d.\n", type);
+			}
 		}
 
-		type = s->deserializer->peek();
-		if (type != ISMRMRD::ISMRMRD_MESSAGE_HEADER)
-			error("BART ISMRMRD Wrapper: No Header received.");
+		assert (type == ISMRMRD::ISMRMRD_MESSAGE_HEADER);
 
 		ISMRMRD::IsmrmrdHeader hdr;
 		s->deserializer->deserialize(hdr);
@@ -177,11 +184,21 @@ extern "C" long ismrm_stream_read_acquisition(struct isrmrm_config_s* config, IS
 	struct ismrm_cpp_state* s = config->ismrm_cpp_state;
 
 	try {
-		auto type = s->deserializer->peek();
-		if (ISMRMRD::ISMRMRD_MESSAGE_CLOSE == type) {
 
-			return 0;
-		} else if (ISMRMRD::ISMRMRD_MESSAGE_ACQUISITION != type) {
+		uint16_t type;
+
+		while (ISMRMRD::ISMRMRD_MESSAGE_ACQUISITION != (type = s->deserializer->peek())) {
+
+			if (ISMRMRD::ISMRMRD_MESSAGE_CLOSE == type)
+				return 0;
+
+			if (ISMRMRD::ISMRMRD_MESSAGE_TEXT == type) {
+
+				ISMRMRD::TextMessage tm;
+				s->deserializer->deserialize(tm);
+				debug_printf(DP_WARN, "Message from ISMRM stream: %s", tm.message.c_str());
+				continue;
+			}
 
 			error("BART ISMRMRD Wrapper: Unexpected Non-Acquisition message.\n");
 		}
