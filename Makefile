@@ -272,7 +272,7 @@ TNUM=fft fftmod fftshift noise bench threshold conv rss filter nlmeans mandelbro
 TRECO=pics pocsense sqpics itsense nlinv moba nufft nufftbase rof tgv ictv sake wave lrmatrix estdims estshift estdelay wavepsf wshfl rtnlinv mobafit grog denoise
 TCALIB=ecalib ecaltwo caldir walsh cc ccapply rovir calmat svd estvar whiten rmfreq ssa bin psf ncalib
 TMRI=homodyne poisson twixread fakeksp looklocker upat fovshift
-TSIM=phantom traj signal epg sim raga
+TSIM=phantom traj signal epg sim raga stl
 TIO=toimg toraw
 TNN=reconet nnet onehotenc measure mnist tensorflow nlinvnet
 TMOTION=affinereg interpolate estmotion
@@ -310,7 +310,7 @@ MODULES_ictv = -liter -llinops
 MODULES_denoise = -lgrecon -liter -llinops -lwavelet -llowrank -lnoncart -lnn -lnlops
 MODULES_bench = -lwavelet -llinops
 MODULES_phantom = -lsimu -lgeom
-MODULES_bart = -lbox -lgrecon -lsense -lnoir -liter -llinops -lwavelet -llowrank -lnoncart -lcalib -lsimu -lsake -lnlops -lnetworks -lnoir -lnn -liter -lmoba -lgeom -lnn  -lmotion -lnlops
+MODULES_bart = -lbox -lgrecon -lsense -lnoir -liter -llinops -lwavelet -llowrank -lnoncart -lcalib -lsimu -lsake -lnlops -lnetworks -lnoir -lnn -liter -lmoba -lgeom -lnn  -lmotion -lnlops -lstl
 MODULES_sake = -lsake
 MODULES_traj = -lnoncart
 MODULES_raga = -lnoncart
@@ -342,6 +342,7 @@ MODULES_affinereg = -lmotion -liter -lnlops -llinops
 MODULES_estmotion = -lmotion -lnn -liter -lnlops -llinops
 MODULES_interpolate = -lmotion -liter -lnlops -llinops
 MODULES_unwrap = -llinops
+MODULES_stl = -lstl
 
 
 
@@ -711,7 +712,7 @@ lib/lib$(1).a: lib$(1).a($$($(1)objs))
 
 endef
 
-ALIBS = misc num grecon sense noir iter linops wavelet lowrank noncart calib simu sake nlops moba lapacke box geom networks nn motion
+ALIBS = misc num grecon sense noir iter linops wavelet lowrank noncart calib simu sake nlops moba lapacke box geom networks nn motion stl
 
 ifeq ($(ISMRMRD),1)
 ALIBS += ismrm
@@ -783,8 +784,9 @@ MODULES_test_pulse += -lsimu
 MODULES_test_tsegf += -lsimu
 
 # lib geom
-UTARGETS += test_geom
+UTARGETS += test_geom test_stl
 MODULES_test_geom += -lgeom
+MODULES_test_stl += -lstl
 
 # lib iter
 UTARGETS += test_iter test_prox test_prox2 test_asl
