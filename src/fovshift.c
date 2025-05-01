@@ -70,9 +70,9 @@ int main_fovshift(int argc, char* argv[argc])
 
 	num_init();
 
-	long sdims[DIMS] = {3, [ 1 ... DIMS - 1 ] = 1 };
+	long sdims[DIMS] = { 3, [ 1 ... DIMS - 1 ] = 1 };
 
-	complex float* cshift;;
+	complex float* cshift;
 
 	if (NULL == shift_file) {
 
@@ -80,6 +80,7 @@ int main_fovshift(int argc, char* argv[argc])
 
 		for (int i = 0; i < 3; i++)
 			cshift[i] = shift[i];
+
 	} else {
 
 		cshift = load_cfl(shift_file, DIMS, sdims);
@@ -146,3 +147,4 @@ int main_fovshift(int argc, char* argv[argc])
 
 	return 0;
 }
+

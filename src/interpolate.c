@@ -101,38 +101,39 @@ int main_interpolate(int argc, char* argv[argc])
 
 		const struct linop_s* lop_interp;
 
-		case INTP_COORDS:
+	case INTP_COORDS:
 
-			lop_interp = linop_interpolate_create(MOTION_DIM, flags, order, DIMS, odims, mdims, mot_ptr, dims);
+		lop_interp = linop_interpolate_create(MOTION_DIM, flags, order, DIMS, odims, mdims, mot_ptr, dims);
 
-			linop_forward(lop_interp, DIMS, odims, out_ptr, DIMS, dims, src_ptr);
+		linop_forward(lop_interp, DIMS, odims, out_ptr, DIMS, dims, src_ptr);
 
-			linop_free(lop_interp);
-			break;
+		linop_free(lop_interp);
+		break;
 
-		case INTP_DISPLACEMENT:
+	case INTP_DISPLACEMENT:
 
-			lop_interp = linop_interpolate_displacement_create(MOTION_DIM, flags, order, DIMS, dims, mdims, mot_ptr, dims);
+		lop_interp = linop_interpolate_displacement_create(MOTION_DIM, flags, order, DIMS, dims, mdims, mot_ptr, dims);
 
-			linop_forward(lop_interp, DIMS, odims, out_ptr, DIMS, dims, src_ptr);
+		linop_forward(lop_interp, DIMS, odims, out_ptr, DIMS, dims, src_ptr);
 
-			linop_free(lop_interp);
-			break;
+		linop_free(lop_interp);
+		break;
 
-		case INTP_AFFINE:
+	case INTP_AFFINE:
 
-			assert(3 == md_nontriv_dims(DIMS, mdims));
-			assert((3 == mdims[0]) || (4 == mdims[0]));
-			assert(4 == mdims[1]);
+		assert(3 == md_nontriv_dims(DIMS, mdims));
+		assert((3 == mdims[0]) || (4 == mdims[0]));
+		assert(4 == mdims[1]);
 
-			complex float affine[12];
-			md_copy_block(2, MD_DIMS(0, 0), MD_DIMS(3, 4), affine, mdims, mot_ptr, sizeof(complex float));
+		complex float affine[12];
+		md_copy_block(2, MD_DIMS(0, 0), MD_DIMS(3, 4), affine, mdims, mot_ptr, sizeof(complex float));
 
-			if ((FFT_FLAGS != flags) || ((~FFT_FLAGS) & md_nontriv_dims(DIMS, dims)))
-				error("Affine interpolation only supports the first three dimensions and flags must be set to 7.\nUse bart looping for higher dimensions.\n");
+		if ((FFT_FLAGS != flags) || ((~FFT_FLAGS) & md_nontriv_dims(DIMS, dims)))
+			error("Affine interpolation only supports the first three dimensions and flags "
+			      "must be set to 7.\nUse bart looping for higher dimensions.\n");
 
-			affine_interpolate(order, affine, odims, out_ptr, dims, src_ptr);
-			break;
+		affine_interpolate(order, affine, odims, out_ptr, dims, src_ptr);
+		break;
 	}
 
 	unmap_cfl(DIMS, mdims, mot_ptr);
