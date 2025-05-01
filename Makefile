@@ -836,7 +836,12 @@ all: .gitignore $(CTARGETS) bart
 
 # special targets
 
-$(shell echo "#define MAIN_LIST $(XTARGETS:%=%,) ()" > src/mainlist.inc)
+# always check if src/mainlist.inc exists:
+-include .mainlist
+.mainlist: src/mainlist.inc
+
+src/mainlist.inc: $(ALLMAKEFILES)
+	echo "#define MAIN_LIST $(XTARGETS:%=%,) ()" > src/mainlist.inc
 
 $(CTARGETS): CPPFLAGS += -include src/main.h
 
