@@ -41,7 +41,7 @@ int main_squeeze(int argc, char* argv[argc])
 	num_init();
 
 	long idims[DIMS];
-	long odims[DIMS] = MD_INIT_ARRAY(DIMS, 1);
+	long odims[DIMS] = { [0 ... DIMS - 1] = 1 };
 
 	complex float* idata = load_cfl(in_file, DIMS, idims);
 		

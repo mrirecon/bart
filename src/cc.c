@@ -82,7 +82,7 @@ int main_cc(int argc, char* argv[argc])
 	if (0 == P)
 		P = channels;
 
-	long out_dims[DIMS] = MD_INIT_ARRAY(DIMS, 1);
+	long out_dims[DIMS] = { [0 ... DIMS - 1] = 1 };
 	out_dims[COIL_DIM] = channels;
 	out_dims[MAPS_DIM] = channels;
 	out_dims[READ_DIM] = (SCC == cc_type) ? 1 : in_dims[READ_DIM];

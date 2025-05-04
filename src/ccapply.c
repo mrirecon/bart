@@ -115,7 +115,7 @@ int main_ccapply(int argc, char* argv[argc])
 
 	assert(cc_dims[MAPS_DIM] >= P && in_dims[COIL_DIM] >= P);
 
-	long out_dims[DIMS] = MD_INIT_ARRAY(DIMS, 1);
+	long out_dims[DIMS] = { [0 ... DIMS - 1] = 1 };
 
 	md_select_dims(DIMS, ~COIL_FLAG, out_dims, in_dims);
 	out_dims[COIL_DIM] = forward ? P : channels;

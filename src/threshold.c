@@ -43,7 +43,7 @@ static void wthresh(int D, const long dims[D], float lambda, unsigned long flags
 	long minsize[D];
 	md_singleton_dims(D, minsize);
 
-	long course_scale[3] = MD_INIT_ARRAY(3, 16);
+	long course_scale[3] = { 16, 16, 16 };
 	md_copy_dims(3, minsize, course_scale);
 
 	unsigned long wflags = 7; // FIXME
@@ -87,7 +87,7 @@ static void dfthresh(int D, const long /*dims*/[D], float /*lambda*/, complex fl
 	long minsize[D];
 	md_singleton_dims(D, minsize);
 
-	long coarse_scale[3] = MD_INIT_ARRAY(3, 16);
+	long coarse_scale[3] = { 16, 16, 16 };
 	md_min_dims(3, ~0u, minsize, dims, coarse_scale);
 
         complex float res[3];

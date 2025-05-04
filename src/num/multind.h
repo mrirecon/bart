@@ -154,7 +154,6 @@ extern unsigned long md_nontriv_dims(int D, const long dims[__VLA(D)]);
 extern unsigned long md_nontriv_strides(int D, const long dims[__VLA(D)]);
 
 
-#define MD_INIT_ARRAY(x, y) { [ 0 ... ((x) - 1) ] = (y) }
 #define MD_MAKE_ARRAY(T, ...) ((T[]){ __VA_ARGS__ })
 #define MD_DIMS(...) MD_MAKE_ARRAY(long, __VA_ARGS__)
 

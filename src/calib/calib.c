@@ -226,7 +226,7 @@ static float sure_crop(float var, const long evec_dims[DIMS], complex float* eve
 	complex float* proj = md_alloc_sameplace(5, im_dims, CFL_SIZE, calreg);
 
 	// Place holder for divergence term
-	long div_dims[5] = MD_INIT_ARRAY(5, 1);
+	long div_dims[5] = { 1, 1, 1, 1, 1 };
 	complex float* div = md_alloc_sameplace(5, div_dims, CFL_SIZE, calreg);
 
 	// Calculating strides.
@@ -600,7 +600,7 @@ void calib2(const struct ecalib_conf* conf, const long out_dims[DIMS], complex f
 	if (conf->rotphase) {
 
 		// rotate the the phase with respect to the first principle component
-		long scc_dims[DIMS] = MD_INIT_ARRAY(DIMS, 1);
+		long scc_dims[DIMS] = { [0 ... DIMS - 1] = 1 };
 		scc_dims[COIL_DIM] = channels;
 		scc_dims[MAPS_DIM] = channels;
 		scc(scc_dims, &rot[0][0], calreg_dims, data);

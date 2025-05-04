@@ -712,7 +712,7 @@ int main_bench(int argc, char* argv[argc])
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
-	long dims[BENCH_DIMS] = MD_INIT_ARRAY(BENCH_DIMS, 1);
+	long dims[BENCH_DIMS] = { [0 ... BENCH_DIMS - 1] = 1 };
 	long strs[BENCH_DIMS];
 	long pos[BENCH_DIMS] = { };
 
