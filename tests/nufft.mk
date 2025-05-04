@@ -406,12 +406,11 @@ tests/test-nufft-no-precomp-inverse: traj scale phantom nufft nrmse
 # as a field map for testing a coil sensitivity map is used and scaled to produce visible distortion 
 # without aliasing that can't be corrected for.
 tests/test-nudft-fieldmap-correction: traj phantom creal normalize scale index reshape transpose nufft nrmse resize copy
-	set -e ; mkdir $(TESTS_TMP) ; cd $(TEST_TMP)								;\
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)								;\
 	$(TOOLDIR)/traj -x64 -y64 traj_fm.ra									;\
 	$(TOOLDIR)/phantom -S 1 coil_sensitivity_map_pre.ra							;\
 	$(TOOLDIR)/resize -c 0 64 1 64 coil_sensitivity_map_pre.ra coil_sensitivity_map.ra			;\
-	$(TOOLDIR)/phantom shepplogan_pre.ra									;\
-	$(TOOLDIR)/resize -c 0 64 1 64 shepplogan_pre.ra shepplogan.ra						;\
+	$(TOOLDIR)/phantom -x64 shepplogan.ra									;\
 	$(TOOLDIR)/creal coil_sensitivity_map.ra fieldmap.ra							;\
 	$(TOOLDIR)/normalize 7 coil_sensitivity_map.ra fieldmap.ra						;\
 	$(TOOLDIR)/scale 1e-2 fieldmap.ra fieldmap.ra								;\
@@ -420,12 +419,13 @@ tests/test-nudft-fieldmap-correction: traj phantom creal normalize scale index r
 	$(TOOLDIR)/transpose 1 2 timemap.ra timemap.ra								;\
 	$(TOOLDIR)/nufft -s -F fieldmap.ra -T timemap.ra traj_fm.ra shepplogan.ra ksp_fm.ra			;\
 	$(TOOLDIR)/nufft -s -a -F fieldmap.ra -T timemap.ra traj_fm.ra ksp_fm.ra img_fm.ra			;\
-	$(TOOLDIR)/nrmse -t 0.02 img_fm.ra shepplogan.ra							;\
+	$(TOOLDIR)/nrmse -t 0.012 img_fm.ra shepplogan.ra							;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+
 tests/test-nudft-fieldmap-constant-circshift: traj ones phantom creal normalize scale index reshape transpose ones saxpy nufft circshift nrmse resize
-	set -e ; mkdir $(TESTS_TMP) ; cd $(TEST_TMP)								;\
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)								;\
 	$(TOOLDIR)/traj -x64 -y64 traj_fm.ra									;\
 	$(TOOLDIR)/phantom -S 1 coil_sensitivity_map_pre.ra							;\
 	$(TOOLDIR)/resize -c 0 64 1 64 coil_sensitivity_map_pre.ra coil_sensitivity_map.ra			;\
