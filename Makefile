@@ -957,6 +957,9 @@ gputest: ${TESTS_GPU}
 
 pythontest: ${TESTS_PYTHON}
 
+ismrmrdtest: ${TESTS_ISMRMRD}
+
+
 
 # unit tests
 
