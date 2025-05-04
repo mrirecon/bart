@@ -946,13 +946,6 @@ NOT_SUPPORTED=tests/test-io tests/test-io2 tests/test-join-append tests/test-joi
 TESTS = $(filter-out $(NOT_SUPPORTED),$(TMP_TESTS))
 endif
 
-# FIXME: those fail for unclear reason due to some file not being generated
-ifeq ($(MNAME),riscv64)
-TMP_TESTS := $(TESTS)
-NOT_SUPPORTED=tests/test-nudft-fieldmap-correction tests/test-nudft-fieldmap-constant-circshift
-TESTS = $(filter-out $(NOT_SUPPORTED),$(TMP_TESTS))
-endif
-
 
 test:	${TESTS}
 
