@@ -387,6 +387,17 @@ static bool stl_is_ascii(const char* name)
 
         close(fd);
 
+        int c = 0;
+
+        for (int i = 0; i < 80; i++)
+                if ('\n' == tmp[i]) {
+
+                        c = i;
+                        break;
+                }
+
+        tmp[c] = '\0';
+
         return stl_str_contained("solid", tmp);
 }
 
