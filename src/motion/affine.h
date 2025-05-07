@@ -1,3 +1,5 @@
+#include "misc/debug.h"
+
 struct nlop_s;
 
 const struct nlop_s* nlop_affine_chain_FF(const struct nlop_s* A, const struct nlop_s* B);
@@ -19,7 +21,7 @@ const struct nlop_s* nlop_affine_rigid_3D(void);
 const struct nlop_s* nlop_affine_2D(void);
 const struct nlop_s* nlop_affine_3D(void);
 
-extern void affine_debug(int dl, const _Complex float* A);
+extern void affine_debug(enum debug_levels dl, const _Complex float* A);
 
 extern void affine_interpolate(int ord, const _Complex float* affine, const long _odims[3], _Complex float* dst, const long _idims[3], const _Complex float* src);
 

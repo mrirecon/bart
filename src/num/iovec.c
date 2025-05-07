@@ -18,7 +18,7 @@
 
 
 #if 1
-void debug_print_iovec(int level, const struct iovec_s* vec)
+void debug_print_iovec(enum debug_levels level, const struct iovec_s* vec)
 {
 	debug_printf(level, "iovec:\n");
 	debug_printf(level, " N = %d\n", vec->N);

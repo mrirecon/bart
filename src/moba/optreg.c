@@ -305,14 +305,14 @@ static void opt_reg_meco_configure(int N, const long dims[N], const struct opt_r
 
 
 	// set number of coefficients for joint regularization
-	long nr_joint_coeff = get_num_of_coeff(optreg_conf->moba_model);
+	long nr_joint_coeff = get_num_of_coeff((unsigned int) optreg_conf->moba_model);
 
 	if (MECO_SOBOLEV == optreg_conf->weight_fB0_type)
 		nr_joint_coeff -= 1;
 
 	// set the flag for the position of the coefficient 
 	// which needs non-negativity constraint
-	unsigned long nonneg_flag = get_R2S_flag(optreg_conf->moba_model);
+	unsigned long nonneg_flag = get_R2S_flag((unsigned int) optreg_conf->moba_model);
 
 
 	const struct reg_s* regs = ropts->regs;

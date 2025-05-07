@@ -33,7 +33,6 @@
 
 #include "misc/debug.h"
 #include "misc/nested.h"
-#include "misc/opts.h"
 #include "misc.h"
 
 
@@ -170,7 +169,7 @@ void print_dims(int D, const long dims[D])
 
 
 
-void debug_print_bits(int dblevel, int D, unsigned long bitmask)
+void debug_print_bits(enum debug_levels dblevel, int D, unsigned long bitmask)
 {
 	bool dbl = debug_logging;
 	debug_logging = false;
@@ -193,7 +192,7 @@ void debug_print_bits(int dblevel, int D, unsigned long bitmask)
 #undef debug_print_dims
 #endif
 
-void debug_print_dims(int dblevel, int D, const long dims[D])
+void debug_print_dims(enum debug_levels dblevel, int D, const long dims[D])
 {
 	bool dbl = debug_logging;
 	debug_logging = false;
@@ -212,7 +211,7 @@ void debug_print_dims(int dblevel, int D, const long dims[D])
 void debug_print_dims_trace(const char* func_name,
 			    const char* file,
 			    int line,
-			    int dblevel,
+			    enum debug_levels dblevel,
 			    int D,
 			    const long dims[D])
 {
@@ -637,13 +636,17 @@ int bitcount(unsigned long flags)
 	return N;
 }
 
- __attribute__((optimize("-fno-finite-math-only")))
+#if __has_attribute(optimize)
+__attribute__((optimize("-fno-finite-math-only")))
+#endif
 bool safe_isnanf(float x)
 {
 	return isnanf(x);
 }
 
+#if __has_attribute(optimize)
 __attribute__((optimize("-fno-finite-math-only")))
+#endif
 bool safe_isfinite(float x)
 {
 	return (!isnan(x) && !isinf(x));

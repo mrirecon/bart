@@ -6,6 +6,7 @@
 #ifndef __SENSE_H
 #define __SENSE_H 1
 
+#include "misc/debug.h"
 #include "misc/mri.h"
 #include "iter/iter.h"
 #include "iter/iter2.h"
@@ -48,7 +49,7 @@ extern const struct operator_p_s* sense_recon_create(const struct sense_conf* co
 		  const struct operator_s* precond_op,
 		  struct iter_monitor_s* monitor);
 
-extern void debug_print_sense_conf(int debug_level, const struct sense_conf* conf);
+extern void debug_print_sense_conf(enum debug_levels debug_level, const struct sense_conf* conf);
 
 
 

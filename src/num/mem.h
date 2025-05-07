@@ -1,4 +1,4 @@
-
+#include "misc/debug.h"
 
 extern void memcache_init(void);
 extern void memcache_destroy(void);
@@ -10,6 +10,6 @@ extern void memcache_clear(void (*device_free)(const void* x, bool host));
 
 extern _Bool mem_ondevice(const void* ptr);
 
-extern void debug_print_memcache(int dl);
+extern void debug_print_memcache(enum debug_levels dl);
 extern _Bool memcache_is_empty(void);
 

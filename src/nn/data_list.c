@@ -29,7 +29,7 @@ struct named_tensor_s {
 	const char* name;
 };
 
-static void debug_print_named_tensor(int level, const struct named_tensor_s* ten)
+static void debug_print_named_tensor(enum debug_levels level, const struct named_tensor_s* ten)
 {
 	debug_printf(level, "%s at %p: ", ten->name, ten->data);
 	debug_print_dims(level, ten->N, ten->dims);
@@ -64,7 +64,7 @@ struct named_data_list_s* named_data_list_create(void)
 	return (struct named_data_list_s*)list_create();
 }
 
-void debug_print_named_data_list(int level, const struct named_data_list_s* list)
+void debug_print_named_data_list(enum debug_levels level, const struct named_data_list_s* list)
 {
 	for (int i = 0; i < list_count((list_t)list); i++)
 		debug_print_named_tensor(level, list_get_item((list_t)list, i));

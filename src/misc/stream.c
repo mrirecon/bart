@@ -746,7 +746,7 @@ static bool stream_receive_idx_locked2(stream_t s)
 
 			xread(s->pipefd, msg.data.extsize, mem);
 
-			struct stream_event* event = stream_event_create(offset, msg.type, msg.data.extsize, mem);
+			struct stream_event* event = stream_event_create(offset, (int) msg.type, msg.data.extsize, mem);
 
 			xfree(mem);
 

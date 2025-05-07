@@ -107,7 +107,7 @@ static float affine_get(int i, int j, const complex float* src)
 	return crealf(src[i + 3 * j]);
 }
 
-void affine_debug(int dl, const complex float* A)
+void affine_debug(enum debug_levels dl, const complex float* A)
 {
 	debug_printf(dl, "Affine Transform Matrix:\n");
 

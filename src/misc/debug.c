@@ -87,7 +87,7 @@ static const char* level_strings[] = {
 #undef  LSTR
 };
 
-static const char* get_level_str(int level)
+static const char* get_level_str(enum debug_levels level)
 {
 	assert(level >= 0);
 
@@ -112,7 +112,7 @@ static void get_datetime_str(int len, char* datetime_str)
 #endif
 
 
-void debug_vprintf(int level, const char* fmt, va_list ap)
+void debug_vprintf(enum debug_levels level, const char* fmt, va_list ap)
 {
 	if (-1 == debug_level) {
 
@@ -193,7 +193,7 @@ void debug_vprintf(int level, const char* fmt, va_list ap)
 }
 
 
-void debug_printf(int level, const char* fmt, ...)
+void debug_printf(enum debug_levels level, const char* fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
@@ -205,7 +205,7 @@ void debug_printf(int level, const char* fmt, ...)
 void debug_vprintf_trace(const char* func_name,
 			 const char* file,
 			 int line,
-			 int level,
+			 enum debug_levels level,
 			 const char* fmt,
 			 va_list ap)
 
@@ -231,7 +231,7 @@ void debug_vprintf_trace(const char* func_name,
 void debug_printf_trace(const char* func_name,
 			const char* file,
 			int line,
-			int level,
+			enum debug_levels level,
 			const char* fmt,
 			...)
 {

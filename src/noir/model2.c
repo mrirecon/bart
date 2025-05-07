@@ -385,7 +385,9 @@ struct noir2_s noir2_cart_create(int N,
 }
 
 
+#if __has_attribute(optimize)
 __attribute__((optimize("-fno-finite-math-only")))
+#endif
 static void proj_add(int D, const long dims[D], const long ostrs[D],
 			complex float* optr, const long v1_strs[D], complex float* v1, const long v2_strs[D], complex float* v2)
 {

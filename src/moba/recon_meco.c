@@ -92,7 +92,7 @@ void init_meco_maps(const long maps_dims[DIMS], complex float* maps, enum meco_m
 
 // rescale the reconstructed maps to the unit of Hz
 // note: input and output are both maps
-static void rescale_maps(int model, double scaling_Y, const struct linop_s* op, const complex float* scaling, const long maps_dims[DIMS], complex float* maps)
+static void rescale_maps(enum meco_model model, double scaling_Y, const struct linop_s* op, const complex float* scaling, const long maps_dims[DIMS], complex float* maps)
 {
 	if (MECO_PI == model) {
 
@@ -104,7 +104,7 @@ static void rescale_maps(int model, double scaling_Y, const struct linop_s* op, 
 
 		long nr_coeff = maps_dims[COEFF_DIM];
 
-		unsigned long fB0_flag = get_fB0_flag(model);
+		unsigned long fB0_flag = get_fB0_flag((unsigned int) model);
 
 		long map_dims[DIMS];
 		md_select_dims(DIMS, ~COEFF_FLAG, map_dims, maps_dims);
@@ -320,7 +320,7 @@ void meco_recon(const struct moba_conf* moba_conf,
 		const struct operator_p_s* prox_ops[NUM_REGS] = { NULL };
 		const struct linop_s* trafos[NUM_REGS] = { NULL };
 
-		int algo = moba_conf->algo;
+		enum algo_t algo = moba_conf->algo;
 
 		if (0 == ropts->r)
 			algo = ALGO_CG;
@@ -343,7 +343,7 @@ void meco_recon(const struct moba_conf* moba_conf,
 
 			struct optreg_conf optreg_conf = optreg_defaults;
 
-			optreg_conf.moba_model = sel_model;
+			optreg_conf.moba_model = (int) sel_model;
 			optreg_conf.weight_fB0_type = nl.weight_fB0_type;
 
 			opt_reg_moba_configure(DIMS, x_dims, ropts, prox_ops, trafos, &optreg_conf);

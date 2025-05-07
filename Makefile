@@ -434,7 +434,7 @@ endif
 
 
 CPPFLAGS += $(DEPFLAG) -iquote $(srcdir)/
-CFLAGS += -std=gnu17
+CFLAGS += -std=gnu23
 CXXFLAGS += -std=c++14
 
 

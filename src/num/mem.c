@@ -130,7 +130,7 @@ void memcache_destroy(void)
 	}
 }
 
-static void print_mem_tree(int dl, tree_t tree)
+static void print_mem_tree(enum debug_levels dl, tree_t tree)
 {
 	int N = tree_count(tree);
 
@@ -152,7 +152,7 @@ static void print_mem_tree(int dl, tree_t tree)
 		debug_printf(dl, "Total: %3.2eB\n", (double)total);
 }
 
-void debug_print_memcache(int dl)
+void debug_print_memcache(enum debug_levels dl)
 {
 	if (!mem_init)
 		return;

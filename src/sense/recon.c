@@ -65,7 +65,7 @@ const struct sense_conf sense_defaults = {
 
 
 
-void debug_print_sense_conf(int level, const struct sense_conf* conf)
+void debug_print_sense_conf(enum debug_levels level, const struct sense_conf* conf)
 {
 	debug_printf(level, "sense conf:\n");
 	debug_printf(level, "\trvc:          %s\n", conf->rvc ? "on" : "off");

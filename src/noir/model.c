@@ -226,7 +226,9 @@ struct noir_s noir_create(const long dims[DIMS], const complex float* mask, cons
 
 
 
+#if __has_attribute(optimize)
 __attribute__((optimize("-fno-finite-math-only")))
+#endif
 static void proj_add(int D, const long dims[D], const long ostrs[D],
 			complex float* optr, const long v1_strs[D], complex float* v1, const long v2_strs[D], complex float* v2)
 {

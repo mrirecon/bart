@@ -6,6 +6,8 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+#include "misc/debug.h"
+
 #include "misc/cppwrap.h"
 
 struct iovec_s {
@@ -27,7 +29,7 @@ extern bool iovec_compare(const struct iovec_s* iova, const struct iovec_s* iovb
 extern void iovec_init2(struct iovec_s* n, int N, const long dims[__VLA(N)], const long strs[__VLA(N)], size_t size);
 extern void iovec_destroy(const struct iovec_s* x);
 
-extern void debug_print_iovec(int level, const struct iovec_s* vec);
+extern void debug_print_iovec(enum debug_levels level, const struct iovec_s* vec);
 
 #include "misc/cppwrap.h"
 

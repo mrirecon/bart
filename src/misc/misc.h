@@ -15,7 +15,9 @@
 #include <stdarg.h>
 #include <stdnoreturn.h>
 
+#include "misc/debug.h"
 #include "misc/nested.h"
+
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795
@@ -28,7 +30,9 @@
 #define MAKE_ARRAY(x, ...) ((__typeof__(x)[]){ x, __VA_ARGS__ })
 #define ARRAY_SIZE(x)	(sizeof(x) / sizeof(x[0]))
 
+#ifndef unreachable
 #define unreachable() __builtin_trap()
+#endif
 
 #define SWAP(x, y) do { __auto_type temp = x; x = y; y = temp; } while (0)
 
@@ -90,10 +94,10 @@ extern int error_catcher(int fun(int argc, char* argv[__VLA(argc)]), int argc, c
 
 extern int bart_printf(const char* fmt, ...) __attribute__((format(printf,1,2)));
 
-extern void debug_print_bits(int dblevel, int D, unsigned long bitmask);
+extern void debug_print_bits(enum debug_levels dblevel, int D, unsigned long bitmask);
 
 extern void print_dims(int D, const long dims[__VLA(D)]);
-extern void debug_print_dims(int dblevel, int D, const long dims[__VLA(D)]);
+extern void debug_print_dims(enum debug_levels dblevel, int D, const long dims[__VLA(D)]);
 
 #ifdef REDEFINE_PRINTF_FOR_TRACE
 #define debug_print_dims(...) \
@@ -103,7 +107,7 @@ extern void debug_print_dims(int dblevel, int D, const long dims[__VLA(D)]);
 extern void debug_print_dims_trace(const char* func_name,
 				   const char* file,
 				   int line,
-				   int dblevel,
+				   enum debug_levels dblevel,
 				   int D,
 				   const long dims[__VLA(D)]);
 

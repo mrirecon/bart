@@ -343,7 +343,7 @@ int main_mobafit(int argc, char* argv[argc])
 
 	//	assert(1 == enc_dims[TE_DIM]);
 
-		x_dims[COEFF_DIM] = get_num_of_coeff(mgre_model);
+		x_dims[COEFF_DIM] = get_num_of_coeff((unsigned int)mgre_model);
 		break;
 
 	case TSE:
@@ -441,7 +441,7 @@ int main_mobafit(int argc, char* argv[argc])
 		static float scale_fB0[2] = { 0., 1. };
 		assert(md_check_equal_dims(DIMS, y_patch_dims, y_patch_sig_dims, ~0UL));
 
-		nlop = nlop_meco_create(DIMS, y_patch_dims, x_patch_dims, enc, mgre_model, false, FAT_SPEC_1, scale_fB0);
+		nlop = nlop_meco_create(DIMS, y_patch_dims, x_patch_dims, enc, (unsigned int)mgre_model, false, FAT_SPEC_1, scale_fB0);
 		break;
 
 	case TSE:

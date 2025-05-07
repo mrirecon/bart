@@ -288,7 +288,7 @@ static bool adc_to_skip(bool noise, uint64_t adc_flag)
 	return !is_image_adc(adc_flag);
 }
 
-static void debug_print_flags(int dblevel, uint64_t adc_flag)
+static void debug_print_flags(enum debug_levels dblevel, uint64_t adc_flag)
 {
 	debug_printf(dblevel, "-------------\n");
 	for (int f = ACQEND; f <= WIP_3; f++)
@@ -359,7 +359,7 @@ static enum adc_return siemens_bounds(bool vd, bool noise, int fd, long min[DIMS
 		struct mdh2 mdh;
 		memcpy(&mdh, vd ? (scan_hdr + 40) : (chan_hdr + 20), sizeof(mdh));
 
-		ssize_t offset = sizeof(scan_hdr) + sizeof(chan_hdr);
+		ssize_t offset = (ssize_t) sizeof(scan_hdr) + (ssize_t) sizeof(chan_hdr);
 
 		if (0 == pos[COIL_DIM])
 			debug_print_flags(DP_DEBUG2, mdh.evalinfo);
@@ -439,7 +439,7 @@ static enum adc_return siemens_adc_read(bool vd, int fd, bool noise, bool linect
 		if (adc_to_skip(noise, mdh.evalinfo)
 			|| (dims[READ_DIM] != mdh.samples)) {
 
-			ssize_t offset = sizeof(scan_hdr) + sizeof(chan_hdr);
+			ssize_t offset = (ssize_t) sizeof(scan_hdr) + (ssize_t) sizeof(chan_hdr);
 
 			return skip_to_next(vd ? scan_hdr : chan_hdr, fd, offset);
 		}
