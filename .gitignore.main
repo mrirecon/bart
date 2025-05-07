@@ -32,6 +32,9 @@ Makefiles/Makefile.*
 # version string
 src/misc/version.inc
 
+# list of main functions
+src/mainlist.inc
+
 # noise simulations
 save/nsv/*.dat
 
