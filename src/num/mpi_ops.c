@@ -394,7 +394,7 @@ void mpi_sync_val(void* pval, long size)
 void mpi_scatter_batch(void* dst, long count, const void* src, size_t size)
 {
 #ifdef USE_MPI
-	count *= size;
+	count *= (long)size;
 	assert(count < INT_MAX);
 
 	MPI_Scatter(src, count, MPI_BYTE, ((0 == mpi_get_rank()) && (dst == src)) ? MPI_IN_PLACE : dst,
@@ -424,7 +424,7 @@ void mpi_scatter_batch(void* dst, long count, const void* src, size_t size)
 void mpi_gather_batch(void* dst, long count, const void* src, size_t size)
 {
 #ifdef USE_MPI
-	count *= size;
+	count *= (long)size;
 	assert(count < INT_MAX);
 
 	MPI_Gather(((0 == mpi_get_rank()) && (dst == src)) ? MPI_IN_PLACE : src, count,
