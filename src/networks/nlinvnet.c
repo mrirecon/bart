@@ -816,7 +816,11 @@ static nn_t nlinvnet_train_loss_create(const struct nlinvnet_s* nlinvnet, int Nb
 	md_copy_dims(N, pat_dims, nn_generic_domain(nn_train, 0, "pat")->dims);
 
 	nn_t loss = train_loss_create(nlinvnet->train_loss, N, out_dims);
-	char* loss_name = strdup(nn_get_out_name_from_arg_index(loss, 0, NULL));
+
+	const char* loss_name = strdup(nn_get_out_name_from_arg_index(loss, 0, NULL));
+
+	if (!loss_name)
+		error("memory out");
 
 	if ((-1. != nlinvnet->time_mask[0]) || (-1. != nlinvnet->time_mask[1])) {
 
@@ -858,7 +862,7 @@ static nn_t nlinvnet_train_loss_create(const struct nlinvnet_s* nlinvnet, int Nb
 		nn_train = nn_set_output_name_F(nn_train, 0, loss_name);
 	}
 
-	free(loss_name);
+	xfree(loss_name);
 
 	nn_train = nlinvnet_sort_args_F(nn_train);
 
