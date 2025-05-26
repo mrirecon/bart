@@ -1,0 +1,9 @@
+In order to compile Bart with PyTorch you need libtorch:
+
+1. Download "libtorch" from https://pytorch.org/ for C++ and save it in path/to/libtorch
+
+2. Set up your local Makefile by adding:
+	PYTORCH?=1
+	PYTORCH_BASE?=path/to/libtorch
+
+3. Compile
