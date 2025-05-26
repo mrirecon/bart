@@ -456,9 +456,6 @@ void noir2_recon(const struct noir2_conf_s* conf, struct noir2_s* noir_ops,
 		md_zrss(N, nrm_col_dims, ~md_nontriv_dims(N, nrm_dims), nrm, tmp);
 		md_free(tmp);
 
-		if (1 != nrm_col_dims[SLICE_DIM])
-			fftmod(DIMS, nrm_col_dims, SLICE_FLAG, nrm, nrm);
-
 		complex float* nrm2 = md_alloc_sameplace(N, nrm_dims, CFL_SIZE, img);
 		md_copy(N, nrm_dims, nrm2, nrm, CFL_SIZE);
 		md_free(nrm);
