@@ -684,7 +684,7 @@ void nlop_unset_derivatives(const struct nlop_s* nlop) {
 
 void nlop_set_derivatives(const struct nlop_s* nlop, int II, int OO, bool der_requested[II][OO])
 {
-	for (int i = 0; i < II; i++)
+	for (int i = 0; i < II; i++) {
 		for (int o = 0; o < OO; o++) {
 
 			if (!der_requested[i][o])
@@ -722,6 +722,7 @@ void nlop_set_derivatives(const struct nlop_s* nlop, int II, int OO, bool der_re
 
 			list_free(operators);
 		}
+	}
 }
 
 const struct linop_s* nlop_get_derivative(const struct nlop_s* op, int o, int i)
@@ -921,7 +922,7 @@ static struct nlop_s* nlop_flatten_graph(const struct nlop_s* op)
 
 		idims[0] += md_calc_size(iov->N, iov->dims);
 		(*offs)[OO + i] = ilast;
-		ilast = idims[0] *(long) CFL_SIZE;
+		ilast = idims[0] * (long)CFL_SIZE;
 	}
 
 	PTR_ALLOC(struct flatten_graph_s, data);
@@ -1544,10 +1545,10 @@ void nlop_generic_apply_loop_sameplace(const struct nlop_s* op, unsigned long lo
 		const complex float* nsrc[NI];
 
 		for (int i = 0; i < NO; i++)
-			ndst[i] = &(MD_ACCESS(DO[i], ostrs[i], pos, dst[i]));
+			ndst[i] = &MD_ACCESS(DO[i], ostrs[i], pos, dst[i]);
 
 		for (int i = 0; i < NI; i++)
-			nsrc[i] = &(MD_ACCESS(DI[i], istrs[i], pos, src[i]));
+			nsrc[i] = &MD_ACCESS(DI[i], istrs[i], pos, src[i]);
 
 		nlop_generic_apply2_sameplace(op,
 			NO, DO, nodims, ostrs, ndst,
@@ -1734,9 +1735,4 @@ const struct operator_p_s* op_p_nlop_wrapper_F(const struct nlop_s* nlop)
 
 	return operator_p_create(cod->N, cod->dims, dom->N, dom->dims, CAST_UP(PTR_PASS(data)), op_p_nlop_fun, op_p_nlop_del);
 }
-
-
-
-
-
 

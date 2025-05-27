@@ -718,6 +718,7 @@ const struct nlop_s* nlop_sense_adjoint_create(int Nb, struct sense_model_s* mod
 	for (int i = 0; i < Nb; i++) {
 
 		nlops[i] = nlop_from_linop_F(linop_get_adjoint(models[i]->sense));
+
 		if (NULL == models[i]->nufft)
 			nlops[i] = nlop_chain2_FF(nlop_sense_model_set_data_create(models[i]->N, models[i]->ksp_dims, models[i], output_psf), 0, nlops[i], 0);
 		else
@@ -746,7 +747,7 @@ const struct nlop_s* nlop_sense_normal_create(int Nb, struct sense_model_s* mode
 	int ostack_dim[] = { BATCH_DIM };
 	int istack_dim[] = { BATCH_DIM };
 
-	return nlop_stack_multiple_F(Nb, nlops, 1, istack_dim, 1, ostack_dim, true , multigpu);
+	return nlop_stack_multiple_F(Nb, nlops, 1, istack_dim, 1, ostack_dim, true, multigpu);
 }
 
 const struct nlop_s* nlop_sense_normal_inv_create(int Nb, struct sense_model_s* models[Nb], struct iter_conjgrad_conf* iter_conf, unsigned long lambda_flags)
@@ -768,7 +769,7 @@ const struct nlop_s* nlop_sense_normal_inv_create(int Nb, struct sense_model_s* 
 	int ostack_dim[] = { BATCH_DIM };
 	int istack_dim[] = { BATCH_DIM, MD_IS_SET(lambda_flags, BATCH_DIM) ? BATCH_DIM : -1 };
 
-	return nlop_stack_multiple_F(Nb, nlops, 2, istack_dim, 1, ostack_dim, true , multigpu);
+	return nlop_stack_multiple_F(Nb, nlops, 2, istack_dim, 1, ostack_dim, true, multigpu);
 }
 
 const struct nlop_s* nlop_sense_dc_prox_create(int Nb, struct sense_model_s* models[Nb], struct iter_conjgrad_conf* iter_conf, unsigned long lambda_flags)
@@ -1247,7 +1248,7 @@ const struct nlop_s* nlop_mri_scale_rss_create(int N, const long max_dims[N], co
 
 	data->N = N;
 	data->bat_flag = conf->batch_flags;
-	data->rss_flag = (~conf->image_flags) & (conf->coil_flags);
+	data->rss_flag = ~conf->image_flags & conf->coil_flags;
 	data->mean = true;
 
 	long odims[N];

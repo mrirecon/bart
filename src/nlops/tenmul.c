@@ -50,6 +50,7 @@ static void tenmul_init(struct tenmul_s* data, const complex float* ref)
 
 		if (NULL == data->der2)
 			data->der2 = md_alloc_sameplace(data->N, data->dims2, CFL_SIZE, ref);
+
 	} else {
 
 		md_free(data->der2);
@@ -60,6 +61,7 @@ static void tenmul_init(struct tenmul_s* data, const complex float* ref)
 
 		if (NULL == data->der1)
 			data->der1 = md_alloc_sameplace(data->N, data->dims1, CFL_SIZE, ref);
+
 	} else {
 
 		md_free(data->der1);
@@ -270,14 +272,18 @@ struct nlop_s* nlop_tenmul_create(int N, const long odim[N], const long idim1[N]
 bool nlop_tenmul_der_available(const struct nlop_s* op, int index)
 {
 	auto data = CAST_MAYBE(tenmul_s, nlop_get_data((struct nlop_s*)op));
+
 	if (NULL != data) {
 
 		if (0 == index)
 			return (NULL != data->der2);
+
 		if (1 == index)
 			return (NULL != data->der1);
+
 		assert(0);
 	}
 
 	return nlop_block_diag_der_available(op, 0, index);
 }
+

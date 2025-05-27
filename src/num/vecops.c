@@ -703,44 +703,44 @@ static void zfftmod(long N, complex float* dst, const complex float* src, int n,
 
 static void pdf_gauss(long N, float mu, float sig, float* dst, const float* src)
 {
-	for (int i = 0; i < N; i ++)
-		dst[i] = expf(- (src[i] - mu) * (src[i] - mu) / (2 * sig * sig)) / (sqrtf(2 * M_PI) * sig);
+	for (int i = 0; i < N; i++)
+		dst[i] = expf(-(src[i] - mu) * (src[i] - mu) / (2 * sig * sig)) / (sqrtf(2 * M_PI) * sig);
 }
 
 
 static void vec_real(long N, float* dst, const complex float* src)
 {
-	for (int i = 0; i < N; i ++)
+	for (int i = 0; i < N; i++)
 		dst[i] = crealf(src[i]);
 }
 
 static  void vec_imag(long N, float* dst, const complex float* src)
 {
-	for (int i = 0; i < N; i ++)
+	for (int i = 0; i < N; i++)
 		dst[i] = cimagf(src[i]);
 }
 
 static void vec_zcmpl_real(long N, complex float* dst, const float* src)
 {
-	for (int i = 0; i < N; i ++)
+	for (int i = 0; i < N; i++)
 		dst[i] = src[i];
 }
 
 static void vec_zcmpl_imag(long N, complex float* dst, const float* src)
 {
-	for (int i = 0; i < N; i ++)
-		dst[i] = src[i] * I;
+	for (int i = 0; i < N; i++)
+		dst[i] = src[i] * 1.i;
 }
 
 static void vec_zcmpl(long N, complex float* dst, const float* real_src, const float* imag_src)
 {
-	for (int i = 0; i < N; i ++)
-		dst[i] = real_src[i] + imag_src[i] * I;
+	for (int i = 0; i < N; i++)
+		dst[i] = real_src[i] + imag_src[i] * 1.i;
 }
 
 static void vec_zfill(long N, complex float val, complex float* dst)
 {
-	for (int i = 0; i < N; i ++)
+	for (int i = 0; i < N; i++)
 		dst[i] = val;
 }
 

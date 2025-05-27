@@ -444,6 +444,7 @@ static void norm_max_abs_fun(const nlop_data_t* _data, int D, complex float* arg
 	md_free(tmp);
 
 	complex float* ones = md_alloc_sameplace(N, sdims, CFL_SIZE, dst);
+
 	md_zfill(N, sdims, ones, 1.);
 	md_zdiv(N, sdims, data->inv_scale, ones, scale);
 
@@ -453,7 +454,6 @@ static void norm_max_abs_fun(const nlop_data_t* _data, int D, complex float* arg
 		MD_STRIDES(N, sdims, CFL_SIZE), data->inv_scale);
 
 	md_free(ones);
-
 }
 
 static void norm_max_abs_deradj(const nlop_data_t* _data, int /*o*/, int /*i*/, complex float* dst, const complex float* src)
