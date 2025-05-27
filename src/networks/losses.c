@@ -25,12 +25,13 @@
 #include "nlops/someops.h"
 #include "nlops/tenmul.h"
 #include "nlops/stack.h"
+#include "nlops/losses.h"
 
 #include "nn/nn.h"
 #include "nn/losses.h"
 #include "nn/chain.h"
 
-#include "networks/losses.h"
+#include "losses.h"
 
 
 struct loss_config_s loss_option = {
