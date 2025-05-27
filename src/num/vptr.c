@@ -723,16 +723,16 @@ void vptr_assert_sameplace(int N, void* nptr[N])
 		struct mem_s* mem = search(nptr[i], false);
 
 		if ((NULL == mem_ref) && (NULL != mem))
-			error("Incopatible pointer: vptr(%x) at %d and normal pointer(%x) at 0!\n", nptr[i], i, nptr[0]);
+			error("Incompatible pointer: vptr(%x) at %d and normal pointer(%x) at 0!\n", nptr[i], i, nptr[0]);
 
 		if ((NULL != mem_ref) && (NULL == mem))
-			error("Incopatible pointer: vptr(%x) at 0 and normal pointer(%x) at %d!\n", nptr[0], nptr[i], i);
+			error("Incompatible pointer: vptr(%x) at 0 and normal pointer(%x) at %d!\n", nptr[0], nptr[i], i);
 		
 		if (NULL == mem_ref)
 			continue;
 
 		if ((hint_ref && !mem->hint) || (!hint_ref && mem->hint))
-			error("Incopatible hints!\n");
+			error("Incompatible hints!\n");
 
 		if (NULL == hint_ref)
 			continue;
@@ -743,7 +743,7 @@ void vptr_assert_sameplace(int N, void* nptr[N])
 			debug_print_dims(DP_INFO, hint_ref->N, hint_ref->dims);
 			debug_print_dims(DP_INFO, mem->hint->N, mem->hint->dims);
 
-			error("Incopatible MPI dist rule!\n");
+			error("Incompatible MPI dist rule!\n");
 		}		
 	}
 }
