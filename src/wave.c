@@ -290,11 +290,13 @@ int main_wave(int argc, char* argv[argc])
 	debug_printf(DP_INFO, "\tM:   %f seconds.\n", t2 - t1);
 
 	debug_printf(DP_INFO, "Forward linear operator information:\n");
-	struct linop_s* A = linop_chain_FF(linop_chain_FF(linop_chain_FF(linop_chain_FF(linop_chain_FF(
-		E, R), Fx), W), Fyz), M);
+
+	struct linop_s* A = linop_chain_FF(linop_chain_FF(linop_chain_FF(linop_chain_FF(linop_chain_FF(E, R), Fx), W), Fyz), M);
 
 	if (dcx) {
+
 		debug_printf(DP_INFO, "\tSplitting result into real and imaginary components.\n");
+
 		struct linop_s* tmp = A;
 		struct linop_s* dcxop = linop_decompose_complex_create(DIMS, ITER_DIM, linop_domain(A)->dims);
 
@@ -309,12 +311,15 @@ int main_wave(int argc, char* argv[argc])
 #else
 		eval = estimate_maxeigenval(A->normal);
 #endif
+
 	debug_printf(DP_INFO, "\tMax eval: %.2e\n", eval);
 	step /= eval;
 
 	debug_printf(DP_INFO, "Normalizing kspace... ");
+
 	float norm = md_znorm(DIMS, kspc_dims, kspc);
 	md_zsmul(DIMS, kspc_dims, kspc, kspc, 1. / norm);
+
 	debug_printf(DP_INFO, "Done.\n");
 
 	const struct operator_p_s* T = NULL;
@@ -454,3 +459,4 @@ int main_wave(int argc, char* argv[argc])
 
 	return 0;
 }
+

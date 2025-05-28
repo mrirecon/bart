@@ -33,14 +33,14 @@
 #endif
 
 static const char help_str[] = "Generate a wave PSF in hybrid space.\n"
-															 "- Assumes the first dimension is the readout dimension.\n"
-															 "- Only generates a 2 dimensional PSF.\n"
-															 "- Use reshape and fmac to generate a 3D PSF.\n\n"
-															 "3D PSF Example:\n"
-															 "bart wavepsf		-x 768 -y 128 -r 0.1 -a 3000 -t 0.00001 -g 0.8 -s 17000 -n 6 wY\n"
-															 "bart wavepsf -c -x 768 -y 128 -r 0.1 -a 3000 -t 0.00001 -g 0.8 -s 17000 -n 6 wZ\n"
-															 "bart reshape 7 wZ 768 1 128 wZ wZ\n"
-															 "bart fmac wY wZ wYZ";
+				 "- Assumes the first dimension is the readout dimension.\n"
+				 "- Only generates a 2 dimensional PSF.\n"
+				 "- Use reshape and fmac to generate a 3D PSF.\n\n"
+				 "3D PSF Example:\n"
+				 "bart wavepsf		-x 768 -y 128 -r 0.1 -a 3000 -t 0.00001 -g 0.8 -s 17000 -n 6 wY\n"
+				 "bart wavepsf -c -x 768 -y 128 -r 0.1 -a 3000 -t 0.00001 -g 0.8 -s 17000 -n 6 wZ\n"
+				 "bart reshape 7 wZ 768 1 128 wZ wZ\n"
+				 "bart fmac wY wZ wYZ";
 
 int main_wavepsf(int argc, char* argv[argc])
 {
@@ -71,15 +71,15 @@ int main_wavepsf(int argc, char* argv[argc])
 	bool cs = false;		// Set to true to use a cosine gradient wave/
 
 	const struct opt_s opts[] = {
-		OPT_SET(	'c', &cs,							"Set to use a cosine gradient wave"),
-		OPT_INT(	'x', &sx,		"RO_dim", "Number of readout points"),
-		OPT_INT(	'y', &sy,		"PE_dim", "Number of phase encode points"),
-		OPT_FLOAT('r', &dy,		"PE_res", "Resolution of phase encode in cm"),
-		OPT_INT(	'a', &adc,	"ADC_T",	"Readout duration in microseconds."),
-		OPT_FLOAT('t', &dt,		"ADC_dt", "ADC sampling rate in seconds"),
-		OPT_FLOAT('g', &gmax, "gMax",		"Maximum gradient amplitude in Gauss/cm"),
-		OPT_FLOAT('s', &smax, "sMax",		"Maximum gradient slew rate in Gauss/cm/second"),
-		OPT_INT(	'n', &ncyc, "ncyc",		"Number of cycles in the gradient wave"),
+		OPT_SET('c', &cs, "Set to use a cosine gradient wave"),
+		OPT_INT('x', &sx, "RO_dim", "Number of readout points"),
+		OPT_INT('y', &sy, "PE_dim", "Number of phase encode points"),
+		OPT_FLOAT('r', &dy, "PE_res", "Resolution of phase encode in cm"),
+		OPT_INT('a', &adc, "ADC_T", "Readout duration in microseconds."),
+		OPT_FLOAT('t', &dt, "ADC_dt", "ADC sampling rate in seconds"),
+		OPT_FLOAT('g', &gmax, "gMax", "Maximum gradient amplitude in Gauss/cm"),
+		OPT_FLOAT('s', &smax, "sMax", "Maximum gradient slew rate in Gauss/cm/second"),
+		OPT_INT('n', &ncyc, "ncyc", "Number of cycles in the gradient wave"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -121,8 +121,7 @@ int main_wavepsf(int argc, char* argv[argc])
 
 	complex float k_phasepercm_interp[sx]; 
 
-	md_resize_center(1, interp_dims, k_phasepercm_interp, wavepoint_dims, k_phasepercm, 
-		sizeof(complex float));
+	md_resize_center(1, interp_dims, k_phasepercm_interp, wavepoint_dims, k_phasepercm, sizeof(complex float));
 
 	complex float phasepercm_interp_complex[sx]; 
 
@@ -162,3 +161,4 @@ int main_wavepsf(int argc, char* argv[argc])
 
 	return 0;
 }
+
