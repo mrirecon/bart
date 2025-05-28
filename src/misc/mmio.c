@@ -305,14 +305,14 @@ int cfl_loop_get_rank(void)
 void cfl_loop_get_dims(int D, long dims[D])
 {
 	assert(cfl_loop_desc.D == D);
-	md_copy_dims(DIMS, dims, cfl_loop_desc.loop_dims);
+	md_copy_dims(D, dims, cfl_loop_desc.loop_dims);
 }
 
 void cfl_loop_get_pos(int D, long pos[D])
 {
 	assert(cfl_loop_desc.D == D);
 	md_set_dims(cfl_loop_desc.D , pos, 0);
-	md_unravel_index(DIMS, pos, cfl_loop_desc.flags, cfl_loop_desc.loop_dims, cfl_loop_index[cfl_loop_worker_id()]);
+	md_unravel_index(D, pos, cfl_loop_desc.flags, cfl_loop_desc.loop_dims, cfl_loop_index[cfl_loop_worker_id()]);
 
 	for (int i = 0; i < cfl_loop_desc.D ; i++)
 		pos[i] += cfl_loop_desc.offs_dims[i];
