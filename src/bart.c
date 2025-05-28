@@ -98,7 +98,26 @@ struct {
 } dispatch_table[] = {
 
 #define DENTRY(x) { main_ ## x, # x },
-	MAP(DENTRY, MAIN_LIST)
+	{ NULL, "Basic Tools:" },
+	MAP(DENTRY, MAIN_BASE)
+	{ NULL, "Mathematics:" },
+	MAP(DENTRY, MAIN_FLP)
+	{ NULL, "Numerics:" },
+	MAP(DENTRY, MAIN_NUM)
+	{ NULL, "I/O:" },
+	MAP(DENTRY, MAIN_IO)
+	{ NULL, "MRI Recon.:" },
+	MAP(DENTRY, MAIN_RECO)
+	{ NULL, "Calibration:" },
+	MAP(DENTRY, MAIN_CALIB)
+	{ NULL, "Misc. MRI:" },
+	MAP(DENTRY, MAIN_MRI)
+	{ NULL, "Simulation:" },
+	MAP(DENTRY, MAIN_SIM)
+	{ NULL, "Learning:" },
+	MAP(DENTRY, MAIN_NN)
+	{ NULL, "Motion:" },
+	MAP(DENTRY, MAIN_MOTION)
 #undef  DENTRY
 	{ NULL, NULL }
 };
@@ -107,14 +126,28 @@ static const char help_str[] = "BART. command line flags";
 
 static void usage(void)
 {
-	printf("BART. Available commands are:");
+	printf("BART. Type `bart <command> -h` for options.");
+
+	int col = 0;
+	int line = 0;
 
 	for (int i = 0; NULL != dispatch_table[i].name; i++) {
 
-		if (0 == i % 6)
-			printf("\n");
+		if (NULL == dispatch_table[i].main_fun) {
+
+			col = 0;
+			line = 0;
+			printf("\n%-12s ", dispatch_table[i].name);
+			continue;
+		}
+
+		if ((0 < line) && (0 == col % 7))
+			printf("\n             ");
 
 		printf("%-12s", dispatch_table[i].name);
+
+		col++;
+		line++;
 	}
 
 	printf("\n");

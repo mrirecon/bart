@@ -266,16 +266,27 @@ ISMRM_BASE ?= /usr/local/ismrmrd/
 
 # Main build targets
 #
-TBASE=show slice crop resize join transpose squeeze flatten zeros ones flip circshift extract repmat bitmask reshape version delta copy casorati vec poly index multicfl tee trx
+TBASE=show slice crop resize join transpose squeeze flatten zeros ones flip circshift extract repmat bitmask reshape version delta copy casorati vec poly index
 TFLP=scale invert conj fmac saxpy sdot spow cpyphs creal carg normalize cdf97 pattern nrmse mip avg cabs zexp calc unwrap
 TNUM=fft fftmod fftshift noise bench threshold conv rss filter nlmeans mandelbrot wavelet window var std fftrot roistat pol2mask conway morphop
 TRECO=pics pocsense sqpics itsense nlinv moba nufft nufftbase rof tgv ictv sake wave lrmatrix estdims estshift estdelay wavepsf wshfl rtnlinv mobafit grog denoise
 TCALIB=ecalib ecaltwo caldir walsh cc ccapply rovir calmat svd estvar whiten rmfreq ssa bin psf ncalib
 TMRI=homodyne poisson twixread fakeksp looklocker upat fovshift
 TSIM=phantom traj signal epg sim raga stl
-TIO=toimg toraw
+TIO=tee toimg toraw multicfl trx
 TNN=reconet nnet onehotenc measure mnist tensorflow nlinvnet
 TMOTION=affinereg interpolate estmotion
+
+TBASE:=$(sort $(TBASE))
+TFLP:=$(sort $(TFLP))
+TNUM:=$(sort $(TNUM))
+TRECO:=$(sort $(TRECO))
+TCALIB:=$(sort $(TCALIB))
+TMRI:=$(sort $(TMRI))
+TSIM:=$(sort $(TSIM))
+TIO:=$(sort $(TIO))
+TNN:=$(sort $(TNN))
+TMOTION:=$(sort $(TMOTION))
 
 
 
@@ -841,7 +852,18 @@ all: .gitignore $(CTARGETS) bart
 .mainlist: src/mainlist.inc
 
 src/mainlist.inc: $(ALLMAKEFILES)
-	echo "#define MAIN_LIST $(XTARGETS:%=%,) ()" > src/mainlist.inc
+	echo "#define MAIN_LIST $(XTARGETS:%=%,) ()" >> src/mainlist.inc
+	echo "#define MAIN_BASE $(TBASE:%=%,) ()" >> src/mainlist.inc
+	echo "#define MAIN_FLP $(TFLP:%=%,) ()" >> src/mainlist.inc
+	echo "#define MAIN_NUM $(TNUM:%=%,) ()" >> src/mainlist.inc
+	echo "#define MAIN_IO $(TIO:%=%,) ()" >> src/mainlist.inc
+	echo "#define MAIN_RECO $(TRECO:%=%,) ()" >> src/mainlist.inc
+	echo "#define MAIN_CALIB $(TCALIB:%=%,) ()" >> src/mainlist.inc
+	echo "#define MAIN_MRI $(TMRI:%=%,) ()" >> src/mainlist.inc
+	echo "#define MAIN_SIM $(TSIM:%=%,) ()" >> src/mainlist.inc
+	echo "#define MAIN_NN $(TNN:%=%,) ()" >> src/mainlist.inc
+	echo "#define MAIN_MOTION $(TMOTION:%=%,) ()" >> src/mainlist.inc
+
 
 $(CTARGETS): CPPFLAGS += -include src/main.h
 
