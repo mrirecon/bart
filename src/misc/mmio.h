@@ -9,6 +9,8 @@
 
 extern _Bool mmio_file_locking;
 
+extern _Bool stream_create_binary_outputs;
+
 #include <stddef.h>
 extern _Bool mpi_shared_files;
 extern unsigned long cfl_loop_rand_flags;

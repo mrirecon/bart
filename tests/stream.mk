@@ -110,9 +110,9 @@ tests/test-stream-binary4: phantom copy nrmse trx
 	rm *.ra	; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-tests/test-stream-binary5: phantom copy nrmse trx
+tests/test-stream-binary5: bart copy nrmse trx
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
-	BART_BINARY_STREAM=1 $(TOOLDIR)/phantom - > phantom.bstrm	;\
+	$(ROOTDIR)/bart --stream-bin-out phantom - > phantom.bstrm	;\
 	$(TOOLDIR)/copy - phantom.ra < phantom.bstrm			;\
 	$(TOOLDIR)/nrmse -t 0 phantom.ra - < phantom.bstrm		;\
 	rm *.ra	; rm phantom.bstrm; cd .. ; rmdir $(TESTS_TMP)

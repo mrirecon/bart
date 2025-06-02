@@ -202,6 +202,7 @@ static void parse_bart_opts(int* argcp, char*** argvp, int order[DIMS], stream_t
 		OPTL_SET(0, "version", &version, "print version"),
 		OPTL_ULONG(0, "random-dims", &cfl_loop_rand_flags, "flags", "vary random numbers along selected dimensions (default: all)"),
 		OPT_SET('d', &attach, "(Wait for debugger)"),
+		OPTL_SET(0, "stream-bin-out", &stream_create_binary_outputs, "Use binary streams (inline data) instead of shared memory for output streams"),
 	};
 
 	int next_arg = options(argcp, *argvp, "", help_str, ARRAY_SIZE(opts), opts, ARRAY_SIZE(args), args, true);

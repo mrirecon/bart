@@ -62,6 +62,8 @@
 
 bool mmio_file_locking = true;
 
+bool stream_create_binary_outputs = false;
+
 #ifdef __EMSCRIPTEN__
 // FIXME: This is a workaround for a bug in emscripten.
 // https://github.com/emscripten-core/emscripten/issues/15140
@@ -732,7 +734,7 @@ static complex float* create_pipe(const char* name, int D, long dimensions[D], u
 	if (NULL != (ptr = stream_clone_if_exists(name, &strm, false)))
 		return ptr;
 
-	if (0 == strcmp("1", getenv("BART_BINARY_STREAM") ? : ""))
+	if (stream_create_binary_outputs)
 		return create_binary_pipe(name, D, dimensions, stream_flags);
 
 	io_register_output(name);
