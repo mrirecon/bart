@@ -191,6 +191,8 @@ extern void print_usage(FILE* fp, const char* name, const char* usage_str, int n
 extern int options(int* argcp, char* argv[*argcp], const char* usage_str, const char* help_str, int n, const struct opt_s opts[n], int m, const struct arg_s args[m], bool stop_at_nonopt);
 extern void cmdline(int* argcp, char* argv[*argcp], int m, const struct arg_s args[m], const char* help_str, int n, const struct opt_s opts[n]);
 extern void opt_free_strdup(void);
+extern void cmdline_synth(void (*print)(const char *fmt, ...),  int n, const struct opt_s opts[static n ?: 1]);
+
 
 #include "misc/cppwrap.h"
 #endif //OPTS_H

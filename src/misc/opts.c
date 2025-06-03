@@ -1,4 +1,5 @@
-/* Copyright 2018-2021. Uecker Lab. University Medical Center Göttingen.
+/* Copyright 2018-2022. Uecker Lab. University Medical Center Göttingen.
+ * Copyright 2021-2025. Insitute of Biomedical Imaging. TU Graz.
  * Copyright 2015-2017. Martin Uecker.
  * Copyright 2017-2018. Damien Nguyen.
  * Copyright 2017-2018. Francesco Santini.
@@ -441,6 +442,194 @@ static void print_interface(FILE* fp, const char* name, const char* usage_str, c
 		}
 
 		fprintf(fp, "{ \"%s\", \"%s\", %s, %s, \"%s\", \"%s\" }\n", cs, opts[i].s, opts[i].arg ? "true" : "false", opt_type_str(opts[i].type), opt_arg_str(opts[i].type), opts[i].descr);
+	}
+}
+
+void cmdline_synth(void (*print)(const char* str, ...), int n, const struct opt_s opts[static n ?: 1])
+{
+	for (int i = 0; i < n; i++) {
+
+		/* Decide whether option is present. */
+		switch (opts[i].type) {
+
+		case OPT_SELECT: ;
+
+			struct opt_select_s *os = opts[i].ptr;
+
+			if (0 != memcpy(os->ptr, os->value, os->size))
+				continue;
+			break;
+
+		case OPT_SET:
+
+			if (!*(bool*)opts[i].ptr)
+				continue;
+			break;
+
+		case OPT_CLEAR:
+
+			if (*(bool*)opts[i].ptr)
+				continue;
+			break;
+
+		case OPT_PINT:
+
+			if (-1 == *(int*)opts[i].ptr)
+				continue;
+			break;
+
+		case OPT_STRING:
+		case OPT_INFILE:
+		case OPT_OUTFILE:
+		case OPT_INOUTFILE:
+
+			if (!*(const char*)opts[i].ptr)
+				continue;
+			break;
+
+		case OPT_VECN:
+		case OPT_FLOAT_VECN: ;
+
+			struct opt_vec_s *ovn = opts[i].ptr;
+
+			if (!ovn || !ovn->count)
+				continue;
+			break;
+
+		default:
+			break;
+		}
+
+		// print options and parameter
+
+		if (opts[i].s)
+			(*print)("--%s ",opts[i].s);
+		else
+			(*print)("-%c", opts[i].c);
+
+		switch (opts[i].type) {
+
+		case OPT_FLOAT: (*print)("%f", *(float*)opts[i].ptr); break;
+		case OPT_DOUBLE: (*print)("%f", *(double*)opts[i].ptr); break;
+		case OPT_INT:
+		case OPT_PINT: (*print)("%d", *(int*)opts[i].ptr); break;
+		case OPT_UINT: (*print)("%u", *(unsigned int*)opts[i].ptr); break;
+		case OPT_LONG: (*print)("%ld", *(long*)opts[i].ptr); break;
+		case OPT_ULONG: (*print)("%lu", *(unsigned long*)opts[i].ptr); break;
+		case OPT_ULLONG: (*print)("%llu", *(unsigned long long*)opts[i].ptr); break;
+
+		case OPT_CFL: ;
+
+			complex float *cfl = opts[i].ptr;
+
+			(*print)("%f+%fi", crealf(*cfl), cimagf(*cfl));
+			break;
+
+		case OPT_VEC2:
+		case OPT_VEC3:
+		case OPT_VECN: ;
+
+			int (*vn)[];
+			int count = 2;
+
+			switch (opts[i].type) {
+
+			case OPT_VEC3:
+
+				count++;
+				/* FALLTHROUGH */
+
+			case OPT_VEC2:
+				vn = opts[i].ptr;
+				break;
+
+			case OPT_VECN: ;
+
+				struct opt_vec_s *ovn = opts[i].ptr;
+				vn = ovn->ptr;
+				count = *ovn->count;
+				break;
+
+			default:
+				break;
+			}
+
+			for (int j = 0; j < count; j++) {
+
+				if (j > 0)
+					(*print)(":");
+				(*print)("%d", (*vn)[j]);
+			}
+
+			break;
+
+		case OPT_FLOAT_VEC2:
+		case OPT_FLOAT_VEC3:
+		case OPT_FLOAT_VEC4:
+		case OPT_FLOAT_VECN: ;
+
+			float (*fvn)[];
+			count = 2;
+			switch (opts[i].type) {
+
+			case OPT_FLOAT_VEC4:
+
+				count++;
+				/* FALLTHROUGH */
+
+			case OPT_FLOAT_VEC3:
+
+				count++;
+				/* FALLTHROUGH */
+
+			case OPT_FLOAT_VEC2:
+
+				fvn = opts[i].ptr;
+				break;
+
+			case OPT_FLOAT_VECN: ;
+
+				struct opt_vec_s *ovn = opts[i].ptr;
+				fvn = ovn->ptr;
+				count = *ovn->count;
+				break;
+
+			default:
+				break;
+			}
+
+			for (int j = 0; j < count; j++) {
+
+				if (j > 0)
+					(*print)(":");
+				(*print)("%f", (*fvn)[j]);
+			}
+
+			break;
+
+		case OPT_STRING:
+		case OPT_INFILE:
+		case OPT_OUTFILE:
+		case OPT_INOUTFILE:
+
+			(*print)("\"%s\"", *(const char**)opts[i].ptr);
+			break;
+
+		case OPT_SUBOPT: ;
+
+			// FIXME: this is not quite right
+			struct opt_subopt_s *so = opts[i].ptr;
+			cmdline_synth(print, so->n, so->opts);
+			break;
+
+		case OPT_SELECT:
+		case OPT_SET:
+		case OPT_CLEAR:
+			break;
+
+		default:
+			(*print)("<unknown>");
+		}
 	}
 }
 
