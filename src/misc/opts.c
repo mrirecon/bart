@@ -132,13 +132,14 @@ static const char* opt_arg_str(enum OPT_TYPE type)
 	case OPT_INOUTFILE:
 		return "<file>";
 	}
+
 	error("Invalid OPT_ARG_TYPE!\n");
 }
 
 #define OPT_ARG_TYPE_CASE(X) 	case X: return #X;
 static const char* opt_type_str(enum OPT_TYPE type)
 {
-	switch(type) {
+	switch (type) {
 
 	OPT_ARG_TYPE_CASE(OPT_SPECIAL)
 	OPT_ARG_TYPE_CASE(OPT_SET)
@@ -451,8 +452,7 @@ static void check_options(int n, const struct opt_s opts[n ?: 1])
 
 	for (int i = 0; i < n; i++) {
 
-		int c = (unsigned char) opts[i].c;
-
+		int c = (unsigned char)opts[i].c;
 
 		if (f[c])
 			error("duplicate option: %c\n", opts[i].c);
@@ -948,20 +948,20 @@ bool opt_subopt(void* _ptr, char /*c*/, const char* optarg)
 		}
 	}
 
-	/*const*/ char* tokens[2 * ptr->n + 2];
+	/*const*/ char* tokens[ptr->n + 1][2];
 
 	for (int i = 0; i < ptr->n; i++) {
 
-		tokens[2 * i] = ptr_printf("%c", wopts[i].c);
+		tokens[i][0] = ptr_printf("%c", wopts[i].c);
 
 		if (NULL == wopts[i].s)
-			tokens[2 * i + 1] = ptr_printf("char_only_token_%c", wopts[i].c);
+			tokens[i][1] = ptr_printf("char_only_token_%c", wopts[i].c);
 		else
-			tokens[2 * i + 1] = ptr_printf("%s", wopts[i].s);
+			tokens[i][1] = ptr_printf("%s", wopts[i].s);
 	}
 
-	tokens[2 * ptr->n] = ptr_printf("h");
-	tokens[2 * ptr->n + 1] = NULL;
+	tokens[ptr->n][0] = ptr_printf("h");
+	tokens[ptr->n][1] = NULL;
 
 
 	char* tmpoptionp = strdup(optarg);
@@ -991,8 +991,11 @@ bool opt_subopt(void* _ptr, char /*c*/, const char* optarg)
 		process_option(wopts[i / 2].c, value, "", "", "", n, wopts, 0, NULL);
 	}
 
-	for (int i = 0; i < 2 * n + 1; i++)
-		xfree(tokens[i]);
+	for (int i = 0; i < n + 1; i++) {
+
+		xfree(tokens[i][0]);
+		xfree(tokens[i][1]);
+	}
 
 	xfree(tmpoptionp);
 
@@ -1006,7 +1009,6 @@ static const char* arg_type_str(enum ARG_TYPE type)
 
 	case ARG: return "ARG";
 	case ARG_TUPLE: return "ARG_TUPLE";
-
 	}
 
 	error("Invalid ARG_TYPE!\n");
@@ -1194,7 +1196,6 @@ void cmdline(int* argcp, char* argv[*argcp], int m, const struct arg_s args[m], 
 		switch (args[i].arg_type) {
 
 		case ARG:
-
 			// Skip optional arguments if the number of given command-line arguments is the number of still required arguments.
 			// This is just for fmac, which has an optional arg in the middle
 
@@ -1207,7 +1208,6 @@ void cmdline(int* argcp, char* argv[*argcp], int m, const struct arg_s args[m], 
 			break;
 
 		case ARG_TUPLE:
-
 			;
 
 			// Consume as many arguments as possible, except for possible args following the tuple
