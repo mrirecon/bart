@@ -453,11 +453,13 @@ void cmdline_synth(void (*print)(const char* str, ...), int n, const struct opt_
 		switch (opts[i].type) {
 
 		case OPT_SELECT:
+		
+			{
+				struct opt_select_s *os = opts[i].ptr;
 
-			struct opt_select_s *os = opts[i].ptr;
-
-			if (0 != memcpy(os->ptr, os->value, os->size))
-				continue;
+				if (0 != memcpy(os->ptr, os->value, os->size))
+					continue;
+			}
 			break;
 
 		case OPT_SET:
@@ -490,10 +492,12 @@ void cmdline_synth(void (*print)(const char* str, ...), int n, const struct opt_
 		case OPT_VECN:
 		case OPT_FLOAT_VECN:
 
-			struct opt_vec_s *ovn = opts[i].ptr;
+			{
+				struct opt_vec_s *ovn = opts[i].ptr;
 
-			if (!ovn || !ovn->count)
-				continue;
+				if (!ovn || !ovn->count)
+					continue;
+			}
 			break;
 
 		default:
@@ -506,6 +510,7 @@ void cmdline_synth(void (*print)(const char* str, ...), int n, const struct opt_
 			(*print)("--%s ",opts[i].s);
 		else
 			(*print)("-%c", opts[i].c);
+
 
 		switch (opts[i].type) {
 
@@ -520,9 +525,11 @@ void cmdline_synth(void (*print)(const char* str, ...), int n, const struct opt_
 
 		case OPT_CFL:
 
-			complex float *cfl = opts[i].ptr;
+			{
+				complex float* cfl = opts[i].ptr;
 
-			(*print)("%f+%fi", crealf(*cfl), cimagf(*cfl));
+				(*print)("%f+%fi", crealf(*cfl), cimagf(*cfl));
+			}
 			break;
 
 		case OPT_VEC2:
@@ -546,9 +553,11 @@ void cmdline_synth(void (*print)(const char* str, ...), int n, const struct opt_
 
 			case OPT_VECN:
 
-				struct opt_vec_s *ovn = opts[i].ptr;
-				vn = ovn->ptr;
-				count = *ovn->count;
+				{
+					struct opt_vec_s *ovn = opts[i].ptr;
+					vn = ovn->ptr;
+					count = *ovn->count;
+				}
 				break;
 
 			default:
@@ -590,9 +599,11 @@ void cmdline_synth(void (*print)(const char* str, ...), int n, const struct opt_
 
 			case OPT_FLOAT_VECN:
 
-				struct opt_vec_s *ovn = opts[i].ptr;
-				fvn = ovn->ptr;
-				count = *ovn->count;
+				{
+					struct opt_vec_s *ovn = opts[i].ptr;
+					fvn = ovn->ptr;
+					count = *ovn->count;
+				}
 				break;
 
 			default:
@@ -618,9 +629,11 @@ void cmdline_synth(void (*print)(const char* str, ...), int n, const struct opt_
 
 		case OPT_SUBOPT:
 
-			// FIXME: this is not quite right
-			struct opt_subopt_s *so = opts[i].ptr;
-			cmdline_synth(print, so->n, so->opts);
+			{
+				// FIXME: this is not quite right
+				struct opt_subopt_s *osu = opts[i].ptr;
+				cmdline_synth(print, osu->n, osu->opts);
+			}
 			break;
 
 		case OPT_SELECT:
