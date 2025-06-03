@@ -86,7 +86,7 @@ Build_riscv:
 Build_Clang:
   stage: build
   script:
-    - CC=clang-16 make all
+    - CC=clang-19 make all
   artifacts:
     paths:
       - bart
@@ -99,7 +99,7 @@ Build_Clang:
 Build_Clang_GPU:
   stage: build
   script:
-    - CC=clang-16 CUDA_CC=clang-14 CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" make all
+    - CC=clang-19 CUDA_CC=clang-14 CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" make all
   artifacts:
     paths:
       - bart
@@ -304,7 +304,7 @@ UTest_riscv:
 UTest_Clang:
   stage: test1
   script:
-    - AUTOCLEAN=0 CC=clang-16 make utest
+    - AUTOCLEAN=0 CC=clang-19 make utest
   needs: [Build_Clang]
   dependencies:
      - Build_Clang
@@ -313,7 +313,7 @@ UTest_Clang_GPU:
   stage: test1
   script:
     - if ! nvidia-smi ; then printf "No usable GPU found, skipping GPU tests!\n"; exit 0; fi
-    - AUTOCLEAN=0 CC=clang-16 CUDA_CC=clang-14 CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" make utest_gpu
+    - AUTOCLEAN=0 CC=clang-19 CUDA_CC=clang-14 CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" make utest_gpu
   needs: [Build_Clang_GPU]
   dependencies:
     - Build_Clang_GPU
@@ -435,7 +435,7 @@ IntTest_GPU:
 IntTest_Clang:
   stage: test2
   script:
-    - AUTOCLEAN=0 CC=clang-16 make test
+    - AUTOCLEAN=0 CC=clang-19 make test
   needs: [Build_Clang]
   dependencies:
     - Build_Clang
@@ -445,7 +445,7 @@ IntTest_Clang_GPU:
   stage: test2
   script:
     - if ! nvidia-smi ; then printf "No usable GPU found, skipping GPU tests!\n"; exit 0; fi
-    - AUTOCLEAN=0 CC=clang-16 CUDA_CC=clang-14 CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" make gputest
+    - AUTOCLEAN=0 CC=clang-19 CUDA_CC=clang-14 CUDA=1 CUDA_LIB=lib64 GPUARCH_FLAGS="-arch sm_35 -Wno-deprecated-gpu-targets" make gputest
   needs: [Build_Clang_GPU]
   dependencies:
     - Build_Clang_GPU
