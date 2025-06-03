@@ -106,5 +106,5 @@ struct vec_ops {
 
 };
 
-
 #endif
+

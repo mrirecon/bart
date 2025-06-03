@@ -732,7 +732,7 @@ static void prepare_sim(struct sim_data* data, int N, int P, float (*mte)[P * N 
 
                 break;
 
-        case SIM_STM: ;
+        case SIM_STM:
 
                 int M = P * N + 1;
 

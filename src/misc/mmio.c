@@ -314,7 +314,7 @@ void cfl_loop_get_pos(int D, long pos[D])
 	md_set_dims(cfl_loop_desc.D , pos, 0);
 	md_unravel_index(D, pos, cfl_loop_desc.flags, cfl_loop_desc.loop_dims, cfl_loop_index[cfl_loop_worker_id()]);
 
-	for (int i = 0; i < cfl_loop_desc.D ; i++)
+	for (int i = 0; i < cfl_loop_desc.D; i++)
 		pos[i] += cfl_loop_desc.offs_dims[i];
 }
 
@@ -818,7 +818,7 @@ static complex float* create_cfl_typed(enum file_types_e type, const char* name,
 
 		switch (type) {
 
-		case FILE_TYPE_PIPE:;
+		case FILE_TYPE_PIPE:
 
 			addr = create_pipe(name, D, dims, stream_flags);
 			break;
@@ -1071,7 +1071,7 @@ static complex float* load_cfl_internal(const char* name, int D, long dimensions
 			addr = memcfl_load(name, D, dimensions);
 			break;
 
-		case FILE_TYPE_CFL: ;
+		case FILE_TYPE_CFL:
 
 			char name_bdy[1024];
 

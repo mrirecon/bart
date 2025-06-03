@@ -64,7 +64,7 @@
 //C = AB
 const struct nlop_s* nlop_affine_chain_FF(const struct nlop_s* A, const struct nlop_s* B)
 {
-	complex float add[4] = { 0, 0., 0., 1. } ;
+	complex float add[4] = { 0, 0., 0., 1. };
 
 	A = nlop_reshape_out_F(A, 0, 3, MD_DIMS(3, 4, 1));
 	

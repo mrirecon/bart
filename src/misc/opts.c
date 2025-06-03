@@ -452,7 +452,7 @@ void cmdline_synth(void (*print)(const char* str, ...), int n, const struct opt_
 		/* Decide whether option is present. */
 		switch (opts[i].type) {
 
-		case OPT_SELECT: ;
+		case OPT_SELECT:
 
 			struct opt_select_s *os = opts[i].ptr;
 
@@ -488,7 +488,7 @@ void cmdline_synth(void (*print)(const char* str, ...), int n, const struct opt_
 			break;
 
 		case OPT_VECN:
-		case OPT_FLOAT_VECN: ;
+		case OPT_FLOAT_VECN:
 
 			struct opt_vec_s *ovn = opts[i].ptr;
 
@@ -518,7 +518,7 @@ void cmdline_synth(void (*print)(const char* str, ...), int n, const struct opt_
 		case OPT_ULONG: (*print)("%lu", *(unsigned long*)opts[i].ptr); break;
 		case OPT_ULLONG: (*print)("%llu", *(unsigned long long*)opts[i].ptr); break;
 
-		case OPT_CFL: ;
+		case OPT_CFL:
 
 			complex float *cfl = opts[i].ptr;
 
@@ -527,23 +527,24 @@ void cmdline_synth(void (*print)(const char* str, ...), int n, const struct opt_
 
 		case OPT_VEC2:
 		case OPT_VEC3:
-		case OPT_VECN: ;
+		case OPT_VECN:
 
 			int (*vn)[];
-			int count = 2;
+			int count;
+			count = 2;
 
 			switch (opts[i].type) {
 
 			case OPT_VEC3:
 
 				count++;
-				/* FALLTHROUGH */
+				[[fallthrough]];
 
 			case OPT_VEC2:
 				vn = opts[i].ptr;
 				break;
 
-			case OPT_VECN: ;
+			case OPT_VECN:
 
 				struct opt_vec_s *ovn = opts[i].ptr;
 				vn = ovn->ptr;
@@ -566,7 +567,7 @@ void cmdline_synth(void (*print)(const char* str, ...), int n, const struct opt_
 		case OPT_FLOAT_VEC2:
 		case OPT_FLOAT_VEC3:
 		case OPT_FLOAT_VEC4:
-		case OPT_FLOAT_VECN: ;
+		case OPT_FLOAT_VECN:
 
 			float (*fvn)[];
 			count = 2;
@@ -575,19 +576,19 @@ void cmdline_synth(void (*print)(const char* str, ...), int n, const struct opt_
 			case OPT_FLOAT_VEC4:
 
 				count++;
-				/* FALLTHROUGH */
+				[[fallthrough]];
 
 			case OPT_FLOAT_VEC3:
 
 				count++;
-				/* FALLTHROUGH */
+				[[fallthrough]];
 
 			case OPT_FLOAT_VEC2:
 
 				fvn = opts[i].ptr;
 				break;
 
-			case OPT_FLOAT_VECN: ;
+			case OPT_FLOAT_VECN:
 
 				struct opt_vec_s *ovn = opts[i].ptr;
 				fvn = ovn->ptr;
@@ -615,7 +616,7 @@ void cmdline_synth(void (*print)(const char* str, ...), int n, const struct opt_
 			(*print)("\"%s\"", *(const char**)opts[i].ptr);
 			break;
 
-		case OPT_SUBOPT: ;
+		case OPT_SUBOPT:
 
 			// FIXME: this is not quite right
 			struct opt_subopt_s *so = opts[i].ptr;

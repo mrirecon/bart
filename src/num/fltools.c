@@ -22,7 +22,6 @@ static int compare(const void* _a, const void* _b)
 
 void zsort(int N, complex float tmp[N])
 {
-
 	qsort(tmp, (size_t)N, sizeof(complex float), compare);
 }
 

@@ -976,7 +976,7 @@ static struct nlop_s* nlop_flatten_graph(const struct nlop_s* op)
 			auto cod = operator_arg_domain(op_adj, II - 1);
 			op_adj = operator_combi_create_FF(OO, (const struct operator_s*[2]){operator_zadd_create(OO, cod->N, cod->dims), op_adj});
 
-			for (int o = OO - 1 ; o >= 0; o--)
+			for (int o = OO - 1; o >= 0; o--)
 				op_adj = operator_link_create_F(op_adj, 1 + o + II - 1 - i + i * o , 1);
 		}
 	}

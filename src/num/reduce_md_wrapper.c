@@ -73,7 +73,7 @@ void reduce_zadd_outer_gpu(int N, const long dims[N], const long ostr[N], comple
 {
 	long size = 8;
 
-	assert(2 == N) ;
+	assert(2 == N);
 	assert(((1 == dims[0]) || (size == ostr[0])) && (0 == ostr[1]));
 	assert(((1 == dims[0]) || (size == istr1[0])) && (0 == istr1[1]));
 	assert(((1 == dims[0]) || (size == istr2[0])) && (size * dims[0] == istr2[1]));
@@ -168,7 +168,7 @@ void reduce_add_outer_gpu(int N, const long dims[N], const long ostr[N], float* 
 {
 	long size = 4;
 
-	assert(2 == N) ;
+	assert(2 == N);
 	assert(((1 == dims[0]) || (size == ostr[0])) && (0 == ostr[1]));
 	assert(((1 == dims[0]) || (size == istr1[0])) && (0 == istr1[1]));
 	assert(((1 == dims[0]) || (size == istr2[0])) && (size * dims[0] == istr2[1]));
@@ -264,7 +264,7 @@ void reduce_zmax_outer_gpu(int N, const long dims[N], const long ostr[N], comple
 {
 	long size = 8;
 
-	assert(2 == N) ;
+	assert(2 == N);
 	assert(((1 == dims[0]) || (size == ostr[0])) && (0 == ostr[1]));
 	assert(((1 == dims[0]) || (size == istr1[0])) && (0 == istr1[1]));
 	assert(((1 == dims[0]) || (size == istr2[0])) && (size * dims[0] == istr2[1]));

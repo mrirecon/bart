@@ -1048,7 +1048,7 @@ void train_reconet(	struct reconet_s* config,
 			break;
 
 		case IN_OPTIMIZE:
-		case IN_BATCHNORM: ;
+		case IN_BATCHNORM:
 
 			auto iov_weight = config->weights->iovs[weight_index];
 			auto iov_train_op = nlop_generic_domain(nn_get_nlop(nn_train), i);
@@ -1233,7 +1233,7 @@ void eval_reconet(struct reconet_s* config, int N, const long max_dims[N], int N
 	complex float losses[NL];
 	md_zavg(N, tloss_dims, ~1UL, losses, tloss);
 
-	for (int i = 0; i < NL ; i++)
+	for (int i = 0; i < NL; i++)
 		debug_printf(DP_INFO, "%s: %e\n", nn_get_out_name_from_arg_index(loss, i, false), crealf(losses[i]));
 
 	nn_free(loss);

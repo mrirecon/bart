@@ -944,7 +944,7 @@ static void separate_bckgrd(int Nb, struct ellipsis_s bckgrd[Nb], int Nf, struct
 {
 	// FIXME: Do not pass unused variables
 
-	for(int j = 0, jb = 0, jf = 0 ; j < N; j++) {
+	for(int j = 0, jb = 0, jf = 0; j < N; j++) {
 
 		if (geometry[j].background) {
 

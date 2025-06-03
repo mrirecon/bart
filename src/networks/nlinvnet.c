@@ -1004,7 +1004,7 @@ void train_nlinvnet(struct nlinvnet_s* nlinvnet, int Nb, struct named_data_list_
 
 		case IN_OPTIMIZE:
 		case IN_STATIC:
-		case IN_BATCHNORM: ;
+		case IN_BATCHNORM:
 
 			auto iov_weight = nlinvnet->weights->iovs[weight_index];
 			auto iov_train_op = nlop_generic_domain(nn_get_nlop(nn_train), i);
