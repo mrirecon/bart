@@ -35,6 +35,9 @@ src/misc/version.inc
 # list of main functions
 src/mainlist.inc
 
+# isclean
+isclean
+
 # noise simulations
 save/nsv/*.dat
 
