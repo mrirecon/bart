@@ -40,16 +40,15 @@ tests/test-smallfov-enlive: fmac fft nrmse nlinv $(TESTS_OUT)/shepplogan-smallfo
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-# FIXME: not to good, why?
 tests/test-smallfov-enlive-batch: conj join fmac fft nrmse nlinv $(TESTS_OUT)/shepplogan-smallfov-ksp.ra $(TESTS_OUT)/cart-pattern.ra
 	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)							;\
 	$(TOOLDIR)/conj $(TESTS_OUT)/shepplogan-smallfov-ksp.ra kc.ra					;\
 	$(TOOLDIR)/join 6 $(TESTS_OUT)/shepplogan-smallfov-ksp.ra kc.ra ksp.ra				;\
 	$(TOOLDIR)/fmac ksp.ra $(TESTS_OUT)/cart-pattern.ra ku.ra					;\
-	$(TOOLDIR)/nlinv -m2 -i12 -U -S -N ku.ra xu2.ra sn.ra			 			;\
+	$(TOOLDIR)/nlinv -m2 -i14 -U -S -N ku.ra xu2.ra sn.ra			 			;\
 	$(TOOLDIR)/fmac -s16 xu2.ra sn.ra xsn.ra							;\
 	$(TOOLDIR)/fft -u 7 xsn.ra xsn2.ra								;\
-	$(TOOLDIR)/nrmse -t 0.17 ksp.ra xsn2.ra		 						;\
+	$(TOOLDIR)/nrmse -t 0.05 ksp.ra xsn2.ra		 						;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
