@@ -276,7 +276,7 @@ void noir_orthogonalize(struct noir_s* op, complex float* coils)
 
 			complex float* prev_map_ptr = (void*)coils + prev * data_strs[MAPS_DIM];
 
-			proj_add(DIMS, single_map_dims, single_map_strs, tmp, single_map_strs, map_ptr, data_strs, prev_map_ptr);
+			proj_add(DIMS, single_map_dims, single_map_strs, tmp, data_strs, map_ptr, data_strs, prev_map_ptr);
 		}
 
 		md_zsub2(DIMS, single_map_dims, data_strs, map_ptr, data_strs, map_ptr, single_map_strs, tmp);

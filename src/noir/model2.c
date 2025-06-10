@@ -430,7 +430,7 @@ void noir2_orthogonalize(int N, const long col_dims[N], complex float* coils)
 			complex float* prev_map_ptr = (void*)coils + prev * col_strs[MAPS_DIM];
 
 			proj_add(N, single_map_dims,
-				single_map_strs, tmp, single_map_strs, map_ptr, col_strs, prev_map_ptr);
+				single_map_strs, tmp, col_strs, map_ptr, col_strs, prev_map_ptr);
 		}
 
 		md_zsub2(N, single_map_dims, col_strs, map_ptr, col_strs, map_ptr, single_map_strs, tmp);
