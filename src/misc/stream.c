@@ -463,10 +463,8 @@ void stream_attach(stream_t s, complex float* x, bool unmap, bool regist)
 stream_t stream_load_file(const char* name, int D, long dims[D], char **datname)
 {
 	int fd = 0;
-	char hdr[IO_MAX_HDR_SIZE] = { '\0' };
 	bool is_stdin = (0 == strcmp(name, "-"));
 
-	bool binary = false;
 
 	if (!is_stdin)
 		fd = open(name, O_RDONLY);
@@ -476,11 +474,27 @@ stream_t stream_load_file(const char* name, int D, long dims[D], char **datname)
 
 	assert (!is_stdin || NULL == stdin_command_line);
 
+	stream_t strm = stream_load_fd(fd, name, D, dims, datname, is_stdin ? &stdin_command_line : NULL);
+
+	if (!strm)
+		error("Reading input from %s\n", name);
+
+	if (!is_stdin && (0 != unlink(name)))
+		error("Unlinking temporary FIFO header %s\n", name);
+
+	return strm;
+}
+
+stream_t stream_load_fd(int fd, const char* name, int D, long dims[D], char **datname, char** cmdline)
+{
+	char hdr[IO_MAX_HDR_SIZE] = { '\0' };
+	bool binary = false;
+
 	// read header from pipe
-	int hdr_bytes = read_cfl_header2(ARRAY_SIZE(hdr) - 1, hdr, fd, datname, is_stdin ? &stdin_command_line : NULL, D, dims);
+	int hdr_bytes = read_cfl_header2(ARRAY_SIZE(hdr) - 1, hdr, fd, datname, cmdline, D, dims);
 
 	if (-1 == hdr_bytes)
-		error("Reading input from %s\n", name);
+		return NULL;
 
 	if (NULL == *datname)
 		binary = true;
@@ -491,11 +505,8 @@ stream_t stream_load_file(const char* name, int D, long dims[D], char **datname)
 
 	xfree(stream_name);
 
-	if (NULL == strm)
-		error("Could not create stream for %s\n", name);
-
-	if (!is_stdin && (0 != unlink(name)))
-		error("Unlinking temporary FIFO header %s\n", name);
+	if (!strm)
+		return NULL;
 
 #ifdef __EMSCRIPTEN__
 	if (!binary) {
