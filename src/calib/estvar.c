@@ -1,9 +1,9 @@
 /* Copyright 2015. The Regents of the University of California.
  * Copyright 2021. Martin Uecker.
- * All rights reserved. Use of this source code is governed by 
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * Authors: 
+ * Authors:
  * 2015 Siddharth Iyer <sid8795@gmail.com>
  */
 
@@ -24,11 +24,11 @@
 #include "estvar.h"
 
 /**
- * noise_calreg - This uses the dimension of the calibration 
+ * noise_calreg - This uses the dimension of the calibration
  *                region to create a new "calibration region"
  *                with each entry being iid standard normal
  *                (or Gaussian) samples.
- * 
+ *
  * Parameters:
  *  T       - Product of all the dimensions of the calibration
  *            region.
@@ -59,10 +59,10 @@ static char* file_name(const char* toolbox, const long kernel_dims[3], const lon
 
 	size = snprintf(NULL, (size_t)size, "%s/save/nsv/KERNEL_%ldx%ldx%ld_CAL_REG%ldx%ldx%ldx%ld.dat",
 		toolbox, kernel_dims[0], kernel_dims[1], kernel_dims[2],
-		calreg_dims[0], calreg_dims[1], calreg_dims[2], calreg_dims[3]);
+		calreg_dims[0], calreg_dims[1], calreg_dims[2], calreg_dims[3]) + 1;
 
 	assert(size > 0);
-    
+
 	char* name = calloc((size_t)size, sizeof(char));
 
 	if (NULL == name)
@@ -113,7 +113,7 @@ static int load_noise_sv(const char* toolbox, const long kernel_dims[3], const l
 
 	if (c != L)
 		goto out2;
- 
+
 	ok = 1;
 out2:
 	fclose(fp);
@@ -153,10 +153,10 @@ out:
 
 
 /**
- * nsv - This takes the singular value 
- *       decomposition of the Hankel matrix 
+ * nsv - This takes the singular value
+ *       decomposition of the Hankel matrix
  *       constructed from a noise-only
- *       calibration region. The noise is 
+ *       calibration region. The noise is
  *       distributed as zero-mean unit-variance
  *       Gaussian noise.
  *
@@ -166,7 +166,7 @@ out:
  *  calreg_dims - The calibration region dimensions.
  *  L           - The number of singular values.
  *  E           - Array to save noise singular values to.
- *  num_iters   - The number of iterations in order to get a better 
+ *  num_iters   - The number of iterations in order to get a better
  *                estimate of the noise singular values.
  */
 static void nsv(const char* toolbox, const long kernel_dims[3], const long calreg_dims[4], long L, float* E, long num_iters)
@@ -177,7 +177,7 @@ static void nsv(const char* toolbox, const long kernel_dims[3], const long calre
 	debug_printf(DP_DEBUG1, "NOTE: Running simulations to figure out noise singular values.\n");
 	debug_printf(DP_DEBUG1, "      The simulation results are saved if BART_TOOLBOX_PATH is set.\n");
 
-	long N = kernel_dims[0] * kernel_dims[1] * kernel_dims[2] * calreg_dims[3]; 
+	long N = kernel_dims[0] * kernel_dims[1] * kernel_dims[2] * calreg_dims[3];
 
 	float tmpE[N];
 
@@ -196,7 +196,7 @@ static void nsv(const char* toolbox, const long kernel_dims[3], const long calre
 
 	for (int idx = 0; idx < L; idx++)
 		E[idx] = sqrtf(tmpE[N - idx - 1]);
-    
+
 	for (long idx = 0; idx < num_iters - 1; idx++) {
 
 		noise_calreg(T, ncalreg);
@@ -224,11 +224,11 @@ static void nsv(const char* toolbox, const long kernel_dims[3], const long calre
  *                           region by fitting the last s^th singular
  *                           values of the noise simulation to the
  *                           Calibration matrix's singular values.
- * 
+ *
  * Parameters:
- *  L - This is the number of singular values, or the length 
+ *  L - This is the number of singular values, or the length
  *      of S and E.
- *  S - This is the singular values obtained from the singular 
+ *  S - This is the singular values obtained from the singular
  *      value decomposition of the Hankel matrix constructed
  *      from the calibration data.
  *  E - This is the noise singular values as constructed by
@@ -287,7 +287,7 @@ extern float estvar_calreg(const char* toolbox, const long kernel_dims[3], const
 
 	for (int idx = 0; idx < L; idx++)
 		S[idx] = sqrtf(tmpE[N - idx - 1]);
-    
+
 	return estvar_sv(toolbox, L, S, kernel_dims, calreg_dims);
 }
 
