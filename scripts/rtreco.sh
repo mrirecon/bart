@@ -231,6 +231,35 @@ delay () (
 )
 
 
+# Reshape incoming k-space data
+reshape_radial_ksp() (
+
+	ksp=$(get_file $1)
+	output=$(get_file $2)
+
+        WORKDIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'mytmpdir')
+        trap 'rm -rf "$WORKDIR"' EXIT
+        cd "$WORKDIR" || exit
+
+	mkfifo meta.fifo
+	mkfifo ksp.fifo
+
+	bart -r $ksp copy $ksp - |\
+	bart tee -n --out0 meta.fifo ksp.fifo &
+
+        dims=$(bart show -m meta.fifo | tail -n1 | cut -f2-)
+
+        samples=$(echo $dims | cut -f1 -d' ')
+        spokes=$(echo $dims | cut -f2 -d' ')
+	frames=$(echo $dims | cut -f11 -d' ')
+
+	if [ 1 -eq $samples ]; then
+
+		bart -r ksp.fifo copy ksp.fifo $output
+	else
+		bart reshape -s $(bart bitmask 2 10) $(bart bitmask 0 1 2 10) 1 $samples $spokes $frames ksp.fifo $output
+	fi
+)
 
 # Arguments:
 # $1 = Input File (stream) to be reordered.
@@ -684,6 +713,7 @@ mkfifo ksp0.fifo
 mkfifo ksp.fifo
 
 bart -r $KSP copy $KSP - |\
+reshape_radial_ksp - - |\
 bart tee -n --out0 meta.fifo ksp0.fifo &
 
 dims=$(bart show -m meta.fifo | tail -n1 | cut -f2-)
