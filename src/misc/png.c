@@ -60,7 +60,9 @@ static int png_write_anyrgb(const char* name, int w, int h, int nbytes, bool rgb
 	row_ptrs = xmalloc((size_t)((long)sizeof(png_bytep) * h));
 	row_size = png_get_rowbytes(structp, infop);
 
-	for (int i = 0; i < h; i++)
+	int i;
+
+	for (i = 0; i < h; i++)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wcast-qual"
 		row_ptrs[i] = (png_bytep)buf + row_size * i;
