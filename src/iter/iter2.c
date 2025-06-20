@@ -400,7 +400,9 @@ void iter2_chambolle_pock(const iter_conf* _conf,
 		D--;
 		prox_ops += 1;
 		ops += 1;
+
 	} else {
+
 		const struct iovec_s* iov = NULL;
 
 		if (NULL != normaleq_op)
@@ -434,6 +436,7 @@ void iter2_chambolle_pock(const iter_conf* _conf,
 	float eps = 1.;
 
 	double maxeigen = 1.;
+
 	if (0 != conf->maxeigen_iter) {
 
 		auto iov = operator_p_domain(prox_G);
@@ -455,6 +458,7 @@ void iter2_chambolle_pock(const iter_conf* _conf,
 		debug_printf(DP_INFO, "Max eigenvalue: %e\n", maxeigen);
 
 		operator_free(me_normal);
+
 	} else if (!conf->adapt_stepsize) {
 
 		debug_printf(DP_WARN, "Max eigenvalue not estimated and no adaptive stepsize, possible convergence issues.\n");
@@ -469,9 +473,6 @@ void iter2_chambolle_pock(const iter_conf* _conf,
 
 	operator_p_free(prox_G);
 	operator_free(normaleq_op);
-
-	//cleanup:
-	//;
 }
 
 
