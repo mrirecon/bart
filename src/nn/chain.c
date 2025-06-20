@@ -4,17 +4,16 @@
  **/
 
 #include <assert.h>
-#include <stdio.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "misc/misc.h"
 
-#include "iter/prox.h"
 #include "num/ops_p.h"
-
-#include "nn/init.h"
 #include "num/iovec.h"
 #include "num/multind.h"
+
+#include "iter/prox.h"
 
 #include "linops/someops.h"
 #include "linops/fmac.h"
@@ -23,7 +22,9 @@
 #include "nlops/chain.h"
 #include "nlops/cast.h"
 
+#include "nn/init.h"
 #include "nn/nn.h"
+
 #include "chain.h"
 
 /**

@@ -10,6 +10,7 @@
 #include <string.h>
 
 #include "iter/italgos.h"
+
 #include "misc/misc.h"
 
 #include "num/iovec.h"
@@ -20,6 +21,7 @@
 #include "nlops/const.h"
 
 #include "nn/nn.h"
+
 #include "const.h"
 
 /**
