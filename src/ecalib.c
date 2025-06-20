@@ -77,6 +77,7 @@ int main_ecalib(int argc, char* argv[argc])
 		OPT_SET('I', &conf.intensity, "intensity correction"),
 		OPT_SET('1', &one, "perform only first part of the calibration"),
 		OPT_CLEAR('P', &conf.rotphase, "Do not rotate the phase with respect to the first principal component"),
+		OPT_SET('N', &conf.phase_normalize, "Use phase normalization"),
 		OPT_CLEAR('O', &conf.orthiter, "()"),
 		OPTL_INT('i', "orthiter", &conf.num_orthiter, "orthiter", "()"),
 		OPT_FLOAT('b', &conf.perturb, "", "()"),
@@ -117,7 +118,7 @@ int main_ecalib(int argc, char* argv[argc])
 
 	complex float* in_data = load_cfl(in_file, N, ksp_dims);
 
-	
+
 	// assert((kdims[0] < calsize_ro) && (kdims[1] < calsize_ro) && (kdims[2] < calsize_ro));
 	// assert((ksp_dims[0] == 1) || (calsize_ro < ksp_dims[0]));
 	if (1 != ksp_dims[MAPS_DIM])
@@ -135,7 +136,7 @@ int main_ecalib(int argc, char* argv[argc])
 		cal_data = extract_calib(cal_dims, calsize, ksp_dims, in_data, false);
 #endif
 	} else {
-	
+
 		for (int i = 0; i < 3; i++)
 			cal_dims[i] = (calsize[i] < ksp_dims[i]) ? calsize[i] : ksp_dims[i];
 
@@ -228,14 +229,14 @@ int main_ecalib(int argc, char* argv[argc])
 
 
 		out_dims[COIL_DIM] = ksp_dims[COIL_DIM];
-		out_dims[MAPS_DIM] = maps;	
+		out_dims[MAPS_DIM] = maps;
 		map_dims[COIL_DIM] = 1;
 		map_dims[MAPS_DIM] = maps;
 
 		complex float* out_data = create_cfl(out_file, N, out_dims);
 		complex float* emaps = (emaps_file ? create_cfl : anon_cfl)(emaps_file, N, map_dims);
 
-		calib(&conf, out_dims, out_data, emaps, K, svals, cal_dims, cal_data); 
+		calib(&conf, out_dims, out_data, emaps, K, svals, cal_dims, cal_data);
 
 		unmap_cfl(N, out_dims, out_data);
 		unmap_cfl(N, map_dims, emaps);

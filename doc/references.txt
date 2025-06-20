@@ -211,7 +211,10 @@ ESPIRiT - An Eigenvalue Approach to  Autocalibrating Parallel MRI:
 Where SENSE meets GRAPPA.
 Magn Reson Med 2014; 71:990-1001.
 
-
+Inati SJ, Hansen MS, Kellman P.
+A solution to the phase problem in adaptive coil combination.
+Annual Meeting ISMRM, Salt Lake City 2013,
+In: Proc Intl Soc Mag Reson Med 2013; 21:2672.
 
 
 - joint estimation: nonlinear inversion, calibrationless -
@@ -384,7 +387,7 @@ T2 shuffling: Sharp, multicontrast, volumetric fast spin‐echo imaging.
 Magn Reson Med 2017; 77:180-195.
 
 Sylvester JJ.
-Thoughts on inverse orthogonal matrices, simultaneous sign successions, 
+Thoughts on inverse orthogonal matrices, simultaneous sign successions,
 and tessellated pavements in two or more colours, with applications to
 Newton’s rule, ornamental tile-work, and the theory of numbers.
 Philosophical Magazine 1867; 34:461-475.
@@ -405,7 +408,7 @@ An EM algorithm for wavelet-based image restoration.
 IEEE Trans Image Process 2003; 12:906-916.
 
 Ong F, Uecker M, Tariq U, Hsiao A, Alley MT, Vasanawala SS, Lustig M.
-Robust 4D Flow Denoising using Divergence-free Wavelet Transform, 
+Robust 4D Flow Denoising using Divergence-free Wavelet Transform,
 Magn Reson Med 2015; 73:828-842.
 
 Ong F, Lustig M.
@@ -424,14 +427,14 @@ Knoll F, Bredies K, Pock T, Stollberger R.
 Second order total generalized variation (TGV) for MRI.
 Magn Reson Med 2010; 65:480-491.
 
-Holler M, Kunisch K. 
-On Infimal Convolution of TV-Type Functionals and Applications 
+Holler M, Kunisch K.
+On Infimal Convolution of TV-Type Functionals and Applications
 to Video and Image Reconstruction.
 SIAM J Imaging Sci 2014; 7:2258-2300.
 
-Schloegl M, Holler M, Schwarzl A, Bredies K, Stollberger R. 
+Schloegl M, Holler M, Schwarzl A, Bredies K, Stollberger R.
 Infimal convolution of total generalized variation functionals
-for dynamic MRI. 
+for dynamic MRI.
 Magn Reson Med 2017; 78:142-155.
 
 

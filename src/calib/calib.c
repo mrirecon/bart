@@ -43,6 +43,7 @@
 
 #include "calib/calmat.h"
 #include "calib/cc.h"
+#include "calib/walsh.h"
 #include "calib/softweight.h"
 
 #include "calib.h"
@@ -274,7 +275,7 @@ static float sure_crop(float var, const long evec_dims[DIMS], complex float* eve
 	float c = 0.99;
 	long ctr1 = 0;
 	long ctr2 = 0;
-	
+
 
 	debug_printf(DP_INFO, "---------------------------------------------\n");
 	debug_printf(DP_INFO, "| CTR1 | CTR2 |  Crop  |      Est. MSE      |\n");
@@ -308,7 +309,7 @@ static float sure_crop(float var, const long evec_dims[DIMS], complex float* eve
 			md_zfmacc2(5, tdims_ip, stro_ip, ip, str1_ip, im, str2_ip, M); // Projection.
 			md_zfmac2(5, tdims_proj, stro_proj, proj, str1_proj, ip, str2_proj, M);
 
-			linop_forward(lop_fft_im, 5, im_dims, proj, 5, im_dims, proj);		// Low res proj img.                             
+			linop_forward(lop_fft_im, 5, im_dims, proj, 5, im_dims, proj);		// Low res proj img.
 
 			md_resize_center(5, calreg_dims, TC, im_dims, proj, CFL_SIZE);
 			md_resize_center(5, im_dims, proj, calreg_dims, TC, CFL_SIZE);
@@ -325,7 +326,7 @@ static float sure_crop(float var, const long evec_dims[DIMS], complex float* eve
 				mse += powf(cabsf(im[jdx] - proj[jdx]), 2.);
 #endif
 
-			linop_forward(lop_fft_evec, 5, evec_dims, LM, 5, evec_dims, M);		// low-res maps .                       
+			linop_forward(lop_fft_evec, 5, evec_dims, LM, 5, evec_dims, M);		// low-res maps .
 
 			md_resize_center(5, cropdims, CM, evec_dims, LM, CFL_SIZE);
 			md_resize_center(5, evec_dims, LM, cropdims, CM, CFL_SIZE);
@@ -417,7 +418,7 @@ void calone(const struct ecalib_conf* conf, const long cov_dims[4], complex floa
 
 
 
-/* calculate point-wise maps 
+/* calculate point-wise maps
  *
  */
 void eigenmaps(const long out_dims[DIMS], complex float* optr, complex float* eptr, const complex float* imgcov2, const long msk_dims[3], const bool* msk, bool orthiter, int num_orthiter, bool ecal_usegpu)
@@ -473,9 +474,9 @@ void eigenmaps(const long out_dims[DIMS], complex float* optr, complex float* ep
 
 					unpack_tri_matrix(channels, cov, tmp);
 
-					if (orthiter) 
+					if (orthiter)
 						eigen_herm3(maps, channels, val, cov, num_orthiter);
-					else 
+					else
 						lapack_eig(channels, val, cov);
 
 					for (int u = 0; u < maps; u++) {
@@ -514,7 +515,7 @@ void caltwo(const struct ecalib_conf* conf, const long out_dims[DIMS], complex f
 
 	long channels = out_dims[3];
 	long cosize = channels * (channels + 1) / 2;
-	
+
 	assert(DIMS >= 5);
 	assert(1 == md_calc_size(DIMS - 5, out_dims + 5));
 	assert(in_dims[3] == cosize);
@@ -577,6 +578,7 @@ const struct ecalib_conf ecalib_defaults = {
 	.rotphase = true,
 	.var = -1.,
 	.automate = false,
+	.phase_normalize = false,
 };
 
 
@@ -661,6 +663,9 @@ void calib2(const struct ecalib_conf* conf, const long out_dims[DIMS], complex f
 
 
 	fixphase2(DIMS, out_dims, COIL_DIM, rot[0], out_data, out_data);
+
+	if (conf->phase_normalize)
+		phase_normalization(conf->kdims, out_dims, out_data, calreg_dims, data);
 
 	md_free(imgcov);
 }
@@ -803,7 +808,7 @@ void compute_kernels(const struct ecalib_conf* conf, long nskerns_dims[5], compl
 		soft_weight_singular_vectors(N, conf-> var, conf->kdims, caldims, val, val);
 
 	for (int i = 0; i < N; i++)
-		for (int j = 0; j < N; j++) 
+		for (int j = 0; j < N; j++)
 #ifndef FLIP
 			nskerns[i * N + j] = (*vec)[N - 1 - i][j] * (conf->weighting ? val[i] : 1.);	// flip
 #else
@@ -829,7 +834,7 @@ void compute_kernels(const struct ecalib_conf* conf, long nskerns_dims[5], compl
 
 
 
-	
+
 void compute_imgcov(const long cov_dims[4], complex float* imgcov, const long nskerns_dims[5], const complex float* nskerns)
 {
 	debug_printf(DP_DEBUG1, "Zeropad...\n");

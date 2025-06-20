@@ -1,11 +1,11 @@
 /* Copyright 2013. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
 
 #ifndef __CALIB_H
 #define __CALIB_H
- 
+
 #include "misc/cppwrap.h"
 #include "misc/mri.h"
 
@@ -26,11 +26,12 @@ struct ecalib_conf {
 	_Bool rotphase;
 	float var;
 	_Bool automate;
+	_Bool phase_normalize;
 };
 
 extern const struct ecalib_conf ecalib_defaults;
 
-extern void calib(const struct ecalib_conf* conf, const long out_dims[DIMS], _Complex float* out_data, _Complex float* eptr, 
+extern void calib(const struct ecalib_conf* conf, const long out_dims[DIMS], _Complex float* out_data, _Complex float* eptr,
 			int SN, float svals[__VLA2(SN)], const long calreg_dims[DIMS], const _Complex float* calreg_data);
 
 extern void calib2(const struct ecalib_conf* conf, const long out_dims[DIMS], _Complex float* out_data, _Complex float* eptr, int SN, float svals[__VLA2(SN)], const long calreg_dims[DIMS], const _Complex float* data, const long msk_dims[3], const _Bool* msk);

@@ -9,6 +9,16 @@ tests/test-ecalib: ecalib pocsense nrmse $(TESTS_OUT)/shepplogan_coil_ksp.ra
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-ecalib-phase: ecalib fft fmac nrmse conj $(TESTS_OUT)/shepplogan_coil_ksp.ra
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/ecalib -N -m1 $(TESTS_OUT)/shepplogan_coil_ksp.ra coils.ra		;\
+	$(TOOLDIR)/fft -i 3 $(TESTS_OUT)/shepplogan_coil_ksp.ra cim.ra			;\
+	$(TOOLDIR)/fmac -s8 -C cim.ra coils.ra proj.ra					;\
+	$(TOOLDIR)/conj proj.ra projc.ra						;\
+	$(TOOLDIR)/nrmse -t 0.1 proj.ra projc.ra					;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 tests/test-ecalib-auto: ecalib pocsense nrmse noise $(TESTS_OUT)/shepplogan_coil_ksp.ra
 	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP) ;\
 	$(TOOLDIR)/noise -n 100 $(TESTS_OUT)/shepplogan_coil_ksp.ra shepplogan_noise.ra ;\
@@ -51,4 +61,5 @@ tests/test-ecalib-gpu: ecalib pocsense nrmse $(TESTS_OUT)/shepplogan_coil_ksp.ra
 
 TESTS += tests/test-ecalib tests/test-ecalib-auto tests/test-ecalib-rotation
 TESTS += tests/test-ecalib-rotation2
+TESTS += tests/test-ecalib-phase
 TESTS_GPU += tests/test-ecalib-gpu
