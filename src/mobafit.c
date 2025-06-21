@@ -11,7 +11,6 @@
 #include <stdbool.h>
 #include <complex.h>
 
-#include "linops/someops.h"
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/ops_p.h"
@@ -24,7 +23,6 @@
 #include "misc/utils.h"
 #include "misc/opts.h"
 #include "misc/debug.h"
-#include "misc/types.h"
 
 #include "iter/italgos.h"
 #include "iter/iter3.h"
@@ -404,7 +402,7 @@ int main_mobafit(int argc, char* argv[argc])
 		nlop = nlop_ir_create(DIMS, dims, enc);
 		break;
 
-	case IR_LL: ;
+	case IR_LL:
 
 		long map_dims[DIMS];
 		md_select_dims(DIMS, ~(COEFF_FLAG | TE_FLAG), map_dims, x_patch_dims);
@@ -436,7 +434,7 @@ int main_mobafit(int argc, char* argv[argc])
 
 		break;
 
-	case MGRE: ;
+	case MGRE:
 
 		static float scale_fB0[2] = { 0., 1. };
 		assert(md_check_equal_dims(DIMS, y_patch_dims, y_patch_sig_dims, ~0UL));
@@ -459,7 +457,7 @@ int main_mobafit(int argc, char* argv[argc])
 		}
 		break;
 
-	case SIM: ;
+	case SIM:
 
 		md_select_dims(DIMS, ~(COEFF_FLAG | TE_FLAG), map_dims, x_patch_dims);
 
@@ -522,6 +520,7 @@ int main_mobafit(int argc, char* argv[argc])
 
 		init[i] = init0[i];
 		scale[i] = scale0[i];
+
 		bound_max[i] /= (scale0[i] ?: 1);
 		bound_min[i] /= (scale0[i] ?: 1);
 	}
