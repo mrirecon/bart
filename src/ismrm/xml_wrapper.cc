@@ -12,8 +12,10 @@
 
 #include "ismrmrd/ismrmrd.h"
 #include "ismrmrd/dataset.h"
+#ifdef USE_ISMRMRD_STREAM
 #include "ismrmrd/serialization.h"
 #include "ismrmrd/serialization_iostream.h"
+#endif
 #include "ismrmrd/xml.h"
 
 #include "xml_wrapper.h"
@@ -98,13 +100,16 @@ static void ismrm_read_encoding_limits_from_hdr(ISMRMRD::IsmrmrdHeader& h, struc
 }
 
 struct ismrm_cpp_state {
+#ifdef USE_ISMRMRD_STREAM
 	std::istream* is;
 	ISMRMRD::IStreamView* rs;
 	ISMRMRD::ProtocolDeserializer* deserializer;
+#endif
 };
 
 extern "C" struct ismrm_cpp_state* ismrm_stream_open(const char* file)
 {
+#ifdef USE_ISMRMRD_STREAM
 	struct ismrm_cpp_state* ret = (struct ismrm_cpp_state*) malloc(sizeof *ret);
 	ret->deserializer = NULL;
 	ret->rs = NULL;
@@ -124,10 +129,15 @@ extern "C" struct ismrm_cpp_state* ismrm_stream_open(const char* file)
 	ret->deserializer = new ISMRMRD::ProtocolDeserializer(*ret->rs);
 
 	return ret;
+#else
+	error("Compiled without ISMRMRD_STREAM not enabled.\n");
+	return NULL;
+#endif
 }
 
 extern "C" void ismrm_stream_close(struct ismrm_cpp_state* s)
 {
+#ifdef USE_ISMRMRD_STREAM
 	if (NULL != s->deserializer)
 		delete s->deserializer;
 	// idk
@@ -135,11 +145,14 @@ extern "C" void ismrm_stream_close(struct ismrm_cpp_state* s)
 		delete s->rs;
 	if (NULL != s->is)
 		delete s->is;
-
+#else
+	error("Compiled without ISMRMRD_STREAM not enabled.\n");
+#endif
 }
 
 extern "C" void ismrm_stream_read_meta(struct isrmrm_config_s* config)
 {
+#ifdef USE_ISMRMRD_STREAM
 	struct ismrm_cpp_state* s = config->ismrm_cpp_state;
 
 	try {
@@ -177,12 +190,17 @@ extern "C" void ismrm_stream_read_meta(struct isrmrm_config_s* config)
 	catch(std::runtime_error& e) {
 		error("BART ISMRMRD Wrapper: Exception thrown: %s\n", e.what());
 	}
+#else
+	error("Compiled without ISMRMRD_STREAM not enabled.\n");
+#endif
 }
 
 extern "C" long ismrm_stream_read_acquisition(struct isrmrm_config_s* config, ISMRMRD::ISMRMRD_Acquisition* c_acq)
 {
 	struct ismrm_cpp_state* s = config->ismrm_cpp_state;
 
+
+#ifdef USE_ISMRMRD_STREAM
 	try {
 
 		uint16_t type;
@@ -221,4 +239,8 @@ extern "C" long ismrm_stream_read_acquisition(struct isrmrm_config_s* config, IS
 	catch(std::runtime_error& e) {
 		error("BART ISMRMRD Wrapper: Exception thrown: %s\n", e.what());
 	}
+#else
+	error("Compiled without ISMRMRD_STREAM not enabled.\n");
+	return 0;
+#endif
 }
