@@ -111,6 +111,12 @@ To install the required libraries on Debian and Ubuntu run:
     install version 0.5.2 of the ISMRMRD library
 
 
+
+(Note: If you are still on Ubuntu 22.04 you need to install gcc-12 and set
+the CC environment variable to it before compiling a recent development
+version of bart.)
+
+
 To install the required libraries on Redhat / Centos / RockyLinux / AlmaLinux 8 run:
 
     $ sudo dnf --enablerepo=powertools install fftw-devel atlas-devel libpng-devel lapack-devel gcc-toolset-12
