@@ -382,7 +382,7 @@ else
 ifeq ($(GCCVERSION12), 1)
 CFLAGS += -Wno-vla-parameter -Wno-nonnull -Wno-maybe-uninitialized
 else
-$(warning ERROR: GCC version 12 or newer is required)
+$(error ERROR: GCC version 12 or newer is required)
 endif
 endif
 endif
