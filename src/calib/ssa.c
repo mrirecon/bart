@@ -354,9 +354,9 @@ void ssa_fary_econ(	const long kernel_dims[3],
 		md_zcmpl_real(2, S_dims, S_complex, S);
 
 		md_zmul2(2, VH_dims, MD_STRIDES(2, VH_dims, CFL_SIZE), VH, MD_STRIDES(2, VH_dims, CFL_SIZE), VH, MD_STRIDES(2, S_dims, CFL_SIZE), S_complex);
-		
+
 		md_free(S_complex);
-		
+
 		ssa_backprojection_econ(N, M, kernel_dims, cal_dims, back, A_dims, U_dims, U, VH_dims, VH, rank, group);
 	}
 

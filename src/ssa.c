@@ -15,6 +15,7 @@
 #include "misc/mri.h"
 #include "misc/debug.h"
 #include "misc/opts.h"
+#include "misc/version.h"
 
 #include "num/multind.h"
 #include "num/init.h"
@@ -152,6 +153,10 @@ int main_ssa(int argc, char* argv[argc])
 	long N = A_dims[0];
 
 	bool econ = A_dims[0] > A_dims[1];
+
+	// exact reprod. of SSA-FARY paper
+	if (use_compat_to_version("v0.9.00"))
+		econ = false;
 
 	long U_dims[2] = { N, econ ? MIN(A_dims[1], N) : N };
 	complex float* U = create_cfl(EOF_file, 2, U_dims);
