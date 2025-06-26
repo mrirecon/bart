@@ -51,14 +51,14 @@ void md_decompress_dims(long N, long dcdims[N], const long cdims[N], const long 
 static void decompress_kern(long stride, long N, long dcstrs, void* dst, long istrs, const long* index, const void* src, size_t size)
 {
 	for (int i = 0; i < N; i++)
-		if (index[i] >= 0)
+		if (index[i * istrs] >= 0)
 			memcpy(dst + dcstrs * i, src + index[istrs * i] * stride, size);
 }
 
 static void compress_kern(long stride, long N, void* dst, long istrs, const long* index, long dcstrs, const void* src, size_t size)
 {
 	for (int i = 0; i < N; i++)
-		if (index[i] >= 0)
+		if (index[i * istrs] >= 0)
 			memcpy(dst + index[istrs * i] * stride, src + dcstrs * i, size);
 }
 
@@ -144,7 +144,7 @@ void md_compress2(int N, const long odims[N], const long ostrs[N], void* dst, co
 
 	for (int i = midx + 1; i < N; i++) {
 
-		if (mdims[i] != odims[i])
+		if (mdims[i] != idims[i])
 			break;
 
 		if (1 == mdims[i])

@@ -295,15 +295,15 @@ __global__ static void decompress_kern(long istride, long N, long dcstrs, void* 
 	int stride = blockDim.x * gridDim.x;
 
 	for (long i = start; i < N; i += stride)
-		if (index[i] >= 0)
-			memcpy((uint8_t*)dst + dcstrs * i, (uint8_t*)src + index[istrs * i] * istride, size);
+		if (index[istrs * i] >= 0)
+			mmemcpy((uint8_t*)dst + dcstrs * i, (uint8_t*)src + index[istrs * i] * istride, size);
 }
 
 extern "C" void cuda_decompress(long stride, long N, long dcstrs, void* dst, long istrs, const long* index, const void* src, size_t size)
 {
-	decompress_kern<<<gridsize(N), blocksize(N), blocksize(N) * sizeof(float), cuda_get_stream()>>>(stride, N, dcstrs, dst, istrs, index, src, size);
+	decompress_kern<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(stride, N, dcstrs, dst, istrs, index, src, size);
+	CUDA_KERNEL_ERROR;
 }
-
 
 __global__ static void compress_kern(long istride, long N, void* dst, long istrs, const long* index, long dcstrs, const void* src, size_t size)
 {
@@ -311,12 +311,13 @@ __global__ static void compress_kern(long istride, long N, void* dst, long istrs
 	int stride = blockDim.x * gridDim.x;
 
 	for (long i = start; i < N; i += stride)
-		if (index[i] >= 0)
-			memcpy((uint8_t*)dst + index[istrs * i] * istride, (uint8_t*)src + dcstrs * i, size);
+		if (index[istrs * i] >= 0)
+			mmemcpy((uint8_t*)dst + index[istrs * i] * istride, (uint8_t*)src + dcstrs * i, size);
 }
 
 extern "C" void cuda_compress(long stride, long N, void* dst, long istrs, const long* index, long dcstrs, const void* src, size_t size)
 {
-	compress_kern<<<gridsize(N), blocksize(N), blocksize(N) * sizeof(float), cuda_get_stream()>>>(stride, N, dst, istrs, index, dcstrs, src, size);
+	compress_kern<<<gridsize(N), blocksize(N), 0, cuda_get_stream()>>>(stride, N, dst, istrs, index, dcstrs, src, size);
+	CUDA_KERNEL_ERROR;
 }
 
