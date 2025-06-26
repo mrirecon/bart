@@ -889,13 +889,14 @@ void train_nlinvnet(struct nlinvnet_s* nlinvnet, int Nb, struct named_data_list_
 		M = Nb;
 
 	int R = mpi_get_num_procs();
+	assert(R > 0);
 	assert(0 == M % R);
 
 	nn_t train_ops[M];
 
 	for (int i = 0; i < M / R; i++) {
 
-		train_ops[i] = nlinvnet_train_loss_create(nlinvnet, Nb / M);
+		train_ops[R * i] = nlinvnet_train_loss_create(nlinvnet, Nb / M);
 
 		for (int j = 1; j < R; j++)
 			train_ops[R * i + j] = nn_clone(train_ops[R * i]);
