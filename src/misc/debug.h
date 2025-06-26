@@ -44,11 +44,6 @@ extern void debug_vprintf_trace(const char* func_name,
 				int level, const char* fmt, va_list ap);
 
 
-#define BART_OUT(...) debug_printf_trace(__FUNCTION__, __FILE__, __LINE__, DP_INFO, __VA_ARGS__)
-#define BART_ERR(...) debug_printf_trace(__FUNCTION__, __FILE__, __LINE__, DP_ERROR, __VA_ARGS__)
-#define BART_WARN(...) debug_printf_trace(__FUNCTION__, __FILE__, __LINE__, DP_WARN, __VA_ARGS__)
-
-
 extern void debug_backtrace(size_t n);
 
 #ifdef USE_DWARF
