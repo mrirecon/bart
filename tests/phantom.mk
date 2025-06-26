@@ -119,6 +119,16 @@ tests/test-phantom-random-tubes: nrmse phantom fmac
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+
+tests/test-phantom-random-tubes1: nrmse phantom fmac
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/phantom -N 1 -k k0.ra							;\
+	$(TOOLDIR)/phantom -N 1 -b -k k1.ra							;\
+	$(TOOLDIR)/fmac -s 64 k1.ra k2.ra							;\
+	$(TOOLDIR)/nrmse -t 0. k0.ra k2.ra							;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+
+
 tests/test-phantom-NIST: fft nrmse phantom
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
 	$(TOOLDIR)/phantom --NIST -k k.ra							;\

@@ -980,172 +980,175 @@ static bool circ_in_background(float s1, float px1, float py1, float s2, float p
 	return false;
 }
 
-void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, bool random, float rotation_angle, int N, const long tstrs[DIMS], const complex float* traj, struct pha_opts* popts)
+static void calc_phantom_tubes2(const long dims[DIMS], complex float* out, bool kspace, bool random, float rotation_angle, int N, const long tstrs[DIMS], const complex float* traj, struct pha_opts* popts)
 {
-	if (1 < dims[COEFF_DIM]) {
+	struct ellipsis_bs phantom_tubes_N[2 * N - 1];
 
-		struct ellipsis_bs phantom_tubes_N[2 * N - 1];
+	if (random) {
 
-		if (random) {
+		int max_count = 10000;
 
-			int max_count = 10000;
+		// background circle position and radius
+		float sx_bg = .9;
+		float px_bg = 0.;
+		float py_bg = 0.;
 
-			// background circle position and radius
-			float sx_bg = .9;
-			float px_bg = 0.;
-			float py_bg = 0.;
+		// min and max tube radius (0. to 1.)
+		float smin = .025;
+		float smax = .4;
 
-			// min and max tube radius (0. to 1.)
-			float smin = .025;
-			float smax = .4;
+		// min and max center position (-1. to 1.)
+		float pmin = -1.;
+		float pmax = 1.;
 
-			// min and max center position (-1. to 1.)
-			float pmin = -1.;
-			float pmax = 1.;
+		// dead zone between tubes
+		float edge_scale = 1.2;
 
-			// dead zone between tubes
-			float edge_scale = 1.2;
+		// generate random ellipse
+		for (int i = 0; i < 2 * N - 2; i += 2) {
 
-			// generate random ellipse
-			for (int i = 0; i < 2 * N - 2; i += 2) {
+			double sx = 0;
+			double px = 0;
+			double py = 0;
 
-				double sx = 0;
-				double px = 0;
-				double py = 0;
+			bool overlap = true;
 
-				bool overlap = true;
+			int total_count = 0;
+			int count = 0;
 
-				int total_count = 0;
-				int count = 0;
+			while (overlap) {
 
-				while (overlap) {
+				if (count > max_count) {
 
-					if (count > max_count) {
-					
-						// shrink ellipse
-						smax *= .95;
-						smin *= .95;
-						total_count += count;
-						count = 0;
-					}
-
-					sx = smin + (smax - smin) * uniform_rand();
-					px = pmin + (pmax - pmin) * uniform_rand();
-					py = pmin + (pmax - pmin) * uniform_rand();
-
-					// check that ellipse fits within background circle
-					overlap = !circ_in_background(edge_scale * sx, px, py, sx_bg, px_bg, py_bg);
-
-					// check that new ellipse does not overlap with existing ellipses
-					// FIXME: change from circle to ellipse intersection
-					if ((i > 0) && !overlap) {
-
-						for (int j = 1; j < i; j += 2) {
-
-							float sx2 = phantom_tubes_N[j].geo.axis[0];
-							float px2 = phantom_tubes_N[j].geo.center[0];
-							float py2 = phantom_tubes_N[j].geo.center[1];
-
-							overlap = circ_intersection(edge_scale * sx, px, py, sx2, px2, py2);
-
-							if (overlap)
-								break;
-						}
-					}
-
-					count++;
-					
-					if (total_count > 100 * max_count)
-						error("Could not fit tube in phantom (requested %d, stopped at %d after %d trials\n", N, i/2, total_count);
+					// shrink ellipse
+					smax *= .95;
+					smin *= .95;
+					total_count += count;
+					count = 0;
 				}
 
-				debug_printf(DP_DEBUG4, "i=%d, (%f, %f), (%f, %f)\n", i, sx, sx, px, py);
+				sx = smin + (smax - smin) * uniform_rand();
+				px = pmin + (pmax - pmin) * uniform_rand();
+				py = pmin + (pmax - pmin) * uniform_rand();
 
-				struct ellipsis_bs ebs = { { 1., { sx, sx }, { px, py }, 0.}, false };
-				phantom_tubes_N[i] = ebs;
+				// check that ellipse fits within background circle
+				overlap = !circ_in_background(edge_scale * sx, px, py, sx_bg, px_bg, py_bg);
 
-				struct ellipsis_bs ebs2 = { { -1., { edge_scale * sx, edge_scale * sx }, { px, py }, 0.}, true };
-				phantom_tubes_N[i + 1] = ebs2;
+				// check that new ellipse does not overlap with existing ellipses
+				// FIXME: change from circle to ellipse intersection
+				if ((i > 0) && !overlap) {
+
+					for (int j = 1; j < i; j += 2) {
+
+						float sx2 = phantom_tubes_N[j].geo.axis[0];
+						float px2 = phantom_tubes_N[j].geo.center[0];
+						float py2 = phantom_tubes_N[j].geo.center[1];
+
+						overlap = circ_intersection(edge_scale * sx, px, py, sx2, px2, py2);
+
+						if (overlap)
+							break;
+					}
+				}
+
+				count++;
+
+				if (total_count > 100 * max_count)
+					error("Could not fit tube in phantom (requested %d, stopped at %d after %d trials\n", N, i/2, total_count);
 			}
 
-			struct ellipsis_bs ebsb = { { 1., { sx_bg, sx_bg }, { px_bg, py_bg }, 0. }, true };
-			phantom_tubes_N[2 * N - 2] = ebsb;
+			debug_printf(DP_DEBUG4, "i=%d, (%f, %f), (%f, %f)\n", i, sx, sx, px, py);
 
-		} else {
+			struct ellipsis_bs ebs = { { 1., { sx, sx }, { px, py }, 0.}, false };
+			phantom_tubes_N[i] = ebs;
 
-			assert((8 == N) || (11 == N) || (15 == N));
-
-			for (int i = 0; i < 2 * N - 1; i++)
-				phantom_tubes_N[i] = (8 == N ? phantom_sonar : (15 == N ? nist_phantom_t2 : phantom_tubes))[i];
+			struct ellipsis_bs ebs2 = { { -1., { edge_scale * sx, edge_scale * sx }, { px, py }, 0.}, true };
+			phantom_tubes_N[i + 1] = ebs2;
 		}
 
+		struct ellipsis_bs ebsb = { { 1., { sx_bg, sx_bg }, { px_bg, py_bg }, 0. }, true };
+		phantom_tubes_N[2 * N - 2] = ebsb;
 
-		// Define geometry parameter -> see src/shepplogan.c
+	} else {
 
-		struct ellipsis_s tubes_bkgrd[N];
-		struct ellipsis_s tubes_frgrd[N - 1];
+		assert((8 == N) || (11 == N) || (15 == N));
 
-		assert(dims[COEFF_DIM] == (long)ARRAY_SIZE(tubes_frgrd) + 1); // foreground + 1 background image!
-
-		separate_bckgrd(ARRAY_SIZE(tubes_bkgrd), tubes_bkgrd, ARRAY_SIZE(tubes_frgrd), tubes_frgrd, ARRAY_SIZE(phantom_tubes_N), phantom_tubes_N);
-
-		// Determine basis functions of the background
-
-		long dims2[DIMS];
-		md_copy_dims(DIMS, dims2, dims);
-		dims2[COEFF_DIM] = (long)ARRAY_SIZE(tubes_bkgrd);
-
-		complex float* bkgrd = md_alloc(DIMS, dims2, CFL_SIZE);
-
-		calc_phantom_arb(dims2[COEFF_DIM], tubes_bkgrd, dims2, bkgrd, kspace, tstrs, traj, rotation_angle, popts);
-
-		// Sum up all spatial coefficients
-
-		long dims3[DIMS];
-		md_select_dims(DIMS, ~COEFF_FLAG, dims3, dims);
-
-		complex float* tmp = md_alloc(DIMS, dims3, CFL_SIZE);
-
-		md_zsum(DIMS, dims2, COEFF_FLAG, tmp, bkgrd);
-
-		// Save summed up coefficients to out
-
-		long pos[DIMS] = { [0 ... DIMS - 1] = 0 };
-
-		md_copy_block(DIMS, pos, dims2, out, dims3, tmp, CFL_SIZE);
-
-		md_free(bkgrd);
-		md_free(tmp);
-
-		// Determine basis functions of the foreground
-
-		dims2[COEFF_DIM] = (long)ARRAY_SIZE(tubes_frgrd); // remove background
-
-		complex float* frgrd = md_alloc(DIMS, dims2, CFL_SIZE);
-
-		calc_phantom_arb(dims2[COEFF_DIM], tubes_frgrd, dims2, frgrd, kspace, tstrs, traj, rotation_angle, popts);
-
-		// Add foreground basis functions to out
-
-		pos[COEFF_DIM] = 1;
-
-		md_copy_block(DIMS, pos, dims, out, dims2, frgrd, CFL_SIZE);
-
-		md_free(frgrd);
-
-	} else { // sum up all objects
-
-		long tdims[DIMS];
-		md_copy_dims(DIMS, tdims, dims);
-
-		tdims[COEFF_DIM] = N;	// Number of elements of tubes phantom with rings see src/shepplogan.c
-
-		complex float* tmp = md_alloc(DIMS, tdims, CFL_SIZE);
-
-		calc_phantom_tubes(tdims, tmp, kspace, random, rotation_angle, N, tstrs, traj, popts);
-
-		md_zsum(DIMS, tdims, COEFF_FLAG, out, tmp);
-		md_free(tmp);
+		for (int i = 0; i < 2 * N - 1; i++)
+			phantom_tubes_N[i] = (8 == N ? phantom_sonar : (15 == N ? nist_phantom_t2 : phantom_tubes))[i];
 	}
+
+	// Define geometry parameter -> see src/shepplogan.c
+
+	struct ellipsis_s tubes_bkgrd[N];
+	struct ellipsis_s tubes_frgrd[N - 1];
+
+	assert(dims[COEFF_DIM] == (long)ARRAY_SIZE(tubes_frgrd) + 1); // foreground + 1 background image!
+
+	separate_bckgrd(ARRAY_SIZE(tubes_bkgrd), tubes_bkgrd, ARRAY_SIZE(tubes_frgrd), tubes_frgrd, ARRAY_SIZE(phantom_tubes_N), phantom_tubes_N);
+
+	// Determine basis functions of the background
+
+	long dims2[DIMS];
+	md_copy_dims(DIMS, dims2, dims);
+	dims2[COEFF_DIM] = (long)ARRAY_SIZE(tubes_bkgrd);
+
+	complex float* bkgrd = md_alloc(DIMS, dims2, CFL_SIZE);
+
+	calc_phantom_arb(dims2[COEFF_DIM], tubes_bkgrd, dims2, bkgrd, kspace, tstrs, traj, rotation_angle, popts);
+
+	// Sum up all spatial coefficients
+
+	long dims3[DIMS];
+	md_select_dims(DIMS, ~COEFF_FLAG, dims3, dims);
+
+	complex float* tmp = md_alloc(DIMS, dims3, CFL_SIZE);
+
+	md_zsum(DIMS, dims2, COEFF_FLAG, tmp, bkgrd);
+
+	// Save summed up coefficients to out
+
+	long pos[DIMS] = { [0 ... DIMS - 1] = 0 };
+
+	md_copy_block(DIMS, pos, dims2, out, dims3, tmp, CFL_SIZE);
+
+	md_free(bkgrd);
+	md_free(tmp);
+
+	// Determine basis functions of the foreground
+
+	dims2[COEFF_DIM] = (long)ARRAY_SIZE(tubes_frgrd); // remove background
+
+	complex float* frgrd = md_alloc(DIMS, dims2, CFL_SIZE);
+
+	calc_phantom_arb(dims2[COEFF_DIM], tubes_frgrd, dims2, frgrd, kspace, tstrs, traj, rotation_angle, popts);
+
+	// Add foreground basis functions to out
+
+	pos[COEFF_DIM] = 1;
+
+	md_copy_block(DIMS, pos, dims, out, dims2, frgrd, CFL_SIZE);
+
+	md_free(frgrd);
+}
+
+
+void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, bool random, float rotation_angle, int N, const long tstrs[DIMS], const complex float* traj, struct pha_opts* popts)
+{
+	if (1 < dims[COEFF_DIM])
+		return calc_phantom_tubes2(dims, out, kspace, random, rotation_angle, N, tstrs, traj, popts);
+
+	// sum up all objects
+
+	long tdims[DIMS];
+	md_copy_dims(DIMS, tdims, dims);
+
+	tdims[COEFF_DIM] = N;	// Number of elements of tubes phantom with rings see src/shepplogan.c
+
+	complex float* tmp = md_alloc(DIMS, tdims, CFL_SIZE);
+
+	calc_phantom_tubes2(tdims, tmp, kspace, random, rotation_angle, N, tstrs, traj, popts);
+
+	md_zsum(DIMS, tdims, COEFF_FLAG, out, tmp);
+	md_free(tmp);
 }
 
