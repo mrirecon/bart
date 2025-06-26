@@ -1,10 +1,11 @@
 /* Copyright 2014. The Regents of the University of California.
  * Copyright 2015-2020. Martin Uecker.
+ * Copyright 2025. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2013-2020 Martin Uecker
+ * 2013-2025 Martin Uecker
  */
 
 #include <stdbool.h>
@@ -76,8 +77,8 @@ int main_phantom(int argc, char* argv[argc])
 
 	const struct opt_s opts[] = {
 
-		OPT_INT('s', &sens, "nc", "nc sensitivities"),
-		OPT_INT('S', &osens, "nc", "Output nc sensitivities"),
+		OPT_PINT('s', &sens, "nc", "nc sensitivities"),
+		OPT_PINT('S', &osens, "nc", "Output nc sensitivities"),
 		OPT_SET('k', &kspace, "k-space"),
 		OPT_INFILE('t', &traj_file, "file", "trajectory"),
 		OPT_SELECT('c', enum ptype_e, &ptype, CIRC, "()"),
@@ -91,16 +92,16 @@ int main_phantom(int argc, char* argv[argc])
 		OPTL_SELECT(0, "ELLIPSOID", enum ptype_e, &ptype, ELLIPSOID0, "Ellipsoid."),
 		OPTL_VEC3(0, "ellipsoid_center", &ellipsoid_center, "", "x,y,z center coordinates of ellipsoid."),
 		OPTL_FLVEC3(0, "ellipsoid_axes", &ellipsoid_axes, "", "Axes lengths of ellipsoid."),
-		OPT_INT('N', &N, "num", "Random tubes phantom with num tubes"),
+		OPT_PINT('N', &N, "num", "Random tubes phantom with num tubes"),
 		OPT_SELECT('B', enum ptype_e, &ptype, BART, "BART logo"),
 		OPTL_INFILE(0, "FILE", &file_load, "name", "Arbitrary geometry based on multicfl file."),
-		OPT_INT('x', &xdim, "n", "dimensions in y and z"),
-		OPT_INT('g', &geo, "n=1,2,3", "select geometry for object phantom"),
+		OPT_PINT('x', &xdim, "n", "dimensions in y and z"),
+		OPT_PINT('g', &geo, "n=1,2,3", "select geometry for object phantom"),
 		OPT_SET('3', &d3, "3D"),
 		OPT_SET('b', &basis, "basis functions for geometry"),
 		OPT_ULLONG('r', &randseed, "", "random seed initialization. '0' uses the default seed."),
 		OPTL_FLOAT(0, "rotation-angle", &rotation_angle, "[deg]", "Angle of rotation"),
-		OPTL_INT(0, "rotation-steps", &rotation_steps, "n", "Number of rotation steps"),
+		OPTL_PINT(0, "rotation-steps", &rotation_steps, "n", "Number of rotation steps"),
 		OPTL_SUBOPT(0, "coil", "...", "configure type of coil", ARRAY_SIZE(coil_opts), coil_opts),
 	};
 
@@ -113,9 +114,11 @@ int main_phantom(int argc, char* argv[argc])
 
 		ptype = RAND_TUBES;
 
-		if (N > 200)
-			BART_WARN("Number of tubes is large. Runtime may be very slow.\n");
+		if (0 == N)
+			error("Number of tubes must be larger than zero.\n");
 
+		if (N > 200)
+			debug_printf(DP_WARN, "Number of tubes is large. Runtime may be very slow.\n");
 	}
 
 	const int coeff[] = { [SONAR] = 8, [NIST] = 15, [BART] = 6, [BRAIN] = 4 };
