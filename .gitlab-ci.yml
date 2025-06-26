@@ -217,7 +217,6 @@ Build_Analyzer:
       - "./lib/*.a"
       - ./commands/
     expire_in: 45 minutes
-  allow_failure: true
 
 
 
