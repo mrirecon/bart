@@ -39,10 +39,11 @@
 	long NO = nlop_get_nr_out_args(nlop);										\
 	long NI = nlop_get_nr_in_args(nlop);										\
 	const struct operator_s** adj_ops = (const struct operator_s**)alloca((size_t)((long)sizeof(struct operator_s*) * NI * NO));	\
+	bool* der_out = (bool*)alloca((size_t)((long)sizeof(bool) * NI));						\
 	for (int o = 0; o < NO; o++)											\
 		for (int i = 0; i < NI; i++)										\
 			adj_ops[i * NO + o] = nlop_get_derivative(nlop, o, i)->adjoint;					\
-	struct iter6_op_arr_s adj_ops_data = { { &TYPEID(iter6_op_arr_s) }, NI, NO, adj_ops };				\
+	struct iter6_op_arr_s adj_ops_data = { { &TYPEID(iter6_op_arr_s) }, NI, NO, adj_ops, NULL, -1, der_out };	\
 	(struct iter_op_arr_s){ iter6_op_arr_fun_deradj, CAST_UP(STRUCT_TMP_COPY(adj_ops_data)) };			\
 })
 
@@ -170,6 +171,10 @@ struct iter6_op_arr_s {
 	long NI;
 
 	const struct operator_s** ops;
+
+	const struct operator_s* oops;
+	int i_index;
+	bool* der_out;
 };
 
 DEF_TYPEID(iter6_op_arr_s);
@@ -197,7 +202,13 @@ static void iter6_op_arr_fun_deradj(iter_op_data* _o, int NO, float* dst[NO], in
 	float* dst_t[NO];
 	int NO_t = 0;
 
+	bool cached = (i_index == data->i_index);
+	data->i_index = i_index;
+
 	for (int o = 0; o < NO; o++) {
+
+		cached = cached && (data->der_out[o] != (NULL == dst[o]));
+		data->der_out[o] = (NULL != dst[o]);
 
 		if (NULL == dst[o])
 			continue;
@@ -206,9 +217,25 @@ static void iter6_op_arr_fun_deradj(iter_op_data* _o, int NO, float* dst[NO], in
 		dst_t[NO_t] = dst[o];
 		NO_t += 1;
 	}
-#if 0
+
+#if 1
+
+	if (!cached) {
+
+		if (NULL != data->oops)
+			operator_free(data->oops);
+
+		data->oops = operator_apply_joined_create(NO_t, op_arr);
+	}
+
+	void* args[NO_t + 1];
+
 	for (int i = 0; i < NO_t; i++)
-		operator_apply_unchecked(op_arr[i], ((complex float**)dst_t)[i], (const complex float*)(src[0]));
+		args[i] = dst_t[i];
+
+	args[NO_t] = (void*)src[i_index];
+
+	operator_generic_apply_unchecked(data->oops, NO_t + 1, args);
 #else
 	operator_apply_joined_unchecked(NO_t, op_arr, (complex float**)dst_t, (const complex float*)(src[0]));
 #endif
@@ -458,6 +485,8 @@ void iter6_sgd_like(	const iter6_conf* conf,
 		prox_ops[i] = NULL;
 	}
 
+	operator_free(CAST_DOWN(iter6_op_arr_s, adj_op_arr.data)->oops);
+
 	md_free(learning_rate_schedule);
 }
 
@@ -638,6 +667,8 @@ void iter6_iPALM(	const iter6_conf* _conf,
 		operator_p_free(prox_ops_weight_decay[i]);
 		prox_ops[i] = NULL;
 	}
+
+	operator_free(CAST_DOWN(iter6_op_arr_s, adj_op_arr.data)->oops);
 }
 
 
