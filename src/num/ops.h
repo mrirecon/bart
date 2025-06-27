@@ -84,7 +84,7 @@ extern void operator_apply2(const struct operator_s* op, int ON, const long odim
 extern void operator_apply_unchecked(const struct operator_s* op, _Complex float* dst, const _Complex float* src);
 extern void operator_apply_parallel_unchecked(int D, const struct operator_s* op[__VLA(D)], _Complex float* dst[__VLA(D)], const _Complex float* src[__VLA(D)], int num_threads);
 extern void operator_apply_joined_unchecked(int N, const struct operator_s* op[__VLA(N)], _Complex float* dst[__VLA(N)], const _Complex float* src);
-
+extern const struct operator_s* operator_apply_joined_create(int N, const struct operator_s* op[__VLA(N)]);
 
 // get functions
 struct iovec_s;

@@ -535,7 +535,7 @@ const struct operator_s* get_in_reshape(const struct operator_s* op) {
 
 	if (NULL != get_reshape_data(op))
 		return get_reshape_data(op)->x;
-	
+
 	return NULL;
 }
 
@@ -638,7 +638,7 @@ void operator_generic_apply_parallel_unchecked(int D, const struct operator_s* o
 		}
 
 		omp_set_num_threads(max_threads);
-	
+
 		return;
 	}
 #else
@@ -661,7 +661,7 @@ void operator_apply_unchecked(const struct operator_s* op, complex float* dst, c
 void operator_apply_parallel_unchecked(int D, const struct operator_s* op[D], complex float* dst[D], const complex float* src[D], int num_threads)
 {
 	void* args[D][2];
-	
+
 	for (int i = 0; i < D; i++) {
 
 		assert(op[i]->io_flags[0]);
@@ -1010,7 +1010,7 @@ struct copy_data_s {
 
 	int N;
 	const long** strs;
-	
+
 	enum COPY_LOCATION* loc;
 
 	bool copy_output;
@@ -1132,7 +1132,7 @@ static const struct operator_s* operator_copy_wrapper_generic(int N, const long*
 		enum COPY_LOCATION loc2[N];
 		for (int i = 0; i < N; i++)
 			loc2[i] = (CL_SAMEPLACE == data->loc[i]) ? loc[i] : data->loc[i];
-			
+
 		return operator_copy_wrapper_generic(N, data->strs, loc2, data->op, device, data->copy_output);
 	}
 
@@ -1222,7 +1222,7 @@ const struct operator_s* operator_copy_wrapper_sameplace(int N, const long* strs
 		else
 #endif
 			loc[i] = CL_CPU;
-		
+
 		if (NULL == ref)
 			loc[i] = CL_SAMEPLACE;
 	}
@@ -2141,9 +2141,9 @@ bool operator_zero_or_null_p(const struct operator_s* op)
 
 	if (NULL != p)
 		return operator_zero_or_null_p(p->op);
-	
+
 	auto r = CAST_MAYBE(op_reshape_s, opd);
-	
+
 	if (NULL != r)
 		return operator_zero_or_null_p(r->x);
 
@@ -2652,6 +2652,30 @@ bool operator_identify(const struct operator_s* a, const struct operator_s* b)
 	}
 
 	return false;
+}
+
+const struct operator_s* operator_apply_joined_create(int N, const struct operator_s* op[N])
+{
+	auto combi = operator_combi_create(N, op);
+
+	int perm[2 * N];
+	for (int i = 0; i < N; i++) {
+
+		perm[i] = 2 * i;
+		perm[i + N] = 2 * i + 1;
+	}
+
+	auto dup = operator_permute(combi, 2 * N, perm);
+	operator_free(combi);
+
+	for (int i = 0; i < N - 1; i++) {
+
+		auto tmp = operator_dup_create(dup, N, N + 1);
+		operator_free(dup);
+		dup = tmp;
+	}
+
+	return graph_optimize_operator_F(dup);
 }
 
 void operator_apply_joined_unchecked(int N, const struct operator_s* op[N], complex float* dst[N], const complex float* src)
