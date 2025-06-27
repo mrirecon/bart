@@ -73,63 +73,63 @@ static const struct linop_s* sense_nc_init(const long max_dims[DIMS], const long
 
 	for (int i = DIMS - 1; i > MAPS_DIM; i--) {
 
-		if (MD_IS_SET(lowmem_stack, i)) {
+		if (!MD_IS_SET(lowmem_stack, i))
+			continue;
 
-			long n_map_dims[DIMS];
-			long n_max_dims[DIMS];
-			long n_traj_dims[DIMS];
-			long n_ksp_dims[DIMS];
-			long n_wgs_dims[DIMS];
-			long n_basis_dims[DIMS];
+		long n_map_dims[DIMS];
+		long n_max_dims[DIMS];
+		long n_traj_dims[DIMS];
+		long n_ksp_dims[DIMS];
+		long n_wgs_dims[DIMS];
+		long n_basis_dims[DIMS];
 
-			md_select_dims(DIMS, ~MD_BIT(i), n_map_dims, map_dims);
-			md_select_dims(DIMS, ~MD_BIT(i), n_max_dims, max_dims);
-			md_select_dims(DIMS, ~MD_BIT(i), n_traj_dims, traj_dims);
-			md_select_dims(DIMS, ~MD_BIT(i), n_ksp_dims, ksp_dims);
+		md_select_dims(DIMS, ~MD_BIT(i), n_map_dims, map_dims);
+		md_select_dims(DIMS, ~MD_BIT(i), n_max_dims, max_dims);
+		md_select_dims(DIMS, ~MD_BIT(i), n_traj_dims, traj_dims);
+		md_select_dims(DIMS, ~MD_BIT(i), n_ksp_dims, ksp_dims);
 
-			if (NULL != weights)
-				md_select_dims(DIMS, ~MD_BIT(i), n_wgs_dims, wgs_dims);
+		if (NULL != weights)
+			md_select_dims(DIMS, ~MD_BIT(i), n_wgs_dims, wgs_dims);
 
-			if (NULL != basis)
-				md_select_dims(DIMS, ~MD_BIT(i), n_basis_dims, basis_dims);
+		if (NULL != basis)
+			md_select_dims(DIMS, ~MD_BIT(i), n_basis_dims, basis_dims);
 
-			if (DIMS != md_calc_blockdim(DIMS, n_map_dims, MD_STRIDES(DIMS, map_dims, CFL_SIZE), CFL_SIZE))
-				error("Sensitivity maps not continuous for stacking along dim %d.\n");
+		if (DIMS != md_calc_blockdim(DIMS, n_map_dims, MD_STRIDES(DIMS, map_dims, CFL_SIZE), CFL_SIZE))
+			error("Sensitivity maps not continuous for stacking along dim %d.\n");
 
-			if (DIMS != md_calc_blockdim(DIMS, n_traj_dims, MD_STRIDES(DIMS, traj_dims, CFL_SIZE), CFL_SIZE))
-				error("Trajectory not continuous for stacking along dim %d.\n");
+		if (DIMS != md_calc_blockdim(DIMS, n_traj_dims, MD_STRIDES(DIMS, traj_dims, CFL_SIZE), CFL_SIZE))
+			error("Trajectory not continuous for stacking along dim %d.\n");
 
-			if ((NULL != weights) && (DIMS != md_calc_blockdim(DIMS, n_wgs_dims, MD_STRIDES(DIMS, wgs_dims, CFL_SIZE), CFL_SIZE)))
-				error("Weights not continuous for stacking along dim %d.\n");
+		if ((NULL != weights) && (DIMS != md_calc_blockdim(DIMS, n_wgs_dims, MD_STRIDES(DIMS, wgs_dims, CFL_SIZE), CFL_SIZE)))
+			error("Weights not continuous for stacking along dim %d.\n");
 
-			if ((NULL != basis) && (DIMS != md_calc_blockdim(DIMS, n_basis_dims, MD_STRIDES(DIMS, basis_dims, CFL_SIZE), CFL_SIZE)))
-				error("Basis not continuous for stacking along dim %d.\n");
+		if ((NULL != basis) && (DIMS != md_calc_blockdim(DIMS, n_basis_dims, MD_STRIDES(DIMS, basis_dims, CFL_SIZE), CFL_SIZE)))
+			error("Basis not continuous for stacking along dim %d.\n");
 
-			long offset_basis = (NULL != basis) && (1 != basis_dims[i]) ? md_calc_size(i, basis_dims) : 0;
-			long offset_weights = (NULL != weights) && (1 != wgs_dims[i]) ? md_calc_size(i, wgs_dims) : 0;
-			long offset_traj = (1 != traj_dims[i]) ? md_calc_size(i, traj_dims) : 0;
-			long offset_sens = (1 != map_dims[i]) ? md_calc_size(i, map_dims) : 0;
+		long offset_basis = (NULL != basis) && (1 != basis_dims[i]) ? md_calc_size(i, basis_dims) : 0;
+		long offset_weights = (NULL != weights) && (1 != wgs_dims[i]) ? md_calc_size(i, wgs_dims) : 0;
+		long offset_traj = (1 != traj_dims[i]) ? md_calc_size(i, traj_dims) : 0;
+		long offset_sens = (1 != map_dims[i]) ? md_calc_size(i, map_dims) : 0;
 
-			if (conf.nopsf)
-				error("Lowmem stacking not compatible with precomputed psf!\n");
+		if (conf.nopsf)
+			error("Lowmem stacking not compatible with precomputed psf!\n");
 
-			debug_printf(DP_DEBUG1, "Lowmem-stacking along dim %d\n!", i);
+		debug_printf(DP_DEBUG1, "Lowmem-stacking along dim %d\n!", i);
 
-			const struct linop_s* lop = sense_nc_init(n_max_dims, n_map_dims, maps, n_ksp_dims, n_traj_dims, traj, conf, n_wgs_dims, weights, n_basis_dims, basis, NULL, shared_img_dims, lowmem_stack);
+		const struct linop_s* lop = sense_nc_init(n_max_dims, n_map_dims, maps, n_ksp_dims, n_traj_dims, traj, conf, n_wgs_dims, weights, n_basis_dims, basis, NULL, shared_img_dims, lowmem_stack);
 
-			for (int j = 1; j < max_dims[i]; j++) {
+		for (int j = 1; j < max_dims[i]; j++) {
 
-				auto tmp = sense_nc_init(n_max_dims, n_map_dims, maps + j * offset_sens, n_ksp_dims, n_traj_dims,
-										traj + j * offset_traj, conf, n_wgs_dims, weights + j * offset_weights,
-										n_basis_dims, basis + j * offset_basis, NULL, shared_img_dims, lowmem_stack);
-				if (MD_IS_SET(shared_img_dims, i))
-					lop = linop_stack_cod_F(2, MAKE_ARRAY(lop, tmp), i);
-				else
-					lop = linop_stack_FF(i, i, lop, tmp);
-			}
-
-			return lop;
+			auto tmp = sense_nc_init(n_max_dims, n_map_dims, maps + j * offset_sens, n_ksp_dims, n_traj_dims,
+									traj + j * offset_traj, conf, n_wgs_dims, weights + j * offset_weights,
+									n_basis_dims, basis + j * offset_basis, NULL, shared_img_dims, lowmem_stack);
+			if (MD_IS_SET(shared_img_dims, i))
+				lop = linop_stack_cod_F(2, MAKE_ARRAY(lop, tmp), i);
+			else
+				lop = linop_stack_FF(i, i, lop, tmp);
 		}
+
+		return lop;
 	}
 
 	long coilim_dims[DIMS];
