@@ -63,6 +63,9 @@ static complex float xsens(int c, int s, double mpos[3], void* data, krn_t fun)
 #if 1
 	struct krn2d_data* krn_data = data;
 
+	if (COIL_NONE == krn_data->stype)
+		return fun(data, s, mpos);
+
 	complex float val = 0.;
 
 	long sh = (COIL_COEFF - 1) / 2;
@@ -111,6 +114,9 @@ static complex float ksens(int c, int s, double mpos[3], void* data, krn_t fun)
 
 	struct krn2d_data* krn_data = data;
 
+	if (COIL_NONE == krn_data->stype)
+		return fun(data, s, mpos);
+
 	complex float val = 0.;
 
 	for (int i = 0; i < COIL_COEFF; i++) {
@@ -156,17 +162,11 @@ static complex float ksens(int c, int s, double mpos[3], void* data, krn_t fun)
 	return val;
 }
 
-static complex float nosens(int /*c*/, int s, double mpos[3], void* data, krn_t fun)
-{
-	return fun(data, s, mpos);
-}
-
 struct data {
 
 	const complex float* traj;
 	const long* tstrs;
 
-	bool sens;
 	const long dims[3];
 	void* data;
 	krn_t fun;
@@ -180,7 +180,7 @@ static complex float xkernel(void* _data, const long pos[])
                            (double)(pos[1] - data->dims[1] / 2) / (0.5 * (double)data->dims[1]),
                            (double)(pos[2] - data->dims[2] / 2) / (0.5 * (double)data->dims[2]) };
 
-	return (data->sens ? xsens : nosens)(pos[COIL_DIM], pos[COEFF_DIM], mpos, data->data, data->fun);
+	return xsens(pos[COIL_DIM], pos[COEFF_DIM], mpos, data->data, data->fun);
 }
 
 static complex float kkernel(void* _data, const long pos[])
@@ -203,7 +203,7 @@ static complex float kkernel(void* _data, const long pos[])
 		mpos[2] = creal((&MD_ACCESS(DIMS, data->tstrs, pos, data->traj))[2]) / 2.;
 	}
 
-	return (data->sens ? ksens : nosens)(pos[COIL_DIM], pos[COEFF_DIM], mpos, data->data, data->fun);
+	return ksens(pos[COIL_DIM], pos[COEFF_DIM], mpos, data->data, data->fun);
 }
 
 
@@ -222,7 +222,6 @@ static void sample(const long dims[DIMS], complex float* out, const long tstrs[D
 	struct data data = {
 
 		.traj = traj,
-		.sens = (dims[COIL_DIM] > 1),
 		.dims = { dims[0], dims[1], dims[2] },
 		.data = krn_data,
 		.tstrs = tstrs,
@@ -422,7 +421,6 @@ void calc_sens(const long dims[DIMS], complex float* sens, struct pha_opts* popt
 	struct data data = {
 
 		.traj = NULL,
-		.sens = true,
 		.dims = { dims[0], dims[1], dims[2] },
 		.data = &(struct krn2d_data){ false, false, popts->stype, DIMS, NULL },
 		.fun = cnst_one,
@@ -573,7 +571,6 @@ void calc_star(const long dims[DIMS], complex float* out, bool kspace, const lon
 
 		.traj = traj,
 		.tstrs = tstrs,
-		.sens = (dims[COIL_DIM] > 1),
 		.dims = { dims[0], dims[1], dims[2] },
 		.data = &poly,
 		.fun = krn_poly,
