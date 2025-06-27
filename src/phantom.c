@@ -193,9 +193,8 @@ int main_phantom(int argc, char* argv[argc])
 	if (d3)
 		dims[2] = dims[0];
 
-	if ((DEFAULT == popts.stype) && ((0 < sens) || (0 < osens)))
+	if ((COIL_NONE == popts.stype) && ((0 < sens) || (0 < osens)))
 		popts.stype = d3 ? HEAD_3D_64CH : HEAD_2D_8CH;
-
 
 	if ((HEAD_2D_8CH == popts.stype) && ((8 < sens) || (8 < osens)))
 		error("More than eight 2D sensitivities are not supported!\n");

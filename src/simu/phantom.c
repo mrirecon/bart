@@ -42,7 +42,7 @@
 
 struct pha_opts pha_opts_defaults = {
 
-	.stype = DEFAULT,
+	.stype = COIL_NONE,
 };
 
 
@@ -72,6 +72,9 @@ static complex float xsens(int c, int s, double mpos[3], void* data, krn_t fun)
 
 			switch (krn_data->stype) {
 
+			case COIL_NONE:
+				assert(0);
+
 			case HEAD_3D_64CH:
 
 				for (int m = 0; m < COIL_COEFF; m++)
@@ -82,12 +85,6 @@ static complex float xsens(int c, int s, double mpos[3], void* data, krn_t fun)
 			case HEAD_2D_8CH:
 
 				val += sens_coeff[c][i][j] * cexpf(-2.i * M_PI * ((i - sh) * mpos[0] + (j - sh) * mpos[1]) / 4.);
-				break;
-
-			case DEFAULT:
-			default:
-
-				error("Please specify a sensitivity type.\n");
 				break;
 			}
 		}
@@ -123,6 +120,9 @@ static complex float ksens(int c, int s, double mpos[3], void* data, krn_t fun)
 
 			switch (krn_data->stype) {
 
+			case COIL_NONE:
+				assert(0);
+
 			case HEAD_3D_64CH:
 
 				for (int m = 0; m < COIL_COEFF; m++) {
@@ -138,7 +138,7 @@ static complex float ksens(int c, int s, double mpos[3], void* data, krn_t fun)
 
 				break;
 
-			case HEAD_2D_8CH: {
+			case HEAD_2D_8CH:
 
 				double mpos2[3] = {
 					mpos[0] + (double)(i - sh) / 4.,
@@ -148,12 +148,6 @@ static complex float ksens(int c, int s, double mpos[3], void* data, krn_t fun)
 
 				val += sens_coeff[c][i][j] * fun(data, s, mpos2);
 
-			}	break;
-
-			case DEFAULT:
-			default:
-
-				error("Please specify a sensitivity type.\n");
 				break;
 			}
 		}
@@ -326,12 +320,14 @@ void calc_ellipsoid(int D, long dims[D], complex float* optr, bool d3, bool kspa
 			continue;
 
 		if (0 == imdims[i] % 2)
-			c[i] = 2 * (double)center[i] / (double)imdims[i]       - 1.;
-		else	c[i] = 2 * (double)center[i] / (double)(imdims[i] - 1) - 1.;
+			c[i] = 2 * (double)center[i] / (double)imdims[i] - 1.;
+		else
+			c[i] = 2 * (double)center[i] / (double)(imdims[i] - 1) - 1.;
 
 		if (0 == imdims[i] % 2)
 			axc[i] = 2 * (double)ax[i] / (double)imdims[i];
-		else	axc[i] = 2 * (double)ax[i] / (double)(imdims[i] - 1);
+		else
+			axc[i] = 2 * (double)ax[i] / (double)(imdims[i] - 1);
 	}
 
 	double tmp = c[1];
@@ -510,9 +506,9 @@ static void calc_moving_discs(const long dims[DIMS], complex float* out, bool ks
 void calc_moving_circ(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj, struct pha_opts* popts)
 {
 	struct moving_ellipsis_s disc[1] = { {
-			.geom = phantom_disc[0],
-			.fourier_coeff_size = { { 0.3, 0., 0, }, { 0.3, 0., 0. }, },
-			.fourier_coeff_pos = { { 0, 0.5, 0., }, { 0., 0.5i, 0. } },
+		.geom = phantom_disc[0],
+		.fourier_coeff_size = { { 0.3, 0., 0, }, { 0.3, 0., 0. }, },
+		.fourier_coeff_pos = { { 0, 0.5, 0., }, { 0., 0.5i, 0. } },
 	} };
 
 	calc_moving_discs(dims, out, kspace, tstrs, traj, ARRAY_SIZE(disc), disc, popts);

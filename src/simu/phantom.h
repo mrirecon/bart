@@ -2,7 +2,7 @@
 #ifndef PHANTOM_H
 #define PHANTOM_H
 
-enum coil_type { DEFAULT, HEAD_2D_8CH, HEAD_3D_64CH };
+enum coil_type { COIL_NONE, HEAD_2D_8CH, HEAD_3D_64CH };
 
 struct pha_opts {
 
