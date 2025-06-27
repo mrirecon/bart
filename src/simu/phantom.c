@@ -922,7 +922,7 @@ void calc_phantom_arb(int N, const struct ellipsis_s* data /*[N]*/, const long d
 
 		for (int j = 0; j < N; j++) {
 
-			position = (data[j].center[0] + data[j].center[1]*I) * cexpf(-2.i * M_PI * rotation_angle / 360. * (float)i);
+			position = (data[j].center[0] + data[j].center[1] * 1.i) * cexpf(-2.i * M_PI * rotation_angle / 360. * (float)i);
 
 			data2[j] = data[j];
 			data2[j].center[0] = crealf(position);
@@ -944,18 +944,12 @@ static void separate_bckgrd(int Nb, struct ellipsis_s bckgrd[Nb], int Nf, struct
 {
 	// FIXME: Do not pass unused variables
 
-	for(int j = 0, jb = 0, jf = 0; j < N; j++) {
+	for (int j = 0, jb = 0, jf = 0; j < N; j++) {
 
-		if (geometry[j].background) {
-
-			bckgrd[jb] = geometry[j].geo;
-			jb++;
-
-		} else {
-
-			frgrd[jf] = geometry[j].geo;
-			jf++;
-		}
+		if (geometry[j].background)
+			bckgrd[jb++] = geometry[j].geo;
+		else
+			frgrd[jf++] = geometry[j].geo;
 	}
 }
 
