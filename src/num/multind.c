@@ -6,7 +6,7 @@
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2020 Martin Uecker
+ * 2012-2025 Martin Uecker
  * 2019-2020 Sebastian Rosenzweig
  * 2013      Frank Ong <frankong@berkeley.edu>
  * 2017      Michael J. Anderson <michael.j.anderson@intel.com>
@@ -2313,14 +2313,16 @@ void md_mask_decompress(int D, const long dims[D], float* dst, long M, const uin
 }
 
 
+extern inline void* md_alloc(int D, const long dimensions[__VLA(D)], size_t size);
+
 /**
  * Allocate CPU memory
  *
  * return pointer to CPU memory
  */
-void* md_alloc(int D, const long dimensions[D], size_t size)
+void* md_alloc_safe(int D, const long[D], size_t, size_t total_size)
 {
-	return xmalloc((size_t)(md_calc_size(D, dimensions) * (long)size));
+	return xmalloc(total_size);
 }
 
 

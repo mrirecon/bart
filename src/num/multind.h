@@ -1,6 +1,6 @@
 /* Copyright 2013-2014. The Regents of the University of California.
  * Copyright 2016-2021. Uecker Lab. University Medical Center Göttingen.
- * Copyright 2022-2024. Institute of Biomedical Imaging. Graz University of Technology.
+ * Copyright 2022-2025. Institute of Biomedical Imaging. Graz University of Technology.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
@@ -23,6 +23,7 @@
 #include "misc/cppwrap.h"
 #include "misc/nested.h"
 #include "misc/types.h"
+#include "misc/misc.h"
 
 typedef void CLOSURE_TYPE(md_nary_fun_t)(void* ptr[]);
 typedef void CLOSURE_TYPE(md_trafo_fun_t)(long N, long str, void* ptr);
@@ -101,10 +102,17 @@ extern bool md_compare2(int D, const long dims[__VLA(D)], const long str1[__VLA(
 			const long str2[__VLA(D)], const void* src2, size_t size);
 extern bool md_compare(int D, const long dims[__VLA(D)], const void* src1, const void* src2, size_t size);
 
+extern long md_calc_size(int D, const long dimensions[__VLA(D)]);
 
 typedef void* (*md_alloc_fun_t)(int D, const long dimensions[__VLA(D)], size_t size);
 
-extern void* md_alloc(int D, const long dimensions[__VLA(D)], size_t size);
+extern void* md_alloc_safe(int D, const long dimensions[__VLA(D)], size_t size, size_t total_size) alloc_size(4);
+
+inline void* md_alloc(int D, const long dimensions[__VLA(D)], size_t size)
+{
+	return md_alloc_safe(D, dimensions, size, (size_t)(md_calc_size(D, dimensions) * (long)size));
+}
+
 extern void* md_calloc(int D, const long dimensions[__VLA(D)], size_t size);
 #ifdef USE_CUDA
 extern void* md_alloc_gpu(int D, const long dimensions[__VLA(D)], size_t size);
@@ -119,7 +127,6 @@ extern void* md_mpi_move(int D, unsigned long dist_flags, const long dims[__VLA(
 extern void* md_mpi_moveF(int D, unsigned long dist_flags, const long dims[__VLA(D)], const void* ptr, size_t size);
 extern void* md_mpi_wrap(int D, unsigned long dist_flags, const long dims[__VLA(D)], const void* ptr, size_t size, _Bool writeback);
 
-extern long md_calc_size(int D, const long dimensions[__VLA(D)]);
 extern long* md_calc_strides(int D, long str[__VLA2(D)], const long dim[__VLA(D)], size_t size);
 extern long md_calc_offset(int D, const long strides[__VLA(D)], const long position[__VLA(D)]);
 extern int md_calc_blockdim(int D, const long dim[__VLA(D)], const long str[__VLA(D)], size_t size);
