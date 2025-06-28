@@ -1,6 +1,6 @@
 
-#ifndef __GRADIENT_H
-#define __GRADIENT_H
+#ifndef _GRADIENT_H
+#define _GRADIENT_H
 
 #include <stdbool.h>
 
@@ -26,5 +26,5 @@ extern double grad_momentum(struct grad_trapezoid* grad);
 extern bool grad_soft(struct grad_trapezoid* grad, double dur, double moment, struct grad_limits sys);
 extern bool grad_hard(struct grad_trapezoid* grad, double moment, struct grad_limits sys);
 
-#endif // __GRADIENT_H
+#endif // _GRADIENT_H
 

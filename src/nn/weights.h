@@ -1,5 +1,5 @@
-#ifndef NN_WEIGHTS_H
-#define NN_WEIGHTS_H
+#ifndef _NN_WEIGHTS_H
+#define _NN_WEIGHTS_H
 
 #include "nn/nn.h"
 

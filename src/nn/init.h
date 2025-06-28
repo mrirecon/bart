@@ -1,5 +1,5 @@
-#ifndef INITIALIZER_H
-#define INITIALIZER_H
+#ifndef _INITIALIZER_H
+#define _INITIALIZER_H
 
 struct initializer_s;
 typedef void (*initializer_f)(const struct initializer_s* conf, int N, const long dims[N], _Complex float* weights);

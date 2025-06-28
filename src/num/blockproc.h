@@ -3,8 +3,8 @@
  * a BSD-style license which can be found in the LICENSE file.
  */
 
-#ifndef __BLOCKPROC
-#define __BLOCKPROC
+#ifndef _BLOCKPROC_H
+#define _BLOCKPROC_H
 
 #include "misc/cppwrap.h"
 

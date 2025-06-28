@@ -3,8 +3,8 @@
  * a BSD-style license which can be found in the LICENSE file.
  */
  
-#ifndef __FINITE_DIFF
-#define __FINITE_DIFF
+#ifndef _FINITE_DIFF
+#define _FINITE_DIFF
 
 #include "misc/cppwrap.h"
 

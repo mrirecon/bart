@@ -1,5 +1,5 @@
-#ifndef __TGV_H
-#define __TGV_H
+#ifndef _ITER_TGV_H
+#define _ITER_TGV_H
 
 #include "linops/linop.h"
 struct reg {
@@ -25,5 +25,5 @@ extern struct reg2 tgv_reg(unsigned long flags, unsigned long jflags, float lamb
 extern struct reg2 ictv_reg(unsigned long flags, unsigned long jflags, float lambda, int N, const long in_dims[N], long isize, long* ext_shift, const float gamma[2], int tvscales_N, const float tvscales[tvscales_N], int tvscales2_N, const float tvscales2[tvscales2_N], const struct linop_s* lop_trafo);
 extern struct reg4 ictgv_reg(unsigned long flags, unsigned long jflags, float lambda, int N, const long in_dims[N], long isize, long* ext_shift, const float alpha[2], const float gamma[2], int tvscales_N, const float tvscales[tvscales_N], int tvscales2_N, const float tvscales2[tvscales2_N], const struct linop_s* lop_trafo);
 
-#endif // __TGV_H
+#endif // _ITER_TGV_H
 

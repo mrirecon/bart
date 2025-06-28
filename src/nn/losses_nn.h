@@ -1,5 +1,5 @@
-#ifndef NN_LOSSES_H
-#define NN_LOSSES_H
+#ifndef _NN_LOSSES_H
+#define _NN_LOSSES_H
 
 #include "nn/nn.h"
 

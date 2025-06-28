@@ -6,8 +6,8 @@
  * 2021 Tamás Hakkel <hakkelt@gmail.com>
  */
 
-#ifndef RAND_R_WINDOWS
-#define RAND_R_WINDOWS
+#ifndef _RAND_R_WINDOWS
+#define _RAND_R_WINDOWS
 
 #include <stdlib.h>
 #include "misc/misc.h"
@@ -23,4 +23,4 @@ int rand_r(unsigned int* /*seed*/)
 	return rand();
 }
 
-#endif /*  RAND_R_WINDOWS */
+#endif /*  _RAND_R_WINDOWS */

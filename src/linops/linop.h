@@ -6,8 +6,8 @@
 
 #include <complex.h>
 
-#ifndef __LINOP_H
-#define __LINOP_H
+#ifndef _LINOP_H
+#define _LINOP_H
 
 #include "misc/cppwrap.h"
 #include "misc/types.h"
@@ -137,5 +137,5 @@ void operator_linops_apply_joined_unchecked(int N, const struct operator_s* op[N
 
 #include "misc/cppwrap.h"
 
-#endif // __LINOP_H
+#endif // _LINOP_H
 

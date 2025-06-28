@@ -1,6 +1,6 @@
 
-#ifndef __STREAM_H
-#define __STREAM_H 1
+#ifndef _STREAM_H
+#define _STREAM_H 1
 
 #include "misc/cppwrap.h"
 
@@ -75,5 +75,5 @@ extern struct list_s* stream_get_events(struct stream* s, int N, long pos[__VLA(
 
 #include "misc/cppwrap.h"
 
-#endif	// __STREAM_H
+#endif	// _STREAM_H
 

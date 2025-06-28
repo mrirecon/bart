@@ -1,10 +1,6 @@
-/* Copyright 2013-2014. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
- * a BSD-style license which can be found in the LICENSE file.
- */
  
-#ifndef __SENSE_H
-#define __SENSE_H 1
+#ifndef _SENSE_H
+#define _SENSE_H 1
 
 #include "misc/mri.h"
 #include "iter/iter.h"

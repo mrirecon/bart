@@ -1,8 +1,4 @@
 
-#ifdef __cplusplus
-#error This file does not support C++
-#endif
-
 #include <stdlib.h>
 
 extern void merge_dims(int D, int N, long dims[N], long (*ostrs[D])[N]);

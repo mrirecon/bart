@@ -1,5 +1,5 @@
-#ifndef NN_ACTIVATIONS_H
-#define NN_ACTIVATIONS_H
+#ifndef _NN_ACTIVATIONS_H
+#define _NN_ACTIVATIONS_H
 
 #include "nn/nn.h"
 #include "nn/activation.h"

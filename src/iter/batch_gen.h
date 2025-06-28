@@ -1,5 +1,5 @@
-#ifndef BATCHGEN_H
-#define BATCHGEN_H
+#ifndef _BATCHGEN_H
+#define _BATCHGEN_H
 
 #include "misc/cppwrap.h"
 

@@ -1,6 +1,6 @@
 
-#ifndef __BART_CPP_WRAP
-#define __BART_CPP_WRAP
+#ifndef _BART_CPP_WRAP
+#define _BART_CPP_WRAP
 
 #ifdef __cplusplus
 extern "C" {
@@ -23,7 +23,7 @@ extern "C" {
 #endif
 
 #else
-#undef __BART_CPP_WRAP
+#undef _BART_CPP_WRAP
 
 #ifdef __cplusplus
 }

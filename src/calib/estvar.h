@@ -7,8 +7,8 @@
  * 2015 Siddharth Iyer <sid8795@gmail.com>
  */
 
-#ifndef __ESTVAR_H
-#define __ESTVAR_H
+#ifndef _ESTVAR_H
+#define _ESTVAR_H
 
 #include <complex.h>
 

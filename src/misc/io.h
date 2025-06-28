@@ -1,6 +1,6 @@
 
-#ifndef __IO_H
-#define __IO_H 1
+#ifndef _IO_H
+#define _IO_H 1
 
 #include "misc/cppwrap.h"
 
@@ -45,5 +45,5 @@ extern void io_memory_cleanup(void);
 
 #include "misc/cppwrap.h"
 
-#endif // __IO_H
+#endif // _IO_H
 

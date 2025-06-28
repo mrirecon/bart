@@ -1,6 +1,6 @@
 
-#ifndef __ITER_VEC_H
-#define __ITER_VEC_H
+#ifndef _ITER_VEC_H
+#define _ITER_VEC_H
 
 struct vec_iter_s {
 

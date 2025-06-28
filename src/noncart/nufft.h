@@ -1,9 +1,3 @@
-/* Copyright 2014-2015. The Regents of the University of California.
- * Copyright 2016-2020. Uecker Lab. University Medical Center Göttingen.
- * Copyright 2022. TU Graz. Institute of Biomedical Imaging.
- * All rights reserved. Use of this source code is governed by
- * a BSD-style license which can be found in the LICENSE file.
- */
 
 #include "misc/cppwrap.h"
 

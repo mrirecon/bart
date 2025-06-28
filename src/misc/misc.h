@@ -7,8 +7,8 @@
  * a BSD-style license which can be found in the LICENSE file.
  */
 
-#ifndef __MISC_H
-#define __MISC_H
+#ifndef _MISC_H
+#define _MISC_H
 
 #include <stdlib.h>
 #include <stddef.h>
@@ -143,5 +143,5 @@ extern char* construct_filename(int D, const long loopdims[__VLA(D)], const long
 
 #include "misc/cppwrap.h"
 
-#endif // __MISC_H
+#endif // _MISC_H
 

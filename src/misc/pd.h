@@ -1,11 +1,3 @@
-/* Copyright 2014. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
- * a BSD-style license which can be found in the LICENSE file.
- */
-
-#ifdef __cplusplus
-#error This file does not support C++
-#endif
 
 extern int poissondisc(int D, int N, int II, float vardens, float delta, float points[static N][D]);
 extern int poissondisc_mc(int D, int T, int N, int II, float vardens,

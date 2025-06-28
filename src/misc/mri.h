@@ -3,8 +3,8 @@
  * a BSD-style license which can be found in the LICENSE file.
  */
 
-#ifndef __MRI_H
-#define __MRI_H
+#ifndef _MRI_H
+#define _MRI_H
 
 #include "misc/cppwrap.h"
 
@@ -64,5 +64,5 @@ enum mri_dims {
 
 #include "misc/cppwrap.h"
 
-#endif	// __MRI_H
+#endif	// _MRI_H
 

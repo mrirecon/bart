@@ -1,16 +1,6 @@
-/* Copyright 2013-2015. The Regents of the University of California.
- * Copyright 2016-2020. Uecker Lab. University Medical Center Göttingen.
- * Copyright 2023. Institute of Biomedical Imaging. TU Graz.
- * All rights reserved. Use of this source code is governed by
- * a BSD-style license which can be found in the LICENSE file.
- */ 
 
 #include <complex.h>
 #include <stdbool.h>
-
-#ifdef __cplusplus
-#error This file does not support C++
-#endif
 
 extern void mat_identity(int A, int B, complex float x[A][B]);
 extern void mat_zero(int A, int B, complex float x[A][B]);
@@ -77,3 +67,4 @@ extern void vec_sadd(long D, complex float alpha, complex float dst[D], const co
 extern void thomas_algorithm(int N, complex float f[N], const complex float A[N][3], const complex float d[N]);
 
 extern void mat_band_reorder(int A, int B, double mat[A][A], double band[B][A], bool upper);
+

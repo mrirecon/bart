@@ -1,6 +1,6 @@
 
-#ifndef __ITER_MONITOR_H
-#define __ITER_MONITOR_H
+#ifndef _ITER_MONITOR_H
+#define _ITER_MONITOR_H
 
 
 struct iter_monitor_s;
@@ -46,4 +46,4 @@ struct monitor_iter6_s {
 
 void monitor_iter6(struct monitor_iter6_s* monitor, int epoch, int batch, int num_batches, float objective, long NI, const float* x[const NI], char* post_string);
 
-#endif // __ITER_MONITOR_H
+#endif // _ITER_MONITOR_H

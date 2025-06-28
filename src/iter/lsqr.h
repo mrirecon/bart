@@ -1,10 +1,6 @@
-/* Copyright 2014. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
- * a BSD-style license which can be found in the LICENSE file.
- */
  
-#ifndef __LSQR_H
-#define __LSQR_H 1
+#ifndef _ITER_LSQR_H
+#define _ITER_LSQR_H 1
 
 #include "iter/iter.h"
 #include "iter/iter2.h"

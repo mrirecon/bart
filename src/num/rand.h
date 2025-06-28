@@ -1,5 +1,5 @@
-#ifndef RAND_H
-#define RAND_H
+#ifndef _RAND_H
+#define _RAND_H
 
 #include "misc/cppwrap.h"
 
@@ -25,4 +25,5 @@ extern unsigned int rand_range_state(struct bart_rand_state* state, unsigned int
 extern unsigned long long rand_ull_state(struct bart_rand_state* state);
 
 #include "misc/cppwrap.h"
-#endif // RAND_H
+#endif // _RAND_H
+ 

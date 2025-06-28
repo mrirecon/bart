@@ -1,16 +1,10 @@
-/* Copyright 2014. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
- * a BSD-style license which can be found in the LICENSE file.
- *
- * 2012-10-28 Martin Uecker <uecker@eecs.berkeley.edu>
- */
 
 #include <complex.h>
 
 #include "misc/cppwrap.h"
 
-#ifndef __CONV_ENUMS
-#define __CONV_ENUMS
+#ifndef _CONV_ENUMS
+#define _CONV_ENUMS
 enum conv_mode { CONV_SYMMETRIC, CONV_CAUSAL, CONV_ANTICAUSAL };
 enum conv_type { CONV_CYCLIC, CONV_TRUNCATED, CONV_VALID, CONV_EXTENDED };
 #endif

@@ -1,5 +1,5 @@
-#ifndef OPTS_H
-#define OPTS_H
+#ifndef _OPTS_H
+#define _OPTS_H
 
 #include <stdbool.h>
 
@@ -195,5 +195,5 @@ extern void cmdline_synth(void (*print)(const char *fmt, ...),  int n, const str
 
 
 #include "misc/cppwrap.h"
-#endif //OPTS_H
+#endif // _OPTS_H
 

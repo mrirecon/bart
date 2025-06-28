@@ -1,10 +1,7 @@
 #include "misc/cppwrap.h"
 
-
 #include <stdint.h>
 #include <stddef.h>
-
-
 
 extern void init_mpi(int* argc, char*** argv);
 extern void deinit_mpi(void);
@@ -38,3 +35,4 @@ extern void  mpi_reduce_zsum_vector(long N, _Complex float ptr[__VLA(N)]);
 extern void mpi_reduce_land(long N, _Bool vec[__VLA(N)]);
 
 #include "misc/cppwrap.h"
+

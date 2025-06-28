@@ -1,5 +1,5 @@
-#ifndef STLMISC_H
-#define STLMISC_H
+#ifndef _STLMISC_H
+#define _STLMISC_H
 
 #define TOL 1E-14
 

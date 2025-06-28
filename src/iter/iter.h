@@ -1,11 +1,6 @@
-/* Copyright 2013-2018. The Regents of the University of California.
- * Copyright 2016-2019. Martin Uecker.
- * All rights reserved. Use of this source code is governed by
- * a BSD-style license which can be found in the LICENSE file.
- */
 
-#ifndef __ITER_H
-#define __ITER_H
+#ifndef _ITER_ITER_H
+#define _ITER_ITER_H
 
 struct operator_s;
 struct operator_p_s;

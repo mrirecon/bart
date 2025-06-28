@@ -1,6 +1,6 @@
 
-#ifndef __MRI2_H
-#define __MRI2_H
+#ifndef _MRI2_H
+#define _MRI2_H
 
 #include "misc/cppwrap.h"
 
@@ -19,5 +19,5 @@ extern void estimate_fast_sq_im_dims(int N, long dims[3], const long tdims[__VLA
 
 #include "misc/cppwrap.h"
 
-#endif	// __MRI2_H
+#endif	// _MRI2_H
 

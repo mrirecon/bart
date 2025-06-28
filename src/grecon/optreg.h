@@ -4,8 +4,8 @@
  * a BSD-style license which can be found in the LICENSE file.
  */
 
-#ifndef __OPTREG_H
-#define __OPTREG_H
+#ifndef _OPTREG_H
+#define _OPTREG_H
 
 #include "misc/cppwrap.h"
 

@@ -1,11 +1,6 @@
-/* Copyright 2014-2015. The Regents of the University of California.
- * Copyright 2016. Martin Uecker.
- * All rights reserved. Use of this source code is governed by
- * a BSD-style license which can be found in the LICENSE file.
- */
 
-#ifndef __SHEPPLOGAN_H
-#define __SHEPPLOGAN_H
+#ifndef _SHEPPLOGAN_H
+#define _SHEPPLOGAN_H
 
 #include <complex.h>
 
@@ -74,4 +69,5 @@ extern complex double phantom3d(int N, const struct ellipsis3d_s arr[__VLA(N)], 
 
 #include "misc/cppwrap.h"
 
-#endif	// __SHEPPLOGAN_H
+#endif	// _SHEPPLOGAN_H
+

@@ -1,6 +1,6 @@
 
-#ifndef SIMULATION_H
-#define SIMULATION_H
+#ifndef _SIMULATION_H
+#define _SIMULATION_H
 
 #include <complex.h>
 #include <stdbool.h>

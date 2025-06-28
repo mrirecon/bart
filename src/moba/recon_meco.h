@@ -1,14 +1,6 @@
-/* Copyright 2020. Uecker Lab, University Medical Center Goettingen.
- * All rights reserved. Use of this source code is governed by
- * a BSD-style license which can be found in the LICENSE file.
- * 
- * Authors:
- * 2019-2020 Martin Uecker <martin.uecker@med.uni-goettingen.de>
- * 2019-2020 Zhengguo Tan <zhengguo.tan@med.uni-goettingen.de>
- */
 
-#ifndef __RECON_MECO_H
-#define __RECON_MECO_H
+#ifndef _RECON_MECO_H
+#define _RECON_MECO_H
 
 #include "moba/meco.h"
 

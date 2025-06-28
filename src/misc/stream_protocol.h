@@ -1,6 +1,6 @@
 
-#ifndef __STREAM_PROTOCOL_H
-#define __STREAM_PROTOCOL_H 1
+#ifndef _STREAM_PROTOCOL_H
+#define _STREAM_PROTOCOL_H 1
 
 #include "misc/cppwrap.h"
 
@@ -45,5 +45,5 @@ extern _Bool stream_decode(struct stream_msg* msg, int l, const char buf[__VLA(l
 
 #include "misc/cppwrap.h"
 
-#endif	// __STREAM_PROTOCOL_H
+#endif	// _STREAM_PROTOCOL_H
 

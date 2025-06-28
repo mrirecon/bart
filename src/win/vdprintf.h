@@ -6,8 +6,8 @@
  * 2021 Tamás Hakkel <hakkelt@gmail.com>
  */
 
-#ifndef VDPRINTF_WINDOWS
-#define VDPRINTF_WINDOWS
+#ifndef _VDPRINTF_WINDOWS
+#define _VDPRINTF_WINDOWS
 
 #include <stdio.h>
 #include "misc/misc.h"
@@ -26,4 +26,4 @@ int vdprintf(int fd, const char *format, va_list ap)
 	return err;
 }
 
-#endif /*  VDPRINTF_WINDOWS */
+#endif /* _VDPRINTF_WINDOWS */

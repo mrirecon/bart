@@ -6,8 +6,8 @@
  * 2021 Tamás Hakkel <hakkelt@gmail.com>
  */
 
-#ifndef FMEMOPEN_WINDOWS
-#define FMEMOPEN_WINDOWS
+#ifndef _FMEMOPEN_WINDOWS
+#define _FMEMOPEN_WINDOWS
 
 FILE *fmemopen(void *buf, size_t len, const char *type);
 

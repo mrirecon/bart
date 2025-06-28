@@ -1,6 +1,6 @@
 
-#ifndef NN_CHAIN_H
-#define NN_CHAIN_H
+#ifndef _NN_CHAIN_H
+#define _NN_CHAIN_H
 
 #include "nn/nn.h"
 
@@ -66,3 +66,4 @@ extern nn_t nn_real_output_F(nn_t op, int o, const char* oname);
 extern nn_t nn_stack_multigpu_F(int N , nn_t x[N], int stack_dim);
 
 #endif
+

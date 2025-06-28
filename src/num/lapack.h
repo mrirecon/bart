@@ -1,14 +1,6 @@
-/* Copyright 2013-2017. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by
- * a BSD-style license which can be found in the LICENSE file.
- */
 
 #include <complex.h>
 #include <stdbool.h>
-
-#ifdef __cplusplus
-#error This file does not support C++
-#endif
 
 extern void lapack_eig(long N, float eigenval[N], complex float matrix[N][N]);
 extern void lapack_geig(long N, float eigenval[N], complex float A[N][N], complex float B[N][N]);

@@ -1,14 +1,10 @@
 /* Copyright 2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
- *
- * Authors:
- * 2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
-
-#ifndef __TYPES_H
-#define __TYPES_H
+#ifndef _TYPES_H
+#define _TYPES_H
 
 #include <stddef.h>
 #include <stdnoreturn.h>

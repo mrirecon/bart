@@ -4,8 +4,8 @@
  * a BSD-style license which can be found in the LICENSE file.
  */
 
-#ifndef __NIHT_H
-#define __NIHT_H
+#ifndef _ITER_NIHT_H
+#define _ITER_NIHT_H
 
 /**
  * struct containing linear transform operator for NIHT (e.g. wavelets)
@@ -47,4 +47,4 @@ void niht(const struct niht_conf_s* conf, const struct niht_transop* trans,
 	  struct iter_monitor_s* monitor);
 
 
-#endif // __NIHT_H
+#endif // _ITER_NIHT_H

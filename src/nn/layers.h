@@ -1,5 +1,5 @@
-#ifndef LAYERS_H
-#define LAYERS_H
+#ifndef _LAYERS_H
+#define _LAYERS_H
 
 #include "nlops/conv.h"
 #include "misc/cppwrap.h"

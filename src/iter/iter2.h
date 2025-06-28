@@ -1,11 +1,6 @@
-/* Copyright 2013-2017. The Regents of the University of California.
- * Copyright 2016-2019. Martin Uecker.
- * All rights reserved. Use of this source code is governed by
- * a BSD-style license which can be found in the LICENSE file.
- */
- 
-#ifndef __ITER2_H
-#define __ITER2_H
+
+#ifndef _ITER_ITER2_H
+#define _ITER_ITER2_H
 
 #include "misc/cppwrap.h"
 #include "misc/types.h"

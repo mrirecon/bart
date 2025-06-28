@@ -1,5 +1,5 @@
-#ifndef ITER6_H
-#define ITER6_H
+#ifndef _ITER_ITER6_H
+#define _ITER_ITER6_H
 
 
 #include "iter/italgos.h"

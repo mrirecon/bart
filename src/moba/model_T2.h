@@ -1,6 +1,4 @@
 
-
-
 #include "misc/mri.h"
 
 struct linop_s;

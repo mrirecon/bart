@@ -1,6 +1,6 @@
 
-#ifndef __PULSE_H
-#define __PULSE_H
+#ifndef _PULSE_H
+#define _PULSE_H
 
 #include <stdbool.h>
 #include <complex.h>
@@ -62,5 +62,5 @@ extern const struct pulse_hypsec pulse_hypsec_defaults;
 extern float pulse_hypsec_phase(const struct pulse_hypsec* pr, float t);
 extern void pulse_hypsec_init(struct pulse_hypsec* pr);
 
-#endif		// __PULSE_H
+#endif		// _PULSE_H
 

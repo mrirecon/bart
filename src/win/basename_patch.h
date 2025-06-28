@@ -6,8 +6,8 @@
  * 2021 Tamás Hakkel <hakkelt@gmail.com>
  */
 
-#ifndef BASENAME_PATCH_H
-#define BASENAME_PATCH_H
+#ifndef _BASENAME_PATCH_H
+#define _BASENAME_PATCH_H
 
 #include <stdlib.h>
 #include <string.h>
@@ -23,4 +23,4 @@ char* win_basename(const char *path) {
 
 #define basename(path) win_basename(path)
 
-#endif /* BASENAME_PATCH_H */
+#endif /* _BASENAME_PATCH_H */

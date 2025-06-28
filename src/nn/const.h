@@ -1,6 +1,6 @@
 
-#ifndef NN_CONST_H
-#define NN_CONST_H
+#ifndef _NN_CONST_H
+#define _NN_CONST_H
 
 #include "nn/nn.h"
 

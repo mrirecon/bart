@@ -1,5 +1,5 @@
-#ifndef NN_DATA_LIST_H
-#define NN_DATA_LIST_H
+#ifndef _NN_DATA_LIST_H
+#define _NN_DATA_LIST_H
 
 #include "iter/batch_gen.h"
 

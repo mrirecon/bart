@@ -1,6 +1,6 @@
 
-#ifndef PHANTOM_H
-#define PHANTOM_H
+#ifndef _PHANTOM_H
+#define _PHANTOM_H
 
 enum coil_type { COIL_NONE, HEAD_2D_8CH, HEAD_3D_64CH };
 
@@ -41,3 +41,4 @@ extern void calc_brain(const long dims[DIMS], complex float* out, bool kspace, c
 extern void calc_cfl_geom(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj, int D_max, long hdims[2][D_max], complex float* x[2], struct pha_opts* popts);
 
 #endif
+

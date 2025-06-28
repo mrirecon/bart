@@ -1,6 +1,6 @@
 
-#ifndef NN_CNN_H
-#define NN_CNN_H
+#ifndef _NN_CNN_H
+#define _NN_CNN_H
 
 #include "misc/mri.h"
 #include "misc/types.h"
@@ -94,3 +94,4 @@ extern struct network_varnet_s network_varnet_default;
 extern struct network_s network_mnist_default;
 
 #endif
+

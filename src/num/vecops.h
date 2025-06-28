@@ -1,12 +1,6 @@
-/* Copyright 2013-2017. The Regents of the University of California.
- * Copyright 2016-2019. Martin Uecker.
- * Copyright 2017. University of Oxford.
- * All rights reserved. Use of this source code is governed by
- * a BSD-style license which can be found in the LICENSE file.
- */
 
-#ifndef __VECOPS_H
-#define __VECOPS_H
+#ifndef _VECOPS_H
+#define _VECOPS_H
 
 extern const struct vec_ops cpu_ops;
 

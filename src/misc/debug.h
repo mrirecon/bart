@@ -5,8 +5,8 @@
  * a BSD-style license which can be found in the LICENSE file.
  */
 
-#ifndef __DEBUG_H
-#define __DEBUG_H 1
+#ifndef _DEBUG_H
+#define _DEBUG_H 1
 
 #include <stdarg.h>
 #include <stddef.h>
@@ -69,4 +69,4 @@ extern void vendor_log(int level,
 #include "misc/cppwrap.h"
 
 
-#endif // __DEBUG_H
+#endif // _DEBUG_H

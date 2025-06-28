@@ -1,6 +1,6 @@
 
-#ifndef NN_H
-#define NN_H
+#ifndef _NN_H
+#define _NN_H
 
 #include "misc/debug.h"
 

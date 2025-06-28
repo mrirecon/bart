@@ -1,11 +1,6 @@
-/* Copyright 2013-2017. The Regents of the University of California.
- * Copyright 2016-2017. Martin Uecker.
- * All rights reserved. Use of this source code is governed by
- * a BSD-style license which can be found in the LICENSE file.
- */
 
-#ifndef __ITALGOS_H
-#define __ITALGOS_H
+#ifndef _ITER_ITALGOS_H
+#define _ITER_ITALGOS_H
 
 #include "misc/cppwrap.h"
 
@@ -272,4 +267,4 @@ void lbfgs(int maxiter, int M, float step, float ftol, float gtol, float c1, flo
 
 #include "misc/cppwrap.h"
 
-#endif // __ITALGOS_H
+#endif // _ITER_ITALGOS_H

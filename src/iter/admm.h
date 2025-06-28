@@ -4,8 +4,8 @@
  * a BSD-style license which can be found in the LICENSE file.
  */ 
 
-#ifndef __ADMM_H
-#define __ADMM_H
+#ifndef _ITER_ADMM_H
+#define _ITER_ADMM_H
 
 #include "misc/cppwrap.h"
 #include "misc/types.h"

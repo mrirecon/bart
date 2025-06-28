@@ -1,6 +1,4 @@
 
-
-
 struct iter3_conf_s;
 struct iter_nlop_s;
 struct nlop_s;

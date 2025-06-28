@@ -1,7 +1,6 @@
-#ifndef GPURAND_H
-#define GPURAND_H
 
-
+#ifndef _GPURAND_H
+#define _GPURAND_H
 
 #include "misc/cppwrap.h"
 
@@ -13,4 +12,5 @@ extern void cuda_rand_one(long N, _Complex float* dst, double p, uint64_t state,
 
 #include "misc/cppwrap.h"
 
-#endif // GPURAND_H
+#endif // _GPURAND_H
+  

@@ -1,6 +1,6 @@
 
-#ifndef __ITER_DUMP_H
-#define __ITER_DUMP_H
+#ifndef _ITER_DUMP_H
+#define _ITER_DUMP_H
 
 struct typeid_s;
 struct nlop_s;
@@ -23,4 +23,4 @@ void iter_dump(const struct iter_dump_s* data, long epoch, long NI, const float*
 void iter_dump_free(const struct iter_dump_s* data);
 
 
-#endif // __ITER_DUMP_H
+#endif // _ITER_DUMP_H

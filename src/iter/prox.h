@@ -1,6 +1,6 @@
  
-#ifndef __PROX_H
-#define __PROX_H
+#ifndef _ITER_PROX_H
+#define _ITER_PROX_H
 
 #include "misc/cppwrap.h"
 

@@ -1,6 +1,6 @@
 
-#ifndef __ITALGO_H
-#define __ITALGO_H
+#ifndef _ITALGO_H
+#define _ITALGO_H
 
 // italgo_fun2_t
 #include "iter/iter2.h"

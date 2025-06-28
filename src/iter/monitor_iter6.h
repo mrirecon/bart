@@ -1,6 +1,6 @@
 
-#ifndef __MONITOR_ITER6_H
-#define __MONITOR_ITER6_H
+#ifndef _MONITOR_ITER6_H
+#define _MONITOR_ITER6_H
 
 
 struct monitor_iter6_s;
@@ -23,4 +23,4 @@ struct monitor_value_s* monitor_iter6_function_create(monitor_iter6_value_by_fun
 extern void monitor_iter6_dump_record(struct monitor_iter6_s* _monitor, const char* filename);
 
 
-#endif // __MONITOR_ITER6_H
+#endif // _MONITOR_ITER6_H

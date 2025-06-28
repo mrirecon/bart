@@ -1,6 +1,6 @@
 
-#ifndef __PADD_ENUMS
-#define __PADD_ENUMS
+#ifndef _PADD_ENUMS
+#define _PADD_ENUMS
 enum PADDING { PAD_VALID, PAD_SAME, PAD_CYCLIC, PAD_SYMMETRIC, PAD_REFLECT, PAD_CAUSAL };
 #endif
 

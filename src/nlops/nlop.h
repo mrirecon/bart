@@ -3,8 +3,8 @@
 
 #include "linops/linop.h"
 
-#ifndef NLOP_H
-#define NLOP_H
+#ifndef _NLOP_H
+#define _NLOP_H
 
 struct nlop_der_s;
 struct nlop_data_s;

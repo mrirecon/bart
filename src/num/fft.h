@@ -1,13 +1,6 @@
-/* Copyright 2013-2014. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
- * a BSD-style license which can be found in the LICENSE file.
- * 
- * Authors:
- * 2011, 2013 Martin Uecker <uecker@eecs.berkeley.edu>
- */
 
-#ifndef __FFT_H
-#define __FFT_H
+#ifndef _FFT_H
+#define _FFT_H
 
 #include <stdbool.h>
 

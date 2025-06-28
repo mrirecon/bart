@@ -1,5 +1,5 @@
-#ifndef NN_LAYERS_H
-#define NN_LAYERS_H
+#ifndef _NN_LAYERS_H
+#define _NN_LAYERS_H
 
 #include "nn/layers.h"
 #include "nn/nn.h"

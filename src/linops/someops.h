@@ -1,6 +1,6 @@
 
-#ifndef __SOMEOPS_H
-#define __SOMEOPS_H
+#ifndef _LINOPS_SOMEOPS_H
+#define _LINOPS_SOMEOPS_H
 
 #include <stdbool.h>
 
@@ -48,8 +48,8 @@ extern struct linop_s* linop_ifft_generic_create(int N, const long dims[N], unsi
 
 extern struct linop_s* linop_cdf97_create(int N, const long dims[__VLA(N)], unsigned long flag);
 
-#ifndef __PADD_ENUMS
-#define __PADD_ENUMS
+#ifndef _PADD_ENUMS
+#define _PADD_ENUMS
 enum PADDING { PAD_VALID, PAD_SAME, PAD_CYCLIC, PAD_SYMMETRIC, PAD_REFLECT, PAD_CAUSAL };
 #endif
 extern struct linop_s* linop_padding_create_onedim(int N, const long dims[N], enum PADDING pad_type, int pad_dim, long pad_for, long pad_after);
@@ -57,8 +57,8 @@ extern struct linop_s* linop_padding_create(int N, const long dims[N], enum PADD
 
 extern struct linop_s* linop_shift_create(int N, const long dims[__VLA(N)], int shift_dim, long shift, enum PADDING pad_type);
 
-#ifndef __CONV_ENUMS
-#define __CONV_ENUMS
+#ifndef _CONV_ENUMS
+#define _CONV_ENUMS
 enum conv_mode { CONV_SYMMETRIC, CONV_CAUSAL, CONV_ANTICAUSAL };
 enum conv_type { CONV_CYCLIC, CONV_TRUNCATED, CONV_VALID, CONV_EXTENDED };
 #endif
@@ -77,4 +77,4 @@ extern struct linop_s* linop_matrix_chain(const struct linop_s* a, const struct 
 extern struct linop_s* linop_hadamard_create(int N, const long in_dims[__VLA(N)], int hadamard_dim);
 
 #include "misc/cppwrap.h"
-#endif // __SOMEOPS_H
+#endif // _LINOPS_SOMEOPS_H
