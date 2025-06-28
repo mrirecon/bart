@@ -41,7 +41,7 @@ int main_conway(int argc, char* argv[argc])
 	const struct opt_s opts[] = {
 
 		OPT_SET('P', &periodic, "periodic boundary conditions"),
-		OPT_INT('n', &iter, "#", "nr. of iterations"),
+		OPT_PINT('n', &iter, "#", "nr. of iterations"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);

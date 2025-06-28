@@ -102,7 +102,7 @@ int main_ncalib(int argc, char* argv[argc])
 		OPT_SET('o', &conf.ret_os_coils, "return oversampled coils"),
 
 		OPT_SET('N', &normalize, "Normalize coil sensitivities"),
-		OPT_INT('m', &maps, "nmaps", "Number of ENLIVE maps to use in reconstruction"),
+		OPT_PINT('m', &maps, "nmaps", "Number of ENLIVE maps to use in reconstruction"),
 		OPTL_VEC3('x', "dims", &my_sens_dims, "x:y:z", "Explicitly specify sens dimensions"),
 		OPTL_FLOAT(0, "sens-os", &(oversampling_coils), "val", "(over-sampling factor for sensitivities)"),
 		OPTL_ULONG(0, "shared-img-dims", &shared_img_flags, "flags", "deselect image dims with flags"),

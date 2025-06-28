@@ -74,6 +74,7 @@ int main_compress(int argc, char* argv[argc])
 		md_decompress(DIMS, odims, out, idims, in, mdims, index, &fill, CFL_SIZE);
 
 		unmap_cfl(DIMS, odims, out);
+
 	} else {
 
 		long odims[DIMS];

@@ -143,13 +143,13 @@ int main_moba(int argc, char* argv[argc])
 		OPTL_SELECT(0, "IR-FLASH", enum sim_seq, &(data.sim.seq.seq_type), SEQ_IRFLASH, "Inversion-Recovery FLASH"),
 		OPTL_FLOAT(0, "TR", &(data.sim.seq.tr), "float", "Repetition time [s]"),
 		OPTL_FLOAT(0, "TE", &(data.sim.seq.te), "float", "Echo time [s]"),
-		OPTL_INT(0, "Nspins", &(data.sim.seq.spin_num), "int", "Number of averaged spins"),
-		OPTL_INT(0, "Nrep", &(data.sim.seq.rep_num), "int", "Number of repetitions"),
+		OPTL_PINT(0, "Nspins", &(data.sim.seq.spin_num), "int", "Number of averaged spins"),
+		OPTL_PINT(0, "Nrep", &(data.sim.seq.rep_num), "int", "Number of repetitions"),
 		OPTL_SET(0, "pinv", &(data.sim.seq.perfect_inversion), "Use perfect inversions"),
 		OPTL_FLOAT(0, "ipl", &(data.sim.seq.inversion_pulse_length), "float", "Inversion Pulse Length [s]"),
 		OPTL_FLOAT(0, "isp", &(data.sim.seq.inversion_spoiler), "float", "Inversion Spoiler Gradient Length [s]"),
 		OPTL_FLOAT(0, "ppl", &(data.sim.seq.prep_pulse_length), "float", "Preparation Pulse Length [s]"),
-		OPTL_INT(0, "av-spokes", &(data.sim.seq.averaged_spokes), "", "Number of averaged consecutive spokes"),
+		OPTL_PINT(0, "av-spokes", &(data.sim.seq.averaged_spokes), "", "Number of averaged consecutive spokes"),
 
         	/* Pulse Specific Parameters */
 		OPTL_FLOAT(0, "Trf", &(data.sim.pulse.rf_end), "float", "Pulse Duration [s]"), /* Assumes to start at t=0 */

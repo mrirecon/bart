@@ -32,17 +32,17 @@ int main_upat(int argc, char* argv[argc])
         dims[PHS1_DIM] = 128;
 	dims[PHS2_DIM] = 128;
 
-	unsigned int undy = 1;
-	unsigned int undz = 2;
-	unsigned int center = 0;
+	int undy = 1;
+	int undz = 2;
+	int center = 0;
 
 	const struct opt_s opts[] = {
 
 		OPT_LONG('Y', &dims[PHS1_DIM], "Y", "size Y"),
 		OPT_LONG('Z', &dims[PHS2_DIM], "Z", "size Z"),
-		OPT_UINT('y', &undy, "uy", "undersampling y"),
-		OPT_UINT('z', &undz, "uz", "undersampling z"),
-		OPT_UINT('c', &center, "cen", "size of k-space center"),
+		OPT_PINT('y', &undy, "uy", "undersampling y"),
+		OPT_PINT('z', &undz, "uz", "undersampling z"),
+		OPT_PINT('c', &center, "cen", "size of k-space center"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);

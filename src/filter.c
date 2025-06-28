@@ -60,13 +60,13 @@ int main_filter(int argc, char* argv[argc])
 
 	const struct opt_s opts[] = {
 
-		OPT_INT('m', &med, "dim", "median filter along dimension dim"),
-		OPT_INT('l', &len, "len", "length of filter"),
+		OPT_PINT('m', &med, "dim", "median filter along dimension dim"),
+		OPT_PINT('l', &len, "len", "length of filter"),
 		OPT_SET('G', &geom, "geometric median"),
-		OPT_INT('a', &mavg, "dim", "Moving average filter along dimension dim"),
+		OPT_PINT('a', &mavg, "dim", "Moving average filter along dimension dim"),
 
-		OPT_INT('d', &diff, "dim", "forward difference along dimension dim"),
-		OPT_INT('b', &back, "dim", "backward difference along dimension dim"),
+		OPT_PINT('d', &diff, "dim", "forward difference along dimension dim"),
+		OPT_PINT('b', &back, "dim", "backward difference along dimension dim"),
 		OPT_SET('Z', &zeroing, "set first (forward diff) or last (backward) value to zero"),
 	};
 

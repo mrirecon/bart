@@ -33,15 +33,15 @@ static const char help_str[] = "Casorati matrix with kernel (kern1, ..., kernN) 
 int main_casorati(int argc, char* argv[argc])
 {
 	int count = 0;
-	unsigned int* dims = NULL;
-	unsigned int* kerns = NULL;
+	int* dims = NULL;
+	int* kerns = NULL;
 	const char* in_file = NULL;
 	const char* out_file = NULL;
 
 	struct arg_s args[] = {
 
-		ARG_TUPLE(true, &count, 2, { OPT_UINT, sizeof(*dims), &dims, "dim" },
-					   { OPT_UINT, sizeof(*kerns), &kerns, "kern" }),
+		ARG_TUPLE(true, &count, 2, { OPT_INT, sizeof(*dims), &dims, "dim" },
+					   { OPT_INT, sizeof(*kerns), &kerns, "kern" }),
 		ARG_INFILE(true, &in_file, "input"),
 		ARG_OUTFILE(true, &out_file, "output"),
 	};
@@ -62,8 +62,8 @@ int main_casorati(int argc, char* argv[argc])
 
 	for (int i = 0; i < count; i++) {
 
-		unsigned int kdim = dims[i];
-		unsigned int ksize = kerns[i];
+		int kdim = dims[i];
+		int ksize = kerns[i];
 
 		assert(kdim < DIMS);
 		assert(ksize >= 1);

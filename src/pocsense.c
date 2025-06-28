@@ -73,7 +73,7 @@ int main_pocsense(int argc, char* argv[argc])
 
 		OPT_INT('i', &maxiter, "iter", "max. number of iterations"),
 		OPT_FLOAT('r', &alpha, "alpha", "regularization parameter"),
-		OPT_INT('l', &l1type, "1/-l2", "toggle l1-wavelet or l2 regularization"),
+		OPT_PINT('l', &l1type, "1/-l2", "toggle l1-wavelet or l2 regularization"),
 		OPT_SET('g', &bart_use_gpu, "()"),
 		OPT_FLOAT('o', &lambda, "", "()"),
 		OPT_FLOAT('m', &admm_rho, "", "()"),

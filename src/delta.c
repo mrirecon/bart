@@ -29,15 +29,15 @@ static const char help_str[] = "Kronecker delta.";
 int main_delta(int argc, char* argv[argc])
 {
 	int N = 0;
-	unsigned long flags = 0;
-	long len = 0;
+	unsigned long flags = 0UL;
+	int len = 0;
 	const char* out_file = NULL;
 
 	struct arg_s args[] = {
 
 		ARG_INT(true, &N, "dims"),
 		ARG_ULONG(true, &flags, "flags"),
-		ARG_LONG(true, &len, "size"),
+		ARG_INT(true, &len, "size"),
 		ARG_OUTFILE(true, &out_file, "out"),
 	};
 
@@ -46,8 +46,6 @@ int main_delta(int argc, char* argv[argc])
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
-
-	assert(N >= 0);
 
 	long dims[N];
 

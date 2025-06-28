@@ -58,7 +58,7 @@ int main_ccapply(int argc, char* argv[argc])
 		OPT_SELECT('S', enum cc_type, &cc_type, SCC, "type: SVD"),
 		OPT_SELECT('G', enum cc_type, &cc_type, GCC, "type: Geometric"),
 		OPT_SELECT('E', enum cc_type, &cc_type, ECC, "type: ESPIRiT"),
-		OPT_INT('A', &aligned, "dim", "Perform alignment of coil sensitivities along dimension A"),
+		OPT_PINT('A', &aligned, "dim", "Perform alignment of coil sensitivities along dimension A"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);

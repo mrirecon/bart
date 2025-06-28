@@ -117,6 +117,7 @@ int main_copy(int argc, char* argv[argc])
 	}
 
 	complex float* out_data = NULL;
+
 	if (!is_stream)
 		out_data = create_cfl(out_file, N, out_dims);
 	else

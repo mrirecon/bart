@@ -54,11 +54,11 @@ int main_ssa(int argc, char* argv[argc])
 
 	const struct opt_s opts[] = {
 
-		OPT_INT('w', &window, "window", "Window length"),
+		OPT_PINT('w', &window, "window", "Window length"),
 		OPT_CLEAR('z', &zeropad, "Zeropadding [Default: True]"),
-		OPT_INT('m', &rm_mean, "0/1", "Remove mean [Default: True]"),
-		OPT_INT('n', &normalize, "0/1", "Normalize [Default: False]"),
-		OPT_INT('r', &rank, "rank", "Rank for backprojection. r < 0: Throw away first r components. r > 0: Use only first r components."),
+		OPT_PINT('m', &rm_mean, "0/1", "Remove mean [Default: True]"),
+		OPT_PINT('n', &normalize, "0/1", "Normalize [Default: False]"),
+		OPT_PINT('r', &rank, "rank", "Rank for backprojection. r < 0: Throw away first r components. r > 0: Use only first r components."),
 		OPT_LONG('g', &group, "bitmask", "Bitmask for Grouping (long value!)"),
 	};
 

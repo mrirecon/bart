@@ -34,7 +34,7 @@ int main_onehotenc(int argc, char* argv[argc])
 	const struct opt_s opts[] = {
 
 		OPT_SET('r', &reverse, "get class label by maximum entry"),
-		OPT_INT('i', &class_index, "index", "select dimension"),
+		OPT_PINT('i', &class_index, "index", "select dimension"),
 	};
 
 	const char* input;

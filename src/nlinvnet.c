@@ -155,7 +155,7 @@ int main_nlinvnet(int argc, char* argv[argc])
 		
 		OPTL_SUBOPT('N', "network", "...", "select neural network", ARRAY_SIZE(network_opts), network_opts),
 		OPTL_INFILE(0,"filter", &filename_filter, "<filter>", "filter output of network block"),
-		OPTL_INT(0, "conv-time", &(nlinvnet.conv_time), "w", "convolve along dimension 10 with window size w"),
+		OPTL_PINT(0, "conv-time", &(nlinvnet.conv_time), "w", "convolve along dimension 10 with window size w"),
 		//OPTL_SELECT(0, "conv-time-causal", enum PADDING, &(nlinvnet.conv_padding), PAD_CAUSAL, "(Use causal convolution)"),
 		OPTL_SET(0, "ref-img", &(nlinvnet.ref_init_img), "(Feed image after initialization in every network.)"),
 		OPTL_SET(0, "ref-col-rt", &(nlinvnet.ref_init_col_rt), "(Temporal regularization for coil sensitivities.)"),
@@ -176,7 +176,7 @@ int main_nlinvnet(int argc, char* argv[argc])
 		OPTL_ULONG(0, "scaling-flags", &scl_flags, "flags", "scaling is increased with sqrt(selected dims)"),
 
 		OPTL_SET('g', "gpu", &bart_use_gpu, "run on gpu"),
-		OPTL_INT('b', "batch-size", &(Nb), "", "size of mini batches"),
+		OPTL_PINT('b', "batch-size", &(Nb), "", "size of mini batches"),
 
 		OPTL_SUBOPT(0, "valid-data", "...", "(provide validation data)", ARRAY_SIZE(valid_opts),valid_opts),
 

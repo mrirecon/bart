@@ -195,7 +195,7 @@ int main_wave(int argc, char* argv[argc])
 	const struct opt_s opts[] = {
 
 		OPT_FLOAT( 'r', &lambda,  "lambda", "Soft threshold lambda for wavelet or locally low rank."),
-		OPT_INT(   'b', &blksize, "blkdim", "Block size for locally low rank."),
+		OPT_PINT(  'b', &blksize, "blkdim", "Block size for locally low rank."),
 		OPT_INT(   'i', &maxiter, "mxiter", "Maximum number of iterations."),
 		OPT_FLOAT( 's', &step,    "stepsz", "Step size for iterative method."),
 		OPT_FLOAT( 'c', &cont,    "cntnu",  "Continuation value for IST/FISTA."),

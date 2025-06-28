@@ -47,8 +47,8 @@ int main_pol2mask(int argc, char* argv[argc])
 
 	const struct opt_s opts[] = {
 
-		OPT_INT('X', &X, "size", "size dimension 0"),
-		OPT_INT('Y', &Y, "size", "size dimension 1"),
+		OPT_PINT('X', &X, "size", "size dimension 0"),
+		OPT_PINT('Y', &Y, "size", "size dimension 1"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -109,7 +109,4 @@ int main_pol2mask(int argc, char* argv[argc])
 
 	return 0;
 }
-
-
-
 

@@ -159,8 +159,8 @@ int main_sim(int argc, char* argv[argc])
 		OPTL_SELECT(0, "CEST", enum sim_seq, &(data.seq.seq_type), SEQ_CEST, "CEST"),
 		OPTL_FLOAT(0, "TR", &(data.seq.tr), "float", "Repetition time [s]"),
 		OPTL_FLOAT(0, "TE", &(data.seq.te), "float", "Echo time [s]"),
-		OPTL_INT(0, "Nspins", &(data.seq.spin_num), "int", "Number of averaged spins"),
-		OPTL_INT(0, "Nrep", &(data.seq.rep_num), "int", "Number of repetitions"),
+		OPTL_PINT(0, "Nspins", &(data.seq.spin_num), "int", "Number of averaged spins"),
+		OPTL_PINT(0, "Nrep", &(data.seq.rep_num), "int", "Number of repetitions"),
 		OPTL_SET(0, "pinv", &(data.seq.perfect_inversion), "Use perfect inversions"),
 		OPTL_FLOAT(0, "ipl", &(data.seq.inversion_pulse_length), "float", "Inversion Pulse Length [s]"),
 		OPTL_FLOAT(0, "isp", &(data.seq.inversion_spoiler), "float", "Inversion Spoiler Gradient Length [s]"),
@@ -193,7 +193,7 @@ int main_sim(int argc, char* argv[argc])
 
 	struct opt_s pool_opts[] = {
 
-		OPT_INT('P', &(data.voxel.P), "int", "Number of pools"),
+		OPT_PINT('P', &(data.voxel.P), "int", "Number of pools"),
 		OPTL_FLVEC4(0, "T1", &T1pools, "<2nd pool>:<3rd pool>:<4th pool>:<5th pool>", "T1 values for further pools"),
 		OPTL_FLVEC4(0, "T2", &T2pools, "<2nd pool>:<3rd pool>:<4th pool>:<5th pool>", "T2 values for further pools"),
 		OPTL_FLVEC4(0, "Om", &Ompools, "<2nd pool>:<3rd pool>:<4th pool>:<5th pool>", "Om values for further pools"),
@@ -209,7 +209,7 @@ int main_sim(int argc, char* argv[argc])
 		OPTL_FLOAT(0, "gamma", &(data.cest.gamma), "float", "Gyromagnetic ratio [Mhz/T]"),
 		OPTL_FLOAT(0, "max", &(data.cest.off_start), "float", "Max offset [ppm]"),
 		OPTL_FLOAT(0, "min", &(data.cest.off_stop), "float", "Min offset [ppm]"),
-		OPTL_INT(0, "n_p", &(data.cest.n_pulses), "int", "Number of pulses"),
+		OPTL_PINT(0, "n_p", &(data.cest.n_pulses), "int", "Number of pulses"),
 		OPTL_FLOAT(0, "t_d", &(data.cest.t_d), "float", "Interpulse delay [s]"),
 		OPTL_FLOAT(0, "t_pp", &(data.cest.t_pp), "float", "Post-preparation delay [s]"),
 		OPTL_SET(0, "ref_scan", &(data.cest.ref_scan), "Use reference scan"),

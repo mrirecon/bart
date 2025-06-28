@@ -79,20 +79,20 @@ int main_poisson(int argc, char* argv[argc])
 	float mindist = 1. / 1.275;
 	float yscale = 1.;
 	float zscale = 1.;
-	unsigned int calreg = 0;
+	int calreg = 0;
 
 	const struct opt_s opts[] = {
 
-		OPT_INT('Y', &yy, "size", "size dimension 1"),
-		OPT_INT('Z', &zz, "size", "size dimension 2"),
+		OPT_PINT('Y', &yy, "size", "size dimension 1"),
+		OPT_PINT('Z', &zz, "size", "size dimension 2"),
 		OPT_FLOAT('y', &yscale, "acc", "acceleration dim 1"),
 		OPT_FLOAT('z', &zscale, "acc", "acceleration dim 2"),
-		OPT_UINT('C', &calreg, "size", "size of calibration region"),
+		OPT_PINT('C', &calreg, "size", "size of calibration region"),
 		OPT_SET('v', &vd_def, "variable density"),
 		OPT_FLOAT('V', &vardensity, "", "(variable density)"),
 		OPT_SET('e', &cutcorners, "elliptical scanning"),
 		OPT_FLOAT('D', &mindist, "", "()"),
-		OPT_INT('T', &T, "", "()"),
+		OPT_PINT('T', &T, "", "()"),
 		OPT_CLEAR('m', &msk, "()"),
 		OPT_INT('R', &points, "", "()"),
 		OPT_ULLONG('s', &randseed, "", "random seed initialization. '0' uses the default seed."),
@@ -253,9 +253,9 @@ int main_poisson(int argc, char* argv[argc])
 	assert((mask != NULL) || (0 == calreg));
 	assert((calreg <= dims[1]) && (calreg <= dims[2]));
 
-	for (int i = 0; i < (int)calreg; i++) {
+	for (int i = 0; i < calreg; i++) {
 
-		for (int j = 0; j < (int)calreg; j++) {
+		for (int j = 0; j < calreg; j++) {
 
 			int y = dims[1] / 2 - calreg / 2 + i;
 			int z = dims[2] / 2 - calreg / 2 + j;

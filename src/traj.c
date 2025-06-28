@@ -65,14 +65,14 @@ int main_traj(int argc, char* argv[argc])
 
 	const struct opt_s opts[] = {
 
-		OPT_INT('x', &X, "x", "readout samples"),
-		OPT_INT('y', &Y, "y", "phase encoding lines"),
-		OPT_INT('z', &Z, "z", "second phase encoding lines"),
-		OPT_INT('d', &D, "d", "full readout samples"),
-		OPT_INT('e', &E, "e", "number of echoes"),
-		OPT_INT('a', &conf.accel, "a", "acceleration"),
-		OPT_INT('t', &conf.turns, "t", "conf.turns"),
-		OPT_INT('m', &conf.mb, "mb", "SMS multiband factor"),
+		OPT_PINT('x', &X, "x", "readout samples"),
+		OPT_PINT('y', &Y, "y", "phase encoding lines"),
+		OPT_PINT('z', &Z, "z", "second phase encoding lines"),
+		OPT_PINT('d', &D, "d", "full readout samples"),
+		OPT_PINT('e', &E, "e", "number of echoes"),
+		OPT_PINT('a', &conf.accel, "a", "acceleration"),
+		OPT_PINT('t', &conf.turns, "t", "conf.turns"),
+		OPT_PINT('m', &conf.mb, "mb", "SMS multiband factor"),
 		OPT_SET('l', &conf.aligned, "aligned partition angle"),
 		OPT_SET('g', &conf.golden_partition, "(golden angle in partition direction)"),
 		OPT_SET('r', &conf.radial, "radial"),
@@ -93,7 +93,7 @@ int main_traj(int argc, char* argv[argc])
 		OPTL_VEC2(0, "z-us", &z_usamp, "accel", "(undersampling in z-direction.)"),
 		OPT_INFILE('C', &custom_angle_file, "file", "custom_angle file [phi + i * psi]"),
 		OPT_INFILE('V', &gdelays_file, "file", "(custom_gdelays)"),
-		OPTL_INT(0, "raga-inc", &raga_inc, "d", "increment of RAGA Sampling"),
+		OPTL_PINT(0, "raga-inc", &raga_inc, "d", "increment of RAGA Sampling"),
 		OPTL_OUTFILE(0, "raga-index-file", &raga_index_file, "file", "output file with indices of RAGA trajectory."),
 	};
 

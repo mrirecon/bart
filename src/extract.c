@@ -65,7 +65,7 @@ int main_extract(int argc, char* argv[argc])
 
 	long pos2[DIMS] = { [0 ... DIMS - 1] = 0 };
 
-	for (long i = 0; i < count; i++) {
+	for (int i = 0; i < count; i++) {
 
 		long dim = dims[i];
 		long start = starts[i];

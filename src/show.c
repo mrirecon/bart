@@ -106,7 +106,7 @@ int main_show(int argc, char* argv[argc])
 	const struct opt_s opts[] = {
 
 		OPT_SET('m', &meta, "show meta data"),
-		OPT_INT('d', &showdim, "dim", "show size of dimension"),
+		OPT_PINT('d', &showdim, "dim", "show size of dimension"),
 		OPT_SET('R', &real, "print only real part"),
 		OPT_SET('N', &index, "print index"),
 		OPT_STRING('s', &sep, "sep", "use <sep> as the separator"),

@@ -34,16 +34,16 @@ static const char help_str[] = "Resizes an array along dimensions to sizes by tr
 int main_resize(int argc, char* argv[argc])
 {
 	int count = 0;
-	unsigned int* dims = NULL;
-	unsigned int* sizes = NULL;
+	int* dims = NULL;
+	int* sizes = NULL;
 
 	const char* in_file = NULL;
 	const char* out_file = NULL;
 
 	struct arg_s args[] = {
 
-		ARG_TUPLE(true, &count, 2, { OPT_UINT, sizeof(*dims), &dims, "dim" },
-					   { OPT_UINT, sizeof(*sizes), &sizes, "size" }),
+		ARG_TUPLE(true, &count, 2, { OPT_PINT, sizeof(*dims), &dims, "dim" },
+					   { OPT_PINT, sizeof(*sizes), &sizes, "size" }),
 		ARG_INFILE(true, &in_file, "input"),
 		ARG_OUTFILE(true, &out_file, "output"),
 	};

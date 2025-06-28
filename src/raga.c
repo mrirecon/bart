@@ -42,8 +42,8 @@ int main_raga(int argc, char* argv[argc])
 
 	const struct opt_s opts[] = {
 
-		OPTL_INT('s', "tiny-angle", &tiny_gold, "# Tiny GA", "tiny (small) golden ratio angle"),
-		OPTL_INT('r', "raga-inc", &raga_inc, "d", "Increment of RAGA Sampling"),
+		OPTL_PINT('s', "tiny-angle", &tiny_gold, "# Tiny GA", "tiny (small) golden ratio angle"),
+		OPTL_PINT('r', "raga-inc", &raga_inc, "d", "Increment of RAGA Sampling"),
 		OPTL_CLEAR(0, "no-double-base", &double_base, "Define GA over Pi base instead of 2Pi."),
 	};
 

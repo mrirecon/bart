@@ -72,14 +72,14 @@ int main_wavepsf(int argc, char* argv[argc])
 
 	const struct opt_s opts[] = {
 		OPT_SET('c', &cs, "Set to use a cosine gradient wave"),
-		OPT_INT('x', &sx, "RO_dim", "Number of readout points"),
-		OPT_INT('y', &sy, "PE_dim", "Number of phase encode points"),
+		OPT_PINT('x', &sx, "RO_dim", "Number of readout points"),
+		OPT_PINT('y', &sy, "PE_dim", "Number of phase encode points"),
 		OPT_FLOAT('r', &dy, "PE_res", "Resolution of phase encode in cm"),
-		OPT_INT('a', &adc, "ADC_T", "Readout duration in microseconds."),
+		OPT_PINT('a', &adc, "ADC_T", "Readout duration in microseconds."),
 		OPT_FLOAT('t', &dt, "ADC_dt", "ADC sampling rate in seconds"),
 		OPT_FLOAT('g', &gmax, "gMax", "Maximum gradient amplitude in Gauss/cm"),
 		OPT_FLOAT('s', &smax, "sMax", "Maximum gradient slew rate in Gauss/cm/second"),
-		OPT_INT('n', &ncyc, "ncyc", "Number of cycles in the gradient wave"),
+		OPT_PINT('n', &ncyc, "ncyc", "Number of cycles in the gradient wave"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);

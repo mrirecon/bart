@@ -46,7 +46,7 @@ static bool help_func_calc(void* /*ptr*/, char /*c*/, const char* /*optarg*/)
 {
 	printf( "Available functions are:\n");
 
-	for (unsigned int i = 0; i < ARRAY_SIZE(calc_table); i++) {
+	for (int i = 0; i < (int)ARRAY_SIZE(calc_table); i++) {
 
 		if (0 == i % 6)
 			printf("\n");

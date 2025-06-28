@@ -953,7 +953,7 @@ int main_wshfl(int argc, char* argv[argc])
 
 	const struct opt_s opts[] = {
 		{ 'R', NULL, true, OPT_SPECIAL, opt_reg, &ropts, "<T>:A:B:C", "Generalized regularization options. (-Rh for help)" },
-		OPT_INT(    'b', &blksize, "blkdim",    "Block size for locally low rank."),
+		OPT_PINT(   'b', &blksize, "blkdim",    "Block size for locally low rank."),
 		OPT_INT(    'i', &maxiter, "mxiter",    "Maximum number of iterations."),
 		OPT_INT(    'j', &cgiter,  "cgiter",    "Maximum number of CG iterations in ADMM."),
 		OPT_FLOAT(  's', &rho,     "admrho",    "ADMM Rho value."),

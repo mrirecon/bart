@@ -30,8 +30,8 @@ int main_mandelbrot(int argc, char* argv[argc])
 		ARG_OUTFILE(true, &out_file, "output"),
 	};
 
-	unsigned int size = 512;
-	unsigned int iter = 20;
+	int size = 512;
+	int iter = 20;
 	float zoom = .20; // 0.3
 	float thresh = 4.;
 	float offr = 0.0; // 0.4
@@ -40,8 +40,8 @@ int main_mandelbrot(int argc, char* argv[argc])
 
 	const struct opt_s opts[] = {
 
-		OPT_UINT('s', &size, "size", "image size"),
-		OPT_UINT('n', &iter, "#", "nr. of iterations"),
+		OPT_PINT('s', &size, "size", "image size"),
+		OPT_PINT('n', &iter, "#", "nr. of iterations"),
 		OPT_FLOAT('t', &thresh, "t", "threshold for divergence"),
 		OPT_FLOAT('z', &zoom, "z", "zoom"),
 		OPT_FLOAT('r', &offr, "r", "offset real"),
@@ -76,7 +76,7 @@ int main_mandelbrot(int argc, char* argv[argc])
 	complex float* prev = o;
 	long skip = md_calc_size(2, dims);
 
-	for (int i = 0; i < (int)iter; i++) {
+	for (int i = 0; i < iter; i++) {
 
 		// iteration x -> x * x + c
 		md_zmul(2, dims, x, x, x);

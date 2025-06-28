@@ -544,7 +544,7 @@ int main_twixread(int argc, char* argv[argc])
 		OPT_SET('N', &noise, "only get noise"),
 		OPTL_SET(0, "rational", &rational, "Rational Approximation Sampling"),
 		OPT_SET('M', &mpi, "MPI mode"),
-		OPTL_INT(0, "bin", &bin, "d", "Binning of spokes for RAGA sampled data"),
+		OPTL_PINT(0, "bin", &bin, "d", "Binning of spokes for RAGA sampled data"),
 		OPT_CLEAR('X', &check_read, "no consistency check for number of read acquisitions"),
 		OPT_INT('d', &debug_level, "level", "Debug level"),
 	};

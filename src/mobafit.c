@@ -188,13 +188,13 @@ int main_mobafit(int argc, char* argv[argc])
 		/* Sequences Specific Parameters */
 		OPTL_FLOAT(0, "TR", &(sim.seq.tr), "float", "Repetition time [s]"),
 		OPTL_FLOAT(0, "TE", &(sim.seq.te), "float", "Echo time [s]"),
-		OPTL_INT(0, "Nspins", &(sim.seq.spin_num), "int", "Number of averaged spins"),
-		OPTL_INT(0, "Nrep", &(sim.seq.rep_num), "int", "Number of repetitions"),
+		OPTL_PINT(0, "Nspins", &(sim.seq.spin_num), "int", "Number of averaged spins"),
+		OPTL_PINT(0, "Nrep", &(sim.seq.rep_num), "int", "Number of repetitions"),
 		OPTL_SET(0, "pinv", &(sim.seq.perfect_inversion), "Use perfect inversions"),
 		OPTL_FLOAT(0, "ipl", &(sim.seq.inversion_pulse_length), "float", "Inversion Pulse Length [s]"),
 		OPTL_FLOAT(0, "isp", &(sim.seq.inversion_spoiler), "float", "Inversion Spoiler Gradient Length [s]"),
 		OPTL_FLOAT(0, "ppl", &(sim.seq.prep_pulse_length), "float", "Preparation Pulse Length [s]"),
-		OPTL_INT(0, "av-spokes", &(sim.seq.averaged_spokes), "", "Number of averaged consecutive spokes"),
+		OPTL_PINT(0, "av-spokes", &(sim.seq.averaged_spokes), "", "Number of averaged consecutive spokes"),
 		OPTL_FLOAT(0, "m0", &(sim.voxel.m0[0]), "float", "m0"),
 
 		/* Pulse Specific Parameters */
@@ -220,7 +220,7 @@ int main_mobafit(int argc, char* argv[argc])
 
 	struct opt_s pool_opts[] = {
 
-		OPT_INT('P', &(sim.voxel.P), "int", "Number of pools"),
+		OPT_PINT('P', &(sim.voxel.P), "int", "Number of pools"),
 	};
 
 	struct opt_s cest_opts[] = {
@@ -230,7 +230,7 @@ int main_mobafit(int argc, char* argv[argc])
 		OPTL_FLOAT(0, "gamma", &(sim.cest.gamma), "float", "Gyromagnetic ratio [Mhz/T]"),
 		OPTL_FLOAT(0, "max", &(sim.cest.off_start), "float", "Max offset [ppm]"),
 		OPTL_FLOAT(0, "min", &(sim.cest.off_stop), "float", "Min offset [ppm]"),
-		OPTL_INT(0, "n_p", &(sim.cest.n_pulses), "int", "Number of pulses"),
+		OPTL_PINT(0, "n_p", &(sim.cest.n_pulses), "int", "Number of pulses"),
 		OPTL_FLOAT(0, "t_d", &(sim.cest.t_d), "float", "Interpulse delay [s]"),
 		OPTL_FLOAT(0, "t_pp", &(sim.cest.t_pp), "float", "Post-preparation delay [s]"),
 		OPTL_SET(0, "ref_scan", &(sim.cest.ref_scan), "Use reference scan"),

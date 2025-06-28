@@ -71,7 +71,7 @@ int main_estmotion(int argc, char* argv[argc])
 	const struct opt_s opts[] = {
 
 		OPT_SET('g', &bart_use_gpu, "use gpu (if available)"),
-		OPT_INT('l', &levels, "", "number of levels in Gaussian pyramide"),
+		OPT_PINT('l', &levels, "", "number of levels in Gaussian pyramide"),
 		OPTL_CLEAR(0, "optical-flow", &synalgo, "use optical flow instead of greedy SyN"),
 		OPT_FLOAT('r', &lambda, "lambda", "regularization strength for TV (optical flow)"),
 		OPTL_FLOAT(0, "max-flow", &maxnorm, "max", "constraint on flow magnitude (optical flow)"),

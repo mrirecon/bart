@@ -176,7 +176,7 @@ int main_threshold(int argc, char* argv[argc])
 		OPT_SELECT('B', enum th_type, &th_type, BINARY, "thresholding with binary output where (val>lambda)"),
 		OPT_SELECT('M', enum th_type, &th_type, BINARY_MAX, "thresholding with binary output where (val<lambda)"),
 		OPT_ULONG('j', &flags, "bitmask", "joint soft-thresholding"),
-		OPT_INT('b', &llrblk, "blocksize", "locally low rank block size"),
+		OPT_PINT('b', &llrblk, "blocksize", "locally low rank block size"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
