@@ -326,9 +326,7 @@ int main_sim(int argc, char* argv[argc])
 	md_free(td);
 
 	unmap_cfl(DIMS, mdims, signals);
-
-	if (NULL != out_deriv)
-		unmap_cfl(DIMS, ddims, deriv);
+	unmap_cfl(DIMS, ddims, deriv);
 
 	return 0;
 }

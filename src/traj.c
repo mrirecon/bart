@@ -430,12 +430,8 @@ int main_traj(int argc, char* argv[argc])
 		unmap_cfl(DIMS, dims2, indices);
 	}
 
-	if (NULL != gdelays2)
-		unmap_cfl(DIMS, gdims, gdelays2);
-
-	if (NULL != custom_angle_vals)
-		unmap_cfl(DIMS, sdims, custom_angle_vals);
-
+	unmap_cfl(DIMS, gdims, gdelays2);
+	unmap_cfl(DIMS, sdims, custom_angle_vals);
 	unmap_cfl(DIMS, dims, samples);
 
 	return 0;

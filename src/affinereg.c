@@ -137,12 +137,8 @@ int main_affinereg(int argc, char* argv[argc])
 	unmap_cfl(DIMS, mdims, mov_ptr);
 	unmap_cfl(DIMS, rdims, ref_ptr);
 	unmap_cfl(DIMS, aff_dims, affine);	
-
-	if (NULL != msk_mov_file) {
-
-		unmap_cfl(DIMS, mdims, msk_mov_ptr);
-		unmap_cfl(DIMS, rdims, msk_ref_ptr);
-	}
+	unmap_cfl(DIMS, mdims, msk_mov_ptr);
+	unmap_cfl(DIMS, rdims, msk_ref_ptr);
 
 	return 0;
 }

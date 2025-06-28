@@ -261,9 +261,7 @@ int main_rmfreq(int argc, char* argv[argc])
 
 	unmap_cfl(DIMS, k_dims, k);
 	unmap_cfl(DIMS, k_dims, k_cor);
-
-	if (NULL != mod_file)
-		unmap_cfl(DIMS, mod_dims, mod);
+	unmap_cfl(DIMS, mod_dims, mod);
 
 	xfree(n_mod);
 

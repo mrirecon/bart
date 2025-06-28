@@ -507,12 +507,8 @@ int main_nlinvnet(int argc, char* argv[argc])
 
 	unmap_cfl(DIMS, pat_dims, pattern);
 	unmap_cfl(DIMS, ksp_dims, kspace);
-
-	if (NULL != basis)
-		unmap_cfl(DIMS, bas_dims, basis);
-
-	if (NULL != nlinvnet.filter)
-		unmap_cfl(DIMS, fil_dims, nlinvnet.filter);
+	unmap_cfl(DIMS, bas_dims, basis);
+	unmap_cfl(DIMS, fil_dims, nlinvnet.filter);
 
 	double recosecs = timestamp() - start_time;
 

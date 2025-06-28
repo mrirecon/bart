@@ -68,4 +68,3 @@ int main_saxpy(int argc, char* argv[argc])
 	return 0;
 }
 
-

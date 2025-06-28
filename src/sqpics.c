@@ -726,17 +726,10 @@ int main_sqpics(int argc, char* argv[argc])
 	unmap_cfl(DIMS, map_dims, maps);
 	unmap_cfl(DIMS, ksp_dims, kspace);
 	unmap_cfl(DIMS, img_dims, image);
+	unmap_cfl(DIMS, traj_dims, traj);
+	unmap_cfl(DIMS, img_dims, image_truth);
 
-	if (NULL != traj)
-		unmap_cfl(DIMS, traj_dims, traj);
-
-	if (im_truth) {
-
-		xfree(image_truth_file);
-
-		unmap_cfl(DIMS, img_dims, image_truth);
-	}
-
+	xfree(image_truth_file);
 
 	double end_time = timestamp();
 

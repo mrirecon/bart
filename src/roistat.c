@@ -139,14 +139,14 @@ int main_roistat(int argc, char* argv[argc])
 	md_clear(DIMS, odims, pat, CFL_SIZE);
 	md_zaxpy2(DIMS, mdims, ostrs, pat, 1., rstrs, roi);
 
-	complex float* avg;
-	complex float* var;
-	complex float* tmp;
+	complex float* avg = NULL;
+	complex float* var = NULL;
+	complex float* tmp = NULL;
 
 	long pos[DIMS] = { };
 
 	if (COUNT == stat)
-		goto out1;
+		goto out;
 
 	avg = (avg_name ? create_cfl : anon_cfl)(avg_name, DIMS, odims);
 
@@ -154,12 +154,12 @@ int main_roistat(int argc, char* argv[argc])
 	md_zfmac2(DIMS, mdims, ostrs, avg, rstrs, roi, istrs, in);
 
 	if (SUM == stat)
-		goto out2;
+		goto out;
 
 	md_zdiv(DIMS, odims, avg, avg, pat);
 
 	if (MEAN == stat)
-		goto out2;
+		goto out;
 
 	if (bessel)
 		md_zsub2(DIMS, odims, ostrs, pat, ostrs, pat, sstrs, (complex float[1]){ 1. });
@@ -187,17 +187,17 @@ int main_roistat(int argc, char* argv[argc])
 	md_free(tmp);
 
 	if (ENERGY == stat)
-		goto out3;
+		goto out;
 
 	md_zdiv(DIMS, odims, var, var, pat);
 
 	if (VAR == stat)
-		goto out3;
+		goto out;
 
 	md_zsqrt(DIMS, odims, var, var);
 
 	if (STD == stat)
-		goto out3;
+		goto out;
 
 	assert(ALL == stat);
 
@@ -219,11 +219,9 @@ int main_roistat(int argc, char* argv[argc])
 
 	} while (md_next(DIMS, odims, rflags, pos));
 
-out3:
+out:
 	unmap_cfl(DIMS, odims, var);
-out2:
 	unmap_cfl(DIMS, odims, avg);
-out1:
 	unmap_cfl(DIMS, odims, pat);
 	unmap_cfl(DIMS, rdims, roi);
 	unmap_cfl(DIMS, idims, in);

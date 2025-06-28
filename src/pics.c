@@ -927,19 +927,14 @@ int main_pics(int argc, char* argv[argc])
 		md_free(pattern);
 
 	unmap_cfl(DIMS, img_dims, image);
-
-	if (NULL != image_truth) {
+	unmap_cfl(DIMS, img_dims, image_start);
 
 #ifdef USE_CUDA
-		if (conf.gpu)
-			md_free(image_truth);
-		else
+	if (conf.gpu)
+		md_free(image_truth);
+	else
 #endif
-			unmap_cfl(DIMS, img_dims, image_truth);
-	}
-
-	if (image_start)
-		unmap_cfl(DIMS, img_dims, image_start);
+		unmap_cfl(DIMS, img_dims, image_truth);
 
 	if (kspace_p != kspace)
 		md_free(kspace_p);
@@ -952,9 +947,7 @@ int main_pics(int argc, char* argv[argc])
 
 	unmap_cfl(DIMS, map_dims, maps);
 	unmap_cfl(DIMS, ksp_dims, kspace);
-
-	if (NULL != traj)
-		unmap_cfl(DIMS, traj_dims, traj);
+	unmap_cfl(DIMS, traj_dims, traj);
 
 	double end_time = timestamp();
 

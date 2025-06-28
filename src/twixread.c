@@ -640,7 +640,7 @@ int main_twixread(int argc, char* argv[argc])
 
 	long pmu_dims[DIMS];
 	md_select_dims(DIMS, ~(READ_FLAG|COIL_FLAG), pmu_dims, dims);
-	complex float* pmu;
+	complex float* pmu = NULL;
 	complex float pmu_val;
 
 	if (pmu_out) {
@@ -750,9 +750,7 @@ int main_twixread(int argc, char* argv[argc])
 	md_free(buf);
 
 	unmap_cfl(DIMS, dims, out);
-
-	if (pmu_out)
-		unmap_cfl(DIMS, pmu_dims, pmu);
+	unmap_cfl(DIMS, pmu_dims, pmu);
 
 	return 0;
 }

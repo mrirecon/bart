@@ -1199,6 +1199,9 @@ complex float* anon_cfl(const char* /*name*/, int D, const long dims[D])
 
 void unmap_raw(const void* data, size_t size)
 {
+	if (NULL == data)
+		return;
+
 	if (-1 == munmap((void*)data, size))
 		io_error("unmap raw");
 }
@@ -1282,6 +1285,9 @@ static int munmap_rounded(const complex float* x, long sz)
 
 void unmap_cfl(int D, const long dims[D], const complex float* x)
 {
+	if (NULL == x)
+		return;
+
 	if (memcfl_unmap(x))
 		return;
 
@@ -1314,6 +1320,9 @@ void unmap_cfl(int D, const long dims[D], const complex float* x)
 
 void unmap_shared_cfl(int D, const long dims[D], const complex float* x)
 {
+	if (NULL == x)
+		return;
+
 	long T;
 
 	if (-1 == (T = io_calc_size(D, dims, sizeof(complex float))))

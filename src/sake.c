@@ -77,6 +77,7 @@ int main_sake(int argc, char* argv[argc])
 
 	unmap_cfl(DIMS, dims, out_data);
 	unmap_cfl(DIMS, dims, in_data);
+
 	return 0;
 }
 

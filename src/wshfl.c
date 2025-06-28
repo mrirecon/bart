@@ -1258,9 +1258,7 @@ int main_wshfl(int argc, char* argv[argc])
 	unmap_cfl(DIMS, reorder_dims, reorder);
 	unmap_cfl(DIMS, table_dims, table);
 	unmap_cfl(DIMS, coeff_dims, recon);
-
-	if (x0 != NULL)
-		unmap_cfl(DIMS, coeff_dims, init);
+	unmap_cfl(DIMS, coeff_dims, init);
 
 	debug_printf(DP_INFO, "Done.\n");
 

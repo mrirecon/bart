@@ -191,9 +191,7 @@ int main_ssa(int argc, char* argv[argc])
 
 	xfree(S_square);
 
-	if (NULL != backproj_file)
-		unmap_cfl(DIMS, back_dims, back);
-
+	unmap_cfl(DIMS, back_dims, back);
 	unmap_cfl(2, U_dims, U);
 	unmap_cfl(DIMS, in_dims, in);
 
