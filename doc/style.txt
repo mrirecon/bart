@@ -3,7 +3,7 @@
 
 1. Language
 
-	The main language is C11 with commonly used GNU extensions (gnu11)
+	The main language is C17 with commonly used GNU extensions (gnu17)
 	as supported by the GCC and clang compilers.
 
 
@@ -16,14 +16,13 @@
 	complex float
 	complex double
 
-	In headers we use _Complex without including the standard header
-	for complex types for compatibility with C++. Similarly, we use
-	the standard boolean type.
+	Similarly, we use the standard boolean type.
 
 	#include <stdbool.h>
 
 	bool x = true;
 
+	In headers that have to be compatible with C++, we have to use _Complex.
 
 1.2. Arrays
 
@@ -37,7 +36,7 @@
 	complex float* image = md_alloc(N, dims, CFL_SIZE);
 
 	In headers, we use the __VLA(x) macro for compatibility with C++
-	when this is possible.
+	when this is necessary.
 
 
 1.2. GNU Extensions:
@@ -45,9 +44,6 @@
 	Some extensions a commonly supported by compilers and useful.
 
 	statement expressions ({  })
-	__typeof__
-
-	const array parameters
 
 
 1.3. Type safety
@@ -75,7 +71,8 @@
 	White space errors (white space after the last visible
         character of a line) should be avoided.
 
-	Labels should be indented one tab less than the actual code.
+	Labels should be indented one tab less than the actual code.  This
+	includes case labels!
 
 	pragmas should start at the beginning of a line.
 	The "omp" in OpenMP pragmas should be aligned to the affected statement
@@ -155,6 +152,7 @@
 
 	Comments should be used to document the API, explain complicated
 	code and algorithms, and give required background information.
+	For single line comments use // for blocks /* */.
 
 	Comments are not meant to explain things a competent programmer
 	should know by reading the code.
@@ -227,6 +225,6 @@
 
 	Include guards should use the following style
 
-	  __NAME_H
+	  _NAME_H
 
 	where NAME is the basename of the header file.
