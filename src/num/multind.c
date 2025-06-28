@@ -283,26 +283,8 @@ void md_loop(int D, const long dim[D], md_loop_fun_t fun)
 /**
  * Computes the next position. Returns true until last index.
  */
-bool md_next(int D, const long dims[D], unsigned long flags, long pos[D])
-{
-	if (0 == D--)
-		return false;
+extern bool md_next(int D, const long dims[D], unsigned long flags, long pos[D]);
 
-	if (md_next(D, dims, flags, pos))
-		return true;
-
-	if (MD_IS_SET(flags, D)) {
-
-		assert((0 <= pos[D]) && (pos[D] < dims[D]));
-
-		if (++pos[D] < dims[D])
-			return true;
-
-		pos[D] = 0;
-	}
-
-	return false;
-}
 
 
 /**
@@ -367,13 +349,7 @@ long md_calc_offset(int D, const long strides[D], const long position[D])
 
 
 
-static long md_calc_size_r(int D, const long dim[D], size_t size)
-{
-	if (0 == D)
-		return (long)size;
-
-	return md_calc_size_r(D - 1, dim, (size_t)((long)size * dim[D - 1]));
-}
+extern long md_calc_size_r(int D, const long dim[D], size_t size);
 
 /**
  * Returns the number of elements
@@ -383,10 +359,7 @@ static long md_calc_size_r(int D, const long dim[D], size_t size)
  * @param D number of dimensions
  * @param dim dimensions array
  */
-long md_calc_size(int D, const long dim[D])
-{
-	return md_calc_size_r(D, dim, 1);
-}
+extern long md_calc_size(int D, const long dim[D]);
 
 
 
@@ -456,10 +429,10 @@ void md_select_strides(int D, unsigned long flags, long ostrs[D], const long ist
  *
  * odims[i] = idims[i]
  */
-void md_copy_dims(int D, long odims[D], const long idims[D])
-{
-	memcpy(odims, idims, (size_t)(D * (long)sizeof(long)));
-}
+extern void md_copy_dims(int D, long odims[D], const long idims[D]);
+
+
+
 
 /**
  * Copy dimensions
@@ -477,10 +450,7 @@ void md_copy_order(int D, int odims[D], const int idims[D])
  *
  * ostrs[i] = istrs[i]
  */
-void md_copy_strides(int D, long ostrs[D], const long istrs[D])
-{
-	memcpy(ostrs, istrs, (size_t)(D  * (long)sizeof(long)));
-}
+extern void md_copy_strides(int D, long ostrs[D], const long istrs[D]);
 
 
 
@@ -724,18 +694,7 @@ void md_clear2(int D, const long dim[D], const long str[D], void* ptr, size_t si
  * @param dim array of dimensions
  * @param size of a single element
  */
-long* md_calc_strides(int D, long str[D], const long dim[D], size_t size)
-{
-	long old = (long)size;
-
-	for (int i = 0; i < D; i++) {
-
-		str[i] = (1 == dim[i]) ? 0 : old;
-		old *= dim[i];
-	}
-
-	return str;
-}
+extern inline long* md_calc_strides(int D, long str[D], const long dim[D], size_t size);
 
 
 

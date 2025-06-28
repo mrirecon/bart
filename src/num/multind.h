@@ -96,7 +96,42 @@ extern bool md_compare2(int D, const long dims[__VLA(D)], const long str1[__VLA(
 			const long str2[__VLA(D)], const void* src2, size_t size);
 extern bool md_compare(int D, const long dims[__VLA(D)], const void* src1, const void* src2, size_t size);
 
-extern long md_calc_size(int D, const long dimensions[__VLA(D)]);
+inline long md_calc_size_r(int D, const long dim[__VLA(D)], size_t size)
+{
+	if (0 == D)
+		return (long)size;
+
+	return md_calc_size_r(D - 1, dim, (size_t)((long)size * dim[D - 1]));
+}
+
+inline long md_calc_size(int D, const long dim[__VLA(D)])
+{
+	return md_calc_size_r(D, dim, 1);
+}
+
+inline long* md_calc_strides(int D, long str[__VLA2(D)], const long dim[__VLA(D)], size_t size)
+{
+	long old = (long)size;
+
+	for (int i = 0; i < D; i++) {
+
+		str[i] = (1 == dim[i]) ? 0 : old;
+		old *= dim[i];
+	}
+
+	return str;
+}
+
+inline void md_copy_strides(int D, long ostrs[__VLA(D)], const long istrs[__VLA(D)])
+{
+	memcpy(ostrs, istrs, (size_t)(D  * (long)sizeof(long)));
+}
+
+inline void md_copy_dims(int D, long odims[__VLA(D)], const long idims[__VLA(D)])
+{
+	memcpy(odims, idims, (size_t)(D * (long)sizeof(long)));
+}
+
 
 typedef void* (*md_alloc_fun_t)(int D, const long dimensions[__VLA(D)], size_t size);
 
@@ -121,14 +156,12 @@ extern void* md_mpi_move(int D, unsigned long dist_flags, const long dims[__VLA(
 extern void* md_mpi_moveF(int D, unsigned long dist_flags, const long dims[__VLA(D)], const void* ptr, size_t size);
 extern void* md_mpi_wrap(int D, unsigned long dist_flags, const long dims[__VLA(D)], const void* ptr, size_t size, _Bool writeback);
 
-extern long* md_calc_strides(int D, long str[__VLA2(D)], const long dim[__VLA(D)], size_t size);
 extern long md_calc_offset(int D, const long strides[__VLA(D)], const long position[__VLA(D)]);
 extern int md_calc_blockdim(int D, const long dim[__VLA(D)], const long str[__VLA(D)], size_t size);
 extern void md_select_dims(int D, unsigned long flags, long odims[__VLA(D)], const long idims[__VLA(D)]);
 extern void md_select_strides(int D, unsigned long flags, long ostrs[__VLA(D)], const long istrs[__VLA(D)]);
-extern void md_copy_dims(int D, long odims[__VLA(D)], const long idims[__VLA(D)]);
+
 extern void md_copy_order(int D, int odims[__VLA(D)], const int idims[__VLA(D)]);
-extern void md_copy_strides(int D, long odims[__VLA(D)], const long idims[__VLA(D)]);
 extern void md_merge_dims(int D, long odims[__VLA(D)], const long dims1[__VLA(D)], const long dims2[__VLA(D)]);
 extern bool md_check_compat(int D, unsigned long flags, const long dim1[__VLA(D)], const long dim2[__VLA(D)]);
 extern bool md_check_bounds(int D, unsigned long flags, const long dim1[__VLA(D)], const long dim2[__VLA(D)]);
@@ -142,7 +175,7 @@ extern bool md_check_dimensions(int N, const long dims[__VLA(N)], unsigned long 
 extern bool md_check_equal_dims(int N, const long dims1[__VLA(N)], const long dims2[__VLA(N)], unsigned long flags);
 extern void md_permute_dims(int D, const int order[__VLA(D)], long odims[__VLA(D)], const long idims[__VLA(D)]);
 extern void md_transpose_dims(int D, int dim1, int dim2, long odims[__VLA(D)], const long idims[__VLA(D)]);
-extern bool md_next(int D, const long dims[__VLA(D)], unsigned long flags, long pos[__VLA(D)]);
+
 extern bool md_next_permuted(int D, const int order[__VLA(D)], const long dims[__VLA(D)], unsigned long flags, long pos[__VLA(D)]);
 
 extern void md_mask_compress(int D, const long dims[__VLA(D)], long M, uint32_t dst[__VLA(M)], const float* src);
@@ -206,6 +239,29 @@ extern int md_min_idx(unsigned long flags);
 	md_singleton_strides(_N, _dims); 		\
 	_dims; 						\
 })
+
+
+inline bool md_next(int D, const long dims[__VLA(D)], unsigned long flags, long pos[__VLA(D)])
+{
+	if (0 == D--)
+		return false;
+
+	if (md_next(D, dims, flags, pos))
+		return true;
+
+	if (MD_IS_SET(flags, D)) {
+
+		assert((0 <= pos[D]) && (pos[D] < dims[D]));
+
+		if (++pos[D] < dims[D])
+			return true;
+
+		pos[D] = 0;
+	}
+
+	return false;
+}
+
 
 #include "misc/cppwrap.h"
 
