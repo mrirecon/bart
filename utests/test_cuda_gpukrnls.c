@@ -118,7 +118,7 @@ static bool test_im2col_loop_out(void)
 
 	long istrs_mat[N + 3];
 
-	md_copy_strides(N + 3, istrs_mat, MD_STRIDES(N, idims, CFL_SIZE));
+	md_copy_strides(N, istrs_mat, MD_STRIDES(N, idims, CFL_SIZE));
 	md_copy_strides(3, istrs_mat + N, MD_STRIDES(N, idims, CFL_SIZE) + 2);
 
 
