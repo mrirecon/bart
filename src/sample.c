@@ -40,6 +40,7 @@
 #include "nn/ext_wrapper.h"
 
 #include "networks/score.h"
+#include "networks/cunet.h"
 
 #include "iter/iter2.h"
 #include "iter/iter.h"
@@ -102,6 +103,9 @@ int main_sample(int argc, char* argv[argc])
 	const char* graph = NULL;
 	const char* key = NULL;
 
+	struct nn_cunet_conf_s cunet_conf = cunet_defaults;
+	const char* cunet_weights = NULL;
+
 	const char* means_file = NULL;
 	const char* vars_file = NULL;
 	const char* ws_file = NULL;
@@ -148,6 +152,11 @@ int main_sample(int argc, char* argv[argc])
 		OPTL_INFILE(0, "w", &ws_file, "file", "weigthing of the Gaussians in the gmm"),
 	};
 
+	struct opt_s cunet_opts[] = {
+		OPTL_INFILE('w', "weights", &cunet_weights, "weights", "weights for cunet"),
+		OPTL_INT('l', "level", &cunet_conf.levels, "l", "Number of UNet levels"),
+	};
+
 	const struct opt_s opts[] = {
 		OPTL_VECN(0, "dims", img_dims, "image dimensions"),
 		OPT_SET('g', &bart_use_gpu, "use gpu"),
@@ -157,6 +166,7 @@ int main_sample(int argc, char* argv[argc])
 		OPTL_SET('p', "predictor-corrector", &predictor_corrector, "predictor-corrector sampling"),
 		OPTL_SUBOPT(0, "sigma", "", "select noise schedule for decreasing noise", ARRAY_SIZE(sigma_opts), sigma_opts),
 		OPTL_SUBOPT(0, "gmm", "", "generate a Gaussian mixture model for sampling", ARRAY_SIZE(gmm_opts), gmm_opts),
+		OPTL_SUBOPT(0, "cunet", "", "sampling with conditional unet", ARRAY_SIZE(cunet_opts), cunet_opts),
 		OPTL_STRING(0, "external-graph", &graph, "weights", ".pt or .tf file with weights"),
 		OPTL_FLOAT(0, "gamma", &gamma_base, "gamma", "scaling of stepsize for Langevin iteration"),
 		OPT_INT('N', &N, "N", "number of noise levels"),
@@ -195,15 +205,28 @@ int main_sample(int argc, char* argv[argc])
 
 	float min_var = 0.0f;
 
-	if (NULL != graph) {
+	if (NULL != graph || NULL != cunet_weights) {
 
-		// generates nlop from tf or pt graph
-		int DO[1] = { 3 };
-		int DI[2] = { 3, 1 };
-		long idims1[3] = { img_dims[0], img_dims[1], batchsize };
-		long idims2[1] = { batchsize };
+		if (NULL != cunet_weights) {
 
-		nlop = nlop_external_graph_create(graph, 1, DO, (const long*[1]) { idims1 },  2, DI, (const long*[2]) {idims1, idims2}, bart_use_gpu, key);
+			const long dims[5] = { 1, img_dims[0], img_dims[1], img_dims[2], batchsize };
+
+			nn_t cunet = cunet_create(&cunet_conf, 5, dims);
+			cunet = nn_denoise_precond_edm(cunet, -1., -1., 0.5, false);
+
+			nn_weights_t weights = load_nn_weights(cunet_weights);
+			nlop = nn_get_nlop_wo_weights_F(cunet, weights, true);
+			nn_weights_free(weights);
+		} else {
+
+			// generates nlop from tf or pt graph
+			int DO[1] = { 3 };
+			int DI[2] = { 3, 1 };
+			long idims1[3] = { img_dims[0], img_dims[1], batchsize };
+			long idims2[1] = { batchsize };
+
+			nlop = nlop_external_graph_create(graph, 1, DO, (const long*[1]) { idims1 },  2, DI, (const long*[2]) {idims1, idims2}, bart_use_gpu, key);
+		}
 
 		nlop = nlop_reshape_in_F(nlop, 0, DIMS, img_dims);
 		nlop = nlop_reshape_out_F(nlop, 0, DIMS, img_dims);
