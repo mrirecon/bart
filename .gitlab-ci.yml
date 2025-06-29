@@ -219,7 +219,6 @@ Build_Analyzer:
     expire_in: 45 minutes
 
 
-
 Build_Tensorflow:
   stage: build
   script:
@@ -235,6 +234,22 @@ Build_Tensorflow:
       - "./src/*.o"
       - ./src/misc/version.inc
     expire_in: 45 minutes
+
+
+Build_Pytorch:
+  stage: build
+  script:
+    - apt-get install -y libtorch-dev
+    - PYTORCH=1 make all
+  artifacts:
+    paths:
+      - bart
+      - "./lib/*.a"
+      - ./commands/
+      - "./src/*.o"
+      - ./src/misc/version.inc
+    expire_in: 45 minutes
+
 
 
 Build_wasm:
