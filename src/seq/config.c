@@ -7,6 +7,68 @@
 
 #include "config.h"
 
+const int seq_loop_order_avg_inner[DIMS] = {
+	AVG_DIM,
+	PHS2_DIM,
+	SLICE_DIM,
+	COEFF2_DIM,
+	COEFF_DIM,
+	PHS1_DIM,
+	TIME2_DIM,
+	TIME_DIM,
+	BATCH_DIM,
+
+	READ_DIM,
+	COIL_DIM,
+	MAPS_DIM,
+	TE_DIM,
+	ITER_DIM,
+	CSHIFT_DIM,
+	LEVEL_DIM
+};
+
+
+const int seq_loop_order_avg_outer[DIMS] = {
+	PHS2_DIM,
+	SLICE_DIM,
+	COEFF2_DIM,
+	COEFF_DIM,
+	PHS1_DIM,
+	AVG_DIM,
+	TIME2_DIM,
+	TIME_DIM,
+	BATCH_DIM,
+
+	READ_DIM,
+	COIL_DIM,
+	MAPS_DIM,
+	TE_DIM,
+	ITER_DIM,
+	CSHIFT_DIM,
+	LEVEL_DIM
+};
+
+const int seq_loop_order_multislice[DIMS] = {
+	PHS2_DIM,
+	COEFF2_DIM,
+	COEFF_DIM,
+	PHS1_DIM,
+	AVG_DIM,
+	TIME2_DIM,
+	TIME_DIM,
+	BATCH_DIM,
+
+	SLICE_DIM,
+	READ_DIM,
+	COIL_DIM,
+	MAPS_DIM,
+	TE_DIM,
+	ITER_DIM,
+	CSHIFT_DIM,
+	LEVEL_DIM
+};
+
+
 const struct seq_config seq_config_defaults = {
 
 	.phys = {

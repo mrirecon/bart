@@ -12,6 +12,20 @@
 #define MAX_GRAD_POINTS 8192
 #define GRAD_RASTER_TIME 10
 
+#define SEQ_FLAGS (PHS1_FLAG|PHS2_FLAG|COEFF_FLAG|COEFF2_FLAG|TIME_FLAG|TIME2_FLAG|SLICE_FLAG|AVG_FLAG|BATCH_FLAG)
+
+
+extern const int seq_loop_order_avg_inner[DIMS];
+extern const int seq_loop_order_avg_outer[DIMS];
+extern const int seq_loop_order_multislice[DIMS];
+
+enum order {
+
+	ORDER_AVG_OUTER,
+	ORDER_SEQ_MS,
+	ORDER_AVG_INNER,
+};
+
 enum block {
 
 	BLOCK_UNDEFINED,
@@ -76,6 +90,7 @@ struct seq_enc {
 	enum pe_mode pe_mode;
 	int tiny;
 	unsigned long aligned_flags;
+	enum order order;
 };
 
 struct seq_magn {
