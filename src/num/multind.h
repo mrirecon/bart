@@ -165,6 +165,7 @@ extern void md_copy_order(int D, int odims[__VLA(D)], const int idims[__VLA(D)])
 extern void md_merge_dims(int D, long odims[__VLA(D)], const long dims1[__VLA(D)], const long dims2[__VLA(D)]);
 extern bool md_check_compat(int D, unsigned long flags, const long dim1[__VLA(D)], const long dim2[__VLA(D)]);
 extern bool md_check_bounds(int D, unsigned long flags, const long dim1[__VLA(D)], const long dim2[__VLA(D)]);
+extern bool md_check_order_bounds(int D, unsigned long flags, const int order1[__VLA(D)], const int order2[__VLA(D)]);
 extern void md_singleton_dims(int D, long dims[__VLA(D)]);
 extern void md_singleton_strides(int D, long strs[__VLA(D)]);
 extern void md_set_dims(int D, long dims[__VLA(D)], long val);
@@ -173,6 +174,7 @@ extern void md_max_dims(int D, unsigned long flags, long odims[__VLA(D)], const 
 extern bool md_is_index(int D, const long pos[__VLA(D)], const long dims[__VLA(D)]);
 extern bool md_check_dimensions(int N, const long dims[__VLA(N)], unsigned long flags);
 extern bool md_check_equal_dims(int N, const long dims1[__VLA(N)], const long dims2[__VLA(N)], unsigned long flags);
+extern bool md_check_equal_order(int N, const int order1[__VLA(N)], const int order2[__VLA(N)], unsigned long flags);
 extern void md_permute_dims(int D, const int order[__VLA(D)], long odims[__VLA(D)], const long idims[__VLA(D)]);
 extern void md_transpose_dims(int D, int dim1, int dim2, long odims[__VLA(D)], const long idims[__VLA(D)]);
 

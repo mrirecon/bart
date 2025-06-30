@@ -504,6 +504,17 @@ bool md_check_equal_dims(int N, const long dims1[N], const long dims2[N], unsign
 
 
 
+/**
+ * Check if order at 'flags' position are equal
+ */
+bool md_check_equal_order(int N, const int order1[N], const int order2[N], unsigned long flags)
+{
+	return (   md_check_order_bounds(N, flags, order1, order2)
+		&& md_check_order_bounds(N, flags, order2, order1));
+}
+
+
+
 /*
  * compute non-trivial (> 1) dims
  */
@@ -605,6 +616,19 @@ bool md_check_bounds(int D, unsigned long flags, const long dim1[D], const long 
 	return false;
 }
 
+/**
+ * order1 must be bounded by order2 where a bit is set
+ */
+bool md_check_order_bounds(int D, unsigned long flags, const int order1[D], const int order2[D])
+{
+	if (0 == D--)
+		return true;
+
+	if (!MD_IS_SET(flags, D) || (order1[D] <= order2[D]))
+		return md_check_order_bounds(D, flags, order1, order2);
+
+	return false;
+}
 
 /**
  * Set the output's flagged dimensions to the minimum of the two input dimensions
