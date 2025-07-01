@@ -272,7 +272,7 @@ TNUM=fft fftmod fftshift noise bench threshold conv rss filter nlmeans mandelbro
 TRECO=pics pocsense sqpics itsense nlinv moba nufft nufftbase rof tgv ictv sake wave lrmatrix estdims estshift estdelay wavepsf wshfl rtnlinv mobafit grog denoise estscaling
 TCALIB=ecalib ecaltwo caldir walsh cc ccapply rovir calmat svd estvar whiten rmfreq ssa bin psf ncalib
 TMRI=homodyne poisson twixread fakeksp looklocker upat fovshift
-TSIM=phantom traj signal epg sim raga stl
+TSIM=phantom traj signal epg sim pulse raga stl
 TIO=tee toimg toraw multicfl trx
 TNN=reconet nnet onehotenc measure mnist tensorflow nlinvnet
 TMOTION=affinereg interpolate estmotion
@@ -355,6 +355,7 @@ MODULES_interpolate = -lmotion -liter -lnlops -llinops
 MODULES_unwrap = -llinops
 MODULES_stl = -lstl
 MODULES_estscaling = -lsense -llinops
+MODULES_pulse = -lseq
 
 
 GCCVERSION12 := $(shell expr `$(CC) -dumpversion | cut -f1 -d.` \>= 12)
