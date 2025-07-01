@@ -108,7 +108,7 @@ int gen_fibonacci(int n, int ind)
 	return (0 == ind) ? fib[0] : fib[1];
 }
 
-static int raga_find_index(int Y, int n)
+int raga_find_index(int Y, int n)
 {
 	int i = 0;
 
@@ -132,6 +132,15 @@ static float rational_angle(int Y, int n)
 	return M_PI / (float)Y * (float)inc;
 }
 
+int raga_spokes(int baseresolution, int tiny_ga)
+{
+	int i = raga_find_index((M_PI / 2.) * baseresolution, tiny_ga);
+
+	while (0 == gen_fibonacci(tiny_ga, i) % 2)
+		i--;
+
+	return gen_fibonacci(tiny_ga, i);
+}
 
 void calc_base_angles(double base_angle[DIMS], int Y, int E, struct traj_conf conf)
 {
