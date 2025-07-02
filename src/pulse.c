@@ -1,4 +1,4 @@
-/* Copyright 2023. Institute of Biomedical Imaging. TU Graz.
+/* Copyright 2023-2025. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
@@ -19,27 +19,26 @@
 
 
 static const char help_str[] = "Pulse generation tool";
+
 int main_pulse(int argc, char* argv[argc])
 {
 	const char* out_signal = NULL;
-
 
 	struct arg_s args[] = {
 
 		ARG_OUTFILE(true, &out_signal, "Signal: Bxy"),
 	};
 
-	struct pulse* pulse = NULL;
 	enum pulse_t pulse_type = PULSE_SINC;
 
 	int Ntime = -1;
 
-	double dur = 620e-6;
-	double flip_angle = 6.0;
-	double bwtp = 3.8;
-	long mb = 1;
-	double sms_dist = 27.e-3;
-	double slice_th = 6.e-3;
+	double dur = 0.001;
+	double flip_angle = 90.0;
+	double bwtp = 4.;
+	int mb = 1;
+	double sms_dist = 0.01;
+	double slice_th = 0.005;
 
 
 	const struct opt_s opts[] = {
@@ -48,14 +47,15 @@ int main_pulse(int argc, char* argv[argc])
 		OPTL_SELECT(0, "sms", enum pulse_t, &pulse_type, PULSE_SINC_SMS, "sms"),
 		OPTL_SELECT(0, "rect", enum pulse_t, &pulse_type, PULSE_REC, "rect"),
 		OPTL_SELECT(0, "hypsec", enum pulse_t, &pulse_type, PULSE_HS, "hypersecant"),
+
 		/* Pulse Specific Parameters */
-		OPTL_DOUBLE(0, "dur", &dur, "long", "Pulse Duration"), /* Assumes to start at t=0 */
-		OPTL_DOUBLE(0, "fa", &flip_angle, "double", "Flipangle [deg]"),
-		OPTL_DOUBLE(0, "bwtp", &bwtp, "double", "Bandwidth-Time-Product"),
-		OPTL_LONG(0, "mb", &mb, "long", "SMS multi-band factor"),
+		OPTL_DOUBLE(0, "dur", &dur, "long", "pulse duration"),
+		OPTL_DOUBLE(0, "fa", &flip_angle, "double", "flip angle [deg]"),
+		OPTL_DOUBLE(0, "bwtp", &bwtp, "double", "bandwidth time product"),
+		OPTL_PINT(0, "mb", &mb, "long", "SMS multi-band factor"),
 		OPTL_DOUBLE(0, "sms-dist", &sms_dist, "long", "center-to-center slice distance between SMS partitions"),
-		OPTL_DOUBLE(0, "slice-th", &slice_th, "double", "Slice thickness"),
-		OPTL_INT(0, "N", &Ntime, "int", "number of time-steps (default = 1e6 * dur)"),
+		OPTL_DOUBLE(0, "slice-th", &slice_th, "double", "slice thickness"),
+		OPTL_PINT(0, "N", &Ntime, "int", "number of time-steps (default = 1e6 * dur)"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -74,56 +74,51 @@ int main_pulse(int argc, char* argv[argc])
 	struct pulse_hypsec ph = pulse_hypsec_defaults;
 	struct pulse_rect pr = pulse_rect_defaults;
 
+	struct pulse* pulse[mb];
 
 	switch (pulse_type) {
 
 	case PULSE_SINC:
 
 		pulse_sinc_init(&ps, dur, flip_angle, 0, bwtp, pulse_sinc_defaults.alpha);
-		pulse = CAST_UP(&ps);
-	break;
+		pulse[0] = CAST_UP(&ps);
+		break;
 
 	case PULSE_SINC_SMS:
 
-		pulse_sms_init(&pm, dur, flip_angle, 0, bwtp, pulse_sms_defaults.alpha,
-				mb, 0, sms_dist, slice_th);
-		pulse = CAST_UP(&pm);
+		for (int m = 0; m < mb; m++) {
+
+			pulse_sms_init(&pm, dur, flip_angle, 0, bwtp, pulse_sms_defaults.alpha,
+				mb, m, sms_dist, slice_th);
+
+			pulse[m] = CAST_UP(&pm);
+		}
+
 		break;
 
 	case PULSE_HS:
 
 		pulse_hypsec_init(&ph);
-		pulse = CAST_UP(&ph);
+		pulse[0] = CAST_UP(&ph);
 		break;
 	
 	case PULSE_REC:
 
 		pulse_rect_init(&pr, dur, flip_angle, 0);
-		pulse = CAST_UP(&pr);
+		pulse[0] = CAST_UP(&pr);
 		break;
-
 	}
-
-	// pulse = CAST_UP(&ps);
 
 	long dims[DIMS];
 	md_singleton_dims(DIMS, dims);
-	dims[TIME_DIM] = Ntime;
+	dims[READ_DIM] = Ntime;
 	dims[SLICE_DIM] = mb;
 
 	complex float* signal = create_cfl(out_signal, DIMS, dims);
 
-	for (int m = 0; m < mb; m++) {
-		if (PULSE_SINC_SMS == pulse_type) {
-
-			auto pm = CAST_DOWN(pulse_sms, pulse);
-			pm->mb_part = m;
-		}
-
+	for (int m = 0; m < mb; m++)
 		for (int t = 0; t < Ntime; t++)
-			signal[m * Ntime + t] = pulse_eval(pulse, (t + 0.5) * pulse->duration / Ntime);
-		
-	}
+			signal[m * Ntime + t] = pulse_eval(pulse[m], (t + 0.5) * pulse[m]->duration / Ntime);
 
 	unmap_cfl(DIMS, dims, signal);
 
