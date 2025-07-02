@@ -5,8 +5,10 @@
 
 #include <math.h>
 #include <assert.h>
+#include <complex.h>
 
 #include "misc/misc.h"
+#include "misc/mri.h"
 #include "misc/types.h"
 
 #include "num/specfun.h"
@@ -14,6 +16,7 @@
 #include "pulse.h"
 
 DEF_TYPEID(pulse_sinc);
+DEF_TYPEID(pulse_sms);
 DEF_TYPEID(pulse_rect);
 DEF_TYPEID(pulse_hypsec);
 
@@ -40,7 +43,7 @@ static float sinc_windowed_antiderivative(float alpha, float t, float n)
 // Analytical definition of windowed sinc pulse
 // 	! centered around 0
 // 	-> Shift by half of pulse length to start pulse at t=0
-static float pulse_sinc(const struct pulse_sinc* ps, float t)
+static complex float pulse_sinc(const struct pulse_sinc* ps, float t)
 {
 	float mid = CAST_UP(ps)->duration / 2.;
 	float t0 = CAST_UP(ps)->duration / ps->bwtp;
@@ -103,6 +106,103 @@ void pulse_sinc_init(struct pulse_sinc* ps, float duration, float angle /*[deg]*
 }
 
 
+/* SMS pulse: sinc pulse with phase modulation; mb_factor=1 equals sinc_pulse */
+
+/* SMS-multiband phase modulation*/
+static complex float pulse_sms_phase_modulation(const struct pulse_sms* ps, float t) 
+{
+	float phase = 0.;
+	complex float mod = 0. + 0.i;
+
+	for (int i = 0; i < ps->mb_factor; i++) {
+
+		phase = (t - CAST_UP(ps)->duration / 2.) 
+			* ((i - (ps->mb_factor - 1.) / 2.) * ps->SMS_dist)
+			* (-2. * M_PI * (ps->bwtp / (ps->super.duration * ps->slice_th)))
+			+ 2 * M_PI * (ps->mb_part * i) / ps->mb_factor;
+
+		mod += cosf(phase) + 1.i * sinf(phase);
+	}
+
+	return mod / ps->mb_factor;
+}	
+
+
+static complex float pulse_sms(const struct pulse_sms* ps, float t)
+{
+	float mid = CAST_UP(ps)->duration / 2.;
+	float t0 = CAST_UP(ps)->duration / ps->bwtp;
+
+	assert((0 <= t) && (t <= CAST_UP(ps)->duration));
+
+	float rf = ps->A * sinc_windowed(ps->alpha, (t - mid) / t0, ps->bwtp / 2.);
+	complex float pm = 1. + 0.i;
+	
+	if (1 != ps->mb_factor)
+		pm = pulse_sms_phase_modulation(ps, t);
+
+	return rf * pm;
+}
+
+float pulse_sms_integral(const struct pulse_sms* ps)
+{
+	float mid = CAST_UP(ps)->duration / 2.;
+	float t0 = CAST_UP(ps)->duration / ps->bwtp;
+
+	return ps->A * t0 * (sinc_windowed_antiderivative(ps->alpha, +mid / t0, ps->bwtp / 2.)
+			- sinc_windowed_antiderivative(ps->alpha, -mid / t0, ps->bwtp / 2.));
+}
+
+
+static complex float pulse_sms_eval(const struct pulse* _ps, float t)
+{
+	auto ps = CAST_DOWN(pulse_sms, _ps);
+
+	return pulse_sms(ps, t);
+}
+
+
+const struct pulse_sms pulse_sms_defaults = {
+
+	.super.duration = 0.001,
+	.super.flipangle = 1.,
+	.super.eval = pulse_sms_eval,
+	.super.TYPEID = &TYPEID2(pulse_sms),
+	// .pulse.phase = 0.,
+
+	.alpha = 0.46,
+	.A = 1.,
+	.bwtp = 4.,
+	.mb_factor = 3,
+	.mb_part = 0,
+	.gamma =  GYRO,
+	.SMS_dist = 27.e-3,
+	.slice_th = 6.e-3,
+};
+
+
+void pulse_sms_init(struct pulse_sms* ps, float duration, float angle /*[deg]*/, float /* phase */, float bwtp, float alpha, 
+			int mb, int part, float dist, float th)
+{
+	ps->super.duration = duration;
+	ps->super.flipangle = angle;
+	ps->super.eval = pulse_sms_eval;
+
+	ps->alpha = alpha;
+	ps->bwtp = bwtp;
+	ps->mb_factor = mb;
+	ps->mb_part = part;
+	ps->SMS_dist = dist;
+	ps->slice_th = th;
+	ps->A = 1.;
+
+	float integral = pulse_sms_integral(ps);
+	float scaling = M_PI / 2. / integral;
+
+	ps->A = scaling / 90. * angle;
+}
+
+
 /* Rectangular pulse */
 
 void pulse_rect_init(struct pulse_rect* pr, float duration, float angle /*[deg]*/, float phase)
@@ -135,7 +235,6 @@ const struct pulse_rect pulse_rect_defaults = {
 	.super.flipangle = 1.,
 	.super.eval = pulse_rect_eval,
 	.super.TYPEID = &TYPEID2(pulse_rect),
-	// .pulse.phase = 0.,
 
 	.A = 1.,
 };

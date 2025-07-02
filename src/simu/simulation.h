@@ -74,9 +74,8 @@ struct simdata_other {
 
 extern const struct simdata_other simdata_other_defaults;
 
-enum pulse_t { PULSE_SINC, PULSE_HS, PULSE_REC };
-
 struct pulse_sinc;
+struct pulse_sms;
 struct pulse_hypsec;
 struct pulse_rect;
 
@@ -90,6 +89,7 @@ struct simdata_pulse {
 	float phase;
 
 	struct pulse_sinc sinc;
+        struct pulse_sms sms;
 	struct pulse_rect rect;
         struct pulse_hypsec hs;
 };

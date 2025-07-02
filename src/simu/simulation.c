@@ -206,6 +206,10 @@ static void compute_fields(struct sim_data* data, float gb_eff[3], float t)
 			ps = CAST_UP(&data->pulse.sinc);
 			break;
 
+		case PULSE_SINC_SMS:
+			ps = CAST_UP(&data->pulse.sms);
+			break;
+
 		case PULSE_HS:
 			ps = CAST_UP(&data->pulse.hs);
 			break;
