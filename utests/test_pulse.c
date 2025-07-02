@@ -16,7 +16,8 @@
 #include "num/quadrature.h"
 #include "num/flpmath.h"
 
-#include "simu/pulse.h"
+#include "seq/pulse.h"
+
 #include "simu/simulation.h"
 
 #include "utest.h"

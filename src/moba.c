@@ -26,7 +26,8 @@
 #include "misc/debug.h"
 #include "misc/version.h"
 
-#include "simu/pulse.h"
+#include "seq/pulse.h"
+
 #include "simu/simulation.h"
 
 #include "noncart/nufft.h"

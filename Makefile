@@ -301,8 +301,8 @@ MODULES_pocsense = -lsense -liter -llinops -lwavelet
 MODULES_nlinv = -lnoir -lgrecon -lwavelet -llowrank -lnn -liter -lnlops -llinops -lnoncart
 MODULES_ncalib = -lnoir -lgrecon -lwavelet -llowrank -lnn -liter -lnlops -llinops -lnoncart
 MODULES_rtnlinv = -lnoir -liter -lnlops -llinops -lnoncart
-MODULES_moba = -lmoba -lnoir -lnn -lnlops -llinops -lwavelet -lnoncart -lsimu -lgrecon -llowrank -llinops -liter -lnn
-MODULES_mobafit = -lmoba -lnlops -llinops -lsimu -liter -lnoir
+MODULES_moba = -lmoba -lnoir -lnn -lnlops -llinops -lwavelet -lnoncart -lseq -lsimu -lgrecon -llowrank -llinops -liter -lnn
+MODULES_mobafit = -lmoba -lnlops -llinops -lseq -lsimu -liter -lnoir
 MODULES_bpsense = -lsense -lnoncart -liter -llinops -lwavelet
 MODULES_itsense = -liter -llinops
 MODULES_ecalib = -lcalib -llinops
@@ -321,7 +321,7 @@ MODULES_ictv = -liter -llinops
 MODULES_denoise = -lgrecon -liter -llinops -lwavelet -llowrank -lnoncart -lnn -lnlops
 MODULES_bench = -lwavelet -llinops
 MODULES_phantom = -lsimu -lgeom
-MODULES_bart = -lbox -lgrecon -lsense -lnoir -liter -llinops -lwavelet -llowrank -lnoncart -lcalib -lsimu -lsake -lnlops -lnetworks -lnoir -lnn -liter -lmoba -lgeom -lnn  -lmotion -lnlops -lstl
+MODULES_bart = -lbox -lgrecon -lsense -lnoir -liter -llinops -lwavelet -llowrank -lnoncart -lcalib -lseq -lsimu -lsake -lnlops -lnetworks -lnoir -lnn -liter -lmoba -lgeom -lnn  -lmotion -lnlops -lstl
 MODULES_sake = -lsake
 MODULES_traj = -lnoncart
 MODULES_raga = -lnoncart
@@ -344,7 +344,7 @@ MODULES_nnet = -lgrecon -lnetworks -lnoncart -lnn -lnlops -llinops -liter
 MODULES_tensorflow = -lnn -lnlops -llinops -liter
 MODULES_measure = -lgrecon -lnetworks -lnoncart -lnn -lnlops -llinops -liter
 MODULES_onehotenc = -lnn
-MODULES_sim = -lsimu
+MODULES_sim = -lseq -lsimu
 MODULES_morphop = -lnlops -llinops -lgeom
 MODULES_psf = -lnoncart -llinops
 MODULES_nlinvnet = -lnetworks -lnoir -liter -lnn -lnlops -llinops -lnoncart -lgrecon -lnetworks -lsense -liter -llinops -lwavelet -llowrank -lnoncart -lnlops -lnn
@@ -764,7 +764,7 @@ UTARGETS += test_pattern test_types test_misc test_memcfl test_tree test_streams
 
 # lib moba
 UTARGETS += test_moba
-MODULES_test_moba += -lmoba -lnoir -llowrank -lwavelet -liter -lnlops -llinops -lsimu
+MODULES_test_moba += -lmoba -lnoir -llowrank -lwavelet -liter -lnlops -llinops -lseq -lsimu
 
 # lib nlop
 UTARGETS += test_nlop test_nlop_jacobian
@@ -792,11 +792,11 @@ UTARGETS_GPU += test_cudafft test_cuda_flpmath test_cuda_flpmath2 test_cuda_gpuk
 # lib simu
 UTARGETS += test_ode_bloch test_ode_simu test_biot_savart test_signals test_epg test_pulse test_tsegf
 MODULES_test_ode_bloch += -lsimu
-MODULES_test_ode_simu += -lsimu
+MODULES_test_ode_simu += -lseq -lsimu
 MODULES_test_biot_savart += -lsimu
 MODULES_test_signals += -lsimu
 MODULES_test_epg += -lsimu
-MODULES_test_pulse += -lsimu
+MODULES_test_pulse += -lseq -lsimu
 MODULES_test_tsegf += -lsimu
 
 # lib geom

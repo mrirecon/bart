@@ -8,8 +8,9 @@
 
 #include <math.h>
 
+#include "seq/pulse.h"
+
 #include "simu/bloch.h"
-#include "simu/pulse.h"
 #include "simu/simulation.h"
 #include "simu/epg.h"
 

@@ -21,8 +21,9 @@
 #include "num/matexp.h"
 #include "num/ode.h"
 
+#include "seq/pulse.h"
+
 #include "simu/bloch.h"
-#include "simu/pulse.h"
 
 #include "simulation.h"
 

@@ -2,7 +2,6 @@
 #include <stdbool.h>
 
 #include "simu/signals.h"
-#include "simu/pulse.h"
 #include "simu/simulation.h"
 
 #include "grecon/italgo.h"

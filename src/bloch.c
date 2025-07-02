@@ -15,8 +15,9 @@
 #include "misc/misc.h"
 #include "misc/opts.h"
 
-#include "simu/bloch.h"
-#include "simu/pulse.h"
+#include "seq/pulse.h"
+
+#include "bloch.h"
 
 
 #ifndef CFL_SIZE

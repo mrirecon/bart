@@ -5,6 +5,7 @@
 #include <complex.h>
 #include <stdbool.h>
 
+#include "seq/pulse.h"
 
 enum sim_seq { SEQ_BSSFP, SEQ_IRBSSFP, SEQ_FLASH, SEQ_IRFLASH, SEQ_CEST };
 enum sim_type { SIM_ROT, SIM_ODE, SIM_STM };

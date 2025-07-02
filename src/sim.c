@@ -18,8 +18,9 @@
 #include "misc/opts.h"
 #include "misc/debug.h"
 
+#include "seq/pulse.h"
+
 #include "simu/bloch.h"
-#include "simu/pulse.h"
 #include "simu/simulation.h"
 
 
