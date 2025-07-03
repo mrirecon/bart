@@ -37,6 +37,7 @@ extern void stream_free(stream_t s);
 extern void stream_unmap_all(void);
 
 void stream_attach(stream_t s, _Complex float* x, _Bool unmap, _Bool regist);
+extern void stream_ensure_fifo(const char* name);
 extern stream_t stream_load_file(const char* name, int D, long dims[__VLA(D)], char **datname);
 extern stream_t stream_load_fd(int fd, const char* name, int D, long dims[D], char **datname, char** cmdline);
 extern stream_t stream_create_file(const char* name, int D, long dims[__VLA(D)], unsigned long stream_flags, char* dataname, _Bool call_msync);

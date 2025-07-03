@@ -55,6 +55,7 @@ struct stream {
 	bool binary;
 
 	const char* filename;
+	const char* fifo_name;
 
 	complex float* ptr;
 	struct pcfl* data;
@@ -351,6 +352,9 @@ stream_t stream_create(int N, const long dims[N], int pipefd, bool input, bool b
 	// msync only makes sense for output streams that are not binary.
 	assert(!call_msync || !(input || binary));
 
+	char* fifo_name = name ? (strcmp("-", name) ? strdup(name) : NULL) : NULL;
+
+
 	PTR_ALLOC(struct stream, ret);
 
 	*ret = (struct stream) {
@@ -361,6 +365,7 @@ stream_t stream_create(int N, const long dims[N], int pipefd, bool input, bool b
 		.call_msync = call_msync,
 		.last_index = -1,
 		.filename = (NULL == name) ? NULL : stream_mangle_name(name, input),
+		.fifo_name = fifo_name,
 		.cond = bart_cond_create(),
 	};
 
@@ -437,6 +442,11 @@ static void stream_del(const struct shared_obj_s* sptr)
 	if (NULL != s->filename)
 		xfree(s->filename);
 
+	if (s->fifo_name && s->input)
+		unlink(s->fifo_name);
+
+	xfree(s->fifo_name);
+
 	stream_event_list_free(s->events);
 
 	stream_stop_log(s);
@@ -465,15 +475,29 @@ void stream_attach(stream_t s, complex float* x, bool unmap, bool regist)
 	}
 }
 
+void stream_ensure_fifo(const char* name)
+{
+	struct stat statbuf = { };
+	if (0 != stat(name, &statbuf))
+		mkfifo(name, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
+
+	if (0 != stat(name, &statbuf))
+		error("stat / mkfifo.\n");
+
+	if (S_IFIFO != (statbuf.st_mode & S_IFMT))
+		error(".fifo-file is not a FIFO!\n");
+}
 
 stream_t stream_load_file(const char* name, int D, long dims[D], char **datname)
 {
 	int fd = 0;
 	bool is_stdin = (0 == strcmp(name, "-"));
 
+	if (!is_stdin) {
 
-	if (!is_stdin)
+		stream_ensure_fifo(name);
 		fd = open(name, O_RDONLY);
+	}
 
 	if (-1 == fd)
 		error("Opening FIFO %s\n", name);
@@ -484,9 +508,6 @@ stream_t stream_load_file(const char* name, int D, long dims[D], char **datname)
 
 	if (!strm)
 		error("Reading input from %s\n", name);
-
-	if (!is_stdin && (0 != unlink(name)))
-		error("Unlinking temporary FIFO header %s\n", name);
 
 	return strm;
 }
@@ -549,15 +570,7 @@ stream_t stream_create_file(const char* name, int D, long dims[D], unsigned long
 
 	if (!is_stdout) {
 
-		struct stat statbuf;
-
-		if (0 != stat(name, &statbuf)) {
-
-			if (NULL != dataname)
-				unlink(dataname);
-			error("Fifo %s does not exist. Create manually before starting BART!\n", name);
-		}
-
+		stream_ensure_fifo(name);
 		fd = open(name, O_WRONLY);
 	}
 
