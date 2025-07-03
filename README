@@ -141,7 +141,7 @@ To install the required libraries on  Fedora 39/40 run:
 
 ### 2.1.2. Mac OS X
 
-BART is supported on Intel-based and ARM-based Macs. Xcode is also required. For
+BART is supported on Intel-based and ARM-based Macs. Xcode CommandLineTools is also required (install with: $ xcode-select --install). For
 ARM-based Macs, it is recommended to use gcc12 or higher.
 
 Using MacPorts (http://www.macports.org/):
