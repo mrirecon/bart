@@ -577,7 +577,7 @@ stream_t stream_create_file(const char* name, int D, long dims[D], unsigned long
 	if (-1 == fd)
 		error("Opening FIFO %s\n", name);
 
-	if (-1 == write_stream_header(fd, is_stdout ? NULL : name, dataname, D, dims))
+	if (-1 == write_stream_header(fd, dataname, D, dims))
 		error("Writing header of %s\n", name);
 
 	stream_t strm = stream_create(D, dims, fd, false, binary, stream_flags, name, call_msync);

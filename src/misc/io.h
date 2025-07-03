@@ -26,7 +26,7 @@ extern int write_cfl_header(int fd, const char* filename, int n, const long dime
 extern int read_cfl_header(int fd, char** file, char** cmd, int D, long dimensions[__VLA(D)]);
 extern int read_cfl_header2(int N, char buf[N + 1], int fd, char** file, char** cmd, int D, long dimensions[D]);
 extern int parse_cfl_header(long N, const char header[N + 1], char** file, char** cmd, int D, long dimensions[D]);
-extern int write_stream_header(int fd, const char* name, const char* dataname, int n, const long dimensions[n]);
+extern int write_stream_header(int fd, const char* filename, int n, const long dimensions[n]);
 
 extern int write_multi_cfl_header(int fd, const char* filename, long num_ele, int D, int n[D], const long* dimensions[D]);
 extern int read_multi_cfl_header(int fd, char** file, int D_max, int n_max, int n[D_max], long dimensions[D_max][n_max]);

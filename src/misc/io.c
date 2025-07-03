@@ -388,7 +388,7 @@ int write_cfl_header(int fd, const char* filename, int n, const long dimensions[
 }
 
 
-int write_stream_header(int fd, const char* filename, const char* dataname, int D, const long dims[D])
+int write_stream_header(int fd, const char* dataname, int D, const long dims[D])
 {
 	// determine header length first by writing it to /dev/null
 #ifdef _WIN32
@@ -402,22 +402,6 @@ int write_stream_header(int fd, const char* filename, const char* dataname, int 
 
 	close(null_fd);
 
-
-	// write header for pipeline tracking:
-	if (NULL != filename) {
-
-		size_t hdrname_len = strlen(filename) + 5;
-		char* hdrname = xmalloc(hdrname_len);
-		snprintf(hdrname, hdrname_len, "%s.hdr", filename);
-
-		int hdr_fd = open(hdrname, O_WRONLY|O_CREAT, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
-
-		write_cfl_header(hdr_fd, NULL, D, dims);
-
-		close(hdr_fd);
-
-		xfree(hdrname);
-	}
 
 	int MM = IO_MIN_HDR_SIZE;
 
