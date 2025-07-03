@@ -152,6 +152,7 @@ Using MacPorts (http://www.macports.org/):
     $ sudo port install openblas
     $ sudo port install flock
     $ sudo port install gmake
+    $ sudo port install libblocksruntime
 
     (optional)
     $ sudo port install octave
