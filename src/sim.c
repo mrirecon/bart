@@ -5,7 +5,6 @@
  * Author: Nick Scholand, Martin Juschitz
  */
 
-
 #include <math.h>
 #include <complex.h>
 
@@ -166,7 +165,7 @@ int main_sim(int argc, char* argv[argc])
 		OPTL_FLOAT(0, "ipl", &(data.seq.inversion_pulse_length), "float", "Inversion Pulse Length [s]"),
 		OPTL_FLOAT(0, "isp", &(data.seq.inversion_spoiler), "float", "Inversion Spoiler Gradient Length [s]"),
 		OPTL_FLOAT(0, "ppl", &(data.seq.prep_pulse_length), "float", "Preparation Pulse Length [s]"),
-		OPTL_INT(0, "av-spokes", &(data.seq.averaged_spokes), "", "Number of averaged consecutive spokes"),
+		OPTL_PINT(0, "av-spokes", &(data.seq.averaged_spokes), "", "Number of averaged consecutive spokes"),
 
 		/* Pulse Specific Parameters */
 		OPTL_FLOAT(0, "Trf", &(data.pulse.rf_end), "float", "Pulse Duration [s]"), /* Assumes to start at t=0 */
@@ -224,10 +223,10 @@ int main_sim(int argc, char* argv[argc])
 		OPTL_FLVEC3('2', "T2", &T2, "min:max:N", "range of T2 values"),
 		OPTL_SELECT(0, "BLOCH", enum sim_model, &(data.seq.model), MODEL_BLOCH, "Bloch Equations (default)"),
 		OPTL_SELECT(0, "BMC", enum sim_model, &(data.seq.model), MODEL_BMC, "Bloch-McConnell Equations"),
-		OPTL_SELECT(0, "ROT", enum sim_type, &(data.seq.type), SIM_ROT, "homogeneously discretized simulation based on rotational matrices"),
-		OPTL_SELECT(0, "ODE", enum sim_type, &(data.seq.type), SIM_ODE, "full ordinary differential equation solver based simulation (default)"),
-		OPTL_SELECT(0, "STM", enum sim_type, &(data.seq.type), SIM_STM, "state-transition matrix based simulation"),
-		OPTL_SET(0, "split-dim", &split_dim, "Split magnetization into x, y, and z component"),
+		OPTL_SELECT(0, "ROT", enum sim_type, &(data.seq.type), SIM_ROT, "discretized simulation based on rotational matrices"),
+		OPTL_SELECT(0, "ODE", enum sim_type, &(data.seq.type), SIM_ODE, "ordinary differential equation solver (default)"),
+		OPTL_SELECT(0, "STM", enum sim_type, &(data.seq.type), SIM_STM, "solver based on state-transition matrices"),
+		OPTL_SET(0, "split-dim", &split_dim, "split magnetization into x, y, and z component"),
 		OPTL_SUBOPT(0, "seq", "...", "configure sequence parameter", N_seq_opts, seq_opts),
 		OPTL_SUBOPT(0, "other", "...", "configure other parameters", N_other_opts, other_opts),
 		OPTL_SUBOPT(0, "pool", "...", "configure parameters for 2nd->5th pool", N_pool_opts, pool_opts),
@@ -331,5 +330,4 @@ int main_sim(int argc, char* argv[argc])
 
 	return 0;
 }
-
 
