@@ -997,7 +997,7 @@ static void cest_seq(struct sim_data* data, float h, float tol, int N, int P, fl
 		rf_pulse(data, h, tol, N, P, xp, NULL);
 		data->voxel.w = 0.;
 
-		if ( (data->cest.n_pulses - 1 > p) && (0. < data->cest.t_d) )
+		if ((data->cest.n_pulses - 1 > p) && (0. < data->cest.t_d))
 			relaxation2(data, h, tol, N, P, xp, 0, data->cest.t_d, NULL, 0.);
 	}
 
