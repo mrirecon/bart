@@ -457,9 +457,9 @@ void eigenmaps(const long out_dims[DIMS], complex float* optr, complex float* ep
 	md_clear(5, out_dims, optr, CFL_SIZE);
 
 #pragma omp parallel for collapse(3)
-	for (int k = 0; k < zz; k++) {
-		for (int j = 0; j < yy; j++) {
-			for (int i = 0; i < xx; i++) {
+	for (long k = 0; k < zz; k++) {
+		for (long j = 0; j < yy; j++) {
+			for (long i = 0; i < xx; i++) {
 
 				if (!msk || msk[i + xx * (j + yy * k)])	{
 
@@ -468,7 +468,7 @@ void eigenmaps(const long out_dims[DIMS], complex float* optr, complex float* ep
 
 					complex float tmp[channels * (channels + 1) / 2];
 
-					for (int l = 0; l < channels * (channels + 1) / 2; l++)
+					for (long l = 0; l < channels * (channels + 1) / 2; l++)
 						tmp[l] = imgcov2[((l * zz + k) * yy + j) * xx + i] / scale;
 
 					unpack_tri_matrix(channels, cov, tmp);
