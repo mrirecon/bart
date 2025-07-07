@@ -348,7 +348,7 @@ static enum adc_return skip_to_next(const char* hdr, int fd, off_t offset)
 }
 
 
-static enum adc_return siemens_bounds(bool vd, bool noise, bool refscan, int fd, long min[DIMS], long max[DIMS])
+static enum adc_return siemens_bounds(bool vd, bool noise, bool refscan, unsigned long ignore_dims_flags, int fd, long min[DIMS], long max[DIMS])
 {
 	char scan_hdr[vd ? 192 : 0];
 	size_t size = sizeof(scan_hdr);
@@ -405,6 +405,9 @@ static enum adc_return siemens_bounds(bool vd, bool noise, bool refscan, int fd,
 		pos[TIME2_DIM]	= mdh.sLC[7];
 		pos[LEVEL_DIM]	= mdh.sLC[8];
 
+		for (int i = 0; i < DIMS; i++)
+			if (MD_IS_SET(ignore_dims_flags, i))
+				pos[i] = 0;
 
 		for (int i = 0; i < DIMS; i++) {
 
@@ -426,7 +429,7 @@ static enum adc_return siemens_bounds(bool vd, bool noise, bool refscan, int fd,
 }
 
 
-static enum adc_return siemens_adc_read(bool vd, int fd, bool noise, bool refscan, bool linectr, bool partctr, bool radial, const long dims[DIMS], long pos[DIMS], complex float* buf, complex float* pmu_val)
+static enum adc_return siemens_adc_read(bool vd, int fd, bool noise, bool refscan, unsigned long ignore_dims_flags, bool linectr, bool partctr, bool radial, const long dims[DIMS], long pos[DIMS], complex float* buf, complex float* pmu_val)
 {
 	char scan_hdr[vd ? 192 : 0];
 	xread(fd, scan_hdr, sizeof(scan_hdr));
@@ -475,6 +478,10 @@ static enum adc_return siemens_adc_read(bool vd, int fd, bool noise, bool refsca
 			pos[TIME_DIM]	= mdh.sLC[6];
 			pos[TIME2_DIM]	= mdh.sLC[7];
 			pos[LEVEL_DIM]	= mdh.sLC[8];
+
+			for (int i = 0; i < DIMS; i++)
+				if (MD_IS_SET(ignore_dims_flags, i))
+					pos[i] = 0;
 		}
 
 		debug_print_dims(DP_DEBUG3, DIMS, pos);
@@ -535,6 +542,8 @@ int main_twixread(int argc, char* argv[argc])
 	long dims[DIMS];
 	md_singleton_dims(DIMS, dims);
 
+	unsigned long ignore_dims_flags = LEVEL_FLAG;
+
 	struct opt_s opts[] = {
 
 		OPT_LONG('x', &(dims[READ_DIM]), "X", "number of samples (read-out)"),
@@ -554,6 +563,7 @@ int main_twixread(int argc, char* argv[argc])
 		OPT_SET('P', &partctr, "use partctr offset"),
 		OPT_SET('N', &noise, "only get noise"),
 		OPT_SET('R', &refscan, "get data of reference scan"),
+		OPT_ULONG('I', &ignore_dims_flags, "flags", "ignore (squash) selected dimensions (defaults to LEVEL_FLAG)"),
 		OPTL_SET(0, "rational", &rational, "Rational Approximation Sampling"),
 		OPT_SET('M', &mpi, "MPI mode"),
 		OPTL_PINT(0, "bin", &bin, "d", "Binning of spokes for RAGA sampled data"),
@@ -569,6 +579,11 @@ int main_twixread(int argc, char* argv[argc])
 		dims[PHS1_DIM] = radial_lines;
 		radial = true;
 	}
+
+	ignore_dims_flags &= ~md_nontriv_dims(DIMS, dims);
+
+	assert(!MD_IS_SET(ignore_dims_flags, READ_DIM));
+	assert(!MD_IS_SET(ignore_dims_flags, COIL_DIM));
 
 	if (0 == adcs)
 		adcs = dims[PHS1_DIM] * dims[PHS2_DIM] * dims[SLICE_DIM] * dims[TIME_DIM] * dims[TIME2_DIM] * dims[LEVEL_DIM] * dims[COEFF_DIM];
@@ -597,7 +612,7 @@ int main_twixread(int argc, char* argv[argc])
 
 		while (ADC_END != sar) {
 
-			sar = siemens_bounds(vd, noise, refscan, ifd, min, max);
+			sar = siemens_bounds(vd, noise, refscan, ignore_dims_flags, ifd, min, max);
 
 			if (ADC_SKIP == sar)
 				continue;
@@ -684,7 +699,7 @@ int main_twixread(int argc, char* argv[argc])
 
 		long pos[DIMS] = { [0 ... DIMS - 1] = 0 };
 
-		sar = siemens_adc_read(vd, ifd, noise, refscan, linectr, partctr, radial, dims, pos, buf, &pmu_val);
+		sar = siemens_adc_read(vd, ifd, noise, refscan, ignore_dims_flags, linectr, partctr, radial, dims, pos, buf, &pmu_val);
 
 		if (ADC_ERROR == sar) {
 
@@ -751,6 +766,16 @@ int main_twixread(int argc, char* argv[argc])
 
 			if (0 < bin)
 				pos[TIME_DIM] = call / bin;
+
+			long strs[DIMS];
+			long sstrs[DIMS];
+			md_calc_strides(DIMS, strs, (0 < bin) ? odims : dims, CFL_SIZE);
+			md_singleton_strides(DIMS, sstrs);
+
+			complex float zero[1] = { 0. };
+
+			if (!md_compare2(DIMS, adc_dims, strs, &(MD_ACCESS(DIMS, strs, pos, out)), sstrs, zero, CFL_SIZE))
+				error("Read same ADC position twice!\n Check squashed dimensions?\n");
 
 			// FIXME: odims not working with MPI data
 			md_copy_block(DIMS, pos, (0 < bin) ? odims : dims, out, adc_dims, buf, CFL_SIZE);
