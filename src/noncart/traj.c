@@ -179,37 +179,37 @@ void calc_base_angles(double base_angle[DIMS], int Y, int E, struct traj_conf co
 	if (conf.double_base || conf.rational)
 		golden_angle *= 2.;
 
-	// Angle between spokes of one slice/partition
-	double angle_s = angle_atom * (conf.full_circle ? 2 : 1);
-
-	// Angle between slices/partitions
-	double angle_m = angle_atom / conf.mb; // linear-turned partitions
-
-	if (conf.aligned)
-		angle_m = 0;
-
-	// Angle between turns
-	double angle_t = 0.;
-
-	if (conf.turns > 1)
-		angle_t = angle_atom / conf.turns * (conf.full_circle ? 2 : 1);
-
-	/* radial multi-echo multi-spoke sampling
-	 *
-	 * Tan Z, Voit D, Kollmeier JM, Uecker M, Frahm J.
-	 * Dynamic water/fat separation and B0 inhomogeneity mapping -- joint
-	 * estimation using undersampled  triple-echo multi-spoke radial FLASH.
-	 * Magn Reson Med 82:1000-1011 (2019)
-	 */
+	double angle_s = 0.;
+	double angle_m = 0.; // slices/partitions
+	double angle_t = 0.; // turns
 	double angle_e = 0.;
 
-	if (conf.mems_traj) {
+	if (!conf.golden) {
 
-		angle_s = angle_s * 1.;
-		angle_e = angle_s / E;
-		angle_t = golden_angle;
+		// Angle between spokes of one slice/partition
+		angle_s = angle_atom * (conf.full_circle ? 2 : 1);
 
-	} else if (conf.golden) {
+		if (!conf.aligned)
+			angle_m = angle_atom / conf.mb; // linear-turned partitions
+
+		if (conf.turns > 1)
+			angle_t = angle_atom / conf.turns * (conf.full_circle ? 2 : 1);
+
+		if (conf.mems_traj) {
+
+			/* radial multi-echo multi-spoke sampling
+			 *
+			 * Tan Z, Voit D, Kollmeier JM, Uecker M, Frahm J.
+			 * Dynamic water/fat separation and B0 inhomogeneity mapping -- joint
+			 * estimation using undersampled  triple-echo multi-spoke radial FLASH.
+			 * Magn Reson Med 82:1000-1011 (2019)
+			 */
+
+			angle_e = angle_s / E;
+			angle_t = golden_angle;
+		}
+
+	} else  {
 
 		if (conf.aligned) {
 
@@ -236,23 +236,23 @@ void calc_base_angles(double base_angle[DIMS], int Y, int E, struct traj_conf co
 
 			int mb_red = 8;
 
-			angle_m = golden_angle;
 			angle_s = golden_angle * mb_red;
+			angle_m = golden_angle;
 			angle_t = golden_angle * Y * mb_red;
 
 			debug_printf(DP_INFO, "Trajectory generation to reproduce SSA-FARY Paper!\n");
 		}
 #endif
-		if (use_compat_to_version("v0.4.00")) {
+		if (use_compat_to_version("v0.4.00") && conf.full_circle) {
 
 			// since the traj rewrite (commit d4e6e2e3a2313) we do not apply
 			// full circle to golden angle anymore. However, this is needed for
 			// reproducing the RING paper
-			angle_s *= (conf.full_circle ? 2. : 1.);
-			angle_m *= (conf.full_circle ? 2. : 1.);
-			angle_t *= (conf.full_circle ? 2. : 1.);
-		}
 
+			angle_s *= 2.;
+			angle_m *= 2.;
+			angle_t *= 2.;
+		}
 	}
 
 	base_angle[PHS2_DIM] = angle_s;
