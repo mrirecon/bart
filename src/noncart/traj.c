@@ -125,13 +125,6 @@ int raga_increment(int Y, int n)
 	return gen_fibonacci(1, i - 1);
 }
 
-static float rational_angle(int Y, int n)
-{
-	int inc = raga_increment(Y, n);
-
-	return M_PI / (float)Y * (float)inc;
-}
-
 int raga_spokes(int baseresolution, int tiny_ga)
 {
 	int i = raga_find_index((M_PI / 2.) * baseresolution, tiny_ga);
@@ -170,12 +163,13 @@ void calc_base_angles(double base_angle[DIMS], int Y, int E, struct traj_conf co
 			golden_angle = M_PI * (2. - (3. - sqrtf(5.))) / 2.;
 	}
 
-	if (conf.rational)
-		golden_angle = rational_angle(Y / (conf.double_base ? 1 : 2), conf.tiny_gold);
-
-	golden_angle = golden_angle * (conf.double_base ? 2. : 1.);
-
 	double angle_atom = M_PI / Y;
+
+	if (conf.rational)
+		golden_angle = angle_atom * conf.raga_inc;
+
+	if (conf.double_base || conf.rational)
+		golden_angle *= 2.;
 
 	// Angle between spokes of one slice/partition
 	double angle_s = angle_atom * (conf.full_circle ? 2 : 1);
