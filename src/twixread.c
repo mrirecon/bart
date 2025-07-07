@@ -280,7 +280,7 @@ static bool is_image_adc(uint64_t adc_flag)
 	return true;
 }
 
-static bool adc_to_skip(bool noise, bool refscan, uint64_t adc_flag)
+static bool adc_to_skip(bool noise, bool refscan, bool refscan_ac, uint64_t adc_flag)
 {
 	if (noise)
 		return !(adc_flag & MD_BIT(NOISEADJSCAN));
@@ -291,7 +291,7 @@ static bool adc_to_skip(bool noise, bool refscan, uint64_t adc_flag)
 			return !is_image_adc(adc_flag);
 	} else {
 
-		if (MD_IS_SET(adc_flag, PATREFANDIMASCAN) || !MD_IS_SET(adc_flag, PATREFSCAN))
+		if (refscan_ac || MD_IS_SET(adc_flag, PATREFANDIMASCAN) || !MD_IS_SET(adc_flag, PATREFSCAN))
 			return !is_image_adc(adc_flag);
 	}
 
@@ -348,7 +348,7 @@ static enum adc_return skip_to_next(const char* hdr, int fd, off_t offset)
 }
 
 
-static enum adc_return siemens_bounds(bool vd, bool noise, bool refscan, unsigned long ignore_dims_flags, int fd, long min[DIMS], long max[DIMS])
+static enum adc_return siemens_bounds(bool vd, bool noise, bool refscan, bool refscan_ac, unsigned long ignore_dims_flags, int fd, long min[DIMS], long max[DIMS])
 {
 	char scan_hdr[vd ? 192 : 0];
 	size_t size = sizeof(scan_hdr);
@@ -378,7 +378,7 @@ static enum adc_return siemens_bounds(bool vd, bool noise, bool refscan, unsigne
 			return ADC_END;
 
 
-		if (adc_to_skip(noise, refscan, mdh.evalinfo))
+		if (adc_to_skip(noise, refscan, refscan_ac, mdh.evalinfo))
 			return skip_to_next(vd ? scan_hdr : chan_hdr, fd, offset);
 
 
@@ -429,7 +429,7 @@ static enum adc_return siemens_bounds(bool vd, bool noise, bool refscan, unsigne
 }
 
 
-static enum adc_return siemens_adc_read(bool vd, int fd, bool noise, bool refscan, unsigned long ignore_dims_flags, bool linectr, bool partctr, bool radial, const long dims[DIMS], long pos[DIMS], complex float* buf, complex float* pmu_val)
+static enum adc_return siemens_adc_read(bool vd, int fd, bool noise, bool refscan, bool refscan_ac, unsigned long ignore_dims_flags, bool linectr, bool partctr, bool radial, const long dims[DIMS], long pos[DIMS], complex float* buf, complex float* pmu_val)
 {
 	char scan_hdr[vd ? 192 : 0];
 	xread(fd, scan_hdr, sizeof(scan_hdr));
@@ -449,7 +449,7 @@ static enum adc_return siemens_adc_read(bool vd, int fd, bool noise, bool refsca
 		if (MD_IS_SET(mdh.evalinfo, ACQEND))
 			return ADC_END;
 
-		if (adc_to_skip(noise, refscan, mdh.evalinfo)
+		if (adc_to_skip(noise, refscan, refscan_ac, mdh.evalinfo)
 			|| (dims[READ_DIM] != mdh.samples)) {
 
 			ssize_t offset = sizeof(scan_hdr) + sizeof(chan_hdr);
@@ -537,6 +537,10 @@ int main_twixread(int argc, char* argv[argc])
 	bool check_read = true;
 	bool noise = false;
 	bool refscan = false;
+	bool refscan_ac = true;
+	// When GRAPPA is selected as acceleartion method, SIEMENS does not use fully-sampled AC region,
+	// i.e. PATREFANDIMASCAN or PATREFSCAN flags are set for AC region depending on position.
+	// If refscan_ac is set, we interpret PATREFSCAN lines as image lines, too.
 
 	bool rational = false;
 	long dims[DIMS];
@@ -563,6 +567,7 @@ int main_twixread(int argc, char* argv[argc])
 		OPT_SET('P', &partctr, "use partctr offset"),
 		OPT_SET('N', &noise, "only get noise"),
 		OPT_SET('R', &refscan, "get data of reference scan"),
+		OPT_CLEAR('S', &refscan_ac, "don't include reference lines"),
 		OPT_ULONG('I', &ignore_dims_flags, "flags", "ignore (squash) selected dimensions (defaults to LEVEL_FLAG)"),
 		OPTL_SET(0, "rational", &rational, "Rational Approximation Sampling"),
 		OPT_SET('M', &mpi, "MPI mode"),
@@ -612,7 +617,7 @@ int main_twixread(int argc, char* argv[argc])
 
 		while (ADC_END != sar) {
 
-			sar = siemens_bounds(vd, noise, refscan, ignore_dims_flags, ifd, min, max);
+			sar = siemens_bounds(vd, noise, refscan, refscan_ac, ignore_dims_flags, ifd, min, max);
 
 			if (ADC_SKIP == sar)
 				continue;
@@ -699,7 +704,7 @@ int main_twixread(int argc, char* argv[argc])
 
 		long pos[DIMS] = { [0 ... DIMS - 1] = 0 };
 
-		sar = siemens_adc_read(vd, ifd, noise, refscan, ignore_dims_flags, linectr, partctr, radial, dims, pos, buf, &pmu_val);
+		sar = siemens_adc_read(vd, ifd, noise, refscan, refscan_ac, ignore_dims_flags, linectr, partctr, radial, dims, pos, buf, &pmu_val);
 
 		if (ADC_ERROR == sar) {
 
