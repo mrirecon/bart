@@ -135,7 +135,7 @@ int raga_spokes(int baseresolution, int tiny_ga)
 	return gen_fibonacci(tiny_ga, i);
 }
 
-void calc_base_angles(double base_angle[DIMS], int Y, int E, struct traj_conf conf)
+static double calc_golden_angle(int tiny_gold)
 {
 	/*
 	 * Winkelmann S, Schaeffter T, Koehler T, Eggers H, Doessel O.
@@ -152,10 +152,10 @@ void calc_base_angles(double base_angle[DIMS], int Y, int E, struct traj_conf co
 	if (use_compat_to_version("v0.5.00"))
 		golden_ratio = (sqrtf(5.) + 1.) / 2;
 
-	double golden_angle = M_PI / (golden_ratio + conf.tiny_gold - 1.);
+	double golden_angle = M_PI / (golden_ratio + tiny_gold - 1.);
 
 	// For numerical stability
-	if (1 == conf.tiny_gold) {
+	if (1 == tiny_gold) {
 
 		golden_angle = M_PI * (2. - (3. - sqrt(5.))) / 2.;
 
@@ -163,10 +163,18 @@ void calc_base_angles(double base_angle[DIMS], int Y, int E, struct traj_conf co
 			golden_angle = M_PI * (2. - (3. - sqrtf(5.))) / 2.;
 	}
 
+	return golden_angle;
+}
+
+void calc_base_angles(double base_angle[DIMS], int Y, int E, struct traj_conf conf)
+{
+	double golden_angle;
 	double angle_atom = M_PI / Y;
 
 	if (conf.rational)
 		golden_angle = angle_atom * conf.raga_inc;
+	else
+		golden_angle = calc_golden_angle(conf.tiny_gold);
 
 	if (conf.double_base || conf.rational)
 		golden_angle *= 2.;
