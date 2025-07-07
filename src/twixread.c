@@ -34,7 +34,7 @@
  * https://github.com/pehses/twixtools
  * https://github.com/cjohnevans/Gannet2.0/blob/master/mapVBVD.m
  * https://bitbucket.org/yarra-dev/yarramodules-setdcmtags/src/
- */ 
+ */
 struct hdr_s {
 
 	uint32_t offset;
@@ -280,12 +280,22 @@ static bool is_image_adc(uint64_t adc_flag)
 	return true;
 }
 
-static bool adc_to_skip(bool noise, uint64_t adc_flag)
+static bool adc_to_skip(bool noise, bool refscan, uint64_t adc_flag)
 {
 	if (noise)
 		return !(adc_flag & MD_BIT(NOISEADJSCAN));
 
-	return !is_image_adc(adc_flag);
+	if (refscan) {
+
+		if (MD_IS_SET(adc_flag, PATREFSCAN) || MD_IS_SET(adc_flag, PATREFANDIMASCAN))
+			return !is_image_adc(adc_flag);
+	} else {
+
+		if (MD_IS_SET(adc_flag, PATREFANDIMASCAN) || !MD_IS_SET(adc_flag, PATREFSCAN))
+			return !is_image_adc(adc_flag);
+	}
+
+	return true;
 }
 
 static void debug_print_flags(int dblevel, uint64_t adc_flag)
@@ -338,7 +348,7 @@ static enum adc_return skip_to_next(const char* hdr, int fd, off_t offset)
 }
 
 
-static enum adc_return siemens_bounds(bool vd, bool noise, int fd, long min[DIMS], long max[DIMS])
+static enum adc_return siemens_bounds(bool vd, bool noise, bool refscan, int fd, long min[DIMS], long max[DIMS])
 {
 	char scan_hdr[vd ? 192 : 0];
 	size_t size = sizeof(scan_hdr);
@@ -368,7 +378,7 @@ static enum adc_return siemens_bounds(bool vd, bool noise, int fd, long min[DIMS
 			return ADC_END;
 
 
-		if (adc_to_skip(noise, mdh.evalinfo))
+		if (adc_to_skip(noise, refscan, mdh.evalinfo))
 			return skip_to_next(vd ? scan_hdr : chan_hdr, fd, offset);
 
 
@@ -416,7 +426,7 @@ static enum adc_return siemens_bounds(bool vd, bool noise, int fd, long min[DIMS
 }
 
 
-static enum adc_return siemens_adc_read(bool vd, int fd, bool noise, bool linectr, bool partctr, bool radial, const long dims[DIMS], long pos[DIMS], complex float* buf, complex float* pmu_val)
+static enum adc_return siemens_adc_read(bool vd, int fd, bool noise, bool refscan, bool linectr, bool partctr, bool radial, const long dims[DIMS], long pos[DIMS], complex float* buf, complex float* pmu_val)
 {
 	char scan_hdr[vd ? 192 : 0];
 	xread(fd, scan_hdr, sizeof(scan_hdr));
@@ -436,7 +446,7 @@ static enum adc_return siemens_adc_read(bool vd, int fd, bool noise, bool linect
 		if (MD_IS_SET(mdh.evalinfo, ACQEND))
 			return ADC_END;
 
-		if (adc_to_skip(noise, mdh.evalinfo)
+		if (adc_to_skip(noise, refscan, mdh.evalinfo)
 			|| (dims[READ_DIM] != mdh.samples)) {
 
 			ssize_t offset = sizeof(scan_hdr) + sizeof(chan_hdr);
@@ -519,6 +529,7 @@ int main_twixread(int argc, char* argv[argc])
 	bool mpi = false;
 	bool check_read = true;
 	bool noise = false;
+	bool refscan = false;
 
 	bool rational = false;
 	long dims[DIMS];
@@ -542,6 +553,7 @@ int main_twixread(int argc, char* argv[argc])
 		OPT_SET('L', &linectr, "use linectr offset"),
 		OPT_SET('P', &partctr, "use partctr offset"),
 		OPT_SET('N', &noise, "only get noise"),
+		OPT_SET('R', &refscan, "get data of reference scan"),
 		OPTL_SET(0, "rational", &rational, "Rational Approximation Sampling"),
 		OPT_SET('M', &mpi, "MPI mode"),
 		OPTL_PINT(0, "bin", &bin, "d", "Binning of spokes for RAGA sampled data"),
@@ -573,6 +585,9 @@ int main_twixread(int argc, char* argv[argc])
 	enum adc_return sar = ADC_OK;
 	long off[DIMS] = { };
 
+	if (noise && refscan)
+		error("Noise and reference scan cannot be read in one run!\n");
+
 	if (autoc | noise) {
 
 		long max[DIMS] = { [COIL_DIM] = 1000 };
@@ -582,7 +597,7 @@ int main_twixread(int argc, char* argv[argc])
 
 		while (ADC_END != sar) {
 
-			sar = siemens_bounds(vd, noise, ifd, min, max);
+			sar = siemens_bounds(vd, noise, refscan, ifd, min, max);
 
 			if (ADC_SKIP == sar)
 				continue;
@@ -669,7 +684,7 @@ int main_twixread(int argc, char* argv[argc])
 
 		long pos[DIMS] = { [0 ... DIMS - 1] = 0 };
 
-		sar = siemens_adc_read(vd, ifd, noise, linectr, partctr, radial, dims, pos, buf, &pmu_val);
+		sar = siemens_adc_read(vd, ifd, noise, refscan, linectr, partctr, radial, dims, pos, buf, &pmu_val);
 
 		if (ADC_ERROR == sar) {
 
