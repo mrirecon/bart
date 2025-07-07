@@ -1,7 +1,7 @@
 /* Copyright 2013. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
- * 
+ *
  * Authors:
  * 2012 Dara Bahri <dbahri123@gmail.com>
  * 2013 Martin Uecker <uecker@eecs.berkeley.edu>
@@ -28,8 +28,7 @@
 
 #include "calibcu.h"
 
-#define MIN(a,b) (((a)<(b))?(a):(b))
-#define MAX(a,b) (((a)>(b))?(a):(b))
+
 extern "C" void error(const char* str, ...);
 
 #if 0
@@ -52,7 +51,7 @@ static __device__ __host__ inline cuFloatComplex cuFloatComplexScale(cuFloatComp
 
 
 static __device__ void gram_schmidtcu(int M, int N, cuFloatComplex* evals, cuFloatComplex* vecs)
-{    
+{
     cuFloatComplex val1;
     cuFloatComplex val2;
     for (int i = M-1; i >= 0; i--) {
@@ -85,7 +84,7 @@ static __device__ void gram_schmidtcu(int M, int N, cuFloatComplex* evals, cuFlo
             vecs[threadIdx.y + i*N] = cuFloatComplexScale(val1, 1./cuCrealf(evals[i]));
         }
 }
-      
+
 static __device__ inline void mat_mulcu(int M, int N, cuFloatComplex* A, cuFloatComplex* B, cuFloatComplex* C, int offset)
 {
     cuFloatComplex tmp;
@@ -99,7 +98,7 @@ static __device__ inline void mat_mulcu(int M, int N, cuFloatComplex* A, cuFloat
 
 static __global__ void eigenmapscu_kern(cuFloatComplex* in_filled, cuFloatComplex* in, cuFloatComplex* out, cuFloatComplex* vals, int iter, int x, int y, int z, int N, int M)
 {
-    const int offset = blockIdx.x * blockDim.x + threadIdx.x; 
+    const int offset = blockIdx.x * blockDim.x + threadIdx.x;
     if (offset > x*y*z-1)
         return;
     extern __shared__ cuFloatComplex sdata[];
@@ -121,32 +120,32 @@ static __global__ void eigenmapscu_kern(cuFloatComplex* in_filled, cuFloatComple
 
 	for (int i = 0; i < M; i++)
 	    tmp1[threadIdx.y + i*N] = (threadIdx.y == i) ? make_cuFloatComplex(1.,0.) : make_cuFloatComplex(0.,0.);
-    __syncthreads();    
+    __syncthreads();
 
     for (int i = 0; i < iter; i++) {
-    	
+
     	for (int j = 0; j < M; j++)
 	        tmp2[threadIdx.y + j*N] = tmp1[threadIdx.y + j*N];
         __syncthreads();
-        
+
         mat_mulcu(M, N, tmp1, tmp2, in_filled, offset);
         __syncthreads();
-		
+
 		gram_schmidtcu(M, N, evals, tmp1);
-		__syncthreads();   
+		__syncthreads();
     }
-    
+
     for (int i = 0; i < M; i++)
         out[offset + (i*N + threadIdx.y)*x*y*z] = tmp1[N * (M-1-i) + threadIdx.y];
-    
-    if (threadIdx.y == 0)    
+
+    if (threadIdx.y == 0)
         if (vals)
             for (int i = 0; i < M; i++)
                 vals[offset + i*x*y*z] = evals[M-1-i];
 }
 
 
-        
+
 void eigenmapscu(const long dims[5], _Complex float* optr, _Complex float* eptr, const _Complex float* imgcov2, int num_orthiter)
 {
 	const int x = (int) dims[0];
@@ -170,14 +169,14 @@ void eigenmapscu(const long dims[5], _Complex float* optr, _Complex float* eptr,
 
 
 	printf("CUDA Pointwise Eigendecomposition...\n");
-    
+
 	cuFloatComplex* optr_device = (cuFloatComplex*)md_alloc_gpu(5, dims, sizeof(cuFloatComplex));
 	cuFloatComplex* imgcov2_device = (cuFloatComplex*)md_alloc_gpu(5, imgcov2_dims, sizeof(cuFloatComplex));
 	cuFloatComplex* imgcov2_device_filled = (cuFloatComplex*)md_alloc_gpu(5, imgcov2_df_dims, sizeof(cuFloatComplex));
 	cuFloatComplex* eptr_device = (cuFloatComplex*)md_alloc_gpu(5, eptr_dims, sizeof(cuFloatComplex));
 
 	md_copy(5, imgcov2_dims, imgcov2_device, imgcov2, sizeof(cuFloatComplex));
-	
+
 
 	struct cudaDeviceProp mycudaDeviceProperties;
 	cudaGetDeviceProperties(&mycudaDeviceProperties, 0);
@@ -186,13 +185,13 @@ void eigenmapscu(const long dims[5], _Complex float* optr, _Complex float* eptr,
 	const int memPerPoint = (2*M*N + M) * sizeof(cuFloatComplex);
 	int pointsPerBlock = MIN(maxThreadsPerBlock/N, maxSharedMemPerBlock/memPerPoint);
 	const int maxRegsPerBlock = mycudaDeviceProperties.regsPerBlock;
-	const int maxCmemPerBlock = mycudaDeviceProperties.totalConstMem;  
+	const int maxCmemPerBlock = mycudaDeviceProperties.totalConstMem;
 	// determined by --ptxas-options="-v". cmem is constant mem used for 1) kernel args, 2) user defined constants, 3) compiler-generated constants
 	const int regsPerThread = 36;
-	const int cmemPerThread = 108; 
+	const int cmemPerThread = 108;
 	pointsPerBlock = MIN(pointsPerBlock, maxRegsPerBlock / (N * regsPerThread));
 	pointsPerBlock = MIN(pointsPerBlock, maxCmemPerBlock / (N * cmemPerThread));
-	assert(pointsPerBlock > 0);    
+	assert(pointsPerBlock > 0);
 
 	dim3 threads(pointsPerBlock, N, 1);
 	int numBlocks = (x*y*z + (pointsPerBlock-1)) / pointsPerBlock;
@@ -232,4 +231,4 @@ void eigenmapscu(const long dims[5], _Complex float* optr, _Complex float* eptr,
 
 
 
-    
+

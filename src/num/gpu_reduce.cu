@@ -21,8 +21,6 @@
 #define FL_SIZE 4
 
 #define BLOCKSIZE 1024
-#define MIN(a, b) ((a < b) ? a : b)
-#define MAX(a, b) ((a > b) ? a : b)
 
 
 static long gridsizeX(long N, unsigned int blocksize)

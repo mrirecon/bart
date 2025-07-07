@@ -36,8 +36,7 @@ static int blocksize(long N)
 	return BLOCKSIZE;
 }
 
-#define MAX(x, y) (((x) > (y)) ? (x) : (y))
-#define MIN(x, y) (((x) < (y)) ? (x) : (y))
+#undef SWAP
 #define SWAP(x, y) { __typeof(x) temp = x; x = y; y = temp; }
 
 static long gridsize(long N)
