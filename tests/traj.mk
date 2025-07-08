@@ -157,7 +157,7 @@ tests/test-traj-rational-approx-loop: traj slice nrmse
 	$(TOOLDIR)/traj -y 233 -r -A -s 1 --double-base -t 2 traj.ra	;\
 	$(TOOLDIR)/slice 10 0 traj.ra o1.ra				;\
 	$(TOOLDIR)/slice 10 1 traj.ra o2.ra				;\
-	$(TOOLDIR)/nrmse -t 0.007 o1.ra o2.ra				;\
+	$(TOOLDIR)/nrmse -t 0.00005 o1.ra o2.ra				;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
@@ -202,7 +202,7 @@ tests/test-traj-double-base: traj slice nrmse
 	$(TOOLDIR)/traj -y 3 -r -G -s1 traj2.ra				;\
 	$(TOOLDIR)/slice 2 1 traj.ra o1.ra				;\
 	$(TOOLDIR)/slice 2 2 traj2.ra o2.ra				;\
-	$(TOOLDIR)/nrmse -t 0.007 o1.ra o2.ra				;\
+	$(TOOLDIR)/nrmse -t 0. o1.ra o2.ra				;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
@@ -239,7 +239,7 @@ tests/test-traj-rational-approx-inc: traj nrmse
 	$(TOOLDIR)/nrmse -t 0.007 t1.ra t2.ra				;\
 	$(TOOLDIR)/traj -y 377 -r -A -s 1 --double-base -t3 t3.ra			;\
 	$(TOOLDIR)/traj -y 377 -r -A --raga-inc 233 --double-base -t3 t4.ra		;\
-	$(TOOLDIR)/nrmse -t 0.007 t3.ra t4.ra				;\
+	$(TOOLDIR)/nrmse -t 0. t3.ra t4.ra				;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
