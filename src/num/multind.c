@@ -515,29 +515,6 @@ void md_max_dims(unsigned int D, unsigned long flags, long odims[D], const long 
 
 
 
-struct data_s {
-
-	size_t size;
-#ifdef USE_CUDA
-	bool use_gpu;
-#endif
-};
-
-static void nary_clear(struct nary_opt_data_s* opt_data, void* ptr[])
-{
-	struct data_s* data = opt_data->data_ptr;
-	size_t size = data->size * opt_data->size;
-
-#ifdef  USE_CUDA
-	if (data->use_gpu) {
-
-		cuda_clear(size, ptr[0]);
-		return;
-	}
-#endif
-	memset(ptr[0], 0, size);
-}
-
 /**
  * Zero out array (with strides)
  *
@@ -546,12 +523,38 @@ static void nary_clear(struct nary_opt_data_s* opt_data, void* ptr[])
 void md_clear2(unsigned int D, const long dim[D], const long str[D], void* ptr, size_t size)
 {
 	const long (*nstr[1])[D] = { (const long (*)[D])str };
-#ifdef	USE_CUDA
-	struct data_s data = { size, cuda_ondevice(ptr) };
+
+#ifdef USE_CUDA
+	struct data_s {
+
+		size_t size;
+		bool use_gpu;
+
+	} data = { size, cuda_ondevice(ptr) };
 #else
-	struct data_s data = { size };
+	struct data_s {
+
+		size_t size;
+
+	} data = { size };
 #endif
 	unsigned long flags = 0;
+
+
+	void nary_clear(struct nary_opt_data_s* opt_data, void* ptr[])
+	{
+		struct data_s* data = opt_data->data_ptr;
+		size_t size = data->size * opt_data->size;
+
+#ifdef  USE_CUDA
+		if (data->use_gpu) {
+
+			cuda_clear(size, ptr[0]);
+			return;
+		}
+#endif
+		memset(ptr[0], 0, size);
+	}
 
 	for (unsigned int i = 0; i < D; i++)
 		if (0 == str[i])
@@ -604,41 +607,6 @@ void md_clear(unsigned int D, const long dim[D], void* ptr, size_t size)
 	md_clear2(D, dim, MD_STRIDES(D, dim, size), ptr, size);
 }
 
-
-
-struct strided_copy_s {
-
-	long sizes[2];
-	long ostr;
-	long istr;
-};
-
-#ifdef USE_CUDA
-static void nary_strided_copy(void* _data, void* ptr[])
-{
-	struct strided_copy_s* data = _data;
-//	printf("CUDA 2D copy %ld %ld %ld %ld %ld %ld\n", data->sizes[0], data->sizes[1], data->ostr, data->istr, (long)ptr[0], (long)ptr[1]);
-
-	cuda_memcpy_strided(data->sizes, data->ostr, ptr[0], data->istr, ptr[1]);
-}
-#endif
-
-static void nary_copy(struct nary_opt_data_s* opt_data, void* ptr[])
-{
-	struct data_s* data = opt_data->data_ptr;
-	size_t size = data->size * opt_data->size;
-
-#ifdef  USE_CUDA
-	if (data->use_gpu) {
-
-		cuda_memcpy(size, ptr[0], ptr[1]);
-		return;
-	}
-#endif
-
-	memcpy(ptr[0], ptr[1], size);
-}
-
 /**
  * Copy array (with strides)
  *
@@ -656,11 +624,18 @@ void md_copy2(unsigned int D, const long dim[D], const long ostr[D], void* optr,
 		fft2(D, dim, 0, ostr, optr, istr, iptr);
 #endif
 
-#ifndef	USE_CUDA
-	struct data_s data = { size };
-#else
+	struct data_s {
+
+		size_t size;
+		bool use_gpu;
+	};
+
+#ifdef USE_CUDA
 	struct data_s data = { size, cuda_ondevice(optr) || cuda_ondevice(iptr) };
-#if 1
+#else
+	struct data_s data = { size, false };
+#endif
+#ifdef USE_CUDA
 	long tostr[D];
 	long tistr[D];
 	long tdims[D];
@@ -685,18 +660,47 @@ void md_copy2(unsigned int D, const long dim[D], const long ostr[D], void* optr,
 		void* nptr[2] = { optr, (void*)iptr };
 
 		long sizes[2] = { md_calc_size(skip, tdims) * size, tdims[skip] };
-		struct strided_copy_s data = { { sizes[0], sizes[1] } , (*nstr2[0])[skip], (*nstr2[1])[skip] };
 
+		struct strided_copy_s {
+
+			long sizes[2];
+			long ostr;
+			long istr;
+
+		} data = { { sizes[0], sizes[1] } , (*nstr2[0])[skip], (*nstr2[1])[skip] };
+
+		void nary_strided_copy(void* _data, void* ptr[])
+		{
+			struct strided_copy_s* data = _data;
+		//	printf("CUDA 2D copy %ld %ld %ld %ld %ld %ld\n", data->sizes[0], data->sizes[1], data->ostr, data->istr, (long)ptr[0], (long)ptr[1]);
+
+			cuda_memcpy_strided(data->sizes, data->ostr, ptr[0], data->istr, ptr[1]);
+		}
 		skip++;
 
 		md_nary(2, ND - skip, tdims + skip , nstr, nptr, &data, &nary_strided_copy);
 		return;
 	}
 #endif
+
+
+	void nary_copy(struct nary_opt_data_s* opt_data, void* ptr[])
+	{
+		struct data_s* data = opt_data->data_ptr;
+		size_t size = data->size * opt_data->size;
+
+#ifdef  USE_CUDA
+		if (data->use_gpu) {
+
+			cuda_memcpy(size, ptr[0], ptr[1]);
+			return;
+		}
 #endif
 
-	const long (*nstr[2])[D] = { (const long (*)[D])ostr, (const long (*)[D])istr };
+		memcpy(ptr[0], ptr[1], size);
+	}
 
+	const long (*nstr[2])[D] = { (const long (*)[D])ostr, (const long (*)[D])istr };
 	optimized_nop(2, MD_BIT(0), D, dim, nstr, (void*[2]){ optr, (void*)iptr }, (size_t[2]){ size, size }, nary_copy, &data);
 }
 
@@ -764,35 +768,6 @@ void md_fill(unsigned int D, const long dim[D], void* ptr, const void* iptr, siz
 
 
 
-struct swap_s {
-
-	unsigned int M;
-	size_t size;
-};
-
-static void nary_swap(struct nary_opt_data_s* opt_data, void* ptr[])
-{
-	const struct swap_s* data = opt_data->data_ptr;
-	size_t size = data->size * opt_data->size;
-	unsigned int M = data->M;
-
-	char* tmp = (size < 32) ? alloca(size) : xmalloc(size);
-
-#ifdef  USE_CUDA
-	assert(!cuda_ondevice(ptr[0]));
-	assert(!cuda_ondevice(ptr[1]));
-#endif
-	memcpy(tmp, ptr[0], size);
-
-	for (unsigned int i = 0; i < M - 1; i++)
-		memcpy(ptr[i], ptr[i + 1], size);
-
-	memcpy(ptr[M - 1], tmp, size);
-
-	if (size >= 32)
-		xfree(tmp);
-}
-
 /**
  * Swap values between a number of arrays (with strides)
  */
@@ -802,7 +777,35 @@ void md_circular_swap2(unsigned int M, unsigned int D, const long dims[D], const
 	for (unsigned int i = 0; i < M; i++)
 		sizes[i] = size;
 
-	struct swap_s data = { M, size };
+	struct swap_s {
+
+		unsigned int M;
+		size_t size;
+
+	} data = { M, size };
+
+	void nary_swap(struct nary_opt_data_s* opt_data, void* ptr[])
+	{
+		const struct swap_s* data = opt_data->data_ptr;
+		size_t size = data->size * opt_data->size;
+		unsigned int M = data->M;
+
+		char* tmp = (size < 32) ? alloca(size) : xmalloc(size);
+
+#ifdef  USE_CUDA
+		assert(!cuda_ondevice(ptr[0]));
+		assert(!cuda_ondevice(ptr[1]));
+#endif
+		memcpy(tmp, ptr[0], size);
+
+		for (unsigned int i = 0; i < M - 1; i++)
+			memcpy(ptr[i], ptr[i + 1], size);
+
+		memcpy(ptr[M - 1], tmp, size);
+
+		if (size >= 32)
+			xfree(tmp);
+	}
 
 	const long (*nstrs[M])[D];
 	for (unsigned int i = 0; i < M; i++)
@@ -1286,27 +1289,26 @@ void md_flip(unsigned int D, const long dims[D], unsigned long flags, void* optr
 }
 
 
-struct compare_s {
-
-	bool eq;
-	size_t size;
-};
-
-static void nary_cmp(struct nary_opt_data_s* opt_data, void* ptrs[])
-{
-	struct compare_s* data = opt_data->data_ptr;
-	size_t size = data->size * opt_data->size;
-
-	bool eq = (0 == memcmp(ptrs[0], ptrs[1], size));
-
-	#pragma omp critical
-	data->eq &= eq;
-}
-
 bool md_compare2(unsigned int D, const long dims[D], const long str1[D], const void* src1,
 			const long str2[D], const void* src2, size_t size)
 {
-	struct compare_s data = { true, size };
+	struct compare_s {
+
+		bool eq;
+		size_t size;
+
+	} data = { true, size };
+
+	void nary_cmp(struct nary_opt_data_s* opt_data, void* ptrs[])
+	{
+		struct compare_s* data = opt_data->data_ptr;
+		size_t size = data->size * opt_data->size;
+
+		bool eq = (0 == memcmp(ptrs[0], ptrs[1], size));
+
+		#pragma omp critical
+		data->eq &= eq;
+	}
 
 	const long (*nstr[2])[D] = { (const long (*)[D])str1, (const long (*)[D])str2 };
 
@@ -1328,20 +1330,6 @@ bool md_compare(unsigned int D, const long dims[D], const void* src1, const void
 
 
 
-struct septrafo_s {
-
-	long N;
-	long str;
-	void* data;
-	md_trafo_fun_t fun;
-};
-
-static void nary_septrafo(void* _data, void* ptr[])
-{
-	struct septrafo_s* data = (struct septrafo_s*)_data;
-
-	data->fun(data->data, data->N, data->str, ptr[0]);
-}
 
 static void md_septrafo_r(unsigned int D, unsigned int R, long dimensions[D], unsigned long flags, const long strides[D], void* ptr, md_trafo_fun_t fun, void* _data)
 {
@@ -1352,7 +1340,22 @@ static void md_septrafo_r(unsigned int D, unsigned int R, long dimensions[D], un
 
         if (MD_IS_SET(flags, R)) {
 
-        	struct septrafo_s data = { dimensions[R], strides[R], _data, fun };
+		struct septrafo_s {
+
+			long N;
+			long str;
+			void* data;
+			md_trafo_fun_t fun;
+
+		} data = { dimensions[R], strides[R], _data, fun };
+
+		void nary_septrafo(void* _data, void* ptr[])
+		{
+			struct septrafo_s* data = (struct septrafo_s*)_data;
+
+			data->fun(data->data, data->N, data->str, ptr[0]);
+		}
+
                 void* nptr[1] = { ptr };
                 const long* nstrides[1] = { strides };
 
