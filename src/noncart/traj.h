@@ -13,6 +13,7 @@ struct traj_conf {
 	_Bool mems_traj;
 	_Bool rational;
 	_Bool double_base;
+	unsigned long aligned_flags;
 	int accel;
 	int tiny_gold;
 	int Y;

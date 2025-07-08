@@ -40,6 +40,9 @@ const struct traj_conf traj_defaults = {
 	.double_base = false,
 	.turns = 1,
 	.mb = 1,
+	.Y = 1,
+	.raga_inc = 1,
+	.aligned_flags = 0,
 };
 
 
