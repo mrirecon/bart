@@ -2549,3 +2549,19 @@ long md_ravel_index(int D, const long pos[D], unsigned long flags, const long di
 	return ind;
 }
 
+/**
+ * Convert pos to flat index with order
+ *
+ */
+long md_ravel_index_permuted(int D, const long pos[D], unsigned long flags, const long dims[D], const int order[D])
+{
+	long dims2[D];
+	md_permute_dims(D, order, dims2, dims);
+
+	long pos2[D];
+	md_permute_dims(D, order, pos2, pos);
+
+	unsigned long flags2 = md_permute_flags(D, order, flags);
+
+	return md_ravel_index(D, pos2, flags2, dims2);
+}
