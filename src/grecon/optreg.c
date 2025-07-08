@@ -469,7 +469,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 	if (NULL != sdims) {
 
-		for (int i = 0; i < NUM_REGS && sdims; i++)
+		for (int i = 0; i < NUM_REGS; i++)
 			sdims[i] = NULL;
 	}
 
@@ -494,10 +494,9 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 			assert(!MD_IS_SET(regs[nr].xflags, asl_dim));
 
 		const struct linop_s* lop_asl = NULL;
-		if (ropts->asl && regs[nr].asl)	{
 
+		if (ropts->asl && regs[nr].asl)
 			lop_asl = linop_asl_create(DIMS, img_dims, asl_dim);
-		}
 
 		if (ropts->teasl) {
 
