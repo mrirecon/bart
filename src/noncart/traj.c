@@ -184,7 +184,7 @@ void calc_base_angles(double base_angle[DIMS], int Y, int E, struct traj_conf co
 	double angle_t = 0.; // turns
 	double angle_e = 0.;
 
-	if (!conf.golden) {
+	if (!conf.golden || conf.mems_traj) {
 
 		// Angle between spokes of one slice/partition
 		angle_s = angle_atom * (conf.full_circle ? 2 : 1);
