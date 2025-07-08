@@ -15,6 +15,8 @@ struct traj_conf {
 	_Bool double_base;
 	int accel;
 	int tiny_gold;
+	int Y;
+	int raga_inc;
 	int turns;
 	int mb;
 };
