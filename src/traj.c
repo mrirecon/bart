@@ -303,7 +303,7 @@ int main_traj(int argc, char* argv[argc])
 			double angle = 0.;
 
 			long ind[DIMS] = { 0L };
-			indices_from_position(ind, pos, conf, 0);
+			indices_from_position(ind, pos, conf);
 
 			for (int d = 1; d < DIMS; d++)
 				angle += (double)ind[d] * base_angle[d];
