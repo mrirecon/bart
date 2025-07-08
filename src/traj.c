@@ -124,6 +124,8 @@ int main_traj(int argc, char* argv[argc])
 	if (-1 == Y)
 		Y = 128;
 
+	conf.Y = Y;
+
 	if (conf.rational) {
 
 		conf.golden = true;
@@ -143,6 +145,10 @@ int main_traj(int argc, char* argv[argc])
 			assert(conf.tiny_gold == recover_gen_fib_ind(Y / (conf.double_base ? 1 : 2), raga_inc));
 
 		debug_printf(DP_INFO, "Golden Ratio Index is set to:\t%d\n", conf.tiny_gold);
+
+		conf.raga_inc = raga_increment(Y / (conf.double_base ? 1 : 2), conf.tiny_gold);
+
+		assert((0 == raga_inc) || (conf.raga_inc == raga_inc));
 	}
 
 	if (-1 == X)
@@ -419,7 +425,7 @@ int main_traj(int argc, char* argv[argc])
 		do {
 			int j = pos[PHS2_DIM];
 
-			indices[p] = (j * raga_increment(Y  / (conf.double_base ? 1 : 2), conf.tiny_gold)) % Y;
+			indices[p] = (j * raga_increment(Y / (conf.double_base ? 1 : 2), conf.tiny_gold)) % Y;
 
 			p++;
 
