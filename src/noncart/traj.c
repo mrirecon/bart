@@ -263,7 +263,7 @@ void calc_base_angles(double base_angle[DIMS], int Y, int E, struct traj_conf co
 
 
 
-void indices_from_position(long ind[DIMS], const long pos[DIMS], struct traj_conf conf, long start_pos_GA)
+void indices_from_position(long ind[DIMS], const long pos[DIMS], struct traj_conf conf)
 {
 	ind[PHS2_DIM] = pos[PHS2_DIM];
 	ind[SLICE_DIM] = pos[SLICE_DIM];
@@ -275,9 +275,6 @@ void indices_from_position(long ind[DIMS], const long pos[DIMS], struct traj_con
 
 	if (conf.turns > 1)
 		ind[TIME_DIM] = pos[TIME_DIM] % conf.turns;
-
-	if (conf.golden && conf.aligned)
-		ind[TIME_DIM] = start_pos_GA + pos[TIME_DIM];
 }
 
 
