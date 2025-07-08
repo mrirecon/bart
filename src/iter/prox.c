@@ -124,6 +124,7 @@ static void prox_weighted_leastsquares_fun(const operator_data_t* prox_data, flo
 static void prox_weighted_leastsquares_del(const operator_data_t* _data)
 {
 	auto data = CAST_DOWN(prox_weighted_leastsquares_data, _data);
+
 	multiplace_free(data->y);
 	multiplace_free(data->W);
 
