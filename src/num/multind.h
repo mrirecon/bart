@@ -25,7 +25,7 @@ typedef void CLOSURE_TYPE(md_loop_fun_t)(const long* pos);
 typedef void CLOSURE_TYPE(md_loop_fun2_t)(unsigned long flags, long* pos);
 
 extern void md_unravel_index(int D, long pos[__VLA(D)], unsigned long flags, const long dims[__VLA(D)], long index);
-extern void md_unravel_index_permuted(int D, const int order[__VLA(D)], long pos[__VLA(D)], unsigned long flags, const long dims[__VLA(D)], long index);
+extern void md_unravel_index_permuted(int D, long pos[__VLA(D)], unsigned long flags, const long dims[__VLA(D)], long index, const int order[__VLA(D)]);
 extern long md_ravel_index(int D, const long pos[__VLA(D)], unsigned long flags, const long dims[__VLA(D)]);
 
 extern void md_nary(int C, int D, const long dim[__VLA(D)], const long* str[__VLA(C)], void* ptr[__VLA(C)], md_nary_fun_t fun);
