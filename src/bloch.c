@@ -17,7 +17,7 @@
 
 #include "seq/pulse.h"
 
-#include "bloch.h"
+#include "simu/bloch.h"
 
 
 #ifndef CFL_SIZE
