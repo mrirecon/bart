@@ -28,7 +28,7 @@ extern const struct traj_conf rmfreq_defaults;
 #define DIMS 16
 #endif
 
-extern void euler(float dir[3], float phi, float psi);
+extern void traj_read_dir(float dir[3], float phi, float psi);
 extern void gradient_delay(float d[3], float coeff[2][3], float phi, float psi);
 extern void calc_base_angles(double base_angle[DIMS], int Y, int E, struct traj_conf conf);
 extern void indices_from_position(long ind[DIMS], const long pos[DIMS], struct traj_conf conf);

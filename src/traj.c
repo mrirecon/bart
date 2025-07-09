@@ -369,7 +369,7 @@ int main_traj(int argc, char* argv[argc])
 			gradient_delay(d, gdelays, angle, angle2);
 
 			float read_dir[3];
-			euler(read_dir, angle, angle2);
+			traj_read_dir(read_dir, angle, angle2);
 
 			if (!conf.transverse) {
 

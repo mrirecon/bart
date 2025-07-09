@@ -43,13 +43,18 @@ const struct traj_conf traj_defaults = {
 };
 
 
-void euler(float dir[3], float phi, float psi)
+static void euler(float dir[3], float phi, float psi)
 {
 	dir[0] = cosf(phi) * cosf(psi);
 	dir[1] = sinf(phi) * cosf(psi);
 	dir[2] =             sinf(psi);
 }
 
+
+static void traj_readdir(float dir[3], float phi, float psi)
+{
+	euler(dir, phi, psi);
+}
 
 /* We allow an arbitrary quadratic form to account for
  * non-physical coordinate systems.
