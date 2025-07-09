@@ -84,15 +84,17 @@ int main_estdelay(int argc, char* argv[argc])
 	long tdims[DIMS];
 	const complex float* traj = load_cfl(traj_file, DIMS, tdims);
 
+	long adims[DIMS];
+	md_select_dims(DIMS, MD_BIT(2), adims, tdims);
 
 	int N = tdims[2];
 
 	float angles[N];
 
-	traj_radial_angles(N, angles, tdims, traj);
+	traj_radial_angles(4, adims, angles, tdims, traj);
 
-	float dc_shift = traj_radial_dcshift(tdims, traj);
-	float scale = traj_radial_dk(tdims, traj);
+	float dc_shift = traj_radial_dcshift(DIMS, tdims, traj);
+	float scale = traj_radial_deltak(DIMS, tdims, traj);
 
 	// Warn on unexpected shifts: != 0.5 for even number of samples, != 0 for odd number of sampled
 	if (1 == tdims[1] % 2) {

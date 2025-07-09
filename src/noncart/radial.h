@@ -1,8 +1,4 @@
 
-#ifndef DIMS
-#define DIMS 16
-#endif
-
-void traj_radial_angles(int N, float angles[N], const long tdims[DIMS], const _Complex float* traj);
-float traj_radial_dcshift(const long tdims[DIMS], const _Complex float* traj);
-float traj_radial_dk(const long tdims[DIMS], const _Complex float* traj);
+extern void traj_radial_angles(int N, const long adims[__VLA(N)], float* angles, const long tdims[__VLA(N)], const _Complex float* traj);
+extern float traj_radial_dcshift(int N, const long tdims[__VLA(N)], const _Complex float* traj);
+extern float traj_radial_deltak(int N, const long tdims[__VLA(N)], const _Complex float* traj);
