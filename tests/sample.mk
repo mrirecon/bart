@@ -215,6 +215,8 @@ tests/test-sample-gmm_img_gpu: phantom scale join ones sample nrmse
 	$(TOOLDIR)/nrmse -t 0.0001 mean1.ra out.ra						;\
 	$(TOOLDIR)/sample --sigma max=10,min=0.001 -g -N100 -K100 -s111 --gmm mean=mu.ra,var=vars.ra,w=ws.ra --gamma=0.01 -S1 out.ra											;\
 	$(TOOLDIR)/nrmse -t 0.0001 mean1.ra out.ra						;\
+	$(TOOLDIR)/sample --sigma max=10,min=0.001 -N100 -K100 -s111 --gmm mean=mu.ra,var=vars.ra,w=ws.ra --gamma=0.01 -S1 out.ra											;\
+	$(TOOLDIR)/nrmse -t 0.0001 mean1.ra out.ra						;\
 	rm *.ra; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
