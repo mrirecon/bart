@@ -406,6 +406,12 @@ static void zatanr(long N, complex float* dst, const complex float* src)
 		dst[i] = atan(crealf(src[i])) + 0.I;
 }
 
+static void zatan2r(long N, complex float* dst, const complex float* src1, const complex float* src2)
+{
+	for (long i = 0; i < N; i++)
+		dst[i] = atan2f(crealf(src1[i]), crealf(src2[i])) + 0.I;
+}
+
 static void zsin(long N, complex float* dst, const complex float* src)
 {
 	for (long i = 0; i < N; i++)
@@ -869,6 +875,7 @@ const struct vec_ops cpu_ops = {
 	.zarg = zarg,
 	.zabs = zabs,
 	.zatanr = zatanr,
+	.zatan2r = zatan2r,
 
 	.zsin = zsin,
 	.zcos = zcos,

@@ -534,6 +534,7 @@ const struct vec_ops gpu_ops = {
 	.zarg = cuda_zarg,
 	.zabs = cuda_zabs,
 	.zatanr = cuda_zatanr,
+	.zatan2r = cuda_zatan2r,
 	.zacosr = cuda_zacosr,
 
 	.exp = cuda_exp,

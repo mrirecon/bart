@@ -3021,6 +3021,25 @@ void md_zatanr(int D, const long dims[D], complex float* optr, const complex flo
 }
 
 
+/**
+ * Calculate arc tangent of real part of iptr1 / iptr2.
+ *
+ */
+void md_zatan2r2(int D, const long dims[D], const long ostr[D], complex float* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)
+{
+	MAKE_Z3OP(zatan2r, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
+}
+
+
+/**
+* Calculate arc tangent of real part of iptr1 / iptr2.
+*
+*/
+void md_zatan2r(int D, const long dims[D], complex float* optr, const complex float* iptr1, const complex float* iptr2)
+{
+	make_z3op_simple(md_zatan2r2, D, dims, optr, iptr1, iptr2);
+}
+
 
 
 /**
@@ -4240,7 +4259,7 @@ void md_zfdiff_backwards(int D, const long dims[D], int d, complex float* out, c
 void md_zfdiff_backwards0(int D, const long dims[D], int d, complex float* out, const complex float* in)
 {
 	md_zfdiff_backwards(D, dims, d, out, in);
-	
+
 	long zdims[D];
 	md_select_dims(D, ~MD_BIT(d), zdims, dims);
 
