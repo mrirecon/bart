@@ -84,8 +84,8 @@ int main_traj(int argc, char* argv[argc])
 		OPTL_SET(0, "double-base", &conf.double_base, "define GA over 2Pi base instead of default Pi."),
 		OPT_FLOAT('o', &over, "o", "oversampling factor"),
 		OPT_FLOAT('R', &rot, "phi", "rotate [°]"),
-		OPT_FLVEC3('q', &gdelays[0], "delays", "gradient delays: x, y, xy"),
-		OPT_FLVEC3('Q', &gdelays[1], "delays", "(gradient delays: z, xz, yz)"),
+		OPT_FLVEC3('q', &gdelays[0], "delays", "gradient delays: y, x, yx"),
+		OPT_FLVEC3('Q', &gdelays[1], "delays", "(gradient delays: z, yz, xz)"),
 		OPT_SET('O', &conf.transverse, "correct transverse gradient error for radial tajectories"),
 		OPT_SET('3', &conf.d3d, "3D"),
 		OPT_SET('c', &conf.asym_traj, "asymmetric trajectory [DC sampled]"),
@@ -384,8 +384,8 @@ int main_traj(int argc, char* argv[argc])
 					d[i] = delay * read_dir[i];
 			}
 
-			samples[p * 3 + 0] = (d[1] + read * read_dir[1]) / over;
-			samples[p * 3 + 1] = (d[0] + read * read_dir[0]) / over;
+			samples[p * 3 + 0] = (d[0] + read * read_dir[0]) / over;
+			samples[p * 3 + 1] = (d[1] + read * read_dir[1]) / over;
 			samples[p * 3 + 2] = (d[2] + read * read_dir[2]) / over;
 
 		} else {
