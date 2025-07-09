@@ -62,14 +62,12 @@ static bool test_grog(void)
 		for (int d = 1; d < DIMS; d++)
 			angle += pos[d] * base_angle[d];
 
-		float d[3] = { 0., 0., 0 };
-
 		float read_dir[3];
-		euler(read_dir, angle, angle2);
+		traj_read_dir(read_dir, angle, angle2);
 
-		traj[p * 3 + 0] = (d[1] + read * read_dir[1]) / (float)OV;
-		traj[p * 3 + 1] = (d[0] + read * read_dir[0]) / (float)OV;
-		traj[p * 3 + 2] = (d[2] + read * read_dir[2])/ (float)OV;
+		traj[p * 3 + 0] = (read * read_dir[0]) / (float)OV;
+		traj[p * 3 + 1] = (read * read_dir[1]) / (float)OV;
+		traj[p * 3 + 2] = (read * read_dir[2]) / (float)OV;
 
 		p++;
 

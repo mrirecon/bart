@@ -51,9 +51,11 @@ static void euler(float dir[3], float phi, float psi)
 }
 
 
-static void traj_readdir(float dir[3], float phi, float psi)
+void traj_read_dir(float dir[3], float phi, float psi)
 {
 	euler(dir, phi, psi);
+
+	SWAP(dir[0], dir[1]);
 }
 
 /* We allow an arbitrary quadratic form to account for
@@ -79,6 +81,8 @@ void gradient_delay(float d[3], float coeff[2][3], float phi, float psi)
 		for (unsigned int j = 0; j < 3; j++)
 			d[i] += mat[i][j] * dir[j];
 	}
+
+	SWAP(d[0], d[1]);
 }
 
 int recover_gen_fib_ind(int Y, int inc)
