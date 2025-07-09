@@ -11,6 +11,10 @@
 
 #include "gradient.h"
 
+double grad_duration(const struct grad_trapezoid* grad)
+{
+	return grad->rampup + grad->flat;
+}
 
 double grad_total_time(const struct grad_trapezoid* grad)
 {
@@ -45,7 +49,6 @@ bool grad_soft(struct grad_trapezoid* grad, double dur, double moment, struct gr
 	if ((fabs(ampl) > sys.max_amplitude))
 		return false;
 
-	grad->start = 0.;
 	grad->flat = flat;
 	grad->ampl = ampl;
 	grad->rampdown = rise;
@@ -71,7 +74,6 @@ bool grad_hard(struct grad_trapezoid* grad, double moment, struct grad_limits sy
 		rise = sqrt(fabs(moment) * sys.inv_slew_rate);
 	}
 
-	grad->start = 0.;
 	grad->flat = flat;
 	grad->rampdown = rise;
 	grad->rampup = rise;

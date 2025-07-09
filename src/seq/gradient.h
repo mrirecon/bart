@@ -12,7 +12,6 @@ struct grad_limits {
 
 struct grad_trapezoid {
 
-	double start;	// FIXME, this will be removed
 	double rampup;
 	double flat;
 	double rampdown;
@@ -20,6 +19,7 @@ struct grad_trapezoid {
 	double ampl;
 };
 
+extern double grad_duration(const struct grad_trapezoid* grad);
 extern double grad_total_time(const struct grad_trapezoid* grad);
 extern double grad_momentum(struct grad_trapezoid* grad);
 
