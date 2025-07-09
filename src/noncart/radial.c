@@ -122,3 +122,85 @@ float traj_radial_deltak(int N, const long tdims[N], const complex float* traj)
 	return dk;
 }
 
+bool traj_radial_same_dk(int N, const long tdims[N], const complex float* traj)
+{
+	assert(1 < N);
+
+	long rdims[N];
+	md_copy_dims(N, rdims, tdims);
+	rdims[1] -= 2;
+
+	complex float* tmp1 = md_alloc_sameplace(N, rdims, CFL_SIZE, traj);
+	complex float* tmp2 = md_alloc_sameplace(N, rdims, CFL_SIZE, traj);
+
+	long pos[N];
+	md_set_dims(N, pos, 0);
+	pos[1] = 1;
+
+	md_copy_block(N, pos, rdims, tmp1, tdims, traj, CFL_SIZE);
+	md_zsmul(N, rdims, tmp1, tmp1, -2.);
+
+	pos[1] = 0;
+	md_copy_block(N, pos, rdims, tmp2, tdims, traj, CFL_SIZE);
+	md_zadd(N, rdims, tmp1, tmp1, tmp2);
+
+	pos[1] = 2;
+	md_copy_block(N, pos, rdims, tmp2, tdims, traj, CFL_SIZE);
+	md_zadd(N, rdims, tmp1, tmp1, tmp2);
+
+	md_free(tmp2);
+
+	float err = md_znorm(N, rdims, tmp1) / (float)md_calc_size(N, rdims);
+	md_free(tmp1);
+
+	return (1.e-5 > err);
+}
+
+static void traj_radial_direction_int(int N, long idx, const long ddims[N], complex float* dir, const long tdims[N], const complex float* traj)
+{
+	long pos[N];
+	md_set_dims(N, pos, 0);
+	pos[1] = idx;
+
+	md_slice(N, MD_BIT(1), pos, tdims, dir, traj, CFL_SIZE);
+
+	long ndims[N];
+	md_select_dims(N, ~MD_BIT(0), ndims, ddims);
+
+	complex float* nrm = md_alloc_sameplace(N, ndims, CFL_SIZE, traj);
+	md_zrss(N, ddims, MD_BIT(0), nrm, dir);
+
+	md_zdiv2(N, ddims, MD_STRIDES(N, ddims, CFL_SIZE), dir, MD_STRIDES(N, ddims, CFL_SIZE), dir, MD_STRIDES(N, ndims, CFL_SIZE), nrm);
+	md_free(nrm);
+}
+
+bool traj_radial_through_center(int N, const long tdims[N], const complex float* traj)
+{
+	long ddims[N];
+	md_select_dims(N, ~MD_BIT(1), ddims, tdims);
+
+	complex float* dir1 = md_alloc_sameplace(N, ddims, CFL_SIZE, traj);
+	complex float* dir2 = md_alloc_sameplace(N, ddims, CFL_SIZE, traj);
+
+	traj_radial_direction_int(N, tdims[1] - 1, ddims, dir1, tdims, traj);
+	traj_radial_direction_int(N, tdims[1] - 2, ddims, dir2, tdims, traj);
+
+	float err = md_znrmse(N, ddims, dir1, dir2);
+
+	md_free(dir1);
+	md_free(dir2);
+
+	return (1.e-5 > err);
+}
+
+bool traj_is_radial(int N, const long tdims[N], const _Complex float* traj)
+{
+	return traj_radial_same_dk(N, tdims, traj) && traj_radial_through_center(N, tdims, traj);
+}
+
+void traj_radial_direction(int N, const long ddims[N], complex float* dir, const long tdims[N], const complex float* traj)
+{
+	traj_radial_direction_int(N, tdims[1] - 1, ddims, dir, tdims, traj);
+}
+
+
