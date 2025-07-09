@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 if [ ! -e "$BART_TOOLBOX_PATH"/bart ] ; then
 	if [ -e "$TOOLBOX_PATH"/bart ] ; then
