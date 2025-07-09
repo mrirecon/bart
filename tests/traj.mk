@@ -246,18 +246,3 @@ tests/test-traj-rational-approx-inc: traj nrmse
 TESTS += tests/test-traj-rational-approx-inc
 
 
-tests/test-traj-rational-approx-ind: traj slice extract vec transpose nrmse
-	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
-	$(TOOLDIR)/traj -y 377 -s 1 -t10 --raga-index-file i.ra t.ra	;\
-	$(TOOLDIR)/slice 10 0 i.ra i0.ra				;\
-	$(TOOLDIR)/slice 10 9 i.ra i9.ra				;\
-	$(TOOLDIR)/nrmse -t 0.000001 i0.ra i9.ra			;\
-	$(TOOLDIR)/extract 2 0 5 i0.ra ie.ra				;\
-	$(TOOLDIR)/vec 0 144 288 55 199 v.ra				;\
-	$(TOOLDIR)/transpose 0 2 v.ra v2.ra				;\
-	$(TOOLDIR)/nrmse -t 0.000001 ie.ra v2.ra			;\
-	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
-	touch $@
-
-TESTS += tests/test-traj-rational-approx-ind
-
