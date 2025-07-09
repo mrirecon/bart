@@ -380,7 +380,7 @@ static bool test_md_unravel_index_permuted(void)
 
 	long idx = 8;
 
-	md_unravel_index_permuted(3, order, pos, 7UL, dims, idx);
+	md_unravel_index_permuted(3, pos, 7UL, dims, idx, order);
 	
 	UT_RETURN_ON_FAILURE(md_check_equal_dims(3, good, pos, 7UL));
 
