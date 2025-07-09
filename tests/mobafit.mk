@@ -201,7 +201,7 @@ tests/test-mobafit-sim: phantom sim repmat fmac index mobafit slice nrmse scale
 	$(TOOLDIR)/repmat 6 11 sim0.ra sim.ra				;\
 	$(TOOLDIR)/fmac -s 64 tubes.ra sim.ra ph_img.ra	;\
 	$(TOOLDIR)/index 5 100 te.ra					;\
-	$(TOOLDIR)/mobafit -S --sim ODE -i4 --init=0.8:1:9:1 --seq IR-BSSFP,TR=0.004,TE=0.002,Nrep=100,ipl=0.01,isp=0.005,ppl=0.002,Trf=0.001,FA=45,BWTP=4 --scale=1:1:1:0:0:0:0:0:0 te.ra ph_img.ra fit.ra ;\
+	$(TOOLDIR)/mobafit -S --sim ODE -i5 --init=0.8:1:9:1 --seq IR-BSSFP,TR=0.004,TE=0.002,Nrep=100,ipl=0.01,isp=0.005,ppl=0.002,Trf=0.001,FA=45,BWTP=4 --scale=1:1:1:0:0:0:0:0:0 te.ra ph_img.ra fit.ra ;\
 	$(TOOLDIR)/slice 6 0 fit.ra fit_r1.ra				;\
 	$(TOOLDIR)/slice 6 2 fit.ra fit_r2.ra				;\
 	$(TOOLDIR)/phantom -x32 -T r1.ra				;\
