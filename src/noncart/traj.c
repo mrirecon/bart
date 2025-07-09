@@ -216,9 +216,8 @@ void calc_base_angles(double base_angle[DIMS], int Y, int E, struct traj_conf co
 
 	} else if (conf.rational) {
 
-		assert(1 == conf.mb);
 		angle_s = 2. * angle_atom;
-
+		angle_m = 2. * angle_atom; // we distinguish for aligned in indices_from_position
 		angle_t = 0.;
 
 	} else {
@@ -284,7 +283,16 @@ void indices_from_position(long ind[DIMS], const long pos[DIMS], struct traj_con
 
 	if (conf.rational) {
 
-		ind[PHS2_DIM] = (conf.raga_inc * pos[PHS2_DIM]) % conf.Y;
+		if (conf.aligned) {
+
+			ind[PHS2_DIM] = (conf.raga_inc * pos[PHS2_DIM]) % conf.Y;
+			ind[SLICE_DIM] = 0;
+
+		} else {
+
+			ind[PHS2_DIM] = (conf.raga_inc * pos[PHS2_DIM] * conf.mb) % conf.Y;
+			ind[SLICE_DIM] = (conf.raga_inc * pos[SLICE_DIM]);
+		}
 		return;
 	}
 
