@@ -967,7 +967,8 @@ $(UTARGETS_GPU): % : utests/utest.c utests/%.o $$(MODULES_%) $(MODULES)
 ROOTDIR=$(root)
 TOOLDIR=$(root)/commands
 TESTS_DIR=$(root)/tests
-TESTS_TMP=$(TESTS_DIR)/tmp/$$$$
+TESTS_TMP_DIR?=$(TESTS_DIR)/tmp
+TESTS_TMP=$(TESTS_TMP_DIR)/$$$$
 TESTS_OUT=$(TESTS_DIR)/out
 
 
