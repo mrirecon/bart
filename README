@@ -148,11 +148,12 @@ is recommended to use gcc12 or higher.
 Using MacPorts (http://www.macports.org/):
 
     $ sudo port install fftw-3-single
-    $ sudo port install gcc12
+    $ sudo port install gcc14
     $ sudo port install libpng
     $ sudo port install openblas
     $ sudo port install flock
     $ sudo port install gmake
+    $ sudo port install coreutils
     $ sudo port install libblocksruntime
 
     (optional)
@@ -161,8 +162,12 @@ Using MacPorts (http://www.macports.org/):
     (optional)
     install version 0.5.2 of the ISMRMRD library
 
-    Use gmake when building and select gcc as the compiler:
-    $ CC=gcc-mp-12 gmake
+    Add the following directory to the front of your PATH environment variable:
+    /opt/local/libexec/gnubin/
+
+    Select gcc as the compiler and make:
+    $ CC=gcc-mp-14 make
+
 
 Using HomeBrew (https://brew.sh):
 
