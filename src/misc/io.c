@@ -423,13 +423,16 @@ int write_stream_header(int fd, const char* filename, const char* dataname, int 
 
 	int padding = 0;
 
-	if (written + 9 + 4 < MM)
-		padding = MM - (written + 9 + 4);
+	const int headstr_len = 9 + 5 + 1; // len("# Header\n") + 5 digits + final linebreak
 
-	int l = xdprintf(fd, "# Header\n%ld\n", written + 9 + 4 + padding);
+	if (written + headstr_len < MM)
+		padding = MM - (written + headstr_len);
 
-	// This works for a header size of 100 to 999
-	assert(l == 9 + 4);
+	int l = xdprintf(fd, "# Header\n%5ld\n", written + headstr_len + padding);
+
+	// This works for a header size up to 99999
+	assert(written < 99999);
+	assert(l == headstr_len);
 
 	write_cfl_header(fd, dataname, D, dims);
 

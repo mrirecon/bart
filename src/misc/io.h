@@ -4,7 +4,7 @@
 
 #include "misc/cppwrap.h"
 
-#define IO_MAX_HDR_SIZE 4096
+#define IO_MAX_HDR_SIZE 99999
 #define IO_MIN_HDR_SIZE  256
 
 enum file_types_e {
