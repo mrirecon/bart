@@ -83,9 +83,13 @@ int main_bloch(int argc, char* argv[argc])
 	pulse_sinc_init(&ps, 0.001, 90., 0., 4., ps.alpha);
 
 	struct sim_data data = { .B0 = 1., .R1 = 1., .R2 = 50., .h = 1.E-4, .tol = 1.E-6 };
-
+#ifdef  __clang__
+	const long *xdims = dims;
+	const long *xpos = pos;
+	NESTED(double, frac, (int dim)) { return (2. * xpos[dim] - xdims[dim]) / (2. * xdims[dim]); };
+#else
 	NESTED(float, frac, (int dim)) { return (2. * pos[dim] - dims[dim]) / (2. * dims[dim]); };
-
+#endif
 	float dur = CAST_UP(&ps)->duration;
 	float delta = dur / dims[READ_DIM];
 
