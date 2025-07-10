@@ -52,16 +52,13 @@ struct mobamod T2_create(const long dims[DIMS], const complex float* mask, const
 
 
 	const struct nlop_s* b = nlinv.nlop;
-	const struct nlop_s* c = nlop_chain2(T2, 0, b, 0);
-	nlop_free(b);
+	const struct nlop_s* c = nlop_chain2_FF(T2, 0, b, 0);
 
-	nlinv.nlop = nlop_permute_inputs(c, 2, (const int[2]){ 1, 0 });
-	nlop_free(c);
+	nlinv.nlop = nlop_permute_inputs_F(c, 2, (const int[2]){ 1, 0 });
 
-	ret.nlop = nlop_flatten(nlinv.nlop);
+	ret.nlop = nlop_flatten_F(nlinv.nlop);
 	ret.linop = nlinv.linop;
 
-	nlop_free(nlinv.nlop);
 	return ret;
 }
 
