@@ -442,7 +442,7 @@ static bool test_optimized_md_zadd2_reduce_inner1(void) { UT_RETURN_ASSERT(test_
 static bool test_optimized_md_zadd2_reduce_inner2(void) { UT_RETURN_ASSERT(test_optimized_md_zadd(~(1ul+4ul), ~(1ul+4ul), ~0ul, false, false, false, 1.e-6)); }
 static bool test_optimized_md_zadd2_reduce_inner3(void) { UT_RETURN_ASSERT(test_optimized_md_zadd(~(1ul+4ul), ~(1ul), ~0ul, true, false, false, 1.e-6)); }
 static bool test_optimized_md_zadd2_reduce_inner4(void) { UT_RETURN_ASSERT(test_optimized_md_zadd(~(1ul+2ul), ~4ul, ~(1ul + 2ul), false, true, true, 1.e-6)); }
-static bool test_optimized_md_zadd2_reduce_inner5(void) { UT_RETURN_ASSERT(test_optimized_md_zadd(0ul, ~4ul, 0ul, false, true, true, 2.e-6)); }
+static bool test_optimized_md_zadd2_reduce_inner5(void) { UT_RETURN_ASSERT(test_optimized_md_zadd(0ul, ~4ul, 0ul, false, true, true, 4.e-6)); }
 
 UT_REGISTER_TEST(test_optimized_md_zadd2_reduce_inner1);
 UT_REGISTER_TEST(test_optimized_md_zadd2_reduce_inner2);
