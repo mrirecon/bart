@@ -177,15 +177,11 @@ static double calc_golden_angle(int tiny_gold)
 
 void calc_base_angles(double base_angle[DIMS], int Y, int E, struct traj_conf conf)
 {
-	double golden_angle;
 	double angle_atom = M_PI / Y;
+	double golden_angle = calc_golden_angle(conf.tiny_gold);
 
-	if (conf.rational)
-		golden_angle = angle_atom * conf.raga_inc;
-	else
-		golden_angle = calc_golden_angle(conf.tiny_gold);
 
-	if (conf.double_base || conf.rational)
+	if (conf.double_base)
 		golden_angle *= 2.;
 
 	double angle_s = 0.;
@@ -218,7 +214,14 @@ void calc_base_angles(double base_angle[DIMS], int Y, int E, struct traj_conf co
 			angle_t = golden_angle;
 		}
 
-	} else  {
+	} else if (conf.rational) {
+
+		assert(1 == conf.mb);
+		angle_s = 2. * angle_atom;
+
+		angle_t = 0.;
+
+	} else {
 
 		if (conf.aligned) {
 
@@ -279,8 +282,11 @@ void indices_from_position(long ind[DIMS], const long pos[DIMS], struct traj_con
 	ind[TE_DIM] = pos[TE_DIM];
 	ind[TIME_DIM] = pos[TIME_DIM];
 
-	if (conf.rational)
+	if (conf.rational) {
+
+		ind[PHS2_DIM] = (conf.raga_inc * pos[PHS2_DIM]) % conf.Y;
 		return;
+	}
 
 	if (conf.turns > 1)
 		ind[TIME_DIM] = pos[TIME_DIM] % conf.turns;
