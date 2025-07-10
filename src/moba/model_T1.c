@@ -109,12 +109,12 @@ static struct mobamod T1_create_internal(const long dims[DIMS], const complex fl
 }
 
 
-struct mobamod T1_create(const long dims[DIMS], const complex float* mask, const complex float* TI, const complex float* psf, 
+struct mobamod T1_create(const long dims[DIMS], const complex float* mask, const complex float* TI, const complex float* psf,
 			float scaling_M0, float scaling_R1s, const struct noir_model_conf_s* conf, float fov)
 {
 	unsigned long bat_flags = TIME_FLAG | TIME2_FLAG;
 	int bat_idx = TIME_DIM;
-	
+
 	if (1 < dims[TIME2_DIM]) {
 
 		if (   ((0 == MD_IS_SET(conf->ptrn_flags, TIME_DIM)) != (0 == MD_IS_SET(conf->ptrn_flags, TIME2_DIM)))
@@ -122,7 +122,7 @@ struct mobamod T1_create(const long dims[DIMS], const complex float* mask, const
 
 			bat_flags = MD_CLEAR(bat_flags, TIME_DIM);
 			bat_idx = TIME2_DIM;
-	    	}  
+	    	}
 	}
 
 	long bat_dims[DIMS];
@@ -144,7 +144,7 @@ struct mobamod T1_create(const long dims[DIMS], const complex float* mask, const
 	md_select_dims(DIMS, ~bat_flags, TI_dims_slc, TI_dims);
 
 	int N = md_calc_size(DIMS, bat_dims);
-	
+
 	const struct linop_s* lop = NULL;
 	const struct nlop_s* nlops[N];
 
@@ -162,18 +162,18 @@ struct mobamod T1_create(const long dims[DIMS], const complex float* mask, const
 
 		md_slice(DIMS, bat_flags, pos, TI_dims, TI_tmp, TI, CFL_SIZE);
 
-		struct mobamod T1 = T1_create_internal(dims_slc, mask, TI_tmp, psf_tmp, scaling_M0, scaling_R1s, conf, fov);	
+		struct mobamod T1 = T1_create_internal(dims_slc, mask, TI_tmp, psf_tmp, scaling_M0, scaling_R1s, conf, fov);
 
-		nlops[i++] = T1.nlop;	
+		nlops[i++] = T1.nlop;
 
 		if (NULL == lop) {
 
-			lop = linop_clone(T1.linop);
+			lop = T1.linop;
 
 		} else {
 
 			if (!MD_IS_SET(conf->cnstcoil_flags, bat_idx))
-				lop = linop_stack_FF(bat_idx, bat_idx, lop, linop_clone(T1.linop));
+				lop = linop_stack_FF(bat_idx, bat_idx, lop, T1.linop);
 		}
 
 		md_free(TI_tmp);
@@ -185,6 +185,7 @@ struct mobamod T1_create(const long dims[DIMS], const complex float* mask, const
 
 		.nlop = (1 == N) ? (struct nlop_s*)nlops[0] : (struct nlop_s*)nlop_stack_container_create_F(N, nlops, 2, (int [2]){ bat_idx, (MD_IS_SET(conf->cnstcoil_flags, bat_idx) ? -1 : bat_idx) }, 1, (int[1]){ bat_idx }),
 		.linop = lop,
+		.linop_alpha = NULL,
 	};
 
 	result.nlop = nlop_flatten_F(result.nlop);
