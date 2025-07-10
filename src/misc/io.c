@@ -428,10 +428,10 @@ int write_stream_header(int fd, const char* filename, const char* dataname, int 
 	if (written + headstr_len < MM)
 		padding = MM - (written + headstr_len);
 
-	int l = xdprintf(fd, "# Header\n%5ld\n", written + headstr_len + padding);
+	int l = xdprintf(fd, "# Header\n%5ld\n", (long)(written + headstr_len + padding));
 
 	// This works for a header size up to 99999
-	assert(written < 99999);
+	assert(written < IO_MAX_HDR_SIZE);
 	assert(l == headstr_len);
 
 	write_cfl_header(fd, dataname, D, dims);
