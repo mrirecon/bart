@@ -631,9 +631,11 @@ tests/test-moba-ir-meco-5para-traj: traj reshape scale phantom signal extract sl
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-TESTS_SLOW += tests/test-moba-t1 tests/test-moba-t1-sms tests/test-moba-t1-no-IR
+TESTS += tests/test-moba-t1 tests/test-moba-t2
+
+TESTS_SLOW += tests/test-moba-t1-sms tests/test-moba-t1-no-IR
 TESTS_SLOW += tests/test-moba-t1-magn tests/test-moba-t1-nonCartesian tests/test-moba-t1-nufft
-TESTS_SLOW += tests/test-moba-t2 tests/test-moba-t1-tv
+TESTS_SLOW += tests/test-moba-t1-tv
 TESTS_SLOW += tests/test-moba-meco-noncart-r2s tests/test-moba-meco-noncart-wfr2s
 TESTS_SLOW += tests/test-moba-bloch-irflash-psf tests/test-moba-bloch-irflash-traj tests/test-moba-bloch-irflash-traj-fixfa tests/test-moba-bloch-irflash-r2fix
 TESTS_SLOW += tests/test-moba-t1-phy-psf tests/test-moba-t1-phy-traj

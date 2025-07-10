@@ -112,8 +112,9 @@ tests/test-rtnlinv-noncart-maps-dims: traj phantom rtnlinv show
 
 
 
-TESTS += tests/test-rtnlinv tests/test-rtnlinv-precomp tests/test-rtnlinv-nlinv-noncart tests/test-rtnlinv-nlinv-pseudocart
+TESTS += tests/test-rtnlinv-nlinv-noncart tests/test-rtnlinv-nlinv-pseudocart
 TESTS += tests/test-rtnlinv-nlinv-sms
 TESTS += tests/test-rtnlinv-maps-dims tests/test-rtnlinv-noncart-maps-dims
-#TESTS += tests/test-rtnlinv-precomp
+
+TESTS_SLOW += tests/test-rtnlinv tests/test-rtnlinv-precomp
 

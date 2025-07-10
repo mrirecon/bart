@@ -336,7 +336,7 @@ tests/test-sim-bmc-bloch: sim extract slice nrmse
 TESTS += tests/test-sim-to-signal-irflash tests/test-sim-to-signal-flash
 TESTS += tests/test-sim-to-signal-irbSSFP
 TESTS += tests/test-sim-spoke-averaging-3 tests/test-sim-to-signal-irbSSFP-averaged-spokes
-TESTS += tests/test-sim-slice-profile-spins tests/test-sim-slice-profile-slicethickness tests/test-sim-slice-profile-density tests/test-sim-slice-profile-density2
+TESTS += tests/test-sim-slice-profile-density tests/test-sim-slice-profile-density2
 TESTS += tests/test-sim-ode-hp-irflash tests/test-sim-ode-hp-flash
 TESTS += tests/test-sim-ode-hp-irbssfp tests/test-sim-ode-hp-bssfp
 TESTS += tests/test-sim-multi-relaxation
@@ -348,3 +348,6 @@ TESTS += tests/test-sim-split-dim-mag tests/test-sim-split-dim-deriv
 TESTS += tests/test-sim-ode-stm-flash-te-eq-trf-eq-tr tests/test-sim-ode-stm-bssfp-te-eq-trf-eq-tr tests/test-sim-ode-rot-flash-te-eq-trf-ep-tr
 TESTS += tests/test-sim-ode-deriv-r1 tests/test-sim-ode-deriv-r2 tests/test-sim-ode-deriv-b1 tests/test-sim-ode-stm-deriv
 TESTS += tests/test-sim-bmc-signal tests/test-sim-bmc-deriv tests/test-sim-bmc-stm-ode tests/test-sim-bmc-bloch
+
+TESTS_SLOW += tests/test-sim-slice-profile-spins tests/test-sim-slice-profile-slicethickness
+

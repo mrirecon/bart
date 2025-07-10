@@ -30,6 +30,6 @@ tests/test-asl-denoise: phantom slice signal fmac saxpy scale repmat join noise 
 	touch $@
 
 
-TESTS += tests/test-asl-denoise
+TESTS_SLOW += tests/test-asl-denoise
 
 
