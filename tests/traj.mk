@@ -173,7 +173,7 @@ tests/test-traj-rational-approx-pattern: traj ones nufft fft nrmse
 	$(TOOLDIR)/fft 7 psf.ra pattern.ra				;\
 	$(TOOLDIR)/nufft -a -x128:128:1 t2.ra o.ra psf2.ra		;\
 	$(TOOLDIR)/fft 7 psf2.ra pattern2.ra				;\
-	$(TOOLDIR)/nrmse -t 0.0005 pattern.ra pattern2.ra		;\
+	$(TOOLDIR)/nrmse -t 1e-6 pattern.ra pattern2.ra			;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
@@ -189,7 +189,7 @@ tests/test-traj-rational-approx-pattern2: traj ones nufft fft nrmse
 	$(TOOLDIR)/fft 7 psf.ra pattern.ra				;\
 	$(TOOLDIR)/nufft -a -x128:128:1 t2.ra o.ra psf2.ra		;\
 	$(TOOLDIR)/fft 7 psf2.ra pattern2.ra				;\
-	$(TOOLDIR)/nrmse -t 0.0005 pattern.ra pattern2.ra		;\
+	$(TOOLDIR)/nrmse -t 3e-6 pattern.ra pattern2.ra			;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
@@ -210,10 +210,10 @@ TESTS += tests/test-traj-double-base
 
 tests/test-traj-rational-approx-double-base-ga: traj transpose reshape slice nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
-	$(TOOLDIR)/traj -y 754 -r -D -s 1 t1.ra			;\
+	$(TOOLDIR)/traj -y 754 -r -D -s 1 t1.ra				;\
 	$(TOOLDIR)/reshape 12 2 377 t1.ra t1a.ra			;\
-	$(TOOLDIR)/slice 2 0 t1a.ra t1b.ra			;\
-	$(TOOLDIR)/transpose 2 3 t1b.ra t1c.ra			;\
+	$(TOOLDIR)/slice 2 0 t1a.ra t1b.ra				;\
+	$(TOOLDIR)/transpose 2 3 t1b.ra t1c.ra				;\
 	$(TOOLDIR)/traj -y 377 -r -A -s 1 --double-base t2.ra		;\
 	$(TOOLDIR)/nrmse -t 0.005 t1c.ra t2.ra				;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
@@ -222,10 +222,10 @@ tests/test-traj-rational-approx-double-base-ga: traj transpose reshape slice nrm
 TESTS += tests/test-traj-rational-approx-double-base-ga
 
 tests/test-traj-rational-approx-ga: traj nrmse
-	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)		;\
 	$(TOOLDIR)/traj -y 754 -r -D -s 1 t1.ra			;\
-	$(TOOLDIR)/traj -y 754 -r -A -s 1 t2.ra		;\
-	$(TOOLDIR)/nrmse -t 0.005 t1.ra t2.ra				;\
+	$(TOOLDIR)/traj -y 754 -r -A -s 1 t2.ra			;\
+	$(TOOLDIR)/nrmse -t 0.005 t1.ra t2.ra			;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
@@ -233,13 +233,13 @@ TESTS += tests/test-traj-rational-approx-ga
 
 
 tests/test-traj-rational-approx-inc: traj nrmse
-	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
-	$(TOOLDIR)/traj -y 754 -r -A -s 1 -t3 t1.ra			;\
-	$(TOOLDIR)/traj -y 754 -r -A --raga-inc 233 -t3 t2.ra		;\
-	$(TOOLDIR)/nrmse -t 0.007 t1.ra t2.ra				;\
-	$(TOOLDIR)/traj -y 377 -r -A -s 1 --double-base -t3 t3.ra			;\
-	$(TOOLDIR)/traj -y 377 -r -A --raga-inc 233 --double-base -t3 t4.ra		;\
-	$(TOOLDIR)/nrmse -t 0. t3.ra t4.ra				;\
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)				;\
+	$(TOOLDIR)/traj -y 754 -r -A -s 1 -t3 t1.ra				;\
+	$(TOOLDIR)/traj -y 754 -r -A --raga-inc 233 -t3 t2.ra			;\
+	$(TOOLDIR)/nrmse -t 0. t1.ra t2.ra					;\
+	$(TOOLDIR)/traj -y 377 -r -A -s 1 --double-base -t3 t3.ra		;\
+	$(TOOLDIR)/traj -y 377 -r -A --raga-inc 233 --double-base -t3 t4.ra	;\
+	$(TOOLDIR)/nrmse -t 0. t3.ra t4.ra					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
@@ -248,7 +248,7 @@ TESTS += tests/test-traj-rational-approx-inc
 
 tests/test-traj-rational-approx-multislice-aligned: traj slice transpose nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
-	$(TOOLDIR)/traj -y 466 -r -D -s 1 -m3 -l traj_gaal.ra	;\
+	$(TOOLDIR)/traj -y 466 -r -D -s 1 -m3 -l traj_gaal.ra		;\
 	$(TOOLDIR)/traj -y 466 -r -A -s 1 -m3 -l traj_raga_al.ra	;\
 	$(TOOLDIR)/nrmse -t 0.007 traj_gaal.ra traj_raga_al.ra		;\
 	$(TOOLDIR)/slice 13 0 traj_raga_al.ra tr0.ra			;\
