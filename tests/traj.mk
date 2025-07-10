@@ -24,7 +24,7 @@ O_TRAJ_GOLDEN_PARTITIONS=-x 384 -y 29 -t 1 -m 3 -g -D
 tests/test-traj_turns: traj nrmse ${TRAJ_TURNS}.cfl
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/traj ${O_TRAJ_TURNS} t_turns.ra					;\
-	$(TOOLDIR)/nrmse -t${T_TOL} t_turns.ra ${TRAJ_TURNS}		;\
+	$(TOOLDIR)/nrmse -t${T_TOL} t_turns.ra ${TRAJ_TURNS}				;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 

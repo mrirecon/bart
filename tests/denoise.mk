@@ -59,6 +59,8 @@ tests/test-ictgv-denoise2: phantom slice vec transpose fmac noise denoise repmat
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-TESTS += tests/test-ictv-denoise tests/test-ictgv-denoise tests/test-ictv-denoise2 tests/test-ictgv-denoise2
+TESTS += tests/test-ictv-denoise tests/test-ictgv-denoise tests/test-ictv-denoise2
+
+TESTS_SLOW += tests/test-ictgv-denoise2
 
 

@@ -449,13 +449,15 @@ tests/test-nudft-fieldmap-constant-circshift: traj ones phantom creal normalize 
 
 
 TESTS += tests/test-nufft-forward tests/test-nufft-adjoint tests/test-nufft-inverse tests/test-nufft-toeplitz
-TESTS += tests/test-nufft-nudft tests/test-nudft-forward tests/test-nudft-adjoint tests/test-nufft-adj-lin
+TESTS += tests/test-nufft-nudft tests/test-nudft-adjoint tests/test-nufft-adj-lin
 TESTS += tests/test-nufft-batch tests/test-nufft-over
 TESTS += tests/test-nufft-lowmem-adjoint tests/test-nufft-lowmem-inverse tests/test-nufft-no-precomp-adjoint tests/test-nufft-no-precomp-inverse
 TESTS += tests/test-nufft-inverse2 tests/test-nufft-inverse3
 TESTS += tests/test-nufft-lowmem-zero-mem tests/test-nufft-lowmem-zero-mem
 TESTS += tests/test-nufft-adjoint-os tests/test-nufft-forward-os
 TESTS += tests/test-nudft-fieldmap-correction tests/test-nudft-fieldmap-constant-circshift
+
+TESTS_SLOW += tests/test-nudft-forward
 
 TESTS_GPU += tests/test-nufft-gpu-inverse tests/test-nufft-gpu-adjoint tests/test-nufft-gpu-forward
 TESTS_GPU += tests/test-nufft-gpu-inverse-lowmem tests/test-nufft-gpu-adjoint-lowmem tests/test-nufft-gpu-forward-lowmem
