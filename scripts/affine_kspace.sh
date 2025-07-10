@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Copyright 2024. TU Graz. Institute of Biomedical Imaging.
 # Author: Moritz Blumenthal
 #
