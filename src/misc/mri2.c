@@ -202,7 +202,6 @@ complex float* extract_calib2(long caldims[DIMS], const long calsize[3], const l
 
 			caldims[i] = MIN(calsize[i], tmp_dims[i]);
 
-			if (i != READ_DIM)
 				calpos[i] = (tmp_dims[i] - caldims[i]) / 2;
 		}
 	}

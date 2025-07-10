@@ -133,7 +133,7 @@ int main_ecalib(int argc, char* argv[argc])
 #ifdef USE_CC_EXTRACT_CALIB
 		cal_data = cc_extract_calib(cal_dims, calsize, ksp_dims, in_data);
 #else
-		cal_data = extract_calib(cal_dims, calsize, ksp_dims, in_data, false);
+		cal_data = extract_calib(cal_dims, calsize, ksp_dims, in_data, conf.phase_normalize);
 #endif
 	} else {
 
