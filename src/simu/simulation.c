@@ -918,6 +918,7 @@ void inversion(const struct sim_data* data, float h, float tol, int N, int P, fl
 		inv_data.pulse.type = PULSE_HS;
 
                 inv_data.pulse.hs = pulse_hypsec_defaults;
+                pulse_hypsec_init(GYRO, &inv_data.pulse.hs);
                 CAST_UP(&inv_data.pulse.hs)->duration = data->seq.inversion_pulse_length;
                 inv_data.pulse.rf_end = data->seq.inversion_pulse_length;
 

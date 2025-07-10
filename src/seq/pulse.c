@@ -175,7 +175,6 @@ const struct pulse_sms pulse_sms_defaults = {
 	.bwtp = 4.,
 	.mb_factor = 3,
 	.mb_part = 0,
-	.gamma =  GYRO,
 	.SMS_dist = 27.e-3,
 	.slice_th = 6.e-3,
 };
@@ -259,9 +258,9 @@ static float sechf(float x)
 static float pulse_hypsec_am(const struct pulse_hypsec* hs, float t /*[s]*/)
 {
         // Check adiabatic condition
-        assert(hs->a0 > sqrtf(hs->mu) * hs->beta);
+        assert(hs->A > (sqrtf(hs->mu) * hs->beta));
 
-        return hs->a0 * sechf(hs->beta * (t - CAST_UP(hs)->duration / 2.));
+        return hs->A * sechf(hs->beta * (t - CAST_UP(hs)->duration / 2.));
 }
 
 #if 0
@@ -292,15 +291,18 @@ const struct pulse_hypsec pulse_hypsec_defaults = {
 	.super.TYPEID = &TYPEID2(pulse_hypsec),
 //	.pulse.phase = 0.,
 
-	.a0 = 13000.,
+	.a0 = 14.,
 	.beta = 800.,
 	.mu = 4.9, /* sech(x)=0.01*/
+	.A = 1.,
+	.gamma =  GYRO,
 };
 
 
-void pulse_hypsec_init(struct pulse_hypsec* pr)
+void pulse_hypsec_init(float gamma, struct pulse_hypsec* pr)
 {
-	(void)pr;
+	pr->gamma = gamma;
+	pr->A = pr->a0 * 2 * M_PI * pr->gamma;
 }
 
 

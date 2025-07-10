@@ -231,6 +231,7 @@ static bool test_hypsec_rf_pulse_ode(void)
 
         // Hyperbolic Secant Characteristics
         data.pulse.hs = pulse_hypsec_defaults;
+        pulse_hypsec_init(GYRO, &data.pulse.hs);
         data.pulse.type = PULSE_HS;
         data.pulse.hs.super.duration = data.pulse.rf_end;
 

@@ -43,7 +43,6 @@ struct pulse_sms {
 	float bwtp;
 	int mb_factor;
 	int mb_part;		/* partition to evaluate */
-	float gamma; 
 	float SMS_dist;		/* center-to-center slice distance defined by phase modulation */
 	float slice_th;		/* slice thickness of one partition*/
 };
@@ -79,12 +78,14 @@ struct pulse_hypsec {
 	float a0;
 	float beta;
 	float mu;
+	float gamma;
+	float A;
 };
 
 extern const struct pulse_hypsec pulse_hypsec_defaults;
 
 extern float pulse_hypsec_phase(const struct pulse_hypsec* pr, float t);
-extern void pulse_hypsec_init(struct pulse_hypsec* pr);
+extern void pulse_hypsec_init(float gamma, struct pulse_hypsec* pr);
 
 #endif		// _PULSE_H
 

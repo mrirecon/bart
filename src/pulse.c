@@ -98,7 +98,7 @@ int main_pulse(int argc, char* argv[argc])
 
 	case PULSE_HS:
 
-		pulse_hypsec_init(&ph);
+		pulse_hypsec_init(GYRO, &ph);
 		pulse[0] = CAST_UP(&ph);
 		break;
 	
