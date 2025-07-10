@@ -230,6 +230,12 @@ void calc_base_angles(double base_angle[DIMS], int Y, int E, struct traj_conf co
 
 		} else {
 
+#if 0			
+			// FIXME 
+			// fix tests/test-traj-rational-approx-multislice; mrirecon/sms-t1-mapping)
+			angle_s = golden_angle * conf.mb;
+			angle_m = golden_angle;
+#endif
 			angle_s = golden_angle;
 			angle_m = golden_angle * Y;
 			angle_t = golden_angle * Y * conf.mb;

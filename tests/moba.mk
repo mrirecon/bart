@@ -112,8 +112,8 @@ tests/test-moba-t1-no-IR: phantom signal fft ones index scale moba looklocker fm
 
 tests/test-moba-t1-nonCartesian: traj transpose phantom signal nufft fft ones index scale moba looklocker resize fmac nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	               		 	;\
-	$(TOOLDIR)/traj -x16 -y1 -r -D -G -s7 -t300 _traj.ra  		                ;\
-	$(TOOLDIR)/transpose 5 10 _traj.ra _traj2.ra    		                ;\
+	$(TOOLDIR)/traj -x16 -y300 -r -D -G -s7 _traj.ra  		                ;\
+	$(TOOLDIR)/transpose 2 5 _traj.ra _traj2.ra    		                ;\
 	$(TOOLDIR)/scale 0.5 _traj2.ra traj.ra   	    		                ;\
 	$(TOOLDIR)/phantom -k -c -t traj.ra basis_geom.ra    	    		        ;\
 	$(TOOLDIR)/signal -F -I -r0.005 -n300 -1 1.12:1.12:1 -2 100:100:1 signal.ra	;\
@@ -138,8 +138,8 @@ tests/test-moba-t1-nonCartesian: traj transpose phantom signal nufft fft ones in
 
 tests/test-moba-t1-nufft: traj transpose phantom signal nufft fft ones index scale moba fmac nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	               		 	;\
-	$(TOOLDIR)/traj -x16 -y1 -r -D -G -s7 -t300 traj2.ra  		                ;\
-	$(TOOLDIR)/transpose 5 10 traj2.ra traj2T.ra    		                ;\
+	$(TOOLDIR)/traj -x16 -y300 -r -D -G -s7 traj2.ra  		                ;\
+	$(TOOLDIR)/transpose 2 5 traj2.ra traj2T.ra    		                ;\
 	$(TOOLDIR)/scale 0.5 traj2T.ra traj.ra   	    		                ;\
 	$(TOOLDIR)/phantom -k -c -t traj.ra basis_geom.ra    	    		        ;\
 	$(TOOLDIR)/signal -F -I -r0.005 -n300 -1 1.12:1.12:1 -2 100:100:1 signal.ra	;\
