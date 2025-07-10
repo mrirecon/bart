@@ -72,6 +72,9 @@ static void bart_exit_cleanup(void)
 	if (NULL != command_line)
 		XFREE(command_line);
 
+	if (NULL != stdin_command_line)
+		XFREE(stdin_command_line);
+
 	io_memory_cleanup();
 
 	opt_free_strdup();
