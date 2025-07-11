@@ -263,7 +263,8 @@ int main_traj(int argc, char* argv[argc])
 	md_clear(DIMS, dims, samples, CFL_SIZE);
 
 	double base_angle[DIMS] = { 0. };
-	calc_base_angles(base_angle, Y, E, conf);
+	if (!conf.rational)
+		calc_base_angles(base_angle, Y, E, conf);
 
 	int p = 0;
 	long pos[DIMS] = { };
@@ -289,23 +290,42 @@ int main_traj(int argc, char* argv[argc])
 
 			double read = (float)sample + (conf.asym_traj ? 0 : 0.5) - (float)D / 2.;
 
-			// Used, for example, in the SMS-NLINV paper
-			if (conf.golden_partition) {
-
-				double golden_ratio = (sqrtf(5.) + 1.) / 2;
-				double angle_atom = M_PI / Y;
-
-				base_angle[SLICE_DIM] = (m > 0) ? (fmod(angle_atom * m / golden_ratio, angle_atom) / m) : 0;
-			}
-
 			double angle = 0.;
 
-			long ind[DIMS] = { 0L };
-			indices_from_position(ind, pos, conf);
+			if (conf.rational) {
 
-			for (int d = 1; d < DIMS; d++)
-				angle += (double)ind[d] * base_angle[d];
+				conf.aligned_flags |= TIME_FLAG;
+				if (conf.aligned)
+					conf.aligned_flags |= SLICE_FLAG;
+				int order[DIMS] = { 0 };
+				for (int d = 0; d < DIMS; d++)
+					order[d] = d;
 
+				order[SLICE_DIM] = PHS2_DIM;
+				order[PHS2_DIM] = SLICE_DIM;
+
+				double atom = calc_angle_atom(&conf);
+				long inc = raga_increment_from_pos(order, pos, ~3UL, dims, &conf);
+
+				angle = atom * inc;
+
+			} else {
+
+				// Used, for example, in the SMS-NLINV paper
+				if (conf.golden_partition) {
+
+					double golden_ratio = (sqrtf(5.) + 1.) / 2;
+					double angle_atom = M_PI / Y;
+
+					base_angle[SLICE_DIM] = (m > 0) ? (fmod(angle_atom * m / golden_ratio, angle_atom) / m) : 0;
+				}
+
+				long ind[DIMS] = { 0L };
+				indices_from_position(ind, pos, conf);
+
+				for (int d = 1; d < DIMS; d++)
+					angle += (double)ind[d] * base_angle[d];
+			}
 
 			if (conf.half_circle_gold)
 				angle = fmod(angle, M_PI);

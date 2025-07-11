@@ -188,6 +188,8 @@ double calc_angle_atom(const struct traj_conf* conf)
 
 void calc_base_angles(double base_angle[DIMS], int Y, int E, struct traj_conf conf)
 {
+	assert(!conf.rational);
+
 	double angle_atom = M_PI / Y;
 	double golden_angle = calc_golden_angle(conf.tiny_gold);
 
@@ -224,12 +226,6 @@ void calc_base_angles(double base_angle[DIMS], int Y, int E, struct traj_conf co
 			angle_e = angle_s / E;
 			angle_t = golden_angle;
 		}
-
-	} else if (conf.rational) {
-
-		angle_s = 2. * angle_atom;
-		angle_m = 2. * angle_atom; // we distinguish for aligned in indices_from_position
-		angle_t = 0.;
 
 	} else {
 
@@ -292,6 +288,7 @@ void calc_base_angles(double base_angle[DIMS], int Y, int E, struct traj_conf co
 
 long raga_increment_from_pos(const int order[DIMS], const long pos[DIMS], unsigned long flags, const long dims[DIMS], const struct traj_conf* conf)
 {
+	assert(conf->rational);
 	return (conf->raga_inc * md_ravel_index_permuted(DIMS, pos, flags & ~conf->aligned_flags, dims, order)) % conf->Y;
 }
 
@@ -299,25 +296,12 @@ long raga_increment_from_pos(const int order[DIMS], const long pos[DIMS], unsign
 
 void indices_from_position(long ind[DIMS], const long pos[DIMS], struct traj_conf conf)
 {
+	assert(!conf.rational);
+
 	ind[PHS2_DIM] = pos[PHS2_DIM];
 	ind[SLICE_DIM] = pos[SLICE_DIM];
 	ind[TE_DIM] = pos[TE_DIM];
 	ind[TIME_DIM] = pos[TIME_DIM];
-
-	if (conf.rational) {
-
-		if (conf.aligned) {
-
-			ind[PHS2_DIM] = (conf.raga_inc * pos[PHS2_DIM]) % conf.Y;
-			ind[SLICE_DIM] = 0;
-
-		} else {
-
-			ind[PHS2_DIM] = (conf.raga_inc * pos[PHS2_DIM] * conf.mb) % conf.Y;
-			ind[SLICE_DIM] = (conf.raga_inc * pos[SLICE_DIM]);
-		}
-		return;
-	}
 
 	if (conf.turns > 1)
 		ind[TIME_DIM] = pos[TIME_DIM] % conf.turns;
