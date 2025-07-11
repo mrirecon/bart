@@ -31,7 +31,9 @@ extern const struct traj_conf rmfreq_defaults;
 
 extern void traj_read_dir(float dir[3], float phi, float psi);
 extern void gradient_delay(float d[3], float coeff[2][3], float phi, float psi);
+extern double calc_angle_atom(const struct traj_conf* conf);
 extern void calc_base_angles(double base_angle[DIMS], int Y, int E, struct traj_conf conf);
+extern long raga_increment_from_pos(const int order[DIMS], const long pos[DIMS], unsigned long flags, const long dims[DIMS], const struct traj_conf* conf);
 extern void indices_from_position(long ind[DIMS], const long pos[DIMS], struct traj_conf conf);
 extern _Bool zpartition_skip(long partitions, long z_usamp[2], long partition, long frame);
 extern int gen_fibonacci(int n, int ind);

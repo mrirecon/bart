@@ -12,6 +12,8 @@
 #include <math.h>
 #include <assert.h>
 
+#include "num/multind.h"
+
 #include "misc/mri.h"
 #include "misc/misc.h"
 #include "misc/version.h"
@@ -178,6 +180,12 @@ static double calc_golden_angle(int tiny_gold)
 	return golden_angle;
 }
 
+double calc_angle_atom(const struct traj_conf* conf)
+{
+	assert(conf->rational);
+	return 2. * M_PI / (double)conf->Y;
+}
+
 void calc_base_angles(double base_angle[DIMS], int Y, int E, struct traj_conf conf)
 {
 	double angle_atom = M_PI / Y;
@@ -279,6 +287,12 @@ void calc_base_angles(double base_angle[DIMS], int Y, int E, struct traj_conf co
 	base_angle[SLICE_DIM] = angle_m;
 	base_angle[TE_DIM] = angle_e;
 	base_angle[TIME_DIM] = angle_t;
+}
+
+
+long raga_increment_from_pos(const int order[DIMS], const long pos[DIMS], unsigned long flags, const long dims[DIMS], const struct traj_conf* conf)
+{
+	return (conf->raga_inc * md_ravel_index_permuted(DIMS, pos, flags & ~conf->aligned_flags, dims, order)) % conf->Y;
 }
 
 
