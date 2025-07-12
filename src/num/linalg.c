@@ -82,6 +82,40 @@ void vecf_copy(int N, float x[N], const float y[N])
 }
 
 
+void vecf_saxpy(int N, float dst[N], float alpha, const float b[N])
+{
+	for (int i = 0; i < N; i++)
+		dst[i] += alpha * b[i];
+}
+
+float vecf_sdot(int N, const float a[N], const float b[N])
+{
+	float ret = 0.;
+
+	for (int i = 0; i < N; i++)
+		ret += a[i] * b[i];
+
+	return ret;
+}
+
+float vecf_norm(int N, const float x[N])
+{
+	return sqrtf(vecf_sdot(N, x, x));
+}
+
+void matf_solve(int N, float x[N], const float m[N][N], const float y[N])
+{
+	float tmp[N][N];
+
+	for (int i = 0; i < N; i++)
+		for (int j = 0; j < N; j++)
+			tmp[i][j] = m[j][i];	// transpose
+
+	for (int i = 0; i < N; i++)
+		x[i] = y[i];
+
+	lapack_solve_real(N, tmp, x);
+}
 
 void mat_gaussian(int A, int B, complex float x[A][B])
 {
