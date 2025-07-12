@@ -62,3 +62,8 @@ void ode_adjoint_sa_eq_eval(int N, int M, int P, float dj[P],
 		const float x[N + 1][M], const float z[N + 1][M],
 		const float Adp[P][M][M]);
 
+void crank_nicolson(float h, int N, float x[N], float st, float end,
+	void CLOSURE_TYPE(f)(int N, float (*matrix)[N][N], float t));
+void crank_nicolson_matrix(float h, int N, float x[N], float st, float end, const float matrix[N][N]);
+
+

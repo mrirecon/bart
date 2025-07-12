@@ -14,6 +14,84 @@
 #include "ode.h"
 
 
+#if 0
+static void euler(float h, int N, float x[N], float st, float end,
+	void CLOSURE_TYPE(f)(int N, float (*matrix)[N][N], float t))
+{
+	for (float t = st; t < end; ) {
+
+		float A[N][N];
+		NESTED_CALL(f, (N, &A, t));
+
+		float tmp[N];
+
+		matf_vecmul(N, N, tmp, A, x);
+
+		t += h;
+
+		vecf_saxpy(N, x, h, tmp);
+
+		if (t + h > end)
+			h = end - t;
+	}
+}
+#endif
+
+void crank_nicolson(float h, int N, float x[N], float st, float end,
+	void CLOSURE_TYPE(f)(int N, float (*matrix)[N][N], float t))
+{
+	for (float t = st; t < end; ) {
+
+		float A[N][N];
+		NESTED_CALL(f, (N, &A, t + h / 2.));
+
+		/* (x_n - x_{n-1}) / dt = A (x_n + x_{n-1}) / 2
+		 * x_n - dt / 2 A x_n = x_{n-1} + dt / 2 A x_{n-1}
+		 * (I - dt / 2 A) x_n = (I + dt / 2 A) x_{n-1}
+		 * x_{n} = (I - dt / 2 A)^{-1} (I + dt / 2 A) x_{n-1}
+		 */
+
+		float B[N][N];
+
+		for (int i = 0; i < N; i++)
+			for (int j = 0; j < N; j++)
+				B[i][j] = (i == j) + h * A[i][j] / 2.;
+
+		float tmp[N];
+		matf_vecmul(N, N, tmp, B, x);
+
+		t += h;
+
+		for (int i = 0; i < N; i++)
+			for (int j = 0; j < N; j++)
+				B[i][j] = (i == j) - h * A[i][j] / 2.;
+
+		matf_solve(N, x, B, tmp);
+
+		if (t + h > end)
+			h = end - t;
+	}
+}
+
+
+void crank_nicolson_matrix(float h, int N, float x[N], float st, float end, const float matrix[N][N])
+{
+#ifdef __clang__
+	const void* matrix2 = matrix;	// clang workaround
+#endif
+	NESTED(void, ode_matrix_fun, (int N, float (*A)[N][N], float t))
+	{
+		(void)t;
+#ifdef __clang__
+		const float (*matrix)[N] = matrix2;
+#endif
+		matf_copy(N, N, *A, matrix);
+	};
+
+	crank_nicolson(h, N, x, st, end, ode_matrix_fun);
+}
+
+
 #define tridiag(s) (s * (s + 1) / 2)
 
 static void runge_kutta_step(float h, int s, const float a[tridiag(s)], const float b[s], const float c[s - 1], int N, int K, float k[K][N], float ynp[N], float tmp[N], float tn, const float yn[N], void CLOSURE_TYPE(f)(float* out, float t, const float* yn))

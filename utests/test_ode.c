@@ -28,6 +28,23 @@ static void lorenz_fun(void* data, float* out, float t, const float* in)
 #endif
 
 
+static bool test_cn_matrix(void)
+{
+	float mat[2][2] = { { 0., +1. }, { -1., 0. } };
+
+	float x[2] = { 1., 0. };
+	float h = 0.05;
+
+	crank_nicolson_matrix(h, 2, x, 0., M_PI, mat);
+
+	float err = pow(fabs(x[0] + 1.), 2.) + pow(fabs(x[1] - 0.), 2.);
+
+	return (sqrtf(err) < 1.E-3);
+}
+
+UT_REGISTER_TEST(test_cn_matrix);
+
+
 
 static bool test_ode_matrix(void)
 {
