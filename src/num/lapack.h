@@ -30,3 +30,6 @@ extern void lapack_sylvester(long N, long M, float* scale, complex float A[N][N]
 extern void lapack_cinverse_UL(long N, complex float A[N][N]);
 extern void lapack_sinverse_UL(long N, float A[N][N]);
 
+extern void lapack_solve_real(long N, float A[N][N], float B[N]);
+
+

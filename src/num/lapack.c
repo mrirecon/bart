@@ -154,3 +154,10 @@ void lapack_sylvester(long N, long M, float* scale, complex float A[N][N], compl
 	LAPACKE(ctrsyl, 'N', 'N', +1, N, M, &A[0][0], N, &B[0][0], M, &C[0][0], N, scale);
 }
 
+void lapack_solve_real(long N, float A[N][N], float B[N])
+{
+	int ipiv[N];
+	LAPACKE(sgesv, N, 1, &A[0][0], N, ipiv, B, N);
+}
+
+
