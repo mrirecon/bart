@@ -3,7 +3,7 @@
 # Author: Moritz Blumenthal
 #
 
-helpstr=$(cat <<- EOF
+IFS='' read -r -d '' helpstr << 'EOF'
 Transform k-space from a moved image (IM) to a reference image (IR) by an affine transform.
 The affine coordinate transform is defined such that:
 IR(xr) = IM(xm) = IM(Axr) = IM(Rxr + a) where A is a 4x4 matrix with
@@ -30,7 +30,7 @@ Warning: A factor 1/|det(R)| is missing for non-rigid transforms!
 
 -h		help
 EOF
-)
+
 
 
 usage="Usage: $0 [-h] <ksp_raw> <trj_raw> <affine> <ksp_trans> <trj_trans>"
