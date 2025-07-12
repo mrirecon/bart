@@ -8,57 +8,29 @@
 
 #include "misc/nested.h"
 
+#include "num/linalg.h"
 #include "num/quadrature.h"
 
-// #include "iter/vec_iter.h"
-
 #include "ode.h"
-
-
-static void vec_saxpy(int N, float dst[N], const float a[N], float alpha, const float b[N])
-{
-	for (int i = 0; i < N; i++)
-		dst[i] = a[i] + alpha * b[i];
-}
-
-static void vec_copy(int N, float dst[N], const float src[N])
-{
-	vec_saxpy(N, dst, src, 0., src);
-}
-
-static float vec_sdot(int N, const float a[N], const float b[N])
-{
-	float ret = 0.;
-
-	for (int i = 0; i < N; i++)
-		ret += a[i] * b[i];
-
-	return ret;
-}
-
-static float vec_norm(int N, const float x[N])
-{
-	return sqrtf(vec_sdot(N, x, x));
-}
-
 
 
 #define tridiag(s) (s * (s + 1) / 2)
 
 static void runge_kutta_step(float h, int s, const float a[tridiag(s)], const float b[s], const float c[s - 1], int N, int K, float k[K][N], float ynp[N], float tmp[N], float tn, const float yn[N], void CLOSURE_TYPE(f)(float* out, float t, const float* yn))
 {
-	vec_saxpy(N, ynp, yn, h * b[0], k[0]);
+	vecf_copy(N, ynp, yn);
+	vecf_saxpy(N, ynp, h * b[0], k[0]);
 
 	for (int l = 0, t = 1; t < s; t++) {
 
-		vec_copy(N, tmp, yn);
+		vecf_copy(N, tmp, yn);
 
 		for (int r = 0; r < t; r++, l++)
-			vec_saxpy(N, tmp, tmp, h * a[l], k[r % K]);
+			vecf_saxpy(N, tmp, h * a[l], k[r % K]);
 
 		NESTED_CALL(f, (k[t % K], tn + h * c[t - 1], tmp));
 
-		vec_saxpy(N, ynp, ynp, h * b[t], k[t % K]);
+		vecf_saxpy(N, ynp, h * b[t], k[t % K]);
 	}
 }
 
@@ -148,8 +120,8 @@ float dormand_prince_step2(float h, int N, float ynp[N], float tn, const float y
 	float tmp[N];
 	runge_kutta_step(h, 7, a, b, c, N, 6, k, ynp, tmp, tn, yn, f);
 
-	vec_saxpy(N, tmp, tmp, -1., ynp);
-	return vec_norm(N, tmp);
+	vecf_saxpy(N, tmp, -1., ynp);
+	return vecf_norm(N, tmp);
 }
 
 
