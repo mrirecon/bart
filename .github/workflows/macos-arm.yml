@@ -1,0 +1,45 @@
+name: Mac OS ARM
+
+on:
+  push:
+    branches: [ master, mac_github ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  OMP_NUM_THREADS: 1
+  CC: gcc-mp-14
+
+jobs:
+  build-and-test:
+
+    runs-on: macos-14
+
+    steps:
+    - uses: melusina-org/setup-macports@v1.1.4
+    - uses: actions/checkout@v4
+    - name: install dependencies
+      run: |
+        port version
+        port install fftw-3-single
+        port install gcc14
+        port install libpng
+        port install openblas
+        port install flock
+        port install gmake
+        port install coreutils
+        echo PATH=/opt/local/libexec/gnubin/:"$PATH" >> $GITHUB_ENV
+    - name: make all
+      run: |
+        make --version
+        make all
+    - name: make utest
+      run: make utest
+    - name: make test
+      run: make test
+    - name: make pythontest
+      run: |
+        port install py312-numpy
+        port select --set python3 python312
+        make pythontest
+      continue-on-error: true
