@@ -295,9 +295,12 @@ int main_traj(int argc, char* argv[argc])
 			if (conf.rational) {
 
 				conf.aligned_flags |= TIME_FLAG;
+
 				if (conf.aligned)
 					conf.aligned_flags |= SLICE_FLAG;
+
 				int order[DIMS] = { 0 };
+
 				for (int d = 0; d < DIMS; d++)
 					order[d] = d;
 
