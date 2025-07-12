@@ -61,7 +61,10 @@ extern void warn_nonnull_ptr(void*);
 	T* x = xmalloc(sizeof(T))
 #endif
 
-#define STRINGIFY(x) # x
+#define _CONCAT(A, B) A ## B
+#define CONCAT(A, B) _CONCAT(A, B)
+#define _STRINGIFY(x) # x
+#define STRINGIFY(x) _STRINGIFY(x)
 
 
 #define PTR_ALLOC(T, x)		_PTR_ALLOC(__typeof__(T), x)

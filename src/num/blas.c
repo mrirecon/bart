@@ -48,21 +48,16 @@
 
 static void cublas_error(const char* file, int line, cublasStatus_t code)
 {
-	const char* err_str = NULL;
-	switch (code) {
-		case CUBLAS_STATUS_SUCCESS: err_str="CUBLAS_STATUS_SUCCESS"; break;
-		case CUBLAS_STATUS_NOT_INITIALIZED: err_str="CUBLAS_STATUS_NOT_INITIALIZED"; break;
-		case CUBLAS_STATUS_ALLOC_FAILED: err_str="CUBLAS_STATUS_ALLOC_FAILED"; break;
-		case CUBLAS_STATUS_INVALID_VALUE: err_str="CUBLAS_STATUS_INVALID_VALUE"; break;
-		case CUBLAS_STATUS_ARCH_MISMATCH: err_str="CUBLAS_STATUS_ARCH_MISMATCH"; break;
-		case CUBLAS_STATUS_MAPPING_ERROR: err_str="CUBLAS_STATUS_MAPPING_ERROR"; break;
-		case CUBLAS_STATUS_EXECUTION_FAILED: err_str="CUBLAS_STATUS_EXECUTION_FAILED"; break;
-		case CUBLAS_STATUS_INTERNAL_ERROR: err_str="CUBLAS_STATUS_INTERNAL_ERROR"; break;
-		case CUBLAS_STATUS_NOT_SUPPORTED: err_str="CUBLAS_STATUS_NOT_SUPPORTED"; break;
-		case CUBLAS_STATUS_LICENSE_ERROR: err_str="CUBLAS_STATUS_LICENSE_ERROR"; break;
+	const char* err_str[] = {
+#define ENTRY(x) [CUBLAS_STATUS_ ## x] = STRINGIFY(CONCAT(CUBLAS_STATUS_,x))
+		ENTRY(SUCCESS), ENTRY(NOT_INITIALIZED), ENTRY(ALLOC_FAILED),
+		ENTRY(INVALID_VALUE), ENTRY(ARCH_MISMATCH), ENTRY(MAPPING_ERROR),
+		ENTRY(EXECUTION_FAILED), ENTRY(INTERNAL_ERROR), ENTRY(NOT_SUPPORTED),
+		ENTRY(LICENSE_ERROR)
+#undef ENTRY
 	};
 
-	error("cuBLAS Error: %s in %s:%d \n", err_str, file, line);
+	error("cuBLAS Error: %s in %s:%d \n", err_str[code], file, line);
 }
 
 #define CUBLAS_ERROR(x)	({ cublasStatus_t errval = (x); if (CUBLAS_STATUS_SUCCESS != errval) cublas_error(__FILE__, __LINE__, errval); })
