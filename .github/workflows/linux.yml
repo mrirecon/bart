@@ -1,4 +1,4 @@
-name: C/C++ CI
+name: Linux Test
 
 on:
   push:
@@ -7,14 +7,16 @@ on:
     branches: [ master ]
 
 jobs:
-  build:
+  build-and-test:
 
     runs-on: ubuntu-24.04
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: update
-      run: sudo apt-get install -q gcc make libfftw3-dev liblapacke-dev libpng-dev libopenblas-dev gfortran
+      run: |
+        sudo apt-get update
+        sudo apt-get install -yq gcc make libfftw3-dev liblapacke-dev libpng-dev libopenblas-dev gfortran
     - name: make all
       run: make all
     - name: make utest
@@ -23,5 +25,5 @@ jobs:
       run: make test
     - name: make pythontest
       run: |
-        sudo apt-get install -q python3 python3-numpy
+        sudo apt-get install -yq python3 python3-numpy
         make pythontest
