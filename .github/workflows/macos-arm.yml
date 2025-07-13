@@ -37,6 +37,8 @@ jobs:
       run: make utest
     - name: make test
       run: make test
+    - name: make testslow
+      run: make testslow
     - name: make pythontest
       run: |
         port install py312-numpy
