@@ -1,5 +1,4 @@
 /* Copyright 2025. TU Graz. Institute of Biomedical Imaging.
- *
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -63,9 +62,9 @@ int main_grid(int argc, char* argv[argc])
 
 	if (NULL == traj_file) {
 
-		go.dims[0] = 0 >= sdims[0] ? 128 : sdims[0];
-		go.dims[1] = 0 >= sdims[1] ? 128 : sdims[1];
-		go.dims[2] = 0 >= sdims[2] ? 1 : sdims[2];
+		go.dims[0] = (0 >= sdims[0]) ? 128 : sdims[0];
+		go.dims[1] = (0 >= sdims[1]) ? 128 : sdims[1];
+		go.dims[2] = (0 >= sdims[2]) ? 1 : sdims[2];
 
 	} else {
 
@@ -79,23 +78,23 @@ int main_grid(int argc, char* argv[argc])
 	if (0 == go.bt)
 		go.bt = 1;
 
-	go.dims[TIME_DIM] = timedim <= 0 ? 1 : timedim;
+	go.dims[TIME_DIM] = (0 >= timedim) ? 1 : timedim;
 
-	if (0 == go.b0[0] && 0 == go.b0[1] && 0 == go.b0[2]) {
+	if ((0 == go.b0[0]) && (0 == go.b0[1]) && (0 == go.b0[2])) {
 
 		go.b0[0] = 0.5;
 		go.b0[1] = 0;
 		go.b0[2] = 0;
 	}
 
-	if (0 == go.b1[0] && 0 == go.b1[1] && 0 == go.b1[2]) {
+	if ((0 == go.b1[0]) && (0 == go.b1[1]) && (0 == go.b1[2])) {
 
 		go.b1[0] = 0;
 		go.b1[1] = 0.5;
 		go.b1[2] = 0;
 	}
 
-	if (0 == go.b2[0] && 0 == go.b2[1] && 0 == go.b2[2]) {
+	if ((0 == go.b2[0]) && (0 == go.b2[1]) && (0 == go.b2[2])) {
 
 		go.b2[0] = 0;
 		go.b2[1] = 0;
@@ -103,12 +102,14 @@ int main_grid(int argc, char* argv[argc])
 	}
 
 	long gdims[DIMS];
+
 	float* grid = compute_grid(DIMS, gdims, &go, tdims, traj);
 
-	if (NULL != traj_file)
-		unmap_cfl(DIMS, tdims, traj);
+	unmap_cfl(DIMS, tdims, traj);
+
 
 	complex float* optr = create_cfl(out_file, DIMS, gdims);
+
 	md_clear(DIMS, gdims, optr, CFL_SIZE);
 
 	long pos[DIMS];
@@ -124,7 +125,9 @@ int main_grid(int argc, char* argv[argc])
 	} while(md_next(DIMS, gdims, ~0UL, pos));
 
 	md_free(grid);
+
 	unmap_cfl(DIMS, gdims, optr);
 
 	return 0;
 }
+
