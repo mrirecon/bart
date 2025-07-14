@@ -81,7 +81,6 @@ void vecf_copy(int N, float x[N], const float y[N])
 		x[i] = y[i];
 }
 
-
 void vecf_saxpy(int N, float dst[N], float alpha, const float b[N])
 {
 	for (int i = 0; i < N; i++)
