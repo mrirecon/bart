@@ -61,6 +61,8 @@ static void cudnn_unset_gpulock(void)
 }
 #endif
 
+static bool use_tensorcore = false;
+
 void cudnn_init(void)
 {
 	for (int i = 0; i < CUDA_MAX_STREAMS + 1; i++) {
@@ -69,6 +71,18 @@ void cudnn_init(void)
 #ifdef _OPENMP
 		omp_init_lock(&(cudnn_gpulock[i]));
 #endif
+	}
+
+	const char* cudnn_str;
+
+	if (NULL != (cudnn_str = getenv("BART_CUDNN_USE_TENSORCORE"))) {
+
+		long val = strtol(cudnn_str, NULL, 10);
+
+		if ((1 != val) && (0 != val))
+			error("BART_CUDNN_USE_TENSORCORE environment variable must be 0 or 1!\n");
+
+		use_tensorcore = (1 == val);
 	}
 }
 
@@ -525,7 +539,8 @@ static cudnnConvolutionDescriptor_t get_conv_descriptor(struct conv_desc_s conv_
 	#if (8 <= CUDNN_MAJOR)
 	// FIXME: Tensor Cores reduce precision, are we fine with that?
 	//	  Deactivate it for now to have default case from cuDNN 7
-	CUDNN_ERROR(cudnnSetConvolutionMathType(result, CUDNN_FMA_MATH));
+	if (!use_tensorcore)
+		CUDNN_ERROR(cudnnSetConvolutionMathType(result, CUDNN_FMA_MATH));
 	#endif
 
 	int nbDims = bitcount(conv_desc.conv_flags) + 2;
@@ -583,7 +598,7 @@ static bool cudnn_convcorr_fwd_int(	float alpha,
 	cudnnConvolutionFwdAlgoPerf_t* algo = NULL;
 	for (int i = 0; i < N_algos; i++) {
 
-		bool applicable= 8 * (in_size + out_size) > algos[i].memory;
+		bool applicable = use_tensorcore || 8 * (in_size + out_size) > algos[i].memory;
 		applicable = applicable && (algos[i].status == CUDNN_STATUS_SUCCESS);
 		#ifndef NON_DETERMINISTIC
 		applicable = applicable && algos[i].determinism == CUDNN_DETERMINISTIC;
@@ -636,7 +651,7 @@ static bool cudnn_convcorr_bwd_krn_int(	float alpha,
 	cudnnConvolutionBwdFilterAlgoPerf_t* algo = NULL;
 	for (int i = 0; i < N_algos; i++) {
 
-		bool applicable= 8 * (in_size + out_size) > algos[i].memory;
+		bool applicable = use_tensorcore || 8 * (in_size + out_size) > algos[i].memory;
 		applicable = applicable && (algos[i].status == CUDNN_STATUS_SUCCESS);
 		#ifndef NON_DETERMINISTIC
 		applicable = applicable && algos[i].determinism == CUDNN_DETERMINISTIC;
@@ -689,7 +704,7 @@ static bool cudnn_convcorr_bwd_in_int(	float alpha,
 	cudnnConvolutionBwdDataAlgoPerf_t* algo = NULL;
 	for (int i = 0; i < N_algos; i++) {
 
-		bool applicable= 8 * (in_size + out_size) > algos[i].memory;
+		bool applicable = use_tensorcore || 8 * (in_size + out_size) > algos[i].memory;
 		applicable = applicable && (algos[i].status == CUDNN_STATUS_SUCCESS);
 		#ifndef NON_DETERMINISTIC
 		applicable = applicable && algos[i].determinism == CUDNN_DETERMINISTIC;
@@ -1081,7 +1096,7 @@ static bool cudnn_convcorr_fwd(
 		krn_tmp = tmp;
 	}
 
-	bool direct = false; // if true, cudnn tries to perform convolution with out transformation
+	bool direct = use_tensorcore; // if true, cudnn tries to perform convolution with out transformation
 	direct = direct && cudnn_convcorr_fwd_int(1. , 1., conv_desc, in_desc.input_tensor_desc, in, krn_desc.filter_desc, krn_tmp, out_desc.input_tensor_desc, out);
 
 	bool success = true;
@@ -1130,7 +1145,7 @@ static bool cudnn_convcorr_bwd_in(
 	float* krn_tmp = md_alloc_gpu(bcd.N, bcd.kdims, FL_SIZE);
 	cudnn_tensor_transform(1, 0, krn_desc.transformed_filter_tensor_desc, krn_tmp, krn_desc.input_filter_tensor_desc, krn);
 
-	bool direct = false; // if true, cudnn tries to perform convolution with out transformation
+	bool direct = use_tensorcore; // if true, cudnn tries to perform convolution with out transformation
 	direct = direct && cudnn_convcorr_bwd_in_int( 1. , 1., conv_desc, in_desc.input_tensor_desc, in, krn_desc.filter_desc, krn_tmp, out_desc.input_tensor_desc, out);
 	bool success = true;
 
@@ -1179,7 +1194,7 @@ static bool cudnn_convcorr_bwd_krn(
 
 	cudnn_tensor_transform(1., 0., krn_desc.transformed_filter_tensor_desc, krn_tmp, krn_desc.input_filter_tensor_desc, krn);
 
-	bool direct = false; // if true, cudnn tries to perform convolution with out transformation
+	bool direct = use_tensorcore; // if true, cudnn tries to perform convolution with out transformation
 	direct = direct && cudnn_convcorr_bwd_krn_int( 1. , 0., conv_desc, in_desc.input_tensor_desc, in, krn_desc.filter_desc, krn_tmp, out_desc.input_tensor_desc, out);
 
 	bool success = true;
@@ -1277,24 +1292,20 @@ static bool cudnn_zconvcorr_fwd_kernel(
 
 	pos[flag_to_index(bcd.channel_out_flags)] = 0;
 	pos[flag_to_index(bcd.channel_in_flags)]  = 0;
-	//md_copy2(bcd.N, bcd.kdims, nkstrs_cp, &MD_ACCESS(bcd.N, rbcd.kstrs, pos, nkrn), rkstrs, krn_real, FL_SIZE);
-	cudnn_smul2(bcd.N, bcd.kdims, nkstrs_cp, &MD_ACCESS(bcd.N, rbcd.kstrs, pos, nkrn), rkstrs, krn_real, 1);
+	md_copy2(bcd.N, bcd.kdims, nkstrs_cp, &MD_ACCESS(bcd.N, rbcd.kstrs, pos, nkrn), rkstrs, krn_real, FL_SIZE);
 
 	pos[flag_to_index(bcd.channel_out_flags)] = 1;
 	pos[flag_to_index(bcd.channel_in_flags)]  = 1;
-	//md_copy2(bcd.N, bcd.kdims, nkstrs_cp, &MD_ACCESS(bcd.N, rbcd.kstrs, pos, nkrn), rkstrs, krn_real, FL_SIZE);
-	cudnn_smul2(bcd.N, bcd.kdims, nkstrs_cp, &MD_ACCESS(bcd.N, rbcd.kstrs, pos, nkrn), rkstrs, krn_real, 1);
+	md_copy2(bcd.N, bcd.kdims, nkstrs_cp, &MD_ACCESS(bcd.N, rbcd.kstrs, pos, nkrn), rkstrs, krn_real, FL_SIZE);
 
 	pos[flag_to_index(bcd.channel_out_flags)] = 1;
 	pos[flag_to_index(bcd.channel_in_flags)]  = 0;
-	//md_copy2(bcd.N, bcd.kdims, nkstrs_cp, &MD_ACCESS(bcd.N, rbcd.kstrs, pos, nkrn), rkstrs, krn_imag, FL_SIZE);
-	cudnn_smul2(bcd.N, bcd.kdims, nkstrs_cp, &MD_ACCESS(bcd.N, rbcd.kstrs, pos, nkrn), rkstrs, krn_imag, 1);
+	md_copy2(bcd.N, bcd.kdims, nkstrs_cp, &MD_ACCESS(bcd.N, rbcd.kstrs, pos, nkrn), rkstrs, krn_imag, FL_SIZE);
 
 	md_smul(bcd.N, bcd.kdims, krn_imag, krn_imag, -1.);
 	pos[flag_to_index(bcd.channel_out_flags)] = 0;
 	pos[flag_to_index(bcd.channel_in_flags)]  = 1;
-	//md_copy2(bcd.N, bcd.kdims, nkstrs_cp, &MD_ACCESS(bcd.N, rbcd.kstrs, pos, nkrn), rkstrs, krn_imag, FL_SIZE);
-	cudnn_smul2(bcd.N, bcd.kdims, nkstrs_cp, &MD_ACCESS(bcd.N, rbcd.kstrs, pos, nkrn), rkstrs, krn_imag, 1);
+	md_copy2(bcd.N, bcd.kdims, nkstrs_cp, &MD_ACCESS(bcd.N, rbcd.kstrs, pos, nkrn), rkstrs, krn_imag, FL_SIZE);
 
 	md_free(krn_imag);
 	md_free(krn_real);
@@ -1376,24 +1387,20 @@ static bool cudnn_zconvcorr_bwd_in_kernel(
 
 	pos[flag_to_index(bcd.channel_out_flags)] = 0;
 	pos[flag_to_index(bcd.channel_in_flags)]  = 0;
-	//md_copy2(bcd.N, bcd.kdims, nkstrs_cp, &MD_ACCESS(bcd.N, rbcd.kstrs, pos, nkrn), rkstrs, krn_real, FL_SIZE);
-	cudnn_smul2(bcd.N, bcd.kdims, nkstrs_cp, &MD_ACCESS(bcd.N, rbcd.kstrs, pos, nkrn), rkstrs, krn_real, 1.);
+	md_copy2(bcd.N, bcd.kdims, nkstrs_cp, &MD_ACCESS(bcd.N, rbcd.kstrs, pos, nkrn), rkstrs, krn_real, FL_SIZE);
 
 	pos[flag_to_index(bcd.channel_out_flags)] = 1;
 	pos[flag_to_index(bcd.channel_in_flags)]  = 1;
-	//md_copy2(bcd.N, bcd.kdims, nkstrs_cp, &MD_ACCESS(bcd.N, rbcd.kstrs, pos, nkrn), rkstrs, krn_real, FL_SIZE);
-	cudnn_smul2(bcd.N, bcd.kdims, nkstrs_cp, &MD_ACCESS(bcd.N, rbcd.kstrs, pos, nkrn), rkstrs, krn_real, 1.);
+	md_copy2(bcd.N, bcd.kdims, nkstrs_cp, &MD_ACCESS(bcd.N, rbcd.kstrs, pos, nkrn), rkstrs, krn_real, FL_SIZE);
 
 	pos[flag_to_index(bcd.channel_out_flags)] = 0;
 	pos[flag_to_index(bcd.channel_in_flags)]  = 1;
-	//md_copy2(bcd.N, bcd.kdims, nkstrs_cp, &MD_ACCESS(bcd.N, rbcd.kstrs, pos, nkrn), rkstrs, krn_imag, FL_SIZE);
-	cudnn_smul2(bcd.N, bcd.kdims, nkstrs_cp, &MD_ACCESS(bcd.N, rbcd.kstrs, pos, nkrn), rkstrs, krn_imag, 1.);
+	md_copy2(bcd.N, bcd.kdims, nkstrs_cp, &MD_ACCESS(bcd.N, rbcd.kstrs, pos, nkrn), rkstrs, krn_imag, FL_SIZE);
 
 	md_smul(bcd.N, bcd.kdims, krn_imag, krn_imag, -1.);
 	pos[flag_to_index(bcd.channel_out_flags)] = 1;
 	pos[flag_to_index(bcd.channel_in_flags)]  = 0;
-	//md_copy2(bcd.N, bcd.kdims, nkstrs_cp, &MD_ACCESS(bcd.N, rbcd.kstrs, pos, nkrn), rkstrs, krn_imag, FL_SIZE);
-	cudnn_smul2(bcd.N, bcd.kdims, nkstrs_cp, &MD_ACCESS(bcd.N, rbcd.kstrs, pos, nkrn), rkstrs, krn_imag, 1.);
+	md_copy2(bcd.N, bcd.kdims, nkstrs_cp, &MD_ACCESS(bcd.N, rbcd.kstrs, pos, nkrn), rkstrs, krn_imag, FL_SIZE);
 
 	md_free(krn_imag);
 	md_free(krn_real);
@@ -1480,26 +1487,22 @@ static bool cudnn_zconvcorr_bwd_krn_kernel(
 
 	pos[flag_to_index(bcd.channel_out_flags)] = 0;
 	pos[flag_to_index(bcd.channel_in_flags)]  = 0;
-	//md_copy2(bcd.N, bcd.kdims, rkstrs, krn_tmp, nkstrs_cp, &MD_ACCESS(bcd.N, rbcd.kstrs, pos, nkrn), FL_SIZE);
-	cudnn_smul2(bcd.N, bcd.kdims, rkstrs, krn_tmp, nkstrs_cp, &MD_ACCESS(bcd.N, rbcd.kstrs, pos, nkrn), 1);
+	md_copy2(bcd.N, bcd.kdims, rkstrs, krn_tmp, nkstrs_cp, &MD_ACCESS(bcd.N, rbcd.kstrs, pos, nkrn), FL_SIZE);
 	md_add(bcd.N, bcd.kdims, krn_real, krn_real, krn_tmp);
 
 	pos[flag_to_index(bcd.channel_out_flags)] = 1;
 	pos[flag_to_index(bcd.channel_in_flags)]  = 1;
-	//md_copy2(bcd.N, bcd.kdims, rkstrs, krn_tmp, nkstrs_cp, &MD_ACCESS(bcd.N, rbcd.kstrs, pos, nkrn), FL_SIZE);
-	cudnn_smul2(bcd.N, bcd.kdims, rkstrs, krn_tmp, nkstrs_cp, &MD_ACCESS(bcd.N, rbcd.kstrs, pos, nkrn), 1);
+	md_copy2(bcd.N, bcd.kdims, rkstrs, krn_tmp, nkstrs_cp, &MD_ACCESS(bcd.N, rbcd.kstrs, pos, nkrn), FL_SIZE);
 	md_sub(bcd.N, bcd.kdims, krn_real, krn_real, krn_tmp);
 
 	pos[flag_to_index(bcd.channel_out_flags)] = 1;
 	pos[flag_to_index(bcd.channel_in_flags)]  = 0;
-	//md_copy2(bcd.N, bcd.kdims, rkstrs, krn_tmp, nkstrs_cp, &MD_ACCESS(bcd.N, rbcd.kstrs, pos, nkrn), FL_SIZE);
-	cudnn_smul2(bcd.N, bcd.kdims, rkstrs, krn_tmp, nkstrs_cp, &MD_ACCESS(bcd.N, rbcd.kstrs, pos, nkrn), 1);
+	md_copy2(bcd.N, bcd.kdims, rkstrs, krn_tmp, nkstrs_cp, &MD_ACCESS(bcd.N, rbcd.kstrs, pos, nkrn), FL_SIZE);
 	md_add(bcd.N, bcd.kdims, krn_imag, krn_imag, krn_tmp);
 
 	pos[flag_to_index(bcd.channel_out_flags)] = 0;
 	pos[flag_to_index(bcd.channel_in_flags)]  = 1;
-	//md_copy2(bcd.N, bcd.kdims, rkstrs, krn_tmp, nkstrs_cp, &MD_ACCESS(bcd.N, rbcd.kstrs, pos, nkrn), FL_SIZE);
-	cudnn_smul2(bcd.N, bcd.kdims, rkstrs, krn_tmp, nkstrs_cp, &MD_ACCESS(bcd.N, rbcd.kstrs, pos, nkrn), 1);
+	md_copy2(bcd.N, bcd.kdims, rkstrs, krn_tmp, nkstrs_cp, &MD_ACCESS(bcd.N, rbcd.kstrs, pos, nkrn), FL_SIZE);
 	md_add(bcd.N, bcd.kdims, krn_imag, krn_imag, krn_tmp);
 
 	md_zcmpl2(bcd.N, bcd.kdims, bcd.kstrs, krn, rkstrs, krn_real, rkstrs, krn_imag);
@@ -1533,7 +1536,7 @@ bool zconvcorr_fwd_cudnn(	int N,
 	if (!check_cudnn_convcorr(bart_conv_desc))
 		return false;
 
-	if (cudnn_zconvcorr_fwd_kernel(bart_conv_desc, in, krn, out, CUDNN_TENSOR_NCHW)) {
+	if (cudnn_zconvcorr_fwd_kernel(bart_conv_desc, in, krn, out, use_tensorcore ? CUDNN_TENSOR_NHWC : CUDNN_TENSOR_NCHW)) {
 
 		debug_printf(DP_DEBUG3, "conv by %s -> 1\n", __func__);
 		return true;
@@ -1567,7 +1570,7 @@ bool zconvcorr_bwd_in_cudnn(	int N,
 	if (!check_cudnn_convcorr(bart_conv_desc))
 		return false;
 
-	if (cudnn_zconvcorr_bwd_in_kernel(bart_conv_desc, in, krn, out, CUDNN_TENSOR_NCHW)) {
+	if (cudnn_zconvcorr_bwd_in_kernel(bart_conv_desc, in, krn, out, use_tensorcore ? CUDNN_TENSOR_NHWC : CUDNN_TENSOR_NCHW)) {
 
 		debug_printf(DP_DEBUG3, "conv by %s -> 1\n", __func__);
 		return true;
@@ -1602,7 +1605,7 @@ bool zconvcorr_bwd_krn_cudnn(	int N,
 		return false;
 
 
-	if (cudnn_zconvcorr_bwd_krn_kernel(bart_conv_desc, in, krn, out, CUDNN_TENSOR_NCHW)) {
+	if (cudnn_zconvcorr_bwd_krn_kernel(bart_conv_desc, in, krn, out, use_tensorcore ? CUDNN_TENSOR_NHWC : CUDNN_TENSOR_NCHW)) {
 
 		debug_printf(DP_DEBUG3, "conv by %s -> 1\n", __func__);
 		return true;
