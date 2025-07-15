@@ -283,9 +283,13 @@ stream_t stream_lookup(const complex float* ptr)
 	return s;
 }
 
-stream_t stream_lookup_name(const char* name)
+static char* stream_mangle_name(const char* name, bool in);
+
+stream_t stream_lookup_name(const char* filename, bool in)
 {
 	stream_t s = NULL;
+
+	char* name = stream_mangle_name(filename, in);
 
 #pragma omp critical(stream_ptr_lock)
 	{
@@ -300,10 +304,12 @@ stream_t stream_lookup_name(const char* name)
 			s = stream_ptr_streams[i];
 	}
 
+	xfree(name);
+
 	return s;
 }
 
-const char* stream_mangle_name(const char* name, bool in)
+static char* stream_mangle_name(const char* name, bool in)
 {
 	assert (0 != strcmp(name, "in_-"));
 	assert (0 != strcmp(name, "out_-"));
@@ -354,7 +360,7 @@ stream_t stream_create(int N, const long dims[N], int pipefd, bool input, bool b
 		.binary = binary,
 		.call_msync = call_msync,
 		.last_index = -1,
-		.filename = (NULL == name) ? NULL : strdup(name),
+		.filename = (NULL == name) ? NULL : stream_mangle_name(name, input),
 		.cond = bart_cond_create(),
 	};
 
@@ -499,11 +505,7 @@ stream_t stream_load_fd(int fd, const char* name, int D, long dims[D], char **da
 	if (NULL == *datname)
 		binary = true;
 
-	const char* stream_name = stream_mangle_name(name, true);
-
-	stream_t strm = stream_create(D, dims, fd, true, binary, 0, stream_name, false);
-
-	xfree(stream_name);
+	stream_t strm = stream_create(D, dims, fd, true, binary, 0, name, false);
 
 	if (!strm)
 		return NULL;
@@ -565,11 +567,7 @@ stream_t stream_create_file(const char* name, int D, long dims[D], unsigned long
 	if (-1 == write_stream_header(fd, is_stdout ? NULL : name, dataname, D, dims))
 		error("Writing header of %s\n", name);
 
-	const char* stream_name = stream_mangle_name(name, false);
-
-	stream_t strm = stream_create(D, dims, fd, false, binary, stream_flags, stream_name, call_msync);
-
-	xfree(stream_name);
+	stream_t strm = stream_create(D, dims, fd, false, binary, stream_flags, name, call_msync);
 
 	return strm;
 }

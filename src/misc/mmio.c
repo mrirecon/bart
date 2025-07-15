@@ -683,9 +683,7 @@ complex float* create_zcoo(const char* name, int D, const long dimensions[D])
 
 static complex float* stream_clone_if_exists(const char* name, stream_t* strm, bool in)
 {
-	const char* stream_name = stream_mangle_name(name, in);
-	*strm = stream_lookup_name(stream_name);
-	xfree(stream_name);
+	*strm = stream_lookup_name(name, in);
 
 	if (!(*strm))
 		return NULL;
@@ -995,7 +993,6 @@ static complex float* load_cfl_internal(const char* name, int D, long dimensions
 
 	complex float* addr = NULL;
 	char* filename = NULL;
-	const char* stream_name;
 	stream_t strm;
 
 #pragma omp critical (bart_file_access2)	// FIXME. this critical section is too big
@@ -1009,9 +1006,7 @@ static complex float* load_cfl_internal(const char* name, int D, long dimensions
 
 			assert(1 == mpi_get_num_procs());
 
-			stream_name = stream_mangle_name(name, true);
-
-			strm = stream_lookup_name(stream_name);
+			strm = stream_lookup_name(name, true);
 
 			if (NULL != strm) {
 
@@ -1049,8 +1044,6 @@ static complex float* load_cfl_internal(const char* name, int D, long dimensions
 			}
 
 		loadcfl_stream_end:
-
-			xfree(stream_name);
 
 			if (cfl_loop_desc_active())
 				stream_clone(strm);

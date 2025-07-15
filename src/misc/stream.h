@@ -24,8 +24,7 @@ struct list_s;
 typedef struct stream* stream_t;
 
 extern stream_t stream_lookup(const _Complex float* ptr);
-extern stream_t stream_lookup_name(const char* name);
-extern const char* stream_mangle_name(const char* name, _Bool in);
+extern stream_t stream_lookup_name(const char* name, _Bool in);
 
 extern _Bool* stream_get_synced(stream_t s);
 
