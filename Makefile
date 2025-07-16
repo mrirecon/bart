@@ -275,7 +275,7 @@ TFLP=scale invert conj fmac saxpy sdot spow cpyphs creal carg normalize cdf97 pa
 TNUM=fft fftmod fftshift noise bench threshold conv rss filter nlmeans mandelbrot wavelet window var std fftrot roistat pol2mask conway morphop
 TRECO=pics pocsense sqpics itsense nlinv moba nufft nufftbase rof tgv ictv sake wave lrmatrix estdims estshift estdelay wavepsf wshfl rtnlinv mobafit grog denoise estscaling
 TCALIB=ecalib ecaltwo caldir walsh cc ccapply rovir calmat svd estvar whiten rmfreq ssa bin psf ncalib
-TMRI=homodyne poisson twixread fakeksp looklocker upat fovshift
+TMRI=homodyne poisson twixread fakeksp looklocker upat fovshift seq
 TSIM=phantom traj signal epg sim pulse raga stl bloch grid trajcor
 TIO=tee toimg toraw multicfl trx
 TNN=reconet nnet onehotenc measure mnist tensorflow nlinvnet sample
@@ -364,6 +364,7 @@ MODULES_estscaling = -lsense -llinops
 MODULES_pulse = -lseq
 MODULES_bloch = -lseq -lsimu
 MODULES_trajcor = -lcalib -lnoncart
+MODULES_seq = -lseq -lnoncart -lsimu
 
 
 GCCVERSION12 := $(shell expr `$(CC) -dumpversion | cut -f1 -d.` \>= 12)
