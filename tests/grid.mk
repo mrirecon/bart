@@ -41,5 +41,13 @@ tests/test-grid_cart-index: grid extract nrmse ones index saxpy
 	rm *.cfl *.hdr; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-TESTS += tests/test-grid_traj tests/test-grid_cart-traj tests/test-grid_cart-index
+tests/test-grid_traj_compat: grid nrmse $(TESTS_OUT)/grid_t
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	;\
+	$(TOOLDIR)/grid -t $(TESTS_OUT)/grid_t -T 7 traj ;\
+	$(TOOLDIR)/grid -t traj ttraj ;\
+	$(TOOLDIR)/nrmse -t 0 traj ttraj ;\
+	rm *.cfl *.hdr; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+TESTS += tests/test-grid_traj tests/test-grid_cart-traj tests/test-grid_cart-index tests/test-grid_traj_compat
 

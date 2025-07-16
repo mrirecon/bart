@@ -36,12 +36,12 @@ int main_grid(int argc, char* argv[argc])
 	};
 
 	long sdims[3] = {-1, -1, -1};
-	long timedim = 1;
+	long timedim = -1;
 
 	const struct opt_s opts[] = {
 
 		OPT_SET('k', &go.kspace, "Compute for k-space."),
-		OPT_INFILE('t', &traj_file, "trajectory file", "Sampling trajectory for k-space of shape (3, Nx, N).\n"),
+		OPT_INFILE('t', &traj_file, "trajectory file", "Sampling trajectory for k-space of shape (3, Nx, N) which should be extended by time.\n"),
 		OPT_VECN('D', sdims, "Dimensions x-space/ k-space per basis vector."),
 		OPT_LONG('T', &timedim, "dt", "Dimension time domain.\n"),
 		OPTL_FLVEC3(0, "b1", &go.b0, "f1:f2:f3", "First basis vector."), //
@@ -60,6 +60,8 @@ int main_grid(int argc, char* argv[argc])
 	complex float* traj = NULL;
 	long tdims[DIMS];
 
+	go.dims[TIME_DIM] = (0 >= timedim) ? 1 : timedim;
+
 	if (NULL == traj_file) {
 
 		go.dims[0] = (0 >= sdims[0]) ? 128 : sdims[0];
@@ -73,12 +75,14 @@ int main_grid(int argc, char* argv[argc])
 		go.dims[0] = 1;
 		go.dims[1] = tdims[1];
 		go.dims[2] = tdims[2];
+
+		// if the user provides a 4d traj which has already a time we continue with those dims.
+		if ((4 == tdims[0]) && (-1 == timedim))
+			go.dims[TIME_DIM] = tdims[TIME_DIM];
 	}
 
 	if (0 == go.bt)
 		go.bt = 1;
-
-	go.dims[TIME_DIM] = (0 >= timedim) ? 1 : timedim;
 
 	if ((0 == go.b0[0]) && (0 == go.b0[1]) && (0 == go.b0[2])) {
 
@@ -107,22 +111,9 @@ int main_grid(int argc, char* argv[argc])
 
 	unmap_cfl(DIMS, tdims, traj);
 
-
 	complex float* optr = create_cfl(out_file, DIMS, gdims);
 
-	md_clear(DIMS, gdims, optr, CFL_SIZE);
-
-	long pos[DIMS];
-	md_set_dims(DIMS, pos, 0);
-
-	long strs[DIMS], ostrs[DIMS];
-	md_calc_strides(DIMS, strs, gdims, FL_SIZE);
-	md_calc_strides(DIMS, ostrs, gdims, CFL_SIZE);
-
-	do {
-		MD_ACCESS(DIMS, ostrs, pos, optr) = MD_ACCESS(DIMS, strs, pos, grid) + 0.i;
-
-	} while(md_next(DIMS, gdims, ~0UL, pos));
+	md_zcmpl_real(DIMS, gdims, optr, grid);
 
 	md_free(grid);
 
