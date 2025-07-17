@@ -240,7 +240,7 @@ CUDNN_LIB ?= lib64
 TENSORFLOW_BASE ?= /usr/local/
 
 # pytorch
-PYTORCH_BASE ?= /usr/local/
+PYTORCH_BASE ?= /usr/
 
 # acml
 
@@ -347,7 +347,7 @@ MODULES_reconet = -lgrecon -lnetworks -lnoncart -lnn -lnlops -llinops -liter
 MODULES_mnist = -lnetworks -lnn -lnlops -llinops -liter
 MODULES_nnet = -lgrecon -lnetworks -lnoncart -lnn -lnlops -llinops -liter
 MODULES_tensorflow = -lnn -lnlops -llinops -liter
-MODULES_sample = -lnn -lnlops -llinops -liter
+MODULES_sample = -lnetworks -lnn -lnlops -llinops -liter
 MODULES_measure = -lgrecon -lnetworks -lnoncart -lnn -lnlops -llinops -liter
 MODULES_onehotenc = -lnn
 MODULES_sim = -lseq -lsimu
@@ -418,7 +418,10 @@ endif
 
 ifeq ($(PYTORCH),1)
 CPPFLAGS += -DPYTORCH -I$(PYTORCH_BASE)/include/torch/csrc/api/include/ -I$(PYTORCH_BASE)/include/
-LIBS += -L$(PYTORCH_BASE)/lib -Wl,--no-as-needed,-rpath $(PYTORCH_BASE)/lib -ltorch -ltorch_cpu -ltorch_cuda -lc10_cuda -lc10
+LIBS += -L$(PYTORCH_BASE)/lib -Wl,--no-as-needed,-rpath $(PYTORCH_BASE)/lib -ltorch -ltorch_cpu -lc10
+ifeq ($(CUDA),1)
+LIBS += -ltorch_cuda -lc10_cuda
+endif
 endif
 
 
@@ -803,7 +806,7 @@ MODULES_test_events += -lseq
 # lib num
 UTARGETS += test_multind test_flpmath test_splines test_linalg test_polynom test_window test_conv
 UTARGETS += test_ode test_nlmeans test_rand test_matexp
-UTARGETS += test_blas test_mdfft test_ops test_ops_p test_flpmath2 test_convcorr test_specfun test_qform test_fft test_gaussians
+UTARGETS += test_blas test_mdfft test_ops test_ops_p test_flpmath2 test_convcorr test_specfun test_qform test_fft test_gaussians test_md_gaussians
 UTARGETS += test_lapack
 ifeq ($(MPI),1)
 UTARGETS += test_mpi test_mpi_multind test_mpi_flpmath test_mpi_fft
