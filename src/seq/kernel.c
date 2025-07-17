@@ -4,7 +4,6 @@
  */
 
 #include <complex.h>
-#include <math.h>
 #include <assert.h>
 
 #include "num/multind.h"
@@ -20,23 +19,6 @@
 #ifndef CFL_SIZE
 #define CFL_SIZE sizeof(complex float)
 #endif
-
-long block_end(int N, const struct seq_event ev[__VLA(N)])
-{
-	return round_up_GRT(events_end_time(N, ev, 0, 0));
-}
-
-long block_end_flat(int N, const struct seq_event ev[N])
-{
-	return round_up_GRT(events_end_time(N, ev, 1, 1));
-}
-
-
-long block_rdt(int N, const struct seq_event ev[N])
-{
-	return round_up_GRT(events_end_time(N, ev, 1, 0) - block_end_flat(N, ev));
-}
-
 
 /*
  * Compute 0th moment on a raster. 
@@ -90,64 +72,6 @@ void seq_compute_adc_samples(int D, const long adc_dims[D], complex float* adc, 
 		e++;
 	}
 	assert(e == adc_dims[TE_DIM]);
-}
-
-/*
- * Compute gradients on a raster. This also works
- * (i.e. yields correct 0 moment) if the abstract
- * gradients do not start and end on the raster.
- * We integrate over each interval to obtain the
- * average gradient.
- */
-void seq_compute_gradients(int M, double gradients[M][3], double dt, int N, const struct seq_event ev[N])
-{
-	for (int i = 0; i < M; i++) 
-		for (int a = 0; a < 3; a++)
-			gradients[i][a] = 0.;
-
-	for (int i = 0; i < N; i++) {
-
-		if (SEQ_EVENT_GRADIENT != ev[i].type)
-			continue;
-
-		double s = ev[i].start;
-		double e = ev[i].end;
-
-
-		/*            |    /
-                 *            |   /|
-                 *            .../..
-                 *            | /  |
-                 *            |/   |
-                 *            /    |
-                 *       ..../|    |
-                 *  |____|__/_|____|____|
-                 *    0    1    2    3  
-                 */
-
-		assert(0. <= s);
-
-		double om[3];
-
-		for (int a = 0; a < 3; a++)
-			om[a] = 0.;
-
-		for (int p = trunc(s / dt); p <= ceil(e / dt); p++) {
-
-			assert(0 <= p);
-
-			double m0[3];
-			moment(m0, (p + 1.) * dt, &ev[i]);
-
-			for (int a = 0; a < 3; a++) {
-
-				if (p < M)
-					gradients[p][a] += (m0[a] - om[a]) / dt;
-
-				om[a] = m0[a];
-			}
-		}
-	}
 }
 
 
