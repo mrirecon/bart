@@ -181,6 +181,8 @@ extern void md_zatan2r2(int D, const long dim[__VLA(D)], const long ostr[__VLA(D
 extern void md_zmax(int D, const long dims[__VLA(D)], _Complex float* optr, const _Complex float* iptr1, const _Complex float* iptr2);
 extern void md_zmax2(int D, const long dims[__VLA(D)], const long ostr[__VLA(D)], _Complex float* optr, const long istr1[__VLA(D)], const _Complex float* iptr1, const long istr2[__VLA(D)], const _Complex float* iptr2);
 
+extern void md_reduce_zmax(int D, const long dims[__VLA(D)], unsigned long rflags, _Complex float* dst, const _Complex float* src);
+
 extern void md_max(int D, const long dim[__VLA(D)], float* optr, const float* iptr1, const float* iptr2);
 extern void md_max2(int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], float* optr, const long istr1[__VLA(D)], const float* iptr1, const long istr2[__VLA(D)], const float* iptr2);
 

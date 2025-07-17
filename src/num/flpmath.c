@@ -1753,6 +1753,25 @@ void md_zmax2(int D, const long dims[D], const long ostr[D], complex float* optr
 
 
 
+/**
+ * Max of an array along the dimensions specified by rflags
+ *
+ * dst = max(src) along dimensions specified by rflags
+ */
+void md_reduce_zmax(int D, const long dims[D], unsigned long rflags, complex float* dst, const complex float* src)
+{
+	long odims[D];
+	md_select_dims(D, ~rflags, odims, dims);
+
+	long pos[D];
+	md_set_dims(D, pos, 0);
+
+	md_slice(D, rflags, pos, dims, dst, src, CFL_SIZE);
+
+	md_zmax2(D, dims, MD_STRIDES(D, odims, CFL_SIZE), dst, MD_STRIDES(D, odims, CFL_SIZE), dst, MD_STRIDES(D, dims, CFL_SIZE), src);
+}
+
+
 
 /**
  * Multiply complex array with a scalar and add to output (without strides)
