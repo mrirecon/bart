@@ -44,7 +44,7 @@ static bool test_nlgrad(void)
 
 	md_zfill(N, dims, src, 1.);
 
-	auto p = prox_nlgrad_create(sq, 30, 0.1, 1.);
+	auto p = prox_nlgrad_create(sq, 30, 0.1, 1., false);
 
 	nlop_free(sq);
 

@@ -209,6 +209,8 @@ struct prox_nlgrad_data {
 	float step_size;
 	float lambda;
 	int steps;
+
+	bool grad_nlop;	//nlop itself computes gradient (score network)
 };
 
 DEF_TYPEID(prox_nlgrad_data);
@@ -231,14 +233,23 @@ static void prox_nlgrad_apply(const operator_data_t* _data, float mu, complex fl
 
 	for (int i = 0; i < data->steps; i++) {
 
-		nlop_apply(data->op, cod->N, cod->dims, out, dom->N, dom->dims, dst);
+		if (data->grad_nlop) {
 
-		debug_printf(DP_DEBUG1, "Loss: %f\n", crealf(out[0]));
+			nlop_apply(data->op, cod->N, cod->dims, grd, dom->N, dom->dims, dst);
 
-		nlop_adjoint(data->op, dom->N, dom->dims, grd, cod->N, cod->dims, grad_ys);
+		} else {
+
+			nlop_apply(data->op, cod->N, cod->dims, out, dom->N, dom->dims, dst);
+
+			debug_printf(DP_DEBUG1, "Loss: %f\n", crealf(out[0]));
+
+			nlop_adjoint(data->op, dom->N, dom->dims, grd, cod->N, cod->dims, grad_ys);
+
+		}
 
 		if (0 < i) {
 
+			assert(src != dst);
 			md_zaxpy(dom->N, dom->dims, dst, -1. * data->step_size, dst);
 			md_zaxpy(dom->N, dom->dims, dst, +1. * data->step_size, src);
 		}
@@ -258,7 +269,7 @@ static void prox_nlgrad_del(const operator_data_t* _data)
 	xfree(data);
 }
 
-extern const struct operator_p_s* prox_nlgrad_create(const struct nlop_s* op, int steps, float step_size, float lambda)
+extern const struct operator_p_s* prox_nlgrad_create(const struct nlop_s* op, int steps, float step_size, float lambda, bool grad_nlop)
 {
 	PTR_ALLOC(struct prox_nlgrad_data, data);
 	SET_TYPEID(prox_nlgrad_data, data);
@@ -268,12 +279,23 @@ extern const struct operator_p_s* prox_nlgrad_create(const struct nlop_s* op, in
 
 	assert(CFL_SIZE == dom->size);
 	assert(CFL_SIZE == cod->size);
-	assert(1 == md_calc_size(cod->N, cod->dims));
+
+
+	if (grad_nlop) {
+
+		assert(dom->N == cod->N);
+		assert(md_check_equal_dims(dom->N, dom->dims, cod->dims, ~0UL));
+		
+	} else {
+
+		assert(1 == md_calc_size(cod->N, cod->dims));
+	}
 
 	data->op = nlop_clone(op);
 	data->lambda = lambda;
 	data->step_size = step_size;
 	data->steps = steps;
+	data->grad_nlop = grad_nlop;
 
 	return operator_p_create(dom->N, dom->dims, dom->N, dom->dims, CAST_UP(PTR_PASS(data)), prox_nlgrad_apply, prox_nlgrad_del);
 }
@@ -414,3 +436,43 @@ const struct operator_p_s* op_p_conjugate(const struct operator_p_s* op, const s
 }
 
 
+struct prox_scale_s {
+
+	operator_data_t super;
+
+	const struct operator_p_s* op;
+	float scale;
+};
+
+DEF_TYPEID(prox_scale_s);
+
+static void prox_scale_apply(const operator_data_t* _data, float mu, complex float* y, const complex float* x)
+{
+	auto data = CAST_DOWN(prox_scale_s, _data);
+
+	operator_p_apply_unchecked(data->op, mu * data->scale, y, x);
+}
+
+static void prox_scale_del(const operator_data_t* _data)
+{
+	auto data = CAST_DOWN(prox_scale_s, _data);
+
+	operator_p_free(data->op);
+
+	xfree(data);
+}
+
+
+const struct operator_p_s* prox_scale_arg_create_F(const struct operator_p_s* op, float scale)
+{
+	PTR_ALLOC(struct prox_scale_s, data);
+	SET_TYPEID(prox_scale_s, data);
+
+	data->op = op;
+	data->scale = scale;
+
+	auto cod = operator_p_codomain(op);
+	auto dom = operator_p_domain(op);
+
+	return operator_p_create(cod->N, cod->dims, dom->N, dom->dims, CAST_UP(PTR_PASS(data)), prox_scale_apply, prox_scale_del);
+}
