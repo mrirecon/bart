@@ -149,7 +149,7 @@ float pulse_sms_integral(const struct pulse_sms* ps)
 	float mid = CAST_UP(ps)->duration / 2.;
 	float t0 = CAST_UP(ps)->duration / ps->bwtp;
 
-	return ps->A * t0 * (sinc_windowed_antiderivative(ps->alpha, +mid / t0, ps->bwtp / 2.)
+	return (ps->A / ps->mb_factor) * t0 * (sinc_windowed_antiderivative(ps->alpha, +mid / t0, ps->bwtp / 2.)
 			- sinc_windowed_antiderivative(ps->alpha, -mid / t0, ps->bwtp / 2.));
 }
 
