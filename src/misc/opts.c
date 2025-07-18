@@ -445,15 +445,26 @@ static void print_interface(FILE* fp, const char* name, const char* usage_str, c
 	}
 }
 
+static void void_printf(const char* fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	vprintf(fmt, ap);
+	va_end(ap);
+}
+
 void cmdline_synth(void (*print)(const char* str, ...), int n, const struct opt_s opts[static n ?: 1])
 {
+	if (NULL == print)
+		print = void_printf;
+
 	for (int i = 0; i < n; i++) {
 
 		/* Decide whether option is present. */
 		switch (opts[i].type) {
 
 		case OPT_SELECT:
-		
+
 			{
 				struct opt_select_s *os = opts[i].ptr;
 
@@ -504,6 +515,9 @@ void cmdline_synth(void (*print)(const char* str, ...), int n, const struct opt_
 			break;
 		}
 
+		if (i > 0)
+			(*print)(" ");
+
 		// print options and parameter
 
 		if (opts[i].s)
@@ -536,7 +550,7 @@ void cmdline_synth(void (*print)(const char* str, ...), int n, const struct opt_
 		case OPT_VEC3:
 		case OPT_VECN:
 
-			int (*vn)[];
+			long (*vn)[];
 			int count;
 			count = 2;
 
@@ -568,7 +582,7 @@ void cmdline_synth(void (*print)(const char* str, ...), int n, const struct opt_
 
 				if (j > 0)
 					(*print)(":");
-				(*print)("%d", (*vn)[j]);
+				(*print)("%ld", (*vn)[j]);
 			}
 
 			break;
