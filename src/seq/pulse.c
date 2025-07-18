@@ -300,3 +300,7 @@ void pulse_hypsec_init(float gamma, struct pulse_hypsec* pr)
 }
 
 
+float pulse_hypsec_integral(const struct pulse_hypsec* hs)
+{
+	return 4. * hs->A / hs->beta * atanf(tanhf(hs->beta * CAST_UP(hs)->duration / 4.));
+}

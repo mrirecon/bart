@@ -86,6 +86,7 @@ extern const struct pulse_hypsec pulse_hypsec_defaults;
 
 extern float pulse_hypsec_phase(const struct pulse_hypsec* pr, float t);
 extern void pulse_hypsec_init(float gamma, struct pulse_hypsec* pr);
+extern float pulse_hypsec_integral(const struct pulse_hypsec* hs);
 
 #endif		// _PULSE_H
 
