@@ -99,10 +99,7 @@ void pulse_sinc_init(struct pulse_sinc* ps, float duration, float angle /*[deg]*
 	ps->alpha = alpha;
 	ps->A = 1.;
 
-	float integral = pulse_sinc_integral(ps);
-	float scaling = M_PI / 2. / integral;
-
-	ps->A = scaling / 90. * angle;
+	ps->A = DEG2RAD(angle) / pulse_sinc_integral(ps);
 }
 
 
@@ -195,10 +192,7 @@ void pulse_sms_init(struct pulse_sms* ps, float duration, float angle /*[deg]*/,
 	ps->slice_th = th;
 	ps->A = 1.;
 
-	float integral = pulse_sms_integral(ps);
-	float scaling = M_PI / 2. / integral;
-
-	ps->A = scaling / 90. * angle;
+	ps->A = DEG2RAD(angle) / pulse_sms_integral(ps);
 }
 
 
