@@ -426,7 +426,7 @@ int write_stream_header(int fd, const char* filename, const char* dataname, int 
 	if (written + 9 + 4 < MM)
 		padding = MM - (written + 9 + 4);
 
-	int l = xdprintf(fd, "# Header\n%ld\n", written + 9 + 4 + padding);
+	int l = xdprintf(fd, "# Header\n%d\n", written + 9 + 4 + padding);
 
 	// This works for a header size of 100 to 999
 	assert(l == 9 + 4);
