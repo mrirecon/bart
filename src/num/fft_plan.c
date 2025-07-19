@@ -227,6 +227,8 @@ static fftwf_plan fft_fftwf_plan(int D, const long dimensions[D], unsigned long 
 		fftwf = fftwf_plan_guru64_dft(k, dims, l, hmdims, (complex float*)src, dst,
 					backwards ? 1 : (-1), measure ? FFTW_MEASURE : FFTW_ESTIMATE);
 
+		assert(NULL != fftwf);
+
 
 		if (NULL != wisdom) {
 
@@ -327,10 +329,17 @@ const struct operator_s* fft_create2(int D, const long dimensions[D], unsigned l
 
 	bool inplace;
 
-	if ((dsts > srce) || (srcs > dste))
+	if ((dsts >= srce) || (srcs >= dste)) {
+
 		inplace = false;
-	else
+	} else {
+
+		ioffset += MAX(0, srcs - dsts); // offset is no relative to joined data
+		ooffset += MAX(0, dsts - srcs);
 		inplace = true;
+	}
+
+	long tsize = inplace ? MAX(dste, srce) - MIN(dsts, srcs) : 0;
 
 	bool trivial =    (D == md_calc_blockdim(D, dimensions, ostrides, CFL_SIZE))
 		       && (D == md_calc_blockdim(D, dimensions, istrides, CFL_SIZE));
@@ -348,7 +357,7 @@ const struct operator_s* fft_create2(int D, const long dimensions[D], unsigned l
 			op = operator_ref(op);
 		} else {
 
-			long size = MAX(isize, osize);
+			long size = MAX(tsize, MAX(isize, osize));
 
 			complex float* tsrc = md_alloc(1, MD_DIMS(size), 1);
 			complex float* tdst = inplace ? tsrc : md_alloc(1, MD_DIMS(size), 1);
