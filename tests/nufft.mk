@@ -423,7 +423,7 @@ tests/test-nufft-no-precomp-inverse: traj scale phantom nufft nrmse
 	touch $@
 
 # test application of a sample fieldmap,
-# as a field map for testing a coil sensitivity map is used and scaled to produce visible distortion 
+# as a field map for testing a coil sensitivity map is used and scaled to produce visible distortion
 # without aliasing that can't be corrected for.
 tests/test-nudft-fieldmap-correction: traj phantom creal normalize scale index reshape transpose nufft nrmse resize copy
 	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)								;\
@@ -466,6 +466,78 @@ tests/test-nudft-fieldmap-constant-circshift: traj ones phantom creal normalize 
 	touch $@
 
 
+#tests for odd dimensions
+
+tests/test-nufft-odd-adjoint: traj scale phantom nufft nrmse conj
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/traj -r -x256 -y201 traj.ra						;\
+	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra						;\
+	$(TOOLDIR)/phantom -t traj2.ra ksp.ra						;\
+	$(TOOLDIR)/nufft -x128:127:1 -a traj2.ra ksp.ra reco1.ra			;\
+	$(TOOLDIR)/conj reco1.ra reco2.ra						;\
+	$(TOOLDIR)/nrmse -t 0.02 reco1.ra reco2.ra					;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-nufft-odd-adjoint2: transpose fft traj scale phantom nufft nrmse conj
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/traj -x128 -y127 traj.ra						;\
+	$(TOOLDIR)/phantom -t traj.ra ksp.ra						;\
+	$(TOOLDIR)/nufft -x128:127:1 -a traj.ra ksp.ra reco1.ra				;\
+	$(TOOLDIR)/fft -u -i 7 ksp.ra reco2.ra 						;\
+	$(TOOLDIR)/transpose 0 1 reco2.ra reco2.ra 					;\
+	$(TOOLDIR)/transpose 1 2 reco2.ra reco2.ra 					;\
+	$(TOOLDIR)/nrmse -t 0.01 reco1.ra reco2.ra					;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-nufft-odd-adjoint-noprecomp: traj scale phantom nufft nrmse conj
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/traj -r -x256 -y201 traj.ra						;\
+	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra						;\
+	$(TOOLDIR)/phantom -t traj2.ra ksp.ra						;\
+	$(TOOLDIR)/nufft --no-precomp -x128:127:1 -a traj2.ra ksp.ra reco1.ra		;\
+	$(TOOLDIR)/conj reco1.ra reco2.ra						;\
+	$(TOOLDIR)/nrmse -t 0.02 reco1.ra reco2.ra					;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-nufft-odd-adjoint-zeromem: traj scale phantom nufft nrmse conj carg
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/traj -r -x256 -y201 traj.ra						;\
+	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra						;\
+	$(TOOLDIR)/phantom -t traj2.ra ksp.ra						;\
+	$(TOOLDIR)/nufft --zero-mem -x128:127:1 -a traj2.ra ksp.ra reco1.ra		;\
+	$(TOOLDIR)/conj reco1.ra reco2.ra						;\
+	$(TOOLDIR)/nrmse -t 0.02 reco1.ra reco2.ra					;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-nufft-odd-forward2: transpose fft traj scale phantom nufft nrmse conj
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/traj -x127 -y127 traj.ra						;\
+	$(TOOLDIR)/phantom -x127 img.ra							;\
+	$(TOOLDIR)/nufft traj.ra img.ra ksp1.ra						;\
+	$(TOOLDIR)/fft -u 7 img.ra ksp2.ra 						;\
+	$(TOOLDIR)/transpose 0 1 ksp2.ra ksp2.ra 					;\
+	$(TOOLDIR)/transpose 0 2 ksp2.ra ksp2.ra					;\
+	$(TOOLDIR)/nrmse -t 0.02 ksp1.ra ksp2.ra					;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+tests/test-nufft-toeplitz-odd: traj scale phantom nufft nrmse resize
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/traj -r -x220 -y201 traj.ra						;\
+	$(TOOLDIR)/scale 0.5 traj.ra traj2.ra						;\
+	$(TOOLDIR)/phantom -t traj2.ra ksp.ra						;\
+	$(TOOLDIR)/nufft -i -r              -x128:127:1 traj2.ra ksp.ra reco1.ra	;\
+	$(TOOLDIR)/nufft -i    		    -x128:127:1 traj2.ra ksp.ra reco2.ra	;\
+	$(TOOLDIR)/nufft -i    --no-precomp -x128:127:1 traj2.ra ksp.ra reco3.ra	;\
+	$(TOOLDIR)/nrmse -t 0.01 reco1.ra reco2.ra					;\
+	$(TOOLDIR)/nrmse -t 0.02 reco1.ra reco3.ra					;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
 
 
 TESTS += tests/test-nufft-forward tests/test-nufft-adjoint tests/test-nufft-inverse tests/test-nufft-toeplitz
@@ -478,6 +550,10 @@ TESTS += tests/test-nufft-adjoint-os tests/test-nufft-forward-os
 TESTS += tests/test-nudft-fieldmap-correction tests/test-nudft-fieldmap-constant-circshift
 
 TESTS_SLOW += tests/test-nudft-forward
+
+TESTS += tests/test-nufft-odd-adjoint tests/test-nufft-odd-adjoint-noprecomp tests/test-nufft-odd-adjoint-zeromem
+TESTS += tests/test-nufft-toeplitz-odd
+TESTS += tests/test-nufft-odd-forward2 tests/test-nufft-odd-adjoint2
 
 TESTS_GPU += tests/test-nufft-gpu-inverse tests/test-nufft-gpu-adjoint tests/test-nufft-gpu-forward
 TESTS_GPU += tests/test-nufft-gpu-inverse-lowmem tests/test-nufft-gpu-adjoint-lowmem tests/test-nufft-gpu-forward-lowmem
