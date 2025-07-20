@@ -84,7 +84,7 @@ __global__ void kern_apply_linphases_3D(struct linphase_conf c, cuFloatComplex* 
 
 
 
-extern "C" void cuda_apply_linphases_3D(int N, const long img_dims[], const float shifts[3], _Complex float* dst, const _Complex float* src, _Bool conj, _Bool fmac, _Bool fftm, float scale)
+extern "C" void cuda_apply_linphases_3D(int N, const long img_dims[], const float _shifts[3], _Complex float* dst, const _Complex float* src, _Bool conj, _Bool fmac, _Bool fftm, float scale)
 {
 	struct linphase_conf c;
 
@@ -94,6 +94,16 @@ extern "C" void cuda_apply_linphases_3D(int N, const long img_dims[], const floa
 	c.scale = scale;
 	c.conj = conj;
 	c.fmac = fmac;
+
+	float shifts[3];
+	
+	for (int i = 0; i < 3; i++) {
+
+		shifts[i] = _shifts[i];
+	
+		if (1 < img_dims[i])
+			shifts[i] += (img_dims[i] / 2. - img_dims[i] / 2);
+	}
 
 	for (int n = 0; n < 3; n++) {
 
