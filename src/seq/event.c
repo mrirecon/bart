@@ -54,7 +54,7 @@ int events_idx(int n, enum seq_event_type type, int N, const struct seq_event ev
  */
 int seq_grad_to_event(struct seq_event ev[2], double start, const struct grad_trapezoid* grad, double proj[3])
 {
-	if (!grad)
+	if ((!grad) || (fabs(grad->ampl) <= 0.))
 		return 0;
 
 	ev[0].type = SEQ_EVENT_GRADIENT;
