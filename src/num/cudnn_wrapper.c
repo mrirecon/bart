@@ -91,7 +91,7 @@ static cudnnHandle_t get_handle(void)
 }
 
 
-static cudnnTensorDescriptor_t bart_to_cudnn_float_tensor_descriptor(unsigned int D, const long dims[D], const long str[D])
+static cudnnTensorDescriptor_t bart_to_cudnn_float_tensor_descriptor(int D, const long dims[D], const long str[D])
 {
 	int nbDims = MAX(D, 3u);
 	int dimA[nbDims];
@@ -119,7 +119,7 @@ static cudnnTensorDescriptor_t bart_to_cudnn_float_tensor_descriptor(unsigned in
 	return result;
 }
 
-static void cudnn_smul2(unsigned int D, const long dims[D], const long ostr[D], float* optr, const long istr[D], const float* iptr, float val)
+static void cudnn_smul2(int D, const long dims[D], const long ostr[D], float* optr, const long istr[D], const float* iptr, float val)
 {
 	cudnnTensorDescriptor_t odesc = bart_to_cudnn_float_tensor_descriptor(D, dims, ostr);
 	cudnnTensorDescriptor_t idesc = bart_to_cudnn_float_tensor_descriptor(D, dims, istr);
@@ -136,7 +136,7 @@ static void cudnn_smul2(unsigned int D, const long dims[D], const long ostr[D], 
 #define MAX_DIMS 16
 struct conv_desc_s {
 
-	unsigned int N;
+	int N;
 
 	long odims[MAX_DIMS];
 	long idims[MAX_DIMS];
@@ -163,7 +163,7 @@ static int flag_to_index(unsigned long flag)
 	if (1 != bitcount(flag))
 		return -1;
 
-	for (unsigned int i = 0; i < 8 * sizeof(flag); i++)
+	for (int i = 0; i < 8 * sizeof(flag); i++)
 		if (MD_IS_SET(flag, i))
 			return i;
 	return -1;
@@ -329,10 +329,11 @@ static struct cudnn_filter_s get_filter_descriptor(struct conv_desc_s conv_desc,
 	int in_channel_index = -1;
 	int out_channel_index = -1;
 
-	for (unsigned int i = 0; i < conv_desc.N; i++) {
+	for (int i = 0; i < conv_desc.N; i++) {
 
 		if (MD_IS_SET(conv_desc.channel_in_flags, i))
 			in_channel_index = i;
+
 		if (MD_IS_SET(conv_desc.channel_out_flags, i))
 			out_channel_index = i;
 	}
@@ -437,10 +438,11 @@ static struct cudnn_tensor_s get_tensor_descriptor(struct conv_desc_s conv_desc,
 	int channel_index = -1;
 	int batch_index = -1;
 
-	for (unsigned int i = 0; i < conv_desc.N; i++) {
+	for (int i = 0; i < conv_desc.N; i++) {
 
 		if (MD_IS_SET(channel_flags, i))
 			channel_index = i;
+
 		if (MD_IS_SET(conv_desc.batch_flags, i))
 			batch_index = i;
 	}
@@ -1318,12 +1320,12 @@ static bool cudnn_zconvcorr_bwd_in_kernel(
 		return false;
 
 	if (0 == bitcount(bcd.channel_out_flags))
-		for (unsigned int i = 0; (i < bcd.N) && (0 == bcd.channel_out_flags); i++)
+		for (int i = 0; (i < bcd.N) && (0 == bcd.channel_out_flags); i++)
 			if ((1 == bcd.odims[i]) && (1 == bcd.idims[i]) && (1 == bcd.kdims[i]))
 				bcd.channel_out_flags = MD_BIT(i);
 
 	if (0 == bitcount(bcd.channel_in_flags))
-		for (unsigned int i = 0; (i < bcd.N) && (0 == bcd.channel_in_flags); i++)
+		for (int i = 0; (i < bcd.N) && (0 == bcd.channel_in_flags); i++)
 			if ((1 == bcd.odims[i]) && (1 == bcd.idims[i]) && (1 == bcd.kdims[i]) && !(MD_IS_SET(bcd.channel_out_flags, i)))
 				bcd.channel_in_flags = MD_BIT(i);
 

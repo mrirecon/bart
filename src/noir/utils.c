@@ -31,7 +31,7 @@
 
 void noir_calc_weights(double a, double b, const long dims[3], complex float* dst)
 {
-	unsigned int flags = 0;
+	unsigned long flags = 0UL;
 
 	for (int i = 0; i < 3; i++)
 		if (1 != dims[i])

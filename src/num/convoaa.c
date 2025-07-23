@@ -130,7 +130,7 @@ void overlapandsave_exec(struct conv_plan* plan, int N, const long dims[N], cons
 #endif
 
 
-void overlapandsave2(int N, unsigned int flags, const long blk[N], const long odims[N], complex float* dst, const long dims1[N], const complex float* src1, const long dims2[N], const complex float* src2)
+void overlapandsave2(int N, unsigned long flags, const long blk[N], const long odims[N], complex float* dst, const long dims1[N], const complex float* src1, const long dims2[N], const complex float* src2)
 {
 	long dims1B[N];
 
@@ -141,7 +141,7 @@ void overlapandsave2(int N, unsigned int flags, const long blk[N], const long od
 
 	long shift[2 * N];
 
-	unsigned int nflags = 0;
+	unsigned long nflags = 0UL;
 
 	for (int i = 0; i < N; i++) {
 
@@ -235,7 +235,7 @@ void overlapandsave2(int N, unsigned int flags, const long blk[N], const long od
 }
 
 
-void overlapandsave2H(int N, unsigned int flags, const long blk[N], const long dims1[N], complex float* dst, const long odims[N], const complex float* src1, const long dims2[N], const complex float* src2)
+void overlapandsave2H(int N, unsigned long flags, const long blk[N], const long dims1[N], complex float* dst, const long odims[N], const complex float* src1, const long dims2[N], const complex float* src2)
 {
 	long dims1B[N];
 
@@ -246,7 +246,7 @@ void overlapandsave2H(int N, unsigned int flags, const long blk[N], const long d
 
 	long shift[2 * N];
 	
-	unsigned int nflags = 0;
+	unsigned long nflags = 0UL;
 
 	for (int i = 0; i < N; i++) {
 
@@ -354,7 +354,7 @@ void overlapandsave2H(int N, unsigned int flags, const long blk[N], const long d
 
 
 
-void overlapandsave2NE(int N, unsigned int flags, const long blk[N], const long odims[N], complex float* dst, const long dims1[N], complex float* src1, const long dims2[N], complex float* src2, const long mdims[N], complex float* msk)
+void overlapandsave2NE(int N, unsigned long flags, const long blk[N], const long odims[N], complex float* dst, const long dims1[N], complex float* src1, const long dims2[N], complex float* src2, const long mdims[N], complex float* msk)
 {
 	long dims1B[N];
 
@@ -365,7 +365,7 @@ void overlapandsave2NE(int N, unsigned int flags, const long blk[N], const long 
 
 	long shift[2 * N];
 
-	unsigned int nflags = 0;
+	unsigned long nflags = 0UL;
 
 	for (int i = 0; i < N; i++) {
 
@@ -481,7 +481,7 @@ void overlapandsave2NE(int N, unsigned int flags, const long blk[N], const long 
 
 
 
-void overlapandsave2NEB(int N, unsigned int flags, const long blk[N], const long odims[N], complex float* dst, const long dims1[N], const complex float* src1, const long dims2[N], const complex float* src2, const long mdims[N], const complex float* msk)
+void overlapandsave2NEB(int N, unsigned long flags, const long blk[N], const long odims[N], complex float* dst, const long dims1[N], const complex float* src1, const long dims2[N], const complex float* src2, const long mdims[N], const complex float* msk)
 {
 	long dims1B[N];
 	memset(dims1B, 0, sizeof dims1B);;	// maybe-uninitialized
@@ -655,7 +655,7 @@ void overlapandsave2NEB(int N, unsigned int flags, const long blk[N], const long
 
 
 
-void overlapandsave2HB(int N, unsigned int flags, const long blk[N], const long dims1[N], complex float* dst, const long odims[N], const complex float* src1, const long dims2[N], const complex float* src2, const long mdims[N], const complex float* msk)
+void overlapandsave2HB(int N, unsigned long flags, const long blk[N], const long dims1[N], complex float* dst, const long odims[N], const complex float* src1, const long dims2[N], const complex float* src2, const long mdims[N], const complex float* msk)
 {
 	long dims1B[N];
 	memset(dims1B, 0, sizeof dims1B);	// maybe-uninitialized

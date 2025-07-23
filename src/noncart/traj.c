@@ -79,11 +79,11 @@ void gradient_delay(float d[3], float coeff[2][3], float phi, float psi)
 		{ coeff[1][1], coeff[1][2], coeff[1][0] },
 	};
 
-	for (unsigned int i = 0; i < 3; i++) {
+	for (int i = 0; i < 3; i++) {
 
 		d[i] = 0.;
 
-		for (unsigned int j = 0; j < 3; j++)
+		for (int j = 0; j < 3; j++)
 			d[i] += mat[i][j] * dir[j];
 	}
 

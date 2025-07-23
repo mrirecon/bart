@@ -596,7 +596,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 		case TGV: {
 
-			unsigned int tgvflags = regs[nr].jflags | MD_BIT(DIMS) | MD_BIT(DIMS - 1);
+			unsigned long tgvflags = regs[nr].jflags | MD_BIT(DIMS) | MD_BIT(DIMS - 1);
 
 			debug_printf(DP_INFO, "TGV regularization: %f\n", regs[nr].lambda);
 
@@ -651,7 +651,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 			debug_printf(DP_INFO, "ICTGV regularization: %f\n", regs[nr].lambda);
 
-			unsigned int ictgvflags = regs[nr].jflags | MD_BIT(DIMS) | MD_BIT(DIMS - 1);
+			unsigned long ictgvflags = regs[nr].jflags | MD_BIT(DIMS) | MD_BIT(DIMS - 1);
 
 			struct reg4 reg4 = ictgv_reg(regs[nr].xflags, ictgvflags, regs[nr].lambda, N, img_dims, md_calc_size(N, img_dims) + ropts->svars, &ext_shift,
 						     ropts->alpha, ropts->gamma, ropts->tvscales_N, ropts->tvscales, ropts->tvscales2_N, ropts->tvscales2, lop_asl);
@@ -704,7 +704,7 @@ void opt_reg_configure(int N, const long img_dims[N], struct opt_reg_s* ropts, c
 
 			long krn_dims[DIMS] = { [0 ... DIMS - 1] = 1 };
 
-			for (unsigned int i = 0; i < DIMS; i++)
+			for (int i = 0; i < DIMS; i++)
 				if (MD_IS_SET(regs[nr].xflags, i))
 					krn_dims[i] = 3;
 

@@ -382,7 +382,7 @@ static void md_zwindow2(int D, const long dims[D], unsigned long flags, const lo
 
 
 #if 0
-static void md_zwindow(const unsigned int D, const long dims[D], const long flags, complex float* optr, const complex float* iptr, bool hamming)
+static void md_zwindow(const int D, const long dims[D], const long flags, complex float* optr, const complex float* iptr, bool hamming)
 {
 	long strs[D];
 	md_calc_strides(D, strs, dims, CFL_SIZE);

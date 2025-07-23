@@ -328,7 +328,7 @@ int main_wave(int argc, char* argv[argc])
 	minsize[0] = MIN(sx, 16);
 	minsize[1] = MIN(sy, 16);
 	minsize[2] = MIN(sz, 16);
-	unsigned int WAVFLAG = (sx > 1) * READ_FLAG | (sy > 1) * PHS1_FLAG | (sz > 2) * PHS2_FLAG;
+	unsigned long WAVFLAG = (sx > 1) * READ_FLAG | (sy > 1) * PHS1_FLAG | (sz > 2) * PHS2_FLAG;
 
 	enum algo_t algo = CG;
 

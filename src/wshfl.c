@@ -144,7 +144,7 @@ struct kern_s {
 
 	linop_data_t super;
 
-	unsigned int N;
+	int N;
 
 	long* reorder_dims; // Dimension of the index table:    ( n,  3,  1,  1, 1,  1,  1,  1)
 	long* phi_dims;     // Dimension of the temporal basis: ( 1,  1,  1,  1, 1, tf, tk,  1)
@@ -470,8 +470,8 @@ struct multc_s {
 
 	linop_data_t super;
 
-	unsigned int nc;
-	unsigned int md;
+	int nc;
+	int md;
 	const complex float* maps;
 	const struct linop_s* sc_op; // Single channel operator.
 };

@@ -79,7 +79,7 @@ int main_nlinv(int argc, char* argv[argc])
 
 	bool normalize = true;
 	bool combine = true;
-	unsigned int nmaps = 1;
+	int nmaps = 1;
 	float restrict_fov = -1.;
 
 	const char* psf_file = NULL;
@@ -101,7 +101,7 @@ int main_nlinv(int argc, char* argv[argc])
 	long my_sens_dims[3] = { 0, 0, 0 };
 	long my_ksens_dims[3] = { 0, 0, 0 };
 
-	unsigned int cnstcoil_flags = 0;
+	unsigned long cnstcoil_flags = 0;
 	bool pattern_for_each_coil = false;
 	float oversampling_coils = -1.;
 
@@ -118,7 +118,7 @@ int main_nlinv(int argc, char* argv[argc])
 		OPT_INT('d', &debug_level, "level", "Debug level"),
 		OPT_SET('c', &conf.rvc, "Real-value constraint"),
 		OPT_CLEAR('N', &normalize, "Do not normalize image with coil sensitivities"),
-		OPT_UINT('m', &nmaps, "nmaps", "Number of ENLIVE maps to use in reconstruction"),
+		OPT_PINT('m', &nmaps, "nmaps", "Number of ENLIVE maps to use in reconstruction"),
 		OPT_CLEAR('U', &combine, "Do not combine ENLIVE maps in output"),
 		OPT_FLOAT('f', &restrict_fov, "FOV", "restrict FOV"),
 		OPT_INFILE('p', &psf_file, "file", "pattern / transfer function"),
@@ -127,7 +127,7 @@ int main_nlinv(int argc, char* argv[argc])
 		OPT_INFILE('I', &init_file, "file", "File for initialization"),
 		OPT_SET('g', &bart_use_gpu, "use gpu"),
 		OPT_SET('S', &(conf.undo_scaling), "Re-scale image after reconstruction"),
-		OPT_UINT('s', &cnstcoil_flags, "", "(dimensions with constant sensitivities)"),
+		OPT_ULONG('s', &cnstcoil_flags, "", "(dimensions with constant sensitivities)"),
 		OPT_FLOAT('a', &conf.a, "", "(a in 1 + a * \\Laplace^-b/2)"),
 		OPT_FLOAT('b', &conf.b, "", "(b in 1 + a * \\Laplace^-b/2)"),
 		OPT_SET('P', &pattern_for_each_coil, "(supplied psf is different for each coil)"),

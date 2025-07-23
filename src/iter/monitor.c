@@ -48,7 +48,7 @@ static DEF_TYPEID(monitor_default_s);
 
 static void monitor_default_fun(struct iter_monitor_s* _data, const struct vec_iter_s* vops, const float* x)
 {
-	static unsigned int iter = 0;
+	static int iter = 0;
 	auto data = CAST_DOWN(monitor_default_s, _data);
 
 	double err = -1.;

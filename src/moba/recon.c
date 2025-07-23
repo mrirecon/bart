@@ -277,7 +277,7 @@ static void recon(const struct moba_conf* conf, struct moba_conf_s* data,
 		const complex float* b0,
 		const long data_dims[DIMS], const complex float* kspace_data)
 {
-	unsigned int fft_flags = FFT_FLAGS;
+	unsigned long fft_flags = FFT_FLAGS;
 
 	if (conf->sms)
 		fft_flags |= SLICE_FLAG;
@@ -462,7 +462,7 @@ void moba_recon(const struct moba_conf* conf, struct moba_conf_s* data, const lo
 	long data_dims[DIMS];
 	long pat_dims[DIMS];
 
-	unsigned int fft_flags = FFT_FLAGS;
+	unsigned long fft_flags = FFT_FLAGS;
 
 	if (conf->sms)
 		fft_flags |= SLICE_FLAG;

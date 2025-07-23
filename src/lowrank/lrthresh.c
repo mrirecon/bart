@@ -300,7 +300,7 @@ float lrnucnorm(const struct operator_p_s* op, const complex float* src)
 		long blkdims[DIMS];
 		long blksize = 1;
 
-		for (unsigned int i = 0; i < DIMS; i++) {
+		for (int i = 0; i < DIMS; i++) {
 
 			blkdims[i] = data->blkdims[l][i];
 			blksize *= blkdims[i];

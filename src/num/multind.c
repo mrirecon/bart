@@ -750,7 +750,7 @@ void md_copy2(int D, const long dim[D], const long ostr[D], void* optr, const lo
 #if 0
 	// this is for a fun comparison between our copy engine and FFTW
 
-	extern void fft2(unsigned int D, const long dim[D], unsigned int flags,
+	extern void fft2(int D, const long dim[D], unsigned long flags,
 			const long ostr[D], void* optr, const long istr[D], const void* iptr);
 
 	if (sizeof(complex float) == size)

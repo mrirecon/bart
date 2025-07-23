@@ -71,7 +71,7 @@ static bool enclosed(const long dims[2], const long strs[2])
 // assumes no overlap
 static long memory_footprint(int N, const long dims[N], const long strs[N])
 {
-	unsigned int flags = 0;
+	unsigned long flags = 0;
 
 	for (int i = 0; i < N; i++)
 		flags |= (0 == strs[i]);

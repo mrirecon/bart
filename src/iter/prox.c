@@ -379,7 +379,7 @@ static void prox_thresh_del(const void* _data)
 	xfree((void*)_data);
 }
 
-const struct operator_p_s* prox_thresh_create(unsigned int N, const long dims[N], float lambda,
+const struct operator_p_s* prox_thresh_create(int N, const long dims[N], float lambda,
 		void (*thresh)(void* _data, float lambda, float* _dst, const float* _src),
 		void* data)
 {

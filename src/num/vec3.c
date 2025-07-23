@@ -14,7 +14,7 @@
 
 void vec3_saxpy(vec3_t dst, const vec3_t src1, float alpha, const vec3_t src2)
 {
-	for (unsigned int i = 0; i < 3; i++)
+	for (int i = 0; i < 3; i++)
 		dst[i] = src1[i] + alpha * src2[i];
 }
 
@@ -43,7 +43,7 @@ float vec3_sdot(const vec3_t a, const vec3_t b)
 {
 	float ret = 0.;
 
-	for (unsigned int i = 0; i < 3; i++)
+	for (int i = 0; i < 3; i++)
 		ret += a[i] * b[i];
 
 	return ret;

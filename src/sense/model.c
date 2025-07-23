@@ -90,7 +90,7 @@ struct linop_s* maps2_create(const long coilim_dims[DIMS], const long maps_dims[
 {
 	unsigned long sens_flags = 0;
 
-	for (unsigned int i = 0; i < DIMS; i++)
+	for (int i = 0; i < DIMS; i++)
 		if (1 != maps_dims[i])
 			sens_flags = MD_SET(sens_flags, i);
 

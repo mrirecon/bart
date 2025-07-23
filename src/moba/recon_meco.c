@@ -153,7 +153,7 @@ void meco_recon(const struct moba_conf* moba_conf,
 	complex float* maps_ptr = (void*)maps + md_calc_offset(DIMS, MD_STRIDES(DIMS, maps_dims, CFL_SIZE), frame_pos);
 	complex float* sens_ptr = (void*)sens + md_calc_offset(DIMS, MD_STRIDES(DIMS, sens_dims, CFL_SIZE), frame_pos);
 
-	unsigned int fft_flags = FFT_FLAGS;
+	unsigned long fft_flags = FFT_FLAGS;
 
 
 	// dimensions & size

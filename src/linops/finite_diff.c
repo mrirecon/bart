@@ -65,7 +65,7 @@ static DEF_TYPEID(fdiff_s);
  *
  * optr = [iptr(1); diff(iptr)]
  */
-static void md_zfinitediff_core2(int D, const long dims[D], unsigned int flags, bool snip, complex float* tmp, const long ostrs[D], complex float* optr, const long istrs[D], const complex float* iptr)
+static void md_zfinitediff_core2(int D, const long dims[D], unsigned long flags, bool snip, complex float* tmp, const long ostrs[D], complex float* optr, const long istrs[D], const complex float* iptr)
 {
 	md_copy2(D, dims, istrs, tmp, istrs, iptr, sizeof(complex float));
 
@@ -447,8 +447,8 @@ static void zfinitediff_apply(const linop_data_t* _data,
 
 	/*
 	   long i_shift, i_adj, x_orig, x_new;
-	   unsigned int d = data->dim_diff;
-	   for (unsigned int i = 0; i < md_calc_size(data->D, data->dims_in); i++) {
+	   int d = data->dim_diff;
+	   for (int i = 0; i < md_calc_size(data->D, data->dims_in); i++) {
 	   i_shift = i;
 	   i_adj = i;
 

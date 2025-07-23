@@ -354,7 +354,7 @@ void iter6_sgd_like(	const iter6_conf* conf,
 
 	struct iter_op_p_s upd_iter_ops[NI];
 
-	for (unsigned int i = 0; i < NI; i++)
+	for (int i = 0; i < NI; i++)
 		upd_iter_ops[i] = OPERATOR_P2ITOP(upd_ops[i]);
 
 	for (int i = 0; i < NI; i++)

@@ -86,7 +86,7 @@ int main_tgv(int argc, char* argv[argc])
 
 	long ext_shift = md_calc_size(DIMS, in_dims);
 
-	unsigned int tgvflags = MD_BIT(DIMS) | MD_BIT(DIMS - 1);
+	unsigned long tgvflags = MD_BIT(DIMS) | MD_BIT(DIMS - 1);
 
 	const struct linop_s* lop_trafo = NULL;
 

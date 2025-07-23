@@ -516,7 +516,7 @@ int main_sqpics(int argc, char* argv[argc])
 			minsize[1] = MIN(img_dims[1], 16);
 			minsize[2] = MIN(img_dims[2], 16);
 
-			unsigned int wflags = 0;
+			unsigned long wflags = 0UL;
 
 			for (int i = 0; i < DIMS; i++) {
 
