@@ -87,7 +87,7 @@ struct rf_shape {
 };
 
 
-
+#ifndef BARTDLL
 int events_counter(enum seq_event_type type, int N, const struct seq_event ev[__VLA(N)]);
 int events_idx(int n, enum seq_event_type type, int N, const struct seq_event ev[__VLA(N)]);
 
@@ -99,6 +99,7 @@ double events_end_time(int N, const struct seq_event ev[__VLA(N)], int gradients
 
 void moment(double m0[3], double t, const struct seq_event* ev);
 void moment_sum(double m0[3], double t, int N, const struct seq_event ev[__VLA(N)]);
+#endif
 
 #include "misc/cppwrap.h"
 
