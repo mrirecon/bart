@@ -3,6 +3,7 @@
  * a BSD-style license which can be found in the LICENSE file.
  */
 
+#include <assert.h>
 #include <math.h>
 #include <stdlib.h>
 
@@ -65,9 +66,11 @@ void crank_nicolson(float h, int N, float x[N], float st, float end,
 		for (int i = 0; i < N; i++)
 			for (int j = 0; j < N; j++)
 				B[i][j] = (i == j) - h * A[i][j] / 2.;
-
+#ifndef NO_LAPACK
 		matf_solve(N, x, B, tmp);
-
+#else
+		assert(0);
+#endif
 		if (t + h > end)
 			h = end - t;
 	}

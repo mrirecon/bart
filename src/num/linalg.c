@@ -102,6 +102,7 @@ float vecf_norm(int N, const float x[N])
 	return sqrtf(vecf_sdot(N, x, x));
 }
 
+#ifndef NO_LAPACK
 void matf_solve(int N, float x[N], const float m[N][N], const float y[N])
 {
 	float tmp[N][N];
@@ -115,6 +116,7 @@ void matf_solve(int N, float x[N], const float m[N][N], const float y[N])
 
 	lapack_solve_real(N, tmp, x);
 }
+#endif
 
 void mat_gaussian(int A, int B, complex float x[A][B])
 {
