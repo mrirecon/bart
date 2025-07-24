@@ -96,6 +96,32 @@ int prep_rf_ex(struct seq_event* rf_ev, double start, double rf_spoil_phase,
 	return 1;
 }
 
+int prep_rf_inv(struct seq_event* rf_ev, double start, const struct seq_config* seq)
+{
+	if (seq->magn.mag_prep != PREP_IR_NON)
+		return 0;
+
+	rf_ev->type = SEQ_EVENT_PULSE;	
+
+	rf_ev->start = start;
+	struct pulse_hypsec hs = pulse_hypsec_defaults;
+	struct pulse* pp = CAST_UP(&hs);
+	rf_ev->end = rf_ev->start + 1e6 * pp->duration;
+	const double asym_pulse = 0.5;
+	rf_ev->mid = rf_ev->start + (rf_ev->end - rf_ev->start) * asym_pulse;
+
+
+	rf_ev->pulse.shape_id = seq->geom.mb_factor;
+
+	rf_ev->pulse.type = REFOCUSSING;
+	rf_ev->pulse.fa = 180.;
+
+	rf_ev->pulse.freq = 0.;
+	rf_ev->pulse.phase = 0.;
+
+	return 1;
+}
+
 double flash_ex_calls(const struct seq_config* seq)
 {
 	long dims[DIMS];

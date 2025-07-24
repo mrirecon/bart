@@ -21,6 +21,8 @@ void idea_cfl_to_sample(const struct rf_shape* pulse, int idx, float* mag, float
 
 double rf_spoiling(int D, const long pos[__VLA(D)], const struct seq_config* seq);
 
+int prep_rf_inv(struct seq_event* rf_ev, double start, const struct seq_config* seq);
+
 int prep_rf_ex(struct seq_event* rf_ev, double start, double rf_spoil_phase,
 		const struct seq_state* seq_state, const struct seq_config* seq);
 
