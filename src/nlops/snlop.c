@@ -681,7 +681,7 @@ void snlop_del_arg(arg_t arg)
 
 	assert(0 <= o);
 
-	snlop->x = nlop_optimize_graph(nlop_del_out_F(snlop->x, o));
+	snlop->x = nlop_optimize_graph_F(nlop_del_out_F(snlop->x, o));
 	arg_unref(list_remove_item(snlop->oargs, o));
 }
 
