@@ -80,7 +80,7 @@ int seq_grad_to_event(struct seq_event ev[2], double start, const struct grad_tr
 /*
  * compute TE for E echoes from list of events
  */
-void events_get_te(int E, long te[__VLA(E)], int N, const struct seq_event ev[__VLA(N)])
+void events_get_te(int E, long te[E], int N, const struct seq_event ev[N])
 {
 	long rf_mid = -1;
 	long adc_mid[E];
@@ -110,7 +110,7 @@ void events_get_te(int E, long te[__VLA(E)], int N, const struct seq_event ev[__
  * gradients_only: if true, only consider gradient events
  * flat_end: if true, use end of flat-top of gradients
  */
-double events_end_time(int N, const struct seq_event ev[__VLA(N)], int gradients_only, int flat_end)
+double events_end_time(int N, const struct seq_event ev[N], int gradients_only, int flat_end)
 {
 	double end = 0.;
 
