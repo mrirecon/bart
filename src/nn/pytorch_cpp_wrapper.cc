@@ -6,7 +6,6 @@
  * 2025 Moritz Blumenthal
  */
 
-
 #include <cstdint>
 #include <vector>
 #include <stdbool.h>
@@ -51,6 +50,7 @@ struct pytorch_wrapper_s* pytorch_wrapper_create(const char* path, int II, const
 		for (int i = 0; i < II; i++) {
 
 			std::vector<int64_t> dims;
+
 			uint64_t size = sizeof(_Complex float);
 
 			for (int j = DI[i] - 1; j >= 0; j--) {
@@ -60,25 +60,26 @@ struct pytorch_wrapper_s* pytorch_wrapper_create(const char* path, int II, const
 			}
 
 			auto options = torch::TensorOptions().dtype(torch::kComplexFloat).requires_grad(true);
-			#ifdef USE_CUDA
-					if (-1 < device)
-						options = options.device(torch::Device(torch::kCUDA, device));
-			#endif
-					torch::Tensor tensor = torch::ones(dims, options);
+#ifdef USE_CUDA
+			if (-1 < device)
+				options = options.device(torch::Device(torch::kCUDA, device));
+#endif
+			torch::Tensor tensor = torch::ones(dims, options);
 
-					ret->isize.push_back(size);
-					ret->itensor.push_back(tensor);
-				}
+			ret->isize.push_back(size);
+			ret->itensor.push_back(tensor);
+		}
 
-			#ifdef USE_CUDA
-				if (-1 < device)
-					ret->module = torch::jit::load(path, torch::Device(torch::kCUDA, device));
-				else
-			#endif
-			ret->module = torch::jit::load(path, torch::kCPU);
+#ifdef USE_CUDA
+		if (-1 < device)
+			ret->module = torch::jit::load(path, torch::Device(torch::kCUDA, device));
+		else
+#endif
+		ret->module = torch::jit::load(path, torch::kCPU);
 
 		//tracing for out dims
 		std::vector<torch::jit::IValue> inputs;
+
 		for (int i = 0; i < II; i++)		
 			inputs.push_back(ret->itensor[i]);
 		
@@ -99,8 +100,8 @@ struct pytorch_wrapper_s* pytorch_wrapper_create(const char* path, int II, const
 			else
 				output = outputs.toTensor();
 			
-
 			uint64_t size = sizeof(_Complex float);
+
 			std::vector<int64_t> odims;
 
 			for (int j = 0; j < output.sizes().size(); j++) {
@@ -114,9 +115,9 @@ struct pytorch_wrapper_s* pytorch_wrapper_create(const char* path, int II, const
 		}
 
 	} catch (const c10::Error& e) {
+
 		error("PYTorch model at %s could not be loaded!:\n %s\n", path, e.what_without_backtrace());
 	}
-
 
 	return ret;
 }
@@ -146,7 +147,6 @@ void pytorch_wrapper_dims_output(const struct pytorch_wrapper_s* data, int o, in
 }
 
 
-
 void pytorch_wrapper_apply_unchecked(struct pytorch_wrapper_s* data, int N, _Complex float* args[__VLA(N)], int device)
 {
 	try {
@@ -154,35 +154,39 @@ void pytorch_wrapper_apply_unchecked(struct pytorch_wrapper_s* data, int N, _Com
 
 		for (int i = 0; i < data->II; i++) {
 
-		#ifdef USE_CUDA
-				if (-1 == device) {
-					data->itensor[i] = data->itensor[i].to(torch::kCPU);
-				} else {
-					data->itensor[i] = data->itensor[i].to(torch::Device(torch::kCUDA, device));
-				}
-				
-				if ((-1 < device) || cuda_ondevice(args[i + data->OO]))
-					cuda_memcpy(data->isize[i], data->itensor[i].data_ptr(), args[i + data->OO]);
-				else
-		#endif
-					memcpy(data->itensor[i].data_ptr(), args[i + data->OO], data->isize[i]);
-				
-				inputs.push_back(data->itensor[i]);
-			}
-
-
-		#ifdef USE_CUDA
+#ifdef USE_CUDA
 			if (-1 == device) {
-			
-				data->module.to(torch::kCPU);
-				cuda_sync_device();
-			} else
-				data->module.to(torch::Device(torch::kCUDA, device));
-		#endif
+
+				data->itensor[i] = data->itensor[i].to(torch::kCPU);
+
+			} else {
+
+				data->itensor[i] = data->itensor[i].to(torch::Device(torch::kCUDA, device));
+			}
 		
+			if ((-1 < device) || cuda_ondevice(args[i + data->OO]))
+				cuda_memcpy(data->isize[i], data->itensor[i].data_ptr(), args[i + data->OO]);
+			else
+#endif
+			memcpy(data->itensor[i].data_ptr(), args[i + data->OO], data->isize[i]);
+
+			inputs.push_back(data->itensor[i]);
+		}
+
+#ifdef USE_CUDA
+		if (-1 == device) {
+
+			data->module.to(torch::kCPU);
+			cuda_sync_device();
+
+		} else
+			data->module.to(torch::Device(torch::kCUDA, device));
+#endif
+
 		auto outputs = data->module.forward(inputs);
 
 		data->otensor.clear();
+
 		for (int i = 0; i < data->OO; i++) {
 
 			torch::Tensor output;
@@ -190,27 +194,31 @@ void pytorch_wrapper_apply_unchecked(struct pytorch_wrapper_s* data, int N, _Com
 			if (outputs.isTuple()) {
 
 				output = outputs.toTuple()->elements()[i].toTensor().to(torch::kComplexFloat);
+
 			} else {
 
 				if (0 != i)
 					error("PyTorch has only one output!\n");
+
 				output = outputs.toTensor().to(torch::kComplexFloat);
 			}
 
 			data->otensor.push_back(output);
-	#ifdef USE_CUDA
+#ifdef USE_CUDA
 			if ((-1 < device) || cuda_ondevice(args[i])) {
 
 				cuda_sync_device();
 				cuda_memcpy(data->osize[i], args[i], data->otensor[i].data_ptr());
+
 			} else
 	#endif
 				memcpy(args[i], data->otensor[i].data_ptr(), data->osize[i]);
 		}
+
 	} catch (const c10::Error& e) {
+
 		error("PYTorch apply failed!:\n %s\n", e.what_without_backtrace());
 	}
-
 }
 
 void pytorch_wrapper_adjoint_unchecked(struct pytorch_wrapper_s* data, int o, int i, _Complex float* dst, const _Complex float* src)
@@ -218,10 +226,13 @@ void pytorch_wrapper_adjoint_unchecked(struct pytorch_wrapper_s* data, int o, in
 	data->itensor[i].mutable_grad() = torch::Tensor();
 
 	torch::Tensor tsrc = torch::empty_like(data->otensor[o]);
+
 #ifdef USE_CUDA
 	if ((tsrc.is_cuda()) || cuda_ondevice(src)) {
+
 		cuda_memcpy(data->osize[o], tsrc.data_ptr(), src);
 		cuda_sync_stream();
+
 	} else
 #endif
 		memcpy(tsrc.data_ptr(), src, data->osize[o]);
@@ -233,6 +244,7 @@ void pytorch_wrapper_adjoint_unchecked(struct pytorch_wrapper_s* data, int o, in
 
 		cuda_sync_device();
 		cuda_memcpy(data->isize[i], dst, data->itensor[i].grad().data_ptr());
+
 	} else
 #endif
 		memcpy(dst, data->itensor[i].grad().data_ptr(), data->isize[i]);
@@ -244,5 +256,4 @@ void pytorch_wrapper_derivative_unchecked(struct pytorch_wrapper_s* data, int o,
 {
 	assert(0);
 }
-
 

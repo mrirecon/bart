@@ -6,7 +6,6 @@
  * 2025 Moritz Blumenthal
  */
 
-
 #include "misc/debug.h"
 #include "misc/misc.h"
 #include "misc/types.h"
@@ -28,6 +27,7 @@ const struct nlop_s* nlop_external_graph_create(const char* path, int OO, const 
 	if ((3 < strlen(path)) && (0 == strcmp(".pt", path + strlen(path) - 3))) {
 
 		nlop = nlop_pytorch_create(path, II, DI, idims, init_gpu);
+
 	} else {
 
 		const struct tf_shared_graph_s* graph = tf_shared_graph_create(path, tf_signature_key);
@@ -36,6 +36,7 @@ const struct nlop_s* nlop_external_graph_create(const char* path, int OO, const 
 		assert(II == nlop_get_nr_in_args(nlop));
 
 		long batch_size = 1;
+
 		for (int i = 0; i < II; i++) {
 
 			auto dom = nlop_generic_domain(nlop, i);
