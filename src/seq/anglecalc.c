@@ -15,7 +15,6 @@
 #include "noncart/traj.h"
 
 #include "seq/config.h"
-#include "seq/seq_dims.h"
 
 void traj_conf_from_seq(struct traj_conf *conf, const struct seq_config* seq)
 {

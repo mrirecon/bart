@@ -9,6 +9,7 @@
 #include "seq/gradient.h"
 
 #define MAX_EVENTS 2048
+#define MAX_RF_SAMPLES 8192
 
 enum seq_event_type { SEQ_EVENT_PULSE, SEQ_EVENT_GRADIENT, SEQ_EVENT_ADC, SEQ_EVENT_WAIT };
 
@@ -64,6 +65,25 @@ struct seq_event {
 		struct seq_adc adc;
 		struct seq_wait wait;
 	};
+};
+
+struct rf_shape {
+
+	double sar_calls;
+	double sar_dur; // for SAR calculation we prepare the RF shape without seq_event
+
+	double fa_prep;
+
+	double max; // can be scaled by ev->pulse.fa / fa_prep
+	double integral;
+
+	long samples;	// shape defined in rad / s
+#ifdef __cplusplus
+	float  shape[MAX_RF_SAMPLES][2];
+#else
+	_Complex float shape[MAX_RF_SAMPLES];
+#endif
+
 };
 
 
