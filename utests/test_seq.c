@@ -240,3 +240,121 @@ static bool test_raga_spokes_full(void)
 
 UT_REGISTER_TEST(test_raga_spokes_full);
 
+
+static bool test_block_minv(void)
+{
+	const enum block blocks[16] = { BLOCK_KERNEL_NOISE, BLOCK_PRE,
+		BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE,
+		BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE,
+		BLOCK_PRE,
+		BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE,
+		BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE
+	};
+
+	struct seq_state seq_state = { 0 };;
+	struct seq_config seq = seq_config_defaults;
+	seq.enc.order = ORDER_AVG_OUTER;
+	seq.magn.ti = 100;
+	seq.magn.mag_prep = PREP_IR_NON;
+
+	int i = 0;
+
+	const int max_E = 200;
+	struct seq_event ev[max_E];
+
+	set_loop_dims_and_sms(&seq, 1, 2, 3, 3, 1, 2, 1, 1, 0, 1);
+	int pre_blocks = 0;
+
+	do {
+
+		int E = seq_block(max_E, ev, &seq_state, &seq);
+
+		if (0 > E)
+			return false;
+
+		if (0 == E)
+			continue;
+
+		if (blocks[i] != seq_state.mode)
+			return false;
+
+		if ((BLOCK_KERNEL_IMAGE == seq_state.mode) && (FLASH_EVENTS != E))
+			return false;
+
+		if (BLOCK_PRE == seq_state.mode)
+			pre_blocks++;
+
+		if ((BLOCK_PRE == seq_state.mode) && (1. * seq.magn.ti != (ev[E - 1].end - ev[E - 1].start)))
+			return false;
+
+		i++;
+
+	} while (seq_continue(&seq_state, &seq));
+
+	if (2 != pre_blocks)
+		return false;
+
+	return true;
+}
+
+UT_REGISTER_TEST(test_block_minv);
+
+
+static bool test_block_minv_multislice(void)
+{
+	const enum block blocks[21] = { BLOCK_KERNEL_NOISE,
+		BLOCK_PRE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE,
+		BLOCK_PRE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE,
+		BLOCK_PRE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE,
+		BLOCK_PRE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE,
+	};
+
+	struct seq_state seq_state = { 0 };;
+	struct seq_config seq = seq_config_defaults;
+	seq.enc.order = ORDER_SEQ_MS;
+	seq.magn.ti = 100;
+	seq.magn.mag_prep = PREP_IR_NON;
+	// seq.magn.inv_delay_time = 100;
+
+	int i = 0;
+	int inversions = 0;
+
+	const int max_E = 200;
+	struct seq_event ev[max_E];
+
+	set_loop_dims_and_sms(&seq, 1, 2, 3, 3, 1, 2, 1, 1, 0, 1);
+
+	do {
+
+		int E = seq_block(max_E, ev, &seq_state, &seq);
+
+		if (0 > E)
+			return false;
+
+		if (0 == E)
+			continue;
+
+		if (blocks[i] != seq_state.mode)
+			return false;
+
+		if ((BLOCK_KERNEL_IMAGE == seq_state.mode) && (FLASH_EVENTS != E))
+			return false;
+
+		if (BLOCK_PRE == seq_state.mode)
+			inversions++;
+
+		// correct ti in mag_prep block
+		if ((BLOCK_PRE == seq_state.mode) && (2 == E) && (1. * seq.magn.ti != seq_block_end(E, ev, seq_state.mode, seq.phys.tr)))
+			return false;
+
+		i++;
+
+	} while (seq_continue(&seq_state, &seq));
+
+	if (4 != inversions)
+		return false;
+
+	return true;
+}
+
+UT_REGISTER_TEST(test_block_minv_multislice);
