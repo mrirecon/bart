@@ -15,7 +15,7 @@
 #include "seq/gradient.h"
 #include "seq/misc.h"
 
-#include "seq_kernel.h"
+#include "kernel.h"
 
 #ifndef CFL_SIZE
 #define CFL_SIZE sizeof(complex float)

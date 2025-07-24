@@ -11,7 +11,7 @@
 #include "seq/gradient.h"
 #include "seq/misc.h"
 
-#include "seq_event.h"
+#include "event.h"
 
 
 int events_counter(enum seq_event_type type, int N, const struct seq_event ev[N])

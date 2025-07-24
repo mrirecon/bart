@@ -8,7 +8,7 @@
 #include "misc/debug.h"
 
 #include "seq/gradient.h"
-#include "seq/seq_event.h"
+#include "seq/event.h"
 
 #include "utest.h"
 

@@ -5,7 +5,7 @@
 
 #include "misc/cppwrap.h"
 
-#include "seq/seq_event.h"
+#include "seq/event.h"
 
 
 
