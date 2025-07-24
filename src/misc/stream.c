@@ -421,6 +421,8 @@ static void stream_del(const struct shared_obj_s* sptr)
 
 	stream_deregister(s);
 
+	stream_stop_log(s);
+
 	if (s->pipefd > 1)
 		close(s->pipefd);
 
@@ -448,8 +450,6 @@ static void stream_del(const struct shared_obj_s* sptr)
 	xfree(s->fifo_name);
 
 	stream_event_list_free(s->events);
-
-	stream_stop_log(s);
 
 	xfree(s);
 }
