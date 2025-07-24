@@ -799,11 +799,12 @@ MODULES_test_nufft += -lnoncart -llinops
 MODULES_test_fib += -lnoncart
 
 # lib seq
-UTARGETS += test_gradient test_events test_angle_calc test_adc_rf
+UTARGETS += test_gradient test_events test_angle_calc test_adc_rf test_seq
 MODULES_test_gradient += -lseq
 MODULES_test_events += -lseq
 MODULES_test_angle_calc += -lseq -lsimu -lnoncart
 MODULES_test_adc_rf += -lseq -lsimu -lnoncart
+MODULES_test_seq += -lseq -lsimu -lnoncart
 
 # lib num
 UTARGETS += test_multind test_flpmath test_splines test_linalg test_polynom test_window test_conv
