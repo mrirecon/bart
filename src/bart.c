@@ -75,6 +75,8 @@ static void bart_exit_cleanup(void)
 	if (NULL != stdin_command_line)
 		XFREE(stdin_command_line);
 
+	toolgraph_close();
+
 	io_memory_cleanup();
 
 	opt_free_strdup();
@@ -212,6 +214,8 @@ static void parse_bart_opts(int* argcp, char*** argvp, int order[DIMS], stream_t
 
 	if (version)
 		debug_printf(DP_INFO, "%s\n", bart_version);
+
+	toolgraph_create((*argvp)[next_arg], *argcp, *argvp);
 
 	*argcp -= next_arg;
 	*argvp += next_arg;

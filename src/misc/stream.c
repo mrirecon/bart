@@ -518,7 +518,7 @@ stream_t stream_load_fd(int fd, const char* name, int D, long dims[D], char **da
 	bool binary = false;
 
 	// read header from pipe
-	int hdr_bytes = read_cfl_header2(ARRAY_SIZE(hdr) - 1, hdr, fd, datname, cmdline, D, dims);
+	int hdr_bytes = read_cfl_header2(ARRAY_SIZE(hdr) - 1, hdr, fd, name, datname, cmdline, D, dims);
 
 	if (-1 == hdr_bytes)
 		return NULL;

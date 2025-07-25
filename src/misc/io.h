@@ -24,10 +24,13 @@ extern int read_ra(int fd, int n, long dimensions[__VLA(n)]);
 extern int write_coo(int fd, int n, const long dimensions[__VLA(n)]);
 extern int read_coo(int fd, int n, long dimensions[__VLA(n)]);
 
+extern void toolgraph_close(void);
+extern void toolgraph_create(const char* tool_name, int argc, char* argv[__VLA(argc)]);
+
 extern int write_cfl_header(int fd, const char* filename, int n, const long dimensions[__VLA(n)]);
-extern int read_cfl_header(int fd, char** file, char** cmd, int D, long dimensions[__VLA(D)]);
-extern int read_cfl_header2(int N, char buf[N + 1], int fd, char** file, char** cmd, int D, long dimensions[D]);
-extern int parse_cfl_header(long N, const char header[N + 1], char** file, char** cmd, int D, long dimensions[D]);
+extern int read_cfl_header(int fd, const char* hdrname, char** file, char** cmd, int D, long dimensions[__VLA(D)]);
+extern int read_cfl_header2(int N, char buf[__VLA(N + 1)], int fd, const char* hdrname, char** file, char** cmd, int D, long dimensions[__VLA(D)]);
+extern int parse_cfl_header(long N, const char header[__VLA(N + 1)], char** file, char** cmd, char** node, int n, long dimensions[__VLA(n)]);
 extern int write_stream_header(int fd, const char* filename, int n, const long dimensions[n]);
 
 extern int write_multi_cfl_header(int fd, const char* filename, long num_ele, int D, int n[D], const long* dimensions[D]);

@@ -38,6 +38,11 @@
 
 
 
+static char* node_id = NULL;
+
+static void toolgraph_add_input(const char* node, const char* file);
+
+static void toolgraph_save_iofiles(void);
 
 
 static int xdprintf(int fd, const char* fmt, ...)
@@ -268,6 +273,7 @@ void io_close(const char* name)
 
 void io_memory_cleanup(void)
 {
+	toolgraph_save_iofiles();
 	while (NULL != iofiles)
 		io_unregister(iofiles->name);
 }
@@ -382,6 +388,9 @@ int write_cfl_header(int fd, const char* filename, int n, const long dimensions[
 		written += xdprintf(fd, "\n");
 	}
 
+	if (node_id)
+		written += xdprintf(fd, "# Node-ID\n%s\n", node_id);
+
 	written += xdprintf(fd, "# Creator\nBART %s\n", bart_version);
 
 	return written;
@@ -454,7 +463,7 @@ static int parse_cfl_header_len(long N, const char header[N + 1])
 }
 
 
-int read_cfl_header2(int N, char header[N + 1], int fd, char **file, char** cmd, int n, long dimensions[n])
+int read_cfl_header2(int N, char header[N + 1], int fd, const char* hdrname, char** file, char** cmd, int n, long dimensions[n])
 {
 	*file = NULL;
 	memset(header, 0, (size_t)(N + 1));
@@ -480,23 +489,30 @@ int read_cfl_header2(int N, char header[N + 1], int fd, char **file, char** cmd,
 
 	assert(r <= M);
 
-	if (0 > parse_cfl_header(r, header, file, cmd, n, dimensions))
+	char* node = NULL;
+	if (0 > parse_cfl_header(r, header, file, cmd, &node, n, dimensions))
 		return -1;
+
+	if (node) {
+
+		toolgraph_add_input(node, hdrname);
+		xfree(node);
+	}
 
 	return r;
 }
 
 
-int read_cfl_header(int fd, char** file, char** cmd, int n, long dimensions[n])
+int read_cfl_header(int fd, const char* hdrname, char** file, char** cmd, int n, long dimensions[n])
 {
 	char header[IO_MAX_HDR_SIZE + 1];
 
-	return read_cfl_header2(IO_MAX_HDR_SIZE, header, fd, file, cmd, n, dimensions);
+	return read_cfl_header2(IO_MAX_HDR_SIZE, header, fd, hdrname, file, cmd, n, dimensions);
 }
 
 
 
-int parse_cfl_header(long N, const char header[N + 1], char **file, char** cmd, int n, long dimensions[n])
+int parse_cfl_header(long N, const char header[N + 1], char** file, char** cmd, char** node, int n, long dimensions[n])
 {
 	*file = NULL;
 
@@ -568,7 +584,24 @@ int parse_cfl_header(long N, const char header[N + 1], char **file, char** cmd, 
 			(*cmd)[delta - 1] = '\0';
 
 			pos += delta;
+
+		} else if (node && 0 == strcmp(keyword, "Node-ID")) {
+
+			char* last_char = memchr(header + pos, '\n', (size_t)(N - pos));
+			assert(NULL != last_char);
+
+			delta = 1 + last_char - (header + pos);
+
+			*node = xmalloc((size_t)delta);
+
+			memcpy(*node, header + pos, (size_t)(delta - 1));
+
+			(*node)[delta - 1] = '\0';
+
+			pos += delta;
 		}
+
+
 
 		// skip lines not starting with '#'
 
@@ -675,7 +708,7 @@ int read_multi_cfl_header(int fd, char** file, int D_max, int n_max, int n[D_max
 	char header[IO_MAX_HDR_SIZE + 1] = { };
 
 	long dims[1];
-	int max = read_cfl_header2(IO_MAX_HDR_SIZE, header, fd, file, NULL, 1, dims);
+	int max = read_cfl_header2(IO_MAX_HDR_SIZE, header, fd, NULL, file, NULL, 1, dims);
 
 	if (-1 == max)
 		return -1;
@@ -975,4 +1008,148 @@ int write_ra(int fd, int n, const long dimensions[n])
 		return -1;
 
 	return 0;
+}
+
+
+
+#define MAX_INPUT_NODES 100
+char* input_nodes [MAX_INPUT_NODES] = { NULL };
+
+static int toolgraph_fd = -1;
+
+static const char* toolgraph_iofiles = NULL;
+
+static void toolgraph_save_iofiles(void)
+{
+	if (!iofiles)
+		return;
+
+	bool set = false;
+#pragma omp critical(toolgraph_iofiles)
+	if (toolgraph_iofiles)
+		set = true;
+	else
+		toolgraph_iofiles = "X";
+
+	if (set)
+		return;
+
+	char* tmp1 = NULL;
+
+	struct iofile_s* in = iofiles;
+
+	tmp1 = ptr_printf("# Files\n");
+
+	while (in) {
+
+		char*  tmp2 = ptr_printf("%s %s%s%s", tmp1, in->input ? "<" : "", in->output ? ">" : "", in->name);
+		xfree(tmp1);
+		tmp1 = tmp2;
+		in = in->prev;
+	}
+
+	toolgraph_iofiles = tmp1;
+}
+
+static void toolgraph_add_input(const char* node, const char* file)
+{
+	if (-1 == toolgraph_fd)
+		return;
+
+	int i = 0;
+	bool found = false;
+#pragma omp critical(toolgraph_inputs)
+	for (; i < MAX_INPUT_NODES && input_nodes[i] && !found; i++)
+		if (0 == strcmp(node, input_nodes[i]))
+			found = true;
+	if (found)
+		return;
+
+	if (MAX_INPUT_NODES == i)
+		error("BART tool graph: Too many input files\n");
+
+	input_nodes[i] = strdup(node);
+
+#pragma omp critical(toolgraph_fd)
+	xdprintf(toolgraph_fd, "%s:%s ", node, file);
+}
+
+static int toolgraph_create_node_fd(const char* tool_name, int dirfd, char** node)
+{
+	int l = tool_name ? strlen(tool_name) : 0;
+	l += 1 + 20 + 1 + 8 + 1; // delimiter + timestamp + pid (up to 8 digits ) + zero-byte
+	char name[l];
+
+	if (snprintf(name, (unsigned)l, "%s_%d_%d", tool_name ? : "", (int)timestamp(), getpid()) >= l)
+		error("graph_generate_name.\n");
+
+	int fd = openat(dirfd, name, O_RDWR|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
+
+	if (-1 == fd)
+		error("graph_generate_name.\n");
+
+	*node = strdup(name);
+
+	return fd;
+}
+
+void toolgraph_create(const char* tool_name, int argc, char* argv[static argc])
+{
+	assert(-1 == toolgraph_fd);
+
+	char* str = getenv("BART_TOOL_GRAPH");
+
+	if (!str || 0 == strlen(str))
+		return;
+
+	struct stat sb = {};
+
+	if (0 != stat(str, &sb) || (S_IFDIR != (sb.st_mode & S_IFMT)))
+		error("Environment variable BART_TOOL_GRAPH is not a directory.\n");
+
+	int dirfd = open(str, O_RDONLY);
+
+	toolgraph_fd = toolgraph_create_node_fd(tool_name, dirfd, &node_id);
+
+	close(dirfd);
+
+	char dir[BART_MAX_DIR_PATH_SIZE];
+
+	if (NULL == getcwd(dir, BART_MAX_DIR_PATH_SIZE))
+		error("Current working directory path too long.\n");
+
+	xdprintf(toolgraph_fd, "# Directory\n%s\n", dir);
+
+	char* cmd = serialize_command_line(argc, argv);
+
+	if (cmd) {
+
+		xdprintf(toolgraph_fd, "# Command\n%s\n", cmd);
+		xfree(cmd);
+	}
+
+	xdprintf(toolgraph_fd, "# Input Nodes\n");
+}
+
+void toolgraph_close(void)
+{
+	if (-1 == toolgraph_fd)
+		return;
+
+	for (int i = 0; i < MAX_INPUT_NODES && input_nodes[i]; i++)
+		xfree(input_nodes[i]);
+
+	xdprintf(toolgraph_fd, "\n");
+
+	if (toolgraph_iofiles) {
+
+		xdprintf(toolgraph_fd, "%s\n", toolgraph_iofiles);
+		xfree(toolgraph_iofiles);
+	}
+
+	if (node_id)
+		XFREE(node_id);
+
+	close(toolgraph_fd);
+	toolgraph_fd = -1;
 }
