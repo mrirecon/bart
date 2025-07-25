@@ -132,7 +132,6 @@ int main_sample(int argc, char* argv[argc])
 	// UNet must be trained with z \sim CN(0, 2I) (i.e. cplx variance 2)
 
 	struct arg_s args[] = {
-		ARG_STRING(false, &graph, "network weights"),
 		ARG_INOUTFILE(true, &samples_file, "samples"),
 		ARG_OUTFILE(false, &mmse_file, "denoised samples (i.e. mmse estimate)"),
 	};
@@ -159,6 +158,7 @@ int main_sample(int argc, char* argv[argc])
 		OPTL_SET('p', "predictor-corrector", &predictor_corrector, "predictor-corrector sampling"),
 		OPTL_SUBOPT(0, "sigma", "", "select noise schedule for decreasing noise", ARRAY_SIZE(sigma_opts), sigma_opts),
 		OPTL_SUBOPT(0, "gmm", "", "generate a gaussian mixture model for sampling", ARRAY_SIZE(gmm_opts), gmm_opts),
+		OPTL_STRING(0, "external-graph", &graph, "weights", ".pt or .tf file with weights"),
 		OPTL_FLOAT(0, "gamma", &gamma_base, "gamma", "scaling of stepsize for Langevin iteration"),
 		OPT_INT('N', &N, "N", "number of noise levels"),
 		OPT_INT('K', &K, "K", "number of Langevin steps per level"),
