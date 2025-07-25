@@ -721,7 +721,6 @@ static complex float* create_binary_pipe(const char* name, int D, long dimension
 static complex float* create_pipe(const char* name, int D, long dimensions[D], unsigned long stream_flags)
 {
 	long T;
-	stream_t strm;
 	complex float* ptr;
 	char filename[] = "bart-XXXXXX";
 	int fd;
@@ -729,7 +728,7 @@ static complex float* create_pipe(const char* name, int D, long dimensions[D], u
 	char* abs_filename;
 	bool call_msync = false;
 
-	if (NULL != (ptr = stream_clone_if_exists(name, &strm, false)))
+	if (NULL != (ptr = stream_clone_if_exists(name, &(stream_t){ NULL }, false)))
 		return ptr;
 
 	if (stream_create_binary_outputs)
@@ -740,27 +739,6 @@ static complex float* create_pipe(const char* name, int D, long dimensions[D], u
 	fd = mkstemp(filename);
 
 	debug_printf(DP_DEBUG1, "Temp file for pipe: %s\n", filename);
-
-	dir = xmalloc(BART_MAX_DIR_PATH_SIZE);
-
-	if (!dir)
-		error("Failed to allocate space for dir. name.\n");
-
-	if (!getcwd(dir, BART_MAX_DIR_PATH_SIZE))
-		error("Directory pathname too long.\n");
-
-	abs_filename = ptr_printf("%s/%s", dir, filename);
-
-#ifdef __EMSCRIPTEN__
-	call_msync = true;
-#endif
-	strm = stream_create_file(name, D, dimensions, stream_flags, abs_filename, call_msync);
-
-	xfree(dir);
-	xfree(abs_filename);
-
-	if (NULL == strm)
-		error("Creating stream");
 
 	if (-1 == (T = io_calc_size(D, dimensions, sizeof(complex float))))
 		error("temp cfl %s\n", filename);
@@ -776,6 +754,27 @@ static complex float* create_pipe(const char* name, int D, long dimensions[D], u
 	if (-1 == close(fd))
 		io_error("temp cfl %s\n", filename);
 #endif
+
+	dir = xmalloc(BART_MAX_DIR_PATH_SIZE);
+
+	if (!dir)
+		error("Failed to allocate space for dir. name.\n");
+
+	if (!getcwd(dir, BART_MAX_DIR_PATH_SIZE))
+		error("Directory pathname too long.\n");
+
+	abs_filename = ptr_printf("%s/%s", dir, filename);
+
+#ifdef __EMSCRIPTEN__
+	call_msync = true;
+#endif
+	stream_t strm = stream_create_file(name, D, dimensions, stream_flags, abs_filename, call_msync);
+
+	xfree(dir);
+	xfree(abs_filename);
+
+	if (NULL == strm)
+		error("Creating stream");
 
 	stream_attach(strm, ptr, true, true);
 
@@ -1156,6 +1155,7 @@ complex float* shared_cfl(int D, const long dims[D], const char* name)
         if (-1 == (fd = open(name, O_RDWR|O_CREAT, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)))
 		io_error("shared cfl %s\n", name);
 
+// FIXME
 //	if (-1 == (fstat(fd, &st)))
 //		error("abort\n");
 
