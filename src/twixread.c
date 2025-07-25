@@ -561,6 +561,7 @@ int main_twixread(int argc, char* argv[argc])
 		OPT_LONG('p', &(dims[COEFF_DIM]), "P", "number of cardiac phases"),
 		OPT_LONG('f', &(dims[TIME2_DIM]), "F", "number of flow encodings"),
 		OPT_LONG('i', &(dims[LEVEL_DIM]), "I", "number inversion experiments"),
+		OPT_LONG('e', &(dims[TE_DIM]), "E", "number of echoes"),
 		OPT_LONG('a', &adcs, "A", "total number of ADCs"),
 		OPT_SET('A', &autoc, "automatic [guess dimensions]"),
 		OPT_SET('L', &linectr, "use linectr offset"),
@@ -591,7 +592,7 @@ int main_twixread(int argc, char* argv[argc])
 	assert(!MD_IS_SET(ignore_dims_flags, COIL_DIM));
 
 	if (0 == adcs)
-		adcs = dims[PHS1_DIM] * dims[PHS2_DIM] * dims[SLICE_DIM] * dims[TIME_DIM] * dims[TIME2_DIM] * dims[LEVEL_DIM] * dims[COEFF_DIM];
+		adcs = dims[PHS1_DIM] * dims[PHS2_DIM] * dims[SLICE_DIM] * dims[TIME_DIM] * dims[TIME2_DIM] * dims[LEVEL_DIM] * dims[COEFF_DIM] * dims[TE_DIM];
 
 	debug_print_dims(DP_DEBUG1, DIMS, dims);
 
