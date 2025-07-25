@@ -6,8 +6,6 @@
 
 #include "misc/mri.h"
 
-#include "seq/gradient.h"
-
 #define MAX_EVENTS 2048
 #define MAX_RF_SAMPLES 8192
 
@@ -91,6 +89,7 @@ struct rf_shape {
 int events_counter(enum seq_event_type type, int N, const struct seq_event ev[__VLA(N)]);
 int events_idx(int n, enum seq_event_type type, int N, const struct seq_event ev[__VLA(N)]);
 
+struct grad_trapezoid;
 int seq_grad_to_event(struct seq_event ev[2], double start, const struct grad_trapezoid* grad, double proj[3]);
 
 void events_get_te(int E, long te[__VLA(E)], int N, const struct seq_event ev[__VLA(N)]);

@@ -1,4 +1,4 @@
-/* Copyright 2022-2023. TU Graz. Institute of Biomedical Imaging.
+/* Copyright 2022-2025. TU Graz. Institute of Biomedical Imaging.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
@@ -105,7 +105,8 @@ void pulse_sinc_init(struct pulse_sinc* ps, float duration, float angle /*[deg]*
 
 /* SMS pulse: sinc pulse with phase modulation; mb_factor=1 equals sinc_pulse */
 
-/* SMS-multiband phase modulation*/
+/* SMS-multiband phase modulation
+ * */
 static complex float pulse_sms_phase_modulation(const struct pulse_sms* ps, float t) 
 {
 	float phase = 0.;

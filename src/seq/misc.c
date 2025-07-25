@@ -27,12 +27,12 @@ long round_up_GRT(double val_usec)
 
 double ro_amplitude(const struct seq_config* seq)
 {
-	return 1.e6 / (seq->geom.fov * seq->phys.dwell * seq->sys.gamma);
+	return 1.E6 / (seq->geom.fov * seq->phys.dwell * seq->sys.gamma);
 }
 
 double slice_amplitude(const struct seq_config* seq)
 {
-	return 1.e6 * seq->phys.bwtp / (seq->sys.gamma * seq->phys.rf_duration * seq->geom.slice_thickness);
+	return 1.E6 * seq->phys.bwtp / (seq->sys.gamma * seq->phys.rf_duration * seq->geom.slice_thickness);
 }
 
 int gradient_prepare_with_timing(struct grad_trapezoid* grad, double moment, struct grad_limits sys)
@@ -49,3 +49,4 @@ int gradient_prepare_with_timing(struct grad_trapezoid* grad, double moment, str
 
 	return 1;
 }
+

@@ -1,14 +1,12 @@
-/* Copyright 2024. TU Graz. Institute of Biomedical Imaging.
+/* Copyright 2025. TU Graz. Institute of Biomedical Imaging.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: Daniel Mackner
- *
  */
 
 #include <complex.h>
 #include <math.h>
-#include <stdio.h>
 
 #include "num/multind.h"
 
@@ -97,11 +95,11 @@ int main_seq(int argc, char* argv[argc])
 		OPTL_DOUBLE(0, "tr", &seq.phys.tr, "tr", "TR [us]"),
 		OPTL_DOUBLE(0, "te", &seq.phys.te, "te0", "TE [us]"),
 
-		OPTL_LONG('r', "lines", &seq.loop_dims[PHS1_DIM], "lines", "Number of phase enconding lines"),
+		OPTL_LONG('r', "lines", &seq.loop_dims[PHS1_DIM], "lines", "Number of phase encoding lines"),
 		OPTL_LONG('z', "partitions", &seq.loop_dims[PHS2_DIM], "partitions", "Number of partitions (3D) or SMS groups (2D)"),
-		OPTL_LONG('t', "measurements", &seq.loop_dims[TIME_DIM], "measurements", "Number of measurements/frames"),
+		OPTL_LONG('t', "measurements", &seq.loop_dims[TIME_DIM], "measurements", "Number of measurements / frames"),
 		OPTL_LONG('m', "slices", &seq.loop_dims[SLICE_DIM], "slices", "Number of slices of multiband factor (SMS)"),
-		OPTL_LONG('i', "inversions", &seq.loop_dims[BATCH_DIM], "inversions", "Number of inversion repetitions"),
+		OPTL_LONG('i', "inversions", &seq.loop_dims[BATCH_DIM], "inversions", "Number of inversions"),
 		OPTL_SET(0, "gradient-normal", &gradient_normal_mode, "Gradient normal mode (default: fast)"),
 		OPTL_SET(0, "gradient-whisper", &gradient_whisper_mode, "Gradient whisper mode (default: fast)"),
 
@@ -125,7 +123,8 @@ int main_seq(int argc, char* argv[argc])
 	}	
 
 	set_loop_dims_and_sms(&seq, 0, seq.loop_dims[SLICE_DIM], seq.loop_dims[PHS1_DIM],
-				seq.loop_dims[TIME_DIM], seq.loop_dims[TE_DIM], seq.loop_dims[BATCH_DIM], 1, 1, 1, seq.geom.mb_factor);
+				seq.loop_dims[TIME_DIM], seq.loop_dims[TE_DIM],
+				seq.loop_dims[BATCH_DIM], 1, 1, 1, seq.geom.mb_factor);
 
 	if ((0 > samples) && (0 > dt))
 		samples = 1000;
@@ -134,6 +133,7 @@ int main_seq(int argc, char* argv[argc])
 
 	assert(!(gradient_normal_mode && gradient_whisper_mode));
 
+	// FIXME, this should be moved in system configurations
 	if (gradient_normal_mode)
 		seq.sys.grad.inv_slew_rate = 10 * sqrt(2.);
 	else if (gradient_whisper_mode)
@@ -151,17 +151,18 @@ int main_seq(int argc, char* argv[argc])
 	debug_printf(DP_INFO, "kernels: %ld \t dims: ", md_calc_size(DIMS, kernel_dims));
 	debug_print_dims(DP_INFO, DIMS, kernel_dims);
 
-
 	if (-1 < single_idx) {
 
 		debug_printf(DP_INFO, "evaluate sequence only at index: %ld\n", single_idx);
+
 		if (single_idx >=  md_calc_size(DIMS, kernel_dims))
 			error("Index out of bounds! %ld >= %ld\n", single_idx, md_calc_size(DIMS, kernel_dims));
+
 		md_unravel_index_permuted(DIMS, seq_state.pos, SEQ_FLAGS, kernel_dims, single_idx, seq.order);
 	}
 		
-
 	long mdims[DIMS];
+
 	if (-1 < single_idx)
 		md_singleton_dims(DIMS, mdims);
 	else
@@ -170,28 +171,36 @@ int main_seq(int argc, char* argv[argc])
 	if (support) {
 
 		seq_state.mode = BLOCK_KERNEL_PREPARE;
+
 		E = seq_block(MAX_EVENTS, ev, &seq_state, &seq);
+
 		seq_state.mode = BLOCK_UNDEFINED;
+
 		for (int i = 0; i < DIMS; i++)
 			seq_state.pos[i] = 0;
+
 		assert(NULL == mom_file);
 	}
-	mdims[READ_DIM] = (support) ? events_counter(SEQ_EVENT_GRADIENT, E, ev) : samples;
-	mdims[MAPS_DIM] = (support) ? 6 : 3;
+
+	mdims[READ_DIM] = support ? events_counter(SEQ_EVENT_GRADIENT, E, ev) : samples;
+	mdims[MAPS_DIM] = support ? 6 : 3;
 
 	long mstrs[DIMS];
 	md_calc_strides(DIMS, mstrs, mdims, CFL_SIZE);
 
 	long adims[DIMS];
+
 	if (-1 < single_idx)
 		md_singleton_dims(DIMS, adims);
 	else
 		md_copy_dims(DIMS, adims, kernel_dims);
+
 	adims[READ_DIM] = seq.geom.baseres * seq.phys.os;
 	adims[MAPS_DIM] = 5;
 
 	long adc_dims[DIMS];
 	md_select_dims(DIMS, (READ_FLAG | MAPS_FLAG | TE_FLAG), adc_dims, adims);
+
 	long adc_strs[DIMS];
 	md_calc_strides(DIMS, adc_strs, adc_dims, CFL_SIZE);
 
@@ -213,7 +222,9 @@ int main_seq(int argc, char* argv[argc])
 
 	struct rf_shape rf_shapes[MAX_RF_PULSES];
 	int rfs = seq_sample_rf_shapes(MAX_RF_PULSES, rf_shapes, &seq);
+
 	debug_printf(DP_INFO, "sampled RF shapes: %d\n", rfs);
+
 	for (int i = 0; i < rfs; i++) {
 
 		double s = idea_pulse_scaling(&rf_shapes[i]);
@@ -223,10 +234,10 @@ int main_seq(int argc, char* argv[argc])
 	}
 
 	do {
-
 		debug_print_dims(DP_DEBUG2, DIMS, seq_state.pos);
 
 		E = seq_block(MAX_EVENTS, ev, &seq_state, &seq);
+
 		if (0 < E)
 			debug_printf(DP_DEBUG2, "block mode: %d ; E: %d \n", seq_state.mode, E);
 
@@ -236,25 +247,33 @@ int main_seq(int argc, char* argv[argc])
 		if (0 > E)
 			error("Sequence not possible! - check seq_config, %d] \n", E);
 
-		for (int i = 0; i< E;i++) {
+		for (int i = 0; i < E; i++) {
 
 			debug_printf(DP_DEBUG3, "event[%d]:\t%.2f\t\t%.2f\t\t%.2f\t\t", i, 
-				ev[i].start, ev[i].mid, ev[i].end);
-			if ( SEQ_EVENT_GRADIENT == ev[i].type)
+					ev[i].start, ev[i].mid, ev[i].end);
+
+			if (SEQ_EVENT_GRADIENT == ev[i].type)
 				debug_printf(DP_DEBUG3, "||\t%.2f\t\t%.2f\t\t%.2f", ev[i].grad.ampl[0], ev[i].grad.ampl[1],ev[i].grad.ampl[2]);
+
 			debug_printf(DP_DEBUG3, "\n");
 		}
+
 		debug_printf(DP_DEBUG3, "seq_block_end_flat: %ld\n", seq_block_end_flat(E, ev));
 
-		double ddt = (0 > dt) ? 1. * seq.phys.tr / samples : ceil(dt*1.e6)/1.e6; //FIXME breaks with float
+		double ddt = (0 > dt) ? 1. * seq.phys.tr / samples : ceil(dt * 1.e6)/ 1.e6; //FIXME breaks with float
 		double g2[samples][mdims[MAPS_DIM]];
-		if (unchecked_gr)
+
+		if (unchecked_gr) {
+
 			debug_printf(DP_INFO, "end of last event: %.2f \t end of calc: %.2f\n",
-						events_end_time(E, ev, 1, 0), samples * ddt);
+				    events_end_time(E, ev, 1, 0), samples * ddt);
+		}
+
 		if (support)
 			seq_gradients_support(samples, g2, E, ev);
 		else
 			seq_compute_gradients(samples, g2, ddt, E, ev);
+
 		float m0[samples][3];
 		seq_compute_moment0(samples, m0, ddt, E, ev);
 
@@ -271,10 +290,13 @@ int main_seq(int argc, char* argv[argc])
 		if (NULL != out_adc) {
 
 			complex float* adc = md_alloc(DIMS, adc_dims, CFL_SIZE);
+
 			seq_compute_adc_samples(DIMS, adc_dims, adc, E, ev);
+
 			double m0_adc[3];
 
 			float scale = 1.;
+
 			if (norm_k)
 				scale = (seq.phys.dwell / seq.phys.os) * ro_amplitude(&seq);
 
@@ -304,9 +326,7 @@ int main_seq(int argc, char* argv[argc])
 	if (NULL != adc_file)
 		unmap_cfl(DIMS, adims, out_adc);
 
-
 	return 0;
 }
-
 
 

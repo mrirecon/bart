@@ -1,9 +1,8 @@
-#ifndef __SEQ_FLASH_H
-#define __SEQ_FLASH_H
+#ifndef _SEQ_FLASH_H
+#define _SEQ_FLASH_H
 
 #include "misc/cppwrap.h"
 
-#include "seq/config.h"
 #include "seq/event.h"
 
 enum seq_error { 
@@ -17,11 +16,13 @@ enum seq_error {
 	ERROR_END_FLAT_KERNEL = -901,
 };
 
-void set_loop_dims_and_sms(struct seq_config* seq, long partitions, long total_slices, long radial_views,
+struct seq_config;
+
+extern void set_loop_dims_and_sms(struct seq_config* seq, long partitions, long total_slices, long radial_views,
 	long frames, long echoes, long inv_reps, long phy_phases, long averages, int checkbox_sms, long mb_factor);
 
-int flash(int N, struct seq_event ev[__VLA(N)], struct seq_state* seq_state, const struct seq_config* seq);
+extern int flash(int N, struct seq_event ev[__VLA(N)], struct seq_state* seq_state, const struct seq_config* seq);
 
 #include "misc/cppwrap.h"
 
-#endif // __SEQ_FLASH_H
+#endif // _SEQ_FLASH_H

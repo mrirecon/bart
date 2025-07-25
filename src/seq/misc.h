@@ -1,6 +1,6 @@
 
-#ifndef _SEQMISC_H
-#define _SEQMISC_H
+#ifndef _SEQ_MISC_H
+#define _SEQ_MISC_H
 
 struct seq_config;
 
@@ -12,5 +12,5 @@ struct grad_trapezoid;
 struct grad_limits;
 extern int gradient_prepare_with_timing(struct grad_trapezoid* grad, double moment, struct grad_limits sys);
 
-#endif
+#endif // _SEQ_MISC_H
 

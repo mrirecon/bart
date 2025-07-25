@@ -3,7 +3,6 @@
  * a BSD-style license which can be found in the LICENSE file.
  */
 
-
 #include <math.h>
 #include <assert.h>
 
@@ -15,6 +14,7 @@
 #include "noncart/traj.h"
 
 #include "seq/config.h"
+
 
 void traj_conf_from_seq(struct traj_conf *conf, const struct seq_config* seq)
 {
@@ -36,13 +36,14 @@ void traj_conf_from_seq(struct traj_conf *conf, const struct seq_config* seq)
 	switch (seq->enc.pe_mode) {
 
 	case PEMODE_RATION_APPROX_GA:
+
 		conf->aligned_flags = 0;
 		break;
+
 	case PEMODE_RATION_APPROX_GAAL:
+
 		conf->aligned_flags = SLICE_FLAG;
 		break;
-	default:
-		assert(0);
 	}
 }
 

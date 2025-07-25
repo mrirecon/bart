@@ -1,6 +1,6 @@
 
-#ifndef __SEQ_CONFIG_H
-#define __SEQ_CONFIG_H
+#ifndef _SEQ_CONFIG_H
+#define _SEQ_CONFIG_H
 
 #include "misc/cppwrap.h"
 #include "misc/mri.h"
@@ -133,4 +133,5 @@ extern const struct seq_config seq_config_defaults;
 
 #include "misc/cppwrap.h"
 
-#endif
+#endif	// _SEQ_CONFIG_H
+

@@ -24,6 +24,7 @@
 int seq_sample_rf_shapes(int N, struct rf_shape pulse[N], const struct seq_config* seq)
 {
 	int idx = 0;
+
 	for (; idx < seq->geom.mb_factor; idx++) {
 
 		if (idx >= N)
@@ -33,20 +34,25 @@ int seq_sample_rf_shapes(int N, struct rf_shape pulse[N], const struct seq_confi
 		pulse[idx].sar_dur = seq->phys.rf_duration;
 		pulse[idx].fa_prep = seq->phys.flip_angle;
 
-		static const float alpha = 0.5;
+		const float alpha = 0.5;
+
 		pulse[idx].samples = 2 * seq->phys.rf_duration;
+
 		if (MAX_RF_SAMPLES < pulse[idx].samples)
 			return -1;
-		double dwell = 1.e-6 * seq->phys.rf_duration / pulse[idx].samples;
+
+		double dwell = 1.E-6 * seq->phys.rf_duration / pulse[idx].samples;
 
 		struct pulse_sms ps = pulse_sms_defaults;
-		pulse_sms_init(&ps, 1.e-6 * seq->phys.rf_duration, seq->phys.flip_angle, 0., seq->phys.bwtp, alpha, 
-			seq->geom.mb_factor, idx, 1.e-3 * seq->geom.sms_distance, 1.e-3 * seq->geom.slice_thickness);
+
+		pulse_sms_init(&ps, 1.E-6 * seq->phys.rf_duration, seq->phys.flip_angle, 0., seq->phys.bwtp, alpha,
+			seq->geom.mb_factor, idx, 1.E-3 * seq->geom.sms_distance, 1.E-3 * seq->geom.slice_thickness);
 
 		pulse[idx].max = ps.A; // this is scaled by fa / fa_prep
 		pulse[idx].integral = pulse_sms_integral(&ps);
 
 		struct pulse* pp = CAST_UP(&ps);
+
 		for (int j = 0; j < pulse[idx].samples; j++)
 			pulse[idx].shape[j] = pulse_eval(pp, j * dwell);
 	}
@@ -63,7 +69,7 @@ int seq_sample_rf_shapes(int N, struct rf_shape pulse[N], const struct seq_confi
 		struct pulse* pp = CAST_UP(&hs);
 
 		pulse[idx].sar_calls = seq->loop_dims[BATCH_DIM];
-		pulse[idx].sar_dur = 1e6 * pp->duration;
+		pulse[idx].sar_dur = 1.E6 * pp->duration;
 
 		pulse[idx].samples = 0.5 * pulse[idx].sar_dur;
 
@@ -168,29 +174,37 @@ int seq_block(int N, struct seq_event ev[N], struct seq_state* seq_state, const 
 
 	if (BLOCK_KERNEL_PREPARE == seq_state->mode) {
 
-		seq_state->pos[SLICE_DIM] = (long)ceil(0.5 * seq->geom.mb_factor); // necessary for SMS bSSFP
+		seq_state->pos[SLICE_DIM] = (long)ceil(0.5 * seq->geom.mb_factor); // for SMS bSSFP
+
+		return flash(N, ev, seq_state, seq);
+
+	} else if (BLOCK_KERNEL_CHECK == seq_state->mode) {
+
 		return flash(N, ev, seq_state, seq);
 	}
-	else if (BLOCK_KERNEL_CHECK == seq_state->mode)
-		return flash(N, ev, seq_state, seq);
 
 	long zeros[DIMS] = { 0 };
 	long last_idx[DIMS];
+
 	for (int i = 0; i < DIMS; i++)
 		last_idx[i] = seq->loop_dims[i] - 1;
 
 	// changed beahvior for sequential multislice
-	unsigned long msm_flag = (md_check_equal_order(DIMS, seq->order, seq_loop_order_multislice, SEQ_FLAGS)) ? SLICE_FLAG : 0UL;
+	unsigned long msm_flag = 0UL;
+
+	if (md_check_equal_order(DIMS, seq->order, seq_loop_order_multislice, SEQ_FLAGS))
+	       msm_flag = SLICE_FLAG ;
 
 	if (0 == seq_state->pos[COEFF_DIM]) {
 
 		if (md_check_equal_dims(DIMS, (zeros[COEFF2_DIM] = 1, zeros), seq_state->pos, ~0UL)) {
 
 			seq_state->mode = BLOCK_KERNEL_NOISE;
-			int i = flash(N, ev, seq_state, seq);
-			return i;
+
+			return flash(N, ev, seq_state, seq);
 		}
-		else if (seq_state->pos[COEFF2_DIM] > 1) {
+
+		if (seq_state->pos[COEFF2_DIM] > 1) {
 
 			if (md_check_equal_dims(DIMS, zeros, seq_state->pos, ~(BATCH_FLAG | msm_flag | COEFF2_FLAG))) {
 
@@ -222,20 +236,19 @@ int seq_block(int N, struct seq_event ev[N], struct seq_state* seq_state, const 
 				}
 			}
 
-		}
-		else if (seq_state->pos[PHS1_DIM] > 0) {
+		} else if (seq_state->pos[PHS1_DIM] > 0) {
 
 			md_max_dims(DIMS, (COEFF2_FLAG | PHS2_FLAG) &  ~msm_flag, seq_state->pos, seq_state->pos, last_idx);
 		}
-	}
-	else if (1 == seq_state->pos[COEFF_DIM]) {
+
+	} else if (1 == seq_state->pos[COEFF_DIM]) {
 
 		seq_state->mode = BLOCK_KERNEL_IMAGE;
 		md_max_dims(DIMS, (COEFF2_FLAG), seq_state->pos, seq_state->pos, last_idx);
-		int i = flash(N, ev, seq_state, seq);
-		return i;
-	}
-	else if (2 == seq_state->pos[COEFF_DIM]) {
+
+		return flash(N, ev, seq_state, seq);
+
+	} else if (2 == seq_state->pos[COEFF_DIM]) {
 
 		md_max_dims(DIMS, (COEFF2_FLAG | PHS2_FLAG) & ~msm_flag, seq_state->pos, seq_state->pos, last_idx);
 		return 0;
@@ -244,8 +257,8 @@ int seq_block(int N, struct seq_event ev[N], struct seq_state* seq_state, const 
 	return 0;
 }
 
-
 int seq_continue(struct seq_state* seq_state, const struct seq_config* seq)
 {
 	return md_next_permuted(DIMS, seq->order, seq->loop_dims, SEQ_FLAGS, seq_state->pos);
 }
+

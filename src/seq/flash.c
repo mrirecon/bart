@@ -20,19 +20,22 @@
 
 #include "flash.h"
 
-#define SCALE_GRAD (0.82) // for time-optimized overlapping gradients, otherwise sqrt(2.)
+// for time-optimized overlapping gradients, otherwise sqrt(2.)
+#define SCALE_GRAD 0.82
 
 
 static double start_rf(const struct seq_config* seq)
 {
 	double sli_ampl = slice_amplitude(seq);
+
 	return ceil(MAX(sli_ampl * seq->sys.grad.inv_slew_rate, seq->sys.coil_control_lead));
 }
 
 static double ro_shift(const struct seq_config* seq)
 {
-	double start_flat = start_rf(seq) + seq->phys.rf_duration / 2. + 1. * seq->phys.te
-		- adc_time_to_echo(seq);
+	double start_flat = start_rf(seq) + seq->phys.rf_duration / 2.
+				+ 1. * seq->phys.te - adc_time_to_echo(seq);
+
 	return (GRAD_RASTER_TIME - (round_up_GRT(start_flat) - (long)start_flat)) % GRAD_RASTER_TIME;
 }
 
@@ -40,6 +43,7 @@ static double ro_shift(const struct seq_config* seq)
 static double available_time_RF_SLI(int ro, const struct seq_config* seq)
 {
 	double ampl = ro ? ro_amplitude(seq) : slice_amplitude(seq);
+
 	return seq->phys.te - seq->phys.rf_duration / 2.
 		- ampl * seq->sys.grad.inv_slew_rate
 		- adc_time_to_echo(seq)
@@ -69,6 +73,7 @@ static int prep_grad_ro(struct grad_trapezoid* grad, const struct seq_config* se
 	*grad = (struct grad_trapezoid){ 0 };
 
 	double ampl = ro_amplitude(seq);
+
 	if (seq->sys.grad.max_amplitude < ampl)
 		return 0;
 
@@ -87,6 +92,7 @@ static int prep_grad_sli(struct grad_trapezoid* grad, const struct seq_config* s
 	*grad = (struct grad_trapezoid){ 0 };
 
 	double ampl = slice_amplitude(seq);
+
 	if (seq->sys.grad.max_amplitude < ampl)
 		return 0;
 
@@ -125,16 +131,17 @@ int flash(int N, struct seq_event ev[N], struct seq_state* seq_state, const stru
 
 	double sli_start = 0;
 	double rf_start = start_rf(seq);
-	double ro_deph_start = rf_start + seq->phys.rf_duration; // ro dephaser
-	double sli_reph_start = ro_deph_start + seq->sys.grad.inv_slew_rate * slice_amplitude(seq); // sli rephaser
-	double ro_grad_start = ro_deph_start + available_time_RF_SLI(1, seq); // RO
-	double adc_start = start_rf(seq) + seq->phys.rf_duration / 2. + 1. * seq->phys.te - adc_time_to_echo(seq); //ADC
+	double ro_deph_start = rf_start + seq->phys.rf_duration;
+	double sli_reph_start = ro_deph_start + seq->sys.grad.inv_slew_rate * slice_amplitude(seq);
+	double ro_grad_start = ro_deph_start + available_time_RF_SLI(1, seq);
+	double adc_start = start_rf(seq) + seq->phys.rf_duration / 2. + 1. * seq->phys.te - adc_time_to_echo(seq);
 
 	int i = 0;
 
 	double rf_spoil_phase = rf_spoiling(DIMS, seq_state->pos, seq);
 
 	double proj_angle = get_rot_angle(seq_state->pos, seq);
+
 	if (0. > proj_angle)
 		return ERROR_ROT_ANGLE;
 
@@ -144,14 +151,15 @@ int flash(int N, struct seq_event ev[N], struct seq_state* seq_state, const stru
 
 	if (!prep_grad_sli(&sli, seq))
 		return ERROR_PREP_GRAD_SLI;
+
 	i += seq_grad_to_event(ev + i, sli_start, &sli, projSLICE);
 
 	i += prep_rf_ex(ev + i, rf_start, rf_spoil_phase, seq_state, seq);
 
 	if (!prep_grad_sli_reph(&sli_reph, seq))
 		return ERROR_PREP_GRAD_SLI_REPH;
-	i += seq_grad_to_event(ev + i, sli_reph_start, &sli_reph, projSLICE);
 
+	i += seq_grad_to_event(ev + i, sli_reph_start, &sli_reph, projSLICE);
 
 	if (!prep_grad_ro_deph(&ro_deph, seq))
 		return ERROR_PREP_GRAD_RO_DEPH;
@@ -163,7 +171,6 @@ int flash(int N, struct seq_event ev[N], struct seq_state* seq_state, const stru
 	i += seq_grad_to_event(ev + i, ro_deph_start, &ro_deph, projX);
 	i += seq_grad_to_event(ev + i, ro_deph_start, &ro_deph, projY);
 
-
 	if (!prep_grad_ro(&ro, seq))
 		return ERROR_PREP_GRAD_RO_RO;
 
@@ -171,7 +178,6 @@ int flash(int N, struct seq_event ev[N], struct seq_state* seq_state, const stru
 	i += seq_grad_to_event(ev + i, ro_grad_start, &ro, projY);
 
 	i += prep_adc(ev + i, adc_start, rf_spoil_phase, seq_state, seq);
-
 
 	if (seq_block_end_flat(i, ev) > seq->phys.tr)
 		return ERROR_END_FLAT_KERNEL;
@@ -193,30 +199,33 @@ void set_loop_dims_and_sms(struct seq_config* seq, long /* partitions */, long t
 	case ORDER_AVG_OUTER:
 		md_copy_order(DIMS, seq->order, seq_loop_order_avg_outer);
 		break;
+
 	case ORDER_SEQ_MS:
 		md_copy_order(DIMS, seq->order, seq_loop_order_multislice);
 		break;
+
 	case ORDER_AVG_INNER:
 		md_copy_order(DIMS, seq->order, seq_loop_order_avg_inner);
 		break;
-	default:
-		assert(0);
-
 	}
 
 	seq->geom.mb_factor = (checkbox_sms) ? mb_factor : 1;
 	seq->loop_dims[SLICE_DIM] = (checkbox_sms) ? seq->geom.mb_factor : total_slices;
 	seq->loop_dims[PHS2_DIM] = (checkbox_sms) ? total_slices / seq->geom.mb_factor : 1;
+
 	if ((seq->loop_dims[PHS2_DIM] * seq->loop_dims[SLICE_DIM]) != total_slices)
 		seq->loop_dims[PHS2_DIM] = -1; //mb groups
 
 	seq->loop_dims[BATCH_DIM] = inv_reps;
 	seq->loop_dims[TIME_DIM] = frames;
+
 	if ((PEMODE_RATION_APPROX_GA == seq->enc.pe_mode) || (PEMODE_RATION_APPROX_GAAL == seq->enc.pe_mode)) {
 
 		assert(frames >= radial_views);
+
 		seq->loop_dims[TIME_DIM] = ceil(1. * frames / radial_views);
 		seq->loop_dims[ITER_DIM] = frames % radial_views;
+
 		if (0 == seq->loop_dims[ITER_DIM])
 			seq->loop_dims[ITER_DIM] = radial_views;
 	}
@@ -231,3 +240,5 @@ void set_loop_dims_and_sms(struct seq_config* seq, long /* partitions */, long t
 	seq->loop_dims[COEFF2_DIM] = 3;
 	seq->loop_dims[COEFF_DIM] = 3; // pre-/post- and actual kernel calls
 }
+
+
