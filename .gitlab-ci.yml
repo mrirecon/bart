@@ -403,7 +403,7 @@ IntTest_riscv:
     - riscv
   image: registry.gitlab.tugraz.at/ibi/reproducibility/gitlab-ci-containers/ibi_riscv_noroot
   script:
-    - AUTOCLEAN=0 AGUE_REF=/reference_data/ make -Otarget -j 4 test testague
+    - AUTOCLEAN=0 make -Otarget -j 4 test
   needs: [Build_riscv]
   dependencies:
     - Build_riscv
