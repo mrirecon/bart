@@ -19,7 +19,7 @@ enum seq_error {
 struct seq_config;
 
 extern void set_loop_dims_and_sms(struct seq_config* seq, long partitions, long total_slices, long radial_views,
-	long frames, long echoes, long inv_reps, long phy_phases, long averages, int checkbox_sms, long mb_factor);
+	long frames, long echoes, long inv_reps, long phy_phases, long averages, bool sms, long mb_factor);
 
 extern int flash(int N, struct seq_event ev[__VLA(N)], struct seq_state* seq_state, const struct seq_config* seq);
 

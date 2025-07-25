@@ -19,11 +19,11 @@ extern const int seq_loop_order_avg_inner[DIMS];
 extern const int seq_loop_order_avg_outer[DIMS];
 extern const int seq_loop_order_multislice[DIMS];
 
-enum order {
+enum seq_order {
 
-	ORDER_AVG_OUTER,
-	ORDER_SEQ_MS,
-	ORDER_AVG_INNER,
+	SEQ_ORDER_AVG_OUTER,
+	SEQ_ORDER_SEQ_MS,
+	SEQ_ORDER_AVG_INNER,
 };
 
 enum block {
@@ -90,7 +90,7 @@ struct seq_enc {
 	enum pe_mode pe_mode;
 	int tiny;
 	unsigned long aligned_flags;
-	enum order order;
+	enum seq_order order;
 };
 
 struct seq_magn {

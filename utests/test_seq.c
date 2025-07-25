@@ -175,7 +175,7 @@ static bool test_raga_spokes(void)
 
 	const int expected_spokes = 8;
 	seq.enc.pe_mode = PEMODE_RATION_APPROX_GA;
-	seq.enc.order = ORDER_AVG_OUTER;
+	seq.enc.order = SEQ_ORDER_AVG_OUTER;
 	set_loop_dims_and_sms(&seq, 1, 1, 5, expected_spokes, 1, 1, 1, 1, 0, 1);
 
 	const int max_E = 200;
@@ -208,7 +208,7 @@ static bool test_raga_spokes_full(void)
 {
 	struct seq_state seq_state = { 0 };;
 	struct seq_config seq = seq_config_defaults;
-	seq.enc.order = ORDER_AVG_OUTER;
+	seq.enc.order = SEQ_ORDER_AVG_OUTER;
 
 	const int spk = 377;
 	seq.enc.pe_mode = PEMODE_RATION_APPROX_GA;
@@ -253,7 +253,7 @@ static bool test_block_minv(void)
 
 	struct seq_state seq_state = { 0 };;
 	struct seq_config seq = seq_config_defaults;
-	seq.enc.order = ORDER_AVG_OUTER;
+	seq.enc.order = SEQ_ORDER_AVG_OUTER;
 	seq.magn.ti = 100;
 	seq.magn.mag_prep = PREP_IR_NON;
 
@@ -302,7 +302,8 @@ UT_REGISTER_TEST(test_block_minv);
 
 static bool test_block_minv_multislice(void)
 {
-	const enum block blocks[21] = { BLOCK_KERNEL_NOISE,
+	const enum block blocks[21] = {
+		BLOCK_KERNEL_NOISE,
 		BLOCK_PRE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE,
 		BLOCK_PRE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE,
 		BLOCK_PRE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE,
@@ -311,7 +312,7 @@ static bool test_block_minv_multislice(void)
 
 	struct seq_state seq_state = { 0 };;
 	struct seq_config seq = seq_config_defaults;
-	seq.enc.order = ORDER_SEQ_MS;
+	seq.enc.order = SEQ_ORDER_SEQ_MS;
 	seq.magn.ti = 100;
 	seq.magn.mag_prep = PREP_IR_NON;
 	// seq.magn.inv_delay_time = 100;

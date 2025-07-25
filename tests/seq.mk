@@ -2,7 +2,7 @@
 tests/test-seq-raga: seq traj transpose slice join nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/traj -x 512 -y 377 -r -A -s 1 --double-base trj_ref.ra 		;\
-	$(TOOLDIR)/seq -r 377 -t377 --pe_mode 0 --norm-kspace grad.ra mom.ra samples.ra ;\
+	$(TOOLDIR)/seq -r 377 -t377 --pe_mode 0 grad.ra mom.ra samples.ra 		;\
 	$(TOOLDIR)/transpose 1 2 samples.ra   samples_t.ra				;\
 	$(TOOLDIR)/transpose 0 1 samples_t.ra samples_tt.ra				;\
 	$(TOOLDIR)/slice 4 3 samples_tt.ra samples_t0.ra 				;\
@@ -20,7 +20,7 @@ TESTS +=  tests/test-seq-raga
 tests/test-seq-raga-sms: seq traj transpose slice join nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)								;\
 	$(TOOLDIR)/traj -x 512 -y 377 -m3 -r -A -s 1 --double-base trj_ref.ra 					;\
-	$(TOOLDIR)/seq -r 377 -t377 --pe_mode 0 --mb_factor=3 -m3 --norm-kspace grad.ra mom.ra samples.ra	;\
+	$(TOOLDIR)/seq -r 377 -t377 --pe_mode 0 --mb_factor=3 -m3 grad.ra mom.ra samples.ra			;\
 	$(TOOLDIR)/transpose 1 2 samples.ra   samples_t.ra							;\
 	$(TOOLDIR)/transpose 0 1 samples_t.ra samples_tt.ra							;\
 	$(TOOLDIR)/slice 4 3 samples_tt.ra samples_t0.ra 							;\
@@ -37,8 +37,8 @@ TESTS +=  tests/test-seq-raga-sms
 
 tests/test-seq-raga-sms-al: seq traj transpose slice join nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)								;\
-	$(TOOLDIR)/traj -x 512 -y 377 -m3 -r -A -s 1 -l --double-base trj_ref.ra 					;\
-	$(TOOLDIR)/seq -r 377 -t377 --pe_mode 1 --mb_factor=3 -m3 --norm-kspace grad.ra mom.ra samples.ra	;\
+	$(TOOLDIR)/traj -x 512 -y 377 -m3 -r -A -s 1 -l --double-base trj_ref.ra 				;\
+	$(TOOLDIR)/seq -r 377 -t377 --pe_mode 1 --mb_factor=3 -m3 grad.ra mom.ra samples.ra			;\
 	$(TOOLDIR)/transpose 1 2 samples.ra   samples_t.ra							;\
 	$(TOOLDIR)/transpose 0 1 samples_t.ra samples_tt.ra							;\
 	$(TOOLDIR)/slice 4 3 samples_tt.ra samples_t0.ra 							;\
@@ -54,8 +54,8 @@ TESTS +=  tests/test-seq-raga-sms-al
 
 tests/test-seq-raga-sms-al-frame: seq traj transpose slice join nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)								;\
-	$(TOOLDIR)/traj -x 512 -y 377 -m3 -r -A -s 1 -l -t3 --double-base trj_ref.ra 					;\
-	$(TOOLDIR)/seq -r 377 -t1131 --pe_mode 1 --mb_factor=3 -m3 --norm-kspace grad.ra mom.ra samples.ra	;\
+	$(TOOLDIR)/traj -x 512 -y 377 -m3 -r -A -s 1 -l -t3 --double-base trj_ref.ra 				;\
+	$(TOOLDIR)/seq -r 377 -t1131 --pe_mode 1 --mb_factor=3 -m3 grad.ra mom.ra samples.ra			;\
 	$(TOOLDIR)/transpose 1 2 samples.ra   samples_t.ra							;\
 	$(TOOLDIR)/transpose 0 1 samples_t.ra samples_tt.ra							;\
 	$(TOOLDIR)/slice 4 3 samples_tt.ra samples_t0.ra 							;\

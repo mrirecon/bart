@@ -192,26 +192,26 @@ int flash(int N, struct seq_event ev[N], struct seq_state* seq_state, const stru
 
 
 void set_loop_dims_and_sms(struct seq_config* seq, long /* partitions */, long total_slices, long radial_views,
-	long frames, long echoes, long inv_reps, long phy_phases, long averages, int checkbox_sms, long mb_factor)
+	long frames, long echoes, long inv_reps, long phy_phases, long averages, bool sms, long mb_factor)
 {
 	switch (seq->enc.order) {
 
-	case ORDER_AVG_OUTER:
+	case SEQ_ORDER_AVG_OUTER:
 		md_copy_order(DIMS, seq->order, seq_loop_order_avg_outer);
 		break;
 
-	case ORDER_SEQ_MS:
+	case SEQ_ORDER_SEQ_MS:
 		md_copy_order(DIMS, seq->order, seq_loop_order_multislice);
 		break;
 
-	case ORDER_AVG_INNER:
+	case SEQ_ORDER_AVG_INNER:
 		md_copy_order(DIMS, seq->order, seq_loop_order_avg_inner);
 		break;
 	}
 
-	seq->geom.mb_factor = (checkbox_sms) ? mb_factor : 1;
-	seq->loop_dims[SLICE_DIM] = (checkbox_sms) ? seq->geom.mb_factor : total_slices;
-	seq->loop_dims[PHS2_DIM] = (checkbox_sms) ? total_slices / seq->geom.mb_factor : 1;
+	seq->geom.mb_factor = sms ? mb_factor : 1;
+	seq->loop_dims[SLICE_DIM] = sms ? seq->geom.mb_factor : total_slices;
+	seq->loop_dims[PHS2_DIM] = sms ? total_slices / seq->geom.mb_factor : 1;
 
 	if ((seq->loop_dims[PHS2_DIM] * seq->loop_dims[SLICE_DIM]) != total_slices)
 		seq->loop_dims[PHS2_DIM] = -1; //mb groups
@@ -219,7 +219,8 @@ void set_loop_dims_and_sms(struct seq_config* seq, long /* partitions */, long t
 	seq->loop_dims[BATCH_DIM] = inv_reps;
 	seq->loop_dims[TIME_DIM] = frames;
 
-	if ((PEMODE_RATION_APPROX_GA == seq->enc.pe_mode) || (PEMODE_RATION_APPROX_GAAL == seq->enc.pe_mode)) {
+	if ((PEMODE_RATION_APPROX_GA == seq->enc.pe_mode)
+	    || (PEMODE_RATION_APPROX_GAAL == seq->enc.pe_mode)) {
 
 		assert(frames >= radial_views);
 
