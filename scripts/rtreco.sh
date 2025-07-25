@@ -51,6 +51,7 @@ CC_NONE=false
 : "${NLMEANS_OPTS:=-p3 -d3 -H0.00005 3}"
 
 export TMPDIR=/dev/shm/
+export TMP_TEMPLATE=tmp.rtreco.XXXXXXXXXX
 
 export OMP_NUM_THREADS=1
 
@@ -210,7 +211,7 @@ delay () (
 	SRC=$(readlink -f $4)
 	DST=$(readlink -f $5)
 
-	WORKDIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'mytmpdir')
+	WORKDIR=$(mktemp --tmpdir -d $TMP_TEMPLATE 2>/dev/null)
 	trap 'rm -rf "$WORKDIR"' EXIT
 	cd "$WORKDIR" || exit
 
@@ -233,7 +234,7 @@ reshape_radial_ksp() (
 	ksp=$(get_file $1)
 	output=$(get_file $2)
 
-        WORKDIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'mytmpdir')
+        WORKDIR=$(mktemp --tmpdir -d $TMP_TEMPLATE 2>/dev/null)
         trap 'rm -rf "$WORKDIR"' EXIT
         cd "$WORKDIR" || exit
 
@@ -267,7 +268,7 @@ rebin_raga() (
         [ "-" = "$1" ] && SRC=- || SRC=$(readlink -f "$1")
         [ "-" = "$2" ] && DST=- || DST=$(readlink -f "$2")
 
-        WORKDIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'mytmpdir')
+        WORKDIR=$(mktemp --tmpdir -d $TMP_TEMPLATE 2>/dev/null)
         trap 'rm -rf "$WORKDIR"' EXIT
         cd "$WORKDIR" || exit
 
@@ -313,7 +314,7 @@ filter () (
 	SRC=$(readlink -f $2)
 	DST=$(readlink -f $3)
 
-	WORKDIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'mytmpdir')
+	WORKDIR=$(mktemp --tmpdir -d $TMP_TEMPLATE 2>/dev/null)
 	trap 'rm -rf "$WORKDIR"' EXIT
 	cd "$WORKDIR" || exit
 
@@ -345,7 +346,7 @@ sliding_window() (
 	DELAYS=$((WINDOW_SIZE - 1))
 	DST=$(get_file $3)
 
-	WORKDIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'mytmpdir')
+	WORKDIR=$(mktemp --tmpdir -d $TMP_TEMPLATE 2>/dev/null)
 	trap 'rm -rf "$WORKDIR"' EXIT
 	cd "$WORKDIR" || exit
 
@@ -372,7 +373,7 @@ rl_filter_ksp () (
 	TRJ=$(get_file $2)
 	OUT=$(get_file $3)
 
-	WORKDIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'mytmpdir')
+	WORKDIR=$(mktemp --tmpdir -d $TMP_TEMPLATE 2>/dev/null)
 	trap 'rm -rf "$WORKDIR"' EXIT
 	cd "$WORKDIR" || exit
 
@@ -389,7 +390,7 @@ trajectory () (
 	KSP=$(readlink -f $1)
 	DST=$(readlink -f $2)
 
-	WORKDIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'mytmpdir')
+	WORKDIR=$(mktemp --tmpdir -d $TMP_TEMPLATE 2>/dev/null)
 	trap 'rm -rf "$WORKDIR"' EXIT
 	cd "$WORKDIR" || exit
 
@@ -448,7 +449,7 @@ coilcompression_svd () (
 	TRJ=$(readlink -f $2)
 	DST=$(readlink -f $3)
 
-	WORKDIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'mytmpdir')
+	WORKDIR=$(mktemp --tmpdir -d $TMP_TEMPLATE 2>/dev/null)
 	trap 'rm -rf "$WORKDIR"' EXIT
 	cd "$WORKDIR" || exit
 
@@ -485,7 +486,7 @@ coilcompression_svd_first () (
 	TRJ=$(readlink -f $2)
 	DST=$(readlink -f $3)
 
-	WORKDIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'mytmpdir')
+	WORKDIR=$(mktemp --tmpdir -d $TMP_TEMPLATE 2>/dev/null)
 	trap 'rm -rf "$WORKDIR"' EXIT
 	cd "$WORKDIR" || exit
 
@@ -520,7 +521,7 @@ coilcompression_rovir () (
 	TRJ=$(readlink -f $2)
 	DST=$(readlink -f $3)
 
-	WORKDIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'mytmpdir')
+	WORKDIR=$(mktemp --tmpdir -d $TMP_TEMPLATE 2>/dev/null)
 	trap 'rm -rf "$WORKDIR"' EXIT
 	cd "$WORKDIR" || exit
 
@@ -586,7 +587,7 @@ coilcompression_geom () (
 	TRJ=$(readlink -f $2)
 	DST=$(readlink -f $3)
 
-	WORKDIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'mytmpdir')
+	WORKDIR=$(mktemp --tmpdir -d $TMP_TEMPLATE 2>/dev/null)
 	trap 'rm -rf "$WORKDIR"' EXIT
 	cd "$WORKDIR" || exit
 
@@ -624,7 +625,7 @@ coilcompression_none () (
 	TRJ=$(readlink -f $2)
 	DST=$(readlink -f $3)
 
-	WORKDIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'mytmpdir')
+	WORKDIR=$(mktemp --tmpdir -d $TMP_TEMPLATE 2>/dev/null)
 	trap 'rm -rf "$WORKDIR"' EXIT
 	cd "$WORKDIR" || exit
 
@@ -632,7 +633,7 @@ coilcompression_none () (
 )
 
 
-WORKDIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'mytmpdir')
+WORKDIR=$(mktemp --tmpdir -d $TMP_TEMPLATE 2>/dev/null)
 trap 'rm -rf "$WORKDIR"; kill $(jobs -p) || true' EXIT
 cd "$WORKDIR" || exit
 
