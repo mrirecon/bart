@@ -92,7 +92,7 @@ const struct seq_config seq_config_defaults = {
 	},
 
 	.enc = {
-		.pe_mode = PEMODE_RATION_APPROX_GA,
+		.pe_mode = PEMODE_RAGA,
 		.tiny = 1,
 		.aligned_flags = 0,
 	},

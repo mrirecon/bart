@@ -132,9 +132,9 @@ int prep_rf_inv(struct seq_event* rf_ev, double start, const struct seq_config* 
 double flash_ex_calls(const struct seq_config* seq)
 {
 	long dims[DIMS];
-	md_select_dims(DIMS, (PHS1_FLAG|TIME_FLAG|TIME2_FLAG|AVG_FLAG|BATCH_FLAG), dims, seq->loop_dims);
+	md_select_dims(DIMS, PHS1_FLAG|TIME_FLAG|TIME2_FLAG|AVG_FLAG|BATCH_FLAG, dims, seq->loop_dims);
 
-	if ((PEMODE_RATION_APPROX_GA == seq->enc.pe_mode) || (PEMODE_RATION_APPROX_GAAL == seq->enc.pe_mode))
+	if ((PEMODE_RAGA == seq->enc.pe_mode) || (PEMODE_RAGA_ALIGNED == seq->enc.pe_mode))
 		dims[PHS1_DIM] = 1;
 
 	if (1 < seq->geom.mb_factor)
@@ -211,11 +211,13 @@ int prep_adc(struct seq_event* adc_ev, double start, double rf_spoil_phase,
 
 	md_copy_dims(DIMS, adc_ev->adc.pos, seq_state->pos);
 
-	if ((PEMODE_RATION_APPROX_GA == seq->enc.pe_mode) || (PEMODE_RATION_APPROX_GAAL == seq->enc.pe_mode)) {
+	if ((PEMODE_RAGA == seq->enc.pe_mode) || (PEMODE_RAGA_ALIGNED == seq->enc.pe_mode)) {
 
 		struct traj_conf conf;
 		traj_conf_from_seq(&conf, seq);
-		adc_ev->adc.pos[PHS1_DIM] = raga_increment_from_pos(seq->order, seq_state->pos, (SEQ_FLAGS & ~(COEFF_FLAG|COEFF2_FLAG)), seq->loop_dims, &conf);
+
+		adc_ev->adc.pos[PHS1_DIM] = raga_increment_from_pos(seq->order, seq_state->pos,
+						SEQ_FLAGS & ~(COEFF_FLAG | COEFF2_FLAG), seq->loop_dims, &conf);
 	}
 
 	adc_ev->adc.os = seq->phys.os;

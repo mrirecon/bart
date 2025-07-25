@@ -35,12 +35,12 @@ void traj_conf_from_seq(struct traj_conf *conf, const struct seq_config* seq)
 
 	switch (seq->enc.pe_mode) {
 
-	case PEMODE_RATION_APPROX_GA:
+	case PEMODE_RAGA:
 
 		conf->aligned_flags = 0;
 		break;
 
-	case PEMODE_RATION_APPROX_GAAL:
+	case PEMODE_RAGA_ALIGNED:
 
 		conf->aligned_flags = SLICE_FLAG;
 		break;

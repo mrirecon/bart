@@ -182,8 +182,9 @@ int flash(int N, struct seq_event ev[N], struct seq_state* seq_state, const stru
 	if (seq_block_end_flat(i, ev) > seq->phys.tr)
 		return ERROR_END_FLAT_KERNEL;
 
-	if (((PEMODE_RATION_APPROX_GA == seq->enc.pe_mode) || (PEMODE_RATION_APPROX_GAAL == seq->enc.pe_mode)) 
-		&& ((seq->loop_dims[TIME_DIM] - 1)  == seq_state->pos[TIME_DIM]) && ((seq->loop_dims[ITER_DIM] - 1) == seq_state->pos[PHS1_DIM]))
+	if (((PEMODE_RAGA == seq->enc.pe_mode) || (PEMODE_RAGA_ALIGNED == seq->enc.pe_mode))
+		&& ((seq->loop_dims[TIME_DIM] - 1) == seq_state->pos[TIME_DIM])
+		&& ((seq->loop_dims[ITER_DIM] - 1) == seq_state->pos[PHS1_DIM]))
 			seq_state->pos[PHS1_DIM] = seq->loop_dims[PHS1_DIM] - 1;
 
 	return i;
@@ -219,8 +220,8 @@ void set_loop_dims_and_sms(struct seq_config* seq, long /* partitions */, long t
 	seq->loop_dims[BATCH_DIM] = inv_reps;
 	seq->loop_dims[TIME_DIM] = frames;
 
-	if ((PEMODE_RATION_APPROX_GA == seq->enc.pe_mode)
-	    || (PEMODE_RATION_APPROX_GAAL == seq->enc.pe_mode)) {
+	if ((PEMODE_RAGA == seq->enc.pe_mode)
+	    || (PEMODE_RAGA_ALIGNED == seq->enc.pe_mode)) {
 
 		assert(frames >= radial_views);
 
@@ -230,6 +231,7 @@ void set_loop_dims_and_sms(struct seq_config* seq, long /* partitions */, long t
 		if (0 == seq->loop_dims[ITER_DIM])
 			seq->loop_dims[ITER_DIM] = radial_views;
 	}
+
 	seq->loop_dims[TIME2_DIM] = phy_phases;
 	seq->loop_dims[AVG_DIM] = averages;
 	seq->loop_dims[PHS1_DIM] = radial_views;

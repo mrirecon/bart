@@ -53,8 +53,8 @@ enum mag_prep {
 
 enum pe_mode {
 
-	PEMODE_RATION_APPROX_GA,
-	PEMODE_RATION_APPROX_GAAL
+	PEMODE_RAGA,
+	PEMODE_RAGA_ALIGNED,
 };
 
 
