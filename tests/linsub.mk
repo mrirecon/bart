@@ -104,5 +104,7 @@ tests/test-pics-linsub-noncart2: traj scale nufft reshape ones delta repmat resh
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-TESTS += tests/test-pics-linsub tests/test-pics-linsub-noncart tests/test-pics-linsub-noncart2
+TESTS += tests/test-pics-linsub tests/test-pics-linsub-noncart
+
+TESTS_SLOW += tests/test-pics-linsub-noncart2
 

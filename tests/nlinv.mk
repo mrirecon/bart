@@ -398,7 +398,7 @@ tests/test-nlinv-noncart-fast-gpu: traj scale phantom nufft resize nlinv fmac nr
 	touch $@
 
 
-TESTS += tests/test-nlinv tests/test-nlinv-sms
+TESTS += tests/test-nlinv
 TESTS += tests/test-nlinv-batch tests/test-nlinv-batch2
 TESTS += tests/test-nlinv-noncart tests/test-nlinv-precomp tests/test-nlinv-precomp-psf
 TESTS += tests/test-nlinv-maps-dims tests/test-nlinv-noncart-maps-dims
@@ -408,9 +408,11 @@ TESTS += tests/test-nlinv-basis-noncart
 TESTS += tests/test-nlinv-ksens
 TESTS += tests/test-nlinv-psf-noncart tests/test-nlinv-sms-noncart-psf
 TESTS += tests/test-ncalib tests/test-ncalib-noncart
-TESTS += tests/test-nlinv-reg tests/test-nlinv-reg2 tests/test-nlinv-reg3 tests/test-nlinv-reg4
+TESTS += tests/test-nlinv-reg
 TESTS_GPU += tests/test-nlinv-gpu tests/test-nlinv-sms-gpu
 
+TESTS_SLOW += tests/test-nlinv-sms
+TESTS_SLOW += tests/test-nlinv-reg2 tests/test-nlinv-reg3 tests/test-nlinv-reg4
 TESTS_SLOW += tests/test-nlinv-sms-noncart
 
 

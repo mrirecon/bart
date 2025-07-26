@@ -285,8 +285,10 @@ TESTS += tests/test-mobafit-r2s tests/test-mobafit-wfr2s
 TESTS += tests/test-mobafit-r2
 TESTS += tests/test-mobafit-irll
 TESTS += tests/test-mobafit-ir_t1
-TESTS += tests/test-mobafit-sim tests/test-mobafit-bmc-sim
 TESTS += tests/test-mobafit-sim-om
 TESTS += tests/test-mobafit-sim-pool2 tests/test-mobafit-sim-pool3
 
+TESTS_SLOW += tests/test-mobafit-sim
+TESTS_SLOW += tests/test-mobafit-bmc-sim
 TESTS_GPU += tests/test-mobafit-gpu
+

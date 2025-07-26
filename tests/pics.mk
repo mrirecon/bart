@@ -688,7 +688,7 @@ TESTS += tests/test-pics-poisson-wavl1 tests/test-pics-joint-wavl1 tests/test-pi
 TESTS += tests/test-pics-weights tests/test-pics-noncart-weights
 TESTS += tests/test-pics-warmstart
 TESTS += tests/test-pics-timedim tests/test-pics-bp-noncart
-TESTS += tests/test-pics-basis tests/test-pics-basis-noncart tests/test-pics-basis-noncart-memory tests/test-pics-basis-noncart2
+TESTS += tests/test-pics-basis-noncart tests/test-pics-basis-noncart-memory tests/test-pics-basis-noncart2
 #TESTS += tests/test-pics-lowmem
 TESTS += tests/test-pics-noncart-sms tests/test-pics-psf tests/test-pics-tgv tests/test-pics-tgv-denoising tests/test-pics-tgv2
 TESTS += tests/test-pics-wavl1-dau2 tests/test-pics-wavl1-cdf44 tests/test-pics-wavl1-haar
@@ -698,4 +698,5 @@ TESTS += tests/test-pics-eulermaruyama tests/test-pics-eulermaruyama2 tests/test
 TESTS += tests/test-pics-fista tests/test-pics-ist
 TESTS += tests/test-pics-pridu-norm tests/test-pics-pridu-admm tests/test-pics-pridu-adaptive-stepsize
 
+TESTS_SLOW += tests/test-pics-basis
 

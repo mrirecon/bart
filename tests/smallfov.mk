@@ -65,6 +65,9 @@ tests/test-smallfov-enlive-batch2: repmat fmac fft nrmse nlinv $(TESTS_OUT)/shep
 
 
 
-TESTS += tests/test-smallfov-pics tests/test-smallfov-enlive
-TESTS += tests/test-smallfov-enlive-batch tests/test-smallfov-enlive-batch2
+TESTS += tests/test-smallfov-pics
+TESTS += tests/test-smallfov-enlive-batch2
+
+TESTS_SLOW += tests/test-smallfov-enlive
+TESTS_SLOW += tests/test-smallfov-enlive-batch
 
