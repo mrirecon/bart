@@ -45,6 +45,7 @@ int main_tee(int argc, char* argv[argc])
 	const char *out0 = NULL;
 	bool no_stdout = false;
 	bool keep_going = true;
+	const char *in_file = "-";
 
 	struct arg_s args[] = {
 
@@ -55,6 +56,7 @@ int main_tee(int argc, char* argv[argc])
 
 	struct opt_s opts[] = {
 
+		OPTL_STRING('i', "in", &in_file, "data", "Input File (instead of stdin)"),
 		OPTL_OUTFILE('\0', "out0", &out0, "meta", "Output file which receives only metadata"),
 		OPT_SET('t', &timer, "print time between inputs"),
 		OPT_SET('n', &no_stdout, "No stdout"),
@@ -86,12 +88,25 @@ int main_tee(int argc, char* argv[argc])
 
 	long dims[DIMS];
 
-	io_reserve_inout("-");
 
-	complex float* in_data = load_async_cfl("-", DIMS, dims);
+	if (0 == strcmp("-", in_file)) {
+
+		if (no_stdout)
+			io_reserve_input(in_file);
+		else
+			io_reserve_inout(in_file);
+	} else {
+
+		io_reserve_input(in_file);
+		if (!no_stdout)
+			io_reserve_output("-");
+	}
+
+
+	complex float* in_data = load_async_cfl(in_file, DIMS, dims);
 
 	stream_t stream_in = stream_lookup(in_data);
-	unsigned long stream_flags = stream_get_flags(stream_in);
+	unsigned long stream_flags = stream_in ? stream_get_flags(stream_in) : 0;
 
 	if (NULL != out0) {
 
