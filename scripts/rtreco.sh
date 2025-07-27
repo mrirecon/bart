@@ -216,7 +216,7 @@ delay () (
 	cd "$WORKDIR" || exit
 
 
-	bart -r $SRC copy $SRC - | bart tee --out0 meta.fifo -n first.fifo end1.fifo			&
+	bart tee -i $SRC --out0 meta.fifo -n first.fifo end1.fifo		&
 	TOT=$(bart show -d $DIM meta.fifo)
 
 	END=$((TOT-END))
@@ -238,9 +238,7 @@ reshape_radial_ksp() (
         trap 'rm -rf "$WORKDIR"' EXIT
         cd "$WORKDIR" || exit
 
-
-	bart -r $ksp copy $ksp - |\
-	bart tee -n --out0 meta.fifo ksp.fifo &
+	bart tee -i $ksp -n --out0 meta.fifo ksp.fifo &
 
         dims=$(bart show -m meta.fifo | tail -n1 | cut -f2-)
 
@@ -272,8 +270,7 @@ rebin_raga() (
         trap 'rm -rf "$WORKDIR"' EXIT
         cd "$WORKDIR" || exit
 
-		bart -r $SRC copy $SRC - |\
-		bart tee -n --out0 meta.fifo ksp.fifo &
+	bart tee -i $SRC -n --out0 meta.fifo ksp.fifo &
 
         dims=$(bart show -m meta.fifo | tail -n1 | cut -f2-)
 
@@ -394,16 +391,13 @@ trajectory () (
 	trap 'rm -rf "$WORKDIR"' EXIT
 	cd "$WORKDIR" || exit
 
+	bart tee -i $KSP --out0 meta.fifo	| \
+	bart copy --stream 1024 - ksp_tmp.fifo	&
 
-	bart -r $KSP copy $KSP - 			| \
-	bart tee --out0 meta0.fifo 			| \
-	bart tee --out0 meta1.fifo 			| \
-	bart tee --out0 meta2.fifo 			| \
-	bart copy --stream 1024 -- - ksp_tmp.fifo	&
-
-	READ=$(($(bart show -d 1 meta0.fifo)/2))
-	PHS1=$(bart show -d 2 meta1.fifo)
-	TOT=$(bart show -d 10 meta2.fifo)
+	dims=$(bart show -m meta.fifo | tail -n1 | cut -f2-)
+	READ=$(($(echo $dims | cut -f2 -d' ')/2))
+	PHS1=$(echo $dims | cut -f3 -d' ')
+	TOT=$(echo $dims | cut -f11 -d' ')
 
 	if $RAGA; then
 		TOPTS="$TOPTS -x$READ -y$SPOKE_FF"
@@ -453,20 +447,17 @@ coilcompression_svd () (
 	trap 'rm -rf "$WORKDIR"' EXIT
 	cd "$WORKDIR" || exit
 
+	bart tee -i $KSP --out0 meta.fifo 					| \
+	bart copy --stream 1024 -- - ksp_tmp.fifo				&
 
-	bart -r $KSP copy $KSP -									| \
-	bart tee --out0 meta0.fifo 									| \
-	bart tee --out0 meta1.fifo 									| \
-	bart copy --stream 1024 -- - ksp_tmp.fifo							&
-
-	PHS=$(bart show -d 2 meta0.fifo)
-	TOT=$(bart show -d 10 meta1.fifo)
+	dims=$(bart show -m meta.fifo | tail -n1 | cut -f2-)
+	PHS=$(echo $dims | cut -f3 -d' ')
+	TOT=$(echo $dims | cut -f11 -d' ')
 
 	mkfifo $TRJ || true
 	cat $TRJ > /dev/null &
 
-	bart -r ksp_tmp.fifo copy ksp_tmp.fifo -					| \
-	bart		tee tmp.fifo									| \
+	bart		tee -i ksp_tmp.fifo tmp.fifo							| \
 	bart 		reshape -s1024 -- $(bart bitmask 2 10) $((PHS*TURNS)) $((TOT/TURNS)) - -	| \
 	bart -r -	cc -M -- - predelay.fifo							&
 
@@ -490,20 +481,17 @@ coilcompression_svd_first () (
 	trap 'rm -rf "$WORKDIR"' EXIT
 	cd "$WORKDIR" || exit
 
+	bart tee -i $KSP --out0 meta.fifo 					| \
+	bart copy --stream 1024 -- - ksp_tmp.fifo				&
 
-	bart -r $KSP copy $KSP -									| \
-	bart tee --out0 meta0.fifo 									| \
-	bart tee --out0 meta1.fifo 									| \
-	bart copy --stream 1024 -- - ksp_tmp.fifo							&
-
-	PHS=$(bart show -d 2 meta0.fifo)
-	TOT=$(bart show -d 10 meta1.fifo)
+	dims=$(bart show -m meta.fifo | tail -n1 | cut -f2-)
+	PHS=$(echo $dims | cut -f3 -d' ')
+	TOT=$(echo $dims | cut -f11 -d' ')
 
 	mkfifo $TRJ || true;
 	cat $TRJ > /dev/null &
 
-	bart -r ksp_tmp.fifo copy ksp_tmp.fifo -					| \
-	bart		tee tmp.fifo									| \
+	bart		tee -i ksp_tmp.fifo tmp.fifo							| \
 	bart 		reshape -s1024 -- $(bart bitmask 2 10) $((PHS*TURNS)) $((TOT/TURNS)) - -	| \
 	bart -r -	cc -M -- - - | bart tee -n cc.fifo						&
 
@@ -525,16 +513,13 @@ coilcompression_rovir () (
 	trap 'rm -rf "$WORKDIR"' EXIT
 	cd "$WORKDIR" || exit
 
+	bart tee -i $KSP --out0 meta.fifo	| \
+	bart copy --stream 1024 - ksp_tmp.fifo	&
 
-	bart -r $KSP copy $KSP -			| \
-	bart tee --out0 meta0.fifo 			| \
-	bart tee --out0 meta1.fifo 			| \
-	bart tee --out0 meta2.fifo 			| \
-	bart copy --stream 1024 -- - ksp_tmp.fifo	&
-
-	READ=$(($(bart show -d 1 meta0.fifo)/2))
-	PHS=$(bart show -d 2 meta1.fifo)
-	TOT=$(bart show -d 10 meta2.fifo)
+	dims=$(bart show -m meta.fifo | tail -n1 | cut -f2-)
+	READ=$(($(echo $dims | cut -f2 -d' ')/2))
+	PHS=$(echo $dims | cut -f3 -d' ')
+	TOT=$(echo $dims | cut -f11 -d' ')
 
 	bart ones 2 20 20 o
 	bart resize -c 0 40 1 40 o pos
@@ -552,11 +537,10 @@ coilcompression_rovir () (
 	bart nufftbase $DIMS trjos pat
 
 
-	bart -r ksp_tmp.fifo copy ksp_tmp.fifo -						| \
-	bart		tee tmp.fifo										| \
+	bart		tee -i ksp_tmp.fifo tmp.fifo								| \
 	bart 		reshape -s1024 -- $(bart bitmask 2 10) $((PHS*TURNS)) $((TOT/TURNS)) - ksp_rovir.fifo	&
 
-	bart -r $TRJ copy $TRJ -											| \
+	bart -r $TRJ copy $TRJ -										| \
 	bart -t4 -r -	scale -- 2 - - 										| \
 	bart 		reshape -s1024 -- $(bart bitmask 2 10) $((PHS*TURNS)) $((TOT/TURNS)) - -		| \
 	bart 		tee trj_rovir1.fifo trj_rovir2.fifo							| \
@@ -591,14 +575,12 @@ coilcompression_geom () (
 	trap 'rm -rf "$WORKDIR"' EXIT
 	cd "$WORKDIR" || exit
 
+	bart tee -i $KSP --out0 meta.fifo 					| \
+	bart copy --stream 1024 -- - ksp_tmp.fifo				&
 
-	bart -r $KSP copy $KSP -									| \
-	bart tee --out0 meta0.fifo 									| \
-	bart tee --out0 meta1.fifo 									| \
-	bart copy --stream 1024 -- - ksp_tmp.fifo							&
-
-	PHS=$(bart show -d 2 meta0.fifo)
-	TOT=$(bart show -d 10 meta1.fifo)
+	dims=$(bart show -m meta.fifo | tail -n1 | cut -f2-)
+	PHS=$(echo $dims | cut -f3 -d' ')
+	TOT=$(echo $dims | cut -f11 -d' ')
 
 	mkfifo $TRJ || true
 	cat $TRJ > /dev/null &
@@ -645,8 +627,7 @@ echo "Reconstruction: $REC" 	>> $LOGFILE
 
 
 
-bart -r $KSP copy $KSP - |\
-reshape_radial_ksp - - |\
+reshape_radial_ksp $KSP - |\
 bart tee -n --out0 meta.fifo ksp0.fifo &
 
 dims=$(bart show -m meta.fifo | tail -n1 | cut -f2-)
@@ -674,13 +655,8 @@ fi
 RDIMS=$((READ/2))
 GDIMS=$(echo "scale=0;($RDIMS*$OVERGRIDDING+0.5)/1" | bc -l)
 
-# not neccessary, pattern is dynamically estimated in nlinv
-# bart ones 3 1 $READ $PHS1 pat
-
-
 
 trajectory ksp_gd.fifo trj.fifo &
-
 
 
 if $ROVIR ; then
@@ -688,15 +664,15 @@ if $ROVIR ; then
 elif $STATIC_COILS ; then
 	coilcompression_svd_first	ksp_cc.fifo trj_cc.fifo ksp_reco.fifo &
 elif $GEOM; then
-	coilcompression_geom	ksp_cc.fifo trj_cc.fifo ksp_reco.fifo &
+	coilcompression_geom		ksp_cc.fifo trj_cc.fifo ksp_reco.fifo &
 elif $CC_NONE; then
 	coilcompression_none		ksp_cc.fifo trj_cc.fifo ksp_reco.fifo &
 else
 	coilcompression_svd		ksp_cc.fifo trj_cc.fifo ksp_reco.fifo &
 fi
 
-bart -r trj.fifo copy trj.fifo - | bart tee trj_cc.fifo | bart -r - scale -- $OVERGRIDDING - trj_reco.fifo &
-bart -r ksp.fifo copy ksp.fifo - | bart tee -n ksp_gd.fifo ksp_cc.fifo &
+bart tee -i trj.fifo trj_cc.fifo | bart -r - scale -- $OVERGRIDDING - trj_reco.fifo &
+bart tee -i ksp.fifo -n ksp_gd.fifo ksp_cc.fifo &
 
 if $FILTER; then
 	OUT=reco.fifo
@@ -708,10 +684,8 @@ if $SLW; then
 
 	window_size=$TURNS
 
-
 	sliding_window trj_reco.fifo $window_size -		|\
 		bart tee -n trj_sw1.fifo trj_sw2.fifo		&
-
 
 	sliding_window ksp_reco.fifo $window_size -		|\
 		rl_filter_ksp - trj_sw1.fifo tmp.fifo		&
