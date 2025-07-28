@@ -139,6 +139,17 @@ Build_Shared_GPU:
     expire_in: 45 minutes
 
 
+Build_WinDLL:
+  stage: build
+  script:
+    #- apt-get update -qq && apt-get install -y mingw-w64
+    - BARTDLL=1 make bart.dll
+  artifacts:
+    paths:
+      - bart.dll
+    expire_in: 45 minutes
+
+
 Build_UBSan:
   stage: build
   script:
