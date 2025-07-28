@@ -26,6 +26,7 @@ struct grid_opts {
 	float bt;
 };
 
+extern struct grid_opts grid_opts_init;
 extern struct grid_opts grid_opts_defaults;
 
 extern float* compute_grid(int D, long gdims[D], struct grid_opts* go, const long tdims[D], const _Complex float* traj);

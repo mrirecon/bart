@@ -28,7 +28,7 @@ int main_grid(int argc, char* argv[argc])
 	const char* out_file = NULL;
 	const char* traj_file = NULL;
 
-	struct grid_opts go = grid_opts_defaults;
+	struct grid_opts go = grid_opts_init;
 
 	struct arg_s args[] = {
 

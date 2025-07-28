@@ -18,7 +18,7 @@
 
 #include "simu/grid.h"
 
-struct grid_opts grid_opts_defaults = {
+struct grid_opts grid_opts_init = {
 
 	.dims = { [0 ... 2] = -1, [3 ... TIME_DIM - 1] = 1, -1, [TIME_DIM + 1 ... DIMS - 1] = 1 },
 	.veclen = { -1, -1, -1, -1 },
@@ -27,6 +27,19 @@ struct grid_opts grid_opts_defaults = {
 
 	.b0 = { 0, 0, 0 },
 	.b1 = { 0, 0, 0 },
+	.b2 = { 0, 0, 0 },
+	.bt = 0,
+};
+
+struct grid_opts grid_opts_defaults = {
+
+	.dims = { 128, 128, [3 ... DIMS - 1] = 1 },
+	.veclen = { 0.5, 0.5, 0, 0 },
+
+	.kspace = false,
+
+	.b0 = { 0.5, 0, 0 },
+	.b1 = { 0, 0.5, 0 },
 	.b2 = { 0, 0, 0 },
 	.bt = 0,
 };
@@ -116,7 +129,7 @@ float* compute_grid(int D, long gdims[D], struct grid_opts* go, const long tdims
 					float s = floorf(gdims[i + 1] / 2.);
 					// division by 1/(2*veclen*veclen). 1/(2*veclen) for kspace sampling density and 1/veclen for
 					// normalization of basis vector during multiplication
-					c[i] = go->kspace ? (pos[i+1] - s) / (2 * powf(go->veclen[i], 2)) : (pos[i+1] - s) / s;
+					c[i] = go->kspace ? (pos[i+1] - s) / (2 * powf(go->veclen[i], 2)) : (pos[i+1] - s) / (0.5 * (double) gdims[i + 1]);
 				}
 			}
 
