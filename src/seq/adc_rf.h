@@ -13,7 +13,6 @@ extern double idea_pulse_scaling(const struct rf_shape* pulse);
 extern double idea_pulse_norm_sum(const struct rf_shape* pulse);
 extern void idea_cfl_to_sample(const struct rf_shape* pulse, int idx, float* mag, float* pha);
 
-#ifndef BARTDLL
 double rf_spoiling(int D, const long pos[__VLA(D)], const struct seq_config* seq);
 
 int prep_rf_inv(struct seq_event* rf_ev, double start, const struct seq_config* seq);
@@ -27,7 +26,6 @@ double adc_duration(const struct seq_config* seq);
 
 int prep_adc(struct seq_event* adc_ev, double start, double rf_spoil_phase,
 		const struct seq_state* seq_state, const struct seq_config* seq);
-#endif
 
 #include "misc/cppwrap.h"
 
