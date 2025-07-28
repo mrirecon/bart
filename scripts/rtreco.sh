@@ -179,23 +179,6 @@ fi
 export GPU
 
 
-if [ "-" = "$1" ]; then
-	KSP=-
-else
-	KSP=$(readlink -f "$1")
-fi
-
-if [ "-" = "$2" ]; then
-	REC=-
-else
-	REC=$(readlink -f "$2")
-fi
-
-if [ $# -eq 3 ]; then
-	COILS=$(readlink -f "$3")
-fi
-
-
 get_file() {
 	[ "-" = "$1" ] && echo - || echo $(readlink -f "$1")
 }
@@ -615,115 +598,147 @@ coilcompression_none () (
 )
 
 
-WORKDIR=$(mktemp --tmpdir -d $TMP_TEMPLATE 2>/dev/null)
-trap 'rm -rf "$WORKDIR"; kill $(jobs -p) || true' EXIT
-cd "$WORKDIR" || exit
 
+build_pipeline ()
 {
-
-echo "WORKING_DIR:    $WORKDIR" >> $LOGFILE
-echo "k-Space:        $KSP" 	>> $LOGFILE
-echo "Reconstruction: $REC" 	>> $LOGFILE
-
-
-
-reshape_radial_ksp $KSP - |\
-bart tee -n --out0 meta.fifo ksp0.fifo &
-
-dims=$(bart show -m meta.fifo | tail -n1 | cut -f2-)
-
-# cut uses one based indexing
-READ=$(echo $dims | cut -f2 -d' ')
-SPOKE_FF=$(echo $dims | cut -f3 -d' ')
-FULL_FRAMES=$(echo $dims | cut -f11 -d' ')
-export SPOKE_FF
-export FULL_FRAMES
-
-DIM0=$(echo $dims | cut -f1 -d' ')
-if [ 1 -ne $DIM0 ]; then
-	echo "Radial k-Space needs dim[0] == 1. Exiting.."
-fi
-
-
-if $RAGA; then
-	rebin_raga ksp0.fifo ksp.fifo &
-else
-	bart -r ksp0.fifo copy ksp0.fifo ksp.fifo &
-fi
-
-
-RDIMS=$((READ/2))
-GDIMS=$(echo "scale=0;($RDIMS*$OVERGRIDDING+0.5)/1" | bc -l)
-
-
-trajectory ksp_gd.fifo trj.fifo &
-
-
-if $ROVIR ; then
-	coilcompression_rovir		ksp_cc.fifo trj_cc.fifo ksp_reco.fifo &
-elif $STATIC_COILS ; then
-	coilcompression_svd_first	ksp_cc.fifo trj_cc.fifo ksp_reco.fifo &
-elif $GEOM; then
-	coilcompression_geom		ksp_cc.fifo trj_cc.fifo ksp_reco.fifo &
-elif $CC_NONE; then
-	coilcompression_none		ksp_cc.fifo trj_cc.fifo ksp_reco.fifo &
-else
-	coilcompression_svd		ksp_cc.fifo trj_cc.fifo ksp_reco.fifo &
-fi
-
-bart tee -i trj.fifo trj_cc.fifo | bart -r - scale -- $OVERGRIDDING - trj_reco.fifo &
-bart tee -i ksp.fifo -n ksp_gd.fifo ksp_cc.fifo &
-
-if $FILTER; then
-	OUT=reco.fifo
-else
-	OUT=$REC
-fi
-
-if $SLW; then
-
-	window_size=$TURNS
-
-	sliding_window trj_reco.fifo $window_size -		|\
-		bart tee -n trj_sw1.fifo trj_sw2.fifo		&
-
-	sliding_window ksp_reco.fifo $window_size -		|\
-		rl_filter_ksp - trj_sw1.fifo tmp.fifo		&
-
-	OMP_NUM_THREADS=4 BART_STREAM_LOG=$TIMELOG bart -r tmp.fifo		\
-		nufft -x$RDIMS:$RDIMS:1 -a trj_sw2.fifo tmp.fifo tmp2.fifo	&
-
-	bart -r tmp2.fifo rss 8 tmp2.fifo - |\
-	bart -r - flip 3 - $OUT &
-else
-
-	BART_STREAM_LOG=$TIMELOG bart nlinv		\
-		--cgiter=10 -S --real-time --fast $GPU	\
-		--sens-os=1.25 -i6 -x$GDIMS:$GDIMS:1	\
-		-t trj_reco.fifo ksp_reco.fifo - $COILS	|\
-	bart -r - flip 3 - -				| \
-	bart -r - resize -c 0 $RDIMS 1 $RDIMS - $OUT	&
-
-fi
-
-
-if $FILTER ; then
-	filter 5 reco.fifo reco_fil.fifo &
-	if $NLMEANS; then
-
-		OMP_NUM_THREADS=4 BART_STREAM_LOG=$TIMELOG''_filter bart -r reco_fil.fifo \
-			nlmeans $NLMEANS_OPTS reco_fil.fifo $REC &
+	KSP=$(get_file $1)
+	REC=$(get_file $2)
+	if [ $# -eq 3 ]; then
+		COILS=$(get_file $3)
+		COILS_TMP=coils.fifo
 	else
-		BART_STREAM_LOG=$TIMELOG''_filter bart -r reco_fil.fifo copy reco_fil.fifo $REC &
-
+		COILS=
+		COILS_TMP=
 	fi
+
+
+	WORKDIR=$(mktemp --tmpdir -d $TMP_TEMPLATE 2>/dev/null)
+	trap 'rm -rf "$WORKDIR"; kill $(jobs -p) || true' EXIT
+	cd "$WORKDIR" || exit
+
+	echo "WORKING_DIR:    $WORKDIR" >> $LOGFILE
+	echo "k-Space:        $KSP" 	>> $LOGFILE
+	echo "Reconstruction: $REC" 	>> $LOGFILE
+
+	reshape_radial_ksp $KSP - |\
+	bart tee -n --out0 meta.fifo ksp0.fifo &
+
+	dims=$(bart show -m meta.fifo | tail -n1 | cut -f2-)
+
+	# cut uses one based indexing
+	READ=$(echo $dims | cut -f2 -d' ')
+	SPOKE_FF=$(echo $dims | cut -f3 -d' ')
+	FULL_FRAMES=$(echo $dims | cut -f11 -d' ')
+	export SPOKE_FF
+	export FULL_FRAMES
+
+	DIM0=$(echo $dims | cut -f1 -d' ')
+	if [ 1 -ne $DIM0 ]; then
+		echo "Radial k-Space needs dim[0] == 1. Exiting.."
+	fi
+
+
+	if $RAGA; then
+		rebin_raga ksp0.fifo ksp.fifo &
+	else
+		bart -r ksp0.fifo copy ksp0.fifo ksp.fifo &
+	fi
+
+
+	RDIMS=$((READ/2))
+	GDIMS=$(echo "scale=0;($RDIMS*$OVERGRIDDING+0.5)/1" | bc -l)
+
+
+	trajectory ksp_gd.fifo trj.fifo &
+
+
+	if $ROVIR ; then
+		coilcompression_rovir		ksp_cc.fifo trj_cc.fifo ksp_reco.fifo &
+	elif $STATIC_COILS ; then
+		coilcompression_svd_first	ksp_cc.fifo trj_cc.fifo ksp_reco.fifo &
+	elif $GEOM; then
+		coilcompression_geom		ksp_cc.fifo trj_cc.fifo ksp_reco.fifo &
+	elif $CC_NONE; then
+		coilcompression_none		ksp_cc.fifo trj_cc.fifo ksp_reco.fifo &
+	else
+		coilcompression_svd		ksp_cc.fifo trj_cc.fifo ksp_reco.fifo &
+	fi
+
+	bart tee -i trj.fifo trj_cc.fifo | bart -r - scale -- $OVERGRIDDING - trj_reco.fifo &
+	bart tee -i ksp.fifo -n ksp_gd.fifo ksp_cc.fifo &
+
+	if $FILTER; then
+		OUT=reco.fifo
+	else
+		OUT=$REC
+	fi
+
+	if $SLW; then
+
+		window_size=$TURNS
+
+		sliding_window trj_reco.fifo $window_size -		|\
+			bart tee -n trj_sw1.fifo trj_sw2.fifo		&
+
+		sliding_window ksp_reco.fifo $window_size -		|\
+			rl_filter_ksp - trj_sw1.fifo tmp.fifo		&
+
+		OMP_NUM_THREADS=4 BART_STREAM_LOG=$TIMELOG bart -r tmp.fifo		\
+			nufft -x$RDIMS:$RDIMS:1 -a trj_sw2.fifo tmp.fifo tmp2.fifo	&
+
+		bart -r tmp2.fifo rss 8 tmp2.fifo - |\
+		bart -r - flip 3 - $OUT &
+	else
+
+		BART_STREAM_LOG=$TIMELOG bart nlinv		\
+			--cgiter=10 -S --real-time --fast $GPU	\
+			--sens-os=1.25 -i6 -x$GDIMS:$GDIMS:1	\
+			-t trj_reco.fifo ksp_reco.fifo - $COILS_TMP |\
+		bart -r - flip 3 - -				| \
+		bart -r - resize -c 0 $RDIMS 1 $RDIMS - $OUT	&
+
+		if [ ! -z $COILS_TMP ]; then
+			bart flip -- 3 $COILS_TMP - |\
+			bart resize -c -- 0 $RDIMS 1 $RDIMS - $COILS &
+		fi
+	fi
+
+
+	if $FILTER ; then
+		filter 5 reco.fifo reco_fil.fifo &
+		if $NLMEANS; then
+
+			OMP_NUM_THREADS=4 BART_STREAM_LOG=$TIMELOG''_filter bart -r reco_fil.fifo \
+				nlmeans $NLMEANS_OPTS reco_fil.fifo $REC &
+		else
+			BART_STREAM_LOG=$TIMELOG''_filter bart -r reco_fil.fifo copy reco_fil.fifo $REC &
+
+		fi
+	fi
+
+	# before removing tmpdir:
+	wait
+}
+
+KSP=$1
+REC=$2
+COILS=
+if [ $# -eq 3 ]; then
+	COILS=$(readlink -f "$3")
 fi
 
-} 2>>$LOGFILE
+if [ "-" = "$1" ]; then
+	stdin_tmpdir=$(mktemp --tmpdir -d $TMP_TEMPLATE 2>/dev/null)
+	trap 'rm -rf "$stdin_tmpdir"' EXIT
+	KSP=$stdin_tmpdir/stdin.fifo
+	mkfifo $KSP
+fi
+
+build_pipeline $KSP $REC $COILS 2>>$LOGFILE &
+
+if [ "-" = "$1" ]; then
+	# 'catch' stdin and block until it's closed:
+	cat > $KSP
+fi
 
 wait
-
-if [ -f "$COILS.hdr" ]; then
-	bart flip -- 3 $COILS tmp_coils
-	bart resize -c -- 0 $RDIMS 1 $RDIMS tmp_coils $COILS;
-fi
