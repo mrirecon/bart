@@ -80,7 +80,7 @@ int seq_grad_to_event(struct seq_event ev[2], double start, const struct grad_tr
 /*
  * compute TE for E echoes from list of events
  */
-void events_get_te(int E, long te[E], int N, const struct seq_event ev[N])
+void events_get_te(int E, double te[E], int N, const struct seq_event ev[N])
 {
 	long rf_mid = -1;
 	long adc_mid[E];
