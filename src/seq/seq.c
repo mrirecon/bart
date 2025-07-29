@@ -148,6 +148,44 @@ void seq_compute_gradients(int M, double gradients[M][3], double dt, int N, cons
 }
 
 
+
+double idea_phase_nco(int set, const struct seq_event* ev)
+{
+	double freq = (SEQ_EVENT_PULSE == ev->type) ? ev->pulse.freq : ev->adc.freq;
+	double phase_mid = (SEQ_EVENT_PULSE == ev->type) ? ev->pulse.phase : ev->adc.phase;
+
+	if (0 == set)
+		phase_mid = -1. * phase_mid;
+
+	double time = (set) ? (ev->mid - ev->start) : (ev->end - ev->mid);
+
+	return phase_clamp(-freq * 0.000360 * time + phase_mid);
+}
+
+double idea_pulse_scaling(const struct rf_shape* pulse)
+{
+	return 180. / M_PI * pulse->integral;
+}
+
+double idea_pulse_norm_sum(const struct rf_shape* pulse)
+{
+	double dwell = 1.e-6 * pulse->sar_dur / pulse->samples;
+	return ((pulse->integral / dwell) / pulse->max);
+}
+
+void idea_cfl_to_sample(const struct rf_shape* pulse, int idx, float* mag, float* pha)
+{
+	assert(idx < pulse->samples);
+
+	complex float val = pulse->shape[idx];
+
+	*mag = cabs(val) / pulse->max;
+	*pha = fmod(carg(val) + 2. * M_PI, 2. * M_PI);
+}
+
+
+
+
 long seq_block_end(int N, const struct seq_event ev[N], enum block mode, long tr)
 {
 	if ((BLOCK_PRE == mode) || (BLOCK_POST == mode))

@@ -7,11 +7,8 @@
 #include "seq/config.h"
 #include "seq/event.h"
 
+extern double phase_clamp(double phase);
 extern double flash_ex_calls(const struct seq_config* seq);
-extern double idea_phase_nco(int set, const struct seq_event* ev);
-extern double idea_pulse_scaling(const struct rf_shape* pulse);
-extern double idea_pulse_norm_sum(const struct rf_shape* pulse);
-extern void idea_cfl_to_sample(const struct rf_shape* pulse, int idx, float* mag, float* pha);
 
 double rf_spoiling(int D, const long pos[__VLA(D)], const struct seq_config* seq);
 

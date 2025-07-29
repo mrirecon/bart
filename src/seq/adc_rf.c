@@ -30,25 +30,12 @@
 #endif
 
 
-static double phase_clamp(double phase)
+double phase_clamp(double phase)
 {
 	double ret = fmod(phase, 360.);
 	return ret + ((ret > 180.) ? -360. : ((ret < -180.) ? 360. : 0));
 }
 
-
-double idea_phase_nco(int set, const struct seq_event* ev)
-{
-	double freq = (SEQ_EVENT_PULSE == ev->type) ? ev->pulse.freq : ev->adc.freq;
-	double phase_mid = (SEQ_EVENT_PULSE == ev->type) ? ev->pulse.phase : ev->adc.phase;
-
-	if (0 == set)
-		phase_mid = -1. * phase_mid;
-
-	double time = (set) ? (ev->mid - ev->start) : (ev->end - ev->mid);
-
-	return phase_clamp(-freq * 0.000360 * time + phase_mid);
-}
 
 double rf_spoiling(int D, const long pos[D], const struct seq_config* seq)
 {
@@ -144,29 +131,6 @@ double flash_ex_calls(const struct seq_config* seq)
 
 	//FIXME: energy of first prep pulse (may be alpha/2)
 	return 1. * md_calc_size(DIMS, dims);
-}
-
-
-void idea_cfl_to_sample(const struct rf_shape* pulse, int idx, float* mag, float* pha)
-{
-	assert(idx < pulse->samples);
-
-	complex float val = pulse->shape[idx];
-
-	*mag = cabs(val) / pulse->max;
-	*pha = fmod(carg(val) + 2. * M_PI, 2. * M_PI);
-}
-
-
-double idea_pulse_scaling(const struct rf_shape* pulse)
-{
-	return 180. / M_PI * pulse->integral;
-}
-
-double idea_pulse_norm_sum(const struct rf_shape* pulse)
-{
-	double dwell = 1.e-6 * pulse->sar_dur / pulse->samples;
-	return ((pulse->integral / dwell) / pulse->max);
 }
 
 double adc_time_to_echo(const struct seq_config* seq)
