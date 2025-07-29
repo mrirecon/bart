@@ -193,11 +193,8 @@ static void zblock_diag_der(const nlop_data_t* _data, int o, int i, complex floa
 	md_tenmul_dims(data->N, max_dims, data->iov_out[o]->dims, data->iov_in[i]->dims, ddims);
 
 	if (NULL != derc)
-		md_zfmacc2(data->N, max_dims,
-			data->iov_out[o]->strs, dst,
-			MD_STRIDES(data->N, ddims, CFL_SIZE), derc,
-			data->iov_in[i]->strs, src
-			);
+		md_zfmacc2(data->N, max_dims, data->iov_out[o]->strs, dst,
+			MD_STRIDES(data->N, ddims, CFL_SIZE), derc, data->iov_in[i]->strs, src);
 }
 
 static void zblock_diag_adj(const nlop_data_t* _data, int o, int i, complex float* dst, const complex float* src)
@@ -584,8 +581,7 @@ struct nlop_s* nlop_rblock_diag_generic_create(nlop_data_t* data, int N,
 	return nlop_generic_managed_create(
 		OO, N - 2, odims, II, N - 2, idims, CAST_UP(PTR_PASS(_data)),
 		rblock_diag_fun, der_funs, adj_funs,
-		NULL, NULL, block_diag_del, block_diag_clear_der, nlop_block_diag_get_graph
-	);
+		NULL, NULL, block_diag_del, block_diag_clear_der, nlop_block_diag_get_graph);
 }
 
 
@@ -897,11 +893,12 @@ void linop_compute_matrix_zblock_diag_fwd(const struct linop_s* lop, int N, cons
 	complex float* in = md_alloc_sameplace(N, idims, CFL_SIZE, jacobian);
 	complex float* out = md_alloc_sameplace(N, odims, CFL_SIZE, jacobian);
 	complex float* ones = md_alloc_sameplace(N, diag_dims, CFL_SIZE, jacobian);
+
 	md_zfill(N, diag_dims, ones, 1);
 
 	do {
-
 		md_clear(N, idims, in, CFL_SIZE);
+
 		md_copy_block(N, pos, idims, in, diag_dims, ones, CFL_SIZE);
 		linop_forward_unchecked(lop, out, in);
 		md_copy_block(N, pos, ddims, jacobian, odims, out, CFL_SIZE);
@@ -987,6 +984,7 @@ void linop_compute_matrix_zblock_diag(const struct linop_s* lop, int N, const lo
 
 void linop_compute_matrix_rblock_diag_fwd(const struct linop_s* lop, int N, const long ddims[N], float* jacobian)
 {
+	assert(N >= 2);
 	assert(N == 2 + linop_domain(lop)->N);
 	assert(N == 2 + linop_codomain(lop)->N);
 
@@ -1058,6 +1056,7 @@ void linop_compute_matrix_rblock_diag_fwd(const struct linop_s* lop, int N, cons
 
 void linop_compute_matrix_rblock_diag_bwd(const struct linop_s* lop, int N, const long ddims[N], float* jacobian)
 {
+	assert(N >= 2);
 	assert(N == 2 + linop_domain(lop)->N);
 	assert(N == 2 + linop_codomain(lop)->N);
 
