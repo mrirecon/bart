@@ -1,6 +1,6 @@
 /* Copyright 2015. The Regents of the University of California.
  * Copyright 2016-2019. Martin Uecker.
- * Copyright 2023. Institute of Biomedical Imaging. TU Graz.
+ * Copyright 2023-2025. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -1041,19 +1041,23 @@ static void copy_fun(const operator_data_t* _data, int N, void* args[N])
 
 #ifdef USE_CUDA
 		switch (data->loc[i]) {
+
 		case CL_CPU:
 			if (allocate || cuda_ondevice(args[i]))
 				ptr[i] = md_alloc(io->N, io->dims, io->size);
 			break;
+
 		case CL_SAMEPLACE:
 			if (allocate)
 				ptr[i] = md_alloc_sameplace(io->N, io->dims, io->size, args[i]);
 			break;
+
 		case CL_DEVICE:
 
 			if (allocate || !cuda_ondevice(args[i]))
 				ptr[i] = md_alloc_gpu(io->N, io->dims, io->size);
 			break;
+
 		default: assert(0);
 		}
 #else
@@ -1278,6 +1282,7 @@ static void vptrw_apply(const operator_data_t* _data, int N, void* args[N])
 	for (int i = 0; i < N; i++) {
 
 		auto iov = operator_arg_domain(d->op, i);
+
 		if (is_vptr(args[i]))
 			targs[i] = args[i];
 		else
@@ -1294,6 +1299,7 @@ static void vptrw_apply(const operator_data_t* _data, int N, void* args[N])
 static void vptrw_free(const operator_data_t* _data)
 {
 	const auto d = CAST_DOWN(vptr_wrapper_s, _data);
+
 	operator_free(d->op);
 	vptr_hint_free(d->hint);
 	xfree(d);
@@ -1397,8 +1403,10 @@ static const struct graph_s* operator_combi_get_graph(const struct operator_s* o
 {
 	const auto d = CAST_DOWN(operator_combi_s, op->data);
 	const struct graph_s* tmp_graphs[d->N];
+
 	for (int i = 0; i < d->N; i++)
 		tmp_graphs[i] = operator_get_graph(d->x[i]);
+
 	return operator_graph_combine_F(d->N, tmp_graphs);
 }
 
@@ -1598,7 +1606,6 @@ static void link_apply(const operator_data_t* _data, int N, void* args[N])
 	void* args2[N + 2];
 
 	for (int i = 0, j = 0; j < N + 2; j++) {
-
 
 		if ((data->a == j) || (data->b == j))
 			continue;
@@ -2438,9 +2445,9 @@ const struct operator_s* operator_chainN(int N, const struct operator_s* x[N])
 	c->x = *PTR_PASS(xp);
 	c->N = N;
 
-	return operator_generic_create2(2, (bool[2]){true, false}, (int[2]){ operator_codomain(x[N - 1])->N, operator_domain(x[0])->N},
-						(const long*[2]){ operator_codomain(x[N - 1])->dims, operator_domain(x[0])->dims},
-						(const long*[2]){ operator_codomain(x[N - 1])->strs, operator_domain(x[0])->strs},
+	return operator_generic_create2(2, (bool[2]){ true, false }, (int[2]){ operator_codomain(x[N - 1])->N, operator_domain(x[0])->N },
+						(const long*[2]){ operator_codomain(x[N - 1])->dims, operator_domain(x[0])->dims },
+						(const long*[2]){ operator_codomain(x[N - 1])->strs, operator_domain(x[0])->strs },
 						CAST_UP(PTR_PASS(c)), chain_apply, chain_free, operator_chain_get_graph);
 }
 
@@ -2517,12 +2524,11 @@ const struct operator_s* operator_chain(const struct operator_s* a, const struct
 }
 
 
-
-
 //get list of all operators applied in one operator
-list_t operator_get_list(const struct operator_s* op) {
-
+list_t operator_get_list(const struct operator_s* op)
+{
 	auto list_graph = operator_graph_get_list(op);
+
 	if (NULL != list_graph)
 		return list_graph;
 
@@ -2539,8 +2545,10 @@ list_t operator_get_list(const struct operator_s* op) {
 	if (NULL != data_combi) {
 
 		list_t result = list_create();
+
 		for (int i = 0; i < data_combi->N; i++)
 			list_merge(result, operator_get_list(data_combi->x[i]), true);
+
 		return result;
 	}
 
@@ -2554,25 +2562,17 @@ list_t operator_get_list(const struct operator_s* op) {
 		return result;
 	}
 
-	if (NULL != data_link) {
-
+	if (NULL != data_link)
 		return operator_get_list(data_link->x);
-	}
 
-	if (NULL != data_dup) {
-
+	if (NULL != data_dup)
 		return operator_get_list(data_dup->x);
-	}
 
-	if (NULL != data_reshape) {
-
+	if (NULL != data_reshape)
 		return operator_get_list(data_reshape->x);
-	}
 
-	if (NULL != data_perm) {
-
+	if (NULL != data_perm)
 		return operator_get_list(data_perm->op);
-	}
 
 	if (NULL != data_plus) {
 
@@ -2581,17 +2581,14 @@ list_t operator_get_list(const struct operator_s* op) {
 		return result;
 	}
 
-	if (NULL != data_copy) {
-
+	if (NULL != data_copy)
 		return operator_get_list(data_copy->op);
-	}
 
-	if (NULL != data_attach) {
-
+	if (NULL != data_attach)
 		return operator_get_list(data_attach->op);
-	}
 
 	list_t result = list_create();
+
 	list_append(result, (void*)op);
 
 	return result;
@@ -2607,10 +2604,8 @@ const struct graph_s* operator_get_graph(const struct operator_s* op)
 }
 
 
-
 const struct operator_s* graph_optimize_operator_F(const struct operator_s* op)
 {
-
 	int N = operator_nr_out_args(op);
 
 	auto tmp = operator_ref(op);
@@ -2621,16 +2616,19 @@ const struct operator_s* graph_optimize_operator_F(const struct operator_s* op)
 
 	for (int i = 0; sorted && i < N; i++) {
 
-		auto iov = tmp->domain[N-1];
+		auto iov = tmp->domain[N - 1];
 		auto id = operator_identity_create(iov->N, iov->dims);
-		auto ttmp = operator_combi_create(2, (const struct operator_s*[2]){id, tmp});
+		auto ttmp = operator_combi_create(2, (const struct operator_s*[2]){ id, tmp });
+
 		operator_free(tmp);
 		operator_free(id);
+
 		tmp = operator_link_create(ttmp, N + 1, 1);
 		operator_free(ttmp);
 	}
 
 	auto graph = operator_get_graph(tmp);
+
 	operator_free(tmp);
 	operator_free(op);
 
@@ -2641,6 +2639,7 @@ bool operator_identify(const struct operator_s* a, const struct operator_s* b)
 {
 	if (a == b)
 		return true;
+
 	if (a->data->TYPEID != b->data->TYPEID)
 		return false;
 
@@ -2683,11 +2682,10 @@ void operator_apply_joined_unchecked(int N, const struct operator_s* op[N], comp
 
 	args[N] = (void*)src;
 
-
 	auto op_optimized = graph_optimize_operator_F(dup);
 
 	operator_generic_apply_unchecked(op_optimized, N + 1, args);
 
 	operator_free(op_optimized);
-
 }
+
