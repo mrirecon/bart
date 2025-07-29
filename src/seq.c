@@ -244,12 +244,12 @@ int main_seq(int argc, char* argv[argc])
 				events_end_time(E, ev, 1, 0), samples * ddt);
 
 		if (support)
-			seq_gradients_support(samples, g2, E, ev);
+			gradients_support(samples, g2, E, ev);
 		else
 			seq_compute_gradients(samples, g2, ddt, E, ev);
 
 		float m0[samples][3];
-		seq_compute_moment0(samples, m0, ddt, E, ev);
+		compute_moment0(samples, m0, ddt, E, ev);
 
 
 		do {
@@ -265,7 +265,7 @@ int main_seq(int argc, char* argv[argc])
 
 			complex float* adc = md_alloc(DIMS, adc_dims, CFL_SIZE);
 
-			seq_compute_adc_samples(DIMS, adc_dims, adc, E, ev);
+			compute_adc_samples(DIMS, adc_dims, adc, E, ev);
 
 			double m0_adc[3];
 

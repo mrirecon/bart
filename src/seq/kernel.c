@@ -23,7 +23,7 @@
 /*
  * Compute 0th moment on a raster. 
  */
-void seq_compute_moment0(int M, float moments[M][3], double dt, int N, const struct seq_event ev[N])
+void compute_moment0(int M, float moments[M][3], double dt, int N, const struct seq_event ev[N])
 {
 	for (int i = 0; i < M; i++) 
 		for (int a = 0; a < 3; a++)
@@ -45,7 +45,7 @@ void seq_compute_moment0(int M, float moments[M][3], double dt, int N, const str
 /*
  * Compute times and phase of adc samples. 
  */
-void seq_compute_adc_samples(int D, const long adc_dims[D], complex float* adc, int N, const struct seq_event ev[N])
+void compute_adc_samples(int D, const long adc_dims[D], complex float* adc, int N, const struct seq_event ev[N])
 {
 	md_clear(D, adc_dims, adc, CFL_SIZE);
 	long adc_strs[D];
@@ -75,7 +75,7 @@ void seq_compute_adc_samples(int D, const long adc_dims[D], complex float* adc, 
 }
 
 
-void seq_gradients_support(int M, double gradients[M][6], int N, const struct seq_event ev[N])
+void gradients_support(int M, double gradients[M][6], int N, const struct seq_event ev[N])
 {
 	for (int i = 0; i < M; i++) 
 		for (int a = 0; a < 6; a++)
