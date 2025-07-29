@@ -125,12 +125,12 @@ inline long* md_calc_strides(int D, long str[__VLA2(D)], const long dim[__VLA(D)
 
 inline void md_copy_strides(int D, long ostrs[__VLA(D)], const long istrs[__VLA(D)])
 {
-	memcpy(ostrs, istrs, (size_t)(D  * (long)sizeof(long)));
+	memcpy(ostrs, istrs, sizeof(long[D]));
 }
 
 inline void md_copy_dims(int D, long odims[__VLA(D)], const long idims[__VLA(D)])
 {
-	memcpy(odims, idims, (size_t)(D * (long)sizeof(long)));
+	memcpy(odims, idims, sizeof(long[D]));
 }
 
 
