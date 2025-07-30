@@ -9,6 +9,7 @@
 
 #include "seq/config.h"
 #include "seq/flash.h"
+#include "seq/helpers.h"
 #include "seq/seq.h"
 
 #include "seq/adc_rf.h"

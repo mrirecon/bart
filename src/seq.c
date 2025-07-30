@@ -19,6 +19,7 @@
 
 #include "seq/config.h"
 #include "seq/event.h"
+#include "seq/helpers.h"
 #include "seq/seq.h"
 
 #include "seq/adc_rf.h"

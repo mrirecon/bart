@@ -5,6 +5,7 @@
 #include "seq/kernel.h"
 #include "seq/flash.h"
 #include "seq/seq.h"
+#include "seq/helpers.h"
 
 #include "seq/adc_rf.c"
 
