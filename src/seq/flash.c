@@ -38,7 +38,7 @@ static double start_rf(const struct seq_config* seq)
 static double ro_shift(long echo, const struct seq_config* seq)
 {
 	double start_flat = start_rf(seq) + seq->phys.rf_duration / 2.
-				+ seq->phys.te[echo] - adc_time_to_echo(seq);
+				+ seq->phys.te[echo] - round_up_raster(adc_time_to_echo(seq), seq->sys.raster_rf);
 
 	double shift = seq->sys.raster_grad - (round_up_raster(start_flat, seq->sys.raster_grad) - start_flat);
 
@@ -55,7 +55,7 @@ static double available_time_RF_SLI(int ro, const struct seq_config* seq)
 
 	return seq->phys.te[0] - seq->phys.rf_duration / 2.
 		- ampl * seq->sys.grad.inv_slew_rate
-		- adc_time_to_echo(seq)
+		- round_up_raster(adc_time_to_echo(seq) - 0.99 * seq->sys.raster_rf, seq->sys.raster_rf) // round down
 		- ro_shift(0, seq);
 }
 
@@ -140,18 +140,10 @@ static int prep_grad_ro_deph(struct grad_trapezoid* grad, const struct seq_confi
 {
 	const long echo = 0;
 
-	double amp = ro_amplitude(seq);
-	double adc_echo = adc_time_to_echo(seq);
-	double adc_rounding = seq->sys.raster_dwell * 
-		((int)(adc_echo / seq->sys.raster_dwell) % (int)(adc_echo / seq->sys.raster_rf));
-
-	double mom = amp * (0.5 * amp * seq->sys.grad.inv_slew_rate
-			    + ro_shift(echo, seq) + adc_rounding + adc_echo);
-
 	struct grad_limits limits = seq->sys.grad;
 	limits.max_amplitude *= SCALE_GRAD;
 
-	if (!grad_soft(grad, available_time_RF_SLI(1, seq), -mom, limits))
+	if (!grad_soft(grad, available_time_RF_SLI(1, seq), -ro_momentum_to_echo(echo, seq), limits))
 		return 0;
 
 	return 1;
