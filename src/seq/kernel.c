@@ -11,14 +11,30 @@
 #include "misc/mri.h"
 #include "misc/misc.h"
 
-#include "seq/gradient.h"
-#include "seq/misc.h"
+#include "seq/seq.h"
 
 #include "kernel.h"
 
 #ifndef CFL_SIZE
 #define CFL_SIZE sizeof(complex float)
 #endif
+
+
+void linearize_events(int N, struct seq_event ev[__VLA(N)], double* start_block, enum block mode, long tr)
+{
+	if ((0 >= N) || (0 > *start_block))
+		return;
+
+	for (int i = 0; i < N; i++) {
+
+		ev[i].start += *start_block;
+		ev[i].mid   += *start_block;
+		ev[i].end   += *start_block;
+	}
+
+	*start_block += (double)seq_block_end(N, ev, mode, tr);
+}
+
 
 /*
  * Compute 0th moment on a raster. 
