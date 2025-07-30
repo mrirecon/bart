@@ -7,6 +7,7 @@
 
 #include <complex.h>
 #include <math.h>
+#include <stdbool.h>
 
 #include "num/multind.h"
 
@@ -223,18 +224,9 @@ int main_seq(int argc, char* argv[argc])
 		if ((BLOCK_KERNEL_IMAGE != seq_state.mode) || (0 == E))
 			continue;
 
-		for (int i = 0; i < E; i++) {
+		if (0 > E)
+			error("Sequence not possible! - check seq_config, %d] \n", E);
 
-			debug_printf(DP_DEBUG3, "event[%d]:\t%.2f\t\t%.2f\t\t%.2f\t\t", i, 
-					ev[i].start, ev[i].mid, ev[i].end);
-
-			if (SEQ_EVENT_GRADIENT == ev[i].type)
-				debug_printf(DP_DEBUG3, "||\t%.2f\t\t%.2f\t\t%.2f", ev[i].grad.ampl[0], ev[i].grad.ampl[1],ev[i].grad.ampl[2]);
-
-			debug_printf(DP_DEBUG3, "\n");
-		}
-
-		debug_printf(DP_DEBUG3, "seq_block_end_flat: %ld\n", seq_block_end_flat(E, ev));
 
 		double ddt = (0 > dt) ? 1. * seq.phys.tr / samples : ceil(dt * 1.e6)/ 1.e6; //FIXME breaks with float
 		double g2[samples][mdims[MAPS_DIM]];
@@ -288,6 +280,22 @@ int main_seq(int argc, char* argv[argc])
 
 			md_free(adc);
 		}
+
+		linearize_events(E, ev, &seq_state.start_block, seq_state.mode, seq.phys.tr);
+
+		for (int i = 0; i < E; i++) {
+
+			debug_printf(DP_DEBUG3, "event[%d]:\t%.2f\t\t%.2f\t\t%.2f\t\t", i, 
+					ev[i].start, ev[i].mid, ev[i].end);
+
+			if (SEQ_EVENT_GRADIENT == ev[i].type)
+				debug_printf(DP_DEBUG3, "||\t%.2f\t\t%.2f\t\t%.2f", ev[i].grad.ampl[0], ev[i].grad.ampl[1],ev[i].grad.ampl[2]);
+
+			debug_printf(DP_DEBUG3, "\n");
+		}
+
+		debug_printf(DP_DEBUG3, "seq_block_end_flat: %ld\n", seq_block_end_flat(E, ev));
+
 
 	} while (seq_continue(&seq_state, &seq));
 
