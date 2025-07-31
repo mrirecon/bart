@@ -383,13 +383,17 @@ int main_sample(int argc, char* argv[argc])
 
 			pos[ITER_DIM] = i / save_mod;
 
-			// compute expectation value at current noise level
-			nlop_apply(nlop_fixed, DIMS, img_dims, tmp4, DIMS, img_dims, samples);
-			md_zsmul(DIMS, img_dims, tmp4, tmp4, var_i / 2);
-			md_zaxpy(DIMS, img_dims, tmp4, 1, samples);
+			complex float* tmp_exp = md_alloc_sameplace(DIMS, img_dims, CFL_SIZE, samples);
 
-			md_copy_block(DIMS, pos, sample_dims, samples_denoised, img_dims, tmp4, CFL_SIZE);
+			// compute expectation value at current noise level
+			nlop_apply(nlop_fixed, DIMS, img_dims, tmp_exp, DIMS, img_dims, samples);
+			md_zsmul(DIMS, img_dims, tmp_exp, tmp_exp, var_i / 2);
+			md_zaxpy(DIMS, img_dims, tmp_exp, 1, samples);
+
+			md_copy_block(DIMS, pos, sample_dims, samples_denoised, img_dims, tmp_exp, CFL_SIZE);
 			md_copy_block(DIMS, pos, sample_dims, out, img_dims, samples, CFL_SIZE);
+
+			md_free(tmp_exp);
 		}
 
 		operator_p_free(score_op_p);
