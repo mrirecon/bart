@@ -19,6 +19,9 @@ enum seq_error {
 
 struct seq_config;
 
+extern long min_tr_flash(const struct seq_config* seq);
+extern void min_te_flash(const struct seq_config* seq, long* min_te, long* fil_te);
+
 extern int flash(int N, struct seq_event ev[__VLA(N)], struct seq_state* seq_state, const struct seq_config* seq);
 
 #include "misc/cppwrap.h"
