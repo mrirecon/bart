@@ -289,7 +289,10 @@ void calc_base_angles(double base_angle[DIMS], int Y, int E, struct traj_conf co
 long raga_increment_from_pos(const int order[DIMS], const long pos[DIMS], unsigned long flags, const long dims[DIMS], const struct traj_conf* conf)
 {
 	assert(conf->rational);
-	return (conf->raga_inc * md_ravel_index_permuted(DIMS, pos, flags & ~conf->aligned_flags, dims, order)) % conf->Y;
+
+	long index = md_ravel_index_permuted(DIMS, pos, flags & ~conf->aligned_flags, dims, order);
+
+	return (conf->raga_inc * index) % conf->Y;
 }
 
 
