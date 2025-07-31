@@ -176,7 +176,7 @@ int main_sample(int argc, char* argv[argc])
 	assert(!bart_use_gpu);
 	md_alloc_fun_t my_alloc = md_alloc;
 #endif
-	sigma_schedule_fun_t get_sigma;
+	sigma_schedule_fun_t get_sigma = NULL;	// false positive
 
 	switch (schedule) {
 
