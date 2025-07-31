@@ -316,12 +316,6 @@ int main_sample(int argc, char* argv[argc])
 	debug_printf(DP_DEBUG2, "sig=%.4f\n", get_sigma(1., sigma_min, sigma_max));
 	md_zsmul(DIMS, img_dims, samples, samples, get_sigma(1., sigma_min, sigma_max));
 
-	complex float* mu = my_alloc(DIMS, img_dims, CFL_SIZE);
-	complex float* x0 = my_alloc(DIMS, img_dims, CFL_SIZE);
-	complex float* tmp1 = my_alloc(DIMS, img_dims, CFL_SIZE);
-	complex float* tmp2 = my_alloc(DIMS, img_dims, CFL_SIZE);
-	complex float* tmp3 = my_alloc(DIMS, img_dims, CFL_SIZE);
-
 	complex float* AHy = my_alloc(DIMS, img_dims, CFL_SIZE);
 	md_clear(DIMS, img_dims, AHy, CFL_SIZE);
 
@@ -346,17 +340,21 @@ int main_sample(int argc, char* argv[argc])
 
 		if (ancestral || predictor_corrector) {
 
+			complex float* tmp = md_alloc_sameplace(DIMS, img_dims, CFL_SIZE, samples);
+
 			complex float fixed_noise_scale = sqrtf(var_ip);
 			const struct nlop_s* nlop_fixed = nlop_set_input_const(nlop, 1, 1, MD_DIMS(1), true, &fixed_noise_scale);
-			nlop_apply(nlop_fixed, DIMS, img_dims, tmp1, DIMS, img_dims, samples);
+			nlop_apply(nlop_fixed, DIMS, img_dims, tmp, DIMS, img_dims, samples);
 			nlop_free(nlop_fixed);
 
-			md_zaxpy(DIMS, img_dims, samples, dvar / 2.f, tmp1);
+			md_zaxpy(DIMS, img_dims, samples, dvar / 2.f, tmp);
 
-			md_gaussian_rand(DIMS, img_dims, tmp1);
-			md_zsmul(DIMS, img_dims, tmp1, tmp1, 1 / sqrtf(2.)); // cplx var 1
+			md_gaussian_rand(DIMS, img_dims, tmp);
+			md_zsmul(DIMS, img_dims, tmp, tmp, 1 / sqrtf(2.)); // cplx var 1
 
-			md_zaxpy(DIMS, img_dims, samples, ancestral ? sqrtf(tau_ip) : sqrtf(dvar), tmp1);
+			md_zaxpy(DIMS, img_dims, samples, ancestral ? sqrtf(tau_ip) : sqrtf(dvar), tmp);
+
+			md_free(tmp);
 
 			if (ancestral)	// No Langevin steps if ancestral
 				K = 0;
@@ -406,12 +404,7 @@ int main_sample(int argc, char* argv[argc])
 
 	nlop_free(nlop);
 
-	md_free(tmp1);
-	md_free(tmp2);
-	md_free(tmp3);
 	md_free(AHy);
-	md_free(x0);
-	md_free(mu);
 
 	md_free(samples);
 	unmap_cfl(DIMS, sample_dims, out);
