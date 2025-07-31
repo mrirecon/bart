@@ -316,9 +316,6 @@ int main_sample(int argc, char* argv[argc])
 	debug_printf(DP_DEBUG2, "sig=%.4f\n", get_sigma(1., sigma_min, sigma_max));
 	md_zsmul(DIMS, img_dims, samples, samples, get_sigma(1., sigma_min, sigma_max));
 
-
-	float gamma;
-
 	struct linop_s* linop = linop_null_create(DIMS, img_dims, DIMS, img_dims);
 
 	complex float* AHy = my_alloc(DIMS, img_dims, CFL_SIZE);
@@ -331,9 +328,6 @@ int main_sample(int argc, char* argv[argc])
 		float dvar = (var_ip - var_i);
 		float tau_ip = var_i / var_ip * dvar;
 
-		gamma = means_file ? (var_i + min_var) * gamma_base : var_i * gamma_base; // stabilization of step size: do not go under minimal variance of underlying distribution
-
-		debug_printf(DP_DEBUG2, "gamma: %.5f\n", gamma);
 		print_stats(DP_DEBUG2, (float)i / N, img_dims, samples, sqrtf(var_ip));
 
 		if (ancestral || predictor_corrector) {
@@ -364,6 +358,9 @@ int main_sample(int argc, char* argv[argc])
 		const struct operator_p_s* score_op_p = prox_nlgrad_create(nlop_fixed, 1, 1., -1, true); // convert grad to prox; mind the SIGN for the score
 
 		score_op_p = prox_scale_arg_create_F(score_op_p, 0.5); // scale due to implementation of em (add 0.5 factor)
+
+		float gamma = means_file ? (var_i + min_var) * gamma_base : var_i * gamma_base; // stabilization of step size: do not go under minimal variance of underlying distribution
+		debug_printf(DP_DEBUG2, "gamma: %.5f\n", gamma);
 
 		struct iter_eulermaruyama_conf em_conf = iter_eulermaruyama_defaults;
 		em_conf.step = gamma;
