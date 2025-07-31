@@ -13,6 +13,7 @@
 #include "num/multind.h"
 #include "num/init.h"
 #include "num/conv.h"
+#include "num/morph.h"
 
 #include "misc/mri.h"
 
@@ -101,7 +102,7 @@ int main_morphop(int argc, char* argv[argc])
 	};
 
 
-	enum morph_type { EROSION, DILATION, OPENING, CLOSING } morph_type = EROSION;
+	enum morph_type { EROSION, DILATION, OPENING, CLOSING, LABEL } morph_type = EROSION;
 
 	enum mask_type { HLINE, VLINE, CROSS, BLOCK } mask_type = BLOCK;
 
@@ -112,6 +113,7 @@ int main_morphop(int argc, char* argv[argc])
 		OPT_SELECT('d', enum morph_type, &morph_type, DILATION, "DILATION"),
 		OPT_SELECT('o', enum morph_type, &morph_type, OPENING, "OPENING"),
 		OPT_SELECT('c', enum morph_type, &morph_type, CLOSING, "CLOSING"),
+		OPT_SELECT('l', enum morph_type, &morph_type, LABEL, "LABEL"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -136,6 +138,7 @@ int main_morphop(int argc, char* argv[argc])
 	md_set_dims(N, mask_dims, 1);
 	mask_dims[READ_DIM] = mask_size;
 	mask_dims[PHS1_DIM] = mask_size;
+	mask_dims[PHS2_DIM] = (1 != dims[PHS2_DIM]) ? mask_size : 1;
 
 	complex float* mask = md_alloc(DIMS, mask_dims, CFL_SIZE);
 	md_clear(N, mask_dims, mask, CFL_SIZE);
@@ -188,6 +191,10 @@ int main_morphop(int argc, char* argv[argc])
 
 	case CLOSING:
 		closing(N, mask_dims, mask, dims, out, in);
+		break;
+
+	case LABEL:
+		md_label(N, dims, out, in, mask_dims, mask);
 		break;
 
 	default:
