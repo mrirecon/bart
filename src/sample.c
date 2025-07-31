@@ -319,8 +319,6 @@ int main_sample(int argc, char* argv[argc])
 
 	float gamma;
 
-	const struct nlop_s* nlop_fixed = NULL;
-	const struct operator_p_s* score_op_p = NULL;
 	struct linop_s* linop = linop_null_create(DIMS, img_dims, DIMS, img_dims);
 
 	complex float* AHy = my_alloc(DIMS, img_dims, CFL_SIZE);
@@ -362,8 +360,8 @@ int main_sample(int argc, char* argv[argc])
 
 		// Corrector
 		complex float fixed_noise_scale = sqrtf(var_i);
-		nlop_fixed = nlop_set_input_const(nlop, 1, 1, MD_DIMS(1), true, &fixed_noise_scale);
-		score_op_p = prox_nlgrad_create(nlop_fixed, 1, 1., -1, true); // convert grad to prox; mind the SIGN for the score
+		const struct nlop_s* nlop_fixed = nlop_set_input_const(nlop, 1, 1, MD_DIMS(1), true, &fixed_noise_scale);
+		const struct operator_p_s* score_op_p = prox_nlgrad_create(nlop_fixed, 1, 1., -1, true); // convert grad to prox; mind the SIGN for the score
 
 		score_op_p = prox_scale_arg_create_F(score_op_p, 0.5); // scale due to implementation of em (add 0.5 factor)
 
