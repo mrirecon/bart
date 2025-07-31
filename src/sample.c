@@ -316,15 +316,15 @@ int main_sample(int argc, char* argv[argc])
 	debug_printf(DP_DEBUG2, "sig=%.4f\n", get_sigma(1., sigma_min, sigma_max));
 	md_zsmul(DIMS, img_dims, samples, samples, get_sigma(1., sigma_min, sigma_max));
 
-	complex float* AHy = my_alloc(DIMS, img_dims, CFL_SIZE);
-	md_clear(DIMS, img_dims, AHy, CFL_SIZE);
 
 	float gamma;
 
 	const struct nlop_s* nlop_fixed = NULL;
 	const struct operator_p_s* score_op_p = NULL;
-	struct linop_s* lop_zero = NULL;
-	const struct operator_s* me_normal = NULL;
+	struct linop_s* linop = linop_null_create(DIMS, img_dims, DIMS, img_dims);
+
+	complex float* AHy = my_alloc(DIMS, img_dims, CFL_SIZE);
+	md_clear(DIMS, img_dims, AHy, CFL_SIZE);
 
 	for (int i = N - 1; i >= 0; i--) {
 
@@ -371,11 +371,8 @@ int main_sample(int argc, char* argv[argc])
 		em_conf.step = gamma;
 		em_conf.maxiter = K;
 
-		lop_zero = linop_null_create(DIMS, img_dims, DIMS, img_dims);
-		me_normal = operator_ref(lop_zero->normal);
-
 		// run K Langevin steps
-		iter2_eulermaruyama(CAST_UP(&em_conf), me_normal, 1, &score_op_p, NULL, NULL, NULL, 2 * md_calc_size(DIMS,img_dims), (float*)samples, (float*)AHy, NULL);
+		iter2_eulermaruyama(CAST_UP(&em_conf), linop->normal, 1, &score_op_p, NULL, NULL, NULL, 2 * md_calc_size(DIMS,img_dims), (float*)samples, (float*)AHy, NULL);
 
 		if (0 == i % save_mod) {
 
@@ -396,13 +393,12 @@ int main_sample(int argc, char* argv[argc])
 
 		operator_p_free(score_op_p);
 		nlop_free(nlop_fixed);
-		linop_free(lop_zero);
-		operator_free(me_normal);
 	}
 
 	print_stats(DP_DEBUG2, 0., img_dims, samples, get_sigma(0., sigma_min, sigma_max));
 
 	nlop_free(nlop);
+	linop_free(linop);
 
 	md_free(AHy);
 
