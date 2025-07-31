@@ -321,7 +321,9 @@ int main_sample(int argc, char* argv[argc])
 	complex float* tmp1 = my_alloc(DIMS, img_dims, CFL_SIZE);
 	complex float* tmp2 = my_alloc(DIMS, img_dims, CFL_SIZE);
 	complex float* tmp3 = my_alloc(DIMS, img_dims, CFL_SIZE);
-	complex float* tmp4 = my_alloc(DIMS, img_dims, CFL_SIZE);
+
+	complex float* AHy = my_alloc(DIMS, img_dims, CFL_SIZE);
+	md_clear(DIMS, img_dims, AHy, CFL_SIZE);
 
 	float gamma;
 
@@ -374,10 +376,8 @@ int main_sample(int argc, char* argv[argc])
 		lop_zero = linop_null_create(DIMS, img_dims, DIMS, img_dims);
 		me_normal = operator_ref(lop_zero->normal);
 
-		md_clear(DIMS, img_dims, tmp4, sizeof(complex float));
-
 		// run K Langevin steps
-		iter2_eulermaruyama(CAST_UP(&em_conf), me_normal, 1, &score_op_p, NULL, NULL, NULL, 2 * md_calc_size(DIMS,img_dims), (float*)samples, (float*)tmp4, NULL);
+		iter2_eulermaruyama(CAST_UP(&em_conf), me_normal, 1, &score_op_p, NULL, NULL, NULL, 2 * md_calc_size(DIMS,img_dims), (float*)samples, (float*)AHy, NULL);
 
 		if (0 == i % save_mod) {
 
@@ -409,7 +409,7 @@ int main_sample(int argc, char* argv[argc])
 	md_free(tmp1);
 	md_free(tmp2);
 	md_free(tmp3);
-	md_free(tmp4);
+	md_free(AHy);
 	md_free(x0);
 	md_free(mu);
 
