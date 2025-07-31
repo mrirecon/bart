@@ -108,6 +108,7 @@ int main_ncalib(int argc, char* argv[argc])
 		OPTL_ULONG(0, "shared-img-dims", &shared_img_flags, "flags", "deselect image dims with flags"),
 		OPTL_ULONG(0, "shared-col-dims", &cnstcoil_flags, "flags", "deselect coil dims with flags"),
 		OPTL_ULONG(0, "scale-loop-dims", &scale_loop_flags, "flags", "scale parameters as if ncalib was looped over these dims"),
+		OPTL_INT(0, "phase-pole", &(conf.phasepoles), "d", "Use phase pole detection after d iterations (0 for every iteration)"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);

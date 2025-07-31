@@ -144,6 +144,7 @@ int main_nlinv(int argc, char* argv[argc])
 		OPTL_FLOAT(0, "cgtol", &conf.cgtol, "tol", "(tolerance for linearized problem)"),
 		OPTL_INT(0, "liniter", &conf.liniter, "iter", "(iterations for solving linearized problem)"),
 		OPTL_SET(0, "real-time", &(conf.realtime), "Use real-time (temporal l2) regularization"),
+		OPTL_INT(0, "phase-pole", &(conf.phasepoles), "d", "Use phase pole detection after d iterations (0 for every iteration)"),
 		OPTL_SET(0, "fast", &(conf.optimized), "Use tuned but less generic model"),
 		OPTL_SET(0, "legacy-early-stopping", &(conf.legacy_early_stoppping), "(legacy mode for irgnm early stopping)"),
 	};
@@ -361,7 +362,7 @@ int main_nlinv(int argc, char* argv[argc])
 
 		assert(1 == ksp_dims[COEFF_DIM]);
 		assert(bas_dims[TE_DIM] == ksp_dims[TE_DIM]);
-		
+
 		if (conf.noncart)
 			assert(1 == md_calc_size(5, bas_dims));
 		else
@@ -376,7 +377,7 @@ int main_nlinv(int argc, char* argv[argc])
 	md_select_dims(DIMS, ~cnstcoil_flags, ksens_dims, dims);
 
 	for (int i = 0; i < 3; i++)
-		ksens_dims[i] = my_ksens_dims[i] ?: ksens_dims[i]; 
+		ksens_dims[i] = my_ksens_dims[i] ?: ksens_dims[i];
 
 	long sens_dims[DIMS];
 	md_select_dims(DIMS, ~cnstcoil_flags, sens_dims, dims);
@@ -405,7 +406,7 @@ int main_nlinv(int argc, char* argv[argc])
 		img = create_async_cfl(img_file, TIME_FLAG, DIMS, img_dims);
 	else
 		img = ((!pprocess) ? create_cfl : anon_cfl)(img_file, DIMS, img_dims);
-	
+
 	long msk_dims[DIMS];
 	md_select_dims(DIMS, FFT_FLAGS, msk_dims, img_dims);
 
@@ -413,7 +414,7 @@ int main_nlinv(int argc, char* argv[argc])
 
 	complex float* ksens = md_alloc(DIMS, sens_dims, CFL_SIZE);
 	complex float* sens = NULL;
-	
+
 	if (pprocess || sens_file)
 		sens = ((NULL != sens_file) ? create_cfl : anon_cfl)(sens_file, DIMS, sens_dims);
 

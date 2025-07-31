@@ -17,6 +17,8 @@ struct noir2_conf_s {
 	float oversampling_coils;
 	_Bool ret_os_coils;
 
+	int phasepoles;
+
 	_Bool sms;
 
 	float scaling;

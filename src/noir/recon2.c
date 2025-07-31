@@ -43,6 +43,7 @@
 #include "misc/version.h"
 
 #include "noir/model2.h"
+#include "noir/pole.h"
 
 #include "grecon/optreg.h"
 #include "grecon/italgo.h"
@@ -64,15 +65,98 @@ struct nlop_wrapper2_s {
 
 	int N;
 	const long* col_dims;
+
+	int iter;
+	int pole_correction;
+	struct pole_config_s conf;
+	const struct noir2_s* noir_ops;
 };
 
 DEF_TYPEID(nlop_wrapper2_s);
 
+static void mult_phase_pole(struct iter_conjgrad_conf conf, const struct linop_s* lop, int N, const long pdims[N], bool conj, const complex float* phase, complex float* dst)
+{
+	assert(N == linop_domain(lop)->N);
+	assert(N == linop_codomain(lop)->N);
+
+	long tdims[N];
+	md_copy_dims(N, tdims, linop_codomain(lop)->dims);
+	assert(md_check_compat(N, ~md_nontriv_dims(N, pdims), pdims, tdims));
+
+	if (linop_is_identity(lop)) {
+
+		(conj ? md_zmulc2 : md_zmul2)(N, tdims, MD_STRIDES(N, tdims, CFL_SIZE), dst, MD_STRIDES(N, tdims, CFL_SIZE), dst, MD_STRIDES(N, pdims, CFL_SIZE), phase);
+		return;
+	}
+
+	complex float* tmp = md_alloc_sameplace(N, tdims, CFL_SIZE, dst);
+	linop_forward_unchecked(lop, tmp, dst);
+
+	(conj ? md_zmulc2 : md_zmul2)(N, tdims, MD_STRIDES(N, tdims, CFL_SIZE), tmp, MD_STRIDES(N, tdims, CFL_SIZE), tmp, MD_STRIDES(N, pdims, CFL_SIZE), phase);
+
+	complex float* adj = md_alloc_sameplace(N, linop_domain(lop)->dims, CFL_SIZE, phase);
+
+	linop_adjoint_unchecked(lop, adj, tmp);
+	md_free(tmp);
+
+	iter_conjgrad(CAST_UP(&conf), lop->normal, NULL, 2 * md_calc_size(N, linop_domain(lop)->dims), (float*)(dst), (const float*)adj, NULL);
+	md_free(adj);
+}
+
+
+static void phasepole_correction(struct pole_config_s conf, const struct noir2_s* d, complex float* dst)
+{
+	int N = d->N;
+
+	const struct linop_s* lop_col = d->lop_coil;
+	long col_dims[N];
+
+	md_copy_dims(N, col_dims, linop_codomain(lop_col)->dims);
+
+	complex float* col = md_alloc_sameplace(d->N, col_dims, CFL_SIZE, dst);
+	linop_forward_unchecked(lop_col, col, dst + md_calc_size(N, linop_domain(d->lop_im)->dims));
+
+	long pdims[N];
+	md_select_dims(d->N, ~SENS_FLAGS, pdims, col_dims);
+
+	complex float* phase = md_alloc_sameplace(d->N, pdims, CFL_SIZE, col);
+	md_zfill(d->N, pdims, phase, 1.);
+
+	bool correct = phase_pole_correction_loop(conf, d->N, (~15UL) & md_nontriv_dims(N, pdims), pdims, phase, col_dims, col);
+
+	md_free(col);
+
+	if (correct) {
+
+		long img_dims[N];
+
+		const struct linop_s* lop_img = d->lop_im;
+		md_copy_dims(N, img_dims, linop_codomain(lop_img)->dims);
+		complex float* img = md_alloc_sameplace(d->N, img_dims, CFL_SIZE, dst);
+		linop_forward_unchecked(lop_img, img, dst);
+		phase_pole_normalize(N, pdims, phase, img_dims, img);
+		md_free(img);
+
+		struct iter_conjgrad_conf conf = iter_conjgrad_defaults;
+		conf.maxiter = 15;
+		conf.l2lambda = 1.e-5;
+		conf.tol = 0.;
+
+		mult_phase_pole(conf, d->lop_im, N, pdims, false, phase, dst);
+		mult_phase_pole(conf, d->lop_coil, N, pdims, true, phase, dst + md_calc_size(N, linop_domain(lop_img)->dims));
+	}
+
+	md_free(phase);
+}
 
 static void orthogonalize(iter_op_data* ptr, float* _dst, const float* _src)
 {
 	assert(_dst == _src);
 	auto nlw = CAST_DOWN(nlop_wrapper2_s, ptr);
+
+	if (((0 == nlw->pole_correction) || (++nlw->iter == nlw->pole_correction)) && (NULL != nlw->noir_ops))
+		phasepole_correction(nlw->conf, nlw->noir_ops, (complex float*)_dst);
+
 	noir2_orthogonalize(nlw->N, nlw->col_dims, (complex float*) _dst + nlw->split);
 }
 
@@ -113,6 +197,7 @@ const struct noir2_conf_s noir2_defaults = {
 	.lintol= 0.,
 
 	.ret_os_coils = false,
+	.phasepoles = -1,
 
 	.optimized = false,
 };
@@ -355,6 +440,12 @@ void noir2_recon(const struct noir2_conf_s* conf, struct noir2_s* noir_ops,
 	nlw.split = skip;
 	nlw.N = N;
 	nlw.col_dims = kco_dims;
+
+	nlw.iter = 0; // pole correction iteration counter
+	nlw.pole_correction = conf->phasepoles;
+
+	nlw.conf = pole_config_default;
+	nlw.noir_ops = noir_ops;
 
 	irgnm_conf.alpha = conf->alpha;
 	irgnm_conf.cgtol = conf->cgtol;
