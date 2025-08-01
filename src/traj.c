@@ -26,6 +26,7 @@
 #include "misc/mri.h"
 #include "misc/opts.h"
 #include "misc/debug.h"
+#include "misc/version.h"
 
 #include "noncart/traj.h"
 
@@ -307,10 +308,18 @@ int main_traj(int argc, char* argv[argc])
 				order[SLICE_DIM] = PHS2_DIM;
 				order[PHS2_DIM] = SLICE_DIM;
 
-				double atom = calc_angle_atom(&conf);
-				long inc = raga_increment_from_pos(order, pos, ~3UL, dims, &conf);
+				if (!use_compat_to_version("v0.9.00")) {
 
-				angle = atom * inc;
+					double atom = calc_angle_atom(&conf);
+					long inc = raga_increment_from_pos(order, pos, ~3UL, dims, &conf);
+
+					angle = atom * inc;
+
+				} else {
+
+					float atom = calc_angle_atom(&conf) * conf.raga_inc;
+					angle = atom * pos[2];
+				}
 
 			} else {
 
