@@ -52,10 +52,12 @@ int main_seq(int argc, char* argv[argc])
 	float dt = -1.;
 	long samples = -1;
 
-	struct seq_state seq_state = { };;
+	struct seq_state seq_state = { };
 	struct seq_config seq = seq_config_defaults;
 
 	enum gradient_mode gradient_mode = GRAD_FAST;
+
+	seq.enc.order = SEQ_ORDER_AVG_OUTER;
 
 	bool support = false;
 
@@ -64,7 +66,10 @@ int main_seq(int argc, char* argv[argc])
 		OPT_FLOAT('d', &dt, "dt", "time-increment per sample (default: seq.phys.tr / 1000)"),
 		OPT_LONG('N', &samples, "samples", "Number of samples (default: 1000)"),
 
-		// OPT_FLVEC3('s', &seq.geom.shift[0], "RO:PE:SL", "FOV shift (mm)"),
+		OPT_DOVEC3('s', &seq.geom.shift[0], "RO:PE:SL", "FOV shift (mm) of first slice"),
+
+		// contrast mode
+		OPTL_SELECT(0, "spoiled", enum flash_contrast, &seq.phys.contrast, CONTRAST_RF_SPOILED, "RF_SPOILED (inc: 50 deg, gradient on) (default: rf random)"),
 
 		// FOV and resolution
 		OPTL_DOUBLE(0, "FOV", &seq.geom.fov, "FOV", "Field Of View [mm]"),
@@ -73,8 +78,8 @@ int main_seq(int argc, char* argv[argc])
 
 		// basic sequence parameters
 		OPTL_DOUBLE(0, "FA", &seq.phys.flip_angle, "flip angle", "Flip angle [deg]"),
-		OPTL_DOUBLE(0, "TR", &seq.phys.tr, "TE", "TR [us]"),
-		OPTL_DOUBLE(0, "TE", &seq.phys.te, "TE0", "TE [us]"),
+		OPTL_DOUBLE(0, "TR", &seq.phys.tr, "TR", "TR [us]"),
+		OPTL_DOUBLE(0, "TE", &seq.phys.te, "TE", "TE [us]"),
 		OPTL_DOUBLE(0, "BWTP", &seq.phys.bwtp, "BWTP", "Bandwidth Time Product"),
 
 		// others sequence parameters
@@ -84,7 +89,10 @@ int main_seq(int argc, char* argv[argc])
 
 		// encoding
 		OPTL_UINT(0, "pe_mode", &seq.enc.pe_mode, "pe_mode", "Phase-encoding mode"),
-		OPTL_PINT(0, "tiny", &seq.enc.tiny, "turns", "Tiny golde-ratio index"),
+		OPTL_SELECT(0, "raga", enum pe_mode, &seq.enc.pe_mode, PEMODE_RAGA, "RAGA PE"),
+		OPTL_SELECT(0, "raga_al", enum pe_mode, &seq.enc.pe_mode, PEMODE_RAGA_ALIGNED, "RAGA-aligned PE (default: RAGA)"),
+
+		OPTL_PINT(0, "tiny", &seq.enc.tiny, "tiny", "Tiny golden-ratio index"),
 
 		OPTL_LONG('r', "lines", &seq.loop_dims[PHS1_DIM], "lines", "Number of phase encoding lines"),
 		OPTL_LONG('z', "partitions", &seq.loop_dims[PHS2_DIM], "partitions", "Number of partitions (3D) or SMS groups (2D)"),
@@ -92,14 +100,17 @@ int main_seq(int argc, char* argv[argc])
 		OPTL_LONG('m', "slices", &seq.loop_dims[SLICE_DIM], "slices", "Number of slices of multiband factor (SMS)"),
 		OPTL_LONG('i', "inversions", &seq.loop_dims[BATCH_DIM], "inversions", "Number of inversions"),
 
+		// order
+		OPTL_SELECT(0, "sequential-multislice", enum seq_order, &seq.enc.order, SEQ_ORDER_SEQ_MS, "seq_order: sequential multislice (default: avg outer)"),
+		OPTL_SELECT(0, "avg-inner", enum seq_order, &seq.enc.order, SEQ_ORDER_AVG_INNER, "seq_order: average inner (default: avg outer)"),
+
 		// sms
 		OPTL_PINT(0, "mb_factor", &seq.geom.mb_factor, "mb_factor", "Multi-band factor"),
 		OPTL_DOUBLE(0, "sms_distance", &seq.geom.sms_distance, "sms_distance", "SMS slice distance [mm]"),
 
 		// magnetization preparation
-		OPTL_UINT(0, "mag_prep", &seq.magn.mag_prep, "mag_prep", "Magn. preparation [OFF, IR_NON]"),
+		OPTL_SELECT(0, "IR_NON", enum mag_prep, &seq.magn.mag_prep, PREP_IR_NON, "Magn. preparation: Nonselective Inversion (default: off)"),
 		OPTL_DOUBLE(0, "TI", &seq.magn.ti, "TI", "Inversion time [us]"),
-		OPTL_UINT(0, "contrast", &seq.phys.contrast, "spoiling", "Spoiling [RF_RANDOM]"),
 
 		// gradient mode
 		OPTL_SELECT(0, "gradient-normal", enum gradient_mode, &gradient_mode, GRAD_NORMAL, "Gradient normal mode (default: fast)"),
@@ -111,7 +122,7 @@ int main_seq(int argc, char* argv[argc])
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 
-	set_loop_dims_and_sms(&seq, 0, seq.loop_dims[SLICE_DIM], seq.loop_dims[PHS1_DIM],
+	set_loop_dims_and_sms(&seq, seq.loop_dims[PHS2_DIM], seq.loop_dims[SLICE_DIM], seq.loop_dims[PHS1_DIM],
 				seq.loop_dims[TIME_DIM], seq.loop_dims[TE_DIM],
 				seq.loop_dims[BATCH_DIM], 1, 1, 1, seq.geom.mb_factor);
 
