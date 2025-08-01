@@ -256,30 +256,28 @@ int main_sample(int argc, char* argv[argc])
 
 			vars = md_alloc_sameplace(DIMS, vars_dims, CFL_SIZE, means);
 			md_zfill(DIMS, vars_dims, vars, 1.0f);
-			min_var = 1.0f;
-
 			debug_printf(DP_WARN, "No variance specified. Set to 1.\n");
 
 		} else {
 
 			vars = load_cfl(vars_file, DIMS, vars_dims);
-			// Find minimum element in vars
-			long num_elements = md_calc_size(DIMS, vars_dims);
-			min_var = crealf(vars[0]);
-
-			for (long i = 1; i < num_elements; i++) {
-
-				float v = crealf(vars[i]);
-
-				if (v < min_var)
-					min_var = v;
-			}
-
-			debug_printf(DP_DEBUG2, "Minimum variance in vars: %f\n", min_var);
 		}
 
 		assert(md_check_equal_dims(DIMS, means_dims, vars_dims, ~md_nontriv_dims(DIMS, img_dims)));
 		assert(md_check_equal_dims(DIMS, means_dims, ws_dims, ~md_nontriv_dims(DIMS, img_dims)));
+
+		// Find minimum element in vars
+		long num_elements = md_calc_size(DIMS, vars_dims);
+		min_var = crealf(vars[0]);
+		for (long i = 1; i < num_elements; i++) {
+
+			float v = crealf(vars[i]);
+
+			if (v < min_var)
+				min_var = v;
+		}
+
+		debug_printf(DP_DEBUG2, "Minimum variance in vars: %f\n", min_var);
 
 		nlop = nlop_gmm_score_create(DIMS, img_dims, means_dims, means, vars_dims, vars, ws_dims, ws);
 
@@ -328,6 +326,9 @@ int main_sample(int argc, char* argv[argc])
 	complex float* AHy = my_alloc(DIMS, img_dims, CFL_SIZE);
 	md_clear(DIMS, img_dims, AHy, CFL_SIZE);
 
+	float maxeigen = 0.;
+
+
 	for (int i = N - 1; i >= 0; i--) {
 
 		float var_i = powf(get_sigma(((float)i) / N, sigma_min, sigma_max), 2);
@@ -366,7 +367,7 @@ int main_sample(int argc, char* argv[argc])
 
 		score_op_p = prox_scale_arg_create_F(score_op_p, 0.5); // scale due to implementation of em (add 0.5 factor)
 
-		float gamma = means_file ? (var_i + min_var) * gamma_base : var_i * gamma_base; // stabilization of step size: do not go under minimal variance of underlying distribution
+		float gamma = gamma_base / (1 / (var_i + min_var) + maxeigen);
 		debug_printf(DP_DEBUG2, "gamma: %.5f\n", gamma);
 
 		struct iter_eulermaruyama_conf em_conf = iter_eulermaruyama_defaults;

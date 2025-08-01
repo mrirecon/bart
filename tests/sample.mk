@@ -122,7 +122,7 @@ tests/test-sample-gauss1d_mean_real_gpu: sample avg var cabs calc scale ones nrm
 	rm *.ra; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-# tests for 1D gauss variance and mean. mean=1, var=0.001, real-valued min noise scale = 5 -> sampled noise scale  
+# tests for 1D gauss variance and mean. mean=1, var=0.001, real-valued min noise scale = 5 -> sampled noise scale
 tests/test-sample-gauss1d_mean_real1_gpu: sample avg std cabs calc scale ones nrmse zeros
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
 	$(TOOLDIR)/ones 2 1 1 mu.ra								;\
@@ -171,8 +171,8 @@ tests/test-sample-gauss1d_mean_pc: sample avg var cabs calc scale ones nrmse zer
 	$(TOOLDIR)/ones 2 1 1 mu.ra								;\
 	$(TOOLDIR)/scale 1+1i mu.ra mu.ra							;\
 	$(TOOLDIR)/ones 16 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 vars.ra				;\
-	$(TOOLDIR)/scale 0.5 vars.ra vars.ra						;\
-	$(TOOLDIR)/sample --sigma max=10.,min=0.001 -N100 -K20 -p -s111 --gamma=0.05 --gmm mean=mu.ra,var=vars.ra -S1000 out.ra 	;\
+	$(TOOLDIR)/scale 0.5 vars.ra vars.ra							;\
+	$(TOOLDIR)/sample --sigma max=10.,min=0.01 -N100 -K20 -p -s111 --gamma=0.01 --gmm mean=mu.ra,var=vars.ra -S1000 out.ra 	;\
 	$(TOOLDIR)/calc zimag out.ra out_imag.ra						;\
 	$(TOOLDIR)/calc zreal out.ra out_real.ra						;\
 	$(TOOLDIR)/avg 32768 out_real.ra out_avg_real.ra					;\
