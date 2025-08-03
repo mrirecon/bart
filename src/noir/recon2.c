@@ -412,8 +412,6 @@ void noir2_recon(const struct noir2_conf_s* conf, struct noir2_s* noir_ops,
 
 	nlop_free(nlop_flat);
 
-	md_free(data);
-
 	md_copy(N, img_dims, img, x, CFL_SIZE);
 	md_copy(N, kco_dims, ksens, x + skip, CFL_SIZE);
 
@@ -466,6 +464,7 @@ void noir2_recon(const struct noir2_conf_s* conf, struct noir2_s* noir_ops,
 
 	md_free(x);
 	md_free(ref);
+	md_free(data);
 
 	if (conf->undo_scaling)
 		md_zsmul(N, img_dims, img, img, 1./scaling);
