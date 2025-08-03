@@ -48,6 +48,8 @@ SPOKES_PER_FRAME=0
 TOPTS="-o2 -r -D -O"
 SLW=false
 CC_NONE=false
+PHASE_POLE=
+FAST=" --fast"
 : "${NLMEANS_OPTS:=-p3 -d3 -H0.00005 3}"
 
 export TMPDIR=/dev/shm/
@@ -55,7 +57,7 @@ export TMP_TEMPLATE=tmp.rtreco.XXXXXXXXXX
 
 export OMP_NUM_THREADS=1
 
-while getopts "hl:t:fnRTp:SGL:s:AN" opt; do
+while getopts "hl:t:fnRTp:SGL:s:ANP" opt; do
         case $opt in
 	h)
 		echo "$usage"
@@ -89,6 +91,10 @@ while getopts "hl:t:fnRTp:SGL:s:AN" opt; do
 	;;
 	p)
 		CHANNELS="$OPTARG"
+	;;
+	P)
+		PHASE_POLE=" --phase-pole=6"
+		FAST=""
 	;;
 	G)
 		GEOM=true
@@ -135,6 +141,8 @@ export RAGA
 export TINY
 export SLW
 export CC_NONE
+export PHASE_POLE
+export FAST
 
 if $SLW; then
 	OVERGRIDDING=1
@@ -691,7 +699,7 @@ build_pipeline ()
 	else
 
 		BART_STREAM_LOG=$TIMELOG bart nlinv		\
-			--cgiter=10 -S --real-time --fast $GPU	\
+			--cgiter=10 -S --real-time $FAST $PHASE_POLE $GPU	\
 			--sens-os=1.25 -i6 -x$GDIMS:$GDIMS:1	\
 			-t trj_reco.fifo ksp_reco.fifo - $COILS_TMP |\
 		bart -r - flip 3 - -				| \
