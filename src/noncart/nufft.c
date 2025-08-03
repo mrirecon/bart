@@ -414,16 +414,17 @@ static complex float* compute_square_weights(int N, const long wgh_dims[N], cons
 	return sqr_weights;
 }
 
-static struct nufft_conf_s compute_psf_nufft_conf(bool periodic, bool lowmem)
+static struct nufft_conf_s compute_psf_nufft_conf(bool periodic, bool lowmem, bool vptr)
 {
 	struct nufft_conf_s conf = nufft_conf_defaults;
 	conf.periodic = periodic;
 	conf.toeplitz = false;	// avoid infinite loop
 	conf.lowmem = lowmem;
 
-	conf.precomp_linphase = use_compat_to_version("v0.9.00");
-	conf.precomp_roll = use_compat_to_version("v0.9.00");
-	conf.precomp_fftmod = use_compat_to_version("v0.9.00");
+	//FIXME: do we need this? It was old behavior, but not sure if it is relevant for reproducibility.
+	conf.precomp_linphase = vptr || use_compat_to_version("v0.8.00");
+	conf.precomp_roll = vptr || use_compat_to_version("v0.8.00");
+	conf.precomp_fftmod = vptr || use_compat_to_version("v0.8.00");
 
 	return conf;
 }
@@ -459,10 +460,7 @@ complex float* compute_psf(int N, const long img_dims[N], const long trj_dims[N]
 	complex float* ones = md_alloc_sameplace(N, ksp_dims, CFL_SIZE, traj);
 	md_zfill(N, ksp_dims, ones, 1.);
 
-	struct nufft_conf_s conf = compute_psf_nufft_conf(periodic, lowmem);
-	conf.precomp_fftmod = true;
-	conf.precomp_linphase = true;
-	conf.precomp_roll = true;
+	struct nufft_conf_s conf = compute_psf_nufft_conf(periodic, lowmem, is_vptr(traj));
 
 	struct linop_s* lop_nufft = nufft_create2(N, ksp_dims, img_dims2, trj_dims, traj, wgh_dims, sqr_weights, sqr_bas_dims, sqr_basis, conf);
 	lop_nufft = linop_reshape_in_F(lop_nufft, N, img_dims);
@@ -513,7 +511,7 @@ complex float* compute_psf2_decomposed(int N, const long psf_dims[N + 1], unsign
 		}
 	}
 
-	struct nufft_conf_s conf = compute_psf_nufft_conf(periodic, lowmem);
+	struct nufft_conf_s conf = compute_psf_nufft_conf(periodic, lowmem, is_vptr(traj));
 
 	//Workaround, will be fixed with vptr_fun
 	if (is_vptr(traj)) {
