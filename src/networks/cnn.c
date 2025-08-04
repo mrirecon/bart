@@ -264,6 +264,7 @@ static nn_t network_resnet_create(const struct network_s* _config, int NO, const
 
 	auto config = CAST_DOWN(network_resnet_s, _config);
 	assert(config->N == N);
+	assert(0 <= N);
 
 	long kdims[N];
 	network_resnet_get_kdims(config, N, kdims);
