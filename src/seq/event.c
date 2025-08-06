@@ -76,6 +76,22 @@ int seq_grad_to_event(struct seq_event ev[2], double start, const struct grad_tr
 	return 2;
 }
 
+/*
+ * setup a delay time
+ */
+int wait_time_to_event(struct seq_event* ev, double start, double dur)
+{
+	if (0 < dur) {
+
+		ev->type = SEQ_EVENT_WAIT;
+		ev->start = start;
+		ev->end = ev->start + dur;
+		return 1;
+	}
+
+	return 0;
+}
+
 
 /*
  * compute TE for E echoes from list of events

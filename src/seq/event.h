@@ -91,6 +91,8 @@ int events_idx(int n, enum seq_event_type type, int N, const struct seq_event ev
 struct grad_trapezoid;
 int seq_grad_to_event(struct seq_event ev[2], double start, const struct grad_trapezoid* grad, double proj[3]);
 
+int wait_time_to_event(struct seq_event* ev, double start, double dur);
+
 void events_get_te(int E, double te[__VLA(E)], int N, const struct seq_event ev[__VLA(N)]);
 
 double events_end_time(int N, const struct seq_event ev[__VLA(N)], int gradients_only, int flat_end);
