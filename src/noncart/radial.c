@@ -84,42 +84,35 @@ float traj_radial_dcshift(int N, const long tdims[N], const complex float* traj)
 
 float traj_radial_deltak(int N, const long tdims[N], const complex float* traj)
 {
-	assert(1 < N);
 
-	long dtdims[N];
-	md_select_dims(N, ~MD_BIT(1), dtdims, tdims);
+	long tdims1[N];
+	md_select_dims(N, ~MD_BIT(1), tdims1, tdims);
 
-	complex float* dtraj = md_alloc_sameplace(N, dtdims, CFL_SIZE, traj);
+	long pos[N];
+	md_set_dims(N, pos, 0);
+
+
+	complex float* traj1 = md_alloc_sameplace(N, tdims1, CFL_SIZE, traj);
 	// Extract what would be the DC component in Cartesian sampling
 
-	long pos1[N];
-	long pos2[N];
+	pos[1] = tdims[1] / 2;
+	md_slice(N, MD_BIT(1), pos, tdims, traj1, traj, CFL_SIZE);
 
-	md_set_dims(N, pos1, 0);
-	md_set_dims(N, pos2, 0);
+	NESTED(float, dist, (int i))
+	{
+		return sqrtf(powf(crealf(traj1[3 * i + 0]), 2.) + powf(crealf(traj1[3 * i + 1]), 2.));
+	};
 
-	pos1[1] = tdims[1] / 2;
-	pos2[1] = tdims[1] / 2 + 1;
+	float dc_shift = dist(0);
 
-	long tstrs[N];
-	long dtstrs[N];
+	pos[1] = tdims[1] / 2 + 1;
+	md_slice(N, MD_BIT(1), pos, tdims, traj1, traj, CFL_SIZE);
 
-	md_calc_strides(N, tstrs, tdims, CFL_SIZE);
-	md_calc_strides(N, dtstrs, dtdims, CFL_SIZE);
+	float shift1 = dist(0) - dc_shift;
 
-	md_zsub2(N, dtdims, dtstrs, dtraj, tstrs, &(MD_ACCESS(N, tstrs, pos1, traj)), tstrs, &(MD_ACCESS(N, tstrs, pos2, traj)));
+	md_free(traj1);
 
-	long adtdims[N];
-	md_select_dims(N, ~MD_BIT(0), adtdims, dtdims);
-
-	complex float* adtraj = md_alloc_sameplace(N, adtdims, CFL_SIZE, traj);
-	md_zrss(N, dtdims, MD_BIT(0), adtraj, dtraj);
-	md_free(dtraj);
-
-	float dk = crealf(adtraj[0]);
-	md_free(adtraj);
-
-	return dk;
+	return shift1;
 }
 
 bool traj_radial_same_dk(int N, const long tdims[N], const complex float* traj)
