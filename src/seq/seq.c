@@ -17,6 +17,7 @@
 #include "seq/adc_rf.h"
 #include "seq/pulse.h"
 #include "seq/flash.h"
+#include "seq/mag_prep.h"
 
 #include "seq.h"
 
@@ -253,34 +254,13 @@ int seq_block(int N, struct seq_event ev[N], struct seq_state* seq_state, const 
 
 		if (seq_state->pos[COEFF2_DIM] > 1) {
 
+			int i = 0;
 			if (md_check_equal_dims(DIMS, zeros, seq_state->pos, ~(BATCH_FLAG | msm_flag | COEFF2_FLAG))) {
 
-				if (PREP_OFF != seq->magn.mag_prep) {
+				seq_state->mode = BLOCK_PRE;
+				i += mag_prep(ev + i, seq);
 
-					int i = 0;
-					seq_state->mode = BLOCK_PRE;
-
-					i += prep_rf_inv(ev + i, 0., seq);
-
-					struct grad_trapezoid spoil = {
-						.ampl = 8,
-						.rampup = 800,
-						.flat = 8200,
-						.rampdown = 600,
-					};
-
-					double projSLICE[3] = { 0. , 0. , 1. };
-
-					i+= seq_grad_to_event(ev + i, ev[i - 1].end, &spoil, projSLICE);
-					
-					ev[i].start = ev[i - 1].end;
-					ev[i].end = ev[i].start + seq->magn.ti;
-					ev[i].type = SEQ_EVENT_WAIT;
-
-					i++;
-
-					return i;
-				}
+				return i;
 			}
 
 		} else if (seq_state->pos[PHS1_DIM] > 0) {
