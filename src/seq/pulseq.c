@@ -56,6 +56,76 @@ do {									\
 #define RF_ACCESS(X) X(id) X(mag) X(mag_id) X(ph_id) X(time_id) X(delay) X(freq) X(phase)
 
 
+static struct shape make_shape(int id, int num, int len, const double val[len])
+{
+	struct shape shape = { id, num, vec_init() };
+
+	bool compression = (num != len);
+	double value = 0.;
+
+	for (int i = 0; i < len; i++) {
+
+		int count = 1;
+
+		double update = val[i];
+		if (compression && (0 < i) && (i < len - 1) && (val[i - 1] == val[i]))
+			count += val[++i];
+
+		while (count--)
+			VEC_ADD(shape.values, (compression) ? value += update : update);
+	}
+
+	assert(shape.values->len == num);
+	return shape;
+}
+
+static struct shape make_compressed_shape(int id, int len, const double val[len])
+{
+	struct shape shape = { id, len, vec_init() };
+
+	double der = 0.;
+
+	int count = 0;
+	
+	for(int i = 0; i <= len; i++) {
+
+		double der_i = 1;
+
+		if (i < len)
+			der_i = val[i] - ((0 == i) ? 0. : val[i - 1]);
+
+		if (1.e-12 > fabs(der - der_i) && (i != (len))) {
+
+			double a = (1.e-8 > fabs(der_i)) ? 0. : der_i;
+
+			if (count < 2)
+				VEC_ADD(shape.values, a);
+
+			count++;
+		}
+		else {
+
+			if (count > 3)
+				VEC_ADD(shape.values, count - 2);
+
+			if (i < len)
+				VEC_ADD(shape.values, der_i);
+
+			der = der_i;
+			count = 1;
+		}
+	}
+
+	if (shape.values && ((int)(0.75 * len) < shape.values->len)) {
+
+		debug_printf(DP_DEBUG3, "insufficient forced compression (%d/%d), return uncompressed shape\n", shape.values->len, len);
+		xfree(shape.values);
+		return make_shape(id, len, len, val); // uncompressed shape because num == len
+	}
+
+	return shape;
+}
+
 void pulseq_init(struct pulseq *ps)
 {
 	ps->version[0] = 1;
