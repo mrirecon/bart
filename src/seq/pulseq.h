@@ -4,6 +4,9 @@
 #include <complex.h>
 #include "misc/mri.h"
 
+#include "seq/event.h"
+
+
 struct ps_block {
 
 	int num;
@@ -85,4 +88,6 @@ struct pulseq {
 
 extern void pulseq_init(struct pulseq *ps);
 extern void pulseq_free(struct pulseq *ps);
+
+extern void pulse_shapes_to_pulseq(struct pulseq *ps, int N, const struct rf_shape rf_shapes[__VLA(N)]);
 

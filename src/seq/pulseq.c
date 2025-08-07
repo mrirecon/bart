@@ -12,6 +12,8 @@
 #include "misc/version.h"
 #include "misc/debug.h"
 #include "misc/mri.h"
+#include "seq/event.h"
+#include "seq/seq.h"
 
 #include "pulseq.h"
 
@@ -158,3 +160,39 @@ void pulseq_free(struct pulseq *ps)
 
 	xfree(ps->shapes);
 }
+
+
+void pulse_shapes_to_pulseq(struct pulseq *ps, int N, const struct rf_shape rf_shapes[N])
+{
+	assert(0 == ps->shapes->len);
+	double tmp[2];
+	for (int i = 0; i < N; i++) {
+	
+		long samples = rf_shapes[i].samples;
+		double mag[samples];
+		double pha[samples];
+		double time[samples];
+
+		int mag_id = 3 * i + 1;
+
+		float m;
+		float p;
+
+		for (int j = 0; j < samples; j++) {
+
+			idea_cfl_to_sample(&rf_shapes[i], j, &m, &p);
+			mag[j] = (double)m;
+			pha[j] = (double)p / (2 * M_PI);
+			time[j] = round(j * rf_shapes[i].sar_dur / rf_shapes[i].samples / (1.e6 * ps->rf_raster_time));
+		}
+
+		VEC_ADD(ps->shapes, make_compressed_shape(mag_id, samples, mag));
+		VEC_ADD(ps->shapes, make_compressed_shape(mag_id + 1, samples, pha));
+
+		if (rf_shapes[i].samples != (1.e-6 / ps->rf_raster_time) * rf_shapes[i].sar_dur)
+			VEC_ADD(ps->shapes, make_compressed_shape(mag_id + 2, samples, time));
+		else
+		 	VEC_ADD(ps->shapes, make_compressed_shape(mag_id + 2, 2, tmp));
+	}
+}
+
