@@ -215,10 +215,14 @@ long seq_block_rdt(int N, const struct seq_event ev[N])
 	return round_up_GRT(events_end_time(N, ev, 1, 0) - seq_block_end_flat(N, ev));
 }
 
+static long get_chrono_slice(const struct seq_state* seq_state, const struct seq_config* seq)
+{
+	return (1 < seq->geom.mb_factor) ? seq_state->pos[PHS2_DIM] + seq_state->pos[SLICE_DIM] * seq->loop_dims[PHS2_DIM] : seq_state->pos[SLICE_DIM];
+}
 
 int seq_block(int N, struct seq_event ev[N], struct seq_state* seq_state, const struct seq_config* seq)
 {
-	seq_state->chrono_slice = seq_state->pos[SLICE_DIM];
+	seq_state->chrono_slice = get_chrono_slice(seq_state, seq);
 
 	if (BLOCK_KERNEL_PREPARE == seq_state->mode) {
 
