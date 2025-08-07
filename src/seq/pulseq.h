@@ -93,3 +93,5 @@ extern void pulse_shapes_to_pulseq(struct pulseq *ps, int N, const struct rf_sha
 
 extern void events_to_pulseq(struct pulseq *ps, enum block mode, long tr, struct seq_sys sys, int M, const struct rf_shape rf_shapes[__VLA(M)], int N, const struct seq_event ev[__VLA(N)]);
 
+extern void pulseq_writef(FILE *fp, struct pulseq *ps);
+

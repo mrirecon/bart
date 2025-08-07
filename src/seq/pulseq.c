@@ -323,3 +323,77 @@ void events_to_pulseq(struct pulseq *ps, enum block mode, long tr, struct seq_sy
 }
 
 
+
+void pulseq_writef(FILE *fp, struct pulseq *ps)
+{
+	fprintf(fp, "# Pulseq sequence file\n"
+		    "# Created by BART %s\n", bart_version);
+
+	fprintf(fp, "\n[VERSION]\nmajor %d\nminor %d\nrevision %d\n",
+		ps->version[0], ps->version[1], ps->version[2]);
+
+	fprintf(fp, "\n[DEFINITIONS]\n");
+	fprintf(fp, "AdcRasterTime %.e\n", ps->adc_raster_time);
+	fprintf(fp, "BlockDurationRaster %.e\n", ps->block_raster_time);
+	fprintf(fp, "GradientRasterTime %.e\n", ps->gradient_raster_time);
+	fprintf(fp, "RadiofrequencyRasterTime %.e\n", ps->rf_raster_time);
+	fprintf(fp, "TotalDuration %.5f\n", ps->total_duration);
+
+	fprintf(fp, "\n\n# Format of blocks:\n");
+	fprintf(fp, "# NUM DUR RF  GX  GY  GZ  ADC  EXT");
+	fprintf(fp, "\n[BLOCKS]\n");
+#define ACCESS(X) , ps->ps_blocks->data[i].X
+	for (int i = 0; i < ps->ps_blocks->len; i++)
+		fprintf(fp, BLOCKS_FORMAT "\n" BLOCKS_ACCESS(ACCESS));
+#undef	ACCESS
+
+	fprintf(fp, "\n[ADC]\n");
+#define ACCESS(X) , ps->adcs->data[i].X
+	for (int i = 0; i < ps->adcs->len; i++)
+		fprintf(fp, ADC_FORMAT "\n" ADC_ACCESS(ACCESS));
+#undef	ACCESS
+
+	fprintf(fp, "\n[GRADIENTS]\n");
+#define ACCESS(X) , ps->gradients->data[i].X
+	for (int i = 0; i < ps->gradients->len; i++)
+		fprintf(fp, GRADIENTS_FORMAT "\n" GRADIENTS_ACCESS(ACCESS));
+#undef	ACCESS
+
+	fprintf(fp, "\n[TRAP]\n");
+#define ACCESS(X) , ps->trapezoids->data[i].X
+	for (int i = 0; i < ps->trapezoids->len; i++)
+		fprintf(fp, TRAP_FORMAT "\n" TRAP_ACCESS(ACCESS));
+#undef	ACCESS
+
+	fprintf(fp, "\n[RF]\n");
+#define ACCESS(X) , ps->rfpulses->data[i].X
+	for (int i = 0; i < ps->rfpulses->len; i++)
+		fprintf(fp, RF_FORMAT "\n" RF_ACCESS(ACCESS));
+#undef	ACCESS
+
+	fprintf(fp, "\n[SHAPES]\n");
+	for (int i = 0; i < ps->shapes->len; i++) {
+
+		fprintf(fp, "\nshape_id %d\n", i + 1);
+		struct shape sh = ps->shapes->data[i];
+
+		fprintf(fp, "num_samples %d\n", sh.num);
+
+		for (int j = 0; j < sh.values->len; j++) {
+
+			if (1 < sh.values->data[j])
+				fprintf(fp, "%d\n", (int)sh.values->data[j]);
+			else
+				fprintf(fp, "%.10f\n", sh.values->data[j]);
+		}
+	}
+
+
+	fprintf(fp, "\n[SIGNATURE]\n");
+	fprintf(fp, "# TODO\n");
+
+	pulseq_free(ps);
+}
+
+
+
