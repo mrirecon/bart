@@ -11,6 +11,7 @@
 
 #include "seq/config.h"
 #include "seq/event.h"
+#include "seq/flash.h"
 
 #include "seq/pulseq.c"
 
@@ -100,12 +101,12 @@ static bool test_rf_shape1(void)
 
 	struct pulseq ps;
 	pulseq_init(&ps);
-	
+
 	pulse_shapes_to_pulseq(&ps, 1, pulse);
 
 	if (3 != ps.shapes->len)
 		return false;
-	
+
 	if (seq.phys.rf_duration != ps.shapes->data[0].values->len)
 		return false;
 
@@ -116,7 +117,7 @@ static bool test_rf_shape1(void)
 	}
 
 	const double good[12] = {0.5, 0.0, 0.0, 144., -0.5, 0.0, 0.0, 324., 0.5, 0.0, 0.0, 143.};
-	
+
 	if ((int)ARRAY_SIZE(good) != ps.shapes->data[1].values->len)
 		return false;
 
@@ -144,12 +145,12 @@ static bool test_rf_shape2(void)
 
 	struct pulseq ps;
 	pulseq_init(&ps);
-	
+
 	pulse_shapes_to_pulseq(&ps, 2, pulse);
 
 	if (6 != ps.shapes->len)
 		return false;
-	
+
 	if (5000 != ps.shapes->data[3].values->len)
 		return false;
 
@@ -165,7 +166,7 @@ static bool test_rf_shape2(void)
 	}
 
 	const double good[4] = { 0.0, 2.0, 2., 4997. };
-	
+
 	if ((int)ARRAY_SIZE(good) != ps.shapes->data[5].values->len)
 		return false;
 
@@ -179,3 +180,63 @@ static bool test_rf_shape2(void)
 }
 
 UT_REGISTER_TEST(test_rf_shape2);
+
+
+
+
+static bool test_events_to_pulseq(void)
+{
+	struct seq_event ev[20];
+	struct seq_config seq = seq_config_defaults;
+	struct seq_state seq_state = { };
+	seq_state.mode = BLOCK_KERNEL_IMAGE;
+
+	int e = flash(20, &ev[0], &seq_state, &seq);
+
+	struct pulseq ps;
+	pulseq_init(&ps);
+
+	struct rf_shape pulse[1];
+	seq_sample_rf_shapes(1, pulse, &seq);
+
+	events_to_pulseq(&ps, seq_state.mode, seq.phys.tr, seq.sys, 1, pulse, e, ev);
+
+	if (1 != ps.ps_blocks->len)
+		return false;
+
+	if (UT_TOL < fabs(seq.phys.tr * 1e-6 - ps.total_duration))
+	 	return false;
+
+	// check ADC
+	if (1 != ps.adcs->len)
+		return false;
+
+	if ((seq.geom.baseres * 2) != (int)ps.adcs->data[0].num)
+		return false;
+
+	if ((seq.phys.dwell / 2. * 1000.) != ps.adcs->data[0].dwell)
+		return false;
+
+
+	// iso-center measurement -> phase beginning of rf == phase adc
+	if (ps.rfpulses->data[0].phase != ps.adcs->data[0].phase)
+		return false;
+
+	// check RF
+	if (1 != ps.rfpulses->len)
+		return false;
+
+	if (UT_TOL < fabs(100.962703 - ps.rfpulses->data[0].mag)) // reference amplitude for 6deg/620us
+		return false;
+
+	// always maximum gradient ampliude
+	if (1021813.8 != ps.gradients->data[0].amp)
+		return false;
+
+	pulseq_free(&ps);
+
+	return true;
+}
+
+UT_REGISTER_TEST(test_events_to_pulseq);
+

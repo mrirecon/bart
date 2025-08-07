@@ -12,6 +12,8 @@
 #include "misc/version.h"
 #include "misc/debug.h"
 #include "misc/mri.h"
+
+#include "seq/config.h"
 #include "seq/event.h"
 #include "seq/seq.h"
 
@@ -195,4 +197,129 @@ void pulse_shapes_to_pulseq(struct pulseq *ps, int N, const struct rf_shape rf_s
 		 	VEC_ADD(ps->shapes, make_compressed_shape(mag_id + 2, 2, tmp));
 	}
 }
+
+
+
+static void grad_to_pulseq(int grad_id[3], struct pulseq *ps, struct seq_sys sys, int N, const struct seq_event ev[N])
+{
+	double g[MAX_GRAD_POINTS][3];
+	seq_compute_gradients(MAX_GRAD_POINTS, g, 10., N, ev);
+	long grad_len = (seq_block_end_flat(N, ev) + seq_block_rdt(N, ev)) / GRAD_RASTER_TIME;
+
+	double g_axis[grad_len];
+
+	for (int a = 0; a < 3; a++) {
+
+		for (int i = 0; i < grad_len; i++)
+			g_axis[i] = - g[i][a] / sys.grad.max_amplitude; // -1. for constistency
+		
+		int sid = ps->shapes->len + 1;
+		struct shape tmp_shape = make_compressed_shape(sid, grad_len, g_axis);
+		auto _tmp = tmp_shape.values;
+		VEC_ADD(ps->shapes, tmp_shape);
+		(void)_tmp;
+		//VEC_ADD(ps->shapes, make_compressed_shape(sid, grad_len, g_axis));
+
+		grad_id[a] = ps->gradients->len + 1;
+		struct gradient g = { 
+
+			.id = grad_id[a],
+			.amp = sys.grad.max_amplitude * sys.gamma * 1.e3,
+			.shape_id = sid
+		};
+
+		VEC_ADD(ps->gradients, g);
+	}
+}
+
+static double phase_pulseq(const struct seq_event* ev)
+{
+	double phase_mid = (SEQ_EVENT_PULSE == ev->type) ? ev->pulse.phase : ev->adc.phase;
+	double freq = (SEQ_EVENT_PULSE == ev->type) ? ev->pulse.freq : ev->adc.freq;
+	double ret = fmod(DEG2RAD(- freq * 0.000360 * (ev->mid - ev->start) + phase_mid), 2. * M_PI);
+	return (ret < 0.) ? (ret + 2. * M_PI) : ret;
+}
+
+static int adc_to_pulseq(struct pulseq *ps, int N, const struct seq_event ev[N])
+{
+	int adc_idx = events_idx(0, SEQ_EVENT_ADC, N, ev);
+	if (0 > adc_idx)
+		return 0;
+
+	assert(SEQ_EVENT_ADC == ev[adc_idx].type);
+	int adc_id = ps->adcs->len + 1;
+	struct adc a = {
+
+		.id = adc_id,
+		.num = (uint64_t)lround(ev[adc_idx].adc.columns * ev[adc_idx].adc.os),
+		.dwell = (uint64_t)lround(ev[adc_idx].adc.dwell_ns / ev[adc_idx].adc.os),
+		.delay = ev[adc_idx].start,
+		.freq = ev[adc_idx].adc.freq, 
+		.phase = phase_pulseq(&ev[adc_idx]) 
+	};
+
+	VEC_ADD(ps->adcs, a);
+	return adc_id;
+}
+
+static int rf_to_pulseq(struct pulseq *ps, int M, const struct rf_shape rf_shapes[M], int N, const struct seq_event ev[N])
+{
+	int rf_idx = events_idx(0, SEQ_EVENT_PULSE, N, ev);
+	if (0 > rf_idx) 
+		return 0;
+
+	assert(SEQ_EVENT_PULSE == ev[rf_idx].type);
+	int rf_id = ps->rfpulses->len + 1;
+
+	int pulse_id = ev[rf_idx].pulse.shape_id;
+	int mag_id = 3 * pulse_id + 1;
+	
+	double ampl = rf_shapes[pulse_id].max / (2. * M_PI);
+
+	int time_id = 0;
+
+	if (rf_shapes[pulse_id].samples != (1.e-6 / ps->rf_raster_time) * rf_shapes[pulse_id].sar_dur)
+		time_id = mag_id + 2;
+
+	struct rfpulse rf = { 
+
+		.id = rf_id,
+		.mag = ampl,
+		.mag_id = mag_id,
+		.ph_id = mag_id + 1,
+		.time_id = time_id,
+		.delay = (uint64_t)(ev[rf_idx].start),
+		.freq = ev[rf_idx].pulse.freq,
+		.phase = phase_pulseq(&ev[rf_idx])
+	};
+
+	VEC_ADD(ps->rfpulses, rf);
+	return rf_id;
+}
+
+void events_to_pulseq(struct pulseq *ps, enum block mode, long tr, struct seq_sys sys, int M, const struct rf_shape rf_shapes[M], int N, const struct seq_event ev[N])
+{
+	unsigned long dur = seq_block_end(N, ev, mode, tr) / (1.e6 * ps->block_raster_time);
+	ps->total_duration += dur * ps->block_raster_time;
+
+	int adc_id = adc_to_pulseq(ps, N, ev);
+
+	int rf_id = rf_to_pulseq(ps, M, rf_shapes, N, ev);
+
+	int g_id[3] = { 0, 0, 0 };
+	grad_to_pulseq(g_id, ps, sys, N, ev);
+	
+	struct ps_block b = {
+
+		.num = ps->ps_blocks->len + 1,
+		.dur = dur,
+		.rf = rf_id,
+		.g = { g_id[0], g_id[1], g_id[2] },
+		.adc = adc_id,
+		.ext = 0
+	};
+
+	VEC_ADD(ps->ps_blocks, b);
+}
+
 
