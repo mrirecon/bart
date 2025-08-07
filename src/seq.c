@@ -25,6 +25,7 @@
 #include "seq/misc.h"
 #include "seq/flash.h"
 #include "seq/kernel.h"
+#include "seq/pulseq.h"
 
 
 #ifndef CFL_SIZE
@@ -40,12 +41,14 @@ int main_seq(int argc, char* argv[argc])
 	const char* grad_file = NULL;
 	const char* mom_file = NULL;
 	const char* adc_file = NULL;
+	const char* seq_file = NULL;
 
 	struct arg_s args[] = {
 
 		ARG_OUTFILE(false, &grad_file, "gradients (x,y,z)"),
 		ARG_OUTFILE(false, &mom_file, "0th moment (x,y,z)"),
 		ARG_OUTFILE(false, &adc_file, "phase of adc, and 0th moment (x,y,z) at sample points"),
+		ARG_OUTFILE(false, &seq_file,  "pulseq file"),
 	};
 
 	float dt = -1.;
@@ -227,6 +230,7 @@ int main_seq(int argc, char* argv[argc])
 	if (NULL != adc_file)
 		out_adc = create_cfl(adc_file, DIMS, adims);
 
+	struct pulseq ps;
 	struct rf_shape rf_shapes[MAX_RF_PULSES];
 	int rfs = seq_sample_rf_shapes(MAX_RF_PULSES, rf_shapes, &seq);
 
@@ -238,6 +242,12 @@ int main_seq(int argc, char* argv[argc])
 		double n = idea_pulse_norm_sum(&rf_shapes[i]);
 
 		debug_printf(DP_DEBUG3, "RF pulse %d: scale = %f, sum = %f\n", i, s, n);
+	}
+
+	if (NULL != seq_file) {
+
+		pulseq_init(&ps);
+		pulse_shapes_to_pulseq(&ps, rfs, rf_shapes);
 	}
 
 	do {
@@ -252,9 +262,13 @@ int main_seq(int argc, char* argv[argc])
 		if (0 > E)
 			error("Sequence not possible! - check seq_config, %d] \n", E);
 
+		if ((BLOCK_KERNEL_NOISE == seq_state.mode) || (0 == E)) // no noise_scan with pulseq
+			goto debug_print_events;
 
+		if (NULL != seq_file)
+			events_to_pulseq(&ps, seq_state.mode, seq.phys.tr, seq.sys, rfs, rf_shapes, E, ev);
 
-		if ((BLOCK_KERNEL_IMAGE != seq_state.mode) || (0 == E))
+		if (BLOCK_KERNEL_IMAGE != seq_state.mode)
 			goto debug_print_events;
 
 		debug_printf(DP_DEBUG1, "end of last event: %.2f \t end of calc: %.2f\n",
@@ -346,6 +360,15 @@ debug_print_events:
 
 	if (NULL != adc_file)
 		unmap_cfl(DIMS, adims, out_adc);
+
+	if (NULL != seq_file) {
+
+		FILE *fp = fopen(seq_file, "w+");
+		if (NULL == fp)
+			error("Opening file for .seq");
+		pulseq_writef(fp, &ps);
+		fclose(fp);
+	}
 
 	return 0;
 }
