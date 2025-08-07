@@ -69,11 +69,11 @@ static bool test_sinc(void)
 	if (rfs != 1)
 		return false;
 
-	if (rf_shape[0].samples != 2 * seq.phys.rf_duration)
+	if (rf_shape[0].samples != 1 * seq.phys.rf_duration)
 		return 0;
 
 	// expected in reference implementation
-	const double good_norm = 330.154932;
+	const double good_norm = 330.154932 / 2.;
 
 	double s = idea_pulse_scaling(&rf_shape[0]);
 	double n = idea_pulse_norm_sum(&rf_shape[0]);
@@ -85,21 +85,21 @@ static bool test_sinc(void)
 		return false;
 
 	// expected in reference implementation
-	double good[2] = { 0.000445, 0.046478 };
+	double good[2] = { 0.000445, 0.046339 };
 
-	if (   ((shape_mag[620] - 1.0) > 1e-5)
-	    || (fabs(good[0] - shape_mag[946]) > 1e-5)
-	    || (fabs(good[0] - shape_mag[294]) > 1e-5)
-	    || (fabs(good[1] - shape_mag[1035]) > 1e-5)
-	    || (fabs(good[1] - shape_mag[205])  > 1e-5))
+	if (   ((shape_mag[310] - 1.0) > 1e-5)
+	    || (fabs(good[0] - shape_mag[473]) > 1e-5)
+	    || (fabs(good[0] - shape_mag[147]) > 1e-5)
+	    || (fabs(good[1] - shape_mag[518]) > 1e-5)
+	    || (fabs(good[1] - shape_mag[102]) > 1e-5))
 			return false;
 
 	for (int i = 0; i < rf_shape[0].samples; i++) {
 
-		if (((i < 294) || (i > 946)) && (fabs(shape_pha[i] - M_PI) > 1e-4))
+		if (((i < 294/2) || (i > 946/2)) && (fabs(shape_pha[i] - M_PI) > 1e-4))
 			return false;
 
-		if ((i > 294) && (i < 946) && (fabs(shape_pha[i]) > 1e-5))
+		if ((i > 294/2) && (i < 946/2) && (fabs(shape_pha[i]) > 1e-5))
 			return  false;
 	}
 
@@ -121,13 +121,13 @@ static bool test_sms(void)
 	if (rfs != 3)
 		return false;
 
-	if ((rf_shape[0].samples != 2 * seq.phys.rf_duration)
-	    || (rf_shape[1].samples != 2 * seq.phys.rf_duration)
-	    || (rf_shape[2].samples != 2 * seq.phys.rf_duration))
+	if ((rf_shape[0].samples != 1 * seq.phys.rf_duration)
+	    || (rf_shape[1].samples != 1 * seq.phys.rf_duration)
+	    || (rf_shape[2].samples != 1 * seq.phys.rf_duration))
 		return 0;
 
 	// expected in reference implementation
-	const double good_norm = 110.051648;
+	const double good_norm = 110.051648 / 2.;
 
 	double s = idea_pulse_scaling(&rf_shape[0]);
 
@@ -144,7 +144,7 @@ static bool test_sms(void)
 		return false;
 
 	// values exported from reference implementation
-	int idx[7] = { 620, 596, 644, 692, 548, 764, 476 };
+	int idx[7] = { 310, 298, 322, 346, 274, 382, 238 };
 
 	float mag[3][7] = {
 		{ 1., 0.349166, 0.349166, 0.243029, 0.243031, 0.199427, 0.199427 },

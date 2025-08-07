@@ -36,7 +36,7 @@ int seq_sample_rf_shapes(int N, struct rf_shape pulse[N], const struct seq_confi
 
 		const float alpha = 0.5;
 
-		pulse[idx].samples = 2 * seq->phys.rf_duration;
+		pulse[idx].samples = 1 * seq->phys.rf_duration;
 
 		if (MAX_RF_SAMPLES < pulse[idx].samples)
 			return -1;
@@ -65,13 +65,14 @@ int seq_sample_rf_shapes(int N, struct rf_shape pulse[N], const struct seq_confi
 
 		pulse[idx].max = hs.A;
 		pulse[idx].integral = pulse_hypsec_integral(&hs);
+		pulse[idx].fa_prep = 180.;
 
 		struct pulse* pp = CAST_UP(&hs);
 
 		pulse[idx].sar_calls = seq->loop_dims[BATCH_DIM];
-		pulse[idx].sar_dur = 1.E6 * pp->duration;
+		pulse[idx].sar_dur = round(1.E6 * pp->duration); // otherwise preparation fails
 
-		pulse[idx].samples = 0.5 * pulse[idx].sar_dur;
+		pulse[idx].samples = lround(0.5 * pulse[idx].sar_dur);
 
 		if (MAX_RF_SAMPLES < pulse[idx].samples)
 			return -1;
