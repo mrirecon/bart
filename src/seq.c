@@ -178,13 +178,14 @@ int main_seq(int argc, char* argv[argc])
 		assert(NULL == mom_file);
 	}
 
-	mdims[READ_DIM] = support ? events_counter(SEQ_EVENT_GRADIENT, E, ev) : samples;
-	mdims[MAPS_DIM] = support ? 6 : 3;
+	assert(1 == kernel_dims[PHS2_DIM]);
+
+	mdims[PHS2_DIM] = mdims[PHS1_DIM];
+	mdims[PHS1_DIM] = support ? events_counter(SEQ_EVENT_GRADIENT, E, ev) : samples;
+	mdims[READ_DIM] = support ? 6 : 3;
 
 	long mstrs[DIMS];
 	md_calc_strides(DIMS, mstrs, mdims, CFL_SIZE);
-
-	assert(1 == kernel_dims[PHS2_DIM]);
 
 	long adims[DIMS];
 	md_copy_dims(DIMS, adims, kernel_dims);
@@ -244,7 +245,7 @@ int main_seq(int argc, char* argv[argc])
 
 
 		double ddt = (0 > dt) ? 1. * seq.phys.tr / samples : ceil(dt * 1.e6)/ 1.e6; //FIXME breaks with float
-		double g2[samples][mdims[MAPS_DIM]];
+		double g2[samples][mdims[READ_DIM]];
 
 
 		debug_printf(DP_DEBUG1, "end of last event: %.2f \t end of calc: %.2f\n",
@@ -259,14 +260,19 @@ int main_seq(int argc, char* argv[argc])
 		compute_moment0(samples, m0, ddt, E, ev);
 
 
+		long grad_pos[DIMS];
+		md_copy_dims(DIMS, grad_pos, seq_state.pos);
+		grad_pos[PHS2_DIM] = seq_state.pos[PHS1_DIM];
+		grad_pos[PHS1_DIM] = 0;
+
 		do {
 			if (NULL != out_grad)
-				MD_ACCESS(DIMS, mstrs, seq_state.pos, out_grad) = g2[seq_state.pos[READ_DIM]][seq_state.pos[MAPS_DIM]];
+				MD_ACCESS(DIMS, mstrs, grad_pos, out_grad) = g2[grad_pos[PHS1_DIM]][grad_pos[READ_DIM]];
 
 			if (NULL != out_mom)
-				MD_ACCESS(DIMS, mstrs, seq_state.pos, out_mom) = m0[seq_state.pos[READ_DIM]][seq_state.pos[MAPS_DIM]];
+				MD_ACCESS(DIMS, mstrs, grad_pos, out_mom) = m0[grad_pos[PHS1_DIM]][grad_pos[READ_DIM]];
 
-		} while (md_next(DIMS, mdims, (READ_FLAG | MAPS_FLAG), seq_state.pos));
+		} while (md_next(DIMS, mdims, (READ_FLAG | PHS1_FLAG), grad_pos));
 
 		if (NULL != out_adc) {
 
