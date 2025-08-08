@@ -62,4 +62,3 @@ int main_window(int argc, char* argv[argc])
 	return 0;
 }
 
-

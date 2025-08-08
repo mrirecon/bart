@@ -65,7 +65,7 @@ int main_nufftbase(int argc, char* argv[argc])
 
 		md_zabs(DIMS, traj_dims, traj, traj);
 		
-		complex float inv_dims[3] = { 1. / dims[0],  1. / dims[1], 1. / dims[2]};
+		complex float inv_dims[3] = { 1. / dims[0], 1. / dims[1], 1. / dims[2] };
 		md_zmul2(DIMS, traj_dims, traj_strs, traj, traj_strs, traj, cord_strs, inv_dims);
 
 		md_zslessequal(DIMS, traj_dims, traj, traj, 0.5);
@@ -87,3 +87,4 @@ int main_nufftbase(int argc, char* argv[argc])
 
 	return 0;
 }
+

@@ -106,12 +106,13 @@ static void toimg_stack(const char* name, bool dicom, bool dim_names, bool singl
 
 	for (int i = 0; i < DIMS; i++) {
 
-		if (1 != dims[i])  {
+		if (1 == dims[i])
+			continue;
 
-			if (2 > l)
-				im_flags |= MD_BIT(i);
-			sq_dims[l++] = dims[i];
-		}
+		if (2 > l)
+			im_flags |= MD_BIT(i);
+
+		sq_dims[l++] = dims[i];
 	}
 
 	float max = 0.;
@@ -232,5 +233,4 @@ int main_toimg(int argc, char* argv[argc])
 
 	return 0;
 }
-
 

@@ -57,4 +57,3 @@ int main_flatten(int argc, char* argv[argc])
 	return 0;
 }
 
-

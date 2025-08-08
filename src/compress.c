@@ -3,7 +3,6 @@
  * a BSD-style license which can be found in the LICENSE file.
  */
 
-
 #include <stdlib.h>
 #include <assert.h>
 #include <stdio.h>
@@ -94,5 +93,4 @@ int main_compress(int argc, char* argv[argc])
 
 	return 0;
 }
-
 

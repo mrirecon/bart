@@ -64,6 +64,3 @@ int main_std(int argc, char* argv[argc])
 	return 0;
 }
 
-
-
-

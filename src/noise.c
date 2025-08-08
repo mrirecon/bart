@@ -128,6 +128,3 @@ int main_noise(int argc, char* argv[argc])
 	return 0;
 }
 
-
-
-

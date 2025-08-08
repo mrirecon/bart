@@ -117,4 +117,3 @@ int main_ismrmrd(int argc, char* argv[argc])
 	return 0;
 }
 
-

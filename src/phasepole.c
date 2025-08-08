@@ -84,6 +84,7 @@ int main_phasepole(int argc, char* argv[argc])
 
 			long pos_dims[DIMS] = { };
 			md_singleton_dims(DIMS - 3, pos_dims + 3);
+
 			complex float* src = load_cfl(src_file, 3, pos_dims);
 
 			if ((3 != pos_dims[0]) || (2 != pos_dims[1]))
@@ -91,11 +92,13 @@ int main_phasepole(int argc, char* argv[argc])
 
 			pos.N = pos_dims[2];
 			pos.pos = md_alloc(3, pos_dims, sizeof(float));
+
 			md_real(3, pos_dims, pos.pos[0][0], src);
 
 			unmap_cfl(3, pos_dims, src);
 
 			pos.N = pos_dims[2];
+
 		} else {
 
 			if (-1. == center[0])
@@ -106,7 +109,8 @@ int main_phasepole(int argc, char* argv[argc])
 			vec3_copy(pos.pos[0][0], center);
 			vec3_copy(pos.pos[0][1], center);
 		}
-	} else{
+
+	} else {
 
 		if (NULL == src_file)
 			error("Input file must be specified for pole estimation (-e) or correction (default).\n");
@@ -119,6 +123,7 @@ int main_phasepole(int argc, char* argv[argc])
 		curl_dims[ITER_DIM] = ((-1 == conf.normal) && (3 == bitcount(md_nontriv_dims(3, sens_dims)))) ? 3 : 1;
 
 		complex float* curl_map = ((NULL != pmap_file) ? create_cfl : anon_cfl)(pmap_file, DIMS, curl_dims);
+
 		compute_curl_map(conf, DIMS, curl_dims, ITER_DIM, curl_map, sens_dims, sens);
 
 		complex float* wgh = ((NULL != wmap_file) ? create_cfl : anon_cfl)(wmap_file, DIMS, curl_dims);
@@ -129,6 +134,7 @@ int main_phasepole(int argc, char* argv[argc])
 		md_select_dims(DIMS, ~(conf.avg_flag | ITER_FLAG), pmap_dims, curl_dims);
 
 		complex float* acurl_map = ((NULL != apmap_file) ? create_cfl : anon_cfl)(apmap_file, DIMS, pmap_dims);
+
 		average_curl_map(DIMS, pmap_dims, acurl_map, curl_dims, ITER_DIM, curl_map, wgh);
 
 		if (NULL != wgh)
@@ -160,6 +166,7 @@ int main_phasepole(int argc, char* argv[argc])
 
 			debug_printf(DP_WARN, "No poles found, filling output with 1.\n");
 			md_zfill(3, dims, out, 1.);
+
 		} else {
 
 			sample_phase_pole_2D(3, dims, out, pos.N, pos.pos);
@@ -171,10 +178,13 @@ int main_phasepole(int argc, char* argv[argc])
 		if (0 == pos.N) {
 
 			debug_printf(DP_WARN, "No poles found, no output.\n");
+
 		} else {
 
 			complex float* out = create_cfl(dst_file, 3, MD_DIMS(3, 2, pos.N));
+
 			md_zcmpl_real(3, MD_DIMS(3, 2, pos.N), out, (const float*)pos.pos[0][0]);
+
 			unmap_cfl(3, MD_DIMS(3, 2, pos.N), out);
 		}
 	}
@@ -184,5 +194,4 @@ int main_phasepole(int argc, char* argv[argc])
 
 	return 0;
 }
-
 

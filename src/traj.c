@@ -443,5 +443,3 @@ int main_traj(int argc, char* argv[argc])
 	return 0;
 }
 
-
-

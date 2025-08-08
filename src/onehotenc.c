@@ -89,4 +89,3 @@ int main_onehotenc(int argc, char* argv[argc])
 	return 0;
 }
 
-

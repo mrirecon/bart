@@ -1,9 +1,6 @@
 /* Copyright 2018. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
- *
- * Authors:
- * 2018 Martin Uecker
  */
 
 #include <stdbool.h>
@@ -120,5 +117,4 @@ int main_fftrot(int argc, char* argv[argc])
 
 	return 0;
 }
-
 

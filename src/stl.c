@@ -74,7 +74,9 @@ int main_stl(int argc, char* argv[argc])
                 } else {
                         
                         complex float* cmodel = load_cfl(in_file, DIMS, dims);
+
                         model = stl_cfl2d(DIMS, dims, cmodel);
+
                         unmap_cfl(DIMS, dims, cmodel);
                 }
 
@@ -101,7 +103,9 @@ int main_stl(int argc, char* argv[argc])
         } else {
 
                 complex float* cmodel = create_cfl(out_file, DIMS, dims);
+
                 stl_d2cfl(DIMS, dims, model, cmodel);
+
                 unmap_cfl(DIMS, dims, cmodel);
         }
 
@@ -109,5 +113,4 @@ int main_stl(int argc, char* argv[argc])
 
         return 0;
 }
-
 

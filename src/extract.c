@@ -1,9 +1,6 @@
 /* Copyright 2013. The Regents of the University of California.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
- *
- * Authors:
- * 2012 Martin Uecker
  */
 
 #include <stdlib.h>
@@ -63,7 +60,7 @@ int main_extract(int argc, char* argv[argc])
 	md_copy_dims(DIMS, out_dims, in_dims);
 
 
-	long pos2[DIMS] = { [0 ... DIMS - 1] = 0 };
+	long pos2[DIMS] = { };
 
 	for (int i = 0; i < count; i++) {
 
@@ -94,5 +91,4 @@ int main_extract(int argc, char* argv[argc])
 
 	return 0;
 }
-
 

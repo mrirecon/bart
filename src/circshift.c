@@ -63,4 +63,3 @@ int main_circshift(int argc, char* argv[argc])
 	return 0;
 }
 
-

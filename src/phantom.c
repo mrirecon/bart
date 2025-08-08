@@ -3,9 +3,6 @@
  * Copyright 2025. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
- *
- * Authors:
- * 2013-2025 Martin Uecker
  */
 
 #include <stdbool.h>
@@ -338,5 +335,4 @@ int main_phantom(int argc, char* argv[argc])
 
 	return 0;
 }
-
 

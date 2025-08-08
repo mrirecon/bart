@@ -738,4 +738,3 @@ int main_sqpics(int argc, char* argv[argc])
 	return 0;
 }
 
-

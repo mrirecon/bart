@@ -69,6 +69,7 @@ int main_walsh(int argc, char* argv[argc])
 	debug_printf(DP_INFO, "Calibration region %ldx%ldx%ld\n", caldims[0], caldims[1], caldims[2]);
 
 	dims[COIL_DIM] = dims[COIL_DIM] * (dims[COIL_DIM] + 1) / 2;
+
 	complex float* out_data = create_cfl(out_file, DIMS, dims);
 
 	walsh(bsize, dims, out_data, caldims, cal_data);
@@ -81,5 +82,4 @@ int main_walsh(int argc, char* argv[argc])
 
 	return 0;
 }
-
 

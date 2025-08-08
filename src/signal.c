@@ -3,7 +3,6 @@
  * a BSD-style license which can be found in the LICENSE file.
  */
 
-
 #include <math.h>
 #include <complex.h>
 
@@ -260,3 +259,4 @@ int main_signal(int argc, char* argv[argc])
 
 	return 0;
 }
+

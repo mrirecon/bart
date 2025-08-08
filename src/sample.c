@@ -267,11 +267,15 @@ int main_sample(int argc, char* argv[argc])
 			// Find minimum element in vars
 			long num_elements = md_calc_size(DIMS, vars_dims);
 			min_var = crealf(vars[0]);
+
 			for (long i = 1; i < num_elements; i++) {
+
 				float v = crealf(vars[i]);
+
 				if (v < min_var)
 					min_var = v;
 			}
+
 			debug_printf(DP_DEBUG2, "Minimum variance in vars: %f\n", min_var);
 		}
 

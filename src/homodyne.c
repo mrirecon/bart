@@ -76,7 +76,6 @@ static float homodyne_filter(int N, float frac, float alpha, bool clear, long p)
 static complex float* estimate_phase(struct wdata wdata, unsigned long flags,
 		int N, const long dims[N], const complex float* idata, bool center_fft)
 {
-
 	long cdims[N];
 	md_copy_dims(N, cdims, dims);
 	// cdims[0] = cdims[1] = cdims[2] = 24;
@@ -213,5 +212,4 @@ int main_homodyne(int argc, char* argv[argc])
 
 	return 0;
 }
-
 

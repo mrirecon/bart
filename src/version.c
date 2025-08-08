@@ -132,5 +132,3 @@ int main_version(int argc, char* argv[argc])
 	return 0;
 }
 
-
-

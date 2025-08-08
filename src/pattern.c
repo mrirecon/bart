@@ -64,6 +64,3 @@ int main_pattern(int argc, char* argv[argc])
 	return 0;
 }
 
-
-
-

@@ -156,4 +156,3 @@ int main_trajcor(int argc, char* argv[argc])
 	return 0;
 }
 
-

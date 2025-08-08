@@ -71,6 +71,7 @@ int main_toraw(int argc, char* argv[argc])
 		uint8_t s8;
 		uint16_t s16;
 		uint32_t s32;
+
 	} sample[2];
 
 

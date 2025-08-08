@@ -1,9 +1,6 @@
 /* Copyright 2021. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
- *
- * Authors:
- * 2020 Martin Uecker
  */
 
 #include <complex.h>
@@ -109,3 +106,4 @@ int main_conway(int argc, char* argv[argc])
 
 	return 0;
 }
+

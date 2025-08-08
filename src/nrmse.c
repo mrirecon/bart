@@ -113,5 +113,3 @@ int main_nrmse(int argc, char* argv[argc])
 	return (err <= test) ? 0 : 1;
 }
 
-
-

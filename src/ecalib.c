@@ -256,4 +256,3 @@ int main_ecalib(int argc, char* argv[argc])
 	return 0;
 }
 
-

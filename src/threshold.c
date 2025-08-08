@@ -228,4 +228,3 @@ int main_threshold(int argc, char* argv[argc])
 	return 0;
 }
 
-

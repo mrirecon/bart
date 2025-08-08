@@ -1,11 +1,7 @@
 /* Copyright 2013. The Regents of the University of California.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
- *
- * Authors:
- * 2012 Martin Uecker
  */
-
 
 #include <stdlib.h>
 #include <assert.h>
@@ -42,7 +38,7 @@ int main_crop(int argc, char* argv[argc])
 		ARG_OUTFILE(true, &out_file, "output"),
 	};
 
-	const struct opt_s opts[] = {};
+	const struct opt_s opts[] = { };
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
@@ -71,5 +67,4 @@ int main_crop(int argc, char* argv[argc])
 
 	return 0;
 }
-
 

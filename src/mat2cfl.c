@@ -96,3 +96,4 @@ int main(int argc, char* argv[argc])
 
 	matClose(mat);
 }
+

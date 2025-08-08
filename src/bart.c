@@ -336,12 +336,12 @@ static void parse_bart_opts(int* argcp, char*** argvp, int order[DIMS], stream_t
 
 	for (int i = 0, j = 0; i < DIMS; ++i) {
 
-		if (MD_IS_SET(flags, i)) {
+		if (!MD_IS_SET(flags, i))
+			continue;
 
-			offs_size[i] = param_start[j];
-			loop_dims[i] = param_end[j] - param_start[j];
-			j++;
-		}
+		offs_size[i] = param_start[j];
+		loop_dims[i] = param_end[j] - param_start[j];
+		j++;
 	}
 
 #ifdef _OPENMP
@@ -592,7 +592,7 @@ int main_bart(int argc, char* argv[argc])
 
 #ifdef CHECK_EXE_COMMANDS
 		// also check dirname(PATH_TO_BART)/commands/:
-		char exe_loc[1024] = {0};
+		char exe_loc[1024] = { };
 		ssize_t exe_loc_size = ARRAY_SIZE(exe_loc);
 		ssize_t rl = readlink("/proc/self/exe", exe_loc, (size_t)exe_loc_size);
 

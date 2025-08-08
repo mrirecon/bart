@@ -133,22 +133,18 @@ int main_filter(int argc, char* argv[argc])
 	switch (filter_type) {
 
 	case 'm':
-
 		(geom ? md_geometric_medianz2 : md_medianz2)(DIMS + 1, DIMS, tmp_dims, tmp2_strs, out_data, tmp_strs, in_data);
 		break;
 
 	case 'a':
-
 		md_moving_avgz2(DIMS + 1, DIMS, tmp_dims, tmp2_strs, out_data, tmp_strs, in_data);
 		break;
 
 	case 'd':
-
 		(zeroing ? md_zfdiff0 : md_zfdiff)(DIMS, out_dims, dim, out_data, in_data);
 		break;
 		
 	case 'b':
-
 		(zeroing ? md_zfdiff_backwards0 : md_zfdiff_backwards)(DIMS, out_dims, dim, out_data, in_data);
 		break;
 

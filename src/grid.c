@@ -35,7 +35,7 @@ int main_grid(int argc, char* argv[argc])
 		ARG_OUTFILE(true, &out_file, "grid"),
 	};
 
-	long sdims[3] = {-1, -1, -1};
+	long sdims[3] = { -1, -1, -1 };
 	long timedim = -1;
 
 	const struct opt_s opts[] = {
