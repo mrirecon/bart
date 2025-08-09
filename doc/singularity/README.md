@@ -107,11 +107,11 @@ bart
 and a short test verifies that the GPU support is provided:
 ```bash
 # Generate k-space-based phantom data
-bart traj t
-bart phantom -k -t t p
+bart traj trajectory
+bart phantom -k -t trajectory kspace
 
 # Perform an nuFFT on the GPU
-bart nufft -g t p reco
+bart nufft -g trajectory kspace reconstruction
 ```
 
 ### Note
