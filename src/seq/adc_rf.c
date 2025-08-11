@@ -147,8 +147,8 @@ double adc_duration(const struct seq_config* seq)
 static double adc_nco_freq(double proj_angle, long chrono_slice, const struct seq_config* seq)
 {
 	return seq->sys.gamma * 
-		(seq->geom.shift[chrono_slice][0] * ro_amplitude(seq) * cos(proj_angle) 
-		+ seq->geom.shift[chrono_slice][0] * ro_amplitude(seq) * sin(proj_angle));
+		(seq->geom.shift[chrono_slice][0] * ro_amplitude(seq) * sin(proj_angle)
+		+ seq->geom.shift[chrono_slice][1] * ro_amplitude(seq) * cos(proj_angle));
 }
 
 static double adc_nco_correction(double freq, struct seq_phys phys, struct seq_sys /*sys*/)
