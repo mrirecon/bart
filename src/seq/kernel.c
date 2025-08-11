@@ -79,11 +79,11 @@ void compute_adc_samples(int D, const long adc_dims[D], complex float* adc, int 
 		pos[TE_DIM] = e;
 
 		do {
-			double ts = ev[i].start + (pos[0] + 0.5) * dwell;
-			MD_ACCESS(D, adc_strs, (pos[MAPS_DIM] = 0, pos), adc) = ts;
-			MD_ACCESS(D, adc_strs, (pos[MAPS_DIM] = 1, pos), adc) = cexpf(1.i * DEG2RAD(ev[i].adc.phase + ev[i].adc.freq * ts));
+			double ts = ev[i].start + (pos[1] + 0.5) * dwell;
+			MD_ACCESS(D, adc_strs, (pos[READ_DIM] = 0, pos), adc) = ts;
+			MD_ACCESS(D, adc_strs, (pos[READ_DIM] = 1, pos), adc) = cexpf(1.i * DEG2RAD(ev[i].adc.phase + ev[i].adc.freq * ts));
 
-		} while(md_next(D, adc_dims, READ_FLAG, pos));
+		} while(md_next(D, adc_dims, PHS1_FLAG, pos));
 
 		e++;
 	}

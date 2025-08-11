@@ -184,14 +184,17 @@ int main_seq(int argc, char* argv[argc])
 	long mstrs[DIMS];
 	md_calc_strides(DIMS, mstrs, mdims, CFL_SIZE);
 
+	assert(1 == kernel_dims[PHS2_DIM]);
+
 	long adims[DIMS];
 	md_copy_dims(DIMS, adims, kernel_dims);
 
-	adims[READ_DIM] = seq.geom.baseres * seq.phys.os;
-	adims[MAPS_DIM] = 5;
+	adims[PHS2_DIM] = adims[PHS1_DIM]; // consistency with traj tool
+	adims[PHS1_DIM] = seq.geom.baseres * seq.phys.os;
+	adims[READ_DIM] = 5;
 
 	long adc_dims[DIMS];
-	md_select_dims(DIMS, (READ_FLAG | MAPS_FLAG | TE_FLAG), adc_dims, adims);
+	md_select_dims(DIMS, (READ_FLAG | PHS1_FLAG | TE_FLAG), adc_dims, adims);
 
 	long adc_strs[DIMS];
 	md_calc_strides(DIMS, adc_strs, adc_dims, CFL_SIZE);
@@ -208,7 +211,7 @@ int main_seq(int argc, char* argv[argc])
 
 	if (NULL != mom_file)
 		out_mom = create_cfl(mom_file, DIMS, mdims);
-	
+
 	if (NULL != adc_file)
 		out_adc = create_cfl(adc_file, DIMS, adims);
 
@@ -275,20 +278,28 @@ int main_seq(int argc, char* argv[argc])
 
 			float scale = (seq.phys.dwell / seq.phys.os) * ro_amplitude(&seq);
 
+			long adc_pos[DIMS];
+			md_copy_dims(DIMS, adc_pos, seq_state.pos);
+			adc_pos[PHS2_DIM] = seq_state.pos[PHS1_DIM];
+			adc_pos[PHS1_DIM] = 0;
+
 			do {
-				assert(0 == seq_state.pos[MAPS_DIM]);
-				moment_sum(m0_adc, MD_ACCESS(DIMS, adc_strs, seq_state.pos, adc), E, ev);
-				
-				MD_ACCESS(DIMS, astrs, (seq_state.pos[MAPS_DIM] = 0, seq_state.pos), out_adc) = MD_ACCESS(DIMS, adc_strs, (seq_state.pos[MAPS_DIM] = 0, seq_state.pos), adc);
-				MD_ACCESS(DIMS, astrs, (seq_state.pos[MAPS_DIM] = 1, seq_state.pos), out_adc) = MD_ACCESS(DIMS, adc_strs, (seq_state.pos[MAPS_DIM] = 1, seq_state.pos), adc);
+				assert(0 == adc_pos[READ_DIM]);
+				moment_sum(m0_adc, MD_ACCESS(DIMS, adc_strs, adc_pos, adc), E, ev);
 
-				MD_ACCESS(DIMS, astrs, (seq_state.pos[MAPS_DIM] = 2, seq_state.pos), out_adc) = m0_adc[0] / scale;
-				MD_ACCESS(DIMS, astrs, (seq_state.pos[MAPS_DIM] = 3, seq_state.pos), out_adc) = m0_adc[1] / scale;
-				MD_ACCESS(DIMS, astrs, (seq_state.pos[MAPS_DIM] = 4, seq_state.pos), out_adc) = m0_adc[2] / scale;
+				for (int i = 0; i < 3; i++)
+					m0_adc[i] = m0_adc[i] / scale;
 
-				seq_state.pos[MAPS_DIM] = 0;
+				MD_ACCESS(DIMS, astrs, (adc_pos[READ_DIM] = 0, adc_pos), out_adc) = MD_ACCESS(DIMS, adc_strs, (adc_pos[READ_DIM] = 0, adc_pos), adc);
+				MD_ACCESS(DIMS, astrs, (adc_pos[READ_DIM] = 1, adc_pos), out_adc) = MD_ACCESS(DIMS, adc_strs, (adc_pos[READ_DIM] = 1, adc_pos), adc);
 
-			} while (md_next(DIMS, adims, READ_FLAG | TE_FLAG, seq_state.pos));
+				MD_ACCESS(DIMS, astrs, (adc_pos[READ_DIM] = 2, adc_pos), out_adc) = m0_adc[0] / scale;
+				MD_ACCESS(DIMS, astrs, (adc_pos[READ_DIM] = 3, adc_pos), out_adc) = m0_adc[1] / scale;
+				MD_ACCESS(DIMS, astrs, (adc_pos[READ_DIM] = 4, adc_pos), out_adc) = m0_adc[2] / scale;
+
+				adc_pos[READ_DIM] = 0;
+
+			} while (md_next(DIMS, adims, PHS1_FLAG | TE_FLAG, adc_pos));
 
 			md_free(adc);
 		}
@@ -297,7 +308,7 @@ int main_seq(int argc, char* argv[argc])
 
 		for (int i = 0; i < E; i++) {
 
-			debug_printf(DP_DEBUG3, "event[%d]:\t%.2f\t\t%.2f\t\t%.2f\t\t", i, 
+			debug_printf(DP_DEBUG3, "event[%d]:\t%.2f\t\t%.2f\t\t%.2f\t\t", i,
 					ev[i].start, ev[i].mid, ev[i].end);
 
 			if (SEQ_EVENT_GRADIENT == ev[i].type)
@@ -316,7 +327,7 @@ int main_seq(int argc, char* argv[argc])
 
 	if (NULL != mom_file)
 		unmap_cfl(DIMS, mdims, out_mom);
-		
+
 	if (NULL != adc_file)
 		unmap_cfl(DIMS, adims, out_adc);
 
