@@ -77,6 +77,8 @@ void compute_adc_samples(int D, const long adc_dims[D], complex float* adc, int 
 
 		double dwell = (ev[i].end - ev[i].start) / (ev[i].adc.columns * ev[i].adc.os);
 
+		double corr = 0.5; // + 0.5 for adc_nco_correction [optional omit adc.phase - pulse_phase]
+
 		long pos[DIMS] = { };
 		pos[TE_DIM] = e;
 
@@ -84,7 +86,7 @@ void compute_adc_samples(int D, const long adc_dims[D], complex float* adc, int 
 			double ts = ev[i].start + (pos[1] + 0.5) * dwell;
 
 			MD_ACCESS(D, adc_strs, (pos[READ_DIM] = 0, pos), adc) = ts;
-			MD_ACCESS(D, adc_strs, (pos[READ_DIM] = 1, pos), adc) = cexpf(1.i * DEG2RAD(ev[i].adc.phase + ev[i].adc.freq * ts));
+			MD_ACCESS(D, adc_strs, (pos[READ_DIM] = 1, pos), adc) = cexpf(1.i * DEG2RAD(ev[i].adc.phase + ev[i].adc.freq * 0.000360 * ev[i].adc.os * (ts - ev[i].mid + corr)));
 
 		} while (md_next(D, adc_dims, PHS1_FLAG, pos));
 
