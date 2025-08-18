@@ -22,7 +22,7 @@
 
 void linearize_events(int N, struct seq_event ev[__VLA(N)], double* start_block, enum block mode, long tr)
 {
-	if ((0 >= N) || (0 > *start_block))
+	if ((0 >= N) || (0. > *start_block))
 		return;
 
 	for (int i = 0; i < N; i++) {
@@ -43,14 +43,14 @@ void compute_moment0(int M, float moments[M][3], double dt, int N, const struct 
 {
 	for (int i = 0; i < M; i++) 
 		for (int a = 0; a < 3; a++)
-			moments[i][a] = 0;
+			moments[i][a] = 0.;
 
 	for (int p = 0; p < M; p++) {
 
 		assert((0 <= p) && (p <= M));
 
 		double m[3];
-		moment_sum(m, (p + 0.5)  * dt, N, ev);
+		moment_sum(m, (p + 0.5) * dt, N, ev);
 
 		for (int a = 0; a < 3; a++) 
 			moments[p][a] = m[a];
@@ -64,10 +64,12 @@ void compute_moment0(int M, float moments[M][3], double dt, int N, const struct 
 void compute_adc_samples(int D, const long adc_dims[D], complex float* adc, int N, const struct seq_event ev[N])
 {
 	md_clear(D, adc_dims, adc, CFL_SIZE);
+
 	long adc_strs[D];
 	md_calc_strides(D, adc_strs, adc_dims, CFL_SIZE);
 
 	int e = 0;
+
 	for (int i = 0; i < N; i++) {
 
 		if (SEQ_EVENT_ADC != ev[i].type)
@@ -75,11 +77,12 @@ void compute_adc_samples(int D, const long adc_dims[D], complex float* adc, int 
 
 		double dwell = (ev[i].end - ev[i].start) / (ev[i].adc.columns * ev[i].adc.os);
 
-		long pos[DIMS] = {  };
+		long pos[DIMS] = { };
 		pos[TE_DIM] = e;
 
 		do {
 			double ts = ev[i].start + (pos[1] + 0.5) * dwell;
+
 			MD_ACCESS(D, adc_strs, (pos[READ_DIM] = 0, pos), adc) = ts;
 			MD_ACCESS(D, adc_strs, (pos[READ_DIM] = 1, pos), adc) = cexpf(1.i * DEG2RAD(ev[i].adc.phase + ev[i].adc.freq * ts));
 
@@ -87,6 +90,7 @@ void compute_adc_samples(int D, const long adc_dims[D], complex float* adc, int 
 
 		e++;
 	}
+
 	assert(e == adc_dims[TE_DIM]);
 }
 

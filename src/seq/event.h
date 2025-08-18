@@ -101,3 +101,4 @@ void moment_sum(double m0[3], double t, int N, const struct seq_event ev[__VLA(N
 #include "misc/cppwrap.h"
 
 #endif // _SEQ_EVENT_H
+

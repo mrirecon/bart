@@ -48,7 +48,6 @@ static double available_time_RF_SLI(int ro, const struct seq_config* seq)
 		- ampl * seq->sys.grad.inv_slew_rate
 		- adc_time_to_echo(seq)
 		- ro_shift(seq);
-
 }
 
 static int prep_grad_ro_deph(struct grad_trapezoid* grad, const struct seq_config* seq)
@@ -115,7 +114,7 @@ static int prep_grad_sli_reph(struct grad_trapezoid* grad, const struct seq_conf
 	struct grad_limits limits = seq->sys.grad;
 	limits.max_amplitude *= SCALE_GRAD;
 
-	if (!grad_soft(grad, available_time_RF_SLI(0, seq), - mom, limits))
+	if (!grad_soft(grad, available_time_RF_SLI(0, seq), -mom, limits))
 		return 0;
 
 	return 1;

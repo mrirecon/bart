@@ -198,3 +198,4 @@ void moment_sum(double m0[3], double t, int N, const struct seq_event ev[N])
 	for (int a = 0; a < 3; a++)
 		m0[a] -= m_rf[a];
 }
+
