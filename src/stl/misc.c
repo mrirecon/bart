@@ -433,6 +433,7 @@ static double* stl_read_ascii(int D, long dims[D], const char* name)
                 xfree(line);
                 line = NULL;
         }
+
         xfree(line);
         fclose(ptr);
 
@@ -626,7 +627,7 @@ static double* stl_read_binary(int D, long dims[D], const char* name)
 
                 MD_ACCESS(D, strs, pos0, model) = 0;
 
-        } while(md_next(D, dims, ~0UL, pos0));
+        } while (md_next(D, dims, ~0UL, pos0));
 
         const size_t bs = 12 * FL_SIZE + sizeof(uint16_t);
         const size_t L = (size_t) N * bs;

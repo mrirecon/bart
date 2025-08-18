@@ -146,7 +146,7 @@ float* compute_grid(int D, long gdims[D], struct grid_opts* go, const long tdims
 		ppos[0] = 3;
 		MD_ACCESS(D, gstrs, ppos, grid) = go->bt * co;
 
-	} while(md_next(D, gdims, ~VEC_FLAG_S, pos));
+	} while (md_next(D, gdims, ~VEC_FLAG_S, pos));
 
 	return grid;
 }

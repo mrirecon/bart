@@ -545,7 +545,7 @@ int main_bart(int argc, char* argv[argc])
 				long workers = cfl_loop_num_workers();
 				long idx = -1;
 				long idx_p = -1;
-				while(loop_step(start, total, workers, &idx, &idx_p, final_ret, order, ref_stream)) {
+				while (loop_step(start, total, workers, &idx, &idx_p, final_ret, order, ref_stream)) {
 
 					int ret = batch_wrapper(dispatch_func, argc, argv, idx_p);
 
@@ -568,7 +568,7 @@ int main_bart(int argc, char* argv[argc])
 
 			mpi_signoff_proc(cfl_loop_desc_active() && (mpi_get_rank() >= total));
 
-			while(loop_step(start, total, workers, &idx, &idx_p, final_ret, order, ref_stream)) {
+			while (loop_step(start, total, workers, &idx, &idx_p, final_ret, order, ref_stream)) {
 
 				int ret = batch_wrapper(dispatch_func, argc, argv, idx_p);
 

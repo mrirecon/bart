@@ -231,7 +231,7 @@ unsigned int rand_range_state(struct bart_rand_state* state, unsigned int range)
 	if (!use_obsolete_rng()) {
 
 		// Lemire's Method, see https://arxiv.org/abs/1805.10941
-		// Adapted for 32-bit integers, and written as do { ... } while();
+		// Adapted for 32-bit integers, and written as do { ... } while ();
 		// Generates random number in range [0,range)
 
 		uint32_t t = (-range) % range;

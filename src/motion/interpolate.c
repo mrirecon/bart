@@ -360,7 +360,7 @@ void md_interpolate2(int d, unsigned long flags, int ord, int N, const long dims
 #endif
 			interpolate2(ord, M, idims_red, istrs_red, intp + ioffset, cstrs_red, cstrs[d], coor + coffset, gdims_red, gstrs_red, grid + goffset);
 
-	} while(md_next(N, dims, ~flags & ~MD_BIT(d), pos));
+	} while (md_next(N, dims, ~flags & ~MD_BIT(d), pos));
 }
 
 void md_interpolateH2(int d, unsigned long flags, int ord, int N, const long gdims[N], const long gstrs[N], complex float* grid, const long dims[N], const long istrs[N], const complex float* intp, const long cstrs[N], const complex float* coor)
@@ -390,7 +390,7 @@ void md_interpolateH2(int d, unsigned long flags, int ord, int N, const long gdi
 #endif
 			interpolateH2(ord, M, gdims_red, gstrs_red, grid + goffset, idims_red, istrs_red, intp + ioffset, cstrs_red, cstrs[d], coor + coffset);
 
-	} while(md_next(N, dims, ~flags & ~MD_BIT(d), pos));
+	} while (md_next(N, dims, ~flags & ~MD_BIT(d), pos));
 }
 
 
@@ -505,7 +505,7 @@ void md_interpolate_adj_coor2(int d, unsigned long flags, int ord, int N, const 
 #endif
 			interpolate_adj_coor2(ord, M, idims_red, istrs_red, dintp + ioffset, cstrs_red, cstrs[d], coor + coffset, dcoor + coffset, gdims_red, gstrs_red, grid + goffset);
 	
-	} while(md_next(N, dims, ~flags & ~MD_BIT(d), pos));
+	} while (md_next(N, dims, ~flags & ~MD_BIT(d), pos));
 }
 
 
@@ -627,7 +627,7 @@ void md_interpolate_der_coor2(int d, unsigned long flags, int ord, int N, const 
 #endif
 			interpolate_der_coor2(ord, M, idims_red, istrs_red, dintp + ioffset, cstrs_red, cstrs[d], coor + coffset, dcoor + coffset, gdims_red, gstrs_red, grid + goffset);
 	
-	} while(md_next(N, dims, ~flags & ~MD_BIT(d), pos));
+	} while (md_next(N, dims, ~flags & ~MD_BIT(d), pos));
 }
 
 
