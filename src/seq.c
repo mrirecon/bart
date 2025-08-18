@@ -294,7 +294,7 @@ int main_seq(int argc, char* argv[argc])
 				moment_sum(m0_adc, MD_ACCESS(DIMS, adc_strs, adc_pos, adc), E, ev);
 
 				for (int i = 0; i < 3; i++)
-					m0_adc[i] = (fabs(m0_adc[i]) < 1.e-10) ? 0. : m0_adc[i] / scale;
+					m0_adc[i] = m0_adc[i] / scale;
 
 				MD_ACCESS(DIMS, astrs, (adc_pos[READ_DIM] = 0, adc_pos), out_adc) = MD_ACCESS(DIMS, adc_strs, (adc_pos[READ_DIM] = 0, adc_pos), adc);
 				MD_ACCESS(DIMS, astrs, (adc_pos[READ_DIM] = 1, adc_pos), out_adc) = MD_ACCESS(DIMS, adc_strs, (adc_pos[READ_DIM] = 1, adc_pos), adc);
