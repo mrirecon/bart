@@ -134,7 +134,7 @@ int flash(int N, struct seq_event ev[N], struct seq_state* seq_state, const stru
 	double ro_deph_start = rf_start + seq->phys.rf_duration;
 	double sli_reph_start = ro_deph_start + seq->sys.grad.inv_slew_rate * slice_amplitude(seq);
 	double ro_grad_start = ro_deph_start + available_time_RF_SLI(1, seq);
-	double adc_start = start_rf(seq) + seq->phys.rf_duration / 2. + 1. * seq->phys.te - adc_time_to_echo(seq);
+	double adc_start = start_rf(seq) + seq->phys.rf_duration / 2. + seq->phys.te - adc_time_to_echo(seq);
 
 	int i = 0;
 
@@ -145,8 +145,8 @@ int flash(int N, struct seq_event ev[N], struct seq_state* seq_state, const stru
 	if (0. > proj_angle)
 		return ERROR_ROT_ANGLE;
 
-	double projX[3] = { cos(proj_angle), 0.	, 0. };
-	double projY[3] = { 0., sin(proj_angle)	, 0. };
+	double projX[3] = { 0., cos(proj_angle), 0. };
+	double projY[3] = { sin(proj_angle), 0., 0. };
 	double projSLICE[3] = { 0. , 0. , 1. };
 
 	if (!prep_grad_sli(&sli, seq))

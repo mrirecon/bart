@@ -291,6 +291,7 @@ int main_seq(int argc, char* argv[argc])
 
 			do {
 				assert(0 == adc_pos[READ_DIM]);
+
 				moment_sum(m0_adc, MD_ACCESS(DIMS, adc_strs, adc_pos, adc), E, ev);
 
 				for (int i = 0; i < 3; i++)
@@ -299,8 +300,8 @@ int main_seq(int argc, char* argv[argc])
 				MD_ACCESS(DIMS, astrs, (adc_pos[READ_DIM] = 0, adc_pos), out_adc) = MD_ACCESS(DIMS, adc_strs, (adc_pos[READ_DIM] = 0, adc_pos), adc);
 				MD_ACCESS(DIMS, astrs, (adc_pos[READ_DIM] = 1, adc_pos), out_adc) = MD_ACCESS(DIMS, adc_strs, (adc_pos[READ_DIM] = 1, adc_pos), adc);
 
-				MD_ACCESS(DIMS, astrs, (adc_pos[READ_DIM] = 2, adc_pos), out_adc) = m0_adc[1]; // swapped for traj consistency
-				MD_ACCESS(DIMS, astrs, (adc_pos[READ_DIM] = 3, adc_pos), out_adc) = m0_adc[0];
+				MD_ACCESS(DIMS, astrs, (adc_pos[READ_DIM] = 2, adc_pos), out_adc) = m0_adc[0];
+				MD_ACCESS(DIMS, astrs, (adc_pos[READ_DIM] = 3, adc_pos), out_adc) = m0_adc[1];
 				MD_ACCESS(DIMS, astrs, (adc_pos[READ_DIM] = 4, adc_pos), out_adc) = m0_adc[2];
 
 				adc_pos[READ_DIM] = 0;
