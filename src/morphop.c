@@ -28,61 +28,6 @@
 #define DIMS 16
 #endif
 
-static void mask_conv(int D, const long mask_dims[D], complex float* mask, const long dims[D], complex float* out, const complex float* in)
-{
-	struct conv_plan* plan = conv_plan(D, FFT_FLAGS, CONV_CYCLIC, CONV_SYMMETRIC, dims, dims, mask_dims, mask);
-
-	conv_exec(plan, out, in);
-
-	conv_free(plan);
-}
-
-static void erosion(int D, const long mask_dims[D], complex float* mask, const long dims[D], complex float* out, const complex float* in)
-{
-	complex float* tmp = md_alloc(DIMS, dims, CFL_SIZE);
-
-	mask_conv(D, mask_dims, mask, dims, tmp, in);
-
-	// take relative error into account due to floating points
-	md_zsgreatequal(D, dims, out, tmp, (1 - 0.00001) * md_zasum(D, mask_dims, mask));
-
-	md_free(tmp);
-}
-
-
-static void dilation(int D, const long mask_dims[D], complex float* mask, const long dims[D], complex float* out, const complex float* in)
-{
-	complex float* tmp = md_alloc(DIMS, dims, CFL_SIZE);
-
-	mask_conv(D, mask_dims, mask, dims, tmp, in);
-
-	// take relative error into account due to floating points
-	md_zsgreatequal(D, dims, out, tmp, (1 - md_zasum(D, mask_dims, mask) * 0.00001));
-
-	md_free(tmp);
-}
-
-static void opening(int D, const long mask_dims[D], complex float* mask, const long dims[D], complex float* out, const complex float* in)
-{
-	complex float* tmp = md_alloc(DIMS, dims, CFL_SIZE);
-
-	erosion(D, mask_dims, mask, dims, tmp, in);
-
-	dilation(D, mask_dims, mask, dims, out, tmp);
-
-	md_free(tmp);
-}
-
-static void closing(int D, const long mask_dims[D], complex float* mask, const long dims[D], complex float* out, const complex float* in)
-{
-	complex float* tmp = md_alloc(DIMS, dims, CFL_SIZE);
-
-	dilation(D, mask_dims, mask, dims, tmp, in);
-
-	erosion(D, mask_dims, mask, dims, out, tmp);
-
-	md_free(tmp);
-}
 
 static const char help_str[] = "Perform morphological operators on binary data with odd mask sizes.";
 
@@ -178,19 +123,19 @@ int main_morphop(int argc, char* argv[argc])
 	switch (morph_type) {
 
 	case EROSION:
-		erosion(N, mask_dims, mask, dims, out, in);
+		md_erosion(N, mask_dims, mask, dims, out, in, CONV_CYCLIC);
 		break;
 
 	case DILATION:
-		dilation(N, mask_dims, mask, dims, out, in);
+		md_dilation(N, mask_dims, mask, dims, out, in, CONV_CYCLIC);
 		break;
 
 	case OPENING:
-		opening(N, mask_dims, mask, dims, out, in);
+		md_opening(N, mask_dims, mask, dims, out, in, CONV_CYCLIC);
 		break;
 
 	case CLOSING:
-		closing(N, mask_dims, mask, dims, out, in);
+		md_closing(N, mask_dims, mask, dims, out, in, CONV_CYCLIC);
 		break;
 
 	case LABEL:
