@@ -43,6 +43,10 @@ double rf_spoiling(int D, const long pos[D], const struct seq_config* seq)
 
 	switch (seq->phys.contrast) {
 
+	case CONTRAST_NO_SPOILING:
+
+		return 0.;
+
 	case CONTRAST_RF_SPOILED:
 
 		idx = 1. + md_ravel_index_permuted(DIMS, pos, SEQ_FLAGS & ~(COEFF_FLAG|COEFF2_FLAG), seq->loop_dims, seq->order);

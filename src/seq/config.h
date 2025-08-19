@@ -40,7 +40,8 @@ enum block {
 
 enum flash_contrast {
 
-	CONTRAST_RF_RANDOM = 1,
+	CONTRAST_NO_SPOILING = 0,
+	CONTRAST_RF_RANDOM,
 	CONTRAST_RF_SPOILED
 };
 

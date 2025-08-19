@@ -69,6 +69,7 @@ int main_seq(int argc, char* argv[argc])
 		OPT_DOVEC3('s', &seq.geom.shift[0], "RO:PE:SL", "FOV shift (mm) of first slice"),
 
 		// contrast mode
+		OPTL_SELECT(0, "no-spoiling", enum flash_contrast, &seq.phys.contrast, CONTRAST_NO_SPOILING, "spoiling off (default: rf random)"),
 		OPTL_SELECT(0, "spoiled", enum flash_contrast, &seq.phys.contrast, CONTRAST_RF_SPOILED, "RF_SPOILED (inc: 50 deg, gradient on) (default: rf random)"),
 
 		// FOV and resolution
