@@ -7,8 +7,6 @@
 #include "seq/seq.h"
 #include "seq/helpers.h"
 
-#include "seq/adc_rf.c"
-
 #include "utest.h"
 
 #define FLASH_EVENTS 14
@@ -156,10 +154,7 @@ static bool test_flash_phase(void)
 		struct seq_event ev_rf = ev[events_idx(0, SEQ_EVENT_PULSE, E, ev)];
 		struct seq_event ev_adc = ev[events_idx(0, SEQ_EVENT_ADC, E, ev)];
 		
-		double phase_rf = phase_clamp(ev_rf.pulse.phase);
-		double phase_echo = phase_clamp(ev_adc.adc.phase - adc_nco_correction(ev_adc.adc.freq, seq.phys, seq.sys));
-		
-		if (UT_TOL < fabs(phase_echo - phase_rf))
+		if (UT_TOL < fabs(ev_adc.adc.phase - ev_rf.pulse.phase))
 			return false;
 	}
 		

@@ -155,12 +155,6 @@ static double adc_nco_freq(double proj_angle, long chrono_slice, const struct se
 		+ seq->geom.shift[chrono_slice][1] * ro_amplitude(seq) * cos(proj_angle));
 }
 
-static double adc_nco_correction(double freq, struct seq_phys phys, struct seq_sys /*sys*/)
-{
-	return freq * 0.000360 * (-0.5 * (phys.dwell / phys.os));
-}
-
-
 int prep_adc(struct seq_event* adc_ev, double start, double rf_spoil_phase,
 		const struct seq_state* seq_state, const struct seq_config* seq)
 {
@@ -194,9 +188,7 @@ int prep_adc(struct seq_event* adc_ev, double start, double rf_spoil_phase,
 
 	adc_ev->adc.freq = adc_nco_freq(proj_angle, seq_state->chrono_slice, seq);
 
-	double clock_correction = adc_nco_correction(adc_ev->adc.freq, seq->phys, seq->sys);
-
-	adc_ev->adc.phase = phase_clamp(clock_correction + rf_spoil_phase);
+	adc_ev->adc.phase = phase_clamp(rf_spoil_phase);
 
 	return 1;
 }
