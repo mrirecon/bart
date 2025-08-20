@@ -121,24 +121,39 @@ static int prep_grad_sli_reph(struct grad_trapezoid* grad, const struct seq_conf
 }
 
 
+struct flash_timing {
+
+	double RF;
+	double slice;
+	double slice_rephaser;
+	double readout_dephaser;
+	double readout;
+	double adc;
+};
+
+
+static struct flash_timing flash_compute_timing(const struct seq_config *seq)
+{
+	struct flash_timing timing;
+
+	timing.slice = 0.;
+	timing.RF = start_rf(seq);
+	timing.readout_dephaser = timing.RF + seq->phys.rf_duration;
+	timing.slice_rephaser = timing.readout_dephaser + seq->sys.grad.inv_slew_rate * slice_amplitude(seq);
+	timing.readout = timing.readout_dephaser + available_time_RF_SLI(1, seq);
+	timing.adc = timing.RF + seq->phys.rf_duration / 2. + seq->phys.te - adc_time_to_echo(seq);
+
+	return timing;
+}
+
+
 int flash(int N, struct seq_event ev[N], struct seq_state* seq_state, const struct seq_config* seq)
 {
-	struct grad_trapezoid sli;
-	struct grad_trapezoid sli_reph;
-	struct grad_trapezoid ro_deph;
-	struct grad_trapezoid ro;
-
-	double sli_start = 0;
-	double rf_start = start_rf(seq);
-	double ro_deph_start = rf_start + seq->phys.rf_duration;
-	double sli_reph_start = ro_deph_start + seq->sys.grad.inv_slew_rate * slice_amplitude(seq);
-	double ro_grad_start = ro_deph_start + available_time_RF_SLI(1, seq);
-	double adc_start = start_rf(seq) + seq->phys.rf_duration / 2. + seq->phys.te - adc_time_to_echo(seq);
+	struct flash_timing timing = flash_compute_timing(seq);
 
 	int i = 0;
 
 	double rf_spoil_phase = rf_spoiling(DIMS, seq_state->pos, seq);
-
 	double proj_angle = get_rot_angle(seq_state->pos, seq);
 
 	if (0. > proj_angle)
@@ -148,35 +163,50 @@ int flash(int N, struct seq_event ev[N], struct seq_state* seq_state, const stru
 	double projY[3] = { sin(proj_angle), 0., 0. };
 	double projSLICE[3] = { 0. , 0. , 1. };
 
-	if (!prep_grad_sli(&sli, seq))
+
+	struct grad_trapezoid slice;
+
+	if (!prep_grad_sli(&slice, seq))
 		return ERROR_PREP_GRAD_SLI;
 
-	i += seq_grad_to_event(ev + i, sli_start, &sli, projSLICE);
+	i += seq_grad_to_event(ev + i, timing.slice, &slice, projSLICE);
 
-	i += prep_rf_ex(ev + i, rf_start, rf_spoil_phase, seq_state, seq);
+	i += prep_rf_ex(ev + i, timing.RF, rf_spoil_phase, seq_state, seq);
 
-	if (!prep_grad_sli_reph(&sli_reph, seq))
+
+	struct grad_trapezoid slice_rephaser;
+
+	if (!prep_grad_sli_reph(&slice_rephaser, seq))
 		return ERROR_PREP_GRAD_SLI_REPH;
 
-	i += seq_grad_to_event(ev + i, sli_reph_start, &sli_reph, projSLICE);
+	i += seq_grad_to_event(ev + i, timing.slice_rephaser, &slice_rephaser, projSLICE);
 
-	if (!prep_grad_ro_deph(&ro_deph, seq))
+
+	struct grad_trapezoid readout_dephaser;
+
+	if (!prep_grad_ro_deph(&readout_dephaser, seq))
 		return ERROR_PREP_GRAD_RO_DEPH;
 
 	//check for overlapping gradients!
-	if (seq->sys.grad.max_amplitude < sqrtf(powf(fabs(sli_reph.ampl), 2.) + powf(ro_deph.ampl, 2.)))
+	if (seq->sys.grad.max_amplitude < sqrtf(powf(fabs(slice_rephaser.ampl), 2.) + powf(readout_dephaser.ampl, 2.)))
 		return ERROR_MAX_GRAD_RO_SLI;
 
-	i += seq_grad_to_event(ev + i, ro_deph_start, &ro_deph, projX);
-	i += seq_grad_to_event(ev + i, ro_deph_start, &ro_deph, projY);
+	i += seq_grad_to_event(ev + i, timing.readout_dephaser, &readout_dephaser, projX);
+	i += seq_grad_to_event(ev + i, timing.readout_dephaser, &readout_dephaser, projY);
 
-	if (!prep_grad_ro(&ro, seq))
+
+	struct grad_trapezoid readout;
+
+	if (!prep_grad_ro(&readout, seq))
 		return ERROR_PREP_GRAD_RO_RO;
 
-	i += seq_grad_to_event(ev + i, ro_grad_start, &ro, projX);
-	i += seq_grad_to_event(ev + i, ro_grad_start, &ro, projY);
+	i += seq_grad_to_event(ev + i, timing.readout, &readout, projX);
+	i += seq_grad_to_event(ev + i, timing.readout, &readout, projY);
 
-	i += prep_adc(ev + i, adc_start, rf_spoil_phase, seq_state, seq);
+
+
+	i += prep_adc(ev + i, timing.adc, rf_spoil_phase, seq_state, seq);
+
 
 	if (seq_block_end_flat(i, ev) > seq->phys.tr)
 		return ERROR_END_FLAT_KERNEL;
