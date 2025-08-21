@@ -84,4 +84,5 @@ struct pulseq {
 #undef VEC
 
 extern void pulseq_init(struct pulseq *ps);
+extern void pulseq_free(struct pulseq *ps);
 

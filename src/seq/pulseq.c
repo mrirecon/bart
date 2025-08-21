@@ -76,3 +76,17 @@ void pulseq_init(struct pulseq *ps)
 	ps->shapes = vec_init();
 }
 
+
+void pulseq_free(struct pulseq *ps)
+{
+	xfree(ps->ps_blocks);
+	xfree(ps->gradients);
+	xfree(ps->trapezoids);
+	xfree(ps->adcs);
+	xfree(ps->rfpulses);
+
+	for (int i = 0; i < ps->shapes->len; i++)
+		xfree(ps->shapes->data[i].values);
+
+	xfree(ps->shapes);
+}
