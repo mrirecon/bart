@@ -33,13 +33,26 @@ struct grid_opts grid_opts_init = {
 
 struct grid_opts grid_opts_defaults = {
 
-	.dims = { 128, 128, [3 ... DIMS - 1] = 1 },
+	.dims = { 128, 128, [2 ... DIMS - 1] = 1 },
 	.veclen = { 0.5, 0.5, 0, 0 },
 
 	.kspace = false,
 
 	.b0 = { 0.5, 0, 0 },
 	.b1 = { 0, 0.5, 0 },
+	.b2 = { 0, 0, 0 },
+	.bt = 0,
+};
+
+struct grid_opts grid_opts_coilcoeff = {
+
+	.dims = { 5, 5, [2 ... DIMS - 1] = 1 },
+	.veclen = { 1, 1, 0, 0 },
+
+	.kspace = true,
+
+	.b0 = { 1, 0, 0 },
+	.b1 = { 0, 1, 0 },
 	.b2 = { 0, 0, 0 },
 	.bt = 0,
 };

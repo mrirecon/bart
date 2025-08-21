@@ -65,6 +65,43 @@ void md_parallel_zsample(int N, const long dims[N], complex float* out, zsample_
 	md_zsample2(N, dims, ~0U, out, fun);
 }
 
+static void md_zzsample2(int N, const long dims[N], unsigned long flags, complex double* out, zzsample_fun_t fun)
+{
+#ifdef USE_CUDA
+	if (cuda_ondevice(out)) {
+
+		complex double *out2 = md_alloc(N, dims, sizeof *out2);
+
+		md_zzsample2(N, dims, flags, out2, fun);
+		md_copy(N, dims, out, out2, sizeof *out2);
+
+		md_free(out2);
+		return;
+	}
+#endif
+
+	long strs[N];
+	md_calc_strides(N, strs, dims, 1);	// we use size = 1 here
+
+	long* strsp = strs;	// because of clang
+
+	NESTED(void, sample_kernel, (const long pos[]))
+	{
+		out[md_calc_offset(N, strsp, pos)] = fun(pos);
+	};
+
+	md_parallel_loop(N, dims, flags, sample_kernel);
+}
+
+void md_zzsample(int N, const long dims[N], complex double* out, zzsample_fun_t fun)
+{
+	md_zzsample2(N, dims, 0U, out, fun);
+}
+
+void md_parallel_zzsample(int N, const long dims[N], complex double* out, zzsample_fun_t fun)
+{
+	md_zzsample2(N, dims, ~0U, out, fun);
+}
 
 static void md_sample2(int N, const long dims[N], unsigned long flags, float* out, sample_fun_t fun)
 {

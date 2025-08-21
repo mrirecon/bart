@@ -1,13 +1,213 @@
 /* Copyright 2014. The Regents of the University of California.
- * All rights reserved. Use of this source code is governed by 
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * 2013 Martin Uecker <uecker@eecs.berkeley.edu>
  */
- 
-#include <complex.h>
 
-#include "sens.h"
+#include <complex.h>
+#include <stdbool.h>
+#include "misc/mmio.h"
+#include "misc/misc.h"
+#include "misc/mri.h"
+#include "misc/debug.h"
+#include "iter/italgos.h"
+#include "num/flpmath.h"
+#include "num/multind.h"
+#include "num/loop.h"
+#include "simu/sens.h"
+#include "simu/grid.h"
+#include "simu/shape.h"
+
+static void dstr_tripoly(struct coil_opts* copts)
+{
+	if (NULL != copts->data) {
+
+		struct tri_poly* tp = copts->data;
+		md_free(tp->coeff);
+		md_free(tp->cpos);
+	}
+	md_free(copts->data);
+}
+
+struct coil_opts coil_opts_defaults = {
+
+	.kspace = false,
+	.ctype = HEAD_2D_8CH,
+	.N = -1,
+	.flags = ~0UL,
+	.data = NULL,
+	.dstr = NULL,
+	.fun = NULL,
+};
+
+static complex float* sens_internal_model(long D, long dims[D], unsigned long flags, long Nc, bool flip, const void* v)
+{
+        const complex float* arr = v;
+
+	dims[COIL_DIM] = 0;
+
+	for (int i = 0; i < Nc; i++)
+		if (MD_IS_SET(flags, i))
+			dims[COIL_DIM]++;
+
+	assert(0 < dims[COIL_DIM]);
+
+	long pos[D], ppos[D], apos[D], strs[D], astrs[D], adims[D];
+
+	complex float* model = md_alloc(D, dims, CFL_SIZE);
+
+	md_calc_strides(D, strs, dims, CFL_SIZE);
+
+	md_singleton_dims(D, adims);
+	adims[0] = Nc;
+
+	for (int i = 0; i < 3; i++)
+		adims[i+1] = dims[i];
+
+	// strides following C order for arr
+	long old = 1;
+	for (int i = 0; i < D; i++) {
+
+		astrs[D - i - 1] = (1 == adims[D - i - 1]) ? 0 : old;
+		old *= adims[D - i - 1];
+	}
+
+	md_set_dims(D, pos, 0);
+	md_set_dims(D, apos, 0);
+
+	do {
+		long n = 0;
+
+		// for compatibility with phantom tool where a sign error existed, the index can be flipped
+		for (int i = 0; i < 3; i++)
+			apos[i+1] = flip ? dims[i] - pos[i] - 1 : pos[i];
+
+		for (apos[0] = 0; apos[0] < Nc; apos[0]++) {
+
+			if (MD_IS_SET(flags, apos[0])) {
+
+				md_copy_dims(D, ppos, pos);
+				ppos[COIL_DIM] = n;
+
+				MD_ACCESS(D, strs, ppos, model) = arr[md_calc_offset(D, astrs, apos)];
+				n++;
+			}
+		}
+
+	} while(md_next(D, dims, ~COIL_FLAG, pos));
+
+        return model;
+}
+
+complex float* sens_internal_H2D8CH(long D, long dims[D], unsigned long flags)
+{
+	md_singleton_dims(D, dims);
+
+	dims[0] = 5;
+	dims[1] = 5;
+
+	return sens_internal_model(D, dims, flags, 8, true, sens_coeff);
+}
+
+complex float* sens_internal_H3D64CH(long D, long dims[D], unsigned long flags)
+{
+	md_singleton_dims(D, dims);
+
+	dims[0] = 5;
+	dims[1] = 5;
+	dims[2] = 5;
+
+	return sens_internal_model(D, dims, flags, 64, true, sens64_coeff);
+}
+
+static complex double simfun_tripoly(const void* v, const long C, double pos[])
+{
+	const struct coil_opts* copts = v;
+	struct tri_poly* t = copts->data;
+	return (copts->kspace ? ktripoly : xtripoly)(t, C, pos);
+}
+
+void cnstr_H2D8CH(long D, struct coil_opts* copts, bool legacy_fov)
+{
+	copts->data = xmalloc(sizeof(struct tri_poly));
+	struct tri_poly* t = copts->data;
+
+	t->D = D;
+	t->coeff = sens_internal_H2D8CH(D, t->cdims, copts->flags);
+
+	struct grid_opts gopts = grid_opts_coilcoeff;
+
+	if (legacy_fov) {
+
+		gopts.veclen[0] = 2;
+		gopts.veclen[1] = 2;
+		gopts.b0[0] = 2;
+		gopts.b1[1] = 2;
+	}
+
+	t->cpos = compute_grid(D, t->cpdims, &gopts, NULL, NULL);
+
+	copts->N = t->cdims[COIL_DIM];
+	copts->fun = simfun_tripoly;
+	copts->dstr = dstr_tripoly;
+}
+
+void cnstr_H3D64CH(long D, struct coil_opts* copts, bool legacy_fov)
+{
+	copts->data = xmalloc(sizeof(struct tri_poly));
+	struct tri_poly* t = copts->data;
+
+	t->D = D;
+	t->coeff = sens_internal_H3D64CH(D, t->cdims, copts->flags);
+
+	struct grid_opts gopts = grid_opts_coilcoeff;
+
+	gopts.veclen[2] = 1;
+	gopts.b2[2] = 1;
+	gopts.dims[2] = 5;
+
+	if (legacy_fov) {
+
+		gopts.veclen[0] = 2;
+		gopts.veclen[1] = 2;
+		gopts.veclen[2] = 2;
+		gopts.b0[0] = 2;
+		gopts.b1[1] = 2;
+		gopts.b2[2] = 2;
+	}
+
+	t->cpos = compute_grid(D, t->cpdims, &gopts, NULL, NULL);
+
+	copts->N = t->cdims[COIL_DIM];
+	copts->fun = simfun_tripoly;
+	copts->dstr = dstr_tripoly;
+}
+
+static void get_position(long D, double p[4], const long pos[D], const long gdims[D], const float* grid)
+{
+	long poss[D];
+	md_singleton_dims(D, poss);
+
+	for (int i = 0; i < D-2; i++)
+		poss[i+1] = pos[i];
+
+	for (poss[0] = 0; poss[0] < 4; poss[0]++)
+		p[poss[0]] = MD_ACCESS(D, MD_STRIDES(D, gdims, FL_SIZE), poss, grid);
+}
+
+void sample_coils(long D, const long sdims[D], complex double* sens, const long gdims[D], const float* grid, const struct coil_opts* copts)
+{
+	const long* gdimsp = gdims; // clang
+
+	NESTED(complex double, fun, (const long pos[]))
+	{
+		double p[4];
+		get_position(D, p, pos, gdimsp, grid);
+		return copts->fun(copts, pos[COIL_DIM], p);
+	};
+	md_parallel_zzsample(D, sdims, sens, fun);
+}
 
 
 const complex float sens_coeff[8][5][5] = {

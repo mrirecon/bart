@@ -2,7 +2,7 @@
 #ifndef _PHANTOM_H
 #define _PHANTOM_H
 
-enum coil_type { COIL_NONE, HEAD_2D_8CH, HEAD_3D_64CH };
+#include "simu/sens.h"
 
 struct pha_opts {
 
