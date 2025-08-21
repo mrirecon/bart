@@ -851,6 +851,10 @@ UTARGETS += test_mpi_reduction
 endif
 UTARGETS_GPU += test_cudafft test_cuda_flpmath test_cuda_flpmath2 test_cuda_gpukrnls test_cuda_convcorr test_cuda_multind test_cuda_shuffle test_cuda_memcache_clear test_cuda_rand
 
+# lib misc
+UTARGETS += test_graph
+
+
 # lib simu
 UTARGETS += test_ode_bloch test_ode_simu test_biot_savart test_signals test_epg test_pulse test_tsegf test_phantom
 MODULES_test_ode_bloch += -lsimu
