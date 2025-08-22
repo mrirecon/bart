@@ -65,7 +65,7 @@ struct mobafit_bound_s {
 	float* max;
 };
 
-DEF_TYPEID(mobafit_bound_s)
+DEF_TYPEID(mobafit_bound_s);
 
 static void mobafit_bound(iter_op_data* _data, float* dst, const float* src)
 {
