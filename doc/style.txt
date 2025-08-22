@@ -41,9 +41,15 @@
 
 1.2. GNU Extensions:
 
-	Some extensions a commonly supported by compilers and useful.
+	Some extensions a commonly supported by compilers and useful. In
+	addition to those that are part of the ISO C23 standard, we
+	use the following extensions.
 
-	statement expressions ({  })
+	a. statement expressions: ({  })
+	b. imaginary constants: 1.i
+	c. conditional operator without middle operand: a?:b
+	b. zero-length arrays: int a[0];
+	d. nested functions using macro wrappers. { NESTED(int, f, ()) { }; }
 
 
 1.3. Type safety
