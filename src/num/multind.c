@@ -702,6 +702,17 @@ void md_clear2(int D, const long dim[D], const long str[D], void* ptr, size_t si
 	optimized_nop(1, MD_BIT(0), D, dim2, nstr, (void*[1]){ ptr }, (size_t[1]){ size }, nary_clear);
 }
 
+/**
+ * Calculate strides in column-major format
+ * (smallest index is sequential)
+ *
+ * @param D number of dimensions
+ * @param flag only calc strides for selected dimensions
+ * @param array of calculates strides
+ * @param dim array of dimensions
+ * @param size of a single element
+ */
+extern long* md_calc_strides_selected(int D, unsigned long flags, long str[D], const long dim[D], size_t size);
 
 
 /**

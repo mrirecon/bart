@@ -19,6 +19,11 @@
 #include "misc/types.h"
 #include "misc/misc.h"
 
+#define MD_BIT(x) (1UL << (x))
+#define MD_IS_SET(x, y)	((x) & MD_BIT(y))
+#define MD_CLEAR(x, y) ((x) & ~MD_BIT(y))
+#define MD_SET(x, y)	((x) | MD_BIT(y))
+
 typedef void CLOSURE_TYPE(md_nary_fun_t)(void* ptr[]);
 typedef void CLOSURE_TYPE(md_trafo_fun_t)(long N, long str, void* ptr);
 typedef void CLOSURE_TYPE(md_loop_fun_t)(const long* pos);
@@ -110,17 +115,28 @@ inline long md_calc_size(int D, const long dim[__VLA(D)])
 	return md_calc_size_r(D, dim, 1);
 }
 
-inline long* md_calc_strides(int D, long str[__VLA2(D)], const long dim[__VLA(D)], size_t size)
+inline long* md_calc_strides_selected(int D, unsigned long flags, long str[__VLA2(D)], const long dim[__VLA(D)], size_t size)
 {
 	long old = (long)size;
 
 	for (int i = 0; i < D; i++) {
+
+		if (!MD_IS_SET(flags, i)) {
+
+			str[i] = 0;
+			continue;
+		}
 
 		str[i] = (1 == dim[i]) ? 0 : old;
 		old *= dim[i];
 	}
 
 	return str;
+}
+
+inline long* md_calc_strides(int D, long str[__VLA2(D)], const long dim[__VLA(D)], size_t size)
+{
+	return md_calc_strides_selected(D, ~0UL, str, dim, size);
 }
 
 inline void md_copy_strides(int D, long ostrs[__VLA(D)], const long istrs[__VLA(D)])
@@ -194,10 +210,6 @@ extern unsigned long md_nontriv_strides(int D, const long dims[__VLA(D)]);
 #define MD_MAKE_ARRAY(T, ...) ((T[]){ __VA_ARGS__ })
 #define MD_DIMS(...) MD_MAKE_ARRAY(long, __VA_ARGS__)
 
-#define MD_BIT(x) (1UL << (x))
-#define MD_IS_SET(x, y)	((x) & MD_BIT(y))
-#define MD_CLEAR(x, y) ((x) & ~MD_BIT(y))
-#define MD_SET(x, y)	((x) | MD_BIT(y))
 
 extern int md_max_idx(unsigned long flags);
 extern int md_min_idx(unsigned long flags);
