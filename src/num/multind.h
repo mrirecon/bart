@@ -206,6 +206,9 @@ extern void md_permute_invert(int D, int inv_order[__VLA(D)], const int order[__
 extern unsigned long md_nontriv_dims(int D, const long dims[__VLA(D)]);
 extern unsigned long md_nontriv_strides(int D, const long dims[__VLA(D)]);
 
+extern _Bool md_overlap(int D1, const long dims1[__VLA(D1)], const long strs1[__VLA(D1)], const void* ptr1, size_t size1,
+			int D2, const long dims2[__VLA(D2)], const long strs2[__VLA(D2)], const void* ptr2, size_t size2);
+
 
 #define MD_MAKE_ARRAY(T, ...) ((T[]){ __VA_ARGS__ })
 #define MD_DIMS(...) MD_MAKE_ARRAY(long, __VA_ARGS__)

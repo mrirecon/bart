@@ -663,6 +663,33 @@ void md_max_dims(int D, unsigned long flags, long odims[D], const long idims1[D]
 }
 
 
+bool md_overlap(int D1, const long dims1[D1], const long strs1[D1], const void* ptr1, size_t size1,
+		int D2, const long dims2[D2], const long strs2[D2], const void* ptr2, size_t size2)
+{
+	long offset1 = 0;
+	long offset2 = 0;
+
+	for (int i = 0; i < D1; i++) {
+
+		size1 += ((size_t)dims1[i] - 1) * (size_t)labs(strs1[i]);
+		offset1 += (dims1[i] - 1) * MAX(-strs1[i], 0);
+	}
+
+	for (int i = 0; i < D2; i++) {
+
+		size2 += ((size_t)dims2[i] - 1) * (size_t)labs(strs2[i]);
+		offset2 += (dims2[i] - 1) * MAX(-strs2[i], 0);
+	}
+
+	const void* ptr1s = ptr1 - offset1;
+	const void* ptr1e = ptr1s + size1;
+
+	const void* ptr2s = ptr2 - offset2;
+	const void* ptr2e = ptr2s + size2;
+
+	return !((ptr1s >= ptr2e) || (ptr2s >= ptr1e));
+}
+
 
 /**
  * Zero out array (with strides)
