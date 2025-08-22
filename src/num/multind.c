@@ -159,7 +159,7 @@ void md_parallel_nary(int C, int D, const long dim[D], unsigned long flags, cons
 	int outer_threads = MAX(1, MIN(old_threads, total_iterations));
 	int inner_threads = MAX(1, old_threads / outer_threads);
 
-	omp_set_num_threads(outer_threads);	
+	omp_set_num_threads(outer_threads);
 #endif
 
 #pragma omp parallel for
@@ -2247,7 +2247,7 @@ void md_mask_compress(int D, const long dims[D], long M, uint32_t dst[static M],
 		cuda_mask_compress(N, dst, src);
 		return;
 	}
-#endif 
+#endif
 
 #pragma omp parallel for
 	for (long i = 0; i < M; i++) {
@@ -2280,7 +2280,7 @@ void md_mask_decompress(int D, const long dims[D], float* dst, long M, const uin
 		cuda_mask_decompress(N, dst, src);
 		return;
 	}
-#endif 
+#endif
 
 #pragma omp parallel for
 	for (long i = 0; i < M; i++) {
