@@ -19,6 +19,14 @@
 
 #define VEC(T) struct { int len; typeof(T) data[]; }
 
+static void* vec_init(void)
+{
+	struct {int len;} * vec;
+	vec = xmalloc(sizeof *vec);
+	vec->len = 0;
+	return vec;
+}
+
 
 #define	VEC_ADD(v, o) 							\
 do {									\
@@ -60,18 +68,11 @@ void pulseq_init(struct pulseq *ps)
 	ps->total_duration = 0.;
 
 
-	ps->ps_blocks = xmalloc(sizeof(int));
-	ps->gradients = xmalloc(sizeof(int));
-	ps->trapezoids = xmalloc(sizeof(int));
-	ps->adcs = xmalloc(sizeof(int));
-	ps->rfpulses = xmalloc(sizeof(int));
-	ps->shapes = xmalloc(sizeof(struct shape));
-
-	ps->ps_blocks->len = 0;
-	ps->gradients->len = 0;
-	ps->trapezoids->len = 0;
-	ps->adcs->len = 0;
-	ps->rfpulses->len = 0;
-	ps->shapes->len = 0;
+	ps->ps_blocks = vec_init();
+	ps->gradients = vec_init();
+	ps->trapezoids = vec_init();
+	ps->adcs = vec_init();
+	ps->rfpulses = vec_init();
+	ps->shapes = vec_init();
 }
 
