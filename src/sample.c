@@ -144,9 +144,9 @@ int main_sample(int argc, char* argv[argc])
 	};
 
 	struct opt_s gmm_opts[] = {
-		OPTL_INFILE(0, "mean", &means_file, "means", "means of the Gaussians in the gmm"),
-		OPTL_INFILE(0, "var", &vars_file, "vars", "variance of the Gaussians in the gmm"),
-		OPTL_INFILE(0, "w", &ws_file, "ws", "weigthing of the Gaussians in the gmm"),
+		OPTL_INFILE(0, "mean", &means_file, "file", "means of the Gaussians in the gmm"),
+		OPTL_INFILE(0, "var", &vars_file, "file", "variance of the Gaussians in the gmm"),
+		OPTL_INFILE(0, "w", &ws_file, "file", "weigthing of the Gaussians in the gmm"),
 	};
 
 	const struct opt_s opts[] = {
@@ -157,7 +157,7 @@ int main_sample(int argc, char* argv[argc])
 		OPTL_SET('a', "ancestral", &ancestral, "ancestral sampling"),
 		OPTL_SET('p', "predictor-corrector", &predictor_corrector, "predictor-corrector sampling"),
 		OPTL_SUBOPT(0, "sigma", "", "select noise schedule for decreasing noise", ARRAY_SIZE(sigma_opts), sigma_opts),
-		OPTL_SUBOPT(0, "gmm", "", "generate a gaussian mixture model for sampling", ARRAY_SIZE(gmm_opts), gmm_opts),
+		OPTL_SUBOPT(0, "gmm", "", "generate a Gaussian mixture model for sampling", ARRAY_SIZE(gmm_opts), gmm_opts),
 		OPTL_STRING(0, "external-graph", &graph, "weights", ".pt or .tf file with weights"),
 		OPTL_FLOAT(0, "gamma", &gamma_base, "gamma", "scaling of stepsize for Langevin iteration"),
 		OPT_INT('N', &N, "N", "number of noise levels"),
