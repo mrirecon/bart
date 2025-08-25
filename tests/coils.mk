@@ -49,4 +49,7 @@ tests/test-coils-grid: coils phantom grid nrmse
 	rm *.cfl *.hdr; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-TESTS += tests/test-coils-channelselection tests/test-coils-sens8 tests/test-coils-grid
+# needs 64bit flags, so does not currently work on wasm
+ifneq ($(BUILDTYPE), WASM)
+TESTS += tests/test-coils-channelselection tests/test-coils-grid tests/test-coils-sens64 tests/test-coils-sens8
+endif
