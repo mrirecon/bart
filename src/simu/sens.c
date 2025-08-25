@@ -41,6 +41,11 @@ struct coil_opts coil_opts_defaults = {
 	.fun = NULL,
 };
 
+struct coil_opts coil_opts_pha_defaults = {
+
+	.ctype = COIL_NONE,
+};
+
 static complex float* sens_internal_model(long D, long dims[D], unsigned long flags, long Nc, bool flip, const void* v)
 {
 	// require 8 byte for representation of up to 64 coils

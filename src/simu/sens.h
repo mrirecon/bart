@@ -21,6 +21,7 @@ struct coil_opts {
 };
 
 extern struct coil_opts coil_opts_defaults;
+extern struct coil_opts coil_opts_pha_defaults;
 
 extern void sample_coils(long D, const long odims[D], _Complex double* optr, const long gdims[D], const float* grid, const struct coil_opts* copts);
 

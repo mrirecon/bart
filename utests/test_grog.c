@@ -9,6 +9,7 @@
 #include "misc/mri.h"
 
 #include "simu/phantom.h"
+#include "simu/sens.c"
 
 #include "noncart/traj.h"
 
@@ -77,13 +78,13 @@ static bool test_grog(void)
 
 	complex float* data = md_alloc(DIMS, ddims, CFL_SIZE);
 
-	struct pha_opts popts = pha_opts_defaults;
-	popts.stype = HEAD_2D_8CH;
+	struct coil_opts copts = coil_opts_defaults;
+	copts.ctype = HEAD_2D_8CH;
 
 	long tstrs[DIMS] = { 0 };
 	md_calc_strides(DIMS, tstrs, tdims, CFL_SIZE);
 
-	calc_phantom(ddims, data, false, true, tstrs, traj, &popts);
+	calc_phantom(ddims, data, false, true, tstrs, traj, &copts);
 
 
 	// 3. Run GROG kernel calibration
