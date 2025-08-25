@@ -35,7 +35,7 @@ do {									\
 	int n2 = (*_p) ? (++(*_p)->len) : 1;				\
 	/* fix fanalyzer leak detection if realloc fails */		\
 	auto _q = *_p;							\
-	*_p = realloc(*_p, sizeof(*_p) + (unsigned long)n2 * sizeof(eltype_t));	\
+	*_p = realloc(*_p, sizeof(**_p) + (unsigned long)n2 * sizeof(eltype_t));\
 	if (!*_p) error("memory out");					\
 	(void)_q;							\
 	(*_p)->len = n2;						\
