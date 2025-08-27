@@ -163,7 +163,7 @@ int main_seq(int argc, char* argv[argc])
 	long mdims[DIMS];
 	md_select_dims(DIMS, ~TE_FLAG, mdims, kernel_dims);
 
-	int E;
+	int E = 0;
 
 	if (support) {
 
