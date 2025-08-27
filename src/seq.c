@@ -22,7 +22,6 @@
 #include "seq/helpers.h"
 #include "seq/seq.h"
 
-#include "seq/adc_rf.h"
 #include "seq/misc.h"
 #include "seq/flash.h"
 #include "seq/kernel.h"
@@ -97,7 +96,7 @@ int main_seq(int argc, char* argv[argc])
 
 		OPTL_LONG('r', "lines", &seq.loop_dims[PHS1_DIM], "lines", "Number of phase encoding lines"),
 		OPTL_LONG('z', "partitions", &seq.loop_dims[PHS2_DIM], "partitions", "Number of partitions (3D) or SMS groups (2D)"),
-		OPTL_LONG('t', "measurements", &seq.loop_dims[TIME_DIM], "measurements", "Number of measurements / frames"),
+		OPTL_LONG('t', "measurements", &seq.loop_dims[TIME_DIM], "measurements", "Number of measurements / frames (RAGA: total number of spokes)"),
 		OPTL_LONG('m', "slices", &seq.loop_dims[SLICE_DIM], "slices", "Number of slices of multiband factor (SMS)"),
 		OPTL_LONG('i', "inversions", &seq.loop_dims[BATCH_DIM], "inversions", "Number of inversions"),
 
@@ -130,6 +129,7 @@ int main_seq(int argc, char* argv[argc])
 	if (0 > samples)
 		samples = (0. > dt) ? 1000 : (seq.phys.tr / dt);
 
+	double ddt = (0 > dt) ? seq.phys.tr / samples : ceil(dt * 1.e6) / 1.e6; //FIXME breaks with float
 
 	// FIXME, this should be moved in system configurations
 	switch (gradient_mode) {
@@ -185,6 +185,9 @@ int main_seq(int argc, char* argv[argc])
 	mdims[PHS1_DIM] = support ? events_counter(SEQ_EVENT_GRADIENT, E, ev) : samples;
 	mdims[READ_DIM] = support ? 6 : 3;
 
+	double g2[samples][mdims[READ_DIM]];
+	float m0[samples][3];
+
 	long mstrs[DIMS];
 	md_calc_strides(DIMS, mstrs, mdims, CFL_SIZE);
 
@@ -238,16 +241,14 @@ int main_seq(int argc, char* argv[argc])
 		if (0 < E)
 			debug_printf(DP_DEBUG2, "block mode: %d ; E: %d \n", seq_state.mode, E);
 
-		if ((BLOCK_KERNEL_IMAGE != seq_state.mode) || (0 == E))
-			continue;
 
 		if (0 > E)
 			error("Sequence not possible! - check seq_config, %d] \n", E);
 
 
-		double ddt = (0 > dt) ? 1. * seq.phys.tr / samples : ceil(dt * 1.e6)/ 1.e6; //FIXME breaks with float
-		double g2[samples][mdims[READ_DIM]];
 
+		if ((BLOCK_KERNEL_IMAGE != seq_state.mode) || (0 == E))
+			goto debug_print_events;
 
 		debug_printf(DP_DEBUG1, "end of last event: %.2f \t end of calc: %.2f\n",
 				events_end_time(E, ev, 1, 0), samples * ddt);
@@ -257,7 +258,6 @@ int main_seq(int argc, char* argv[argc])
 		else
 			seq_compute_gradients(samples, g2, ddt, E, ev);
 
-		float m0[samples][3];
 		compute_moment0(samples, m0, ddt, E, ev);
 
 
@@ -312,6 +312,7 @@ int main_seq(int argc, char* argv[argc])
 			md_free(adc);
 		}
 
+debug_print_events:
 		linearize_events(E, ev, &seq_state.start_block, seq_state.mode, seq.phys.tr);
 
 		for (int i = 0; i < E; i++) {
