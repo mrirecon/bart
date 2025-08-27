@@ -49,12 +49,12 @@ int main_pulse(int argc, char* argv[argc])
 		OPTL_SELECT(0, "hypsec", enum pulse_t, &pulse_type, PULSE_HS, "hypersecant"),
 
 		/* Pulse Specific Parameters */
-		OPTL_DOUBLE(0, "dur", &dur, "long", "pulse duration"),
+		OPTL_DOUBLE(0, "dur", &dur, "double", "pulse duration [s]"),
 		OPTL_DOUBLE(0, "fa", &flip_angle, "double", "flip angle [deg]"),
 		OPTL_DOUBLE(0, "bwtp", &bwtp, "double", "bandwidth time product"),
 		OPTL_PINT(0, "mb", &mb, "long", "SMS multi-band factor"),
-		OPTL_DOUBLE(0, "sms-dist", &sms_dist, "long", "center-to-center slice distance between SMS partitions"),
-		OPTL_DOUBLE(0, "slice-th", &slice_th, "double", "slice thickness"),
+		OPTL_DOUBLE(0, "sms-dist", &sms_dist, "long", "center-to-center slice distance between SMS partitions [m]"),
+		OPTL_DOUBLE(0, "slice-th", &slice_th, "double", "slice thickness [m]"),
 		OPTL_PINT(0, "N", &Ntime, "int", "number of time-steps (default = 1e6 * dur)"),
 	};
 
@@ -70,7 +70,7 @@ int main_pulse(int argc, char* argv[argc])
 		Ntime = ceilf(1.e6 * dur);
 
 	struct pulse_sinc ps = pulse_sinc_defaults;
-	struct pulse_sms pm = pulse_sms_defaults;
+	struct pulse_sms pm[mb];
 	struct pulse_hypsec ph = pulse_hypsec_defaults;
 	struct pulse_rect pr = pulse_rect_defaults;
 
@@ -88,10 +88,11 @@ int main_pulse(int argc, char* argv[argc])
 
 		for (int m = 0; m < mb; m++) {
 
-			pulse_sms_init(&pm, dur, flip_angle, 0, bwtp, pulse_sms_defaults.alpha,
+			pm[m] = pulse_sms_defaults;
+			pulse_sms_init(&pm[m], dur, flip_angle, 0, bwtp, pulse_sms_defaults.alpha,
 				mb, m, sms_dist, slice_th);
 
-			pulse[m] = CAST_UP(&pm);
+			pulse[m] = CAST_UP(&pm[m]);
 		}
 
 		break;
