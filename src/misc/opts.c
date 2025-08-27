@@ -125,7 +125,7 @@ static const char* opt_arg_str(enum OPT_TYPE type)
 
 	case OPT_FLOAT_VEC4:
 		return "f:f:f:f";
-	
+
 	case OPT_FLOAT_VECN:
 	case OPT_DOUBLE_VECN:
 		return "[f:]*f";
@@ -587,7 +587,7 @@ void cmdline_synth(void (*print)(const char* str, ...), int n, const struct opt_
 				break;
 
 			default:
-				break;
+				assert(0);
 			}
 
 			for (int j = 0; j < count; j++) {
@@ -633,7 +633,7 @@ void cmdline_synth(void (*print)(const char* str, ...), int n, const struct opt_
 				break;
 
 			default:
-				break;
+				assert(0);
 			}
 
 			for (int j = 0; j < count; j++) {
@@ -649,13 +649,13 @@ void cmdline_synth(void (*print)(const char* str, ...), int n, const struct opt_
 		case OPT_DOUBLE_VECN:
 
 			double (*dvn)[];
-			count = 2;
+			count = 3;
 			switch (opts[i].type) {
 
 			case OPT_DOUBLE_VEC3:
 
-				count++;
-				[[fallthrough]];
+				dvn = opts[i].ptr;
+				break;
 
 			case OPT_DOUBLE_VECN:
 
@@ -667,7 +667,7 @@ void cmdline_synth(void (*print)(const char* str, ...), int n, const struct opt_
 				break;
 
 			default:
-				break;
+				assert(0);
 			}
 
 			for (int j = 0; j < count; j++) {
