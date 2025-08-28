@@ -121,6 +121,12 @@ int main_seq(int argc, char* argv[argc])
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
+	if ((seq.loop_dims[TIME_DIM] < seq.loop_dims[PHS1_DIM]) && (PEMODE_RAGA == seq.enc.pe_mode)) {
+
+		debug_printf(DP_INFO, "Set total number of spokes to %ld (full frame for RAGA encoding)\n", seq.loop_dims[PHS1_DIM]);
+		seq.loop_dims[TIME_DIM] = seq.loop_dims[PHS1_DIM];
+	}
+
 
 	set_loop_dims_and_sms(&seq, seq.loop_dims[PHS2_DIM], seq.loop_dims[SLICE_DIM], seq.loop_dims[PHS1_DIM],
 				seq.loop_dims[TIME_DIM], seq.loop_dims[TE_DIM],
