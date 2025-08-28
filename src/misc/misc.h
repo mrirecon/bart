@@ -63,8 +63,9 @@ extern void warn_nonnull_ptr(void*);
 
 #define _CONCAT(A, B) A ## B
 #define CONCAT(A, B) _CONCAT(A, B)
-#define _STRINGIFY(x) # x
-#define STRINGIFY(x) _STRINGIFY(x)
+//FIXME _STRINGIFY is defined in mpi_portable_platform.h
+#define STRINGIFY_HELPER(x) # x
+#define STRINGIFY(x) STRINGIFY_HELPER(x)
 
 
 #define PTR_ALLOC(T, x)		_PTR_ALLOC(__typeof__(T), x)
