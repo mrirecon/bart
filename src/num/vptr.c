@@ -199,6 +199,21 @@ struct mem_s {
 	struct vptr_hint_s* hint;
 };
 
+static void vptr_debug_mem(int dl, const struct mem_s* mem)
+{
+	assert(0 != mem);
+	debug_printf(dl, "Virtual pointer %p\n", mem->ptr);
+
+	if (0 < mem->shape.N) {
+
+		debug_printf(dl, "size: %lu, dims: ", mem->shape.size);
+		debug_print_dims(dl, mem->shape.N, mem->shape.dims);
+	}
+
+	if (0 == mem->shape.N)
+		debug_printf(dl, "ptr not initialized\n");
+}
+
 static int vptr_cmp(const void* _a, const void* _b)
 {
 	const struct mem_s* a = _a;
@@ -523,6 +538,145 @@ void* vptr_wrap_sameplace(int N, const long dims[N], size_t size, const void* pt
 }
 
 
+/*
+ * Assuming a loop over adims accesing a pointer allocated with mdims via astrs.
+ * long apos[N];
+ * do {
+ * 	long mpos[D];
+ * 	md_unravel_index(D, mpos, ~0UL, mdims, offset + md_calc_offset(N, astrs, apos));
+ * 	...
+ * } while (md_next(N, adims, ~0UL, apos));
+ *
+ * This function computes the positions in mpos which may change due to a change of apos[i].
+ *
+ * if a bit is not set in any return flag, we access only a slice of the memory
+ * if a bit is only set in one return flag, we can access the memory in a single loop
+*/
+static void loop_access_dims(int N, unsigned long flags[N], const long adims[N], const long astrs[N], int D, const long mdims[D], long offset)
+{
+	long mstrs[D];
+	md_calc_strides(D, mstrs, mdims, 1);
+
+	long mpos[D];
+	md_unravel_index(D, mpos, ~0UL, mdims, offset);
+
+	long adims2[MIN(N, D)];
+	for (int i = 0; i < MIN(N, D); i++)
+		adims2[i] = adims[i] + mpos[i];
+
+	if (   md_check_bounds(MIN(N, D), md_nontriv_dims(N, adims), adims2, mdims)
+	    && md_check_equal_dims(MIN(N, D), astrs, mstrs, md_nontriv_dims(N, adims))
+	    && (N < D || 1 == md_calc_size(N - D, adims + D))) {
+
+		for (int i = 0; i < N; i++)
+			flags[i] = 1 < adims[i] ? MD_BIT(i) : 0ul;
+
+		return;
+	}
+
+	long dstrs[N][D];
+	for (int i = 0; i < N; i++) {
+
+		md_set_dims(D, dstrs[i], 0);
+
+		if (0 != astrs[i])
+			md_unravel_index(D, dstrs[i], ~0UL, mdims, labs(astrs[i]));
+
+		if (0 > astrs[i])
+			for (int j = 0; j < D; j++)
+				dstrs[i][j] = -dstrs[i][j];
+	}
+
+	long mlpos[D];
+	long mupos[D];
+
+	memset(mlpos, 0, sizeof mlpos);	// GCC ANALYZER
+	memset(mupos, 0, sizeof mupos);	// GCC ANALYZER
+
+	for (int j = 0; j < D; j++) {
+
+		mlpos[j] = mpos[j];
+		mupos[j] = mpos[j];
+
+		for (int i = 0; i < N; i++) {
+
+			mlpos[j] = MIN(mlpos[j], dstrs[i][j] * (adims[i] - 1));
+			mupos[j] = MAX(mupos[j], dstrs[i][j] * (adims[i] - 1));
+		}
+	}
+
+	//which dimensions are affected by a move in this dimension
+	unsigned long affect_flags[D];
+
+	for (int i = 0; i < D; i++) {
+
+		affect_flags[i] = MD_BIT(i);
+
+		long mlposj = mlpos[i];
+		long muposj = mupos[i];
+
+		for (int j = i; j < D - 1; j++) {
+
+			if ((0 > mlposj) || (muposj >= mdims[j])) {
+
+				affect_flags[i] |= MD_BIT(j + 1);
+
+				mlposj /= mdims[j];
+				muposj /= mdims[j];
+
+				mlposj += mlpos[j + 1];
+				muposj += mupos[j + 1];
+			} else {
+
+				break;
+			}
+		}
+	}
+
+	for(int i = 0; i < N; i++) {
+
+		flags[i] = 0ul;
+
+		for(int j = 0; j < D; j++)
+			if (0 != dstrs[i][j])
+				flags[i] |= affect_flags[j];
+	}
+}
+
+static void check_valid_loop_access(const struct mem_s* mem , int N, const long dims[N], const long strs[N], size_t size, const void* ptr)
+{
+	const void* minp = ptr;
+	const void* maxp = ptr + size - 1;
+
+	for (int i = 0; i < N; i++) {
+
+		minp += MIN(0, (dims[i] - 1) * strs[i]);
+		maxp += MAX(0, (dims[i] - 1) * strs[i]);
+	}
+
+	if ((maxp >= mem->ptr + mem->len) || minp < mem->ptr) {
+
+		debug_print_dims(DP_INFO, N, dims);
+		debug_print_dims(DP_INFO, N, strs);
+		vptr_debug_mem(DP_ERROR, mem);
+		error("Invalid vptr access at %p!\n", ptr);
+	}
+}
+
+static void size_to_dims(int N, long odims[N + 1], const long idims[N], size_t size)
+{
+	odims[0] = (long)size;
+	md_copy_dims(N, odims + 1, idims);
+}
+
+static void size_to_strs(int N, long ostrs[N + 1], const long istrs[N], size_t /*size*/)
+{
+	ostrs[0] = 1;
+	md_copy_dims(N, ostrs + 1, istrs);
+}
+
+
+
 /**
  * Returns which dimensions cannot be accessed using the same resolved pointer
  */
@@ -535,90 +689,47 @@ unsigned long vptr_block_loop_flags(int N, const long dims[N], const long strs[N
 
 	vptr_mem_init(&mem->blocks);
 
-	if (mem->blocks.block_size == (long)(mem->len))
+	check_valid_loop_access(mem, N, dims, strs, size, ptr);
+
+	unsigned long lflags = mem->blocks.flags;
+	if (NULL != mem->hint)
+		lflags |= mem->hint->mpi_flags;
+
+	if (0 == lflags)
 		return 0UL;
 
+	long mdims[mem->shape.N + 1];
 	long tdims[N + 1];
 	long tstrs[N + 1];
 
-	tdims[0] = (long)size;
-	tstrs[0] = 1;
+	size_to_dims(mem->shape.N, mdims, mem->shape.dims, mem->shape.size);
+	size_to_dims(N, tdims, dims, size);
+	size_to_strs(N, tstrs, strs, size);
 
-	md_select_dims(N, md_nontriv_strides(N, strs), tdims + 1, dims);
-	md_select_strides(N, md_nontriv_dims(N, tdims + 1), tstrs + 1, strs);
+	md_select_dims(N + 1, md_nontriv_strides(N + 1, tstrs), tdims, tdims);
+	md_select_strides(N + 1, md_nontriv_dims(N + 1, tdims), tstrs, tstrs);
 
+	unsigned long flags[N + 1];
+	memset(flags, 0, sizeof flags);	// GCC ANALYZER
+	loop_access_dims(N + 1, flags, tdims, tstrs, mem->shape.N + 1, mdims, ptr - mem->ptr);
 
-	//general case: To check if dimension i can be safely accessed from one rank:
-	//		1.) Search for all positions with pos[i] = 0 for max(offset % block_size) and min(offset % block_size)
-	//		2.) Check if by changing pos[i] the range [0, mpi_size - 1] is left
+	unsigned long ret_flags = 0;
 
-	long rstrs[N + 1];
-	for (int i = 0; i < N + 1; i++)
-		rstrs[i] = tstrs[i] % mem->blocks.block_size;
+	for (int i = 1; i < N + 1; i++)
+		if (0 != (lflags & (flags[i] / 2)))
+			ret_flags |= MD_BIT(i);
 
-	unsigned long flags = 0;
-	long offset = (ptr - mem->ptr) % mem->blocks.block_size;
+	ret_flags /= 2;
 
-	for (int i = 0; i < N + 1; i++) {
+	if (0 != ret_flags) {
 
-		if (mem->blocks.block_size <= tstrs[i]) {
+		for (int i = md_min_idx(ret_flags); i < N; i++)
+			ret_flags |= MD_BIT(i);
 
-			flags |= MD_BIT(i);
-			continue;
-		}
-
-		if (0 == rstrs[i])
-			continue;
-
-		long pos[N + 1];
-		md_set_dims(N + 1, pos, 0);
-
-		long max = offset; // max of (offset % block_size) for all possible pos with pos[i] = 0
-		long min = offset; // min of (offset % block_size) for all possible pos with pos[i] = 0
-
-		for (int j = 0; j < N + 1; j++) {
-
-			if (i == j)
-				continue;
-
-			// cheap search by just considering max position
-			if (0 < rstrs[i])
-				max += rstrs[j] * (tdims[j] - 1);
-			else
-				min += rstrs[j] * (tdims[j] - 1);
-		}
-
-		if (   ((0 < tstrs[i]) && (max >= mem->blocks.block_size))
-		    || ((0 > tstrs[i]) && (0 < min))) {
-
-		    	// Cheap search is not valid!
-			// Expensive brute force search!
-			max = offset;
-			min = offset;
-
-			do {
-				long o = (md_calc_offset(N + 1, rstrs, pos) + offset) % mem->blocks.block_size;
-
-				if (0 > o)
-					o += mem->blocks.block_size;
-
-				max = MAX(max, o);
-				min = MIN(min, o);
-
-			} while (md_next(N + 1, tdims, ~MD_BIT(i) & md_nontriv_strides(N + 1, rstrs), pos));
-		}
-
-		if ((tstrs[i] > 0) && (max + (tdims[i] - 1) * tstrs[i] >= mem->blocks.block_size))
-			flags |= MD_BIT(i);
-
-		if ((tstrs[i] < 0) && (min + (tdims[i] - 1) * tstrs[i] < 0))
-			flags |= MD_BIT(i);
+		ret_flags &= md_nontriv_dims(N, dims);
 	}
 
-	if (MD_IS_SET(flags, 0))
-		error("Memory block overlaps MPI boundaries!\n");
-
-	return flags / 2;
+	return ret_flags;
 }
 
 
