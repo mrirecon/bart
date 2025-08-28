@@ -873,12 +873,16 @@ int mpi_ptr_get_rank(const void* ptr)
 }
 
 
-bool mpi_accessible_from(const void* ptr, int rank)
+static bool mpi_accessible_from_mem(const struct mem_s* mem, const void* ptr, int rank)
 {
-	auto mem = search(ptr, false);
-
 	if ((NULL == mem) || (NULL == mem->hint) || (0 == mem->hint->mpi_flags))
 		return true;
+
+	if (0 == mem->shape.N) {
+
+		vptr_debug_mem(DP_ERROR, mem);
+		error("Virtual pointer is range or not initialized!\n");
+	}
 
 	struct vptr_hint_s* h = mem->hint;
 	int N = MAX(mem->shape.N, h->N);
@@ -902,21 +906,41 @@ bool mpi_accessible_from(const void* ptr, int rank)
 	return false;
 }
 
+bool mpi_accessible_from(const void* ptr, int rank)
+{
+	auto mem = search(ptr, false);
+
+	return mpi_accessible_from_mem(mem, ptr, rank);
+}
+
 
 bool mpi_accessible(const void* ptr)
 {
 	return mpi_accessible_from(ptr, mpi_get_rank());
 }
 
-bool mpi_accessible_mult(int N, const void* ptr[N])
+static bool mpi_accessible_from_mult(int N, const struct mem_s* mem[N], const void* ptr[N], int rank)
 {
+
 	for (int i = 0; i < N; i++)
-		if (!mpi_accessible(ptr[i]))
+		if (!mpi_accessible_from_mem(mem[i], ptr[i], rank))
 			return false;
 
 	return true;
 }
 
+
+bool mpi_accessible_mult(int N, const void* ptr[N])
+{
+	const struct mem_s* mem[N];
+	for (int i = 0; i < N; i++)
+		mem[i] = search(ptr[i], false);
+
+	if (!mpi_accessible_from_mult(N, mem, ptr, mpi_get_rank()))
+		return false;
+
+	return true;
+}
 
 int mpi_reduce_color(unsigned long reduce_flags, const void* ptr)
 {
