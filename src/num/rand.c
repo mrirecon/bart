@@ -116,8 +116,6 @@ struct bart_rand_state* rand_state_create(unsigned long long seed)
 
 static struct bart_rand_state get_worker_state(void)
 {
-	assert(rand_is_init);
-
 	struct bart_rand_state worker_state;
 
 #pragma omp critical(global_rand_state)
@@ -503,7 +501,7 @@ static void md_sample_mpi(int D, const long dims[D], complex float* dst, md_samp
 	long strs_offset[D]; // one based
 	long offset_cfl = cfl_loop_offset_and_strides(D, strs_offset, dims);
 
-	unsigned long loop_flags = vptr_block_loop_flags(D, dims, strs, dst, sizeof(complex float));
+	unsigned long loop_flags = vptr_block_loop_flags(D, dims, strs, dst, sizeof(complex float), false);
 
 	if (D != md_calc_blockdim(D, dims, strs_offset, 1))
 		loop_flags |= ~(MD_BIT(md_calc_blockdim(D, dims, strs_offset, 1)) - 1);

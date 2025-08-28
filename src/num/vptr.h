@@ -35,7 +35,8 @@ extern _Bool is_mpi(const void* ptr);
 extern void* vptr_move_cpu(const void* ptr);
 extern void* vptr_move_gpu(const void* ptr);
 
-extern unsigned long vptr_block_loop_flags(int N, const long dims[__VLA(N)], const long strs[__VLA(N)], const void* ptr, size_t size);
+extern unsigned long vptr_block_loop_flags(int N, const long dims[__VLA(N)], const long strs[__VLA(N)], const void* ptr, size_t size, _Bool contiguous_strs);
+extern void vptr_contiguous_strs(int N, const void* ptr, unsigned long lflags, long nstrs[__VLA(N)], const long ostrs[__VLA(N)]);
 
 extern void vptr_assert_sameplace(int N, void* nptr[__VLA(N)]);
 
@@ -43,6 +44,7 @@ extern void vptr_assert_sameplace(int N, void* nptr[__VLA(N)]);
 extern struct vptr_hint_s* hint_mpi_create(unsigned long mpi_flags, int N, const long dims[__VLA(N)]);
 extern _Bool mpi_accessible_from(const void* ptr, int rank);
 extern _Bool mpi_accessible(const void* ptr);
+extern _Bool mpi_accessible_mult(int N, const void* ptr[__VLA(N)]);
 extern int mpi_ptr_get_rank(const void* ptr);
 
 extern unsigned long mpi_parallel_flags(int N, const long dims[__VLA(N)], const long strs[__VLA(N)], size_t size, const void* ptr);

@@ -97,7 +97,7 @@ void md_nary(int C, int D, const long dim[D], const long* str[C], void* ptr[C], 
 	vptr_assert_sameplace(C, ptr);
 
 	for (int i = 0; i < C; i++)
-		block_flags |= vptr_block_loop_flags(D, dim, str[i], ptr[i], 1);
+		block_flags |= vptr_block_loop_flags(D, dim, str[i], ptr[i], 1, false);
 
 	long bdim[D?:1];
 	long pos[D?:1];
@@ -798,8 +798,8 @@ void md_copy2(int D, const long dim[D], const long ostr[D], void* optr, const lo
 //		debug_print_dims(DP_INFO, D, ostr);
 //		debug_print_dims(DP_INFO, D, istr);
 
-		unsigned long iflags = vptr_block_loop_flags(D, dim, istr, iptr, size);
-		unsigned long oflags = vptr_block_loop_flags(D, dim, ostr, optr, size);
+		unsigned long iflags = vptr_block_loop_flags(D, dim, istr, iptr, size, false);
+		unsigned long oflags = vptr_block_loop_flags(D, dim, ostr, optr, size, false);
 
 		long cdims[D];
 		md_singleton_dims(D, cdims);
@@ -1717,7 +1717,7 @@ static void md_flip_inpl2(int D, const long dims[D], unsigned long flags, const 
 {
 	int i;
 
-	assert(0 == (vptr_block_loop_flags(D, dims, str, ptr, size) & flags));
+	assert(0 == (vptr_block_loop_flags(D, dims, str, ptr, size, false) & flags));
 
 	for (i = D - 1; i >= 0; i--)
 		if ((1 != dims[i]) && MD_IS_SET(flags, i))

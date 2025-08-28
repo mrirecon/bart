@@ -558,7 +558,7 @@ void mpi_reduce_sum(int N, unsigned long reduce_flags, const long dims[N], float
 	long strs[N];
 	md_calc_strides(N, strs, dims, FL_SIZE);
 
-	unsigned long block_flags = vptr_block_loop_flags(N, dims, strs, ptr, FL_SIZE);
+	unsigned long block_flags = vptr_block_loop_flags(N, dims, strs, ptr, FL_SIZE, false);
 
 	long size = 1;
 
@@ -660,7 +660,7 @@ void mpi_reduce_sumD(int N, unsigned long reduce_flags, const long dims[N], doub
 	long strs[N];
 	md_calc_strides(N, strs, dims, DL_SIZE);
 
-	unsigned long block_flags = vptr_block_loop_flags(N, dims, strs, ptr, DL_SIZE);
+	unsigned long block_flags = vptr_block_loop_flags(N, dims, strs, ptr, DL_SIZE, false);
 
 	long size = 1;
 

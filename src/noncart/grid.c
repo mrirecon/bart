@@ -150,7 +150,7 @@ void gridH(const struct grid_conf_s* conf, const long ksp_dims[4], const long tr
 {
 	if (grid_dims[3] != ksp_dims[3])
 		error("Adjoint gridding: ksp and grid are incompatible in dim 3 (%d != %d)!\n", ksp_dims[3], grid_dims[3]);
-	
+
 	assert(3 == ksp_dims[0]);
 	assert(0 == ksp_strs[0]);
 	assert(CFL_SIZE == trj_strs[0]);
@@ -185,7 +185,7 @@ void gridH(const struct grid_conf_s* conf, const long ksp_dims[4], const long tr
 			complex float val[C];
 			for (int j = 0; j < C; j++)
 				val[j] = 0.0;
-		
+
 			grid_pointH(C, 3, grid_dims, grid_strs, pos, val, grid, conf->periodic, conf->width, kb_size, kb_table);
 
 			for (int j = 0; j < ksp_dims[3]; j++)
@@ -233,7 +233,7 @@ void grid(const struct grid_conf_s* conf, const long ksp_dims[4], const long trj
 			pos[2] += (grid_dims[2] > 1) ? ((float) (grid_dims[2] / 2)) : 0.;
 
 			complex float val[C];
-		
+
 			bool skip = true;
 
 			for (int j = 0; j < C; j++) {
@@ -241,9 +241,9 @@ void grid(const struct grid_conf_s* conf, const long ksp_dims[4], const long trj
 				val[j] = src[j * ksp_strs[3] / (long)CFL_SIZE + ik];
 				skip = skip && (0. == val[j]);
 			}
-			
+
 			if (!skip)
-				grid_point(C, 3, grid_dims, grid_strs, pos, grid, val, conf->periodic, conf->width, kb_size, kb_table);			
+				grid_point(C, 3, grid_dims, grid_strs, pos, grid, val, conf->periodic, conf->width, kb_size, kb_table);
 		}
 	}
 }
@@ -279,9 +279,9 @@ void grid2(const struct grid_conf_s* conf, int D, const long trj_dims[D], const 
 	md_max_dims(D, ~0UL, max_dims, ksp_dims, trj_dims);
 	md_max_dims(D - 3, ~0UL, max_dims + 3, max_dims + 3, grid_dims + 3);
 
-	unsigned long mpi_flags = vptr_block_loop_flags(D - 3, max_dims + 3, trj_strs + 3, traj, (size_t)(md_calc_size(3, trj_dims) * (long)CFL_SIZE))
-				| vptr_block_loop_flags(D - 3, max_dims + 3, ksp_strs + 3, src, (size_t)(md_calc_size(3, ksp_dims) * (long)CFL_SIZE))
-				| vptr_block_loop_flags(D - 3, max_dims + 3, grid_strs + 3, dst, (size_t)(md_calc_size(3, grid_dims) * (long)CFL_SIZE));
+	unsigned long mpi_flags = vptr_block_loop_flags(D - 3, max_dims + 3, trj_strs + 3, traj, (size_t)(md_calc_size(3, trj_dims) * (long)CFL_SIZE), false)
+				| vptr_block_loop_flags(D - 3, max_dims + 3, ksp_strs + 3, src, (size_t)(md_calc_size(3, ksp_dims) * (long)CFL_SIZE), false)
+				| vptr_block_loop_flags(D - 3, max_dims + 3, grid_strs + 3, dst, (size_t)(md_calc_size(3, grid_dims) * (long)CFL_SIZE), false);
 	mpi_flags <<= 3;
 
 	if ((trj_strs[2] == trj_strs[1] * max_dims[1]) && (ksp_strs[2] == ksp_strs[1] * max_dims[1])) {
@@ -297,7 +297,7 @@ void grid2(const struct grid_conf_s* conf, int D, const long trj_dims[D], const 
 
 		if (0 != grid_strs[i])
 			continue;
-		
+
 		if ((trj_strs[i] == trj_strs[1] * max_dims[1]) && (ksp_strs[i] == ksp_strs[1] * max_dims[1])) {
 
 			max_dims[1] *= max_dims[i];
@@ -372,9 +372,9 @@ void grid2H(const struct grid_conf_s* conf, int D, const long trj_dims[D], const
 	md_max_dims(D, ~0UL, max_dims, ksp_dims, trj_dims);
 	md_max_dims(D - 3, ~0UL, max_dims + 3, max_dims + 3, grid_dims + 3);
 
-	unsigned long mpi_flags = vptr_block_loop_flags(D - 3, max_dims + 3, trj_strs + 3, traj, (size_t)(md_calc_size(3, trj_dims) * (long)CFL_SIZE))
-				| vptr_block_loop_flags(D - 3, max_dims + 3, ksp_strs + 3, dst, (size_t)(md_calc_size(3, ksp_dims) * (long)CFL_SIZE))
-				| vptr_block_loop_flags(D - 3, max_dims + 3, grid_strs + 3, src, (size_t)(md_calc_size(3, grid_dims) * (long)CFL_SIZE));
+	unsigned long mpi_flags = vptr_block_loop_flags(D - 3, max_dims + 3, trj_strs + 3, traj, (size_t)(md_calc_size(3, trj_dims) * (long)CFL_SIZE), false)
+				| vptr_block_loop_flags(D - 3, max_dims + 3, ksp_strs + 3, dst, (size_t)(md_calc_size(3, ksp_dims) * (long)CFL_SIZE), false)
+				| vptr_block_loop_flags(D - 3, max_dims + 3, grid_strs + 3, src, (size_t)(md_calc_size(3, grid_dims) * (long)CFL_SIZE), false);
 
 	mpi_flags <<= 3;
 
@@ -391,7 +391,7 @@ void grid2H(const struct grid_conf_s* conf, int D, const long trj_dims[D], const
 
 		if (0 != grid_strs[i])
 			continue;
-		
+
 		if ((trj_strs[i] == trj_strs[1] * max_dims[1]) && (ksp_strs[i] == ksp_strs[1] * max_dims[1])) {
 
 			max_dims[1] *= max_dims[i];
@@ -600,15 +600,15 @@ void rolloff_correction(float os, float width, float beta, const long dimensions
 	kb_init(beta);
 
 	double scale = 1.;
-	
+
 	if (use_compat_to_version("v0.8.00"))
 		scale = pow(ftkb(beta, 0.) * width / 2, bitcount(md_nontriv_dims(3, dimensions)));
 
 #pragma omp parallel for collapse(3)
-	for (int z = 0; z < dimensions[2]; z++) 
-		for (int y = 0; y < dimensions[1]; y++) 
+	for (int z = 0; z < dimensions[2]; z++)
+		for (int y = 0; y < dimensions[1]; y++)
 			for (int x = 0; x < dimensions[0]; x++)
-				dst[x + dimensions[0] * (y + z * dimensions[1])] 
+				dst[x + dimensions[0] * (y + z * dimensions[1])]
 					= (dimensions[0] > 1 ? rolloff(pos(dimensions[0], x, os), beta, width) : 1.)
 					* (dimensions[1] > 1 ? rolloff(pos(dimensions[1], y, os), beta, width) : 1.)
 					* (dimensions[2] > 1 ? rolloff(pos(dimensions[2], z, os), beta, width) : 1.)
@@ -619,7 +619,7 @@ void apply_rolloff_correction2(float os, float width, float beta, int N, const l
 {
 	// precompute kaiser bessel table
 	kb_init(beta);
-	
+
 	long size_bat = 1;
 	long obstr = -1;	// batch stride, we support three dims with strides and one batch dim
 	long ibstr = -1;	// batch stride, we support three dims with strides and one batch dim
@@ -632,11 +632,11 @@ void apply_rolloff_correction2(float os, float width, float beta, int N, const l
 		assert((-1 == obstr) || ( (ostrs[i] == obstr * size_bat) && (istrs[i] == ibstr * size_bat)));
 
 		if (-1 == obstr) {
-			
+
 			obstr = ostrs[i];
 			ibstr = istrs[i];
 		}
-		
+
 		size_bat *= dims[i];
 	}
 

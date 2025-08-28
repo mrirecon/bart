@@ -753,7 +753,7 @@ static void size_to_strs(int N, long ostrs[N + 1], const long istrs[N], size_t /
 /**
  * Returns which dimensions cannot be accessed using the same resolved pointer
  */
-unsigned long vptr_block_loop_flags(int N, const long dims[N], const long strs[N], const void* ptr, size_t size)
+unsigned long vptr_block_loop_flags(int N, const long dims[N], const long strs[N], const void* ptr, size_t size, _Bool contiguous_strs)
 {
 	struct mem_s* mem = search(ptr, false);
 
@@ -794,7 +794,7 @@ unsigned long vptr_block_loop_flags(int N, const long dims[N], const long strs[N
 
 	ret_flags /= 2;
 
-	if (0 != ret_flags) {
+	if (0 != ret_flags && !contiguous_strs) {
 
 		for (int i = md_min_idx(ret_flags); i < N; i++)
 			ret_flags |= MD_BIT(i);
@@ -803,6 +803,35 @@ unsigned long vptr_block_loop_flags(int N, const long dims[N], const long strs[N
 	}
 
 	return ret_flags;
+}
+
+void vptr_contiguous_strs(int N, const void* ptr, unsigned long lflags, long nstrs[N], const long ostrs[N])
+{
+	struct mem_s* mem = search(ptr, false);
+
+	if (NULL == mem) {
+
+		for (int i = 0; i < N; i++)
+			nstrs[i] = ostrs[i];
+
+		return;
+	}
+
+	int Nm = mem->shape.N + 1;
+	long mdims[Nm];
+	mdims[0] = (long)mem->shape.size;
+	md_copy_dims(mem->shape.N, mdims + 1, mem->shape.dims);
+
+	for (int i = 0; i < N; i++) {
+
+		if (MD_IS_SET(lflags, i) || (0 == ostrs[i])) {
+
+			nstrs[i] = ostrs[i];
+			continue;
+		}
+
+		nstrs[i] = md_reravel_index(Nm, ~(2 * mem->blocks.flags) & md_nontriv_dims(Nm, mdims), md_nontriv_dims(Nm, mdims), mdims, labs(ostrs[i])) * (ostrs[i] < 0 ? -1 : 1);
+	}
 }
 
 
@@ -877,6 +906,15 @@ bool mpi_accessible_from(const void* ptr, int rank)
 bool mpi_accessible(const void* ptr)
 {
 	return mpi_accessible_from(ptr, mpi_get_rank());
+}
+
+bool mpi_accessible_mult(int N, const void* ptr[N])
+{
+	for (int i = 0; i < N; i++)
+		if (!mpi_accessible(ptr[i]))
+			return false;
+
+	return true;
 }
 
 

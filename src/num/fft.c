@@ -161,7 +161,7 @@ static void fftmod2_r(int N, const long dims[N], unsigned long flags, const long
 
 	if (is_vptr(dst) || is_vptr(src)) {
 
-		unsigned long mpi_flags = vptr_block_loop_flags(N, dims, ostrs, dst, CFL_SIZE) | vptr_block_loop_flags(N, dims, istrs, src, CFL_SIZE);
+		unsigned long mpi_flags = vptr_block_loop_flags(N, dims, ostrs, dst, CFL_SIZE, false) | vptr_block_loop_flags(N, dims, istrs, src, CFL_SIZE, false);
 
 		long ldims[N];
 		long bdims[N];
@@ -363,8 +363,8 @@ void fft2(int D, const long dimensions[D], unsigned long flags, const long ostri
 {
 	if (is_vptr(dst) || is_vptr(src)) {
 
-		unsigned long mpi_flags =  vptr_block_loop_flags(D, dimensions, ostrides, dst, CFL_SIZE)
-					 | vptr_block_loop_flags(D, dimensions, istrides, src, CFL_SIZE);
+		unsigned long mpi_flags =  vptr_block_loop_flags(D, dimensions, ostrides, dst, CFL_SIZE, false)
+					 | vptr_block_loop_flags(D, dimensions, istrides, src, CFL_SIZE, false);
 
 		assert(0 == (mpi_flags & flags));
 
@@ -396,8 +396,8 @@ void ifft2(int D, const long dimensions[D], unsigned long flags, const long ostr
 {
 	if (is_vptr(dst) || is_vptr(src)) {
 
-		unsigned long mpi_flags =  vptr_block_loop_flags(D, dimensions, ostrides, dst, CFL_SIZE)
-					 | vptr_block_loop_flags(D, dimensions, istrides, src, CFL_SIZE);
+		unsigned long mpi_flags =  vptr_block_loop_flags(D, dimensions, ostrides, dst, CFL_SIZE, false)
+					 | vptr_block_loop_flags(D, dimensions, istrides, src, CFL_SIZE, false);
 
 		assert(0 == (mpi_flags & flags));
 

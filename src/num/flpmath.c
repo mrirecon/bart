@@ -2580,7 +2580,7 @@ static float md_scalar2_mpi(int D, const long dim[D], const long str1[D], const 
 {
 	int N = MIN(md_calc_blockdim(D, dim, str1, FL_SIZE), md_calc_blockdim(D, dim, str2, FL_SIZE));
 
-	int mpi_idx = md_min_idx(vptr_block_loop_flags(D, dim, str1, ptr1, FL_SIZE) | vptr_block_loop_flags(D, dim, str2, ptr2, FL_SIZE));
+	int mpi_idx = md_min_idx(vptr_block_loop_flags(D, dim, str1, ptr1, FL_SIZE, false) | vptr_block_loop_flags(D, dim, str2, ptr2, FL_SIZE, false));
 	if (-1 < mpi_idx)
 		N = MIN(N, mpi_idx);
 
@@ -2798,7 +2798,7 @@ static complex float md_zscalar2_mpi(int D, const long dim[D], const long str1[D
 {
 	int N = MIN(md_calc_blockdim(D, dim, str1, CFL_SIZE), md_calc_blockdim(D, dim, str2, CFL_SIZE));
 
-	int mpi_idx = md_min_idx(vptr_block_loop_flags(D, dim, str1, ptr1, CFL_SIZE) | vptr_block_loop_flags(D, dim, str2, ptr2, CFL_SIZE));
+	int mpi_idx = md_min_idx(vptr_block_loop_flags(D, dim, str1, ptr1, CFL_SIZE, false) | vptr_block_loop_flags(D, dim, str2, ptr2, CFL_SIZE, false));
 	if (-1 < mpi_idx)
 		N = MIN(N, mpi_idx);
 

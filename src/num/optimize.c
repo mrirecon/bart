@@ -411,7 +411,7 @@ int optimize_dims_gpu(int D, int N, long dims[N], long (*strs[D])[N])
 #endif
 
 	ND = simplify_dims(D, N, dims, strs);
-	
+
 	return ND;
 }
 
@@ -633,7 +633,7 @@ void optimized_nop(int N, unsigned long io, int D, const long dim[D], const long
 		unsigned long mpi_flags = 0UL;
 
 		for (int i = 0; i < N; ++i)
-			mpi_flags |= vptr_block_loop_flags(D, dim, (long*)nstr[i], nptr[i], sizes[i]);
+			mpi_flags |= vptr_block_loop_flags(D, dim, (long*)nstr[i], nptr[i], sizes[i], false);
 
 		long ldims[D];
 		long bdims[D];
@@ -751,10 +751,10 @@ out:
 				if (gpu) {
 					cuda_copy_ND(1, MD_DIMS(cnst_size), MD_DIMS(tsizes[i]), cnst_buf[i], MD_DIMS(0), nptr1[i], (size_t)tsizes[i]);
 				} else
-#endif			
+#endif
 					for (long n = 0; n < cnst_size; n++)
 						memcpy(cnst_buf[i]  + n * tsizes[i], nptr1[i], (size_t)tsizes[i]);
-				
+
 				nptr1[i] = cnst_buf[i];
 			}
 		}

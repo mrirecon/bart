@@ -904,9 +904,9 @@ static bool simple_z3op(int N_checks, struct simple_z3op_check strided_calls[N_c
 	if (0 == N)
 		return false;
 
-	unsigned long block_flags = vptr_block_loop_flags(N, dims, ostrs, out, CFL_SIZE)
-				  | vptr_block_loop_flags(N, dims, istrs1, in1, CFL_SIZE)
-				  | vptr_block_loop_flags(N, dims, istrs2, in2, CFL_SIZE);
+	unsigned long block_flags = vptr_block_loop_flags(N, dims, ostrs, out, CFL_SIZE, false)
+				  | vptr_block_loop_flags(N, dims, istrs1, in1, CFL_SIZE, false)
+				  | vptr_block_loop_flags(N, dims, istrs2, in2, CFL_SIZE, false);
 
 	if (block_flags && conj) // FIXME
 		return false;
@@ -1106,9 +1106,9 @@ static bool simple_3op(int N_checks, struct simple_3op_check strided_calls[N_che
 	if (0 == N)
 		return false;
 
-	unsigned long block_flags = vptr_block_loop_flags(N, dims, ostrs, out, FL_SIZE)
-				  | vptr_block_loop_flags(N, dims, istrs1, in1, FL_SIZE)
-				  | vptr_block_loop_flags(N, dims, istrs2, in2, FL_SIZE);
+	unsigned long block_flags = vptr_block_loop_flags(N, dims, ostrs, out, FL_SIZE, false)
+				  | vptr_block_loop_flags(N, dims, istrs1, in1, FL_SIZE, false)
+				  | vptr_block_loop_flags(N, dims, istrs2, in2, FL_SIZE, false);
 
 	long tdims[N];
 	md_select_dims(N, ~block_flags, tdims, dims);

@@ -32,18 +32,18 @@ static bool test_mpi_get_flags_C2R(void)
 	const long cdims[N] = { 32, 32, 1, 8, 1, 1, 1, 1, 1, 1};
 
 	complex float* ptr = md_alloc_mpi(N, flags, cdims, CFL_SIZE);
-	
+
 	long cstrs[N];
 	md_calc_strides(N, cstrs, cdims, CFL_SIZE);
-	
+
 	const long rdims[N + 1] = { 2, 32, 32, 1, 8, 1, 1, 1, 1, 1, 1};
 	long rstrs[N + 1];
 	md_calc_strides(N, rstrs, rdims, FL_SIZE);
 
 	//return
-	const unsigned long complex_flags = vptr_block_loop_flags(N, cdims, cstrs, ptr, CFL_SIZE);
-	const unsigned long real_flags = vptr_block_loop_flags(N, rdims, rstrs, ptr, FL_SIZE);
-	
+	const unsigned long complex_flags = vptr_block_loop_flags(N, cdims, cstrs, ptr, CFL_SIZE, false);
+	const unsigned long real_flags = vptr_block_loop_flags(N, rdims, rstrs, ptr, FL_SIZE, false);
+
 	md_free(ptr);
 
 #ifdef USE_MPI
@@ -60,7 +60,7 @@ static bool test_mpi_get_flags_slice(void)
 	const size_t CFL_SIZE = sizeof(complex float);
 
 	/* so far dims is ignored in mpi_get_flags */
-	
+
 	const unsigned long flags = 8UL;
 	const long dims[N] = { 32, 32, 1, 8, 1, 1, 1, 1, 1, 1};
 
@@ -72,7 +72,7 @@ static bool test_mpi_get_flags_slice(void)
 	long sstrs[N];
 	md_select_strides(N, ~flags, sstrs, strs);
 
-	unsigned long f = vptr_block_loop_flags(N, dims, sstrs, ptr, CFL_SIZE);
+	unsigned long f = vptr_block_loop_flags(N, dims, sstrs, ptr, CFL_SIZE, false);
 
 	md_free(ptr);
 
@@ -95,7 +95,7 @@ static bool test_mpi_get_flags_reshape(void)
 	long reshape1_strs[N];
 	md_calc_strides(N, reshape1_strs, reshape1_dims, CFL_SIZE);
 
-	unsigned long f = vptr_block_loop_flags(N, dims, reshape1_strs, ptr, CFL_SIZE);
+	unsigned long f = vptr_block_loop_flags(N, dims, reshape1_strs, ptr, CFL_SIZE, false);
 
 	md_free(ptr);
 
@@ -123,7 +123,7 @@ static bool test_mpi_get_flags_roi(void)
 	long roi[N] = { 128, 32, 1, 8, 1, 1, 1, 1, 1, 1};
 
 
-	unsigned long f1 = vptr_block_loop_flags(N, roi, strs, ptr, CFL_SIZE);
+	unsigned long f1 = vptr_block_loop_flags(N, roi, strs, ptr, CFL_SIZE, false);
 
 	md_free(ptr);
 #ifdef USE_MPI
