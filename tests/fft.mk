@@ -13,7 +13,7 @@ tests/test-fft-basic: scale fft nrmse $(TESTS_OUT)/shepplogan_fft.ra $(TESTS_OUT
 	$(TOOLDIR)/nrmse -t 0.000001 shepploganS.ra shepplogan2.ra			;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
-	
+
 
 # unitary FFT
 
@@ -98,7 +98,5 @@ tests/test-fft-multi-loop-mpi-strided: bart
 TESTS += tests/test-fft-basic tests/test-fft-unitary tests/test-fft-uncentered tests/test-fft-shift
 TESTS += tests/test-fft-multi-loop-omp
 
-ifeq ($(MPI),1)
-TESTS_SLOW += tests/test-fft-multi-loop-mpi tests/test-fft-multi-loop-mpi-strided
-endif
+TESTS_MPI += tests/test-fft-multi-loop-mpi tests/test-fft-multi-loop-mpi-strided
 

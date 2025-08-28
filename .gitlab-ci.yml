@@ -477,7 +477,7 @@ IntTest_UBSan:
 IntTest_MPI:
   stage: test2
   script:
-    - AUTOCLEAN=0 MPI=1 make testslow
+    - AUTOCLEAN=0 MPI=1 make mpitest
   needs: [Build_MPI]
   dependencies:
     - Build_MPI

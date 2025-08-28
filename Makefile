@@ -1021,6 +1021,8 @@ testague: ${TESTS_AGUE} # test importing *.dat-files specified in tests/twixread
 
 gputest: ${TESTS_GPU}
 
+mpitest: ${TESTS_MPI}
+
 pythontest: ${TESTS_PYTHON}
 
 ismrmrdtest: ${TESTS_ISMRMRD}

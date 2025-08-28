@@ -429,10 +429,9 @@ TESTS += tests/test-reconet-nnmodl-train-noncart
 TESTS += tests/test-reconet-nnmodl-train-noncart-init
 TESTS += tests/test-reconet-nnvn-train-noncart-init
 TESTS += tests/test-reconet-nnmodl-train-basis
-ifeq ($(MPI),1)
-TESTS_SLOW += tests/test-reconet-nnvn-train-mpi
-TESTS_SLOW += tests/test-reconet-nnmodl-train-mpi
-endif
+
+TESTS_MPI += tests/test-reconet-nnvn-train-mpi
+TESTS_MPI += tests/test-reconet-nnmodl-train-mpi
 
 TESTS_GPU += tests/test-reconet-nnvn-train-gpu
 TESTS_GPU += tests/test-reconet-nnmodl-train-gpu

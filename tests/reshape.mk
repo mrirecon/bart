@@ -28,8 +28,6 @@ tests/test-reshape-mpi: bart
 
 TESTS += tests/test-reshape
 
-ifeq ($(MPI),1)
-TESTS_SLOW += tests/test-reshape-mpi
-endif
+TESTS_MPI += tests/test-reshape-mpi
 
 

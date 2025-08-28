@@ -159,10 +159,8 @@ tests/test-pics-non-cart-batch-mpi: bart $(TESTS_OUT)/sens_1.ra $(TESTS_OUT)/sen
 
 
 
-ifeq ($(MPI),1)
-TESTS_SLOW += tests/test-pics-cart-batch-mpi tests/test-pics-non-cart-batch-mpi tests/test-pics-cart-slice-batch-mpi tests/test-pics-cart-range-batch-mpi
-TESTS_SLOW += tests/test-pics-cart-mpi tests/test-pics-noncart-mpi tests/test-pics-mpi-timedim
-TESTS_SLOW += tests/test-pics-cart-mpi_shared tests/test-pics-cart-mpi-sharedcoil tests/test-pics-cart-mpi-multipledims tests/test-pics-cart-mpi-multipledims-sharedcoil
-endif
+TESTS_MPI += tests/test-pics-cart-batch-mpi tests/test-pics-non-cart-batch-mpi tests/test-pics-cart-slice-batch-mpi tests/test-pics-cart-range-batch-mpi
+TESTS_MPI += tests/test-pics-cart-mpi tests/test-pics-noncart-mpi tests/test-pics-mpi-timedim
+TESTS_MPI += tests/test-pics-cart-mpi_shared tests/test-pics-cart-mpi-sharedcoil tests/test-pics-cart-mpi-multipledims tests/test-pics-cart-mpi-multipledims-sharedcoil
 
 

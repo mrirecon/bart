@@ -88,9 +88,7 @@ tests/test-noise-mpi2: bart
 
 TESTS += tests/test-noise-loop  tests/test-noise-loop2 tests/test-noise-random-dims
 
-ifeq ($(MPI),1)
-TESTS_SLOW += tests/test-noise-mpi
-endif
+TESTS_MPI += tests/test-noise-mpi
 
 
 
