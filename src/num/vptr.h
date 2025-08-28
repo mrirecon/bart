@@ -3,6 +3,13 @@
 
 #include "misc/cppwrap.h"
 
+struct vptr_shape_s {
+
+	int N;
+	const long* dims;
+	size_t size;
+};
+
 struct vptr_hint_s;
 extern struct vptr_hint_s* vptr_hint_ref(struct vptr_hint_s* hint);
 extern void vptr_hint_free(struct vptr_hint_s* hint);
@@ -15,6 +22,9 @@ extern void* vptr_wrap_sameplace(int N, const long dims[__VLA(N)], size_t size, 
 extern _Bool vptr_free(const void* ptr);
 extern void* vptr_resolve(const void* ptr);
 extern void* vptr_resolve_unchecked(const void* ptr);
+
+extern const struct vptr_shape_s* vptr_get_shape(const void* ptr);
+extern long vptr_get_offset(const void* ptr);
 
 extern _Bool is_vptr(const void* ptr);
 extern _Bool is_vptr_cpu(const void* ptr);
