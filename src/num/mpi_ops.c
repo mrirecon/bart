@@ -63,7 +63,7 @@ void init_mpi(int* argc, char*** argv)
 		MPI_Comm_dup(MPI_COMM_WORLD, &comm);
 		MPI_Comm_rank(comm, &mpi_rank);
 		MPI_Comm_size(comm, &mpi_nprocs);
-		
+
 		if (1 == mpi_nprocs)
 			return;
 
@@ -76,7 +76,7 @@ void init_mpi(int* argc, char*** argv)
 
 		int rank_on_node;
 		MPI_Comm_rank(node_comm, &rank_on_node);
-		
+
 		int number_of_nodes = (rank_on_node == 0);
 
 		MPI_Allreduce(MPI_IN_PLACE, &number_of_nodes, 1, MPI_INT, MPI_SUM, comm);
@@ -140,7 +140,7 @@ void mpi_signoff_proc(bool signoff)
 	if (1 >= mpi_get_num_procs())
 		return;
 
-	MPI_Comm new_comm;	
+	MPI_Comm new_comm;
 	MPI_Comm_split(comm, !signoff, mpi_get_rank(), &new_comm);
 	MPI_Comm_free(&comm);
 
@@ -166,7 +166,7 @@ void mpi_signoff_proc(bool signoff)
 static void print_cuda_aware_warning(void)
 {
 	static bool printed = false;
-	
+
 	if (!printed && !cuda_aware_mpi)
 		debug_printf(DP_WARN, "CUDA aware MPI is not activated. This may decrease performance for multi-GPU operations significantly!.\n");
 
@@ -193,7 +193,7 @@ static void mpi_bcast_selected_gpu(bool tag, void* ptr, long size, int root)
 	print_cuda_aware_warning();
 
 	void* tmp = xmalloc((size_t)size);
-	
+
 	if (mpi_get_rank() == root)
 		cuda_memcpy(size, tmp, ptr);
 
@@ -266,7 +266,7 @@ void mpi_bcast2(int N, const long dims[N], const long strs[N], void* ptr, long s
 	{
 		mpi_bcast(ptr[0], size, root);
 	};
-	
+
 	md_nary(1, N, tdims, &strs, &ptr, nary_bcast);
 }
 
@@ -368,7 +368,7 @@ void mpi_copy2(int N, const long dim[N], const long ostr[N], void* optr, const l
 
 /**
  * Synchronise pval to all processes (take part in calculation)
- * 
+ *
  * This function requires Communicator handling!
  *
  * @param pval source (rank == 0) /destination (rank != 0) buffer
@@ -383,7 +383,7 @@ void mpi_sync_val(void* pval, long size)
  * Inplace scatter src to dest in block of size N
  * Copies N elements from src buffer (rank = 0) to dst buffers
  * (rank != 0). For rank == 0, dst == src, evenly over communicator
- * 
+ *
  * This function requires Communicator handling!
  *
  * @param dst destination buffer of ranks != 0
@@ -412,7 +412,7 @@ void mpi_scatter_batch(void* dst, long count, const void* src, size_t size)
 /**
  * Copies N elements from src buffer (rank = 0) to dst buffers
  * (rank != 0). For rank == 0, dst == src, evenly over communicator
- * 
+ *
  * This function requires Communicator handling!
  *
  * @param dst destination buffer of ranks != 0
@@ -477,7 +477,7 @@ void mpi_reduce_land(long N, bool vec[__VLA(N)])
 	if (cuda_ondevice(vec))
 		cuda_sync_stream();
 #endif
-	
+
 	for (long n = 0; n < N; n += INT_MAX / 2)
 		MPI_Allreduce(MPI_IN_PLACE, vec + n, MIN(N - n, INT_MAX / 2), MPI_C_BOOL, MPI_LAND, mpi_get_comm());
 #else
@@ -619,8 +619,8 @@ static void mpi_allreduce_sumD_gpu(int N, double vec[N], MPI_Comm comm)
 		cuda_memcpy(size, vec, tmp);
 		xfree(tmp);
 
-		cuda_sync_stream();
-	} 
+		return;
+	}
 
 	if (cuda_ondevice(vec))
 		cuda_sync_stream();
