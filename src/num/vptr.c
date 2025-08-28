@@ -148,14 +148,43 @@ static tree_t vmap = NULL;
 
 
 
+struct vptr_mem_s {
+
+	const struct vptr_shape_s* shape;
+
+	int num_blocks;
+	void** mem;
+	long block_size;
+	unsigned long flags;
+};
+
+struct vptr_mem_s vptr_mem_default = { NULL, 1, NULL, 0, 0UL };
+
+static void vptr_mem_init(struct vptr_mem_s* mem)
+{
+	if (NULL != mem->mem)
+		return;
+
+#pragma omp critical(vptr_mem_init)
+	if (NULL == mem->mem) {
+
+		long tdims[mem->shape->N];
+		md_select_dims(mem->shape->N, mem->flags, tdims, mem->shape->dims);
+		mem->num_blocks = md_calc_size(mem->shape->N, tdims);
+		mem->mem = *TYPE_ALLOC(void*[mem->num_blocks]);
+
+		for (int i = 0; i < mem->num_blocks; i++)
+			mem->mem[i] = NULL;
+
+		mem->block_size = (long)mem->shape->size * md_calc_size(mem->shape->N, mem->shape->dims) / mem->num_blocks;
+	}
+}
+
 
 struct mem_s {
 
 	void* ptr;
-	void** mem;
 	size_t len;
-	long num_blocks;
-	long block_size;
 
 	bool gpu;
 
@@ -164,6 +193,8 @@ struct mem_s {
 	bool writeback;
 
 	struct vptr_shape_s shape;
+
+	struct vptr_mem_s blocks;
 
 	struct vptr_hint_s* hint;
 };
@@ -250,11 +281,7 @@ static struct mem_s* vptr_create(int N, const long dims[N], size_t size, struct 
 	PTR_ALLOC(struct mem_s, x);
 
 	x->ptr = ptr;
-	x->mem = NULL;
 	x->len = (size_t)len;
-
-	x->num_blocks = 1;
-	x->block_size = len;
 
 	x->free = true;
 	x->free_first_only = false;
@@ -263,19 +290,27 @@ static struct mem_s* vptr_create(int N, const long dims[N], size_t size, struct 
 	x->shape.N = N;
 	x->shape.dims = ARR_CLONE(long[N], dims);
 	x->shape.size = size;
+
+	x->blocks.shape = &x->shape;
+	x->blocks.flags = 0UL;
+	x->blocks.mem = NULL;
+
 	x->writeback = false;
 	x->hint = vptr_hint_ref(hint);
 
 	if (NULL != hint) {
 
 		assert(md_check_compat(MIN(N, hint->N), ~0UL, dims, hint->dims));
+		x->blocks.flags = hint->mpi_flags;
 
-		x->block_size = (long)size;	// size of continuous blocks located on one rank
+		bool set = false;
+		for (int i = 0; i < N; i++) {
 
-		for (int i = 0; (i < N) && !MD_IS_SET(md_nontriv_dims(N, dims) & hint->mpi_flags, i); i++)
-			x->block_size *= x->shape.dims[i];
+			set = set || MD_IS_SET(x->blocks.flags, i);
 
-		x->num_blocks = (long)x->len / x->block_size;
+			if (set)
+				x->blocks.flags = MD_SET(x->blocks.flags, i);
+		}
 	}
 
 	vptr_init();
@@ -300,29 +335,22 @@ static void* vptr_resolve_int(const void* ptr, bool assert_rank)
 		return NULL;
 	}
 
-#pragma omp critical(bart_vmap)
-	if (NULL == mem->mem) {
+	vptr_mem_init(&mem->blocks);
 
-		mem->mem = *TYPE_ALLOC(void*[mem->num_blocks]);
-
-		for (long i = 0; i < mem->num_blocks; i++)
-			mem->mem[i] = NULL;
-	}
-
-	long idx = (ptr - mem->ptr) / (mem->block_size);
+	long idx = (ptr - mem->ptr) / (mem->blocks.block_size);
 
 #pragma omp critical(bart_vmap)
-	if (NULL == (mem->mem[idx])) {
+	if (NULL == (mem->blocks.mem[idx])) {
 
 #ifdef USE_CUDA
 		if (mem->gpu)
-			mem->mem[idx] = cuda_malloc(mem->block_size);
+			mem->blocks.mem[idx] = cuda_malloc(mem->blocks.block_size);
 		else
 #endif
-		mem->mem[idx] = xmalloc((size_t)mem->block_size);
+		mem->blocks.mem[idx] = xmalloc((size_t)mem->blocks.block_size);
 	}
 
-	return mem->mem[idx] + ((ptr - mem->ptr) % mem->block_size);
+	return mem->blocks.mem[idx] + ((ptr - mem->ptr) % mem->blocks.block_size);
 }
 
 void* vptr_resolve(const void* ptr)
@@ -379,18 +407,18 @@ bool vptr_free(const void* ptr)
 	if (NULL == mem)
 		return false;
 
-	if (mem->free && (NULL != mem->mem)) {
+	if (mem->free && (NULL != mem->blocks.mem)) {
 
-		md_free(mem->mem[0]);
+		md_free(mem->blocks.mem[0]);
 
-		for (int i = 1; (i < mem->num_blocks) && !mem->free_first_only; i++)
-			md_free(mem->mem[i]);
+		for (int i = 1; (i < mem->blocks.num_blocks) && !mem->free_first_only; i++)
+			md_free(mem->blocks.mem[i]);
 
 	} else {
 
 		// only for continuous allocations
 		if (mem->writeback)
-			md_copy(mem->shape.N, mem->shape.dims, mem->mem[0], mem->ptr, mem->shape.size);
+			md_copy(mem->shape.N, mem->shape.dims, mem->blocks.mem[0], mem->ptr, mem->shape.size);
 	}
 
 	mem = search(ptr, true);
@@ -400,8 +428,8 @@ bool vptr_free(const void* ptr)
 	if (NULL != mem->shape.dims)
 		xfree(mem->shape.dims);
 
-	if (NULL != mem->mem)
-		xfree(mem->mem);
+	if (NULL != mem->blocks.mem)
+		xfree(mem->blocks.mem);
 
 	vptr_hint_free(mem->hint);
 
@@ -468,10 +496,10 @@ void* vptr_wrap(int N, const long dims[N], size_t size, const void* ptr, struct 
 	mem->free = free;
 	mem->writeback = writeback;
 
-	mem->mem = *TYPE_ALLOC(void*[mem->num_blocks]);
+	vptr_mem_init(&mem->blocks);
 
-	for (int i = 0; i < mem->num_blocks; i++)
-		mem->mem[i] = (void*)ptr + i * mem->block_size;
+	for (int i = 0; i < mem->blocks.num_blocks; i++)
+		mem->blocks.mem[i] = (void*)ptr + i * mem->blocks.block_size;
 
 #ifdef USE_CUDA
 	mem->gpu = cuda_ondevice(ptr);
@@ -498,7 +526,12 @@ unsigned long vptr_block_loop_flags(int N, const long dims[N], const long strs[N
 {
 	struct mem_s* mem = search(ptr, false);
 
-	if ((NULL == mem) || ((mem->block_size == (long)(mem->len))))
+	if (NULL == mem)
+		return 0UL;
+
+	vptr_mem_init(&mem->blocks);
+
+	if (mem->blocks.block_size == (long)(mem->len))
 		return 0UL;
 
 	long tdims[N + 1];
@@ -517,14 +550,14 @@ unsigned long vptr_block_loop_flags(int N, const long dims[N], const long strs[N
 
 	long rstrs[N + 1];
 	for (int i = 0; i < N + 1; i++)
-		rstrs[i] = tstrs[i] % mem->block_size;
+		rstrs[i] = tstrs[i] % mem->blocks.block_size;
 
 	unsigned long flags = 0;
-	long offset = (ptr - mem->ptr) % mem->block_size;
+	long offset = (ptr - mem->ptr) % mem->blocks.block_size;
 
 	for (int i = 0; i < N + 1; i++) {
 
-		if (mem->block_size <= tstrs[i]) {
+		if (mem->blocks.block_size <= tstrs[i]) {
 
 			flags |= MD_BIT(i);
 			continue;
@@ -551,7 +584,7 @@ unsigned long vptr_block_loop_flags(int N, const long dims[N], const long strs[N
 				min += rstrs[j] * (tdims[j] - 1);
 		}
 
-		if (   ((0 < tstrs[i]) && (max >= mem->block_size))
+		if (   ((0 < tstrs[i]) && (max >= mem->blocks.block_size))
 		    || ((0 > tstrs[i]) && (0 < min))) {
 
 		    	// Cheap search is not valid!
@@ -560,10 +593,10 @@ unsigned long vptr_block_loop_flags(int N, const long dims[N], const long strs[N
 			min = offset;
 
 			do {
-				long o = (md_calc_offset(N + 1, rstrs, pos) + offset) % mem->block_size;
+				long o = (md_calc_offset(N + 1, rstrs, pos) + offset) % mem->blocks.block_size;
 
 				if (0 > o)
-					o += mem->block_size;
+					o += mem->blocks.block_size;
 
 				max = MAX(max, o);
 				min = MIN(min, o);
@@ -571,7 +604,7 @@ unsigned long vptr_block_loop_flags(int N, const long dims[N], const long strs[N
 			} while (md_next(N + 1, tdims, ~MD_BIT(i) & md_nontriv_strides(N + 1, rstrs), pos));
 		}
 
-		if ((tstrs[i] > 0) && (max + (tdims[i] - 1) * tstrs[i] >= mem->block_size))
+		if ((tstrs[i] > 0) && (max + (tdims[i] - 1) * tstrs[i] >= mem->blocks.block_size))
 			flags |= MD_BIT(i);
 
 		if ((tstrs[i] < 0) && (min + (tdims[i] - 1) * tstrs[i] < 0))
