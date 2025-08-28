@@ -23,14 +23,17 @@
 #include "misc/misc.h"
 #include "misc/debug.h"
 #include "misc/mmio.h"
+#include "misc/types.h"
 
 #ifdef USE_CUDA
 #include "num/gpuops.h"
+#include "num/gpukrnls.h"
 #endif
 #include "num/multind.h"
 #include "num/optimize.h"
 #include "num/flpmath.h"
 #include "num/vptr.h"
+#include "num/vptr_fun.h"
 
 #include "mpi_ops.h"
 
@@ -516,12 +519,12 @@ static void mpi_allreduce_sum_gpu(int N, float vec[N], MPI_Comm comm)
 #endif
 
 #ifdef USE_MPI
-static void mpi_reduce_sum_kernel(unsigned long reduce_flags, long N, float vec[N])
+static void mpi_reduce_sum_kernel(long N, float vec[N])
 {
 	if (1 == mpi_get_num_procs())
 		error("MPI reduction requested but only run by one process!\n");
 
-	int tag = mpi_reduce_color(reduce_flags, vec);
+	int tag = mpi_accessible(vec) ? 1 : 0;
 
 	MPI_Comm comm_sub;
 	MPI_Comm_split(mpi_get_comm(), tag, 0, &comm_sub);
@@ -549,57 +552,6 @@ void mpi_reduce_sum_vector(long N, float vec[N])
 		mpi_allreduce_sum_gpu(MIN(N - n, INT_MAX / 2), vec + n, mpi_get_comm());
 }
 #endif
-
-void mpi_reduce_sum(int N, unsigned long reduce_flags, const long dims[N], float* ptr)
-{
-	long tdims[N];
-	md_copy_dims(N, tdims, dims);
-
-	long strs[N];
-	md_calc_strides(N, strs, dims, FL_SIZE);
-
-	unsigned long block_flags = vptr_block_loop_flags(N, dims, strs, ptr, FL_SIZE, false);
-
-	long size = 1;
-
-	for (int i = 0; i < N; i++) {
-
-		if (MD_IS_SET(block_flags, i))
-			break;
-
-		if (strs[i] == size * (long)FL_SIZE) {
-
-			size *= tdims[i];
-			tdims[i] = 1;
-		}
-	}
-
-	long pos[N];
-	md_singleton_strides(N, pos);
-
-	do {
-#ifdef USE_MPI
-		mpi_reduce_sum_kernel(reduce_flags, size, &MD_ACCESS(N, strs, pos, ptr));
-#else
-		(void)reduce_flags;
-#endif
-	} while (md_next(N, tdims, ~0UL, pos));
-}
-
-void mpi_reduce_zsum(int N, unsigned long reduce_flags, const long dims[N], complex float* ptr)
-{
-	mpi_reduce_sum(N + 1, reduce_flags, MD_REAL_DIMS(N, dims), (float*)ptr);
-}
-
-void mpi_reduce_zsum_vector(long N, complex float ptr[N])
-{
-#ifdef USE_MPI
-	mpi_reduce_sum_vector(2 * N, (float*)ptr);
-#else
-	(void)N;
-	(void)ptr;
-#endif
-}
 
 #ifdef USE_MPI
 static void mpi_allreduce_sumD_gpu(int N, double vec[N], MPI_Comm comm)
@@ -630,12 +582,12 @@ static void mpi_allreduce_sumD_gpu(int N, double vec[N], MPI_Comm comm)
 #endif
 
 #ifdef USE_MPI
-static void mpi_reduce_sumD_kernel(unsigned long reduce_flags, long N, double vec[N])
+static void mpi_reduce_sumD_kernel(long N, double vec[N])
 {
 	if (1 == mpi_get_num_procs())
 		error("MPI reduction requested but only run by one process!\n");
 
-	int tag = mpi_reduce_color(reduce_flags, vec);
+	int tag = mpi_accessible(vec) ? 1 : 0;
 
 	MPI_Comm comm_sub;
 	MPI_Comm_split(mpi_get_comm(), tag, 0, &comm_sub);
@@ -652,46 +604,187 @@ static void mpi_reduce_sumD_kernel(unsigned long reduce_flags, long N, double ve
 }
 #endif
 
-void mpi_reduce_sumD(int N, unsigned long reduce_flags, const long dims[N], double* ptr)
+struct vptr_mpi_reduce_s {
+
+	vptr_fun_data_t super;
+	bool use_double;
+	bool use_complex;
+};
+
+DEF_TYPEID(vptr_mpi_reduce_s);
+
+
+static void reduce_sum_int(vptr_fun_data_t* d, int N, int D, const long* dims[N], const long* strs[N], void* args[N])
 {
-	long tdims[N];
-	md_copy_dims(N, tdims, dims);
+	size_t size = (CAST_DOWN(vptr_mpi_reduce_s, d)->use_double) ? DL_SIZE : FL_SIZE;
+	if (CAST_DOWN(vptr_mpi_reduce_s, d)->use_complex)
+		size *= 2;
 
-	long strs[N];
-	md_calc_strides(N, strs, dims, DL_SIZE);
+	int ND = md_calc_blockdim(D, dims[0], strs[0], size);
 
-	unsigned long block_flags = vptr_block_loop_flags(N, dims, strs, ptr, DL_SIZE, false);
+#ifdef USE_MPI
+	long tot = md_calc_size(ND, dims[0]);
+	if (CAST_DOWN(vptr_mpi_reduce_s, d)->use_complex)
+		tot *= 2;
+#endif
 
-	long size = 1;
-
-	for (int i = 0; i < N; i++) {
-
-		if (MD_IS_SET(block_flags, i))
-			break;
-
-		if (strs[i] == size * (long)DL_SIZE) {
-
-			size *= tdims[i];
-			tdims[i] = 1;
-		}
-	}
-
-	long pos[N];
-	md_singleton_strides(N, pos);
+	long pos[D];
+	md_set_dims(D, pos, 0);
 
 	do {
 #ifdef USE_MPI
-		mpi_reduce_sumD_kernel(reduce_flags, size, &MD_ACCESS(N, strs, pos, ptr));
-#else
-		(void)reduce_flags;
-#endif
 
-	} while (md_next(N, tdims, ~0UL, pos));
+	void* optr = args[0] + md_calc_offset(D, strs[0], pos);
+	void* rptr = args[1] + md_calc_offset(D, strs[1], pos);
+
+	if (CAST_DOWN(vptr_mpi_reduce_s, d)->use_double) {
+
+		mpi_reduce_sumD_kernel(tot, rptr);
+
+		if (mpi_accessible(optr) && (optr != rptr)) {
+
+			rptr = vptr_resolve(rptr);
+			optr = vptr_resolve(optr);
+
+#ifdef USE_CUDA
+			if (cuda_ondevice(optr))
+				cuda_addD(tot, optr, optr, rptr);
+			else
+#endif
+			{
+				for (long i = 0; i < tot; i++)
+					((double*)optr)[i] += ((double*)rptr)[i];
+			}
+		}
+	} else {
+
+		mpi_reduce_sum_kernel(tot, rptr);
+
+		if (mpi_accessible(optr) && (optr != rptr)) {
+
+			rptr = vptr_resolve(rptr);
+			optr = vptr_resolve(optr);
+
+			md_add(1, MD_DIMS(tot), optr, optr, rptr);
+		}
+	}
+#else
+		(void)size;
+		(void)args;
+		(void)d;
+#endif
+	} while (md_next(D, dims[0], ~(MD_BIT(ND) - 1), pos));
 }
 
-void mpi_reduce_zsumD(int N, unsigned long reduce_flags, const long dims[N], complex double* ptr)
+
+void mpi_reduce_sum(int N, const long dims[N], float* optr, float* rptr)
 {
-	mpi_reduce_sumD(N + 1, reduce_flags, MD_REAL_DIMS(N, dims), (double*)ptr);
+	PTR_ALLOC(struct vptr_mpi_reduce_s, _d);
+	SET_TYPEID(vptr_mpi_reduce_s, _d);
+	_d->super.del = NULL;
+	_d->use_double = false;
+	_d->use_complex = false;
+
+	exec_vptr_fun_gen(reduce_sum_int, CAST_UP(PTR_PASS(_d)), 2, N, ~0UL, 3UL, 3UL, (const long*[2]) { dims, dims }, (const long*[2]) { MD_STRIDES(N, dims, FL_SIZE), MD_STRIDES(N, dims, FL_SIZE) }, (void*[2]) { optr, rptr }, (size_t[2]){ FL_SIZE, FL_SIZE }, false);
+}
+
+void mpi_reduce_zsum(int N, const long dims[N], complex float* optr, complex float* rptr)
+{
+	PTR_ALLOC(struct vptr_mpi_reduce_s, _d);
+	SET_TYPEID(vptr_mpi_reduce_s, _d);
+	_d->super.del = NULL;
+	_d->use_double = false;
+	_d->use_complex = true;
+
+	exec_vptr_fun_gen(reduce_sum_int, CAST_UP(PTR_PASS(_d)), 2, N, ~0UL, 3UL, 3UL, (const long*[2]) { dims, dims }, (const long*[2]) { MD_STRIDES(N, dims, CFL_SIZE), MD_STRIDES(N, dims, CFL_SIZE) }, (void*[2]) { optr, rptr }, (size_t[2]){ CFL_SIZE, CFL_SIZE }, false);
+
+}
+
+void mpi_reduce_zsum_vector(long N, complex float ptr[N])
+{
+#ifdef USE_MPI
+	mpi_reduce_sum_vector(2 * N, (float*)ptr);
+#else
+	(void)N;
+	(void)ptr;
+#endif
+}
+
+
+void mpi_reduce_sumD(int N, const long dims[N], double* optr, double* rptr)
+{
+	PTR_ALLOC(struct vptr_mpi_reduce_s, _d);
+	SET_TYPEID(vptr_mpi_reduce_s, _d);
+	_d->super.del = NULL;
+	_d->use_double = true;
+	_d->use_complex = false;
+
+	exec_vptr_fun_gen(reduce_sum_int, CAST_UP(PTR_PASS(_d)), 2, N, ~0UL, 3UL, 3UL, (const long*[2]) { dims, dims }, (const long*[2]) { MD_STRIDES(N, dims, DL_SIZE), MD_STRIDES(N, dims, DL_SIZE) }, (void*[2]) { optr, rptr }, (size_t[2]){ DL_SIZE, DL_SIZE }, false);
+}
+
+void mpi_reduce_zsumD(int N, const long dims[N], complex double* optr, complex double* rptr)
+{
+	PTR_ALLOC(struct vptr_mpi_reduce_s, _d);
+	SET_TYPEID(vptr_mpi_reduce_s, _d);
+	_d->super.del = NULL;
+	_d->use_double = true;
+	_d->use_complex = true;
+
+	exec_vptr_fun_gen(reduce_sum_int, CAST_UP(PTR_PASS(_d)), 2, N, ~0UL, 3UL, 3UL, (const long*[2]) { dims, dims }, (const long*[2]) { MD_STRIDES(N, dims, CDL_SIZE), MD_STRIDES(N, dims, CDL_SIZE) }, (void*[2]) { optr, rptr }, (size_t[2]){ CDL_SIZE, CDL_SIZE }, false);
+}
+
+void* mpi_reduction_sum_buffer_create(const void* ptr)
+{
+	assert(is_vptr(ptr));
+
+	const struct vptr_shape_s* shape = vptr_get_shape(ptr);
+
+	void* buf = vptr_alloc_sameplace(shape->N, shape->dims, shape->size, ptr);
+	md_clear(shape->N, shape->dims, buf, shape->size);
+
+	mpi_set_reduction_buffer(buf);
+
+	return buf + vptr_get_offset(ptr);
+}
+
+void mpi_reduction_sum_buffer(float* optr, float* rptr)
+{
+	if (optr == rptr)
+		return;
+
+	optr -= vptr_get_offset(optr);
+	rptr -= vptr_get_offset(rptr);
+
+	const struct vptr_shape_s* shape = vptr_get_shape(optr);
+
+	assert(FL_SIZE == shape->size || CFL_SIZE == shape->size);
+
+	if (FL_SIZE == shape->size)
+		mpi_reduce_sum(shape->N, shape->dims, optr, rptr);
+	else
+		mpi_reduce_zsum(shape->N, shape->dims, (complex float*)optr, (complex float*)rptr);
+
+	md_free(rptr);
+}
+
+void mpi_reduction_sumD_buffer(double* optr, double* rptr)
+{
+	if (optr == rptr)
+		return;
+
+	optr -= vptr_get_offset(optr);
+	rptr -= vptr_get_offset(rptr);
+
+	const struct vptr_shape_s* shape = vptr_get_shape(optr);
+
+	assert(DL_SIZE == shape->size || CDL_SIZE == shape->size);
+
+	if (DL_SIZE == shape->size)
+		mpi_reduce_sumD(shape->N, shape->dims, optr, rptr);
+	else
+		mpi_reduce_zsumD(shape->N, shape->dims, (complex double*)optr, (complex double*)rptr);
+
+	md_free(rptr);
 }
 
 

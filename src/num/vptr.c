@@ -304,6 +304,10 @@ struct mem_s {
 	struct vptr_mem_s blocks;
 
 	struct vptr_hint_s* hint;
+
+	bool reduction_buffer;		// true if this pointer is used as reduction buffer
+					// only one rank is allowed to write to it
+					// => we can use a simple all_reduce to sum up the results
 };
 
 static void vptr_debug_mem(int dl, const struct mem_s* mem)
@@ -428,6 +432,8 @@ static struct mem_s* vptr_create(int N, const long dims[N], size_t size, struct 
 		assert(md_check_compat(MIN(N, hint->N), ~0UL, dims, hint->dims));
 		x->blocks.flags = hint->mpi_flags;
 	}
+
+	x->reduction_buffer = false;
 
 	vptr_init();
 	tree_insert(vmap, x);
@@ -939,67 +945,17 @@ bool mpi_accessible_mult(int N, const void* ptr[N])
 	if (!mpi_accessible_from_mult(N, mem, ptr, mpi_get_rank()))
 		return false;
 
+	bool reduce = false;
+
+	for (int i = 0; i < N; i++)
+		if (mem[i] &&mem[i]->reduction_buffer)
+			reduce = true;
+
+	for (int i = 0; i < mpi_get_rank(); i++)
+		if (reduce && mpi_accessible_from_mult(N, mem, ptr, i))
+			return false;
+
 	return true;
-}
-
-int mpi_reduce_color(unsigned long reduce_flags, const void* ptr)
-{
-	// FIXME: duplicates a lot of code of mpi_accessible_from
-	//
-	struct mem_s* mem = search(ptr, false);
-
-	assert(NULL != mem);
-
-	struct vptr_hint_s* h = mem->hint;
-	int N = MAX(mem->shape.N, h->N);
-
-	long pos[N];
-
-	md_set_dims(N, pos, 0);
-
-	//position in allocation
-	md_unravel_index(mem->shape.N, pos, ~0UL, mem->shape.dims, (ptr - mem->ptr) / (long)mem->shape.size);
-
-
-	unsigned long loop_flags = ~md_nontriv_dims(mem->shape.N, mem->shape.dims);
-
-	loop_flags &= MD_BIT(mem->shape.N) - 1;
-	loop_flags &= h->mpi_flags;
-
-	do {
-		if (hint_get_rank(h->N, pos, h) == mpi_get_rank())
-			return 1 + (int)md_ravel_index(h->N, pos, ~reduce_flags, h->dims);
-
-	} while (md_next(h->N, h->dims, loop_flags, pos));
-
-	return 0;
-}
-
-
-unsigned long mpi_parallel_flags(int N, const long dims[N], const long strs[N], size_t size, const void* ptr)
-{
-	struct mem_s* mem = search(ptr, false);
-
-	assert((NULL != mem) && (NULL != mem->hint));
-	assert((size == mem->shape.size / 2) || (size == mem->shape.size));
-
-	long tdims[N];
-
-	if (size == mem->shape.size) {
-
-		md_select_dims(N, md_nontriv_strides(N, strs), tdims, dims);
-
-	} else {
-
-		N--;
-		md_select_dims(N, md_nontriv_strides(N, strs + 1), tdims, dims + 1);
-	}
-
-	assert(md_check_equal_dims(MIN(N, mem->shape.N), tdims, mem->shape.dims, ~0UL));
-	assert(0 == md_nontriv_dims(N - mem->shape.N, tdims + mem->shape.N));
-	assert(0 == md_nontriv_dims(mem->shape.N - N, mem->shape.dims + N));
-
-	return mem->hint->mpi_flags & ~md_nontriv_dims(mem->shape.N, mem->shape.dims);
 }
 
 
@@ -1040,5 +996,67 @@ void vptr_assert_sameplace(int N, void* nptr[N])
 			error("Incompatible MPI dist rule!\n");
 		}
 	}
+}
+
+void mpi_set_reduction_buffer(const void* ptr)
+{
+	struct mem_s* mem = search(ptr, false);
+	assert(mem);
+	mem->reduction_buffer = true;
+}
+
+void mpi_unset_reduction_buffer(const void* ptr)
+{
+	struct mem_s* mem = search(ptr, false);
+	assert(mem);
+	mem->reduction_buffer = false;
+}
+
+bool mpi_is_reduction(int N, const long dims[N], const long ostrs[N], const void* optr, size_t osize, const long istrs[N], const void* iptr, size_t isize)
+{
+	if (!is_mpi(iptr))
+		return false;
+
+	if (!is_mpi(optr))
+		return true;
+
+	struct mem_s* imem = search(iptr, false);
+	struct mem_s* omem = search(optr, false);
+
+	if (imem->hint != omem->hint)
+		return true;
+
+	unsigned long flags = 0;
+	flags |= vptr_block_loop_flags(N, dims, istrs, iptr, isize, true);
+	flags |= vptr_block_loop_flags(N, dims, ostrs, optr, osize, true);
+
+	if (0 == flags)
+		return false;
+
+	long imem_strs[imem->shape.N];
+	long omem_strs[omem->shape.N];
+
+	md_calc_strides(imem->shape.N, imem_strs, imem->shape.dims, imem->shape.size);
+	md_calc_strides(omem->shape.N, omem_strs, omem->shape.dims, omem->shape.size);
+
+	unsigned long imem_flags = imem->hint->mpi_flags & md_nontriv_dims(imem->shape.N, imem->shape.dims);
+	unsigned long omem_flags = omem->hint->mpi_flags & md_nontriv_dims(omem->shape.N, omem->shape.dims);
+
+	for (int i = 0; i < N; i++) {
+
+		if (!MD_IS_SET(flags, i))
+			continue;
+
+		if (i >= imem->shape.N || i >= omem->shape.N)
+			return true;
+
+		if (istrs[i] != imem_strs[i] || ostrs[i] != omem_strs[i])
+			return true;
+
+		if (MD_IS_SET(imem_flags, i) != MD_IS_SET(omem_flags, i))
+			return true;
+	}
+
+	return false;
 }
 

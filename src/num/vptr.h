@@ -47,8 +47,11 @@ extern _Bool mpi_accessible(const void* ptr);
 extern _Bool mpi_accessible_mult(int N, const void* ptr[__VLA(N)]);
 extern int mpi_ptr_get_rank(const void* ptr);
 
-extern unsigned long mpi_parallel_flags(int N, const long dims[__VLA(N)], const long strs[__VLA(N)], size_t size, const void* ptr);
-extern int mpi_reduce_color(unsigned long reduce_flags, const void* ptr);
+extern void mpi_set_reduction_buffer(const void* ptr);
+extern void mpi_unset_reduction_buffer(const void* ptr);
+extern _Bool mpi_is_reduction(int N, const long dims[__VLA(N)], const long ostrs[__VLA(N)], const void* optr, size_t osize, const long istrs[__VLA(N)], const void* iptr, size_t isize);
+
+
 
 
 #include "misc/cppwrap.h"
