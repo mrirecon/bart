@@ -180,6 +180,42 @@ static void vptr_mem_init(struct vptr_mem_s* mem)
 	}
 }
 
+static void* vptr_mem_resolve(struct vptr_mem_s* mem, bool gpu, bool clear, long offset)
+{
+	unsigned long dflags = md_nontriv_dims(mem->shape->N, mem->shape->dims);
+
+	long idx = md_reravel_index(mem->shape->N, mem->flags & dflags, dflags, mem->shape->dims, offset / (long)mem->shape->size);
+
+	vptr_mem_init(mem);
+
+	if (NULL == (mem->mem[idx])) {
+
+#pragma omp critical(vptr_mem_resolve)
+		if (NULL == (mem->mem[idx])) {
+
+
+#ifdef USE_CUDA
+			if (gpu) {
+
+				mem->mem[idx] = cuda_malloc(mem->block_size);
+				if (clear)
+					cuda_clear(mem->block_size, mem->mem[idx]);
+			} else
+#endif
+			{
+				mem->mem[idx] = xmalloc((size_t)mem->block_size);
+				if (clear)
+					memset(mem->mem[idx], 0, (size_t)mem->block_size);
+			}
+		}
+	}
+
+	(void)gpu;
+
+	return mem->mem[idx] + md_reravel_index(mem->shape->N, ~mem->flags & dflags, dflags, mem->shape->dims, offset / (long)mem->shape->size) * (long)mem->shape->size;
+}
+
+
 
 struct mem_s {
 
@@ -189,7 +225,6 @@ struct mem_s {
 	bool gpu;
 
 	bool free;		// mem should be free'd
-	bool free_first_only;	// only first block needs to be free'd
 	bool writeback;
 
 	struct vptr_shape_s shape;
@@ -303,7 +338,6 @@ static struct mem_s* vptr_create(int N, const long dims[N], size_t size, struct 
 	x->len = (size_t)len;
 
 	x->free = true;
-	x->free_first_only = false;
 	x->gpu = false;
 
 	x->shape.N = N;
@@ -321,15 +355,6 @@ static struct mem_s* vptr_create(int N, const long dims[N], size_t size, struct 
 
 		assert(md_check_compat(MIN(N, hint->N), ~0UL, dims, hint->dims));
 		x->blocks.flags = hint->mpi_flags;
-
-		bool set = false;
-		for (int i = 0; i < N; i++) {
-
-			set = set || MD_IS_SET(x->blocks.flags, i);
-
-			if (set)
-				x->blocks.flags = MD_SET(x->blocks.flags, i);
-		}
 	}
 
 	vptr_init();
@@ -354,22 +379,7 @@ static void* vptr_resolve_int(const void* ptr, bool assert_rank)
 		return NULL;
 	}
 
-	vptr_mem_init(&mem->blocks);
-
-	long idx = (ptr - mem->ptr) / (mem->blocks.block_size);
-
-#pragma omp critical(bart_vmap)
-	if (NULL == (mem->blocks.mem[idx])) {
-
-#ifdef USE_CUDA
-		if (mem->gpu)
-			mem->blocks.mem[idx] = cuda_malloc(mem->blocks.block_size);
-		else
-#endif
-		mem->blocks.mem[idx] = xmalloc((size_t)mem->blocks.block_size);
-	}
-
-	return mem->blocks.mem[idx] + ((ptr - mem->ptr) % mem->blocks.block_size);
+	return vptr_mem_resolve(&mem->blocks, mem->gpu, false, ptr - mem->ptr);
 }
 
 void* vptr_resolve(const void* ptr)
@@ -426,19 +436,12 @@ bool vptr_free(const void* ptr)
 	if (NULL == mem)
 		return false;
 
-	if (mem->free && (NULL != mem->blocks.mem)) {
+	if (mem->writeback)
+		md_copy(mem->shape.N, mem->shape.dims, mem->blocks.mem[0], mem->ptr, mem->shape.size);
 
-		md_free(mem->blocks.mem[0]);
-
-		for (int i = 1; (i < mem->blocks.num_blocks) && !mem->free_first_only; i++)
+	if (mem->free && (NULL != mem->blocks.mem))
+		for (int i = 0; i < mem->blocks.num_blocks; i++)
 			md_free(mem->blocks.mem[i]);
-
-	} else {
-
-		// only for continuous allocations
-		if (mem->writeback)
-			md_copy(mem->shape.N, mem->shape.dims, mem->blocks.mem[0], mem->ptr, mem->shape.size);
-	}
 
 	mem = search(ptr, true);
 
@@ -511,14 +514,12 @@ void* vptr_wrap(int N, const long dims[N], size_t size, const void* ptr, struct 
 
 	auto mem = vptr_create(N, dims, size, hint);
 
-	mem->free_first_only = true;
 	mem->free = free;
 	mem->writeback = writeback;
 
+	mem->blocks.flags = 0;
 	vptr_mem_init(&mem->blocks);
-
-	for (int i = 0; i < mem->blocks.num_blocks; i++)
-		mem->blocks.mem[i] = (void*)ptr + i * mem->blocks.block_size;
+	mem->blocks.mem[0] = (void*)ptr;
 
 #ifdef USE_CUDA
 	mem->gpu = cuda_ondevice(ptr);
