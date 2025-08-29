@@ -13,6 +13,7 @@ struct vptr_shape_s {
 struct vptr_hint_s;
 extern struct vptr_hint_s* vptr_hint_ref(struct vptr_hint_s* hint);
 extern void vptr_hint_free(struct vptr_hint_s* hint);
+extern struct vptr_hint_s* vptr_get_hint(const void* ptr);
 
 extern void* vptr_alloc(int N, const long dims[N], size_t size, struct vptr_hint_s* hint);
 extern void* vptr_alloc_sameplace(int N, const long dims[__VLA(N)], size_t size, const void* ref);

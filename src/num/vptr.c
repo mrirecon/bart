@@ -1060,3 +1060,11 @@ bool mpi_is_reduction(int N, const long dims[N], const long ostrs[N], const void
 	return false;
 }
 
+
+struct vptr_hint_s* vptr_get_hint(const void* ptr)
+{
+	struct mem_s* mem = search(ptr, false);
+
+	return (NULL != mem) ? mem->hint : NULL;
+}
+
