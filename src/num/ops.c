@@ -1043,8 +1043,17 @@ static void copy_fun(const operator_data_t* _data, int N, void* args[N])
 		switch (data->loc[i]) {
 
 		case CL_CPU:
-			if (allocate || cuda_ondevice(args[i]))
-				ptr[i] = md_alloc(io->N, io->dims, io->size);
+			if (allocate || cuda_ondevice(args[i])) {
+
+				if (is_vptr(args[i])) {
+
+					ptr[i] = vptr_alloc_sameplace(io->N, io->dims, io->size, args[i]);
+					vptr_set_cpu(ptr[i]);
+				} else {
+
+					ptr[i] = md_alloc(io->N, io->dims, io->size);
+				}
+			}
 			break;
 
 		case CL_SAMEPLACE:
@@ -1054,15 +1063,24 @@ static void copy_fun(const operator_data_t* _data, int N, void* args[N])
 
 		case CL_DEVICE:
 
-			if (allocate || !cuda_ondevice(args[i]))
-				ptr[i] = md_alloc_gpu(io->N, io->dims, io->size);
+			if (allocate || !cuda_ondevice(args[i])) {
+
+				if (is_vptr(args[i])) {
+
+					ptr[i] = vptr_alloc_sameplace(io->N, io->dims, io->size, args[i]);
+					vptr_set_gpu(ptr[i]);
+				} else {
+
+					ptr[i] = md_alloc_gpu(io->N, io->dims, io->size);
+				}
+			}
 			break;
 
 		default: assert(0);
 		}
 #else
 		if (allocate)
-			ptr[i] = md_alloc(io->N, io->dims, io->size);
+			ptr[i] = is_vptr(args[i]) ? vptr_alloc_sameplace(io->N, io->dims, io->size, args[i]) : md_alloc(io->N, io->dims, io->size);
 #endif
 
 		if (NULL != ptr[i]) {
@@ -1274,26 +1292,71 @@ struct vptr_wrapper_s {
 static DEF_TYPEID(vptr_wrapper_s);
 
 
-static void vptrw_apply(const operator_data_t* _data, int N, void* args[N])
+static void vptrw_apply(const operator_data_t* _data, int N, void* _args[N])
 {
 	const auto d = CAST_DOWN(vptr_wrapper_s, _data);
 
-	void* targs[N];
+	void* args[N];
+	void* fargs[N];
+	bool io_flags[N];
+
 	for (int i = 0; i < N; i++) {
+
+		args[i] = NULL;
+		fargs[i] = NULL;
+	}
+
+	for (int i = 0; i < N; i++) {
+
+		if (NULL != args[i])
+			continue;
+
+		auto iov = operator_arg_domain(d->op, i);
+		io_flags[i] = operator_get_io_flags(d->op)[i];
+
+		for (int j = i + 1; j < N; j++)
+			if (_args[j] == _args[i])
+				io_flags[i] = io_flags[i] || operator_get_io_flags(d->op)[j];
+
+		if (is_vptr(_args[i])) {
+
+			if (!vptr_is_init(_args[i]))
+				vptr_set_dims(_args[i], iov->N, iov->dims, iov->size, d->hint);
+
+			if (d->hint == vptr_get_hint(_args[i])) {
+
+				args[i] = _args[i];
+				continue;
+			} else {
+
+				fargs[i] = vptr_alloc(iov->N, iov->dims, iov->size, d->hint);
+				(is_vptr_gpu(_args[i]) ? vptr_set_gpu : vptr_set_cpu)(fargs[i]);
+				md_copy(iov->N, iov->dims, fargs[i], _args[i], iov->size);
+			}
+		} else {
+
+			fargs[i] = vptr_wrap(iov->N, iov->dims, iov->size, _args[i], d->hint, false, io_flags[i]);
+		}
+
+		for (int j = i; j < N; j++)
+			if (_args[j] == _args[i])
+				args[j] = fargs[i];
+	}
+
+	operator_generic_apply_unchecked(d->op, N, args);
+
+	for (int i = 0; i < N; i++) {
+
+		if (NULL == fargs[i])
+			continue;
 
 		auto iov = operator_arg_domain(d->op, i);
 
-		if (is_vptr(args[i]))
-			targs[i] = args[i];
-		else
-			targs[i] = vptr_wrap(iov->N, iov->dims, iov->size, args[i], d->hint, false, operator_get_io_flags(d->op)[i]);
+		if (io_flags[i] && is_vptr(_args[i]))
+			md_copy(iov->N, iov->dims, _args[i], fargs[i], iov->size);
+
+		md_free(fargs[i]);
 	}
-
-	operator_generic_apply_unchecked(d->op, N, targs);
-
-	for (int i = 0; i < N; i++)
-		if (targs[i] != args[i])
-			md_free(targs[i]);
 }
 
 static void vptrw_free(const operator_data_t* _data)
@@ -1307,27 +1370,7 @@ static void vptrw_free(const operator_data_t* _data)
 
 const struct operator_s* operator_vptr_wrapper(const struct operator_s* op, struct vptr_hint_s* hint)
 {
-	if (NULL == hint)
-		return operator_ref(op);
-
 	int A = operator_nr_args(op);
-	int N = -1;
-
-	for (int i = 0; i < A; i++) {
-
-		auto iov = operator_arg_domain(op, i);
-
-		if (1 == iov->N && 1 == iov->dims[0])
-			continue;
-
-		if (-1 == N)
-			N = iov->N;
-
-		assert(N == iov->N);
-		assert(N == md_calc_blockdim(N, iov->dims, iov->strs, iov->size));
-	}
-
-	assert(0 < N);
 
 	PTR_ALLOC(struct vptr_wrapper_s, data);
 	SET_TYPEID(vptr_wrapper_s, data);
@@ -1335,8 +1378,8 @@ const struct operator_s* operator_vptr_wrapper(const struct operator_s* op, stru
 	data->op = operator_ref(op);
 	data->hint = vptr_hint_ref(hint);
 
-	int D[N];
-	const long* op_dims[N];
+	int D[A];
+	const long* op_dims[A];
 	const long* op_strs[A];
 
 	for (int j = 0; j < A; j++) {
