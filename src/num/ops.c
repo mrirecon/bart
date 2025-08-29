@@ -1666,19 +1666,21 @@ static void link_apply(const operator_data_t* _data, int N, void* args[N])
 
 	assert(iovec_check(iovb, iov->N, iov->dims, iov->strs));
 
+	const void* ref = args[0];
+
 #ifdef USE_CUDA
 	// Allocate tmp on GPU when one argument is on the GPU.
 	// The scalar parameters of op_p may be on CPU.
 
-	bool gpu = false;
-
 	for (int i = 0; i < N; i++)
-		gpu = gpu || cuda_ondevice(args[i]);
-
-	void* tmp = (gpu ? md_alloc_gpu : md_alloc)(iov->N, iov->dims, iov->size);
-#else
-	void* tmp = md_alloc(iov->N, iov->dims, iov->size);
+		if (cuda_ondevice(args[i]))
+			ref = args[i];
 #endif
+	for (int i = 0; i < N; i++)
+		if (is_vptr(args[i]))
+			ref = args[i];
+
+	void* tmp = md_alloc_sameplace(iov->N, iov->dims, iov->size, ref);
 
 	assert(N + 2 == operator_nr_args(data->x));
 
