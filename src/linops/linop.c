@@ -976,6 +976,18 @@ struct linop_s* linop_vptr_wrapper(struct vptr_hint_s* hint, const struct linop_
 	return PTR_PASS(op2);
 }
 
+struct linop_s* linop_vptr_set_dims_wrapper(const struct linop_s* op, const void* cod_ref, const void* dom_ref, struct vptr_hint_s* hint)
+{
+	PTR_ALLOC(struct linop_s, op2);
+
+	op2->forward = operator_vptr_set_dims_wrapper(op->forward, 2, (const void* [2]){ cod_ref, dom_ref }, hint);
+	op2->adjoint = operator_vptr_set_dims_wrapper(op->adjoint, 2, (const void* [2]){ dom_ref, cod_ref }, hint);
+	op2->normal = (NULL == op->normal) ? NULL : operator_vptr_set_dims_wrapper(op->normal, 2, (const void* [2]){ dom_ref, dom_ref }, hint);
+	op2->norm_inv = NULL; // FIXME
+
+	return PTR_PASS(op2);
+}
+
 
 /**
  * Free the linear operator and associated data,

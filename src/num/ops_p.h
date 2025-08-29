@@ -60,6 +60,9 @@ extern const struct operator_p_s* operator_p_gpu_wrapper(const struct operator_p
 extern const struct operator_p_s* operator_p_cpu_wrapper(const struct operator_p_s* op);
 extern const struct operator_p_s* operator_p_cpu_wrapper_F(const struct operator_p_s* op);
 
+struct vptr_hint_s;
+extern const struct operator_p_s* operator_p_vptr_set_dims_wrapper(const struct operator_p_s* op, const void* cod_ref, const void* dom_ref, struct vptr_hint_s* hint);
+
 // functions freeing its arguments
 extern const struct operator_p_s* operator_p_pre_chain_FF(const struct operator_s* a, const struct operator_p_s* _b);
 extern const struct operator_p_s* operator_p_pst_chain_FF(const struct operator_p_s* _a, const struct operator_s* b);

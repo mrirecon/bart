@@ -166,5 +166,9 @@ extern const struct nlop_s* nlop_optimize_graph_F(const struct nlop_s* op);
 
 extern const struct operator_p_s* op_p_nlop_wrapper_F(const struct nlop_s* nlop);
 
+struct vptr_hint_s;
+extern const struct nlop_s* nlop_vptr_wrapper(struct vptr_hint_s* hint, const struct nlop_s* op);
+extern const struct nlop_s* nlop_vptr_set_dims_wrapper(const struct nlop_s* op, int OO, const void* oref[OO], int II, const void* iref[II], struct vptr_hint_s* hint) ;
+
 #endif
 

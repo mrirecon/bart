@@ -341,6 +341,12 @@ const struct operator_p_s* operator_p_cpu_wrapper_F(const struct operator_p_s* o
 	return ret;
 }
 
+const struct operator_p_s* operator_p_vptr_set_dims_wrapper(const struct operator_p_s* op, const void* cod_ref, const void* dom_ref, struct vptr_hint_s* hint)
+{
+	const void* ref[3] = { NULL, cod_ref, dom_ref };
+
+	return operator_p_downcast(operator_vptr_set_dims_wrapper(operator_p_upcast(op), 3, ref, hint));
+}
 
 const struct operator_p_s* operator_p_stack(int A, int B, const struct operator_p_s* _a, const struct operator_p_s* _b)
 {

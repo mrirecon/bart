@@ -157,6 +157,8 @@ extern const struct operator_s* graph_optimize_operator_F(const struct operator_
 
 extern _Bool operator_zero_or_null_p(const struct operator_s* op);
 
+extern const struct operator_s* operator_vptr_set_dims_wrapper(const struct operator_s* op, int N, const void* ref[__VLA(N)], struct vptr_hint_s* hint);
+
 #include "misc/cppwrap.h"
 
 #endif

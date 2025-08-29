@@ -1766,3 +1766,59 @@ const struct operator_p_s* op_p_nlop_wrapper_F(const struct nlop_s* nlop)
 	return operator_p_create(cod->N, cod->dims, dom->N, dom->dims, CAST_UP(PTR_PASS(data)), op_p_nlop_fun, op_p_nlop_del);
 }
 
+
+
+const struct nlop_s* nlop_vptr_wrapper(struct vptr_hint_s* hint, const struct nlop_s* op)
+{
+	PTR_ALLOC(struct nlop_s, n);
+
+	int II = nlop_get_nr_in_args(op);
+	int OO = nlop_get_nr_out_args(op);
+
+	n->op = operator_vptr_wrapper(op->op, hint);
+
+	const struct linop_s* (*der)[II?:1][OO?:1] = (void*)op->derivative;
+
+	PTR_ALLOC(const struct linop_s*[II?:1][OO?:1], nder);
+
+	for (int ii = 0; ii < II; ii++)
+		for (int oo = 0; oo < OO; oo++)
+			(*nder)[ii][oo] = linop_vptr_wrapper(hint, (struct linop_s*)(*der)[ii][oo]);
+
+	n->derivative = &(*PTR_PASS(nder))[0][0];
+	return PTR_PASS(n);
+}
+
+
+
+const struct nlop_s* nlop_vptr_set_dims_wrapper(const struct nlop_s* op, int OO, const void* oref[OO], int II, const void* iref[II], struct vptr_hint_s* hint)
+{
+	PTR_ALLOC(struct nlop_s, n);
+
+	assert(II == nlop_get_nr_in_args(op));
+	assert(OO == nlop_get_nr_out_args(op));
+
+	const void* refs[II + OO];
+	for (int i = 0; i < OO; i++)
+		refs[i] = oref[i];
+	for (int i = 0; i < II; i++)
+		refs[OO + i] = iref[i];
+
+	n->op = operator_vptr_set_dims_wrapper(op->op, OO + II, refs, hint);
+
+	struct linop_s* (*der)[II][OO] = (void*)op->derivative;
+
+	PTR_ALLOC(const struct linop_s*[II?:1][OO?:1], nder);
+
+	for (int ii = 0; ii < II; ii++)
+		for (int oo = 0; oo < OO; oo++)
+			(*nder)[ii][oo] = linop_vptr_set_dims_wrapper((*der)[ii][oo], oref[oo], iref[ii], hint);
+
+
+	n->derivative = &(*PTR_PASS(nder))[0][0];
+	return PTR_PASS(n);
+}
+
+
+
+

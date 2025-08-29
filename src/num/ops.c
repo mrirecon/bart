@@ -2709,3 +2709,72 @@ void operator_apply_joined_unchecked(int N, const struct operator_s* op[N], comp
 	operator_free(op_optimized);
 }
 
+struct vptr_set_dims_data_s {
+
+	operator_data_t super;
+
+	const struct operator_s* op;
+
+	const void** ref;
+	struct vptr_hint_s* hint;
+};
+
+static DEF_TYPEID(vptr_set_dims_data_s);
+
+static void vptr_set_dims_fun(const operator_data_t* _data, int N, void* args[N])
+{
+	const auto data = CAST_DOWN(vptr_set_dims_data_s, _data);
+
+
+	for (int i = 0; i < N; i++) {
+
+		if (!is_vptr(args[i]))
+			continue;
+
+		if (NULL == data->ref[i])
+			vptr_set_dims(args[i], data->op->domain[i]->N, data->op->domain[i]->dims, data->op->domain[i]->size, data->hint);
+		else
+			vptr_set_dims_sameplace(args[i], data->ref[i]);
+	}
+
+
+	operator_generic_apply_unchecked(data->op, N, args);
+}
+
+static void vptr_set_dims_del(const operator_data_t* _data)
+{
+	const auto data = CAST_DOWN(vptr_set_dims_data_s, _data);
+
+	operator_free(data->op);
+	vptr_hint_free(data->hint);
+	xfree(data->ref);
+
+	xfree(data);
+}
+
+const struct operator_s* operator_vptr_set_dims_wrapper(const struct operator_s* op, int N, const void* ref[N], struct vptr_hint_s* hint)
+{
+	assert(N == operator_nr_args(op));
+
+	PTR_ALLOC(struct vptr_set_dims_data_s, data);
+	SET_TYPEID(vptr_set_dims_data_s, data);
+
+	data->op = operator_ref(op);
+	data->ref = ARR_CLONE(const void*[N], ref);
+	data->hint = vptr_hint_ref(hint);
+
+	int D[N];
+	const long* dims[N];
+	const long* strs[N];
+
+	for (int i = 0; i < N; i++) {
+
+		D[i] = op->domain[i]->N;
+		dims[i] = op->domain[i]->dims;
+		strs[i] = op->domain[i]->strs;
+	}
+
+	return operator_generic_create2(N, op->io_flags, D, dims, strs, CAST_UP(PTR_PASS(data)), vptr_set_dims_fun, vptr_set_dims_del, NULL);
+}
+
+
