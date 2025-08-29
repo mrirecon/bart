@@ -160,7 +160,32 @@ struct vptr_mem_s {
 
 struct vptr_mem_s vptr_mem_default = { NULL, 1, NULL, 0, 0UL };
 
-static void vptr_mem_init(struct vptr_mem_s* mem)
+enum VPTR_LOC { VPTR_CPU, VPTR_GPU, VPTR_ANY, VPTR_LOC_COUNT };
+long vptr_size[VPTR_LOC_COUNT] = { 0 };
+long vptr_peak[VPTR_LOC_COUNT] = { 0 };
+
+
+static enum VPTR_LOC vptr_loc_sameplace(enum VPTR_LOC loc)
+{
+	switch (loc) {
+		case VPTR_CPU: return VPTR_CPU;
+		case VPTR_GPU: return VPTR_GPU;
+		default: assert(0);
+	}
+}
+
+static void vptr_update_size(enum VPTR_LOC loc, long size)
+{
+#pragma omp atomic
+	vptr_size[loc] += size ;
+	vptr_peak[loc] = MAX(vptr_peak[loc], vptr_size[loc]);
+
+#pragma omp atomic
+	vptr_size[VPTR_ANY] += size ;
+	vptr_peak[VPTR_ANY] = MAX(vptr_peak[VPTR_ANY], vptr_size[VPTR_ANY]);
+}
+
+static void vptr_mem_block_init(struct vptr_mem_s* mem)
 {
 	if (NULL != mem->mem)
 		return;
@@ -180,39 +205,86 @@ static void vptr_mem_init(struct vptr_mem_s* mem)
 	}
 }
 
-static void* vptr_mem_resolve(struct vptr_mem_s* mem, bool gpu, bool clear, long offset)
+static void vptr_mem_block_alloc(struct vptr_mem_s* mem, int idx, enum VPTR_LOC loc, bool clear)
+{
+	vptr_mem_block_init(mem);
+
+	if (NULL != mem->mem[idx])
+		return;
+
+	vptr_update_size(loc, mem->block_size);
+
+	switch (loc) {
+
+	case VPTR_CPU:
+		mem->mem[idx] = xmalloc((size_t)mem->block_size);
+		if (clear)
+			memset(mem->mem[idx], 0, (size_t)mem->block_size);
+		break;
+#ifdef USE_CUDA
+	case VPTR_GPU:
+		mem->mem[idx] = cuda_malloc(mem->block_size);
+		if (clear)
+			cuda_clear(mem->block_size, mem->mem[idx]);
+		break;
+#endif
+	default:
+		assert(0);
+	}
+}
+
+static void vptr_mem_block_free(struct vptr_mem_s* mem, int idx, enum VPTR_LOC loc, bool free)
+{
+	if ((NULL == mem->mem) || (NULL == mem->mem[idx]))
+		return;
+
+	vptr_update_size(loc, -mem->block_size);
+
+	if (!free)
+		return;
+
+	switch (loc) {
+	case VPTR_CPU:
+		xfree(mem->mem[idx]);
+		break;
+#ifdef USE_CUDA
+	case VPTR_GPU:
+		cuda_free((void*)mem->mem[idx]);
+		break;
+#endif
+	default:
+		assert(0);
+	}
+
+	mem->mem[idx] = NULL;
+}
+
+static void vptr_mem_free(struct vptr_mem_s* mem, enum VPTR_LOC loc, bool free)
+{
+	if (NULL == mem->mem)
+		return;
+
+	for (int i = 0; i < mem->num_blocks; i++)
+		vptr_mem_block_free(mem, i, loc, free);
+
+	xfree(mem->mem);
+	mem->mem = NULL;
+}
+
+
+
+static void* vptr_mem_block_resolve(struct vptr_mem_s* mem, enum VPTR_LOC loc, bool clear, long offset)
 {
 	unsigned long dflags = md_nontriv_dims(mem->shape->N, mem->shape->dims);
 
 	long idx = md_reravel_index(mem->shape->N, mem->flags & dflags, dflags, mem->shape->dims, offset / (long)mem->shape->size);
 
-	vptr_mem_init(mem);
-
-	if (NULL == (mem->mem[idx])) {
+	vptr_mem_block_init(mem);
 
 #pragma omp critical(vptr_mem_resolve)
-		if (NULL == (mem->mem[idx])) {
+	vptr_mem_block_alloc(mem, idx, loc, clear);
 
-
-#ifdef USE_CUDA
-			if (gpu) {
-
-				mem->mem[idx] = cuda_malloc(mem->block_size);
-				if (clear)
-					cuda_clear(mem->block_size, mem->mem[idx]);
-			} else
-#endif
-			{
-				mem->mem[idx] = xmalloc((size_t)mem->block_size);
-				if (clear)
-					memset(mem->mem[idx], 0, (size_t)mem->block_size);
-			}
-		}
-	}
-
-	(void)gpu;
-
-	return mem->mem[idx] + md_reravel_index(mem->shape->N, ~mem->flags & dflags, dflags, mem->shape->dims, offset / (long)mem->shape->size) * (long)mem->shape->size;
+	return mem->mem[idx] + md_reravel_index(mem->shape->N, ~mem->flags & dflags, dflags, mem->shape->dims, offset / (long)mem->shape->size) * (long)mem->shape->size + (offset % (long)mem->shape->size);
 }
 
 
@@ -222,9 +294,9 @@ struct mem_s {
 	void* ptr;
 	size_t len;
 
-	bool gpu;
+	enum VPTR_LOC loc;
 
-	bool free;		// mem should be free'd
+	bool free;
 	bool writeback;
 
 	struct vptr_shape_s shape;
@@ -337,8 +409,8 @@ static struct mem_s* vptr_create(int N, const long dims[N], size_t size, struct 
 	x->ptr = ptr;
 	x->len = (size_t)len;
 
+	x->loc = VPTR_CPU;
 	x->free = true;
-	x->gpu = false;
 
 	x->shape.N = N;
 	x->shape.dims = ARR_CLONE(long[N], dims);
@@ -379,7 +451,7 @@ static void* vptr_resolve_int(const void* ptr, bool assert_rank)
 		return NULL;
 	}
 
-	return vptr_mem_resolve(&mem->blocks, mem->gpu, false, ptr - mem->ptr);
+	return vptr_mem_block_resolve(&mem->blocks, mem->loc, false, ptr - mem->ptr);
 }
 
 void* vptr_resolve(const void* ptr)
@@ -418,19 +490,20 @@ bool is_vptr(const void* ptr)
 bool is_vptr_gpu(const void* ptr)
 {
 	struct mem_s* mem = search(ptr, false);
-	return mem && mem->gpu;
+	return mem && (VPTR_GPU == vptr_loc_sameplace(mem->loc));
 }
 
 bool is_vptr_cpu(const void* ptr)
 {
 	struct mem_s* mem = search(ptr, false);
-	return mem && !mem->gpu;
+	return mem && (VPTR_CPU == vptr_loc_sameplace(mem->loc));
 }
 
 
 
 bool vptr_free(const void* ptr)
 {
+	//md_copy for writeback requires vptr to stay valid until after the copy, hence don't remove here
 	struct mem_s* mem = search(ptr, false);
 
 	if (NULL == mem)
@@ -439,19 +512,15 @@ bool vptr_free(const void* ptr)
 	if (mem->writeback)
 		md_copy(mem->shape.N, mem->shape.dims, mem->blocks.mem[0], mem->ptr, mem->shape.size);
 
-	if (mem->free && (NULL != mem->blocks.mem))
-		for (int i = 0; i < mem->blocks.num_blocks; i++)
-			md_free(mem->blocks.mem[i]);
-
 	mem = search(ptr, true);
+
+	vptr_mem_free(&mem->blocks, mem->loc, mem->free);
+
 
 	munmap((void*)ptr, mem->len);
 
 	if (NULL != mem->shape.dims)
 		xfree(mem->shape.dims);
-
-	if (NULL != mem->blocks.mem)
-		xfree(mem->blocks.mem);
 
 	vptr_hint_free(mem->hint);
 
@@ -475,7 +544,7 @@ void* vptr_alloc_sameplace(int N, const long dims[N], size_t size, const void* r
 		return NULL;
 
 	auto ret = vptr_create(N, dims, size, mem->hint);
-	ret->gpu = mem->gpu;
+	ret->loc = vptr_loc_sameplace(mem->loc);
 
 	return ret->ptr;
 }
@@ -487,7 +556,7 @@ void* vptr_move_gpu(const void* ptr)
 	assert(mem && mem->ptr == ptr);
 
 	auto ret = vptr_create(mem->shape.N, mem->shape.dims, mem->shape.size, mem->hint);
-	ret->gpu = true;
+	ret->loc = VPTR_GPU;
 
 	md_copy(mem->shape.N, mem->shape.dims, ret->ptr, mem->ptr, mem->shape.size);
 
@@ -501,7 +570,7 @@ void* vptr_move_cpu(const void* ptr)
 	assert(mem && mem->ptr == ptr);
 
 	auto ret = vptr_create(mem->shape.N, mem->shape.dims, mem->shape.size, mem->hint);
-	ret->gpu = false;
+	ret->loc = VPTR_CPU;
 
 	md_copy(mem->shape.N, mem->shape.dims, ret->ptr, mem->ptr, mem->shape.size);
 
@@ -514,16 +583,19 @@ void* vptr_wrap(int N, const long dims[N], size_t size, const void* ptr, struct 
 
 	auto mem = vptr_create(N, dims, size, hint);
 
-	mem->free = free;
 	mem->writeback = writeback;
 
 	mem->blocks.flags = 0;
-	vptr_mem_init(&mem->blocks);
+	vptr_mem_block_init(&mem->blocks);
 	mem->blocks.mem[0] = (void*)ptr;
 
 #ifdef USE_CUDA
-	mem->gpu = cuda_ondevice(ptr);
+	mem->loc = cuda_ondevice(ptr) ? VPTR_GPU : VPTR_CPU;
 #endif
+	mem->free = free;
+
+	vptr_update_size(mem->loc, mem->blocks.block_size);
+
 	return mem->ptr;
 }
 
@@ -688,7 +760,7 @@ unsigned long vptr_block_loop_flags(int N, const long dims[N], const long strs[N
 	if (NULL == mem)
 		return 0UL;
 
-	vptr_mem_init(&mem->blocks);
+	vptr_mem_block_init(&mem->blocks);
 
 	check_valid_loop_access(mem, N, dims, strs, size, ptr);
 
