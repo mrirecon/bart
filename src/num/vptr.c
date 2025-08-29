@@ -191,6 +191,8 @@ static void vptr_mem_block_init(struct vptr_mem_s* mem)
 	if (NULL != mem->mem)
 		return;
 
+	assert(0 != mem->shape->N);
+
 #pragma omp critical(vptr_mem_init)
 	if (NULL == mem->mem) {
 
@@ -406,37 +408,30 @@ static struct mem_s* search(const void* ptr, bool remove)
 	return mem;
 }
 
-
-static struct mem_s* vptr_create(int N, const long dims[N], size_t size, struct vptr_hint_s* hint)
+static struct mem_s* vptr_reserve_int(size_t len)
 {
-	long len = md_calc_size(N, dims) * (long)size;
+	assert(0 < len);
 
-	void* ptr = mmap(NULL, (size_t)len, PROT_NONE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+	void* ptr = mmap(NULL, len, PROT_NONE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
 
 	PTR_ALLOC(struct mem_s, x);
 
 	x->ptr = ptr;
-	x->len = (size_t)len;
+	x->len = len;
 
 	x->loc = VPTR_CPU;
 	x->free = true;
 
-	x->shape.N = N;
-	x->shape.dims = ARR_CLONE(long[N], dims);
-	x->shape.size = size;
+	x->shape.N = 0;
+	x->shape.dims = NULL;
+	x->shape.size = 0;
 
 	x->blocks.shape = &x->shape;
 	x->blocks.flags = 0UL;
 	x->blocks.mem = NULL;
 
 	x->writeback = false;
-	x->hint = vptr_hint_ref(hint);
-
-	if (NULL != hint) {
-
-		assert(md_check_compat(MIN(N, hint->N), ~0UL, dims, hint->dims));
-		x->blocks.flags = hint->mpi_flags;
-	}
+	x->hint = NULL;
 
 	x->reduction_buffer = false;
 
@@ -444,6 +439,67 @@ static struct mem_s* vptr_create(int N, const long dims[N], size_t size, struct 
 	tree_insert(vmap, x);
 
 	return PTR_PASS(x);
+}
+
+static void vptr_set_dims_int(struct mem_s* mem, int N, const long dims[N], size_t size, struct vptr_hint_s* hint)
+{
+	if (0 == mem->blocks.shape->N) {
+
+		assert(mem->len == (size_t)md_calc_size(N, dims) * size);
+
+		mem->shape.N = N;
+		mem->shape.dims = ARR_CLONE(long[N], dims);
+		mem->shape.size = size;
+
+		mem->hint = vptr_hint_ref(hint);
+
+		if (NULL != hint) {
+
+			assert(md_check_compat(MIN(N, hint->N), ~0UL, dims, hint->dims));
+			mem->blocks.flags = hint->mpi_flags;
+		}
+	} else {
+
+		assert(mem->shape.N == N);
+		assert(mem->shape.size == size);
+		assert(md_check_compat(N, ~0UL, mem->shape.dims, dims));
+		assert(hint == mem->hint);
+	}
+}
+
+void vptr_set_dims(const void* ptr, int N, const long dims[N], size_t size, struct vptr_hint_s* hint)
+{
+	struct mem_s* mem = search(ptr, false);
+
+	if (NULL == mem)
+		error("Cannot set dimensions of non-virtual pointer!\n");
+
+	vptr_set_dims_int(mem, N, dims, size, hint);
+}
+
+void vptr_set_dims_sameplace(const void* ptr, const void* ref)
+{
+	struct mem_s* mem = search(ptr, false);
+
+	if (NULL == mem)
+		error("Cannot set dimensions of non-virtual pointer!\n");
+
+	struct mem_s* rmem = search(ref, false);
+
+	if (NULL == rmem)
+		error("Reference pointer is not a virtual pointer!\n");
+
+	vptr_set_dims_int(mem, rmem->shape.N, rmem->shape.dims, rmem->shape.size, rmem->hint);
+}
+
+static struct mem_s* vptr_create(int N, const long dims[N], size_t size, struct vptr_hint_s* hint)
+{
+	long len = md_calc_size(N, dims) * (long)size;
+
+	struct mem_s* mem = vptr_reserve_int((size_t)len);
+	vptr_set_dims_int(mem, N, dims, size, hint);
+
+	return mem;
 }
 
 
