@@ -510,6 +510,36 @@ bool is_vptr_cpu(const void* ptr)
 	return mem && (VPTR_CPU == vptr_loc_sameplace(mem->loc));
 }
 
+static void vptr_update_loc(const void* ptr, enum VPTR_LOC loc)
+{
+	struct mem_s* mem = search(ptr, false);
+
+	if (NULL == mem)
+		error("Cannot change location of non-virtual pointer!\n");
+
+	assert(loc == VPTR_CPU || loc == VPTR_GPU);
+
+	if (vptr_loc_sameplace(mem->loc) == loc)
+		return;
+
+	mem->loc = loc;
+
+	for (int i = 0; (NULL != mem->blocks.mem) && (i < mem->blocks.num_blocks); i++)
+		if(NULL != mem->blocks.mem[i])
+			error("Cannot change location of already allocated virtual pointer!\n");
+}
+
+void vptr_set_gpu(const void* ptr)
+{
+	vptr_update_loc(ptr, VPTR_GPU);
+}
+
+void vptr_set_cpu(const void* ptr)
+{
+	vptr_update_loc(ptr, VPTR_CPU);
+}
+
+
 
 
 bool vptr_free(const void* ptr)

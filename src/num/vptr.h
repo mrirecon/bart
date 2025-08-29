@@ -32,6 +32,9 @@ extern _Bool is_vptr(const void* ptr);
 extern _Bool is_vptr_cpu(const void* ptr);
 extern _Bool is_vptr_gpu(const void* ptr);
 
+extern void vptr_set_gpu(const void* ptr);
+extern void vptr_set_cpu(const void* ptr);
+
 extern _Bool is_mpi(const void* ptr);
 
 extern void* vptr_move_cpu(const void* ptr);
