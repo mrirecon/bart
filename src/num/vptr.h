@@ -18,6 +18,9 @@ extern struct vptr_hint_s* vptr_get_hint(const void* ptr);
 extern void* vptr_alloc(int N, const long dims[N], size_t size, struct vptr_hint_s* hint);
 extern void* vptr_alloc_sameplace(int N, const long dims[__VLA(N)], size_t size, const void* ref);
 
+extern void* vptr_alloc_size(size_t len);
+extern _Bool vptr_is_init(const void* ptr);
+extern void vptr_clear(const void* ptr);
 extern void vptr_set_dims(const void* ptr, int N, const long dims[N], size_t size, struct vptr_hint_s* hint);
 extern void vptr_set_dims_sameplace(const void* ptr, const void* ref);
 

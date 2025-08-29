@@ -303,7 +303,7 @@ struct mem_s {
 	size_t len;
 
 	enum VPTR_LOC loc;
-
+	bool clear;
 	bool free;
 	bool writeback;
 
@@ -427,6 +427,7 @@ static struct mem_s* vptr_reserve_int(size_t len)
 
 	x->loc = VPTR_CPU;
 	x->free = true;
+	x->clear = false;
 
 	x->shape.N = 0;
 	x->shape.dims = NULL;
@@ -454,6 +455,35 @@ static struct mem_s* vptr_reserve_int(size_t len)
 	tree_insert(vmap, x);
 
 	return PTR_PASS(x);
+}
+
+void* vptr_alloc_size(size_t len)
+{
+	struct mem_s* mem = vptr_reserve_int(len);
+	return mem->ptr;
+}
+
+bool vptr_is_init(const void* ptr)
+{
+	struct mem_s* mem = search(ptr, false);
+
+	if (NULL == mem)
+		error("Cannot check initialization of non-virtual pointer!\n");
+
+	return (0 != mem->shape.N);
+}
+
+void vptr_clear(const void* ptr)
+{
+	struct mem_s* mem = search(ptr, false);
+
+	if (NULL == mem)
+		error("Cannot clear non-virtual pointer!\n");
+
+	for (int i = 0; (NULL != mem->blocks.mem) && (i < mem->blocks.num_blocks); i++)
+		assert(NULL == mem->blocks.mem[i]);
+
+	mem->clear = true;
 }
 
 static void vptr_set_dims_int(struct mem_s* mem, int N, const long dims[N], size_t size, struct vptr_hint_s* hint)
@@ -533,7 +563,7 @@ static void* vptr_resolve_int(const void* ptr, bool assert_rank)
 		return NULL;
 	}
 
-	return vptr_mem_block_resolve(&mem->blocks, mem->loc, false, ptr - mem->ptr);
+	return vptr_mem_block_resolve(&mem->blocks, mem->loc, mem->clear, ptr - mem->ptr);
 }
 
 void* vptr_resolve(const void* ptr)
