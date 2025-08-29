@@ -694,6 +694,22 @@ void* vptr_alloc_sameplace(int N, const long dims[N], size_t size, const void* r
 	return ret->ptr;
 }
 
+void* vptr_alloc_same(const void* ref)
+{
+	struct mem_s* mem = search(ref, false);
+
+	if (NULL == mem)
+		return NULL;
+
+	void* ret = vptr_alloc_size(mem->len);
+	vptr_set_dims_sameplace(ret, ref);
+
+	if (is_vptr_gpu(ref))
+		vptr_set_gpu(ret);
+
+	return ret;
+}
+
 void* vptr_move_gpu(const void* ptr)
 {
 	struct mem_s* mem = search(ptr, false);
