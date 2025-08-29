@@ -25,10 +25,13 @@
 #include <ctype.h>
 #include <math.h>
 #include <limits.h>
+#include <unistd.h>
 
 #ifdef BART_WITH_PYTHON
 #include <Python.h>
 #endif
+
+#include "num/mpi_ops.h"
 
 #include "misc/debug.h"
 #include "misc/nested.h"
@@ -91,6 +94,8 @@ void error(const char* fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
+
+	sleep((unsigned int)mpi_get_rank());
 
 #ifndef BART_WITH_PYTHON
 #ifdef USE_LOG_BACKEND
