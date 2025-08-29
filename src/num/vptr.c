@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <signal.h>
+#include <unistd.h>
 
 #ifdef _WIN32
 #include "win/mman.h"
@@ -312,6 +313,8 @@ struct mem_s {
 
 	struct vptr_hint_s* hint;
 
+	const char* backtrace;		// backtrace of allocation (for debugging)
+
 	bool reduction_buffer;		// true if this pointer is used as reduction buffer
 					// only one rank is allowed to write to it
 					// => we can use a simple all_reduce to sum up the results
@@ -352,8 +355,11 @@ static void handler(int /*sig*/, siginfo_t *si, void*)
 {
 	struct mem_s* mem = search(si->si_addr, false);
 
-	if (mem)
-		error("Virtual pointer at %x not resolved!\n", si->si_addr);
+	if (mem) {
+
+		sleep((unsigned int)mpi_get_rank());
+		error("Virtual pointer at %x not resolved!\n Pointer was allocated at:\n%s", si->si_addr, mem->backtrace ?: "no backtrace available");
+	}
 
 #ifdef USE_CUDA
 	if (cuda_ondevice(si->si_addr))
@@ -434,6 +440,15 @@ static struct mem_s* vptr_reserve_int(size_t len)
 	x->hint = NULL;
 
 	x->reduction_buffer = false;
+
+	x->backtrace = NULL;
+
+#ifdef VPTR_DEBUG
+#ifdef USE_DWARF
+	x->backtrace = debug_good_backtrace_string(4);
+#endif // USE_DWARF
+#endif
+
 
 	vptr_init();
 	tree_insert(vmap, x);
@@ -618,6 +633,9 @@ bool vptr_free(const void* ptr)
 
 	if (NULL != mem->shape.dims)
 		xfree(mem->shape.dims);
+
+	if (NULL != mem->backtrace)
+		xfree(mem->backtrace);
 
 	vptr_hint_free(mem->hint);
 
