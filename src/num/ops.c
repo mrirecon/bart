@@ -2371,7 +2371,7 @@ static void chain_apply(const operator_data_t* _data, int N, void* args[N])
 		if (i == data->N - 1)
 			dst = args[0];
 		else
-			dst = md_alloc_sameplace(iov->N, iov->dims, iov->size, src);
+			dst = md_alloc_sameplace(iov->N, iov->dims, iov->size, src ?: args[0]);
 
 		operator_apply_unchecked(data->x[i], dst, src);
 
