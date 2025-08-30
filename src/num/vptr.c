@@ -160,7 +160,7 @@ struct vptr_mem_s {
 
 struct vptr_mem_s vptr_mem_default = { NULL, 1, NULL, 0, 0UL };
 
-enum VPTR_LOC { VPTR_CPU, VPTR_GPU, VPTR_ANY, VPTR_LOC_COUNT };
+enum VPTR_LOC { VPTR_CPU, VPTR_GPU, VPTR_CFL, VPTR_ANY, VPTR_LOC_COUNT };
 long vptr_size[VPTR_LOC_COUNT] = { 0 };
 long vptr_peak[VPTR_LOC_COUNT] = { 0 };
 
@@ -170,6 +170,7 @@ static enum VPTR_LOC vptr_loc_sameplace(enum VPTR_LOC loc)
 	switch (loc) {
 		case VPTR_CPU: return VPTR_CPU;
 		case VPTR_GPU: return VPTR_GPU;
+		case VPTR_CFL: return VPTR_CPU;
 		default: assert(0);
 	}
 }
@@ -244,6 +245,10 @@ static void vptr_mem_block_free(struct vptr_mem_s* mem, int idx, enum VPTR_LOC l
 		return;
 
 	switch (loc) {
+	case VPTR_CFL:
+		assert(0 == idx);
+		unmap_cfl(mem->shape->N, mem->shape->dims, mem->mem[idx]);
+		break;
 	case VPTR_CPU:
 		xfree(mem->mem[idx]);
 		break;
@@ -614,6 +619,25 @@ void* vptr_wrap_sameplace(int N, const long dims[N], size_t size, const void* pt
 	assert(NULL != mem);
 
 	return vptr_wrap(N, dims, size, ptr, mem->hint, free, writeback);
+}
+
+void* vptr_wrap_cfl(int N, const long dims[N], size_t size, const void* ptr, struct vptr_hint_s* hint, bool free, bool writeback)
+{
+	assert(!is_vptr(ptr));
+
+	auto mem = vptr_create(N, dims, size, hint);
+
+	mem->writeback = writeback;
+
+	mem->blocks.flags = 0;
+	vptr_mem_block_init(&mem->blocks);
+	mem->blocks.mem[0] = (void*)ptr;
+
+	mem->loc = VPTR_CFL;
+	mem->free = free;
+	vptr_update_size(mem->loc, mem->blocks.block_size);
+
+	return mem->ptr;
 }
 
 

@@ -35,6 +35,7 @@
 
 #include "num/mpi_ops.h"
 #include "num/multind.h"
+#include "num/vptr.h"
 
 #include "misc/misc.h"
 #include "misc/list.h"
@@ -926,6 +927,17 @@ complex float* create_cfl(const char* name, int D, const long dimensions[D])
 }
 
 
+complex float* create_cfl_sameplace(const char* name, int D, const long dimensions[D], const void* ref)
+{
+	complex float* ret = create_cfl(name, D, dimensions);
+
+	if (!is_vptr(ref))
+		return ret;
+	else
+	 	return vptr_wrap_cfl(D, dimensions, sizeof(complex float), ret, vptr_get_hint(ref), true, true);
+}
+
+
 complex float* create_async_cfl(const char* name, const unsigned long flags, int D, const long dimensions[D])
 {
 	if (!cfl_loop_desc_active())
@@ -1134,6 +1146,16 @@ complex float* load_cfl(const char* name, int D, long dimensions[D])
 	return load_cfl_internal(name, D, dimensions, true, false);
 }
 
+complex float* load_cfl_sameplace(const char* name, int D, long dimensions[D], const void* ref)
+{
+	complex float* ret = load_cfl(name, D, dimensions);
+
+	if (!is_vptr(ref))
+		return ret;
+	else
+	 	return vptr_wrap_cfl(D, dimensions, sizeof(complex float), ret, vptr_get_hint(ref), true, false);
+}
+
 
 complex float* load_shared_cfl(const char* name, int D, long dimensions[D])
 {
@@ -1293,6 +1315,12 @@ void unmap_cfl(int D, const long dims[D], const complex float* x)
 {
 	if (NULL == x)
 		return;
+
+	if (is_vptr(x)) {
+
+		md_free(x);
+		return;
+	}
 
 	if (memcfl_unmap(x))
 		return;
