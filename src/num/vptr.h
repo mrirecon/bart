@@ -28,10 +28,12 @@ extern void vptr_set_dims_sameplace(const void* ptr, const void* ref);
 extern void* vptr_wrap(int N, const long dims[__VLA(N)], size_t size, const void* ptr, struct vptr_hint_s* hint, _Bool free, _Bool writeback);
 extern void* vptr_wrap_sameplace(int N, const long dims[__VLA(N)], size_t size, const void* ptr, const void* ref, _Bool free, _Bool writeback);
 extern void* vptr_wrap_cfl(int N, const long dims[N], size_t size, const void* ptr, struct vptr_hint_s* hint, _Bool free, _Bool writeback);
+extern void* vptr_wrap_range(int D, void* ptr[__VLA(D)], _Bool free);
 
 extern _Bool vptr_free(const void* ptr);
 extern void* vptr_resolve(const void* ptr);
 extern void* vptr_resolve_unchecked(const void* ptr);
+extern void* vptr_resolve_range(const void* ptr);
 
 extern const struct vptr_shape_s* vptr_get_shape(const void* ptr);
 extern long vptr_get_offset(const void* ptr);

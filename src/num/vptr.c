@@ -296,6 +296,13 @@ static void* vptr_mem_block_resolve(struct vptr_mem_s* mem, enum VPTR_LOC loc, b
 }
 
 
+struct vptr_range_s {
+
+	int D;
+	struct mem_s** sub_ptr;
+};
+
+
 
 struct mem_s {
 
@@ -310,6 +317,7 @@ struct mem_s {
 	struct vptr_shape_s shape;
 
 	struct vptr_mem_s blocks;
+	struct vptr_range_s range;
 
 	struct vptr_hint_s* hint;
 
@@ -437,6 +445,9 @@ static struct mem_s* vptr_reserve_int(size_t len)
 	x->blocks.flags = 0UL;
 	x->blocks.mem = NULL;
 
+	x->range.D = 0;
+	x->range.sub_ptr = NULL;
+
 	x->writeback = false;
 	x->hint = NULL;
 
@@ -470,7 +481,7 @@ bool vptr_is_init(const void* ptr)
 	if (NULL == mem)
 		error("Cannot check initialization of non-virtual pointer!\n");
 
-	return (0 != mem->shape.N);
+	return ((0 != mem->shape.N) || (0 != mem->range.D));
 }
 
 void vptr_clear(const void* ptr)
@@ -484,10 +495,25 @@ void vptr_clear(const void* ptr)
 		assert(NULL == mem->blocks.mem[i]);
 
 	mem->clear = true;
+
+	for (int i = 0; i < mem->range.D; i++) {
+
+		struct mem_s* tmem = mem->range.sub_ptr[i];
+
+		if (NULL == tmem)
+			continue;
+
+		for (int i = 0; (NULL != tmem->blocks.mem) && (i < tmem->blocks.num_blocks); i++)
+			assert(NULL == tmem->blocks.mem[i]);
+
+		tmem->clear = true;
+	}
 }
 
 static void vptr_set_dims_int(struct mem_s* mem, int N, const long dims[N], size_t size, struct vptr_hint_s* hint)
 {
+	assert(0 == mem->range.D);
+
 	if (0 == mem->blocks.shape->N) {
 
 		assert(mem->len == (size_t)md_calc_size(N, dims) * size);
@@ -522,19 +548,39 @@ void vptr_set_dims(const void* ptr, int N, const long dims[N], size_t size, stru
 	vptr_set_dims_int(mem, N, dims, size, hint);
 }
 
-void vptr_set_dims_sameplace(const void* ptr, const void* ref)
+void vptr_set_dims_sameplace(const void* x, const void* ref)
 {
-	struct mem_s* mem = search(ptr, false);
-
-	if (NULL == mem)
-		error("Cannot set dimensions of non-virtual pointer!\n");
-
+	struct mem_s* mem = search(x, false);
 	struct mem_s* rmem = search(ref, false);
+	assert(NULL != mem);
+	assert(NULL != rmem);
 
-	if (NULL == rmem)
-		error("Reference pointer is not a virtual pointer!\n");
+	if (0 < mem->range.D || 0 < mem->shape.N)
+		return;
 
-	vptr_set_dims_int(mem, rmem->shape.N, rmem->shape.dims, rmem->shape.size, rmem->hint);
+	if (0 < rmem->range.D) {
+
+		int D = rmem->range.D;
+		struct mem_s* sub_mem[D];
+
+		for (int i = 0; i < D; i++) {
+
+			sub_mem[i] = vptr_reserve_int(rmem->range.sub_ptr[i]->len);
+			sub_mem[i]->loc = vptr_loc_sameplace(rmem->loc);
+			sub_mem[i]->clear = mem->clear;
+			sub_mem[i]->reduction_buffer = mem->reduction_buffer;
+
+			vptr_set_dims_int(sub_mem[i], rmem->range.sub_ptr[i]->shape.N, rmem->range.sub_ptr[i]->shape.dims, rmem->range.sub_ptr[i]->shape.size, rmem->range.sub_ptr[i]->hint);
+		}
+
+		mem->range.D = D;
+		mem->range.sub_ptr = ARR_CLONE(struct mem_s*[D], sub_mem);
+		mem->free = true;
+		mem->hint = vptr_hint_ref(rmem->hint);
+	} else {
+
+		vptr_set_dims_int(mem, rmem->shape.N, rmem->shape.dims, rmem->shape.size, rmem->hint);
+	}
 }
 
 static struct mem_s* vptr_create(int N, const long dims[N], size_t size, struct vptr_hint_s* hint)
@@ -547,9 +593,37 @@ static struct mem_s* vptr_create(int N, const long dims[N], size_t size, struct 
 	return mem;
 }
 
+void* vptr_resolve_range(const void* ptr)
+{
+	if (NULL == ptr)
+		return NULL;
+
+	if (!is_vptr(ptr))
+		return (void*)ptr;
+
+	struct mem_s* mem = search(ptr, false);
+	assert(NULL != mem);
+
+	if((0 == mem->range.D) && (0 == mem->shape.N))
+		error("Virtual pointer not initialized!");
+
+	if (0 == mem->range.D)
+		return (void*)ptr;
+
+	long offset = ptr - mem->ptr;
+	int i = 0;
+
+	while (offset >= (long)mem->range.sub_ptr[i]->len)
+		offset -= (long)mem->range.sub_ptr[i++]->len;
+
+	return mem->range.sub_ptr[i]->ptr + offset;
+}
+
 
 static void* vptr_resolve_int(const void* ptr, bool assert_rank)
 {
+	ptr = vptr_resolve_range(ptr);
+
 	struct mem_s* mem = search(ptr, false);
 
 	if (NULL == mem)
@@ -581,6 +655,7 @@ const struct vptr_shape_s* vptr_get_shape(const void* ptr)
 {
 	struct mem_s* mem = search(ptr, false);
 	assert(mem);
+	assert(0 < mem->shape.N);
 	return &mem->shape;
 }
 
@@ -611,10 +686,8 @@ bool is_vptr_cpu(const void* ptr)
 	return mem && (VPTR_CPU == vptr_loc_sameplace(mem->loc));
 }
 
-static void vptr_update_loc(const void* ptr, enum VPTR_LOC loc)
+static void vptr_update_loc(struct mem_s* mem, enum VPTR_LOC loc)
 {
-	struct mem_s* mem = search(ptr, false);
-
 	if (NULL == mem)
 		error("Cannot change location of non-virtual pointer!\n");
 
@@ -625,19 +698,29 @@ static void vptr_update_loc(const void* ptr, enum VPTR_LOC loc)
 
 	mem->loc = loc;
 
-	for (int i = 0; (NULL != mem->blocks.mem) && (i < mem->blocks.num_blocks); i++)
-		if(NULL != mem->blocks.mem[i])
-			error("Cannot change location of already allocated virtual pointer!\n");
+	if (0 < mem->range.D) {
+
+		for (int i = 0; i < mem->range.D; i++)
+			vptr_update_loc(mem->range.sub_ptr[i], loc);
+
+	} else {
+
+		for (int i = 0; (NULL != mem->blocks.mem) && (i < mem->blocks.num_blocks); i++)
+			if(NULL != mem->blocks.mem[i])
+				error("Cannot change location of already allocated virtual pointer!\n");
+	}
 }
 
 void vptr_set_gpu(const void* ptr)
 {
-	vptr_update_loc(ptr, VPTR_GPU);
+	struct mem_s* mem = search(ptr, false);
+	vptr_update_loc(mem, VPTR_GPU);
 }
 
 void vptr_set_cpu(const void* ptr)
 {
-	vptr_update_loc(ptr, VPTR_CPU);
+	struct mem_s* mem = search(ptr, false);
+	vptr_update_loc(mem, VPTR_CPU);
 }
 
 
@@ -656,6 +739,11 @@ bool vptr_free(const void* ptr)
 
 	mem = search(ptr, true);
 
+	if (mem->free)
+		for(int i = 0; i < mem->range.D; i++)
+			vptr_free(mem->range.sub_ptr[i]->ptr);
+
+
 	vptr_mem_free(&mem->blocks, mem->loc, mem->free);
 
 
@@ -663,6 +751,9 @@ bool vptr_free(const void* ptr)
 
 	if (NULL != mem->shape.dims)
 		xfree(mem->shape.dims);
+
+	if (NULL != mem->range.sub_ptr)
+		xfree(mem->range.sub_ptr);
 
 	if (NULL != mem->backtrace)
 		xfree(mem->backtrace);
@@ -788,6 +879,33 @@ void* vptr_wrap_cfl(int N, const long dims[N], size_t size, const void* ptr, str
 	vptr_update_size(mem->loc, mem->blocks.block_size);
 
 	return mem->ptr;
+}
+
+
+void* vptr_wrap_range(int D, void* ptr[D], bool free)
+{
+	assert(0 < D);
+	size_t len = 0;
+
+	struct mem_s* mem[D];
+
+	for (int i = 0; i < D; i++) {
+
+		mem[i] = search(ptr[i], false);
+
+		assert(NULL != mem[i]);
+		assert(is_vptr_gpu(ptr[i]) == is_vptr_gpu(ptr[0]));
+		len += mem[i]->len;
+	}
+
+	struct mem_s* rmem = vptr_reserve_int(len);
+	rmem->range.D = D;
+	rmem->range.sub_ptr = ARR_CLONE(struct mem_s*[D], mem);
+	rmem->free = free;
+	rmem->hint = vptr_hint_ref(mem[0]->hint);
+	rmem->loc = vptr_loc_sameplace(mem[0]->loc);
+
+	return rmem->ptr;
 }
 
 
@@ -935,6 +1053,7 @@ static void size_to_strs(int N, long ostrs[N + 1], const long istrs[N], size_t /
  */
 unsigned long vptr_block_loop_flags(int N, const long dims[N], const long strs[N], const void* ptr, size_t size, _Bool contiguous_strs)
 {
+	ptr = vptr_resolve_range(ptr);
 	struct mem_s* mem = search(ptr, false);
 
 	if (NULL == mem)
@@ -987,6 +1106,7 @@ unsigned long vptr_block_loop_flags(int N, const long dims[N], const long strs[N
 
 void vptr_contiguous_strs(int N, const void* ptr, unsigned long lflags, long nstrs[N], const long ostrs[N])
 {
+	ptr = vptr_resolve_range(ptr);
 	struct mem_s* mem = search(ptr, false);
 
 	if (NULL == mem) {
@@ -1177,6 +1297,11 @@ void mpi_set_reduction_buffer(const void* ptr)
 	struct mem_s* mem = search(ptr, false);
 	assert(mem);
 	mem->reduction_buffer = true;
+
+	for (int i = 0; i < mem->range.D; i++)
+		if (NULL != mem->range.sub_ptr[i])
+			mem->range.sub_ptr[i]->reduction_buffer = true;
+
 }
 
 void mpi_unset_reduction_buffer(const void* ptr)
@@ -1184,6 +1309,10 @@ void mpi_unset_reduction_buffer(const void* ptr)
 	struct mem_s* mem = search(ptr, false);
 	assert(mem);
 	mem->reduction_buffer = false;
+
+	for (int i = 0; i < mem->range.D; i++)
+		if (NULL != mem->range.sub_ptr[i])
+			mem->range.sub_ptr[i]->reduction_buffer = false;
 }
 
 bool mpi_is_reduction(int N, const long dims[N], const long ostrs[N], const void* optr, size_t osize, const long istrs[N], const void* iptr, size_t isize)
