@@ -328,10 +328,42 @@ struct mem_s {
 					// => we can use a simple all_reduce to sum up the results
 };
 
+const char* str_byte[] = { "B", "KB", "MB", "GB", "TB" };
+
+static const char* get_byte_unit(size_t size)
+{
+	double fsize = size;
+	int idx = 0;
+
+	while (idx + 1 < (int)ARRAY_SIZE(str_byte) && 1024 < fsize) {
+
+		idx++;
+		fsize /= 1024;
+	}
+
+	return str_byte[idx];
+}
+
+static double get_byte_size(size_t size)
+{
+	double fsize = size;
+	int idx = 0;
+
+	while (idx + 1 < (int)ARRAY_SIZE(str_byte) && 1024 < fsize) {
+
+		idx++;
+		fsize /= 1024;
+	}
+
+	return fsize;
+}
+
 static void vptr_debug_mem(int dl, const struct mem_s* mem)
 {
 	assert(0 != mem);
-	debug_printf(dl, "Virtual pointer %p\n", mem->ptr);
+	debug_printf(dl, "Virtual pointer %p %s (%.1f%s)\n", mem->ptr,
+		(VPTR_CFL == mem->loc) ? "wrapping CFL" : (VPTR_GPU == vptr_loc_sameplace(mem->loc) ? "on GPU" : "on CPU"),
+		get_byte_size(mem->len), get_byte_unit(mem->len));
 
 	if (0 < mem->shape.N) {
 
@@ -339,8 +371,22 @@ static void vptr_debug_mem(int dl, const struct mem_s* mem)
 		debug_print_dims(dl, mem->shape.N, mem->shape.dims);
 	}
 
-	if (0 == mem->shape.N)
+	if (0 < mem->range.D) {
+
+		debug_printf(dl, "wraps %d virtual pointer:\n", mem->range.D);
+
+		for (int i = 0; i < mem->range.D; i++) {
+
+			debug_printf(dl, "%d: %p size: %lu, dims: ", i, mem->range.sub_ptr[i]->ptr, mem->range.sub_ptr[i]->shape.size);
+			debug_print_dims(dl, mem->range.sub_ptr[i]->shape.N, mem->range.sub_ptr[i]->shape.dims);
+		}
+	}
+
+	if ((0 == mem->shape.N) && (0 == mem->range.D))
 		debug_printf(dl, "ptr not initialized\n");
+
+	if (NULL != mem->backtrace)
+		debug_printf(dl, "allocated at:\n%s", mem->backtrace);
 }
 
 static int vptr_cmp(const void* _a, const void* _b)
@@ -366,7 +412,8 @@ static void handler(int /*sig*/, siginfo_t *si, void*)
 	if (mem) {
 
 		sleep((unsigned int)mpi_get_rank());
-		error("Virtual pointer at %x not resolved!\n Pointer was allocated at:\n%s", si->si_addr, mem->backtrace ?: "no backtrace available");
+		vptr_debug_mem(DP_ERROR, mem);
+		error("Virtual pointer at %p not resolved!\n", si->si_addr);
 	}
 
 #ifdef USE_CUDA
@@ -1219,6 +1266,7 @@ static bool mpi_accessible_from_mem(const struct mem_s* mem, const void* ptr, in
 
 bool mpi_accessible_from(const void* ptr, int rank)
 {
+	ptr = vptr_resolve_range(ptr);
 	auto mem = search(ptr, false);
 
 	return mpi_accessible_from_mem(mem, ptr, rank);
@@ -1241,8 +1289,12 @@ static bool mpi_accessible_from_mult(int N, const struct mem_s* mem[N], const vo
 }
 
 
-bool mpi_accessible_mult(int N, const void* ptr[N])
+bool mpi_accessible_mult(int N, const void* tptr[N])
 {
+	const void* ptr[N];
+	for (int i = 0; i < N; i++)
+		ptr[i] = vptr_resolve_range(tptr[i]);
+
 	const struct mem_s* mem[N];
 	for (int i = 0; i < N; i++)
 		mem[i] = search(ptr[i], false);
