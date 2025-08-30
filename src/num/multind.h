@@ -33,6 +33,7 @@ extern void md_unravel_index(int D, long pos[__VLA(D)], unsigned long flags, con
 extern void md_unravel_index_permuted(int D, long pos[__VLA(D)], unsigned long flags, const long dims[__VLA(D)], long index, const int order[__VLA(D)]);
 extern long md_ravel_index(int D, const long pos[__VLA(D)], unsigned long flags, const long dims[__VLA(D)]);
 extern long md_ravel_index_permuted(int D, const long pos[__VLA(D)], unsigned long flags, const long dims[__VLA(D)], const int order[__VLA(D)]);
+extern long md_reravel_index(int D, unsigned long rflags, unsigned long uflags, const long dims[__VLA(D)], long index);
 
 extern void md_nary(int C, int D, const long dim[__VLA(D)], const long* str[__VLA(C)], void* ptr[__VLA(C)], md_nary_fun_t fun);
 

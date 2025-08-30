@@ -2553,7 +2553,7 @@ void md_unravel_index(int D, long pos[D], unsigned long flags, const long dims[D
 }
 
 /**
- * Convert flat index to pos with according order 
+ * Convert flat index to pos with according order
  *
  */
 void md_unravel_index_permuted(int D, long pos[D], unsigned long flags, const long dims[D], long index, const int order[D])
@@ -2591,6 +2591,30 @@ long md_ravel_index(int D, const long pos[D], unsigned long flags, const long di
 	}
 
 	return ind;
+}
+
+
+static long md_reravel_index2(int D, unsigned long flags, const long dims[D], const long rstrs[D], const long ustrs[D], long index)
+{
+	long ret = 0;
+
+	for (int i = 0; i < D; i++)
+		if (MD_IS_SET(flags, i))
+			ret += (0 == ustrs[i]) ? 0 : ((index / ustrs[i]) % dims[i]) * rstrs[i];
+
+	return ret;
+}
+
+
+long md_reravel_index(int D, unsigned long rflags, unsigned long uflags, const long dims[D], long index)
+{
+	long rstrs[D];
+	long ustrs[D];
+
+	md_calc_strides_selected(D, rflags, rstrs, dims, 1);
+	md_calc_strides_selected(D, uflags, ustrs, dims, 1);
+
+	return md_reravel_index2(D, rflags, dims, rstrs, ustrs, index);
 }
 
 /**
