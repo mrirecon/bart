@@ -1242,3 +1242,190 @@ struct vptr_hint_s* vptr_get_hint(const void* ptr)
 	return (NULL != mem) ? mem->hint : NULL;
 }
 
+
+
+
+static struct vptr_mapped_dims_s* vptr_mem_map_dims(int N, const long odims[N], int D, const long* ostrs[D], const size_t size[D], void* ptr[D], const struct mem_s* mem[D], bool check_changed)
+{
+	int Nmem = 0;
+	for (int i = 0; i < D; i++)
+		if (NULL != mem[i])
+			Nmem = MAX(Nmem, mem[i]->shape.N);
+
+	int Nsize = MD_BIT(D);
+
+	int Nred = bitcount(md_nontriv_dims(N, odims));
+
+	long maxdims[Nmem + Nsize];
+	md_singleton_dims(Nmem + Nsize, maxdims);
+
+	long strs[D][Nred + Nmem + Nsize];
+
+	for (int i = 0; i < D; i++) {
+
+		md_singleton_strides(Nred + Nmem + Nsize, strs[i]);
+
+		if (NULL == mem[i])
+			continue;
+
+		long tdims[Nmem + Nsize];
+		md_singleton_dims(Nmem + Nsize, tdims);
+
+		md_copy_dims(mem[i]->shape.N, tdims, mem[i]->shape.dims);
+		md_calc_strides(Nmem, strs[i], tdims, mem[i]->shape.size);
+
+		for (int j = 0; j < Nsize; j++) {
+
+			if (MD_IS_SET((unsigned long)j, i))
+				continue;
+
+			strs[i][j + Nmem] = (long)size[i];
+			tdims[j + Nmem] = (long)mem[i]->shape.size / strs[i][j + Nmem];
+		}
+
+		md_max_dims(Nmem + Nsize, ~0UL, maxdims, maxdims, tdims);
+	}
+
+	unsigned long set_flag = 0UL;
+	bool split = false;
+
+	long dims[Nred + Nmem + Nsize];
+	md_singleton_dims(Nmem + Nsize, dims);
+
+	for (int i = 0, ip = Nmem + Nsize; i < N; i++) {
+
+		if (1 == odims[i])
+			continue;
+
+		for (int j = 0; j < D; j++)
+			strs[j][ip] = ostrs[j][i];
+
+		dims[ip] = odims[i];
+		ip++;
+	}
+
+	do {
+		split = false;
+
+		for (int j = Nmem + Nsize; j < Nred + Nmem + Nsize; j++) {
+
+			if (1 == dims[j])
+				continue;
+
+			for (int k = 0; k < Nmem + Nsize; k++) {
+
+				bool match = true;
+				for (int l = 0; l < D; l++) {
+
+					if (NULL == mem[l] && !MD_IS_SET(set_flag, l))
+						continue;
+
+					match = match && (strs[l][k] * dims[k] == strs[l][j]);
+				}
+
+				if (!match)
+					continue;
+
+				long dim = MIN(maxdims[k], dims[j]);
+
+				while ((0 != (dims[j] % dim)) || (0 != (maxdims[k] % dim)))
+					dim--;
+
+				if (1 < dim) {
+
+					maxdims[k] /= dim;
+					dims[k] *= dim;
+					dims[j] /= dim;
+
+					if (!MD_IS_SET(set_flag, k)) {
+
+						for (int l = 0; l < D; l++)
+							strs[l][k] = strs[l][j];
+
+						set_flag = MD_SET(set_flag, k);
+					}
+
+					for (int l = 0; l < D; l++)
+						strs[l][j] *= dim;
+
+					split = true;
+				}
+			}
+		}
+	} while (split);
+
+	if (1 == md_calc_size(Nmem, dims) && check_changed)
+		return NULL;
+
+	unsigned long flag = md_nontriv_dims(Nred + Nmem + Nsize, dims);
+
+	int Nnew = Nred + Nmem + Nsize;
+
+	long nstrs[D][Nnew];
+	for (int i = 0; i < D; i++)
+		md_select_strides(Nnew, flag, nstrs[i], strs[i]);
+
+	if (check_changed) {
+
+		bool same = (N >= Nmem);
+		same = same && md_check_equal_dims(Nmem, dims, odims, ~0UL);
+
+		for (int i = 0; i < D; i++)
+			same = same && md_check_equal_dims(Nmem, nstrs[i], ostrs[i], flag);
+
+		if (same)
+			return NULL;
+	}
+
+
+	PTR_ALLOC(struct vptr_mapped_dims_s, x);
+
+	x->N = Nnew;
+	x->dims = ARR_CLONE(long[x->N], dims);
+	x->D = D;
+	x->strs = ARR_CLONE(long[x->D * x->N], nstrs);
+	x->ptr = ARR_CLONE(void*[x->D], ptr);
+	x->next = NULL;
+
+	return PTR_PASS(x);
+}
+
+
+struct vptr_mapped_dims_s* vptr_map_dims(int N, const long dims[N], int D, const long* strs[D], const size_t size[D], void* ptr[D])
+{
+	const struct mem_s* mem[D];
+
+	void* tptr[D];
+	bool vptr = false;
+
+
+	for (int i = 0; i < D; i++) {
+
+		tptr[i] = vptr_resolve_range(ptr[i]);
+		mem[i] = search(tptr[i], false);
+
+		vptr = vptr || (NULL != mem[i]);
+	}
+
+	if (!vptr)
+		return NULL;
+
+	return vptr_mem_map_dims(N, dims, D, strs, size, tptr, mem, true);
+}
+
+
+
+
+struct vptr_mapped_dims_s* vptr_mapped_dims_free_and_next(struct vptr_mapped_dims_s* x)
+{
+	struct vptr_mapped_dims_s* ret = x->next;
+
+	xfree(x->dims);
+	xfree(x->strs);
+	xfree(x->ptr);
+	xfree(x);
+
+	return ret;
+}
+
+

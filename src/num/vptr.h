@@ -64,6 +64,20 @@ extern void mpi_set_reduction_buffer(const void* ptr);
 extern void mpi_unset_reduction_buffer(const void* ptr);
 extern _Bool mpi_is_reduction(int N, const long dims[__VLA(N)], const long ostrs[__VLA(N)], const void* optr, size_t osize, const long istrs[__VLA(N)], const void* iptr, size_t isize);
 
+struct vptr_mapped_dims_s {
+
+	int N;
+	long* dims;
+
+	int D;
+	long* strs;
+	void** ptr;
+
+	struct vptr_mapped_dims_s* next;
+};
+
+extern struct vptr_mapped_dims_s* vptr_map_dims(int N, const long dims[N], int D, const long* strs[D], const size_t size[D], void* ptr[D]);
+extern struct vptr_mapped_dims_s* vptr_mapped_dims_free_and_next(struct vptr_mapped_dims_s* x);
 
 
 
