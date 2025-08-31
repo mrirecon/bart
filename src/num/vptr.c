@@ -1014,7 +1014,7 @@ static void loop_access_dims(int N, unsigned long flags[N], const long adims[N],
 	}
 }
 
-static void check_valid_loop_access(const struct mem_s* mem , int N, const long dims[N], const long strs[N], size_t size, const void* ptr)
+static bool check_valid_loop_access(const struct mem_s* mem , int N, const long dims[N], const long strs[N], size_t size, const void* ptr, bool throw_error)
 {
 	const void* minp = ptr;
 	const void* maxp = ptr + size - 1;
@@ -1025,13 +1025,17 @@ static void check_valid_loop_access(const struct mem_s* mem , int N, const long 
 		maxp += MAX(0, (dims[i] - 1) * strs[i]);
 	}
 
-	if ((maxp >= mem->ptr + mem->len) || minp < mem->ptr) {
+	bool valid = !((maxp >= mem->ptr + mem->len) || minp < mem->ptr);
+
+	if (throw_error && !valid) {
 
 		debug_print_dims(DP_INFO, N, dims);
 		debug_print_dims(DP_INFO, N, strs);
 		vptr_debug_mem(DP_ERROR, mem);
 		error("Invalid vptr access at %p!\n", ptr);
 	}
+
+	return valid;
 }
 
 static void size_to_dims(int N, long odims[N + 1], const long idims[N], size_t size)
@@ -1061,7 +1065,7 @@ unsigned long vptr_block_loop_flags(int N, const long dims[N], const long strs[N
 
 	vptr_mem_block_init(&mem->blocks);
 
-	check_valid_loop_access(mem, N, dims, strs, size, ptr);
+	check_valid_loop_access(mem, N, dims, strs, size, ptr, true);
 
 	unsigned long lflags = mem->blocks.flags;
 	if (NULL != mem->hint)
@@ -1242,7 +1246,7 @@ bool mpi_accessible_mult(int N, const void* ptr[N])
 	bool reduce = false;
 
 	for (int i = 0; i < N; i++)
-		if (mem[i] &&mem[i]->reduction_buffer)
+		if (mem[i] && mem[i]->reduction_buffer)
 			reduce = true;
 
 	for (int i = 0; i < mpi_get_rank(); i++)
@@ -1317,6 +1321,22 @@ void mpi_unset_reduction_buffer(const void* ptr)
 
 bool mpi_is_reduction(int N, const long dims[N], const long ostrs[N], const void* optr, size_t osize, const long istrs[N], const void* iptr, size_t isize)
 {
+	struct vptr_mapped_dims_s* mdims = vptr_map_dims(N, dims, 2, (const long*[2]) { ostrs, istrs }, (const size_t[2]){ osize, isize }, (void*[2]){ (void*)optr, (void*)iptr });
+
+	if (NULL != mdims) {
+
+		bool ret = false;
+
+		while (NULL != mdims) {
+
+			const long (*mstrs)[mdims->D][mdims->N] = (void*) mdims->strs;
+			ret = ret || mpi_is_reduction(mdims->N, mdims->dims, (*mstrs)[0], mdims->ptr[0], osize, (*mstrs)[1], mdims->ptr[1], isize);
+			mdims = vptr_mapped_dims_free_and_next(mdims);
+		}
+
+		return ret;
+	}
+
 	if (!is_mpi(iptr))
 		return false;
 
@@ -1328,6 +1348,9 @@ bool mpi_is_reduction(int N, const long dims[N], const long ostrs[N], const void
 
 	if (imem->hint != omem->hint)
 		return true;
+
+	if (0 == (imem->hint->mpi_flags & md_nontriv_dims(imem->shape.N, imem->shape.dims)))
+		return false;
 
 	unsigned long flags = 0;
 	flags |= vptr_block_loop_flags(N, dims, istrs, iptr, isize, true);
@@ -1525,7 +1548,9 @@ struct vptr_mapped_dims_s* vptr_map_dims(int N, const long dims[N], int D, const
 	const struct mem_s* mem[D];
 
 	void* tptr[D];
+	bool valid = true;
 	bool vptr = false;
+	bool vptr_range = false;
 
 
 	for (int i = 0; i < D; i++) {
@@ -1533,16 +1558,45 @@ struct vptr_mapped_dims_s* vptr_map_dims(int N, const long dims[N], int D, const
 		tptr[i] = vptr_resolve_range(ptr[i]);
 		mem[i] = search(tptr[i], false);
 
+		valid = valid && ((NULL == mem[i]) || check_valid_loop_access(mem[i], N, dims, strs[i], size[i], tptr[i], false));
 		vptr = vptr || (NULL != mem[i]);
+		vptr_range = vptr_range || (tptr[i] != ptr[i]);
 	}
 
 	if (!vptr)
 		return NULL;
 
-	return vptr_mem_map_dims(N, dims, D, strs, size, tptr, mem, true);
+	if (valid)
+		return vptr_mem_map_dims(N, dims, D, strs, size, tptr, mem, !vptr_range);
+
+	if (1 != N)
+		error("Cannot split vptr range with non flat dimensions!\n");
+
+	long dim = dims[0];
+
+	for (int i = 0; i < D; i++) {
+
+		if ((0 == strs[i][0]) || NULL == mem[i])
+			continue;
+
+		if (0 > strs[i][0])
+			error("Cannot split vptr range with negative strides!\n"); //FIXME: should be possible
+
+		dim = MIN(dim, ((long)mem[i]->len - (tptr[i] - mem[i]->ptr)) / strs[i][0]);
+	}
+
+	assert(0 < dim);
+
+	struct vptr_mapped_dims_s* ret = vptr_mem_map_dims(1, &dim, D, strs, size, tptr, mem, false);
+
+	long rdim = dims[0] - dim;
+	for (int i = 0; i < D; i++)
+		tptr[i] = ptr[i] + dim * strs[i][0];
+
+	ret->next = 0 < rdim ? vptr_map_dims(1, &rdim, D, strs, size, tptr) : NULL;
+
+	return ret;
 }
-
-
 
 
 struct vptr_mapped_dims_s* vptr_mapped_dims_free_and_next(struct vptr_mapped_dims_s* x)
