@@ -253,8 +253,35 @@ static void make_2opd_simple(md_2opd_t fun, int D, const long dims[D], double* o
 	fun(D, dims, strs_double, optr, strs_single, iptr1);
 }
 
+static bool make_op_map_dims(int C, int D, const long dim[D], const long* str[C], void* ptr[C], const size_t size[C], md_nary_resolve_fun_t fun)
+{
+	struct vptr_mapped_dims_s* mdims = vptr_map_dims(D, dim, C, str, size, ptr);
+
+	if (NULL == mdims)
+		return false;
+
+	while (NULL != mdims) {
+
+		const long (*mstrs)[mdims->D][mdims->N] = (void*)mdims->strs;
+		const long* nstr[C];
+		for (int i = 0; i < C; i++)
+			nstr[i] = (*mstrs)[i];
+
+
+		NESTED_CALL(fun, (C, mdims->ptr, mdims->N, mdims->dims, nstr));
+
+		mdims = vptr_mapped_dims_free_and_next(mdims);
+	}
+
+	return true;
+}
+
 static void make_z3op(size_t offset, int D, const long dim[D], const long ostr[D], complex float* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)
 {
+	const long* strs[] = {  ostr, istr1, istr2 };
+	const size_t size[] = { sizeof(optr[0]), sizeof(iptr1[0]), sizeof(iptr2[0]) };
+	void* ptr[] = { optr, (void*)iptr1, (void*)iptr2 };
+
 	if (is_vptr(optr) || is_vptr(iptr1) || is_vptr(iptr2)) {
 
 		NESTED(void, nary_loop, (int C, void* ptr[C], int D, const long dims[D], const long* strs[C]))
@@ -262,7 +289,10 @@ static void make_z3op(size_t offset, int D, const long dim[D], const long ostr[D
 			make_z3op(offset, D, dims, strs[0], ptr[0], strs[1], ptr[1], strs[2], ptr[2]);
 		};
 
-		md_nary_resolve(3, D, dim, (const long*[3]) { ostr, istr1, istr2}, (void*[3]) { optr, (void*)iptr1, (void*)iptr2 }, nary_loop);
+		if (make_op_map_dims(ARRAY_SIZE(ptr), D, dim, strs, ptr, size, nary_loop))
+			return;
+
+		md_nary_resolve(3, D, dim, strs, ptr, nary_loop);
 		return;
 	}
 
@@ -294,6 +324,10 @@ static void make_z3op(size_t offset, int D, const long dim[D], const long ostr[D
 
 static void make_3op(size_t offset, int D, const long dim[D], const long ostr[D], float* optr, const long istr1[D], const float* iptr1, const long istr2[D], const float* iptr2)
 {
+	const long* strs[] = {  ostr, istr1, istr2 };
+	const size_t size[] = { sizeof(optr[0]), sizeof(iptr1[0]), sizeof(iptr2[0]) };
+	void* ptr[] = { optr, (void*)iptr1, (void*)iptr2 };
+
 	if (is_vptr(optr) || is_vptr(iptr1) || is_vptr(iptr2)) {
 
 		NESTED(void, nary_loop, (int C, void* ptr[C], int D, const long dims[D], const long* strs[C]))
@@ -301,7 +335,10 @@ static void make_3op(size_t offset, int D, const long dim[D], const long ostr[D]
 			make_3op(offset, D, dims, strs[0], ptr[0], strs[1], ptr[1], strs[2], ptr[2]);
 		};
 
-		md_nary_resolve(3, D, dim, (const long*[3]) { ostr, istr1, istr2}, (void*[3]) { optr, (void*)iptr1, (void*)iptr2 }, nary_loop);
+		if (make_op_map_dims(ARRAY_SIZE(ptr), D, dim, strs, ptr, size, nary_loop))
+			return;
+
+		md_nary_resolve(3, D, dim, strs, ptr, nary_loop);
 		return;
 	}
 
@@ -326,6 +363,10 @@ static void make_3op(size_t offset, int D, const long dim[D], const long ostr[D]
 
 static void make_z3opd(size_t offset, int D, const long dim[D], const long ostr[D], complex double* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)
 {
+	const long* strs[] = {  ostr, istr1, istr2 };
+	const size_t size[] = { sizeof(optr[0]), sizeof(iptr1[0]), sizeof(iptr2[0]) };
+	void* ptr[] = { optr, (void*)iptr1, (void*)iptr2 };
+
 	if (is_vptr(optr) || is_vptr(iptr1) || is_vptr(iptr2)) {
 
 		NESTED(void, nary_loop, (int C, void* ptr[C], int D, const long dims[D], const long* strs[C]))
@@ -333,7 +374,10 @@ static void make_z3opd(size_t offset, int D, const long dim[D], const long ostr[
 			make_z3opd(offset, D, dims, strs[0], ptr[0], strs[1], ptr[1], strs[2], ptr[2]);
 		};
 
-		md_nary_resolve(3, D, dim, (const long*[3]) { ostr, istr1, istr2}, (void*[3]) { optr, (void*)iptr1, (void*)iptr2 }, nary_loop);
+		if (make_op_map_dims(ARRAY_SIZE(ptr), D, dim, strs, ptr, size, nary_loop))
+			return;
+
+		md_nary_resolve(3, D, dim, strs, ptr, nary_loop);
 		return;
 	}
 
@@ -351,6 +395,10 @@ static void make_z3opd(size_t offset, int D, const long dim[D], const long ostr[
 
 static void make_3opd(size_t offset, int D, const long dim[D], const long ostr[D], double* optr, const long istr1[D], const float* iptr1, const long istr2[D], const float* iptr2)
 {
+	const long* strs[] = {  ostr, istr1, istr2 };
+	const size_t size[] = { sizeof(optr[0]), sizeof(iptr1[0]), sizeof(iptr2[0]) };
+	void* ptr[] = { optr, (void*)iptr1, (void*)iptr2 };
+
 	if (is_vptr(optr) || is_vptr(iptr1) || is_vptr(iptr2)) {
 
 		NESTED(void, nary_loop, (int C, void* ptr[C], int D, const long dims[D], const long* strs[C]))
@@ -358,7 +406,10 @@ static void make_3opd(size_t offset, int D, const long dim[D], const long ostr[D
 			make_3opd(offset, D, dims, strs[0], ptr[0], strs[1], ptr[1], strs[2], ptr[2]);
 		};
 
-		md_nary_resolve(3, D, dim, (const long*[3]) { ostr, istr1, istr2}, (void*[3]) { optr, (void*)iptr1, (void*)iptr2 }, nary_loop);
+		if (make_op_map_dims(ARRAY_SIZE(ptr), D, dim, strs, ptr, size, nary_loop))
+			return;
+
+		md_nary_resolve(3, D, dim, strs, ptr, nary_loop);
 		return;
 	}
 
@@ -376,6 +427,24 @@ static void make_3opd(size_t offset, int D, const long dim[D], const long ostr[D
 
 static void make_z2op(size_t offset, int D, const long dim[D], const long ostr[D], complex float* optr, const long istr1[D], const complex float* iptr1)
 {
+	const long* strs[] = {  ostr, istr1 };
+	const size_t size[] = { sizeof(optr[0]), sizeof(iptr1[0]) };
+	void* ptr[] = { optr, (void*)iptr1 };
+
+	if (is_vptr(optr) || is_vptr(iptr1)) {
+
+		NESTED(void, nary_loop, (int C, void* ptr[C], int D, const long dims[D], const long* strs[C]))
+		{
+			make_z2op(offset, D, dims, strs[0], ptr[0], strs[1], ptr[1]);
+		};
+
+		if (make_op_map_dims(ARRAY_SIZE(ptr), D, dim, strs, ptr, size, nary_loop))
+			return;
+
+		md_nary_resolve(ARRAY_SIZE(ptr), D, dim, strs, ptr, nary_loop);
+		return;
+	}
+
 	NESTED(void, nary_z2op, (struct nary_opt_data_s* data, void* ptr[]))
 	{
 		(*(z2op_t*)(((char*)data->ops) + offset))(data->size, ptr[0], ptr[1]);
@@ -386,6 +455,24 @@ static void make_z2op(size_t offset, int D, const long dim[D], const long ostr[D
 
 static void make_2op(size_t offset, int D, const long dim[D], const long ostr[D], float* optr, const long istr1[D], const float* iptr1)
 {
+	const long* strs[] = {  ostr, istr1 };
+	const size_t size[] = { sizeof(optr[0]), sizeof(iptr1[0]) };
+	void* ptr[] = { optr, (void*)iptr1 };
+
+	if (is_vptr(optr) || is_vptr(iptr1)) {
+
+		NESTED(void, nary_loop, (int C, void* ptr[C], int D, const long dims[D], const long* strs[C]))
+		{
+			make_2op(offset, D, dims, strs[0], ptr[0], strs[1], ptr[1]);
+		};
+
+		if (make_op_map_dims(ARRAY_SIZE(ptr), D, dim, strs, ptr, size, nary_loop))
+			return;
+
+		md_nary_resolve(ARRAY_SIZE(ptr), D, dim, strs, ptr, nary_loop);
+		return;
+	}
+
 	NESTED(void, nary_2op, (struct nary_opt_data_s* data, void* ptr[]))
 	{
 		(*(r2op_t*)(((char*)data->ops) + offset))(data->size, ptr[0], ptr[1]);
@@ -397,6 +484,24 @@ static void make_2op(size_t offset, int D, const long dim[D], const long ostr[D]
 __attribute__((unused))
 static void make_z2opd(size_t offset, int D, const long dim[D], const long ostr[D], complex double* optr, const long istr1[D], const complex float* iptr1)
 {
+	const long* strs[] = {  ostr, istr1 };
+	const size_t size[] = { sizeof(optr[0]), sizeof(iptr1[0]) };
+	void* ptr[] = { optr, (void*)iptr1 };
+
+	if (is_vptr(optr) || is_vptr(iptr1)) {
+
+		NESTED(void, nary_loop, (int C, void* ptr[C], int D, const long dims[D], const long* strs[C]))
+		{
+			make_z2opd(offset, D, dims, strs[0], ptr[0], strs[1], ptr[1]);
+		};
+
+		if (make_op_map_dims(ARRAY_SIZE(ptr), D, dim, strs, ptr, size, nary_loop))
+			return;
+
+		md_nary_resolve(ARRAY_SIZE(ptr), D, dim, strs, ptr, nary_loop);
+		return;
+	}
+
 	size_t sizes[2] = { sizeof(complex double), sizeof(complex float) };
 
 	NESTED(void, nary_z2opd, (struct nary_opt_data_s* data, void* ptr[]))
@@ -410,6 +515,24 @@ static void make_z2opd(size_t offset, int D, const long dim[D], const long ostr[
 
 static void make_2opd(size_t offset, int D, const long dim[D], const long ostr[D], double* optr, const long istr1[D], const float* iptr1)
 {
+	const long* strs[] = {  ostr, istr1 };
+	const size_t size[] = { sizeof(optr[0]), sizeof(iptr1[0]) };
+	void* ptr[] = { optr, (void*)iptr1 };
+
+	if (is_vptr(optr) || is_vptr(iptr1)) {
+
+		NESTED(void, nary_loop, (int C, void* ptr[C], int D, const long dims[D], const long* strs[C]))
+		{
+			make_2opd(offset, D, dims, strs[0], ptr[0], strs[1], ptr[1]);
+		};
+
+		if (make_op_map_dims(ARRAY_SIZE(ptr), D, dim, strs, ptr, size, nary_loop))
+			return;
+
+		md_nary_resolve(ARRAY_SIZE(ptr), D, dim, strs, ptr, nary_loop);
+		return;
+	}
+
 	NESTED(void, nary_2opd, (struct nary_opt_data_s* data, void* ptr[]))
 	{
 		(*(r2opd_t*)(((char*)data->ops) + offset))(data->size, ptr[0], ptr[1]);
@@ -420,6 +543,24 @@ static void make_2opd(size_t offset, int D, const long dim[D], const long ostr[D
 
 static void make_z2opf(size_t offset, int D, const long dim[D], const long ostr[D], complex float* optr, const long istr1[D], const complex double* iptr1)
 {
+	const long* strs[] = {  ostr, istr1 };
+	const size_t size[] = { sizeof(optr[0]), sizeof(iptr1[0]) };
+	void* ptr[] = { optr, (void*)iptr1 };
+
+	if (is_vptr(optr) || is_vptr(iptr1)) {
+
+		NESTED(void, nary_loop, (int C, void* ptr[C], int D, const long dims[D], const long* strs[C]))
+		{
+			make_z2opf(offset, D, dims, strs[0], ptr[0], strs[1], ptr[1]);
+		};
+
+		if (make_op_map_dims(ARRAY_SIZE(ptr), D, dim, strs, ptr, size, nary_loop))
+			return;
+
+		md_nary_resolve(ARRAY_SIZE(ptr), D, dim, strs, ptr, nary_loop);
+		return;
+	}
+
 	size_t sizes[2] = { sizeof(complex float), sizeof(complex double) };
 
 	NESTED(void, nary_z2opf, (struct nary_opt_data_s* data, void* ptr[]))
@@ -434,6 +575,24 @@ void* unused2 = make_z2opf;
 
 static void make_2opf(size_t offset, int D, const long dim[D], const long ostr[D], float* optr, const long istr1[D], const double* iptr1)
 {
+	const long* strs[] = {  ostr, istr1 };
+	const size_t size[] = { sizeof(optr[0]), sizeof(iptr1[0]) };
+	void* ptr[] = { optr, (void*)iptr1 };
+
+	if (is_vptr(optr) || is_vptr(iptr1)) {
+
+		NESTED(void, nary_loop, (int C, void* ptr[C], int D, const long dims[D], const long* strs[C]))
+		{
+			make_2opf(offset, D, dims, strs[0], ptr[0], strs[1], ptr[1]);
+		};
+
+		if (make_op_map_dims(ARRAY_SIZE(ptr), D, dim, strs, ptr, size, nary_loop))
+			return;
+
+		md_nary_resolve(ARRAY_SIZE(ptr), D, dim, strs, ptr, nary_loop);
+		return;
+	}
+
 	NESTED(void, nary_2opf, (struct nary_opt_data_s* data, void* ptr[]))
 	{
 		(*(r2opf_t*)(((char*)data->ops) + offset))(data->size, ptr[0], ptr[1]);
