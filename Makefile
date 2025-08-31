@@ -854,6 +854,7 @@ UTARGETS += test_linalg_rand
 MODULES_test_linalg_rand += -llinops
 ifeq ($(MPI),1)
 UTARGETS += test_mpi test_mpi_multind test_mpi_flpmath test_mpi_fft
+UTARGETS += test_mpi_reduction
 endif
 UTARGETS_GPU += test_cudafft test_cuda_flpmath test_cuda_flpmath2 test_cuda_gpukrnls test_cuda_convcorr test_cuda_multind test_cuda_shuffle test_cuda_memcache_clear test_cuda_rand
 
