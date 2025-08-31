@@ -668,6 +668,13 @@ long vptr_get_offset(const void* ptr)
 }
 
 
+size_t vptr_get_len(const void* ptr)
+{
+	struct mem_s* mem = search(ptr, false);
+	assert(mem);
+	return mem->len;
+}
+
 
 bool is_vptr(const void* ptr)
 {

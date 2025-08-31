@@ -37,6 +37,7 @@ extern void* vptr_resolve_range(const void* ptr);
 
 extern const struct vptr_shape_s* vptr_get_shape(const void* ptr);
 extern long vptr_get_offset(const void* ptr);
+extern size_t vptr_get_len(const void* ptr);
 
 extern _Bool is_vptr(const void* ptr);
 extern _Bool is_vptr_cpu(const void* ptr);
