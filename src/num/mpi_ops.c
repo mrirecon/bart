@@ -737,10 +737,8 @@ void* mpi_reduction_sum_buffer_create(const void* ptr)
 {
 	assert(is_vptr(ptr));
 
-	const struct vptr_shape_s* shape = vptr_get_shape(ptr);
-
-	void* buf = vptr_alloc_sameplace(shape->N, shape->dims, shape->size, ptr);
-	md_clear(shape->N, shape->dims, buf, shape->size);
+	void* buf = vptr_alloc_same(ptr);
+	vptr_clear(buf);
 
 	mpi_set_reduction_buffer(buf);
 
@@ -755,14 +753,40 @@ void mpi_reduction_sum_buffer(float* optr, float* rptr)
 	optr -= vptr_get_offset(optr);
 	rptr -= vptr_get_offset(rptr);
 
-	const struct vptr_shape_s* shape = vptr_get_shape(optr);
+	long dims[] = { (long)vptr_get_len(optr) / (long)FL_SIZE };
+	long stride[] = { (long)FL_SIZE };
+	const long* strides[] = { stride, stride };
+	size_t sizes[] = { FL_SIZE, FL_SIZE };
+	void* ptr[] = { optr, rptr };
 
-	assert(FL_SIZE == shape->size || CFL_SIZE == shape->size);
+	struct vptr_mapped_dims_s* mdims = vptr_map_dims(1, dims, 2, strides, sizes, ptr);
 
-	if (FL_SIZE == shape->size)
-		mpi_reduce_sum(shape->N, shape->dims, optr, rptr);
-	else
-		mpi_reduce_zsum(shape->N, shape->dims, (complex float*)optr, (complex float*)rptr);
+	if (NULL != mdims) {
+
+		while (NULL != mdims) {
+
+			const struct vptr_shape_s* shape = vptr_get_shape(mdims->ptr[0]);
+
+			assert(FL_SIZE == shape->size || CFL_SIZE == shape->size);
+
+			if (FL_SIZE == shape->size)
+				mpi_reduce_sum(shape->N, shape->dims, mdims->ptr[0], mdims->ptr[1]);
+			else
+				mpi_reduce_zsum(shape->N, shape->dims, mdims->ptr[0], mdims->ptr[1]);
+
+			mdims = vptr_mapped_dims_free_and_next(mdims);
+		}
+	} else {
+
+		const struct vptr_shape_s* shape = vptr_get_shape(optr);
+
+		assert(FL_SIZE == shape->size || CFL_SIZE == shape->size);
+
+		if (FL_SIZE == shape->size)
+			mpi_reduce_sum(shape->N, shape->dims, optr, rptr);
+		else
+			mpi_reduce_zsum(shape->N, shape->dims, (complex float*)optr, (complex float*)rptr);
+	}
 
 	md_free(rptr);
 }
@@ -775,14 +799,40 @@ void mpi_reduction_sumD_buffer(double* optr, double* rptr)
 	optr -= vptr_get_offset(optr);
 	rptr -= vptr_get_offset(rptr);
 
-	const struct vptr_shape_s* shape = vptr_get_shape(optr);
+	long dims[] = { (long)vptr_get_len(optr) / (long)DL_SIZE };
+	long stride[] = { (long)DL_SIZE };
+	const long* strides[] = { stride, stride };
+	size_t sizes[] = { DL_SIZE, DL_SIZE };
+	void* ptr[] = { optr, rptr };
 
-	assert(DL_SIZE == shape->size || CDL_SIZE == shape->size);
+	struct vptr_mapped_dims_s* mdims = vptr_map_dims(1, dims, 2, strides, sizes, ptr);
 
-	if (DL_SIZE == shape->size)
-		mpi_reduce_sumD(shape->N, shape->dims, optr, rptr);
-	else
-		mpi_reduce_zsumD(shape->N, shape->dims, (complex double*)optr, (complex double*)rptr);
+	if (NULL != mdims) {
+
+		while (NULL != mdims) {
+
+			const struct vptr_shape_s* shape = vptr_get_shape(mdims->ptr[0]);
+
+			assert(DL_SIZE == shape->size || CDL_SIZE == shape->size);
+
+			if (DL_SIZE == shape->size)
+				mpi_reduce_sumD(shape->N, shape->dims, mdims->ptr[0], mdims->ptr[1]);
+			else
+				mpi_reduce_zsumD(shape->N, shape->dims, mdims->ptr[0], mdims->ptr[1]);
+
+			mdims = vptr_mapped_dims_free_and_next(mdims);
+		}
+	} else {
+
+		const struct vptr_shape_s* shape = vptr_get_shape(optr);
+
+		assert(DL_SIZE == shape->size || CDL_SIZE == shape->size);
+
+		if (DL_SIZE == shape->size)
+			mpi_reduce_sumD(shape->N, shape->dims, optr, rptr);
+		else
+			mpi_reduce_zsumD(shape->N, shape->dims, (complex double*)optr, (complex double*)rptr);
+	}
 
 	md_free(rptr);
 }
