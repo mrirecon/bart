@@ -83,6 +83,8 @@ extern struct vptr_mapped_dims_s* vptr_map_dims(int N, const long dims[N], int D
 extern struct vptr_mapped_dims_s* vptr_mapped_dims_free_and_next(struct vptr_mapped_dims_s* x);
 
 
+extern void vptr_debug(int dl, const void* ptr);
+
 
 #include "misc/cppwrap.h"
 

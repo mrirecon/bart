@@ -389,6 +389,21 @@ static void vptr_debug_mem(int dl, const struct mem_s* mem)
 		debug_printf(dl, "allocated at:\n%s", mem->backtrace);
 }
 
+static struct mem_s* search(const void* ptr, bool remove);
+
+void vptr_debug(int dl, const void* ptr)
+{
+	struct mem_s* mem = search(ptr, false);
+
+	if (NULL == mem) {
+
+		debug_printf(dl, "Not a virtual pointer: %p\n", ptr);
+		return;
+	}
+
+	vptr_debug_mem(dl, mem);
+}
+
 static int vptr_cmp(const void* _a, const void* _b)
 {
 	const struct mem_s* a = _a;
@@ -400,7 +415,6 @@ static int vptr_cmp(const void* _a, const void* _b)
 	return (a->ptr > b->ptr) ? 1 : -1;
 }
 
-static struct mem_s* search(const void* ptr, bool remove);
 
 #ifndef BARTLIB_EXPORTS
 static struct sigaction old_sa;
