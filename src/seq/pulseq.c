@@ -206,6 +206,9 @@ static void grad_to_pulseq(int grad_id[3], struct pulseq *ps, struct seq_sys sys
 	seq_compute_gradients(MAX_GRAD_POINTS, g, 10., N, ev);
 	long grad_len = (seq_block_end_flat(N, ev) + seq_block_rdt(N, ev)) / GRAD_RASTER_TIME;
 
+	if (0 == grad_len)
+		grad_len = 1; // dummy
+
 	double g_axis[grad_len];
 
 	for (int a = 0; a < 3; a++) {
@@ -218,7 +221,6 @@ static void grad_to_pulseq(int grad_id[3], struct pulseq *ps, struct seq_sys sys
 		auto _tmp = tmp_shape.values;
 		VEC_ADD(ps->shapes, tmp_shape);
 		(void)_tmp;
-		//VEC_ADD(ps->shapes, make_compressed_shape(sid, grad_len, g_axis));
 
 		grad_id[a] = ps->gradients->len + 1;
 		struct gradient g = { 
