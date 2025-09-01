@@ -98,6 +98,7 @@ struct seq_magn {
 
 	enum mag_prep mag_prep;
 	double ti; // us
+	double init_delay_sec; // sec
 };
 
 struct seq_sys {

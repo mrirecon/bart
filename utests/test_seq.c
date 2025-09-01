@@ -237,9 +237,9 @@ static bool test_raga_spokes_full(void)
 UT_REGISTER_TEST(test_raga_spokes_full);
 
 
-static bool test_block_minv(void)
+static bool test_block_minv_init_delay(void)
 {
-	const enum block blocks[16] = { BLOCK_KERNEL_NOISE, BLOCK_PRE,
+	const enum block blocks[16] = { BLOCK_PRE, BLOCK_KERNEL_NOISE, BLOCK_PRE,
 		BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE,
 		BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE,
 		BLOCK_PRE,
@@ -250,6 +250,7 @@ static bool test_block_minv(void)
 	struct seq_state seq_state = { 0 };;
 	struct seq_config seq = seq_config_defaults;
 	seq.enc.order = SEQ_ORDER_AVG_OUTER;
+	seq.magn.init_delay_sec = 1;
 	seq.magn.ti = 100;
 	seq.magn.mag_prep = PREP_IR_NON;
 
@@ -280,20 +281,23 @@ static bool test_block_minv(void)
 		if (BLOCK_PRE == seq_state.mode)
 			pre_blocks++;
 
-		if ((BLOCK_PRE == seq_state.mode) && (1. * seq.magn.ti != (ev[E - 1].end - ev[E - 1].start)))
+		// correct delay_meas_time
+		if ((BLOCK_PRE == seq_state.mode) && (1 == E) && (1.E6 * seq.magn.init_delay_sec != seq_block_end(E, ev, seq_state.mode, seq.phys.tr)))
+			return false;
+		else if ((BLOCK_PRE == seq_state.mode) && (1 < E) && (1. * seq.magn.ti != (ev[E - 1].end - ev[E - 1].start)))
 			return false;
 
 		i++;
 
 	} while (seq_continue(&seq_state, &seq));
 
-	if (2 != pre_blocks)
+	if (3 != pre_blocks)
 		return false;
 
 	return true;
 }
 
-UT_REGISTER_TEST(test_block_minv);
+UT_REGISTER_TEST(test_block_minv_init_delay);
 
 
 static bool test_block_minv_multislice(void)

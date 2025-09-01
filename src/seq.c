@@ -111,6 +111,7 @@ int main_seq(int argc, char* argv[argc])
 		// magnetization preparation
 		OPTL_SELECT(0, "IR_NON", enum mag_prep, &seq.magn.mag_prep, PREP_IR_NON, "Magn. preparation: Nonselective Inversion (default: off)"),
 		OPTL_DOUBLE(0, "TI", &seq.magn.ti, "TI", "Inversion time [us]"),
+		OPTL_DOUBLE(0, "init_delay", &seq.magn.init_delay_sec, "init_delay_sec", "Initial delay of measurement (seconds)"),
 
 		// gradient mode
 		OPTL_SELECT(0, "gradient-normal", enum gradient_mode, &gradient_mode, GRAD_NORMAL, "Gradient normal mode (default: fast)"),

@@ -245,7 +245,12 @@ int seq_block(int N, struct seq_event ev[N], struct seq_state* seq_state, const 
 
 	if (0 == seq_state->pos[COEFF_DIM]) {
 
-		if (md_check_equal_dims(DIMS, (zeros[COEFF2_DIM] = 1, zeros), seq_state->pos, ~0UL)) {
+		if (md_check_equal_dims(DIMS, zeros, seq_state->pos, ~0UL)) {
+
+			seq_state->mode = BLOCK_PRE;
+			return wait_time_to_event(ev, 0., 1.E6 * seq->magn.init_delay_sec);
+		}
+		else if (md_check_equal_dims(DIMS, (zeros[COEFF2_DIM] = 1, zeros), seq_state->pos, ~0UL)) {
 
 			seq_state->mode = BLOCK_KERNEL_NOISE;
 
