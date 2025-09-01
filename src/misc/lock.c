@@ -148,7 +148,8 @@ void bart_cond_notify_all(bart_cond_t* cond)
 #else
 	cnd_broadcast(&cond->cnd);
 #endif
-
+#else
+	(void)cond;
 #endif
 }
 
