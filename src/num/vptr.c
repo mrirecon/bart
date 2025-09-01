@@ -1490,7 +1490,7 @@ static struct vptr_mapped_dims_s* vptr_mem_map_dims(int N, const long odims[N], 
 
 		md_singleton_strides(Nred + Nmem + Nsize, strs[i]);
 
-		if (NULL == mem[i])
+		if (NULL == mem[i] || 1 == mem[i]->shape.N)
 			continue;
 
 		long tdims[Nmem + Nsize];
@@ -1542,7 +1542,7 @@ static struct vptr_mapped_dims_s* vptr_mem_map_dims(int N, const long odims[N], 
 				bool match = true;
 				for (int l = 0; l < D; l++) {
 
-					if (NULL == mem[l] && !MD_IS_SET(set_flag, l))
+					if (((NULL == mem[l]) || (1 == mem[l]->shape.N)) && !MD_IS_SET(set_flag, l))
 						continue;
 
 					match = match && (strs[l][k] * dims[k] == strs[l][j]);
