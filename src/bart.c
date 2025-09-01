@@ -410,10 +410,8 @@ static bool loop_step(long start, long total, long workers, long* idx, long *idx
 
 	if (NULL != ref_stream) {
 
-	#ifdef USE_MPI
-
-		error("Non-Sequential loops not implemented for MPI.\n");
-	#endif
+		if (1 < mpi_get_num_procs())
+			error("Non-Sequential loops not implemented for MPI.\n");
 
 		long dims[DIMS];
 		long stream_dims[DIMS];
@@ -471,10 +469,8 @@ static bool loop_step(long start, long total, long workers, long* idx, long *idx
 
 
 	//FIXME : Loop Order breaks random number test.
-	#ifdef USE_MPI
-	if (*idx_p != *idx)
+	if ((1 < mpi_get_num_procs()) && (*idx_p != *idx))
 		error("Non-Sequential loops not implemented for MPI.\n");
-	#endif
 
 	return true;
 }
