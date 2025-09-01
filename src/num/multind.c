@@ -417,11 +417,8 @@ void md_select_dims(int D, unsigned long flags, long odims[D], const long idims[
  */
 void md_select_strides(int D, unsigned long flags, long ostrs[D], const long istrs[D])
 {
-       md_copy_dims(D, ostrs, istrs);
-
-       for (int i = 0; i < D; i++)
-               if (!MD_IS_SET(flags, i))
-                       ostrs[i] = 0;
+	for (int i = 0; i < D; i++)
+		ostrs[i] = MD_IS_SET(flags, i) ? istrs[i] : 0;
 }
 
 /**
