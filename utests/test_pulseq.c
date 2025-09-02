@@ -100,7 +100,7 @@ static bool test_rf_shape1(void)
 	seq_sample_rf_shapes(1, pulse, &seq);
 
 	struct pulseq ps;
-	pulseq_init(&ps);
+	pulseq_init(&ps, &seq);
 
 	pulse_shapes_to_pulseq(&ps, 1, pulse);
 
@@ -144,7 +144,7 @@ static bool test_rf_shape2(void)
 	seq_sample_rf_shapes(2, pulse, &seq);
 
 	struct pulseq ps;
-	pulseq_init(&ps);
+	pulseq_init(&ps, &seq);
 
 	pulse_shapes_to_pulseq(&ps, 2, pulse);
 
@@ -194,7 +194,7 @@ static bool test_events_to_pulseq(void)
 	int e = flash(20, &ev[0], &seq_state, &seq);
 
 	struct pulseq ps;
-	pulseq_init(&ps);
+	pulseq_init(&ps, &seq);
 
 	struct rf_shape pulse[1];
 	seq_sample_rf_shapes(1, pulse, &seq);

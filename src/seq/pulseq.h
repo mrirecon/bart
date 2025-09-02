@@ -74,6 +74,7 @@ struct pulseq {
 	double gradient_raster_time;
 	double block_raster_time;
 	double rf_raster_time;
+	double fov[3];
 	double total_duration;
 
 	VEC(struct ps_block) *ps_blocks;
@@ -86,7 +87,7 @@ struct pulseq {
 
 #undef VEC
 
-extern void pulseq_init(struct pulseq *ps);
+extern void pulseq_init(struct pulseq *ps, const struct seq_config* seq);
 extern void pulseq_free(struct pulseq *ps);
 
 extern void pulse_shapes_to_pulseq(struct pulseq *ps, int N, const struct rf_shape rf_shapes[__VLA(N)]);

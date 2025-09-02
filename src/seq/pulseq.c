@@ -128,7 +128,7 @@ static struct shape make_compressed_shape(int id, int len, const double val[len]
 	return shape;
 }
 
-void pulseq_init(struct pulseq *ps)
+void pulseq_init(struct pulseq *ps, const struct seq_config* seq)
 {
 	ps->version[0] = 1;
 	ps->version[1] = 4;
@@ -137,6 +137,9 @@ void pulseq_init(struct pulseq *ps)
 	ps->gradient_raster_time = 1.e-5;
 	ps->block_raster_time = 1.e-5;
 	ps->rf_raster_time = 1.e-6;
+	ps->fov[0] = 1.e-3 * seq->geom.fov;
+	ps->fov[1] = 1.e-3 * seq->geom.fov;
+	ps->fov[2] = 1.e-3 * seq->geom.slice_thickness * seq->loop_dims[SLICE_DIM];
 	ps->total_duration = 0.;
 
 
@@ -339,6 +342,7 @@ void pulseq_writef(FILE *fp, struct pulseq *ps)
 	fprintf(fp, "BlockDurationRaster %.e\n", ps->block_raster_time);
 	fprintf(fp, "GradientRasterTime %.e\n", ps->gradient_raster_time);
 	fprintf(fp, "RadiofrequencyRasterTime %.e\n", ps->rf_raster_time);
+	fprintf(fp, "FOV %.3f %.3f %.3f \n", ps->fov[0], ps->fov[1], ps->fov[2]);
 	fprintf(fp, "TotalDuration %.5f\n", ps->total_duration);
 
 	fprintf(fp, "\n\n# Format of blocks:\n");

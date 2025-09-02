@@ -246,7 +246,7 @@ int main_seq(int argc, char* argv[argc])
 
 	if (NULL != seq_file) {
 
-		pulseq_init(&ps);
+		pulseq_init(&ps, &seq);
 		pulse_shapes_to_pulseq(&ps, rfs, rf_shapes);
 	}
 
