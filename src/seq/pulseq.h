@@ -10,7 +10,7 @@
 struct ps_block {
 
 	int num;
-	uint64_t dur;
+	unsigned long dur;
 	int rf;
 	int g[3];
 	int adc;
@@ -22,17 +22,17 @@ struct gradient {
 	double amp;
 	int shape_id;
 	int time_id;
-	uint64_t delay;
+	unsigned long delay;
 };
 
 struct trapezoid {
 
 	int id;
 	double amp;
-	uint64_t rise;
-	uint64_t flat;
-	uint64_t fall;
-	uint64_t delay;
+	unsigned long rise;
+	unsigned long flat;
+	unsigned long fall;
+	unsigned long delay;
 };
 
 struct rfpulse {
@@ -42,7 +42,7 @@ struct rfpulse {
 	int mag_id;
 	int ph_id;
 	int time_id;
-	uint64_t delay;
+	unsigned long delay;
 	double freq;
 	double phase;
 };
@@ -50,9 +50,9 @@ struct rfpulse {
 struct adc {
 
 	int id;
-	uint64_t num;
-	uint64_t dwell;
-	uint64_t delay;
+	unsigned long num;
+	unsigned long dwell;
+	unsigned long delay;
 	double freq;
 	double phase;
 };

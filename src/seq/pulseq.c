@@ -48,15 +48,15 @@ do {									\
 
 
 #define SECTIONS(X) X(VERSION) X(DEFINITIONS) X(BLOCKS) X(GRADIENTS) X(TRAP) X(RF) X(ADC) X(SHAPES) X(SIGNATURE)
-#define BLOCKS_FORMAT "%4d %ld %d %d %d %d %d %d"
+#define BLOCKS_FORMAT "%4d %lu %d %d %d %d %d %d"
 #define BLOCKS_ACCESS(X) X(num) X(dur) X(rf) X(g[0]) X(g[1]) X(g[2]) X(adc) X(ext)
-#define GRADIENTS_FORMAT "%d %lf %d %d %ld"
+#define GRADIENTS_FORMAT "%d %lf %d %d %lu"
 #define GRADIENTS_ACCESS(X) X(id) X(amp) X(shape_id) X(time_id) X(delay)
-#define TRAP_FORMAT "%d %lf %ld %ld %ld %ld"
+#define TRAP_FORMAT "%d %lf %lu %lu %lu %lu"
 #define TRAP_ACCESS(X) X(id) X(amp) X(rise) X(flat) X(fall) X(delay)
-#define ADC_FORMAT "%d %ld %ld %ld %lf %lf"
+#define ADC_FORMAT "%d %lu %lu %lu %lf %lf"
 #define ADC_ACCESS(X) X(id) X(num) X(dwell) X(delay) X(freq) X(phase)
-#define RF_FORMAT "%d %lf %d %d %d %ld %lf %lf"
+#define RF_FORMAT "%d %lf %d %d %d %lu %lf %lf"
 #define RF_ACCESS(X) X(id) X(mag) X(mag_id) X(ph_id) X(time_id) X(delay) X(freq) X(phase)
 
 
