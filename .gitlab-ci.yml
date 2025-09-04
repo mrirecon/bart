@@ -606,6 +606,20 @@ RockyLinux_9:
     - make all -j8
     - make utest -j8
 
+RockyLinux_10:
+  variables:
+    DEBUG: "0"
+    DEBUG_DWARF: "0"
+  rules:
+    - if: $CI_DISTRO_TESTS == "1"
+  stage: distro_build
+  image: docker.io/rockylinux:10
+  script:
+    - dnf --enablerepo=crb install -y fftw-devel openblas-devel libpng-devel lapack-devel gcc
+    - echo -e -n "OPENBLAS=1\nCPPFLAGS=-Wall -Wextra -I/usr/include/openblas\n" > Makefiles/Makefile.local
+    - make all -j8
+    - make utest -j8
+
 Ubuntu_22.04:
   variables:
     DEBUG: "0"

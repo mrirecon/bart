@@ -135,6 +135,14 @@ To install the required libraries on Redhat / Centos / RockyLinux / AlmaLinux 9 
 
 Note that crb (CodeReady Builder) is the new name of powertools from RedHat 9, which contains additional development packages.
 
+To install the required libraries on Redhat / Centos / RockyLinux / AlmaLinux 10 run:
+
+    $ sudo dnf --enablerepo=crb install  fftw-devel openblas-devel libpng-devel lapack-devel gcc
+
+and the following command in the bart repository, to actually use Openblas:
+
+    $ echo -e -n "OPENBLAS=1\nCPPFLAGS=-Wall -Wextra -I/usr/include/openblas\n" > Makefiles/Makefile.local
+
 To install the required libraries on  Fedora 39/40 run:
 
     $ sudo dnf install gcc make fftw-devel lapack-devel openblas-devel atlas-devel libpng-devel
