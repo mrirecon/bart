@@ -582,15 +582,13 @@ void cmdline_synth(void (*print)(const char* str, ...), int n, const struct opt_
 
 			case OPT_VECN:
 
-				{
-					struct opt_vec_s *ovn = opts[i].ptr;
-					vn = ovn->ptr;
-					count = *ovn->count;
-				}
+				struct opt_vec_s *ovn = opts[i].ptr;
+				vn = ovn->ptr;
+				count = *ovn->count;
 				break;
 
 			default:
-				assert(0);
+				unreachable();
 			}
 
 			for (int j = 0; j < count; j++) {
@@ -628,15 +626,13 @@ void cmdline_synth(void (*print)(const char* str, ...), int n, const struct opt_
 
 			case OPT_FLOAT_VECN:
 
-				{
-					struct opt_vec_s *ovn = opts[i].ptr;
-					fvn = ovn->ptr;
-					count = *ovn->count;
-				}
+				struct opt_vec_s *ovn = opts[i].ptr;
+				fvn = ovn->ptr;
+				count = *ovn->count;
 				break;
 
 			default:
-				assert(0);
+				unreachable();
 			}
 
 			for (int j = 0; j < count; j++) {
@@ -653,6 +649,7 @@ void cmdline_synth(void (*print)(const char* str, ...), int n, const struct opt_
 
 			double (*dvn)[];
 			count = 3;
+
 			switch (opts[i].type) {
 
 			case OPT_DOUBLE_VEC3:
@@ -662,15 +659,13 @@ void cmdline_synth(void (*print)(const char* str, ...), int n, const struct opt_
 
 			case OPT_DOUBLE_VECN:
 
-				{
-					struct opt_vec_s *ovn = opts[i].ptr;
-					dvn = ovn->ptr;
-					count = *ovn->count;
-				}
+				struct opt_vec_s *ovn = opts[i].ptr;
+				dvn = ovn->ptr;
+				count = *ovn->count;
 				break;
 
 			default:
-				assert(0);
+				unreachable();
 			}
 
 			for (int j = 0; j < count; j++) {

@@ -512,7 +512,7 @@ void rf_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[
                 rot_pulse(data, N, P, xp);
                 break;
 
-        case SIM_ODE: {
+        case SIM_ODE:
 
 		float gb_eff[3];
 		void *gb_eff_p = gb_eff;	// clang workaround
@@ -576,7 +576,7 @@ void rf_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[
 		// Choose P-1 because ODE interface treats signal separate and P only describes the number of parameters
 		ode_direct_sa(h, tol, N, P - 1, xp, data->pulse.rf_start, data->pulse.rf_end, call_fun, call_pdy2, call_pdp2);
 
-	}	break;
+		break;
 
         case SIM_STM:
 
@@ -625,7 +625,7 @@ void relaxation2(struct sim_data* data, float h, float tol, int N, int P, float 
                 hard_relaxation(data, N, P, xp, st, end, r2spoil);
                 break;
 
-        case SIM_ODE: {
+        case SIM_ODE:
 
 		float gb_eff[3];
 		void *gb_eff_p = gb_eff;	// clang workaround
@@ -697,7 +697,7 @@ void relaxation2(struct sim_data* data, float h, float tol, int N, int P, float 
 		// Choose P-1 because ODE interface treats signal separate and P only describes the number of parameters
 		ode_direct_sa(h, tol, N, P - 1, xp, st, end, call_fun, call_pdy2, call_pdp2);
 
-	}	break;
+		break;
 
         case SIM_STM:
 

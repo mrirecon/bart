@@ -130,7 +130,7 @@ static bool opt_reg(void* ptr, char c, const char* optarg)
 
 	switch (c) {
 
-	case 'R': {
+	case 'R':
 
 		// first get transform type
 		int ret = sscanf(optarg, "%4[^:]", rt);
@@ -142,14 +142,14 @@ static bool opt_reg(void* ptr, char c, const char* optarg)
 			regs[r].xform = L1WAV;
 			int ret = sscanf(optarg, "%*[^:]:%lu:%lu:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
 			assert(3 == ret);
-		}
-		else if (strcmp(rt, "L") == 0) {
+
+		} else if (strcmp(rt, "L") == 0) {
 
 			regs[r].xform = LLR;
 			int ret = sscanf(optarg, "%*[^:]:%lu:%lu:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
 			assert(3 == ret);
-		}
-		else if (strcmp(rt, "M") == 0) {
+
+		} else if (strcmp(rt, "M") == 0) {
 
 			regs[r].xform = regs[0].xform;
 			regs[r].xflags = regs[0].xflags;
@@ -159,58 +159,57 @@ static bool opt_reg(void* ptr, char c, const char* optarg)
 			regs[0].xform = MLR;
 			int ret = sscanf(optarg, "%*[^:]:%lu:%lu:%f", &regs[0].xflags, &regs[0].jflags, &regs[0].lambda);
 			assert(3 == ret);
-		}
-		else if (strcmp(rt, "T") == 0) {
+
+		} else if (strcmp(rt, "T") == 0) {
 
 			regs[r].xform = TV;
 			int ret = sscanf(optarg, "%*[^:]:%lu:%lu:%f", &regs[r].xflags, &regs[r].jflags, &regs[r].lambda);
 			assert(3 == ret);
 			p->algo = ADMM;
-		}
-		else if (strcmp(rt, "R1") == 0) {
+
+		} else if (strcmp(rt, "R1") == 0) {
 
 			regs[r].xform = IMAGL1;
 			int ret = sscanf(optarg, "%*[^:]:%lu:%f", &regs[r].jflags, &regs[r].lambda);
 			assert(2 == ret);
 			regs[r].xflags = 0u;
 			p->algo = ADMM;
-		}
-		else if (strcmp(rt, "R2") == 0) {
+
+		} else if (strcmp(rt, "R2") == 0) {
 
 			regs[r].xform = IMAGL2;
 			int ret = sscanf(optarg, "%*[^:]:%lu:%f", &regs[r].jflags, &regs[r].lambda);
 			assert(2 == ret);
 			regs[r].xflags = 0u;
 			p->algo = ADMM;
-		}
-		else if (strcmp(rt, "I") == 0) {
+
+		} else if (strcmp(rt, "I") == 0) {
 
 			regs[r].xform = L1IMG;
 			int ret = sscanf(optarg, "%*[^:]:%lu:%f", &regs[r].jflags, &regs[r].lambda);
 			assert(2 == ret);
 			regs[r].xflags = 0u;
-		}
-		else if (strcmp(rt, "Q") == 0) {
+
+		} else if (strcmp(rt, "Q") == 0) {
 
 			regs[r].xform = L2IMG;
 			int ret = sscanf(optarg, "%*[^:]:%f", &regs[r].lambda);
 			assert(1 == ret);
 			regs[r].xflags = 0u;
 			regs[r].jflags = 0u;
-		}
-		else if (strcmp(rt, "h") == 0) {
+
+		} else if (strcmp(rt, "h") == 0) {
 
 			help_reg();
 			return 0;
-		}
-		else {
+
+		} else {
 
 			error("Unrecognized regularization type: \"%s\" (-Rh for help).\n", rt);
 		}
 
 		p->r++;
 		break;
-	}
 
 	case 'l':
 		assert(r < NUM_REGS);
@@ -223,8 +222,7 @@ static bool opt_reg(void* ptr, char c, const char* optarg)
 			regs[r].xform = L1WAV;
 			regs[r].xflags = 7u;
 
-		} else
-		if (0 == strcmp("2", optarg)) {
+		} else if (0 == strcmp("2", optarg)) {
 
 			regs[r].xform = L2IMG;
 
@@ -507,7 +505,7 @@ int main_sqpics(int argc, char* argv[argc])
 
 		switch (regs[nr].xform) {
 
-		case L1WAV: {
+		case L1WAV:
 
 			debug_printf(DP_INFO, "l1-wavelet regularization: %f\n", regs[nr].lambda);
 
@@ -529,7 +527,7 @@ int main_sqpics(int argc, char* argv[argc])
 
 			trafos[nr] = linop_identity_create(DIMS, img_dims);
 			thresh_ops[nr] = prox_wavelet_thresh_create(DIMS, img_dims, wflags, regs[nr].jflags, WAVELET_DAU2, minsize, regs[nr].lambda, randshift);
-		}	break;
+			break;
 
 		case TV:
 			debug_printf(DP_INFO, "TV regularization: %f\n", regs[nr].lambda);
@@ -540,7 +538,7 @@ int main_sqpics(int argc, char* argv[argc])
 					regs[nr].lambda, regs[nr].jflags | MD_BIT(DIMS));
 			break;
 
-		case LLR: {
+		case LLR:
 			debug_printf(DP_INFO, "lowrank regularization: %f\n", regs[nr].lambda);
 
 			// add locally lowrank penalty
@@ -560,9 +558,9 @@ int main_sqpics(int argc, char* argv[argc])
 
 			trafos[nr] = linop_identity_create(DIMS, img_dims);
 			thresh_ops[nr] = lrthresh_create(img_dims, randshift, regs[nr].xflags, (const long (*)[DIMS])blkdims, regs[nr].lambda, false, remove_mean, false);
-		}	break;
+			break;
 
-		case MLR: {
+		case MLR:
 
 			debug_printf(DP_INFO, "multi-scale lowrank regularization: %f\n", regs[nr].lambda);
 
@@ -584,7 +582,7 @@ int main_sqpics(int argc, char* argv[argc])
 			linop_free(decom_op);
 			linop_free(tmp_op);
 
-		}	break;
+			break;
 
 		case IMAGL1:
 			debug_printf(DP_INFO, "l1 regularization of imaginary part: %f\n", regs[nr].lambda);

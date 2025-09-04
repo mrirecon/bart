@@ -69,7 +69,7 @@ static void post_process(enum mdb_t mode, const struct linop_s* op, struct moba_
         // Estimate effective flip angle from R1'
 	// FIXME: Move to separate function which can be tested with a unit test
 
-	case MDB_T1_PHY: {
+	case MDB_T1_PHY:
 
 		float r1p_nom = read_relax(data->sim.seq.tr, DEG2RAD(CAST_UP(&data->sim.pulse.sinc)->flipangle));
 
@@ -106,7 +106,7 @@ static void post_process(enum mdb_t mode, const struct linop_s* op, struct moba_
 
 		md_free(offset);
 
-	} 	break;
+		break;
 
 	// IR multi-echo gradient echo model
 

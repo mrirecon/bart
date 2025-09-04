@@ -398,7 +398,7 @@ CFLAGS += -fblocks
 else
 # only add if not clang, as it doesn't understand this:
 ifeq ($(GCCVERSION14), 1)
-CFLAGS += -Wuseless-cast -Wjump-misses-init
+CFLAGS += -Wuseless-cast
 else
 ifeq ($(GCCVERSION12), 1)
 CFLAGS += -Wno-vla-parameter -Wno-nonnull -Wno-maybe-uninitialized
