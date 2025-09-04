@@ -10,6 +10,7 @@
 #include <stdbool.h>
 
 #include "num/multind.h"
+#include "num/rand.h"
 
 #include "misc/debug.h"
 #include "misc/mri.h"
@@ -125,6 +126,8 @@ int main_seq(int argc, char* argv[argc])
 
 		OPTL_SET(0, "support", &support, "save support points of gradient"),
 	};
+
+	num_rand_init(0ULL);
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
