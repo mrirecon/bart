@@ -360,18 +360,16 @@ void load_network_data(struct network_data_s* nd)
 	else
 		compute_adjoint_cart(nd);
 
-	unmap_cfl(DIMS, nd->pat_dims, nd->pattern);
-	md_singleton_dims(DIMS, nd->pat_dims);
-	nd->pattern = NULL;
-
 	if (nd->create_out) {
 
 		md_copy_dims(DIMS, nd->out_dims, nd->img_dims);
-		nd->out = create_cfl(nd->filename_out, DIMS, nd->img_dims);
+		nd->out = create_cfl(nd->filename_out, DIMS, nd->out_dims);
 
 	} else {
 
 		nd->out = load_cfl(nd->filename_out, DIMS, nd->out_dims);
+
+		if (! sense_model_get_noncart(nd->conf))
 		assert(    md_check_equal_dims(DIMS, nd->img_dims, nd->out_dims, ~0UL)
 			|| md_check_equal_dims(DIMS, nd->cim_dims, nd->out_dims, ~0UL) );
 	}
@@ -458,7 +456,7 @@ void free_network_data(struct network_data_s* nd)
 	unmap_cfl(nd->ND, nd->psf_dims, nd->psf);
 	unmap_cfl(DIMS, nd->img_dims, nd->adjoint);
 	unmap_cfl(DIMS, nd->col_dims, nd->coil);
-	unmap_cfl(DIMS, nd->img_dims, nd->out);
+	unmap_cfl(DIMS, nd->out_dims, nd->out);
 	if (NULL != nd->trajectory)
 		unmap_cfl(DIMS, nd->trj_dims, nd->trajectory);
 	if (NULL != nd->pattern)
@@ -475,7 +473,7 @@ void free_network_data(struct network_data_s* nd)
 static void merge_slice_to_batch_dim(int N, const long bat_dims[N], long dims[N], complex float** data)
 {
 	unsigned long bat_flags = md_nontriv_dims(N, bat_dims);
-	
+
 	long tbat_dims[N];
 	long tdims[N];
 
@@ -489,7 +487,7 @@ static void merge_slice_to_batch_dim(int N, const long bat_dims[N], long dims[N]
 		for (int i = 0; i < N; i++)
 			if (MD_IS_SET(bat_flags, i))
 				tdims[i] = bat_dims[i];
-		
+
 		complex float* tdata = anon_cfl("", N, tdims);
 
 		md_copy2(N, tdims, MD_STRIDES(N, tdims, CFL_SIZE), tdata, MD_STRIDES(N, dims, CFL_SIZE), *data, CFL_SIZE);
@@ -530,19 +528,19 @@ void network_data_slice_dim_to_batch_dim(struct network_data_s* nd)
 struct named_data_list_s* network_data_get_named_list(struct network_data_s* nd)
 {
 	auto train_data_list = named_data_list_create();
-	
+
 	if (NULL != nd->kspace)
 		named_data_list_append(train_data_list, nd->N, nd->ksp_dims, nd->kspace, "kspace");
-	
+
 	if (NULL != nd->coil)
 		named_data_list_append(train_data_list, nd->N, nd->col_dims, nd->coil, "coil");
-	
+
 	if (NULL != nd->psf)
 		named_data_list_append(train_data_list, nd->ND, nd->psf_dims, nd->psf, "psf");
-	
+
 	if (NULL != nd->pattern)
 		named_data_list_append(train_data_list, nd->N, nd->pat_dims, nd->pattern, "pattern");
-		
+
 	if (NULL != nd->adjoint)
 		named_data_list_append(train_data_list, nd->N, nd->img_dims, nd->adjoint, "adjoint");
 

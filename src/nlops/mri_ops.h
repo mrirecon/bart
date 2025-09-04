@@ -17,7 +17,8 @@ extern int sense_model_get_N(struct config_nlop_mri_s* model);
 extern void sense_model_get_img_dims(struct config_nlop_mri_s* model, int N, long img_dims[N]);
 extern void sense_model_get_col_dims(struct config_nlop_mri_s* model, int N, long col_dims[N]);
 extern void sense_model_get_cim_dims(struct config_nlop_mri_s* model, int N, long cim_dims[N]);
-
+extern void sense_model_get_ksp_dims(struct config_nlop_mri_s* model, int N, long ksp_dims[N]);
+extern _Bool sense_model_get_noncart(const struct config_nlop_mri_s* model);
 
 extern void sense_model_config_free(const struct config_nlop_mri_s* x);
 
@@ -41,6 +42,8 @@ extern const struct nlop_s* nlop_sense_normal_inv_create(int Nb, struct sense_mo
 extern const struct nlop_s* nlop_sense_dc_prox_create(int Nb, struct sense_model_s* models[Nb], struct iter_conjgrad_conf* iter_conf, unsigned long lambda_flags);
 extern const struct nlop_s* nlop_sense_dc_grad_create(int Nb, struct sense_model_s* models[Nb], unsigned long lambda_flags);
 extern const struct nlop_s* nlop_sense_scale_maxeigen_create(int Nb, struct sense_model_s* models[Nb], int N, const long dims[N]);
+
+extern const struct nlop_s* nlop_mri_loss_create(_Bool fft, int Nb, struct sense_model_s* models[Nb]);
 
 extern const struct nlop_s* nlop_mri_normal_create(int Nb, const struct config_nlop_mri_s* conf);
 extern const struct nlop_s* nlop_mri_normal_inv_create(int N, const long lam_dims[N], int Nb, const struct config_nlop_mri_s* conf, struct iter_conjgrad_conf* iter_conf);
