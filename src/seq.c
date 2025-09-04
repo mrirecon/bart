@@ -61,6 +61,7 @@ int main_seq(int argc, char* argv[argc])
 
 	seq.enc.order = SEQ_ORDER_AVG_OUTER;
 
+	bool chrono = false;
 	bool support = false;
 
 	const struct opt_s opts[] = {
@@ -94,6 +95,8 @@ int main_seq(int argc, char* argv[argc])
 		OPTL_UINT(0, "pe_mode", &seq.enc.pe_mode, "pe_mode", "Phase-encoding mode"),
 		OPTL_SELECT(0, "raga", enum pe_mode, &seq.enc.pe_mode, PEMODE_RAGA, "RAGA PE"),
 		OPTL_SELECT(0, "raga_al", enum pe_mode, &seq.enc.pe_mode, PEMODE_RAGA_ALIGNED, "RAGA-aligned PE (default: RAGA)"),
+
+		OPTL_SET(0, "chrono", &chrono, "save gradients/moments/sampling in chronological order (RAGA)"),
 
 		OPTL_PINT(0, "tiny", &seq.enc.tiny, "tiny", "Tiny golden-ratio index"),
 
@@ -140,6 +143,9 @@ int main_seq(int argc, char* argv[argc])
 		samples = (0. > dt) ? 1000 : (seq.phys.tr / dt);
 
 	double ddt = (0 > dt) ? seq.phys.tr / samples : ceil(dt * 1.e6) / 1.e6; //FIXME breaks with float
+
+	if ((PEMODE_RAGA != seq.enc.pe_mode) && (PEMODE_RAGA_ALIGNED != seq.enc.pe_mode))
+		chrono = true;
 
 	// FIXME, this should be moved in system configurations
 	switch (gradient_mode) {
@@ -282,19 +288,31 @@ int main_seq(int argc, char* argv[argc])
 		compute_moment0(samples, m0, ddt, E, ev);
 
 
-		long grad_pos[DIMS];
-		md_copy_dims(DIMS, grad_pos, seq_state.pos);
-		grad_pos[PHS2_DIM] = seq_state.pos[PHS1_DIM];
-		grad_pos[PHS1_DIM] = 0;
+		long pos_save[DIMS];
+		md_copy_dims(DIMS, pos_save, seq_state.pos);
+
+
+		if (!chrono) {
+
+			int adc_idx = events_idx(0, SEQ_EVENT_ADC, E, ev);
+
+			if (0 > adc_idx)
+				error("No ADC found - try chronologic ordering");
+
+			md_copy_dims(DIMS, pos_save, ev[adc_idx].adc.pos);
+		}
+
+		pos_save[PHS2_DIM] = pos_save[PHS1_DIM];
+		pos_save[PHS1_DIM] = 0;
 
 		do {
 			if (NULL != out_grad)
-				MD_ACCESS(DIMS, mstrs, grad_pos, out_grad) = g2[grad_pos[PHS1_DIM]][grad_pos[READ_DIM]];
+				MD_ACCESS(DIMS, mstrs, pos_save, out_grad) = g2[pos_save[PHS1_DIM]][pos_save[READ_DIM]];
 
 			if (NULL != out_mom)
-				MD_ACCESS(DIMS, mstrs, grad_pos, out_mom) = m0[grad_pos[PHS1_DIM]][grad_pos[READ_DIM]];
+				MD_ACCESS(DIMS, mstrs, pos_save, out_mom) = m0[pos_save[PHS1_DIM]][pos_save[READ_DIM]];
 
-		} while (md_next(DIMS, mdims, (READ_FLAG | PHS1_FLAG), grad_pos));
+		} while (md_next(DIMS, mdims, (READ_FLAG | PHS1_FLAG), pos_save));
 
 		if (NULL != out_adc) {
 
@@ -306,29 +324,24 @@ int main_seq(int argc, char* argv[argc])
 
 			float scale = (seq.phys.dwell / seq.phys.os) * ro_amplitude(&seq);
 
-			long adc_pos[DIMS];
-			md_copy_dims(DIMS, adc_pos, seq_state.pos);
-			adc_pos[PHS2_DIM] = seq_state.pos[PHS1_DIM];
-			adc_pos[PHS1_DIM] = 0;
-
 			do {
-				assert(0 == adc_pos[READ_DIM]);
+				assert(0 == pos_save[READ_DIM]);
 
-				moment_sum(m0_adc, MD_ACCESS(DIMS, adc_strs, adc_pos, adc), E, ev);
+				moment_sum(m0_adc, MD_ACCESS(DIMS, adc_strs, pos_save, adc), E, ev);
 
 				for (int i = 0; i < 3; i++)
 					m0_adc[i] = m0_adc[i] / scale;
 
-				MD_ACCESS(DIMS, astrs, (adc_pos[READ_DIM] = 0, adc_pos), out_adc) = MD_ACCESS(DIMS, adc_strs, (adc_pos[READ_DIM] = 0, adc_pos), adc);
-				MD_ACCESS(DIMS, astrs, (adc_pos[READ_DIM] = 1, adc_pos), out_adc) = MD_ACCESS(DIMS, adc_strs, (adc_pos[READ_DIM] = 1, adc_pos), adc);
+				MD_ACCESS(DIMS, astrs, (pos_save[READ_DIM] = 0, pos_save), out_adc) = MD_ACCESS(DIMS, adc_strs, (pos_save[READ_DIM] = 0, pos_save), adc);
+				MD_ACCESS(DIMS, astrs, (pos_save[READ_DIM] = 1, pos_save), out_adc) = MD_ACCESS(DIMS, adc_strs, (pos_save[READ_DIM] = 1, pos_save), adc);
 
-				MD_ACCESS(DIMS, astrs, (adc_pos[READ_DIM] = 2, adc_pos), out_adc) = m0_adc[0];
-				MD_ACCESS(DIMS, astrs, (adc_pos[READ_DIM] = 3, adc_pos), out_adc) = m0_adc[1];
-				MD_ACCESS(DIMS, astrs, (adc_pos[READ_DIM] = 4, adc_pos), out_adc) = m0_adc[2];
+				MD_ACCESS(DIMS, astrs, (pos_save[READ_DIM] = 2, pos_save), out_adc) = m0_adc[0];
+				MD_ACCESS(DIMS, astrs, (pos_save[READ_DIM] = 3, pos_save), out_adc) = m0_adc[1];
+				MD_ACCESS(DIMS, astrs, (pos_save[READ_DIM] = 4, pos_save), out_adc) = m0_adc[2];
 
-				adc_pos[READ_DIM] = 0;
+				pos_save[READ_DIM] = 0;
 
-			} while (md_next(DIMS, adims, PHS1_FLAG | TE_FLAG, adc_pos));
+			} while (md_next(DIMS, adims, PHS1_FLAG | TE_FLAG, pos_save));
 
 			md_free(adc);
 		}
