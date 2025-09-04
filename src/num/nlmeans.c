@@ -1,18 +1,15 @@
-/* Copyright 2023. Institute of Biomedical Imaging. TU Graz.
+/* Copyright 2023 - 2025. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
 
 #include <complex.h>
 #include <assert.h>
-#include <math.h>
 
 #include "misc/misc.h"
-#include "misc/debug.h"
 
 #include "num/multind.h"
 #include "num/flpmath.h"
-#include "num/loop.h"
 
 #include "nlmeans.h"
 
@@ -22,196 +19,118 @@
  * Buades, A, Coll B, Morel J-M. A non-local algorithm for image denoising.
  * IEEE Computer Society Conference on Computer Vision and Pattern Recognition (CVPR'05); 2005.
  */
-void md_znlmeans2(int D, const long dim[D], unsigned long flags,
+void md_znlmeans2(int D, const long dims[D], unsigned long flags,
 		const long ostrs[D], complex float* optr,
 		const long istrs[D], const complex float* iptr,
 		long patch_length, long patch_dist, float h, float a)
 {
 	assert(1 == patch_length % 2);
 
-	bool multi = true;
-	bool parallel = true;
-
-	int reflect_dist = patch_dist + patch_length / 2;
-
 	int flag_count = bitcount(flags);
 	int xD = D + flag_count;
-	unsigned long xflags = 0; // ! unsigned ! because long could be only 32 bit -> plusminus 2 ^ 16
-
-	long r_patchcenter_offset[D];
-
-	long fdim[D];
-	long rdim[D];
-	long xdim[xD];
-
-	long weight_full_dim[xD];
-	long weight_1_dim[xD];
-	long w_weight_dim[xD];
-	long n_dim[D];
-
-	long patch_dim[xD];
-
-	long rstrs[D];
-	long n_str[D];
-	long n_full_str[D];
-	long ostr2[D];
-
-	long xstr[xD];
-	long weight_full_str[xD];
-	long weight_1_str[xD];
-	long w_weight_str[xD];
-	long patch_str[xD];
-
-	md_select_dims(D, flags, fdim, dim);
-	md_copy_dims(D, rdim, dim);
-	md_copy_dims(D, xdim, dim);
-	md_copy_dims(D, weight_full_dim, dim);
-	md_set_dims(xD, w_weight_dim, 1);
-
-	md_set_dims(xD, weight_1_dim, 1);
-	md_copy_dims(D, weight_1_dim, dim);
-
-	md_copy_dims(D, patch_dim, dim);
-	md_set_dims(D, r_patchcenter_offset, 0);
-
-	md_select_dims(D, ~flags, n_dim, dim);
+	long dist_size = 2 * patch_dist + 1; // number of pixels along one dim that will be used for the mean
+	long padding_img = 2 * (patch_dist + patch_length / 2); // size difference input img vs input for sliding differences, along flagged dims
+	long padding_diff = 2 * (patch_length / 2); // size difference input img vs result of sliding differences
 
 
-	for (int i = 0; i < D; i++) {
+	long weight_dims[xD + flag_count]; // size of weight-space: values with which pixels will be weighted.
+					   // [0..D] pixel for which mean is calculated (output pixel)
+					   // [D..D+flag_count] pixel to which this weight applies. Relative offset to output pixel in flagged dims. (input pixel)
+					   // [D+flag_count..D+2*flag_count] neighborhood / patch around input pixel, in flagged dims. Used with patch_strides, not allocated
+	md_copy_dims(D, weight_dims, dims);
+	md_set_dims(flag_count, weight_dims + D, dist_size);
+	md_set_dims(flag_count, weight_dims + xD, patch_length);
 
-		if (MD_IS_SET(flags, i)) {
+	long weight_strs[xD + flag_count];
+	md_calc_strides(xD, weight_strs, weight_dims, CFL_SIZE);
+	md_set_dims(flag_count, weight_strs + xD, 0); // weights = accumulated patches, thus stride = 0 in the last dims
 
-			rdim[i] += 2 * reflect_dist;
 
-			r_patchcenter_offset[i] = patch_length / 2;
+	long* kernel_dims = weight_dims + xD; // size of gaussian pdf for weighted euclidean norm of patches
+	long kernel_strs[xD + flag_count];
+	md_set_dims(xD, kernel_strs, 0);
+	md_calc_strides(flag_count, kernel_strs + xD, kernel_dims, CFL_SIZE);
 
-			patch_dim[i] = 2 * patch_dist + 1;
-			patch_dim[D + i] = patch_length;
 
-			weight_full_dim[i + D] = patch_dim[i];
-			weight_1_dim[i] = patch_dim[i];
+	long pad_dims[D]; // size of padded image
+	for (int i = 0; i < D; i++)
+		pad_dims[i] = MD_IS_SET(flags, i) ? dims[i] + padding_img : dims[i];
 
-			w_weight_dim[D + i] = patch_dim[D + i];
+	long pad_strs[xD];
+	md_set_dims(xD, pad_strs, 0);
+	md_calc_strides(D, pad_strs, pad_dims, CFL_SIZE);
 
-			xdim[i] = dim[i] + 2 * (patch_length / 2);
-			xdim[D + i] = 2 * patch_dist + 1;
+	for (int i = 0, j = 0; i < D; i++)
+		if (MD_IS_SET(flags, i))
+			pad_strs[D + (j++)] = pad_strs[i];
 
-			xflags = MD_SET(xflags, D + i);
-		}
-	}
 
-	md_calc_strides(xD, xstr, xdim, CFL_SIZE);
-	md_calc_strides(xD, weight_full_str, weight_full_dim, CFL_SIZE);
-	md_copy_strides(xD, patch_str, xstr);
-	md_copy_strides(xD, weight_1_str, weight_full_str);
+	long diff_dims[xD]; // size of difference images
+	for (int i = 0; i < D; i++)
+		diff_dims[i] = MD_IS_SET(flags, i) ? dims[i] + padding_diff : dims[i] ;
+
+	md_set_dims(flag_count, diff_dims + D, dist_size);
+
+	long diff_strs[xD];
+	md_calc_strides(xD, diff_strs, diff_dims, CFL_SIZE);
+
+
+	long patch_strs[xD + flag_count]; // another view on difference images: difference of patches of own and neighbouring pixels
+	md_copy_strides(xD, patch_strs, diff_strs);
+	for (int i = 0, j = 0; i < D; i++)
+		if (MD_IS_SET(flags, i))
+			patch_strs[xD + (j++)] = diff_strs[i];
+
+
+	long r_patchcenter_offset[D]; // index to center of first patch
+	for (int i = 0; i < D; i++)
+		r_patchcenter_offset[i] = MD_IS_SET(flags, i) ?  patch_length / 2 : 0;
+
+
+	long ostr2[xD]; // extended output strides for accumulation into output
+	md_set_dims(xD, ostr2, 0);
 	md_copy_strides(D, ostr2, ostrs);
 
-	md_calc_strides(D, n_full_str, dim, CFL_SIZE);
-	md_copy_strides(D, n_str, n_full_str);
 
-	md_calc_strides(xD, w_weight_str, w_weight_dim, CFL_SIZE);
-	md_calc_strides(D, rstrs, rdim, CFL_SIZE);
+	complex float* diff = md_alloc_sameplace(xD, diff_dims, CFL_SIZE, iptr);
+	complex float* weight = md_alloc_sameplace(xD, weight_dims, CFL_SIZE, iptr);
+	complex float* kernel = md_alloc_sameplace(flag_count, kernel_dims, CFL_SIZE, iptr);
+	complex float* padded = md_alloc_sameplace(D, pad_dims, CFL_SIZE, iptr);
 
-	for (int i = 0; i < D; i++) {
-
-		if (MD_IS_SET(flags, i)) {
-
-			n_str[i] = 0;
-			ostr2[i] = 0;
-
-			patch_str[i] = xstr[i + D];
-			patch_str[i + D] = xstr[i];
-
-			// weight_1 'reuses' the flag dimensions, as they become free from summing over a patch,
-			// for the patch distance. weight_full has these in D+[0 .. flag_count].
-			weight_1_str[i] = weight_full_str[i + D];
-			weight_1_str[i + D] = 0;
-		}
-	}
-
-
-
-	complex float* r_in = md_calloc(D, rdim, CFL_SIZE);
-	complex float* x = md_calloc(xD, xdim, CFL_SIZE);
-	complex float* weight_full_vec = md_calloc(xD, multi ? weight_full_dim : weight_1_dim, CFL_SIZE);
-	complex float* n_full_vec = md_calloc(D, dim, CFL_SIZE);
-	complex float* w_weight = md_alloc(xD, w_weight_dim, CFL_SIZE);
-
-
-
-	// Create extended input: reflectpad
-	md_reflectpad_center2(D, rdim, rstrs, r_in, dim, istrs, iptr, CFL_SIZE);
-	complex float* r_patchcenter = &MD_ACCESS(D, rstrs, r_patchcenter_offset, r_in);
-
-	// 'precompute' x(N(i)) - x(N(j)): xdim[0:D] stores i,  xdim[D:xD] stores (i-j)
-	md_znlmeans_distance2(D, rdim, xD, xdim, flags, xstr, x, rstrs, r_in);
-	md_zmulc2(xD, xdim, xstr, x, xstr, x, xstr, x);
+	// pad input
+	md_reflectpad_center2(D, pad_dims, pad_strs, padded, dims, istrs, iptr, CFL_SIZE);
 
 	// gauss kernel for distance-weighted euclidean norm
-	md_zgausspdf(xD, w_weight_dim, w_weight, powf(a, 2));
-	md_zsmul(xD, w_weight_dim, w_weight, w_weight, 1. / md_znorm(xD, w_weight_dim, w_weight)); // don't interfere with h_factor.
+	md_zgausspdf(flag_count, kernel_dims, kernel, a * a);
 
-	md_clear2(D, dim, ostrs, optr, CFL_SIZE);
+	// compute difference images: diff(N(i)) - diff(N(j)), diff_dims[0:D] stores i,  diff_dims[D:xD] stores (i-j)
+	md_znlmeans_distance2(D, pad_dims, xD, diff_dims, flags, diff_strs, diff, pad_strs, padded);
+	// square differences
+	md_zmulc2(xD, diff_dims, diff_strs, diff, diff_strs, diff, diff_strs, diff);
 
+	// weighted sum of squared differences (convolution in original paper; but kernel is symmetric, thus equivalent to pointwise multiplication & summation)
+	md_clear(xD, weight_dims, weight, CFL_SIZE);
+	md_zfmac2(xD + flag_count, weight_dims, weight_strs, weight, patch_strs, diff, kernel_strs, kernel);
 
-	// needed for clang
-	const long *a_weight_full_str = &weight_full_str[0];
-	const long *a_weight_1_dim = &weight_1_dim[0];
-	const long *a_weight_1_str = &weight_1_str[0];
-	const long *a_w_weight_str = &w_weight_str[0];
-	const long *a_patch_dim = &patch_dim[0];
-	const long *a_patch_str = &patch_str[0];
-	const long *a_n_dim = &n_dim[0];
-	const long *a_n_str = &n_str[0];
-	const long *a_n_full_str = &n_full_str[0];
-	const long *a_ostrs = &ostrs[0];
-	const long *a_ostr2 = &ostr2[0];
-	const long *a_rstrs = &rstrs[0];
-	const long *a_xstr = &xstr[0];
+	// exponential
+	float var = -1. / (2. * h * h) / md_znorm(flag_count, kernel_dims, kernel);
+	md_zsmul2(xD, weight_dims, weight_strs, weight, weight_strs, weight, var);
+	md_zexp2(xD, weight_dims, weight_strs, weight, weight_strs, weight);
 
-	// loop over pixels
-	NESTED(void, znlmeans_core, (const long im_pos[]))
-	{
-		complex float* weight_vec = multi ? &MD_ACCESS(D, a_weight_full_str, im_pos, weight_full_vec) : weight_full_vec;
-		complex float* n_vec = multi ? &MD_ACCESS(D, a_n_full_str, im_pos, n_full_vec) : n_full_vec;
+	// normalize
+	md_clear2(D, dims, ostrs, optr, CFL_SIZE);
+	md_zadd2(xD, weight_dims, ostr2, optr, ostr2, optr, weight_strs, weight);
+	md_zdiv2(xD, weight_dims, weight_strs, weight, weight_strs, weight, ostr2, optr);
 
-		/* Creative use of strides:
-		 * flag dim:
-		 *   - patch_dim and weight_1_dim have (2 x patch distance + 1) size in flag dimensions
-		 *   - weight_1_str is 'normal': -> loop over image position
-		 *   - patch_str is 'swapped'  : -> loop over patch location (in D+... dimensions)
-		 * xflag dim:
-		 *   - patch_dim has patch_length in xflag dimensions
-		 *   - weight_1_str is 0    -> accumulate
-		 *   - patch_str is swapped -> loop over image position, i.e. patch (difference) content.
-		 */
-		// weighted (!) euclidean distance ^ 2. (convolution in the original paper; but w_weights is symmetric, thus equivalent to pointwise multiplication & summation)
-
-		md_zfmac2(xD, a_patch_dim, a_weight_1_str, weight_vec,
-				a_patch_str, &MD_ACCESS(D, a_xstr, im_pos, x),
-				a_w_weight_str, w_weight);
-
-		// exponential
-		md_zsmul2(xD, a_weight_1_dim, a_weight_1_str, weight_vec, a_weight_1_str, weight_vec, -1. / (2. * h * h));
-		md_zexp2(D, a_weight_1_dim, a_weight_1_str, weight_vec, a_weight_1_str, weight_vec);
-
-		// normalize
-		md_clear(D, a_n_dim, n_vec, CFL_SIZE);
-		md_zadd2(D, a_weight_1_dim, a_n_str, n_vec, a_n_str, n_vec, a_weight_1_str, weight_vec);
-		md_zdiv2(D, a_weight_1_dim, a_weight_1_str, weight_vec, a_weight_1_str, weight_vec, a_n_str, n_vec);
-
-		// patch center x weight
-		md_zfmac2(D, a_weight_1_dim, a_ostr2, &MD_ACCESS(D, a_ostrs, im_pos, optr), a_weight_1_str, weight_vec, a_rstrs, &MD_ACCESS(D, a_rstrs, im_pos, r_patchcenter));
-	};
-
-	md_parallel_loop(D, fdim, parallel ? ~0UL : 0UL, znlmeans_core);
+	// weighted average of patch centers
+	md_clear2(D, dims, ostrs, optr, CFL_SIZE);
+	md_zfmac2(xD, weight_dims, ostr2, optr, weight_strs, weight, pad_strs, &MD_ACCESS(D, pad_strs, r_patchcenter_offset, padded));
 
 
-	md_free(x);
-	md_free(r_in);
-	md_free(weight_full_vec);
-	md_free(n_full_vec);
-	md_free(w_weight);
+	md_free(diff);
+	md_free(padded);
+	md_free(weight);
+	md_free(kernel);
 }
 
 void md_znlmeans(int D, const long dim[D], unsigned long flags,
@@ -232,60 +151,39 @@ void md_znlmeans_distance2(int D, const long idim[D], int xD,
 		const long ostrs[xD], complex float* optr,
 		const long istrs[D], const complex float* iptr)
 {
+	int flag_count = bitcount(flags);
+
 	assert(xD > D);
+	assert(xD - D == flag_count);
+	assert(flags < MD_BIT(D));
 
-	int flag_count = 0;
-	long loop_idx[D];
-	long r_patchstart_offset[D];
-	long ipos[D];
-	long xpos[xD];
-	unsigned long xflags = 0;
+	long ioffset[D];
+	md_set_dims(D, ioffset, 0);
 
-	for (int i = 0; i < D; i++) {
+	long istrs_moving[xD];
+	md_copy_strides(D, istrs_moving, istrs);
 
-		loop_idx[i] = 0;
-		r_patchstart_offset[i] = 0;
+	long istrs_fix[xD];
+	md_copy_strides(D, istrs_fix, istrs);
+
+	for (int i = 0, j = 0; i < D; i++) {
 
 		if (MD_IS_SET(flags, i)) {
 
-			assert(xD > D + flag_count);
-			assert(1 == odim[D + flag_count] % 2);
+			istrs_moving[D + j] = istrs[i];
+			istrs_fix[D + j] = 0;
 
-			long patch_dist = (odim[D + flag_count] - 1) / 2;
+			int diff = idim[i] - odim[i];
+			assert(diff + 1 == odim[D + i]);
+			assert(0 == diff % 2);
 
-			assert(2 * patch_dist == idim[i] - odim[i]);
-
-			loop_idx[flag_count] = i;
-			r_patchstart_offset[i] = patch_dist;
-
-			xflags = MD_SET(xflags, D + flag_count);
-			++flag_count;
-
-		} else {
-
-			assert(odim[i] == idim[i]);
+			ioffset[i] = diff / 2;
+			j++;
 		}
 	}
 
-	assert(flag_count == (xD - D));
-
-	const complex float* r_patchstart = &MD_ACCESS(D, istrs, r_patchstart_offset, iptr);
-
-	md_set_dims(D, ipos, 0);
-	md_set_dims(xD, xpos, 0);
-
-	do {
-
-		for (int i = 0; i < flag_count; i++)
-			ipos[loop_idx[i]] = xpos[i + D] - (odim[D + i] - 1) / 2;
-
-		md_zsub2(D, odim, ostrs, &MD_ACCESS(xD, ostrs, xpos, optr),
-				istrs, r_patchstart,
-				istrs, &MD_ACCESS(D, istrs, ipos, r_patchstart));
-
-	} while (md_next(xD, odim, xflags, xpos));
+	md_zsub2(xD, odim, ostrs, optr, istrs_fix, &MD_ACCESS(D, istrs, ioffset, iptr), istrs_moving, iptr);
 }
-
 
 void md_znlmeans_distance(int D, const long idim[D], int xD,
 		const long odim[xD], unsigned long flags,
@@ -295,7 +193,4 @@ void md_znlmeans_distance(int D, const long idim[D], int xD,
 			MD_STRIDES(xD, odim, CFL_SIZE), optr,
 			MD_STRIDES(D, idim, CFL_SIZE), iptr);
 }
-
-
-
 

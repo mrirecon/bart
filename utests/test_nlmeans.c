@@ -44,11 +44,13 @@ static bool test_md_znlmeans_distance(void)
 				for (int l = -1; l < 2; l++) {
 
 					//transpos:center[i]  [j]   - center[i+k]  [j+l]   == output[i+1][j+1][k+1][l+1]);
-					bool ok = (padded[j + 2][i + 2] - padded[j + l + 2][i + k + 2] == output[l + 1][k + 1][j + 1][i + 1]);
+					complex float ref = padded[j + 2][i + 2] - padded[j + l + 2][i + k + 2];
+					complex float res = output[l + 1][k + 1][j + 1][i + 1];
+					bool ok = cabsf(ref - res) < 1e-7;
 
 					if (!ok) {
 
-						fprintf(stderr, "Failed at [%d][%d][%d][%d]\n", l, k, j, i);
+						fprintf(stderr, "Failed at [%d][%d][%d][%d]. Reference: %f, Result = %f\n", l, k, j, i, creal(ref), creal(res));
 						return false;
 					}
 				}
