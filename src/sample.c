@@ -4,6 +4,7 @@
  *
  * Authors: Moritz Blumenthal
  *          Tina Holliber
+ *          Verena Fink
  */
 
 #include <assert.h>
@@ -23,6 +24,7 @@
 #include "misc/debug.h"
 #include "misc/opts.h"
 #include "misc/mri.h"
+#include "misc/mri2.h"
 
 #include "linops/linop.h"
 #include "linops/sum.h"
@@ -45,7 +47,9 @@
 #include "iter/iter2.h"
 #include "iter/iter.h"
 #include "iter/prox2.h"
+#include "iter/misc.h"
 
+#include "noncart/nufft.h"
 
 #ifndef DIMS
 #define DIMS 16
@@ -98,6 +102,33 @@ static float sigma_schedule_quad(float t, float sigma_min, float sigma_max)
 	return sigma_min + sigma_max * t * t;
 }
 
+
+static const struct linop_s* get_sense_linop(long img_dims[DIMS], long ksp_dims[DIMS], long col_dims[DIMS], complex float* sens, long traj_dims[DIMS], const complex float* traj, long pat_dims[DIMS], const complex float* pat)
+{
+	struct linop_s* lop_sense = NULL;
+
+	long cim_dims[DIMS];
+	md_max_dims(DIMS, ~0UL, cim_dims, img_dims, col_dims);
+	md_select_dims(DIMS, ~MAPS_FLAG, cim_dims, cim_dims);
+
+	if (NULL != traj) {
+
+		lop_sense = nufft_create2(DIMS, ksp_dims, cim_dims, traj_dims, traj, pat_dims, pat, MD_SINGLETON_DIMS(DIMS), NULL, nufft_conf_defaults);
+	} else {
+
+		lop_sense = linop_fftc_create(DIMS, col_dims, FFT_FLAGS);
+
+		assert(md_check_equal_dims(DIMS, cim_dims, ksp_dims, ~0UL));
+		assert(md_check_compat(DIMS, md_nontriv_dims(DIMS, ksp_dims), ksp_dims, pat_dims));
+
+		lop_sense = linop_chain_FF(lop_sense, linop_cdiag_create(DIMS, ksp_dims, md_nontriv_dims(DIMS, pat_dims), pat));
+	}
+
+	return linop_chain_FF(linop_fmac_dims_create(DIMS, cim_dims, img_dims, col_dims, sens), lop_sense);
+}
+
+
+
 int main_sample(int argc, char* argv[argc])
 {
 	const char* graph = NULL;
@@ -129,6 +160,11 @@ int main_sample(int argc, char* argv[argc])
 
 	float gamma_base = 0.5;
 
+	const char* kspace_file = NULL;
+	const char* sens_file = NULL;
+	const char* traj_file = NULL;
+	const char* pattern_file = NULL;
+
 	long img_dims[DIMS];
 	md_singleton_dims(DIMS, img_dims);
 	img_dims[0] = 256;
@@ -157,6 +193,13 @@ int main_sample(int argc, char* argv[argc])
 		OPTL_INT('l', "level", &cunet_conf.levels, "l", "Number of UNet levels"),
 	};
 
+	struct opt_s posterior_opts[] = {
+		OPTL_INFILE('k', "kspace", &kspace_file, "kspace", "kspace file"),
+		OPTL_INFILE('s', "sens", &sens_file, "sens", "sensitivities"),
+		OPTL_INFILE('t', "traj", &traj_file, "traj", "k-space trajectory"),
+		OPTL_INFILE('p', "pattern", &pattern_file, "pattern", "Pattern file")
+	};
+
 	const struct opt_s opts[] = {
 		OPTL_VECN(0, "dims", img_dims, "image dimensions"),
 		OPT_SET('g', &bart_use_gpu, "use gpu"),
@@ -173,6 +216,7 @@ int main_sample(int argc, char* argv[argc])
 		OPT_INT('K', &K, "K", "number of Langevin steps per level"),
 		OPT_LONG('S', &batchsize, "S", "number of samples drawn"),
 		OPTL_LONG(0, "save-mod", &save_mod, "S", "save samples every S steps"),
+		OPTL_SUBOPT(0, "posterior", "", "sample posterior", ARRAY_SIZE(posterior_opts), posterior_opts),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -201,6 +245,40 @@ int main_sample(int argc, char* argv[argc])
 	num_rand_init(seed);
 
 	const struct nlop_s* nlop = NULL;
+	const struct linop_s* linop = NULL;
+
+	bool posterior = (NULL != kspace_file);
+
+	long ksp_dims[DIMS];
+	complex float* ksp = NULL;
+
+	if (posterior) {
+
+		ksp = load_cfl(kspace_file, DIMS, ksp_dims);
+
+		long col_dims[DIMS];
+		complex float* sens = load_cfl(sens_file, DIMS, col_dims);
+		md_select_dims(DIMS, ~COIL_FLAG, img_dims, col_dims);
+
+		long trj_dims[DIMS];
+		complex float* traj = (NULL == traj_file) ? NULL : load_cfl(traj_file, DIMS, trj_dims);
+
+		long pat_dims[DIMS];
+		md_select_dims(DIMS, ~COIL_FLAG, pat_dims, ksp_dims);
+		complex float* pat = ((NULL == pattern_file) ? anon_cfl(NULL, DIMS, pat_dims) : load_cfl(pattern_file, DIMS, pat_dims));
+
+		if (NULL == pattern_file)
+			estimate_pattern(DIMS, ksp_dims, COIL_FLAG, pat, ksp);
+
+		linop = get_sense_linop(img_dims, ksp_dims, col_dims, sens, trj_dims, traj, pat_dims, pat);
+
+		unmap_cfl(DIMS, col_dims, sens);
+		unmap_cfl(DIMS, pat_dims, pat);
+
+		if (NULL != traj_file)
+			unmap_cfl(DIMS, trj_dims, traj);
+	}
+
 	img_dims[BATCH_DIM] = batchsize;
 
 	float min_var = 0.0f;
@@ -349,12 +427,32 @@ int main_sample(int argc, char* argv[argc])
 	debug_printf(DP_DEBUG2, "sig=%.4f\n", get_sigma(1., sigma_min, sigma_max));
 	md_zsmul(DIMS, img_dims, samples, samples, get_sigma(1., sigma_min, sigma_max));
 
-	struct linop_s* linop = linop_null_create(DIMS, img_dims, DIMS, img_dims);
-
 	complex float* AHy = my_alloc(DIMS, img_dims, CFL_SIZE);
 	md_clear(DIMS, img_dims, AHy, CFL_SIZE);
 
 	float maxeigen = 0.;
+
+	if (posterior) {
+
+		maxeigen = estimate_maxeigenval_sameplace(linop->normal, 30, samples);
+
+		long img_single_dims[DIMS];
+		md_select_dims(DIMS, ~BATCH_FLAG, img_single_dims, img_dims);
+
+		complex float* tmp_AHy = md_alloc_sameplace(DIMS, img_single_dims, CFL_SIZE, ksp);
+		linop_adjoint(linop, DIMS, img_single_dims, tmp_AHy, DIMS, ksp_dims, ksp);
+		md_copy2(DIMS, img_dims, MD_STRIDES(DIMS, img_dims, CFL_SIZE), AHy, MD_STRIDES(DIMS, img_single_dims, CFL_SIZE), tmp_AHy, CFL_SIZE);
+		md_free(tmp_AHy);
+
+		long loop_dims[DIMS];
+		md_select_dims(DIMS, BATCH_FLAG, loop_dims, img_dims);
+
+		linop = linop_loop_F(DIMS, loop_dims, (struct linop_s*)linop);
+
+	} else {
+
+		linop = linop_null_create(DIMS, img_dims, DIMS, img_dims);
+	}
 
 
 	for (int i = N - 1; i >= 0; i--) {
@@ -374,6 +472,17 @@ int main_sample(int argc, char* argv[argc])
 			const struct nlop_s* nlop_fixed = nlop_set_input_const(nlop, 1, 1, MD_DIMS(1), true, &fixed_noise_scale);
 			nlop_apply(nlop_fixed, DIMS, img_dims, tmp, DIMS, img_dims, samples);
 			nlop_free(nlop_fixed);
+
+			if (posterior) {
+
+				complex float* tmp1 = md_alloc_sameplace(DIMS, img_dims, CFL_SIZE, samples);
+
+				linop_normal(linop, DIMS, img_dims, tmp1, samples);
+				md_zsub(DIMS, img_dims, tmp1, AHy, tmp1);
+
+				md_zadd(DIMS, img_dims, tmp, tmp, tmp1);
+				md_free(tmp1);
+			}
 
 			md_zaxpy(DIMS, img_dims, samples, dvar, tmp);
 
