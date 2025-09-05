@@ -716,7 +716,7 @@ build_pipeline ()
 		filter 5 reco.fifo reco_fil.fifo &
 		if $NLMEANS; then
 
-			OMP_NUM_THREADS=4 BART_STREAM_LOG=$TIMELOG''_filter bart -r reco_fil.fifo \
+			OMP_NUM_THREADS=16 BART_STREAM_LOG=$TIMELOG''_filter bart -r reco_fil.fifo \
 				nlmeans $NLMEANS_OPTS reco_fil.fifo $REC &
 		else
 			BART_STREAM_LOG=$TIMELOG''_filter bart -r reco_fil.fifo copy reco_fil.fifo $REC &
