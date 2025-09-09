@@ -90,7 +90,7 @@ static struct shape make_compressed_shape(int id, int len, const double val[len]
 	double der = 0.;
 
 	int count = 0;
-	
+
 	for(int i = 0; i < len; i++) {
 
 		double der_i  = val[i] - ((0 == i) ? 0. : val[i - 1]);
@@ -172,7 +172,7 @@ void pulse_shapes_to_pulseq(struct pulseq *ps, int N, const struct rf_shape rf_s
 	assert(0 == ps->shapes->len);
 	double tmp[2];
 	for (int i = 0; i < N; i++) {
-	
+
 		long samples = rf_shapes[i].samples;
 		double mag[samples];
 		double pha[samples];
@@ -218,7 +218,7 @@ static void grad_to_pulseq(int grad_id[3], struct pulseq *ps, struct seq_sys sys
 
 		for (int i = 0; i < grad_len; i++)
 			g_axis[i] = - g[i][a] / sys.grad.max_amplitude; // -1. for constistency
-		
+
 		int sid = ps->shapes->len + 1;
 		struct shape tmp_shape = make_compressed_shape(sid, grad_len, g_axis);
 		auto _tmp = tmp_shape.values;
@@ -226,7 +226,7 @@ static void grad_to_pulseq(int grad_id[3], struct pulseq *ps, struct seq_sys sys
 		(void)_tmp;
 
 		grad_id[a] = ps->gradients->len + 1;
-		struct gradient g = { 
+		struct gradient g = {
 
 			.id = grad_id[a],
 			.amp = sys.grad.max_amplitude * sys.gamma * 1.e3,
@@ -259,8 +259,8 @@ static int adc_to_pulseq(struct pulseq *ps, int N, const struct seq_event ev[N])
 		.num = (uint64_t)lround(ev[adc_idx].adc.columns * ev[adc_idx].adc.os),
 		.dwell = (uint64_t)lround(ev[adc_idx].adc.dwell_ns / ev[adc_idx].adc.os),
 		.delay = ev[adc_idx].start,
-		.freq = ev[adc_idx].adc.freq, 
-		.phase = phase_pulseq(&ev[adc_idx]) 
+		.freq = ev[adc_idx].adc.freq,
+		.phase = phase_pulseq(&ev[adc_idx])
 	};
 
 	VEC_ADD(ps->adcs, a);
@@ -270,7 +270,7 @@ static int adc_to_pulseq(struct pulseq *ps, int N, const struct seq_event ev[N])
 static int rf_to_pulseq(struct pulseq *ps, int M, const struct rf_shape rf_shapes[M], int N, const struct seq_event ev[N])
 {
 	int rf_idx = events_idx(0, SEQ_EVENT_PULSE, N, ev);
-	if (0 > rf_idx) 
+	if (0 > rf_idx)
 		return 0;
 
 	assert(SEQ_EVENT_PULSE == ev[rf_idx].type);
@@ -278,7 +278,7 @@ static int rf_to_pulseq(struct pulseq *ps, int M, const struct rf_shape rf_shape
 
 	int pulse_id = ev[rf_idx].pulse.shape_id;
 	int mag_id = 3 * pulse_id + 1;
-	
+
 	double ampl = rf_shapes[pulse_id].max / (2. * M_PI);
 
 	int time_id = 0;
@@ -286,7 +286,7 @@ static int rf_to_pulseq(struct pulseq *ps, int M, const struct rf_shape rf_shape
 	if (rf_shapes[pulse_id].samples != (1.e-6 / ps->rf_raster_time) * rf_shapes[pulse_id].sar_dur)
 		time_id = mag_id + 2;
 
-	struct rfpulse rf = { 
+	struct rfpulse rf = {
 
 		.id = rf_id,
 		.mag = ampl,
@@ -313,7 +313,7 @@ void events_to_pulseq(struct pulseq *ps, enum block mode, long tr, struct seq_sy
 
 	int g_id[3] = { 0, 0, 0 };
 	grad_to_pulseq(g_id, ps, sys, N, ev);
-	
+
 	struct ps_block b = {
 
 		.num = ps->ps_blocks->len + 1,
