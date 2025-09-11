@@ -36,9 +36,10 @@
 #include "nlops/gmm.h"
 
 #include "nn/nn.h"
-#include "nn/chain.h"
 #include "nn/weights.h"
 #include "nn/ext_wrapper.h"
+
+#include "networks/score.h"
 
 #include "iter/iter2.h"
 #include "iter/iter.h"
@@ -54,7 +55,7 @@
 #endif
 
 static const char help_str[] =
-	"Prior sampling with given score network (either PyTorch or TensorFlow) or Gaussian Mixture Model using unadjusted Langevin algorithm.\n";
+	"Prior sampling with given diffusion network (either PyTorch or TensorFlow) which is trained as denoiser (i.e. outputs the expectation) or Gaussian Mixture Model using unadjusted Langevin algorithm.\n";
 
 
 static void print_stats(int dl, float t, long img_dims[DIMS], const complex float* samples, float sigma)
@@ -128,8 +129,6 @@ int main_sample(int argc, char* argv[argc])
 	md_singleton_dims(DIMS, img_dims);
 	img_dims[0] = 256;
 	img_dims[1] = 256;
-
-	// UNet must be trained with z \sim CN(0, 2I) (i.e. cplx variance 2)
 
 	struct arg_s args[] = {
 		ARG_INOUTFILE(true, &samples_file, "samples"),
@@ -211,6 +210,8 @@ int main_sample(int argc, char* argv[argc])
 
 		nlop = nlop_reshape_in_F(nlop, 0, DIMS, img_dims);
 		nlop = nlop_reshape_out_F(nlop, 0, DIMS, img_dims);
+
+		nlop = nlop_expectation_to_score(nlop);
 
 		auto par = nlop_generic_domain(nlop, 1);
 
