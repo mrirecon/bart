@@ -311,25 +311,24 @@ void debug_grid_plan(int dl, struct grid_plan_s* plan)
 	debug_printf(dl, "    shift: %f %f %f\n", plan->conf.shift[0], plan->conf.shift[1], plan->conf.shift[2]);
 	debug_printf(dl, "    periodic: %d\n", plan->conf.periodic);
 	debug_printf(dl, "  grid_dims: %d %d %d\n", plan->grd_dims[0], plan->grd_dims[1], plan->grd_dims[2]);
-	debug_printf(dl, "  Nc: %d, ksp_strs: %d grd_strs: %d\n", plan->Nc, plan->col_str_ksp, plan->col_str_grd);
+	debug_printf(dl, "  Nc: %d, ksp_strs: %ld grd_strs: %ld\n", plan->Nc, plan->col_str_ksp, plan->col_str_grd);
 
 	if (plan->sort) {
 
 		debug_printf(dl, "  bin:\n");
-		debug_printf(dl, "    Nt: %d\n", plan->access.bin.Nt);
-		debug_printf(dl, "    grid_count: %d\n", plan->access.bin.grid_count);
+		debug_printf(dl, "    Nt: %ld\n", plan->access.bin.Nt);
+		debug_printf(dl, "    grid_count: %ld\n", plan->access.bin.grid_count);
 		debug_printf(dl, "    shared_size: %d\n", plan->access.bin.shared_size);
 		debug_printf(dl, "    local_size: %d %d %d\n", plan->access.bin.local_size[0], plan->access.bin.local_size[1], plan->access.bin.local_size[2]);
 		debug_printf(dl, "    width: %d %d %d\n", plan->access.bin.width[0], plan->access.bin.width[1], plan->access.bin.width[2]);
+
 	} else {
 
 		debug_printf(dl, "  stride:\n");
-		debug_printf(dl, "    ksp_dims: %d %d\n", plan->access.stride.ksp_dims[0], plan->access.stride.ksp_dims[1]);
-		debug_printf(dl, "    ksp_strs: %d %d\n", plan->access.stride.ksp_strs[0], plan->access.stride.ksp_strs[1]);
-		debug_printf(dl, "    trj_strs: %d %d\n", plan->access.stride.trj_strs[0], plan->access.stride.trj_strs[1]);
+		debug_printf(dl, "    ksp_dims: %ld %ld\n", plan->access.stride.ksp_dims[0], plan->access.stride.ksp_dims[1]);
+		debug_printf(dl, "    ksp_strs: %ld %ld\n", plan->access.stride.ksp_strs[0], plan->access.stride.ksp_strs[1]);
+		debug_printf(dl, "    trj_strs: %ld %ld\n", plan->access.stride.trj_strs[0], plan->access.stride.trj_strs[1]);
 	}
-
-
 }
 
 void grid_plan_free(struct grid_plan_s plan)
