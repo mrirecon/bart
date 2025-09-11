@@ -206,9 +206,7 @@ int main_seq(int argc, char* argv[argc])
 		assert(NULL == mom_file);
 	}
 
-	assert(1 == kernel_dims[PHS2_DIM]);
-
-	mdims[PHS2_DIM] = mdims[PHS1_DIM];
+	mdims[PHS2_DIM] *= mdims[PHS1_DIM];
 	mdims[PHS1_DIM] = support ? events_counter(SEQ_EVENT_GRADIENT, E, ev) : samples;
 	mdims[READ_DIM] = support ? 6 : 3;
 
@@ -221,7 +219,7 @@ int main_seq(int argc, char* argv[argc])
 	long adims[DIMS];
 	md_copy_dims(DIMS, adims, kernel_dims);
 
-	adims[PHS2_DIM] = adims[PHS1_DIM]; // consistency with traj tool
+	adims[PHS2_DIM] *= adims[PHS1_DIM]; // consistency with traj tool
 	adims[PHS1_DIM] = seq.geom.baseres * seq.phys.os;
 	adims[READ_DIM] = 5;
 
@@ -330,7 +328,7 @@ int main_seq(int argc, char* argv[argc])
 			md_copy_dims(DIMS, pos_save, ev[adc_idx].adc.pos);
 		}
 
-		pos_save[PHS2_DIM] = pos_save[PHS1_DIM];
+		pos_save[PHS2_DIM] = pos_save[PHS2_DIM] * seq.loop_dims[PHS1_DIM] + pos_save[PHS1_DIM];
 		pos_save[PHS1_DIM] = 0;
 
 		do {
