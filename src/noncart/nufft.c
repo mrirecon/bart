@@ -547,9 +547,6 @@ complex float* compute_psf2_decomposed(int N, const long psf_dims[N + 1], unsign
 	md_copy_dims(N + 1, trj_dims2, trj_dims);
 	trj_dims2[N] = psf_dims2[N];
 
-	complex float* traj2 = md_alloc_sameplace(N + 1, trj_dims2, CFL_SIZE, traj);
-	md_copy2(N + 1, trj_dims2, MD_STRIDES(N + 1, trj_dims2, CFL_SIZE), traj2, MD_STRIDES(N + 1, trj_dims, CFL_SIZE), traj, CFL_SIZE);
-
 	long factors[N + 1];
 	compute_factors(N + 1, flags, factors, psf_dims);
 
@@ -565,9 +562,11 @@ complex float* compute_psf2_decomposed(int N, const long psf_dims[N + 1], unsign
 
 	long sdims[N + 1];
 	md_select_dims(N + 1, MD_BIT(0) | MD_BIT(N), sdims, trj_dims2);
-	complex float* tshift = md_alloc_sameplace(N + 1, sdims, CFL_SIZE, traj2);
+	complex float* tshift = md_alloc_sameplace(N + 1, sdims, CFL_SIZE, traj);
 	md_copy(N + 1, sdims, tshift, &(tp[0][0]), CFL_SIZE);
-	md_zadd2(N + 1, trj_dims2, MD_STRIDES(N + 1, trj_dims2, CFL_SIZE), traj2, MD_STRIDES(N + 1, trj_dims2, CFL_SIZE), traj2, MD_STRIDES(N + 1, sdims, CFL_SIZE), tshift);
+
+	complex float* traj2 = md_alloc_sameplace(N + 1, trj_dims2, CFL_SIZE, traj);
+	md_zadd2(N + 1, trj_dims2, MD_STRIDES(N + 1, trj_dims2, CFL_SIZE), traj2, MD_STRIDES(N + 1, trj_dims, CFL_SIZE), traj, MD_STRIDES(N + 1, sdims, CFL_SIZE), tshift);
 	md_free(tshift);
 
 	struct linop_s* lop_nufft;
