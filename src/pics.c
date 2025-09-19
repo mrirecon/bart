@@ -397,15 +397,15 @@ int main_pics(int argc, char* argv[argc])
 
 	complex float* kspace = load_cfl(ksp_file, DIMS, ksp_dims);
 
-        if (sms) {
+	if (sms) {
 
 		if (NULL == traj_file)
 			error("SMS is only supported for non-Cartesian trajectories.\n");
 
 		nuconf.cfft |= SLICE_FLAG;
 
-                debug_printf(DP_INFO, "SMS reconstruction: MB = %ld\n", ksp_dims[SLICE_DIM]);
-        }
+		debug_printf(DP_INFO, "SMS reconstruction: MB = %ld\n", ksp_dims[SLICE_DIM]);
+	}
 
 	if (ropts.asl && ropts.teasl)
 		error("Use either TE-ASL or ASL reconstruction.\n");
@@ -744,6 +744,7 @@ int main_pics(int argc, char* argv[argc])
 	} else {
 
 		debug_printf(DP_DEBUG1, "Inverse scaling of the data: %f\n", scaling);
+
 		md_zsmul(DIMS, ksp_dims, kspace_p, kspace_p, 1. / scaling);
 
 		if (conf.bpsense) {
@@ -751,6 +752,7 @@ int main_pics(int argc, char* argv[argc])
 			bpsense_eps /= scaling;
 			debug_printf(DP_DEBUG1, "scaling basis pursuit eps: %.3e\n", bpsense_eps);
 		}
+
 		pridu.sigma_tau_ratio = scaling;
 	}
 
@@ -761,6 +763,7 @@ int main_pics(int argc, char* argv[argc])
 	}
 
 	complex float* image = create_cfl(out_file, DIMS, img_dims);
+
 	md_clear(DIMS, img_dims, image, CFL_SIZE);
 
 
