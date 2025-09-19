@@ -6,6 +6,8 @@
 #include <complex.h>
 #include <math.h>
 
+#include "num/multind.h"
+
 #include "misc/mmio.h"
 #include "misc/opts.h"
 #include "misc/misc.h"
@@ -47,7 +49,7 @@ do {									\
 } while (0)
 
 
-#define SECTIONS(X) X(VERSION) X(DEFINITIONS) X(BLOCKS) X(GRADIENTS) X(TRAP) X(RF) X(ADC) X(SHAPES) X(SIGNATURE)
+#define SECTIONS(X) X(VERSION) X(DEFINITIONS) X(BLOCKS) X(GRADIENTS) X(TRAP) X(RF) X(ADC) X(EXTENSIONS) X(SHAPES) X(SIGNATURE)
 #define BLOCKS_FORMAT "%4d %lu %d %d %d %d %d %d"
 #define BLOCKS_ACCESS(X) X(num) X(dur) X(rf) X(g[0]) X(g[1]) X(g[2]) X(adc) X(ext)
 #define GRADIENTS_FORMAT "%d %lf %d %d %lu"
@@ -56,6 +58,8 @@ do {									\
 #define TRAP_ACCESS(X) X(id) X(amp) X(rise) X(flat) X(fall) X(delay)
 #define ADC_FORMAT "%d %lu %lu %lu %lf %lf"
 #define ADC_ACCESS(X) X(id) X(num) X(dwell) X(delay) X(freq) X(phase)
+#define EXTENSIONS_FORMAT "%d %d %d %d"
+#define EXTENSIONS_ACCESS(X) X(id) X(type) X(ref) X(next)
 #define RF_FORMAT "%d %lf %d %d %d %lu %lf %lf"
 #define RF_ACCESS(X) X(id) X(mag) X(mag_id) X(ph_id) X(time_id) X(delay) X(freq) X(phase)
 
@@ -142,6 +146,7 @@ void pulseq_init(struct pulseq *ps, const struct seq_config* seq)
 	ps->fov[2] = 1.e-3 * seq->geom.slice_thickness * seq->loop_dims[SLICE_DIM];
 	ps->total_duration = 0.;
 
+	ps->label_flags = md_nontriv_dims(DIMS, seq->loop_dims) & SEQ_FLAGS & ~(COEFF_FLAG | COEFF2_FLAG| ITER_FLAG); // MDH dimension to write
 
 	ps->ps_blocks = vec_init();
 	ps->gradients = vec_init();
@@ -149,6 +154,8 @@ void pulseq_init(struct pulseq *ps, const struct seq_config* seq)
 	ps->adcs = vec_init();
 	ps->rfpulses = vec_init();
 	ps->shapes = vec_init();
+	ps->extensions = vec_init();
+	ps->extension_spec = vec_init();
 }
 
 
@@ -164,6 +171,13 @@ void pulseq_free(struct pulseq *ps)
 		xfree(ps->shapes->data[i].values);
 
 	xfree(ps->shapes);
+
+	xfree(ps->extensions);
+
+	for (int i = 0; i < ps->extension_spec->len; i++)
+		xfree(ps->extension_spec->data[i].values);
+
+	xfree(ps->extension_spec);
 }
 
 
@@ -305,6 +319,92 @@ static int adc_to_pulseq(struct pulseq *ps, int N, const struct seq_event ev[N])
 	return adc_id;
 }
 
+static int label_check_spec(struct pulseq* ps, struct extension_spec es)
+{
+	for (int i = 0; i < ps->extension_spec->len; i++)
+		if (0 == strcmp(ps->extension_spec->data[i].string_id, es.string_id))
+			return i;
+
+	return -1;
+}
+
+static const char* dim_to_string(int dim)
+{
+	switch (dim) {
+
+	case PHS1_DIM: return "LIN";
+	case TIME_DIM: return "REP";
+	case SLICE_DIM: return "SLC";
+	case TE_DIM: return "ECO";
+	case PHS2_DIM: return "PAR";
+	case CSHIFT_DIM: return "SET";
+	case BATCH_DIM: return "SEG";
+	case TIME2_DIM: return "PHS";
+	case AVG_DIM: return "AVG";
+	default: assert(0);
+	}
+}
+
+
+static int label_set(struct pulseq* ps, const char* set, struct seq_event adc_ev)
+{
+	struct extension_spec es;
+	es.string_id = set;
+
+	int idx = label_check_spec(ps, es);
+
+	for (int i = 0; i < DIMS; i++) {
+
+		if (MD_IS_SET(ps->label_flags, i)) {
+
+			struct ext e = { (int)adc_ev.adc.pos[i], i };
+
+			if (0 > idx) {
+
+				idx = ps->extension_spec->len;
+				es.type = idx + 1;
+				es.values = vec_init();
+				VEC_ADD(es.values, e);
+				VEC_ADD(ps->extension_spec, es);
+				continue;
+			}
+
+			VEC_ADD(ps->extension_spec->data[idx].values, e);
+		}
+	}
+
+	return idx + 1;
+}
+
+static int ext_to_pulseq(struct pulseq *ps, int N, const struct seq_event ev[N])
+{
+	int adc_idx = events_idx(0, SEQ_EVENT_ADC, N, ev);
+	if (0 > adc_idx)
+		return 0;
+
+	assert(SEQ_EVENT_ADC == ev[adc_idx].type);
+
+	int labels = bitcount(ps->label_flags);
+	int es_type = label_set(ps, "LABELSET", ev[adc_idx]);
+
+	int ext_id = ps->extensions->len + 1;
+
+	for (int i = 0; i < 3; i++) {
+
+		struct extension e = {
+
+			.id = ext_id + i,
+			.type = es_type,
+			.ref = ext_id + i,
+			.next = ((i + 1) == labels) ? 0 : ext_id + i + 1,
+		};
+
+		VEC_ADD(ps->extensions, e);
+	}
+
+	return ext_id;
+}
+
 static int rf_to_pulseq(struct pulseq *ps, int M, const struct rf_shape rf_shapes[M], int N, const struct seq_event ev[N])
 {
 	int rf_idx = events_idx(0, SEQ_EVENT_PULSE, N, ev);
@@ -345,7 +445,15 @@ void events_to_pulseq(struct pulseq *ps, enum block mode, long tr, struct seq_sy
 	unsigned long dur = seq_block_end(N, ev, mode, tr) / (1.e6 * ps->block_raster_time);
 	ps->total_duration += dur * ps->block_raster_time;
 
+
+	if (0 < events_counter(SEQ_EVENT_ADC, N, ev))
+		error("Multiple ADCs per block not supported\n");
+
 	int adc_id = adc_to_pulseq(ps, N, ev);
+
+	int ext_id = 0;
+	if (adc_id)
+		ext_id = ext_to_pulseq(ps, N, ev);
 
 	int rf_id = rf_to_pulseq(ps, M, rf_shapes, N, ev);
 
@@ -359,7 +467,7 @@ void events_to_pulseq(struct pulseq *ps, enum block mode, long tr, struct seq_sy
 		.rf = rf_id,
 		.g = { g_id[0], g_id[1], g_id[2] },
 		.adc = adc_id,
-		.ext = 0
+		.ext = ext_id
 	};
 
 	VEC_ADD(ps->ps_blocks, b);
@@ -399,6 +507,24 @@ void pulseq_writef(FILE *fp, struct pulseq *ps)
 	for (int i = 0; i < ps->adcs->len; i++)
 		fprintf(fp, ADC_FORMAT "\n" ADC_ACCESS(ACCESS));
 #undef	ACCESS
+
+	if (0 < ps->extensions->len) {
+
+		fprintf(fp, "\n[EXTENSIONS]\n");
+#define ACCESS(X) , ps->extensions->data[i].X
+		for (int i = 0; i < ps->extensions->len; i++)
+			fprintf(fp, EXTENSIONS_FORMAT "\n" EXTENSIONS_ACCESS(ACCESS));
+#undef	ACCESS
+
+		fprintf(fp, "\n#id set labelstring");
+
+		struct extension_spec es = ps->extension_spec->data[0];
+		fprintf(fp, "\nextension %s %d\n", es.string_id, es.type);
+
+		for (int j = 0; j < es.values->len; j++)
+			fprintf(fp, "%d %d %s\n", j + 1, es.values->data[j].val, dim_to_string(es.values->data[j].dim));
+	}
+
 
 	fprintf(fp, "\n[GRADIENTS]\n");
 #define ACCESS(X) , ps->gradients->data[i].X

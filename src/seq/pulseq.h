@@ -59,6 +59,14 @@ struct adc {
 	double phase;
 };
 
+struct extension {
+
+	int id;
+	int type;
+	int ref;
+	int next;
+};
+
 #define VEC(T) struct { int len; typeof(T) data[]; }
 
 struct shape {
@@ -68,6 +76,18 @@ struct shape {
 	VEC(double) *values;
 };
 
+struct ext {
+
+	int val;
+	int dim;
+};
+
+struct extension_spec {
+
+	const char* string_id;
+	int type;
+	VEC(struct ext) *values;
+};
 
 struct pulseq {
 
@@ -79,12 +99,16 @@ struct pulseq {
 	double fov[3];
 	double total_duration;
 
+	unsigned long label_flags;
+
 	VEC(struct ps_block) *ps_blocks;
 	VEC(struct gradient) *gradients;
 	VEC(struct trapezoid) *trapezoids;
 	VEC(struct adc) *adcs;
 	VEC(struct rfpulse) *rfpulses;
 	VEC(struct shape) *shapes;
+	VEC(struct extension) *extensions;
+	VEC(struct extension_spec) *extension_spec;
 };
 
 #undef VEC
