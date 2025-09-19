@@ -109,6 +109,7 @@ NNAME = $(shell uname -n)
 MYLINK=ln
 
 
+
 ifeq ($(UNAME),Darwin)
 	BUILDTYPE = MacOSX
 	MYLINK = ln -s
@@ -152,8 +153,9 @@ endif
 
 ifeq ($(CC),emcc)
 	BUILDTYPE = WASM
+else
+	LDFLAGS += -Wl,-no-warn-execstack
 endif
-
 
 # Automatic dependency generation
 
