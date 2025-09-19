@@ -49,7 +49,7 @@ int main_morphop(int argc, char* argv[argc])
 
 	enum morph_type { EROSION, DILATION, OPENING, CLOSING, LABEL } morph_type = EROSION;
 
-	enum mask_type { HLINE, VLINE, CROSS, BLOCK } mask_type = BLOCK;
+	enum mask_type { HLINE, VLINE, CROSS, BLOCK, BALL } mask_type = BLOCK;
 
 
 	const struct opt_s opts[] = {
@@ -59,6 +59,8 @@ int main_morphop(int argc, char* argv[argc])
 		OPT_SELECT('o', enum morph_type, &morph_type, OPENING, "OPENING"),
 		OPT_SELECT('c', enum morph_type, &morph_type, CLOSING, "CLOSING"),
 		OPT_SELECT('l', enum morph_type, &morph_type, LABEL, "LABEL"),
+
+		OPT_SELECT('B', enum mask_type, &mask_type, BALL, "use BALL structuring element"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -89,6 +91,11 @@ int main_morphop(int argc, char* argv[argc])
 	md_clear(N, mask_dims, mask, CFL_SIZE);
 
 	switch (mask_type) {
+
+	case BALL:
+		md_free(mask);
+		mask = md_structuring_element_ball(N, mask_dims, mask_size / 2, FFT_FLAGS & md_nontriv_dims(N, dims), NULL);
+		break;
 
 	case HLINE:
 		error("Mask Type is not implemented yet.\n");
