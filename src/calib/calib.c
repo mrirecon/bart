@@ -775,7 +775,8 @@ void compute_kernels(const struct ecalib_conf* conf, long nskerns_dims[5], compl
 	assert(NULL != val);
 	assert(SN == N);
 
-	debug_printf(DP_DEBUG1, "Build calibration matrix and SVD...\n");
+	debug_printf(DP_DEBUG1, "Build calibration matrix and SVD...");
+	double time = -timestamp();
 
 #ifdef CALMAT_SVD
 	calmat_svd(conf->kdims, N, *vec, val, caldims, caldata);
@@ -792,8 +793,11 @@ void compute_kernels(const struct ecalib_conf* conf, long nskerns_dims[5], compl
 #endif
 #else
 	covariance_function(conf->kdims, N, *vec, caldims, caldata);
+	time += timestamp();
 
-	debug_printf(DP_DEBUG1, "Eigen decomposition... (size: %ld)\n", N);
+	debug_printf(DP_DEBUG1, " done (%.3fs)\nEigen decomposition... (size: %ld) ... ", time, N);
+
+	time = -timestamp();
 
 	// we could apply Nystroem method here to speed it up
 
@@ -822,6 +826,9 @@ void compute_kernels(const struct ecalib_conf* conf, long nskerns_dims[5], compl
 		perturb(dims, nskerns, conf->perturb);
 	}
 
+	time += timestamp();
+	debug_printf(DP_DEBUG1, " done (%.3fs)\n", time);
+
 #ifndef FLIP
 	nskerns_dims[4] = number_of_kernels(conf, N, val);
 #else
@@ -837,7 +844,9 @@ void compute_kernels(const struct ecalib_conf* conf, long nskerns_dims[5], compl
 
 void compute_imgcov(const long cov_dims[4], complex float* imgcov, const long nskerns_dims[5], const complex float* nskerns)
 {
-	debug_printf(DP_DEBUG1, "Zeropad...\n");
+	debug_printf(DP_DEBUG1, "Zeropad...");
+
+	double time = -timestamp();
 
 	long xh = cov_dims[0];
 	long yh = cov_dims[1];
@@ -857,9 +866,13 @@ void compute_imgcov(const long cov_dims[4], complex float* imgcov, const long ns
 
 	md_resize_center(5, imgkern_dims, imgkern1, nskerns_dims, nskerns, CFL_SIZE);
 
+	time += timestamp();
+	debug_printf(DP_DEBUG1, "done (%.3fs)\n", time);
+	time = -timestamp();
+
 	// resort array
 
-	debug_printf(DP_DEBUG1, "FFT (juggling)...\n");
+	debug_printf(DP_DEBUG1, "FFT (juggling)... ");
 
 	long istr[5];
 	long mstr[5];
@@ -879,7 +892,12 @@ void compute_imgcov(const long cov_dims[4], complex float* imgcov, const long ns
 
 	md_free(imgkern1);
 
-	debug_printf(DP_DEBUG1, "Calculate Gram matrix...\n");
+
+	time += timestamp();
+	debug_printf(DP_DEBUG1, "done (%.3fs)\n", time);
+	time = -timestamp();
+
+	debug_printf(DP_DEBUG1, "Calculate Gram matrix...");
 
 	int cosize = channels * (channels + 1) / 2;
 
@@ -906,6 +924,9 @@ void compute_imgcov(const long cov_dims[4], complex float* imgcov, const long ns
 	}
 
 	md_free(imgkern2);
+
+	time += timestamp();
+	debug_printf(DP_DEBUG1, "done (%.3fs)\n", time);
 }
 
 
