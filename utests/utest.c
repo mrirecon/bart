@@ -86,6 +86,8 @@ int main(int argc, char* argv[])
 #ifdef UTEST_GPU
 	bart_use_gpu = true;
 	num_init_gpu_support();
+#else
+	num_init();
 #endif
 
 	num_rand_init(0ULL);
