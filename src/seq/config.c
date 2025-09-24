@@ -105,6 +105,7 @@ const struct seq_config seq_config_defaults = {
 
 	.sys = {
 		.gamma = 42.575575,
+		.b0 = 2.893620,
 		.grad.inv_slew_rate = 7.848885540911,
 		.grad.max_amplitude = 24.,
 		.coil_control_lead = 100.,
