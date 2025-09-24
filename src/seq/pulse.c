@@ -22,6 +22,7 @@ DEF_TYPEID(pulse_sms);
 DEF_TYPEID(pulse_rect);
 DEF_TYPEID(pulse_hypsec);
 DEF_TYPEID(pulse_arb);
+DEF_TYPEID(pulse_gauss);
 
 extern inline complex float pulse_eval(const struct pulse* p, float t);
 
@@ -354,4 +355,70 @@ float pulse_arb_integral(const struct pulse_arb* pa)
 		sum += pa->A * cabsf(pa->values[i]);
 
 	return sum * (pa->super.duration / pa->samples);
+}
+
+
+static float gauss_windowed(float alpha, float t, float n)
+{
+	return ((1. - alpha) + alpha * cosf(M_PI * t / n)) * expf(- M_PI * t * t);
+}
+
+static complex float pulse_gauss(const struct pulse_gauss* pg, float t)
+{
+	float mid = CAST_UP(pg)->duration / 2.;
+	float t0 = CAST_UP(pg)->duration / pg->bwtp;
+
+	assert((0 <= t) && (t <= CAST_UP(pg)->duration));
+
+	return pg->A * gauss_windowed(pg->alpha, (t - mid) / t0, pg->bwtp / 2.);
+}
+
+float pulse_gauss_integral(const struct pulse_gauss* pg)
+{
+	const int N = 1000;
+	float t0 = CAST_UP(pg)->duration / N;
+
+	double sum = 0.;
+
+	for (int i = 0; i < N; i++)
+		sum += pulse_gauss(pg, i * t0);
+
+	return pg->A * sum * t0;
+}
+
+
+static complex float pulse_gauss_eval(const struct pulse* _ps, float t)
+{
+	auto pg = CAST_DOWN(pulse_gauss, _ps);
+
+	return pulse_gauss(pg, t);
+}
+
+
+const struct pulse_gauss pulse_gauss_defaults = {
+
+	.super.duration = 0.025,
+	.super.flipangle = 360.,
+	.super.eval = pulse_gauss_eval,
+	.super.TYPEID = &TYPEID2(pulse_gauss),
+	// .pulse.phase = 0.,
+
+	.alpha = 0.5,
+	.A = 1.,
+	.bwtp = .2,
+};
+
+
+void pulse_gauss_init(struct pulse_gauss* pg, float duration, float angle /*[deg]*/, float phase, float bwtp, float alpha)
+{
+	pg->super.duration = duration;
+	pg->super.flipangle = angle;
+	pg->super.eval = pulse_gauss_eval;
+	(void)phase;
+
+	pg->bwtp = bwtp;
+	pg->alpha = alpha;
+	pg->A = 1.;
+
+	pg->A = DEG2RAD(angle) / pulse_gauss_integral(pg);
 }

@@ -7,7 +7,7 @@
 
 #include "misc/types.h"
 
-enum pulse_t { PULSE_SINC, PULSE_SINC_SMS, PULSE_HS, PULSE_REC, PULSE_ARB };
+enum pulse_t { PULSE_SINC, PULSE_SINC_SMS, PULSE_HS, PULSE_REC, PULSE_ARB, PULSE_GAUSS };
 
 struct pulse {
 
@@ -105,6 +105,20 @@ extern const struct pulse_arb pulse_arb_oc_cest_sat_defaults;
 extern void pulse_arb_init(struct pulse_arb* pa, float gamma);
 extern float pulse_arb_integral(const struct pulse_arb* pa);
 
+
+struct pulse_gauss {
+
+	struct pulse super;
+
+	float alpha;
+	float A;
+	float bwtp;
+};
+
+extern const struct pulse_gauss pulse_gauss_defaults;
+
+extern void pulse_gauss_init(struct pulse_gauss* pg, float duration, float angle /*[deg]*/, float phase, float bwtp, float alpha);
+extern float pulse_gauss_integral(const struct pulse_gauss* pg);
 
 #endif		// _PULSE_H
 

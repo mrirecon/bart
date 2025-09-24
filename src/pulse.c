@@ -48,6 +48,7 @@ int main_pulse(int argc, char* argv[argc])
 		OPTL_SELECT(0, "rect", enum pulse_t, &pulse_type, PULSE_REC, "rect"),
 		OPTL_SELECT(0, "hypsec", enum pulse_t, &pulse_type, PULSE_HS, "hypersecant"),
 		OPTL_SELECT(0, "arb", enum pulse_t, &pulse_type, PULSE_ARB, "arbitrary (OC CEST saturation pulse)"),
+		OPTL_SELECT(0, "gauss", enum pulse_t, &pulse_type, PULSE_GAUSS, "gauss"),
 
 		/* Pulse Specific Parameters */
 		OPTL_DOUBLE(0, "dur", &dur, "double", "pulse duration [s]"),
@@ -75,6 +76,7 @@ int main_pulse(int argc, char* argv[argc])
 	struct pulse_hypsec ph = pulse_hypsec_defaults;
 	struct pulse_rect pr = pulse_rect_defaults;
 	struct pulse_arb pa = pulse_arb_oc_cest_sat_defaults;
+	struct pulse_gauss pg = pulse_gauss_defaults;
 
 	struct pulse* pulse[mb];
 
@@ -115,6 +117,12 @@ int main_pulse(int argc, char* argv[argc])
 
 		pulse_arb_init(&pa, GYRO);
 		pulse[0] = CAST_UP(&pa);
+		break;
+
+	case PULSE_GAUSS:
+
+		pulse_gauss_init(&pg, dur, flip_angle, 0, bwtp, pulse_gauss_defaults.alpha);
+		pulse[0] = CAST_UP(&pg);
 		break;
 	}
 

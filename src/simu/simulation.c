@@ -222,6 +222,10 @@ static void compute_fields(struct sim_data* data, float gb_eff[3], float t)
 		case PULSE_ARB:
 			ps = CAST_UP(&data->pulse.arb);
 			break;
+
+		case PULSE_GAUSS:
+			ps = CAST_UP(&data->pulse.gauss);
+			break;
 		}
 
 		w1 = cexpf(1.i * data->pulse.phase) * pulse_eval(ps, t);

@@ -94,6 +94,7 @@ struct simdata_pulse {
 	struct pulse_rect rect;
         struct pulse_hypsec hs;
 	struct pulse_arb arb;
+	struct pulse_gauss gauss;
 };
 
 struct simdata_cest {
