@@ -10,7 +10,6 @@
  * 2017-2018 Damien Nguyen <damien.nguyen@alumni.epfl.ch>
  */
 
-#define _GNU_SOURCE
 #include <string.h>
 #include <stdio.h>
 #include <stdarg.h>

@@ -13,8 +13,6 @@
  * FOR RESEARCH USE ONLY - NOT FOR DIAGNOSTIC USE
  */
 
-#define _GNU_SOURCE
-
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>

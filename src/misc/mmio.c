@@ -5,8 +5,6 @@
  * a BSD-style license which can be found in the LICENSE file.
  */
 
-#define _GNU_SOURCE
-
 #include <string.h>
 #include <stdio.h>
 #include <fcntl.h>

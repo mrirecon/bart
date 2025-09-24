@@ -4,7 +4,6 @@
  * a BSD-style license which can be found in the LICENSE file.
  */
 
-#define _GNU_SOURCE
 #include <complex.h>
 #include <math.h>
 #include <assert.h>

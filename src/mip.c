@@ -6,7 +6,6 @@
  * 2014-2016 Jonathan Tamir
  */
 
-#define _GNU_SOURCE
 #include <stdbool.h>
 #include <complex.h>
 

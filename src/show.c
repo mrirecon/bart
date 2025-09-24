@@ -8,8 +8,6 @@
  * 2015-2016 Jon Tamir
  */
 
-#define _GNU_SOURCE
-
 #include <stdbool.h>
 #include <complex.h>
 #include <stdio.h>

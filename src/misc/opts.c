@@ -12,7 +12,6 @@
  * 2017-2018 Francesco Santini <francesco.santini@unibas.ch>
  */
 
-#define _GNU_SOURCE
 #include "ya_getopt.h"
 #include <stdio.h>
 #include <assert.h>

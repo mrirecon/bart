@@ -6,7 +6,6 @@
  * 2015 Martin Uecker
  */
 
-#define _GNU_SOURCE
 #include <stdbool.h>
 #include <assert.h>
 #include <complex.h>

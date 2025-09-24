@@ -8,7 +8,6 @@
  * 2013-2022 Martin Uecker <uecker@tugraz.at>
  */
 
-#define _GNU_SOURCE
 #include <complex.h>
 #include <stdbool.h>
 #include <assert.h>

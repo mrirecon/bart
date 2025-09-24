@@ -28,8 +28,6 @@
  * to copy between CPU and GPU.
  */
 
-#define _GNU_SOURCE
-
 #include <string.h>
 #include <assert.h>
 #include <stdbool.h>

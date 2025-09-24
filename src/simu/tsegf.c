@@ -6,7 +6,6 @@
  * 2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
-#define _GNU_SOURCE
 #include <complex.h>
 #include <math.h>
 
