@@ -327,7 +327,7 @@ int main_seq(int argc, char* argv[argc])
 
 			double m0_adc[3];
 
-			float scale = (seq.phys.dwell / seq.phys.os) * ro_amplitude(&seq);
+			float scale = seq.phys.dwell * ro_amplitude(&seq);
 
 			do {
 				assert(0 == pos_save[READ_DIM]);
