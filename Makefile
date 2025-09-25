@@ -804,11 +804,12 @@ MODULES_test_nufft += -lnoncart -llinops
 MODULES_test_fib += -lnoncart
 
 # lib seq
-UTARGETS += test_gradient test_events test_angle_calc test_adc_rf test_seq test_pulseq
+UTARGETS += test_gradient test_events test_angle_calc test_adc_rf test_flash test_seq test_pulseq
 MODULES_test_gradient += -lseq
 MODULES_test_events += -lseq
 MODULES_test_angle_calc += -lseq -lsimu -lnoncart
 MODULES_test_adc_rf += -lseq -lsimu -lnoncart
+MODULES_test_flash += -lseq -lsimu -lnoncart
 MODULES_test_seq += -lseq -lsimu -lnoncart
 MODULES_test_pulseq += -lseq -lnoncart
 
