@@ -154,7 +154,9 @@ endif
 ifeq ($(CC),emcc)
 	BUILDTYPE = WASM
 else
+ifneq ($(BUILDTYPE), MacOSX)
 	LDFLAGS += -Wl,-no-warn-execstack
+endif
 endif
 
 # Automatic dependency generation
