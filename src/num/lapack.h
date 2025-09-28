@@ -6,8 +6,8 @@ extern void lapack_eig(long N, float eigenval[N], complex float matrix[N][N]);
 extern void lapack_geig(long N, float eigenval[N], complex float A[N][N], complex float B[N][N]);
 extern void lapack_svd(long M, long N, complex float U[M][M], complex float VH[N][N], float S[(N > M) ? M : N], complex float A[N][M]);
 extern void lapack_svd_econ(long M, long N,
-		     complex float U[M][(N > M) ? M : N],
-		     complex float VH[(N > M) ? M : N][N],
+		     complex float U[(N > M) ? M : N][M],
+		     complex float VH[N][(N > M) ? M : N],
 		     float S[(N > M) ? M : N],
 		     complex float A[N][M]);
 

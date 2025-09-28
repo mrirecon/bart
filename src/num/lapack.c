@@ -51,9 +51,10 @@ void lapack_svd(long M, long N, complex float U[M][M], complex float VH[N][N], f
 	LAPACKE(cgesdd, 'A', M, N, &A[0][0], M, S, &U[0][0], M, &VH[0][0], N);
 }
 
+// AT = VHT ST UT
 void lapack_svd_econ(long M, long N,
-		     complex float U[M][(N > M) ? M : N],
-		     complex float VH[(N > M) ? M : N][N],
+		     complex float U[(N > M) ? M : N][M],
+		     complex float VH[N][(N > M) ? M : N],
 		     float S[(N > M) ? M : N],
 		     complex float A[N][M])
 {
