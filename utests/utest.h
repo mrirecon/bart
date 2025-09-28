@@ -24,6 +24,12 @@
 #define UT_RETURN_ON_FAILURE(test)	\
 	if (!(test)) return (debug_printf(DP_ERROR, "%s:%d assertion `%s` failed.\n", __func__, __LINE__, #test), false)
 
+#define UT_RETURN_ASSERT_TOL(err, tol)	\
+	return ((err <= tol) || (debug_printf(DP_ERROR, "%s:%d assertion `%.2e=%s<=%.2e=%s` failed.\n", __func__, __LINE__, err, #err, tol, #tol), false))
+
+#define UT_RETURN_ON_FAILURE_TOL(err, tol)	\
+	if (!(err <= tol)) return (debug_printf(DP_ERROR, "%s:%d assertion `%.2e=%s<=%.2e=%s` failed.\n", __func__, __LINE__, err, #err, tol, #tol), false)
+
 #define UT_TOL 1E-6
 
 
