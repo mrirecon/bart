@@ -546,6 +546,7 @@ int main_twixread(int argc, char* argv[argc])
 	long dims[DIMS];
 	md_singleton_dims(DIMS, dims);
 
+	bool chrono = false;
 	unsigned long ignore_dims_flags = LEVEL_FLAG;
 
 	struct opt_s opts[] = {
@@ -570,6 +571,7 @@ int main_twixread(int argc, char* argv[argc])
 		OPT_SET('R', &refscan, "get data of reference scan"),
 		OPT_CLEAR('S', &refscan_ac, "don't include reference lines"),
 		OPT_ULONG('I', &ignore_dims_flags, "flags", "ignore (squash) selected dimensions (defaults to LEVEL_FLAG)"),
+		OPT_SET('C', &chrono, "read data chronologically and ignore adc postitions"),
 		OPTL_SET(0, "rational", &rational, "Rational Approximation Sampling"),
 		OPT_SET('M', &mpi, "MPI mode"),
 		OPTL_PINT(0, "bin", &bin, "d", "Binning of spokes for RAGA sampled data"),
@@ -609,10 +611,13 @@ int main_twixread(int argc, char* argv[argc])
 	if (noise && refscan)
 		error("Noise and reference scan cannot be read in one run!\n");
 
-	if (autoc | noise) {
+	if (autoc | noise | chrono) {
 
 		long max[DIMS] = { [COIL_DIM] = 1000 };
 		long min[DIMS] = { }; // min is always 0
+
+		if (chrono)
+			ignore_dims_flags = ~(READ_FLAG|COIL_FLAG);
 
 		adcs = 0;
 
@@ -628,10 +633,16 @@ int main_twixread(int argc, char* argv[argc])
 
 			if (ADC_OK == sar) {
 
+				if (chrono)
+					max[PHS1_DIM]++;
+
 				debug_print_dims(DP_DEBUG3, DIMS, max);
 				adcs++;
 			}
 		}
+
+		if (chrono)
+			max[PHS1_DIM]--;
 
 		debug_printf(DP_DEBUG2, "found %ld adcs\n", adcs);
 
@@ -725,6 +736,9 @@ int main_twixread(int argc, char* argv[argc])
 
 			for (int i = 0; i < DIMS; i++)
 				pos[i] += off[i];
+
+			if (chrono)
+				off[PHS1_DIM]++;
 
 			if (mpi) {
 

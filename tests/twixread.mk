@@ -33,12 +33,23 @@ tests/test-twixread-ve: twixread ${TWIX_VE}
 	touch $@
 
 tests/test-twixread-pmu: twixread ${TWIX_PMU}
-	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
-	$(TOOLDIR)/twixread -A ${TWIX_PMU} ksp.ra pmu.ra					;\
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)				;\
+	$(TOOLDIR)/twixread -A ${TWIX_PMU} ksp.ra pmu.ra			;\
 	echo "3ce40a3777cf9c9924073696b2598bb8  ksp.ra" | md5sum -c		;\
 	echo "f7628c4adaef57f6615f7ff7d85dab05  pmu.ra" | md5sum -c		;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-TESTS_AGUE += tests/test-twixread tests/test-twixread-multiraid tests/test-twixread-mpi tests/test-twixread-ve tests/test-twixread-pmu
+tests/test-twixread-pmu-chrono: twixread transpose nrmse 
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)				;\
+	$(TOOLDIR)/twixread -A    ${TWIX_PMU} ksp_ref.ra pmu_ref.ra		;\
+	$(TOOLDIR)/twixread -A -C ${TWIX_PMU} ksp_chr.ra pmu_chr.ra		;\
+	$(TOOLDIR)/transpose 1 10 ksp_chr.ra ksp_chr_re.ra			;\
+	$(TOOLDIR)/nrmse -t 0 ksp_chr_re.ra ksp_ref.ra				;\
+	$(TOOLDIR)/transpose 1 10 pmu_chr.ra pmu_chr_re.ra			;\
+	$(TOOLDIR)/nrmse -t 0 pmu_chr_re.ra pmu_ref.ra				;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+TESTS_AGUE += tests/test-twixread tests/test-twixread-multiraid tests/test-twixread-mpi tests/test-twixread-ve tests/test-twixread-pmu tests/test-twixread-pmu-chrono
 
