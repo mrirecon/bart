@@ -13,12 +13,15 @@
 
 #include "num/specfun.h"
 
+#include "seq/pulse_library.h"
+
 #include "pulse.h"
 
 DEF_TYPEID(pulse_sinc);
 DEF_TYPEID(pulse_sms);
 DEF_TYPEID(pulse_rect);
 DEF_TYPEID(pulse_hypsec);
+DEF_TYPEID(pulse_arb);
 
 extern inline complex float pulse_eval(const struct pulse* p, float t);
 
@@ -304,4 +307,51 @@ void pulse_hypsec_init(float gamma, struct pulse_hypsec* pr)
 float pulse_hypsec_integral(const struct pulse_hypsec* hs)
 {
 	return 4. * hs->A / hs->beta * atanf(tanhf(hs->beta * CAST_UP(hs)->duration / 4.));
+}
+
+
+
+static complex float pulse_arb_eval(const struct pulse* _pa, float t)
+{
+	auto pa = CAST_DOWN(pulse_arb, _pa);
+
+	assert((t >= 0.) && (t <= _pa->duration));
+
+	int idx = (int)(t / _pa->duration * pa->samples);
+
+	assert(idx < pa->samples);
+
+	return pa->A * pa->values[idx];
+}
+
+const struct pulse_arb pulse_arb_oc_cest_sat_defaults = {
+
+	.super.duration = 0.1,
+	.super.flipangle = 1482.66, // B1rms = 1uT for oc_cest_sat_pulse
+	.super.eval = pulse_arb_eval,
+	.super.TYPEID = &TYPEID2(pulse_arb),
+
+	.samples = 1000,
+	.values = oc_cest_sat_pulse,
+	.A = 1.,
+	.gamma =  GYRO,
+};
+
+
+void pulse_arb_init(struct pulse_arb* pa, float gamma)
+{
+	pa->gamma = gamma;
+	pa->A = DEG2RAD(pa->super.flipangle) / pulse_arb_integral(pa);
+
+}
+
+
+float pulse_arb_integral(const struct pulse_arb* pa)
+{
+	float sum = 0.;
+
+	for (int i = 0; i < pa->samples; i++)
+		sum += pa->A * cabsf(pa->values[i]);
+
+	return sum * (pa->super.duration / pa->samples);
 }

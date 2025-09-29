@@ -7,7 +7,7 @@
 
 #include "misc/types.h"
 
-enum pulse_t { PULSE_SINC, PULSE_SINC_SMS, PULSE_HS, PULSE_REC };
+enum pulse_t { PULSE_SINC, PULSE_SINC_SMS, PULSE_HS, PULSE_REC, PULSE_ARB };
 
 struct pulse {
 
@@ -16,7 +16,7 @@ struct pulse {
 	float flipangle;
 	float duration;		/* pulse duration */
 
-	complex float (*eval)(const struct pulse *p, float t);
+	_Complex float (*eval)(const struct pulse *p, float t);
 };
 
 struct pulse_sinc {
@@ -54,7 +54,7 @@ extern void pulse_sms_init(struct pulse_sms* ps, float duration, float angle /*[
 
 extern float pulse_sms_integral(const struct pulse_sms* ps);
 
-inline complex float pulse_eval(const struct pulse* p, float t)
+inline _Complex float pulse_eval(const struct pulse* p, float t)
 {
 	return p->eval(p, t);
 }
@@ -87,6 +87,24 @@ extern const struct pulse_hypsec pulse_hypsec_defaults;
 extern float pulse_hypsec_phase(const struct pulse_hypsec* pr, float t);
 extern void pulse_hypsec_init(float gamma, struct pulse_hypsec* pr);
 extern float pulse_hypsec_integral(const struct pulse_hypsec* hs);
+
+
+
+struct pulse_arb {
+
+	struct pulse super;
+
+	int samples;
+	_Complex float* values;
+	float gamma;
+	float A;		/* amplitude */
+};
+
+extern const struct pulse_arb pulse_arb_oc_cest_sat_defaults;
+
+extern void pulse_arb_init(struct pulse_arb* pa, float gamma);
+extern float pulse_arb_integral(const struct pulse_arb* pa);
+
 
 #endif		// _PULSE_H
 
