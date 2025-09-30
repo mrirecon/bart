@@ -12,6 +12,10 @@
 
 #include "num/multind.h"
 
+#ifdef USE_CUDA
+#include "num/gpuops.h"
+#endif
+
 #include "nlops/nlop.h"
 
 #include "nn/pytorch_cpp_wrapper.h"
