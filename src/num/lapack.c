@@ -59,7 +59,7 @@ void lapack_svd_econ(long M, long N,
 		     complex float A[N][M])
 {
 	PTR_ALLOC(float[MIN(M, N) - 1], superb);
-	LAPACKE(cgesvd, 'S', 'S', M, N, &A[0][0], M, S, &U[0][0], M, &VH[0][0], MIN(M, N), *superb);
+	LAPACKE(cgesvd, NULL != U ? 'S' : 'N', NULL != VH ? 'S' : 'N', M, N, &A[0][0], M, S, NULL != U ? &U[0][0] : NULL, M, NULL != VH ? &VH[0][0] : NULL, MIN(M, N), *superb);
 	PTR_FREE(superb);
 }
 
