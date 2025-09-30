@@ -202,6 +202,32 @@ void pulse_shapes_to_pulseq(struct pulseq *ps, int N, const struct rf_shape rf_s
 }
 
 
+static int check_existing_shape(const struct pulseq* ps, const struct shape* shape2)
+{
+	for (int i = 0; i < ps->shapes->len; i++) {
+
+		struct shape sh = ps->shapes->data[i];
+
+		if (sh.values->len != shape2->values->len)
+			continue;
+
+		bool equal = true;
+
+		for (int j = 0; j < sh.values->len; j++) {
+
+			if (1.e-12 < fabs(sh.values->data[j] - shape2->values->data[j])) {
+
+				equal = false;
+				break;
+			}
+		}
+
+		if (equal)
+			return sh.id;
+	}
+
+	return -1;
+}
 
 static void grad_to_pulseq(int grad_id[3], struct pulseq *ps, struct seq_sys sys, int N, const struct seq_event ev[N])
 {
@@ -221,9 +247,21 @@ static void grad_to_pulseq(int grad_id[3], struct pulseq *ps, struct seq_sys sys
 
 		int sid = ps->shapes->len + 1;
 		struct shape tmp_shape = make_compressed_shape(sid, grad_len, g_axis);
-		auto _tmp = tmp_shape.values;
-		VEC_ADD(ps->shapes, tmp_shape);
-		(void)_tmp;
+
+		int sid2 = check_existing_shape(ps, &tmp_shape);
+
+		if (0 < sid2) {
+
+			debug_printf(DP_DEBUG3, "re-using existing gradient shape %d instead of %d\n", sid2, sid);
+			xfree(tmp_shape.values);
+			sid = sid2;
+		}
+		else {
+
+			auto _tmp = tmp_shape.values;
+			VEC_ADD(ps->shapes, tmp_shape);
+			(void)_tmp;
+		}
 
 		grad_id[a] = ps->gradients->len + 1;
 		struct gradient g = {
