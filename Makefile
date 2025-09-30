@@ -151,12 +151,14 @@ ifneq (,$(findstring MSYS,$(UNAME)))
 endif
 
 
+
 ifeq ($(CC),emcc)
 	BUILDTYPE = WASM
-else
-ifneq ($(BUILDTYPE), MacOSX)
-	LDFLAGS += -Wl,-no-warn-execstack
 endif
+
+HAVE_NOEXECWARN := $(shell ld --help 2>&1 | grep -c "\-no\-warn\-execstack")
+ifneq ($(HAVE_NOEXECWARN), 0)
+	LDFLAGS += -Wl,-no-warn-execstack
 endif
 
 # Automatic dependency generation
