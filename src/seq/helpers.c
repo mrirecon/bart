@@ -47,8 +47,6 @@ void set_loop_dims_and_sms(struct seq_config* seq, long /* partitions*/ , long t
 	if ((PEMODE_RAGA == seq->enc.pe_mode)
 	    || (PEMODE_RAGA_ALIGNED == seq->enc.pe_mode)) {
 
-		assert(frames >= radial_views);
-
 		seq->loop_dims[TIME_DIM] = ceil(1. * frames / radial_views);
 		seq->loop_dims[ITER_DIM] = frames % radial_views;
 
