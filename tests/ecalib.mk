@@ -58,8 +58,16 @@ tests/test-ecalib-gpu: ecalib pocsense nrmse $(TESTS_OUT)/shepplogan_coil_ksp.ra
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-ecalib-econ: ecalib nrmse $(TESTS_OUT)/shepplogan_coil_ksp.ra
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/ecalib -m1 -e 1  $(TESTS_OUT)/shepplogan_coil_ksp.ra coils1.ra	;\
+	$(TOOLDIR)/ecalib -m1 -e -1 $(TESTS_OUT)/shepplogan_coil_ksp.ra coils2.ra	;\
+	$(TOOLDIR)/nrmse -t 0. coils1.ra coils2.ra					;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
 
 TESTS += tests/test-ecalib tests/test-ecalib-auto tests/test-ecalib-rotation
 TESTS += tests/test-ecalib-rotation2
 TESTS += tests/test-ecalib-phase
+TESTS += tests/test-ecalib-econ
 TESTS_GPU += tests/test-ecalib-gpu

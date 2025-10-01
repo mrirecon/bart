@@ -533,17 +533,90 @@ void caltwo(const struct ecalib_conf* conf, const long out_dims[DIMS], complex f
 	assert((1 == yh) || (0 == yh % 2));
 	assert((1 == zh) || (0 == zh % 2));
 
-	complex float* imgcov2 = md_alloc(4, covbig_dims, CFL_SIZE);
+	if (0 <= conf->econdim) {
 
-	debug_printf(DP_DEBUG1, "Resize...\n");
+		assert(conf->econdim < 3);
 
-	sinc_zeropad(4, covbig_dims, imgcov2, cov_dims, in_data);
+		long cov_int_dims[4] = { xh, yh, zh, cosize };
+		cov_int_dims[conf->econdim] = covbig_dims[conf->econdim];
 
-	debug_printf(DP_DEBUG1, "Point-wise eigen-decomposition...\n");
+		long edims[DIMS];
+		md_select_dims(DIMS, ~COIL_FLAG, edims, out_dims);
 
-	eigenmaps(out_dims, out_data, emaps, imgcov2, msk_dims, msk, conf->orthiter, conf->num_orthiter, conf->usegpu);
+		long sout_dims[DIMS];
+		long sin_dims[4];
+		long scov_dims[4];
+		long sedims[DIMS];
+		long smsk_dims[3];
 
-	md_free(imgcov2);
+		md_select_dims(DIMS, ~MD_BIT(conf->econdim), sout_dims, out_dims);
+		md_select_dims(4, ~MD_BIT(conf->econdim), sin_dims, cov_int_dims);
+		md_select_dims(DIMS, ~MD_BIT(conf->econdim), sedims, edims);
+		md_select_dims(4, ~MD_BIT(conf->econdim), scov_dims, covbig_dims);
+		if (NULL != msk_dims)
+			md_select_dims(3, ~MD_BIT(conf->econdim), smsk_dims, msk_dims);
+
+		complex float* imgcov_int = md_alloc_sameplace(4, cov_int_dims, CFL_SIZE, in_data);
+		sinc_zeropad(4, cov_int_dims, imgcov_int, cov_dims, in_data);
+
+		complex float* slc_in = md_alloc_sameplace(4, sin_dims, CFL_SIZE, imgcov_int);
+		complex float* slc_out = md_alloc_sameplace(DIMS, sout_dims, CFL_SIZE, out_data);
+		complex float* slc_cov = md_alloc_sameplace(4, scov_dims, CFL_SIZE, imgcov_int);
+		complex float* slc_emaps = (emaps == NULL) ? NULL : md_alloc_sameplace(DIMS, sedims, CFL_SIZE, emaps);
+		bool* slc_msk = (NULL == msk) ? NULL : md_alloc_sameplace(3, smsk_dims, sizeof(bool), msk);
+
+		long pos[DIMS] = { 0 };
+
+		double time = -timestamp();
+		debug_printf(DP_DEBUG1, "Point-wise eigen-decomposition (loop along %d) ... ", conf->econdim);
+
+		for (pos[conf->econdim] = 0; pos[conf->econdim] < covbig_dims[conf->econdim]; pos[conf->econdim]++) {
+
+			md_slice(4, MD_BIT(conf->econdim), pos, cov_int_dims, slc_in, imgcov_int, CFL_SIZE);
+			if (NULL != msk)
+				md_slice(3, MD_BIT(conf->econdim), pos, msk_dims, slc_msk, msk, sizeof(bool));
+
+			sinc_zeropad(4, scov_dims, slc_cov, sin_dims, slc_in);
+
+			eigenmaps(sout_dims, slc_out, slc_emaps, slc_cov, msk ? smsk_dims : 0, slc_msk, conf->orthiter, conf->num_orthiter, conf->usegpu);
+
+			md_copy_block(DIMS, pos, out_dims, out_data, sout_dims, slc_out, CFL_SIZE);
+
+			if (NULL != emaps)
+				md_copy_block(DIMS, pos, edims, emaps, sedims, slc_emaps, CFL_SIZE);
+		}
+
+		md_free(slc_in);
+		md_free(slc_out);
+		md_free(slc_cov);
+		md_free(slc_emaps);
+		md_free(slc_msk);
+		md_free(imgcov_int);
+
+		time += timestamp();
+		debug_printf(DP_DEBUG1, "done (%.3fs).\n", time);
+
+	} else {
+
+		complex float* imgcov2 = md_alloc_sameplace(4, covbig_dims, CFL_SIZE, in_data);
+
+		double time = -timestamp();
+
+		debug_printf(DP_DEBUG1, "Resize... ");
+
+		sinc_zeropad(4, covbig_dims, imgcov2, cov_dims, in_data);
+
+		time += timestamp();
+		debug_printf(DP_DEBUG1, "done (%.3fs).\nPoint-wise eigen-decomposition... ", time);
+		time = -timestamp();
+
+		eigenmaps(out_dims, out_data, emaps, imgcov2, msk_dims, msk, conf->orthiter, conf->num_orthiter, conf->usegpu);
+
+		time += timestamp();
+		debug_printf(DP_DEBUG1, "done (%.3fs).\n", time);
+
+		md_free(imgcov2);
+	}
 }
 
 
@@ -581,6 +654,7 @@ const struct ecalib_conf ecalib_defaults = {
 	.var = -1.,
 	.automate = false,
 	.phase_normalize = false,
+	.econdim = -2,
 };
 
 

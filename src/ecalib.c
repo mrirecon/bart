@@ -88,6 +88,7 @@ int main_ecalib(int argc, char* argv[argc])
 		OPT_PINT('n', &conf.numsv, "", "()"),
 		OPT_FLOAT('v', &conf.var, "variance", "Variance of noise in data."),
 		OPT_SET('a', &conf.automate, "Automatically pick thresholds."),
+		OPT_INT('e', &conf.econdim, "dim", "(Split second step along selected dimension, default: selects 2 for 3D and -1 (deactivated) for 2D)"),
 		OPT_INT('d', &debug_level, "level", "Debug level"),
 	};
 
@@ -117,6 +118,9 @@ int main_ecalib(int argc, char* argv[argc])
 	long ksp_dims[N];
 
 	complex float* in_data = load_cfl(in_file, N, ksp_dims);
+
+	if (-2 == conf.econdim)
+		conf.econdim = (3 == bitcount(md_nontriv_dims(3, ksp_dims)) ? 2 : -1);
 
 
 	// assert((kdims[0] < calsize_ro) && (kdims[1] < calsize_ro) && (kdims[2] < calsize_ro));

@@ -27,6 +27,7 @@ struct ecalib_conf {
 	float var;
 	_Bool automate;
 	_Bool phase_normalize;
+	int econdim;
 };
 
 extern const struct ecalib_conf ecalib_defaults;
