@@ -187,7 +187,7 @@ void pulse_shapes_to_pulseq(struct pulseq *ps, int N, const struct rf_shape rf_s
 
 			idea_cfl_to_sample(&rf_shapes[i], j, &m, &p);
 			mag[j] = (double)m;
-			pha[j] = (double)p / (2 * M_PI);
+			pha[j] = round(1.e5 * (double)p / (2 * M_PI)) * 1.e-5;
 			time[j] = round(j * rf_shapes[i].sar_dur / rf_shapes[i].samples / (1.e6 * ps->rf_raster_time));
 		}
 
