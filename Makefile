@@ -156,9 +156,12 @@ ifeq ($(CC),emcc)
 	BUILDTYPE = WASM
 endif
 
+
 HAVE_NOEXECWARN := $(shell ld --help 2>&1 | grep -c "\-no\-warn\-execstack")
+ifneq ($(BUILDTYPE), WASM)
 ifneq ($(HAVE_NOEXECWARN), 0)
 	LDFLAGS += -Wl,-no-warn-execstack
+endif
 endif
 
 # Automatic dependency generation
