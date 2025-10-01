@@ -1424,7 +1424,7 @@ void iPALM(	long NI, long isize[NI], enum IN_TYPE in_type[NI], float* x[const NI
 		tmp[i] = NULL;
 		grad[i] = NULL;
 
-		switch (in_type[i]){
+		switch (in_type[i]) {
 
 		case IN_STATIC:
 			break;

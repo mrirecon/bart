@@ -107,7 +107,7 @@ int main_ismrmrd(int argc, char* argv[argc])
 	bart_stream = stream_lookup(bart_cfl);
 
 	while (ismrm_stream_read(&config, D, dims, pos, bart_cfl))
-		if(bart_stream)
+		if (bart_stream)
 			stream_sync_slice(bart_stream, D, dims, flags, pos);
 
 	unmap_cfl(D, dims, bart_cfl);
