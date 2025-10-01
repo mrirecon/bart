@@ -535,6 +535,15 @@ void caltwo(const struct ecalib_conf* conf, const long out_dims[DIMS], complex f
 
 	if (0 <= conf->econdim) {
 
+#ifdef USE_CUDA
+		if (conf->usegpu) {
+			assert(!msk);
+			complex float* tmp = md_alloc_gpu(4, in_dims, CFL_SIZE);
+			md_copy(4, in_dims, tmp, in_data, CFL_SIZE);
+			in_data = tmp;
+		}
+#endif
+
 		assert(conf->econdim < 3);
 
 		long cov_int_dims[4] = { xh, yh, zh, cosize };
@@ -559,11 +568,11 @@ void caltwo(const struct ecalib_conf* conf, const long out_dims[DIMS], complex f
 		complex float* imgcov_int = md_alloc_sameplace(4, cov_int_dims, CFL_SIZE, in_data);
 		sinc_zeropad(4, cov_int_dims, imgcov_int, cov_dims, in_data);
 
-		complex float* slc_in = md_alloc_sameplace(4, sin_dims, CFL_SIZE, imgcov_int);
-		complex float* slc_out = md_alloc_sameplace(DIMS, sout_dims, CFL_SIZE, out_data);
-		complex float* slc_cov = md_alloc_sameplace(4, scov_dims, CFL_SIZE, imgcov_int);
-		complex float* slc_emaps = (emaps == NULL) ? NULL : md_alloc_sameplace(DIMS, sedims, CFL_SIZE, emaps);
-		bool* slc_msk = (NULL == msk) ? NULL : md_alloc_sameplace(3, smsk_dims, sizeof(bool), msk);
+		complex float* slc_in = md_alloc_sameplace(4, sin_dims, CFL_SIZE, in_data);
+		complex float* slc_out = md_alloc_sameplace(DIMS, sout_dims, CFL_SIZE, in_data);
+		complex float* slc_cov = md_alloc_sameplace(4, scov_dims, CFL_SIZE, in_data);
+		complex float* slc_emaps = (emaps == NULL) ? NULL : md_alloc_sameplace(DIMS, sedims, CFL_SIZE, in_data);
+		bool* slc_msk = (NULL == msk) ? NULL : md_alloc_sameplace(3, smsk_dims, sizeof(bool), in_data);
 
 		long pos[DIMS] = { 0 };
 
@@ -576,7 +585,16 @@ void caltwo(const struct ecalib_conf* conf, const long out_dims[DIMS], complex f
 			if (NULL != msk)
 				md_slice(3, MD_BIT(conf->econdim), pos, msk_dims, slc_msk, msk, sizeof(bool));
 
-			sinc_zeropad(4, scov_dims, slc_cov, sin_dims, slc_in);
+			if (conf->usegpu) {
+
+				// much more efficient on GPU than sequential 1D FFTs due to better strides
+				fftc(4, sin_dims, FFT_FLAGS, slc_in, slc_in);
+				md_resize_center(4, scov_dims, slc_cov, sin_dims, slc_in, CFL_SIZE);
+				ifftc(4, scov_dims, FFT_FLAGS, slc_cov, slc_cov);
+			} else {
+
+				sinc_zeropad(4, scov_dims, slc_cov, sin_dims, slc_in);
+			}
 
 			eigenmaps(sout_dims, slc_out, slc_emaps, slc_cov, msk ? smsk_dims : 0, slc_msk, conf->orthiter, conf->num_orthiter, conf->usegpu);
 
@@ -592,6 +610,9 @@ void caltwo(const struct ecalib_conf* conf, const long out_dims[DIMS], complex f
 		md_free(slc_emaps);
 		md_free(slc_msk);
 		md_free(imgcov_int);
+
+		if (conf->usegpu)
+			md_free(in_data);
 
 		time += timestamp();
 		debug_printf(DP_DEBUG1, "done (%.3fs).\n", time);

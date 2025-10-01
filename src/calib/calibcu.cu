@@ -199,15 +199,7 @@ void eigenmapscu(const long dims[5], _Complex float* optr, _Complex float* eptr,
 	size_t sharedMem = memPerPoint * pointsPerBlock;
 
 	eigenmapscu_kern<<<blocks, threads, sharedMem, cuda_get_stream()>>>(imgcov2_device_filled, imgcov2_device, optr_device, eptr_device, num_orthiter, x, y, z, N, M);
-	cudaDeviceSynchronize();
-
-	cudaError_t cu_error = cudaGetLastError();
-
-	if (cu_error != cudaSuccess) {
-
-		fprintf(stderr, "ERROR: %s\n", cudaGetErrorString(cu_error));
-		error("abort!\n");
-	}
+	CUDA_KERNEL_ERROR;
 
 	md_copy(5, dims, optr, optr_device, sizeof(_Complex float));
 	md_copy(5, eptr_dims, eptr, eptr_device, sizeof(_Complex float));
