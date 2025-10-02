@@ -465,8 +465,10 @@ static enum adc_return siemens_adc_read(bool vd, int fd, bool noise, bool refsca
 
 			if (radial) { // reorder for radial
 
-				pos[SLICE_DIM]	= mdh.sLC[3];
-
+				if (1 < dims[PHS2_DIM])
+					pos[SLICE_DIM]	= mdh.sLC[3]; // only for 3D
+				else
+					pos[SLICE_DIM]	= mdh.sLC[2];
 			} else {
 
 				pos[SLICE_DIM]	= mdh.sLC[2];
