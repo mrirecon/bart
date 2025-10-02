@@ -2,7 +2,9 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <complex.h>
+
 #include "misc/mri.h"
+#include "misc/misc.h"
 
 #include "seq/event.h"
 #include "seq/config.h"

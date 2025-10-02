@@ -334,6 +334,8 @@ void pulseq_writef(FILE *fp, struct pulseq *ps)
 	fprintf(fp, "# Pulseq sequence file\n"
 		    "# Created by BART %s\n", bart_version);
 
+	fprintf(fp, "# bart %s\n", command_line);
+
 	fprintf(fp, "\n[VERSION]\nmajor %d\nminor %d\nrevision %d\n",
 		ps->version[0], ps->version[1], ps->version[2]);
 
