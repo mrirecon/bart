@@ -22,6 +22,8 @@
 
 #include "noncart/traj.h"
 
+#include "seq/config.h"
+
 static const char help_str[] = "Generate file with RAGA indices for given approximated tiny golden ratio angle/raga increment and full frame spokes.";
 
 
@@ -45,6 +47,8 @@ int main_raga(int argc, char* argv[argc])
 
 		OPTL_PINT('s', "tiny-angle", &tiny_gold, "# Tiny GA", "tiny (small) golden ratio angle"),
 		OPTL_PINT('r', "raga-inc", &raga_inc, "d", "Increment of RAGA Sampling"),
+		OPTL_LONG('m', "slices", &dims[SLICE_DIM], "m", "Number of (non-aligned) slices"),
+		OPTL_LONG('z', "partitions", &dims[PHS2_DIM], "m", "Number of (non-aligned) partitions"),
 		OPTL_CLEAR(0, "no-double-base", &double_base, "Define GA over Pi base instead of 2Pi."),
 	};
 
@@ -92,7 +96,7 @@ int main_raga(int argc, char* argv[argc])
 		MD_ACCESS(DIMS, strs, pos, indices) = (p * raga_increment(Y  / (double_base ? 1 : 2), tiny_gold)) % Y;
 		p++;
 
-	} while (md_next(DIMS, dims, ~1UL, pos));
+	} while (md_next_permuted(DIMS, seq_loop_order_avg_outer, dims, ~1UL, pos));
 
 	assert(p == md_calc_size(DIMS, dims));
 
