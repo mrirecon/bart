@@ -169,6 +169,27 @@ tests/test-bin-zero-fill: vec join bin nrmse
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+
+tests/test-bin-reorder-multi: vec join zeros noise transpose reshape slice bin nrmse
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+		$(TOOLDIR)/vec 3 4 5 0 1 2 i0t.ra					;\
+		$(TOOLDIR)/transpose 0 2 i0t.ra i0.ra				;\
+		$(TOOLDIR)/vec 2 3 4 0 5 1 i1t.ra					;\
+		$(TOOLDIR)/transpose 0 2 i1t.ra i1.ra				;\
+		$(TOOLDIR)/join 13 i0.ra i1.ra ind.ra				;\
+		$(TOOLDIR)/zeros 2 6 2 z.ra ;\
+		$(TOOLDIR)/noise --uniform z.ra tmp.ra ;\
+		$(TOOLDIR)/reshape 8199 1 1 6 2 tmp.ra input.ra ;\
+		$(TOOLDIR)/slice 13 0 input.ra tmp.ra ;\
+		$(TOOLDIR)/bin -o i0.ra tmp.ra ref0.ra ;\
+		$(TOOLDIR)/slice 13 1 input.ra tmp.ra ;\
+		$(TOOLDIR)/bin -o i1.ra tmp.ra ref1.ra ;\
+		$(TOOLDIR)/join 13 ref0.ra ref1.ra ref.ra				;\
+		$(TOOLDIR)/bin -o ind.ra input.ra multi.ra ;\
+		$(TOOLDIR)/nrmse -t 0. ref.ra multi.ra			;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 TESTS += tests/test-bin-label tests/test-bin-reorder tests/test-bin-quadrature tests/test-bin-quadrature-offset tests/test-bin-amplitude
-TESTS += tests/test-bin-zero-fill
+TESTS += tests/test-bin-zero-fill tests/test-bin-reorder-multi
 

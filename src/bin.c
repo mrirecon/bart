@@ -278,7 +278,26 @@ int main_bin(int argc, char* argv[argc])
 		md_check_compat(DIMS, ~0u, src_dims, labels_dims);
 		md_check_bounds(DIMS, ~0u, labels_dims, src_dims);
 
-		int dim = find_dim(DIMS, labels_dims); // Dimension to be binned
+		int dim = -1;
+
+		long loop_dims[DIMS];
+		md_singleton_dims(DIMS, loop_dims);
+
+		if (1 < bitcount(md_nontriv_dims(DIMS, labels_dims))) {
+
+			dim = 2;
+
+			assert(BIN_REORDER == bin_type);
+			assert(md_check_equal_dims(DIMS, labels_dims, src_dims, md_nontriv_dims(DIMS, labels_dims)));
+
+			md_select_dims(DIMS, md_nontriv_dims(DIMS, labels_dims) & ~PHS2_FLAG, loop_dims, labels_dims);
+			debug_printf(DP_INFO, "Non 1D label - reordering source: PHS2_DIM!\n");
+		}
+		else {
+
+			dim = find_dim(DIMS, labels_dims); // Dimension to be binned
+		}
+
 		long N = labels_dims[dim]; // number of samples to be binned
 
 		// Determine number of clusters
@@ -358,7 +377,7 @@ int main_bin(int argc, char* argv[argc])
 
 
 		long singleton_dims[DIMS];
-		md_select_dims(DIMS, ~MD_BIT(dim), singleton_dims, src_dims);
+		md_select_dims(DIMS, ~(MD_BIT(dim) | md_nontriv_dims(DIMS, loop_dims)), singleton_dims, src_dims);
 
 		complex float* singleton = md_alloc(DIMS, singleton_dims, CFL_SIZE);
 
@@ -370,39 +389,49 @@ int main_bin(int argc, char* argv[argc])
 		long pos_src[DIMS] = { };
 		long pos_dst[DIMS] = { };
 
+		long pos_loop[DIMS] = { };
+
+		long label_strs[DIMS];
+		md_calc_strides(DIMS, label_strs, labels_dims, CFL_SIZE);
+
 		for (int i = 0; i < N; i++) { // TODO: Speed but by direct copying
 
-			int label = (int)crealf(labels[i]);
+			do  {
+				int label = (int)crealf(labels[i]);
 
-			if (BIN_ZEROFILL == bin_type) {
+				if (BIN_ZEROFILL == bin_type) {
 
-				pos_src[dim] = label;
-				pos_dst[dim] = label;
+					pos_src[dim] = label;
+					pos_dst[dim] = label;
 
-				pos_dst[zero_filled_dim] = i / spokes_per_frame;
+					pos_dst[zero_filled_dim] = i / spokes_per_frame;
 
-			} else if (BIN_REORDER != bin_type) {
+				} else if (BIN_REORDER != bin_type) {
 
-				pos_src[dim] = i;
-				pos_dst[dim] = label;
+					pos_src[dim] = i;
+					pos_dst[dim] = label;
 
-				pos_dst[conf.cluster_dim] = idx[label]; // Next empty singleton index for i-th cluster
-				idx[label]++;
+					pos_dst[conf.cluster_dim] = idx[label]; // Next empty singleton index for i-th cluster
+					idx[label]++;
 
-			} else {
+				} else {
 
-				pos_src[dim] = label;	// switched!
-				pos_dst[dim] = i;
-			}
+					md_copy_dims(DIMS, pos_src, pos_loop);
+					md_copy_dims(DIMS, pos_dst, pos_loop);
+					pos_src[dim] = (int)crealf(MD_ACCESS(DIMS, (pos_loop[dim] = i, pos_loop), label_strs, labels));
+					pos_dst[dim] = i;
+				}
 
-			if (is_stream && strm_src)
-				stream_sync_slice(strm_src, DIMS, src_dims, MD_BIT(dim), pos_src);
+				if (is_stream && strm_src)
+					stream_sync_slice(strm_src, DIMS, src_dims, MD_BIT(dim), pos_src);
 
-			md_copy_block(DIMS, pos_src, singleton_dims, singleton, src_dims, src, CFL_SIZE);
-			md_copy_block(DIMS, pos_dst, dst_dims, dst, singleton_dims, singleton, CFL_SIZE);
+				md_copy_block(DIMS, pos_src, singleton_dims, singleton, src_dims, src, CFL_SIZE);
+				md_copy_block(DIMS, pos_dst, dst_dims, dst, singleton_dims, singleton, CFL_SIZE);
 
-			if (is_stream && strm_dst)
-				stream_sync_slice(strm_dst, DIMS, dst_dims, MD_BIT(dim), pos_dst);
+				if (is_stream && strm_dst)
+					stream_sync_slice(strm_dst, DIMS, dst_dims, MD_BIT(dim), pos_dst);
+
+			} while (md_next(DIMS, loop_dims, md_nontriv_dims(DIMS, loop_dims) , pos_loop));
 
 			if (0 == i % ((10 >= N) ? 1 : N / 10))
 				debug_printf(DP_DEBUG3, "Binning: %f\n", 100. * i / (double)N);
