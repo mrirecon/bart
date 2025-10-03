@@ -39,6 +39,7 @@ int main_raga(int argc, char* argv[argc])
 	int raga_inc = 0;
 	int tiny_gold = 0;
 	bool double_base = true;
+	long dims[DIMS] = { [0 ... DIMS - 1] = 1  };
 
 	const struct opt_s opts[] = {
 
@@ -75,28 +76,34 @@ int main_raga(int argc, char* argv[argc])
 	assert(0 < tiny_gold);
 
 	// Generate index file
+	dims[PHS1_DIM] = Y;
 
-	long dims[DIMS] = { [0 ... DIMS - 1] = 1  };
-	dims[PHS2_DIM] = Y;
-
-	complex float* indices = create_cfl(out_file, DIMS, dims);
+	complex float* indices = md_alloc(DIMS, dims, CFL_SIZE);
 	md_clear(DIMS, dims, indices, CFL_SIZE);
+
+
+	long strs[DIMS];
+	md_calc_strides(DIMS, strs, dims, CFL_SIZE);
 
 	int p = 0;
 	long pos[DIMS] = { };
 
 	do {
-		int j = pos[PHS2_DIM];
-
-		indices[p] = (j * raga_increment(Y  / (double_base ? 1 : 2), tiny_gold)) % Y;
-
+		MD_ACCESS(DIMS, strs, pos, indices) = (p * raga_increment(Y  / (double_base ? 1 : 2), tiny_gold)) % Y;
 		p++;
 
 	} while (md_next(DIMS, dims, ~1UL, pos));
 
-	assert(p == Y);
+	assert(p == md_calc_size(DIMS, dims));
 
-	unmap_cfl(DIMS, dims, indices);
+	long odims[DIMS];
+	md_transpose_dims(DIMS, PHS2_DIM, PHS1_DIM, odims, dims);
+
+	complex float* odata = create_cfl(out_file, DIMS, odims);
+	md_transpose(DIMS, PHS2_DIM, PHS1_DIM, odims, odata, dims, indices, CFL_SIZE);
+
+	md_free(indices);
+	unmap_cfl(DIMS, dims, odata);
 
 	return 0;
 }
