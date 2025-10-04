@@ -15,6 +15,7 @@
 #include <errno.h>
 #include <string.h>
 #include <signal.h>
+#include <math.h>
 
 #ifdef _WIN32
 #include "win/fmemopen.h"
@@ -363,6 +364,9 @@ static void parse_bart_opts(int* argcp, char*** argvp, int order[DIMS], stream_t
 	init_cfl_loop_desc(DIMS, loop_dims, offs_size, flags, omp_threads, 0);
 }
 
+static double time = 0;
+static double time_sq = 0;
+static long count = 0;
 
 static int batch_wrapper(main_fun_t* dispatch_func, int argc, char *argv[argc], long pos)
 {
@@ -380,7 +384,18 @@ static int batch_wrapper(main_fun_t* dispatch_func, int argc, char *argv[argc], 
 	set_cfl_loop_index(pos);
 	num_rand_init(0ULL);
 
+	double loctime = -timestamp();
+
 	int ret = (*dispatch_func)(argc, thread_argv);
+
+	loctime += timestamp();
+
+#pragma omp atomic
+	time += loctime;
+#pragma omp atomic
+	time_sq += loctime * loctime;
+#pragma omp atomic
+	count++;
 
 	io_memory_cleanup();
 
@@ -514,6 +529,7 @@ int main_bart(int argc, char* argv[argc])
 	if (builtin_found) {
 
 		debug_printf(DP_DEBUG3, "Builtin found: %s\n", bn);
+		double tot_time = -timestamp();
 
 		unsigned int v[5];
 		version_parse(v, bart_version);
@@ -581,6 +597,12 @@ int main_bart(int argc, char* argv[argc])
 
 		deinit_mpi();
 		bart_exit_cleanup();
+
+		tot_time += timestamp();
+		double time_mean = time / count;
+		double time_std = sqrt(time_sq / count - time_mean * time_mean);
+		debug_printf(DP_DEBUG1, "bart %s run in %.2es, time per slice: %.3e +- %.3es\n",
+					bn, tot_time, time_mean, time_std);
 
 		return final_ret;
 
