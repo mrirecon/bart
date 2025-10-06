@@ -64,3 +64,19 @@ tests/test-raga-multislice: raga vec transpose bin circshift join nrmse
 	touch $@
 
  TESTS += tests/test-raga-multislice
+
+
+
+tests/test-raga-multi-inversion: raga circshift join nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
+	$(TOOLDIR)/raga -s 1 -i 3 13 ind_mi.ra				;\
+	$(TOOLDIR)/raga -s 1      13 ind_i1.ra				;\
+	$(TOOLDIR)/circshift 2 12 ind_i1.ra ind_i2.ra			;\
+	$(TOOLDIR)/circshift 2 11 ind_i1.ra ind_i3.ra			;\
+	$(TOOLDIR)/join 15 ind_i1.ra ind_i2.ra ind_i3.ra ind_ref.ra	;\
+	$(TOOLDIR)/nrmse -t 0. ind_mi.ra ind_ref.ra			;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+ TESTS += tests/test-raga-multi-inversion
+

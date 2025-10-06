@@ -290,9 +290,22 @@ long raga_increment_from_pos(const int order[DIMS], const long pos[DIMS], unsign
 {
 	assert(conf->rational);
 
-	long index = md_ravel_index_permuted(DIMS, pos, flags & ~conf->aligned_flags, dims, order);
+	unsigned long outer_loops = 0;
 
-	return (conf->raga_inc * index) % conf->Y;
+	bool outer = false;
+	for (int d = 0; d < DIMS; d++) {
+
+		if (outer)
+			outer_loops |= (1UL << order[d]);
+
+		if (TIME_DIM == order[d])
+			outer = true;
+	}
+
+	long idx_inner = md_ravel_index_permuted(DIMS, pos, flags & ~(conf->aligned_flags | outer_loops), dims, order);
+	long idx_outer = md_ravel_index_permuted(DIMS, pos, flags & ~conf->aligned_flags & outer_loops, dims, order);
+
+	return conf->raga_inc * (idx_inner + idx_outer) % conf->Y;
 }
 
 

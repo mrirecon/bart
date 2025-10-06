@@ -49,6 +49,8 @@ int main_raga(int argc, char* argv[argc])
 		OPTL_PINT('r', "raga-inc", &raga_inc, "d", "Increment of RAGA Sampling"),
 		OPTL_LONG('m', "slices", &dims[SLICE_DIM], "m", "Number of (non-aligned) slices"),
 		OPTL_LONG('z', "partitions", &dims[PHS2_DIM], "m", "Number of (non-aligned) partitions"),
+		OPTL_LONG('i', "inversions", &dims[BATCH_DIM], "i", "Number of (non-aligned) inversions"),
+		OPTL_LONG('c', "shifts", &dims[CSHIFT_DIM], "c", "Number of (non-aligned) shifts"),
 		OPTL_CLEAR(0, "no-double-base", &double_base, "Define GA over Pi base instead of 2Pi."),
 	};
 
@@ -85,25 +87,35 @@ int main_raga(int argc, char* argv[argc])
 	complex float* indices = md_alloc(DIMS, dims, CFL_SIZE);
 	md_clear(DIMS, dims, indices, CFL_SIZE);
 
+	long odims[DIMS];
+	md_transpose_dims(DIMS, PHS2_DIM, PHS1_DIM, odims, dims);
+
+	complex float* odata = create_cfl(out_file, DIMS, odims);
+	md_clear(DIMS, odims, odata, CFL_SIZE);
+
 
 	long strs[DIMS];
 	md_calc_strides(DIMS, strs, dims, CFL_SIZE);
 
-	int p = 0;
+	struct traj_conf conf = traj_defaults;
+
+	conf.rational = true;
+	conf.Y = Y;
+	conf.tiny_gold = tiny_gold;
+	conf.double_base = double_base;
+	conf.raga_inc = raga_increment(conf.Y  / (conf.double_base ? 1 : 2), conf.tiny_gold);
+
 	long pos[DIMS] = { };
+	int p = 0;
 
 	do {
-		MD_ACCESS(DIMS, strs, pos, indices) = (p * raga_increment(Y  / (double_base ? 1 : 2), tiny_gold)) % Y;
+		MD_ACCESS(DIMS, strs, pos, indices) = raga_increment_from_pos(seq_loop_order_avg_outer, pos, ~0UL, dims, &conf);
 		p++;
 
 	} while (md_next_permuted(DIMS, seq_loop_order_avg_outer, dims, ~1UL, pos));
 
 	assert(p == md_calc_size(DIMS, dims));
 
-	long odims[DIMS];
-	md_transpose_dims(DIMS, PHS2_DIM, PHS1_DIM, odims, dims);
-
-	complex float* odata = create_cfl(out_file, DIMS, odims);
 	md_transpose(DIMS, PHS2_DIM, PHS1_DIM, odims, odata, dims, indices, CFL_SIZE);
 
 	md_free(indices);

@@ -30,6 +30,27 @@
 
 #include "noncart/traj.h"
 
+static const int traj_loop_order[DIMS] = {
+
+	SLICE_DIM,
+	COEFF2_DIM,
+	COEFF_DIM,
+	PHS2_DIM,
+	PHS1_DIM,
+	AVG_DIM,
+	TIME2_DIM,
+	TIME_DIM,
+	BATCH_DIM,
+
+	READ_DIM,
+	COIL_DIM,
+	MAPS_DIM,
+	TE_DIM,
+	ITER_DIM,
+	CSHIFT_DIM,
+	LEVEL_DIM
+};
+
 static const char help_str[] = "Computes k-space trajectories.";
 
 
@@ -300,18 +321,10 @@ int main_traj(int argc, char* argv[argc])
 				if (conf.aligned)
 					conf.aligned_flags |= SLICE_FLAG;
 
-				int order[DIMS] = { 0 };
-
-				for (int d = 0; d < DIMS; d++)
-					order[d] = d;
-
-				order[SLICE_DIM] = PHS2_DIM;
-				order[PHS2_DIM] = SLICE_DIM;
-
 				if (!use_compat_to_version("v0.9.00")) {
 
 					double atom = calc_angle_atom(&conf);
-					long inc = raga_increment_from_pos(order, pos, ~3UL, dims, &conf);
+					long inc = raga_increment_from_pos(traj_loop_order, pos, ~3UL, dims, &conf);
 
 					angle = atom * inc;
 
