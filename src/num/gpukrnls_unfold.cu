@@ -28,6 +28,15 @@ struct cuda_strides_3D {
 	long ostrs[3];
 	long istrs1[3];
 	long istrs2[3];
+
+	int blockDim[3];
+	long sistrs1[3];
+	long sistrs2[3];
+
+	int shared1_size;
+	int shared2_size;
+	unsigned int const1;
+	unsigned int const2;
 };
 
 static struct cuda_strides_3D strs_ini = {
@@ -38,6 +47,14 @@ static struct cuda_strides_3D strs_ini = {
 	.ostrs = { 0, 0, 0},
 	.istrs1 = { 0, 0, 0},
 	.istrs2 = { 0, 0, 0},
+
+	.blockDim = {0, 0, 0},
+	.sistrs1 = {0, 0, 0},
+	.sistrs2 = {0, 0, 0},
+	.shared1_size = 0,
+	.shared2_size = 0,
+	.const1 = 0,
+	.const2 = 0,
 };
 
 typedef void(*fOp)(float*, float, float);
@@ -46,486 +63,263 @@ typedef void(kern_fOp_unfold)(cuda_strides_3D strs, float* dst, const float* src
 typedef void(*zOp)(cuFloatComplex*, cuFloatComplex, cuFloatComplex);
 typedef void(kern_zOp_unfold)(cuda_strides_3D strs, cuFloatComplex* dst, const cuFloatComplex* src1, const cuFloatComplex* src2);
 
+#define BLK_SIZE(x) (1U << (x))
 
-template <fOp fop, int N, unsigned int const1, unsigned int const2>
+__device__ static long offset_reravel_index(const long dims[3], const long strs[3], const long pos[3], const int blk_dim[3], unsigned int cflag, int idx)
+{
+	long offset = 0;
+	bool valid = true;
+
+	for (int i = 0; i < 3; i++) {
+
+		if (MD_IS_SET(cflag, i))
+			continue;
+
+		unsigned int idx_i = idx & ((1U << blk_dim[i]) - 1);
+		valid = valid && (pos[i] + idx_i < dims[i]);
+		offset += idx_i * strs[i];
+		idx = idx >> blk_dim[i];
+	}
+
+	valid = valid && (0 == idx);
+
+	return valid ? offset : -1;
+}
+
+template <fOp fop>
 __global__ static void kern_fop_unfold_generic(cuda_strides_3D strs, float* dst, const float* src1, const float* src2)
 {
 	long idx[3];
 	long idx_init[3];
 	unsigned int stride[3];
-	unsigned int thread[3];
-	unsigned int block[3];
+	int N = strs.N;
 
-	thread[0] = (0 < N) ? threadIdx.x : 0;
-	thread[1] = (1 < N) ? threadIdx.y : 0;
-	thread[2] = (2 < N) ? threadIdx.z : 0;
+	idx_init[0] = (0 < N) ? BLK_SIZE(strs.blockDim[0]) * blockIdx.x : 0; //if idx would contain thread id, the loop might diverge ->deadlock with syncthreads
+	idx_init[1] = (1 < N) ? BLK_SIZE(strs.blockDim[1]) * blockIdx.y : 0;
+	idx_init[2] = (2 < N) ? BLK_SIZE(strs.blockDim[2]) * blockIdx.z : 0;
 
-	block[0] = (0 < N) ? blockDim.x : 1;
-	block[1] = (1 < N) ? blockDim.y : 1;
-	block[2] = (2 < N) ? blockDim.z : 1;
-
-	idx_init[0] = (0 < N) ? blockDim.x * blockIdx.x : 0; //if idx would contain thread id, the loop might diverge ->deadlock with syncthreads
-	idx_init[1] = (1 < N) ? blockDim.y * blockIdx.y : 0;
-	idx_init[2] = (2 < N) ? blockDim.z * blockIdx.z : 0;
-
-	stride[0] = (0 < N) ? blockDim.x * gridDim.x : 1;
-	stride[1] = (1 < N) ? blockDim.y * gridDim.y : 1;
-	stride[2] = (2 < N) ? blockDim.z * gridDim.z : 1;
+	stride[0] = (0 < N) ? BLK_SIZE(strs.blockDim[0]) * gridDim.x : 1;
+	stride[1] = (1 < N) ? BLK_SIZE(strs.blockDim[1]) * gridDim.y : 1;
+	stride[2] = (2 < N) ? BLK_SIZE(strs.blockDim[2]) * gridDim.z : 1;
 
 	for (idx[2] = idx_init[2]; idx[2] < ((2 < N) ? strs.dims[2] : 1); idx[2] += stride[2])
 		for (idx[1] = idx_init[1]; idx[1] < ((1 < N) ? strs.dims[1] : 1); idx[1] += stride[1])
 			for (idx[0] = idx_init[0]; idx[0] < ((0 < N) ? strs.dims[0] : 1); idx[0] += stride[0]) {
 
-				long o_off =  0;
-				long i1_off = 0;
-				long i2_off = 0;
+				float* tmp_dst = dst;
+				const float* tmp_src1 = src1;
+				const float* tmp_src2 = src2;
 
-				bool valid = true;
+				for (int i = 0; i < N; i++) {
 
-				for (int i = 0; i < N ; i++) {
-
-					valid = valid && ((thread[i] + idx[i]) < strs.dims[i]);
-
-					o_off +=  (thread[i] + idx[i]) * strs.ostrs[i];
-					i1_off += (thread[i] + idx[i]) * strs.istrs1[i];
-					i2_off += (thread[i] + idx[i]) * strs.istrs2[i];
+					tmp_dst += idx[i] * strs.ostrs[i];
+					tmp_src1 += idx[i] * strs.istrs1[i];
+					tmp_src2 += idx[i] * strs.istrs2[i];
 				}
 
+				extern __shared__ float shared_float[];
+				float* tmp_float = shared_float;
 
-				int tmp1_size = 0;
-				int tmp1_idx = 0;
-				bool read1 = false;
+				if (strs.const1) {
 
-				if (const1) {
+					long roffset = offset_reravel_index(strs.dims, strs.istrs1, idx, strs.blockDim, strs.const1, threadIdx.x);
+					long soffset = offset_reravel_index(strs.dims, strs.sistrs1, idx, strs.blockDim, strs.const1, threadIdx.x);
+					bool valid = -1 != roffset;
 
-					tmp1_size = 1;
-					read1 = true;
+					if (valid)
+						tmp_float[soffset] = tmp_src1[roffset];
 
-					for (int i = 0; i < N; i++) {
-
-						if (const1 & (1u << i)) {
-
-							read1 = read1 && (0 == thread[i]);
-
-						} else {
-
-							tmp1_idx += tmp1_size * thread[i];
-							tmp1_size *= block[i];
-						}
-					}
+					tmp_src1 = tmp_float;
+					tmp_float += strs.shared1_size;
 				}
 
-				int tmp2_size = 0;
-				int tmp2_idx = tmp1_size;
-				_Bool read2 = false;
+				if (strs.const2) {
 
-				if (const2) {
+					long roffset = offset_reravel_index(strs.dims, strs.istrs2, idx, strs.blockDim, strs.const2, threadIdx.x);
+					long soffset = offset_reravel_index(strs.dims, strs.sistrs2, idx, strs.blockDim, strs.const2, threadIdx.x);
+					bool valid = -1 != roffset;
 
-					tmp2_size = 1;
-					read2 = true;
+					if (valid)
+						tmp_float[soffset] = tmp_src2[roffset];
 
-					for (int i = 0; i < N; i++) {
-
-						if (const2 & (1u << i)) {
-
-							read2 = read2 && (0 == thread[i]);
-
-						} else {
-
-							tmp2_idx += tmp2_size * thread[i];
-							tmp2_size *= block[i];
-						}
-					}
+					tmp_src2 = tmp_float;
 				}
 
-				extern __shared__ float tmp_float[];
-
-				if (valid && read1)
-					tmp_float[tmp1_idx] = src1[i1_off];
-
-				if (valid && read2)
-					tmp_float[tmp2_idx] = src2[i2_off];
-
-				if (const1 || const2)
+				if (strs.const1 || strs.const2)
 					__syncthreads();
 
-				if (valid)
-					fop(&(dst[o_off]), (const1 ? tmp_float[tmp1_idx] : src1[i1_off]), (const2 ? tmp_float[tmp2_idx] : src2[i2_off]));
+				long o_off = offset_reravel_index(strs.dims, strs.ostrs, idx, strs.blockDim, 0, threadIdx.x);
+				long i1_off = offset_reravel_index(strs.dims, strs.sistrs1, idx, strs.blockDim, 0, threadIdx.x);
+				long i2_off = offset_reravel_index(strs.dims, strs.sistrs2, idx, strs.blockDim, 0, threadIdx.x);
+
+				if (-1 != o_off)
+					fop(tmp_dst + o_off, tmp_src1[i1_off], tmp_src2[i2_off]);
+
+				if (strs.const1 || strs.const2)
+					__syncthreads();
 			}
 }
 
-#define run_fop_unfold(_N, _const1, _const2) if ((_N == N) && (_const1 == const1) && (_const2 == const2)) return kern_fop_unfold_generic<fop, _N, _const1, _const2>;
-
-template <fOp fop>
-static kern_fOp_unfold* get_kern_fop_unfold(int N, unsigned int const1, unsigned int const2)
-{
-	run_fop_unfold(1 , 0, 0);
-	run_fop_unfold(1 , 1, 0);
-	run_fop_unfold(1 , 0, 1);
-
-
-	run_fop_unfold(2 , 0, 0);
-	run_fop_unfold(2 , 0, 1);
-	run_fop_unfold(2 , 0, 2);
-	run_fop_unfold(2 , 0, 3);
-
-	run_fop_unfold(2 , 1, 0);
-	run_fop_unfold(2 , 1, 1);
-	run_fop_unfold(2 , 1, 2);
-	run_fop_unfold(2 , 1, 3);
-
-	run_fop_unfold(2 , 2, 0);
-	run_fop_unfold(2 , 2, 1);
-	run_fop_unfold(2 , 2, 2);
-	run_fop_unfold(2 , 2, 3);
-
-	run_fop_unfold(2 , 3, 0);
-	run_fop_unfold(2 , 3, 1);
-	run_fop_unfold(2 , 3, 2);
-	run_fop_unfold(2 , 3, 3);
-
-
-	run_fop_unfold(3 , 0, 0);
-	run_fop_unfold(3 , 0, 1);
-	run_fop_unfold(3 , 0, 2);
-	run_fop_unfold(3 , 0, 3);
-	run_fop_unfold(3 , 0, 4);
-	run_fop_unfold(3 , 0, 5);
-	run_fop_unfold(3 , 0, 6);
-	run_fop_unfold(3 , 0, 7);
-
-	run_fop_unfold(3 , 1, 0);
-	run_fop_unfold(3 , 1, 1);
-	run_fop_unfold(3 , 1, 2);
-	run_fop_unfold(3 , 1, 3);
-	run_fop_unfold(3 , 1, 4);
-	run_fop_unfold(3 , 1, 5);
-	run_fop_unfold(3 , 1, 6);
-	run_fop_unfold(3 , 1, 7);
-
-	run_fop_unfold(3 , 2, 0);
-	run_fop_unfold(3 , 2, 1);
-	run_fop_unfold(3 , 2, 2);
-	run_fop_unfold(3 , 2, 3);
-	run_fop_unfold(3 , 2, 4);
-	run_fop_unfold(3 , 2, 5);
-	run_fop_unfold(3 , 2, 6);
-	run_fop_unfold(3 , 2, 7);
-
-	run_fop_unfold(3 , 3, 0);
-	run_fop_unfold(3 , 3, 1);
-	run_fop_unfold(3 , 3, 2);
-	run_fop_unfold(3 , 3, 3);
-	run_fop_unfold(3 , 3, 4);
-	run_fop_unfold(3 , 3, 5);
-	run_fop_unfold(3 , 3, 6);
-	run_fop_unfold(3 , 3, 7);
-
-	run_fop_unfold(3 , 4, 0);
-	run_fop_unfold(3 , 4, 1);
-	run_fop_unfold(3 , 4, 2);
-	run_fop_unfold(3 , 4, 3);
-	run_fop_unfold(3 , 4, 4);
-	run_fop_unfold(3 , 4, 5);
-	run_fop_unfold(3 , 4, 6);
-	run_fop_unfold(3 , 4, 7);
-
-	run_fop_unfold(3 , 5, 0);
-	run_fop_unfold(3 , 5, 1);
-	run_fop_unfold(3 , 5, 2);
-	run_fop_unfold(3 , 5, 3);
-	run_fop_unfold(3 , 5, 4);
-	run_fop_unfold(3 , 5, 5);
-	run_fop_unfold(3 , 5, 6);
-	run_fop_unfold(3 , 5, 7);
-
-	run_fop_unfold(3 , 6, 0);
-	run_fop_unfold(3 , 6, 1);
-	run_fop_unfold(3 , 6, 2);
-	run_fop_unfold(3 , 6, 3);
-	run_fop_unfold(3 , 6, 4);
-	run_fop_unfold(3 , 6, 5);
-	run_fop_unfold(3 , 6, 6);
-	run_fop_unfold(3 , 6, 7);
-
-	run_fop_unfold(3 , 7, 0);
-	run_fop_unfold(3 , 7, 1);
-	run_fop_unfold(3 , 7, 2);
-	run_fop_unfold(3 , 7, 3);
-	run_fop_unfold(3 , 7, 4);
-	run_fop_unfold(3 , 7, 5);
-	run_fop_unfold(3 , 7, 6);
-	run_fop_unfold(3 , 7, 7);
-
-	assert(0);
-	return NULL;
-}
-
-
-template <zOp zop, int N, unsigned int const1, unsigned int const2>
+template <zOp zop>
 __global__ static void kern_zop_unfold_generic(cuda_strides_3D strs, cuFloatComplex* dst, const cuFloatComplex* src1, const cuFloatComplex* src2)
 {
 	long idx[3];
 	long idx_init[3];
 	unsigned int stride[3];
-	unsigned int thread[3];
-	unsigned int block[3];
+	int N = strs.N;
 
-	thread[0] = (0 < N) ? threadIdx.x : 0;
-	thread[1] = (1 < N) ? threadIdx.y : 0;
-	thread[2] = (2 < N) ? threadIdx.z : 0;
+	idx_init[0] = (0 < N) ? BLK_SIZE(strs.blockDim[0]) * blockIdx.x : 0; //if idx would contain thread id, the loop might diverge ->deadlock with syncthreads
+	idx_init[1] = (1 < N) ? BLK_SIZE(strs.blockDim[1]) * blockIdx.y : 0;
+	idx_init[2] = (2 < N) ? BLK_SIZE(strs.blockDim[2]) * blockIdx.z : 0;
 
-	block[0] = (0 < N) ? blockDim.x : 1;
-	block[1] = (1 < N) ? blockDim.y : 1;
-	block[2] = (2 < N) ? blockDim.z : 1;
-
-	idx_init[0] = (0 < N) ? blockDim.x * blockIdx.x : 0; //if idx would contain thread id, the loop might diverge ->deadlock with syncthreads
-	idx_init[1] = (1 < N) ? blockDim.y * blockIdx.y : 0;
-	idx_init[2] = (2 < N) ? blockDim.z * blockIdx.z : 0;
-
-	stride[0] = (0 < N) ? blockDim.x * gridDim.x : 1;
-	stride[1] = (1 < N) ? blockDim.y * gridDim.y : 1;
-	stride[2] = (2 < N) ? blockDim.z * gridDim.z : 1;
+	stride[0] = (0 < N) ? BLK_SIZE(strs.blockDim[0]) * gridDim.x : 1;
+	stride[1] = (1 < N) ? BLK_SIZE(strs.blockDim[1]) * gridDim.y : 1;
+	stride[2] = (2 < N) ? BLK_SIZE(strs.blockDim[2]) * gridDim.z : 1;
 
 	for (idx[2] = idx_init[2]; idx[2] < ((2 < N) ? strs.dims[2] : 1); idx[2] += stride[2])
 		for (idx[1] = idx_init[1]; idx[1] < ((1 < N) ? strs.dims[1] : 1); idx[1] += stride[1])
 			for (idx[0] = idx_init[0]; idx[0] < ((0 < N) ? strs.dims[0] : 1); idx[0] += stride[0]) {
 
-				long o_off =  0;
-				long i1_off = 0;
-				long i2_off = 0;
+				cuFloatComplex* tmp_dst = dst;
+				const cuFloatComplex* tmp_src1 = src1;
+				const cuFloatComplex* tmp_src2 = src2;
 
-				bool valid = true;
+				for (int i = 0; i < N; i++) {
 
-				for (int i = 0; i < N ; i++) {
-
-					valid = valid && ((thread[i] + idx[i]) < strs.dims[i]);
-
-					o_off +=  (thread[i] + idx[i]) * strs.ostrs[i];
-					i1_off += (thread[i] + idx[i]) * strs.istrs1[i];
-					i2_off += (thread[i] + idx[i]) * strs.istrs2[i];
+					tmp_dst += idx[i] * strs.ostrs[i];
+					tmp_src1 += idx[i] * strs.istrs1[i];
+					tmp_src2 += idx[i] * strs.istrs2[i];
 				}
 
-				int tmp1_size = 0;
-				int tmp1_idx = 0;
-				bool read1 = false;
+				extern __shared__ cuFloatComplex shared_complex[];
+				cuFloatComplex* tmp_float = shared_complex;
 
-				if (const1) {
+				if (strs.const1) {
 
-					tmp1_size = 1;
-					read1 = true;
+					long roffset = offset_reravel_index(strs.dims, strs.istrs1, idx, strs.blockDim, strs.const1, threadIdx.x);
+					long soffset = offset_reravel_index(strs.dims, strs.sistrs1, idx, strs.blockDim, strs.const1, threadIdx.x);
+					bool valid = -1 != roffset;
 
-					for (int i = 0; i < N; i++) {
+					if (valid)
+						tmp_float[soffset] = tmp_src1[roffset];
 
-						if (const1 & (1u << i)) {
-
-							read1 = read1 && (0 == thread[i]);
-
-						} else {
-
-							tmp1_idx += tmp1_size * thread[i];
-							tmp1_size *= block[i];
-						}
-					}
+					tmp_src1 = tmp_float;
+					tmp_float += strs.shared1_size;
 				}
 
-				int tmp2_size = 0;
-				int tmp2_idx = tmp1_size;
-				bool read2 = false;
+				if (strs.const2) {
 
-				if (const2) {
+					long roffset = offset_reravel_index(strs.dims, strs.istrs2, idx, strs.blockDim, strs.const2, threadIdx.x);
+					long soffset = offset_reravel_index(strs.dims, strs.sistrs2, idx, strs.blockDim, strs.const2, threadIdx.x);
+					bool valid = -1 != roffset;
 
-					tmp2_size = 1;
-					read2 = true;
+					if (valid)
+						tmp_float[soffset] = tmp_src2[roffset];
 
-					for (int i = 0; i < N; i++) {
-
-						if (const2 & (1u << i)) {
-
-							read2 = read2 && (0 == thread[i]);
-
-						} else {
-
-							tmp2_idx += tmp2_size * thread[i];
-							tmp2_size *= block[i];
-						}
-					}
+					tmp_src2 = tmp_float;
 				}
 
-				extern __shared__ cuFloatComplex tmp_complex[];
-
-				if (valid && read1)
-					tmp_complex[tmp1_idx] = src1[i1_off];
-
-				if (valid && read2)
-					tmp_complex[tmp2_idx] = src2[i2_off];
-
-				if (const1 || const2)
+				if (strs.const1 || strs.const2)
 					__syncthreads();
 
-				if (valid)
-					zop(&(dst[o_off]), (const1 ? tmp_complex[tmp1_idx] : src1[i1_off]), (const2 ? tmp_complex[tmp2_idx] : src2[i2_off]));
+				long o_off = offset_reravel_index(strs.dims, strs.ostrs, idx, strs.blockDim, 0, threadIdx.x);
+				long i1_off = offset_reravel_index(strs.dims, strs.sistrs1, idx, strs.blockDim, 0, threadIdx.x);
+				long i2_off = offset_reravel_index(strs.dims, strs.sistrs2, idx, strs.blockDim, 0, threadIdx.x);
+
+				if (-1 != o_off)
+					zop(tmp_dst + o_off, tmp_src1[i1_off], tmp_src2[i2_off]);
+
+				if (strs.const1 || strs.const2)
+					__syncthreads();
 			}
 }
 
-#define run_zop_unfold(_N, _const1, _const2) if ((_N == N) && (_const1 == const1) && (_const2 == const2)) return kern_zop_unfold_generic<zop, _N, _const1, _const2>;
-
-template <zOp zop>
-static kern_zOp_unfold* get_kern_zop_unfold(int N, unsigned int const1, unsigned int const2)
-{
-	run_zop_unfold(1 , 0, 0);
-	run_zop_unfold(1 , 1, 0);
-	run_zop_unfold(1 , 0, 1);
-
-
-	run_zop_unfold(2 , 0, 0);
-	run_zop_unfold(2 , 0, 1);
-	run_zop_unfold(2 , 0, 2);
-	run_zop_unfold(2 , 0, 3);
-
-	run_zop_unfold(2 , 1, 0);
-	run_zop_unfold(2 , 1, 1);
-	run_zop_unfold(2 , 1, 2);
-	run_zop_unfold(2 , 1, 3);
-
-	run_zop_unfold(2 , 2, 0);
-	run_zop_unfold(2 , 2, 1);
-	run_zop_unfold(2 , 2, 2);
-	run_zop_unfold(2 , 2, 3);
-
-	run_zop_unfold(2 , 3, 0);
-	run_zop_unfold(2 , 3, 1);
-	run_zop_unfold(2 , 3, 2);
-	run_zop_unfold(2 , 3, 3);
-
-
-	run_zop_unfold(3 , 0, 0);
-	run_zop_unfold(3 , 0, 1);
-	run_zop_unfold(3 , 0, 2);
-	run_zop_unfold(3 , 0, 3);
-	run_zop_unfold(3 , 0, 4);
-	run_zop_unfold(3 , 0, 5);
-	run_zop_unfold(3 , 0, 6);
-	run_zop_unfold(3 , 0, 7);
-
-	run_zop_unfold(3 , 1, 0);
-	run_zop_unfold(3 , 1, 1);
-	run_zop_unfold(3 , 1, 2);
-	run_zop_unfold(3 , 1, 3);
-	run_zop_unfold(3 , 1, 4);
-	run_zop_unfold(3 , 1, 5);
-	run_zop_unfold(3 , 1, 6);
-	run_zop_unfold(3 , 1, 7);
-
-	run_zop_unfold(3 , 2, 0);
-	run_zop_unfold(3 , 2, 1);
-	run_zop_unfold(3 , 2, 2);
-	run_zop_unfold(3 , 2, 3);
-	run_zop_unfold(3 , 2, 4);
-	run_zop_unfold(3 , 2, 5);
-	run_zop_unfold(3 , 2, 6);
-	run_zop_unfold(3 , 2, 7);
-
-	run_zop_unfold(3 , 3, 0);
-	run_zop_unfold(3 , 3, 1);
-	run_zop_unfold(3 , 3, 2);
-	run_zop_unfold(3 , 3, 3);
-	run_zop_unfold(3 , 3, 4);
-	run_zop_unfold(3 , 3, 5);
-	run_zop_unfold(3 , 3, 6);
-	run_zop_unfold(3 , 3, 7);
-
-	run_zop_unfold(3 , 4, 0);
-	run_zop_unfold(3 , 4, 1);
-	run_zop_unfold(3 , 4, 2);
-	run_zop_unfold(3 , 4, 3);
-	run_zop_unfold(3 , 4, 4);
-	run_zop_unfold(3 , 4, 5);
-	run_zop_unfold(3 , 4, 6);
-	run_zop_unfold(3 , 4, 7);
-
-	run_zop_unfold(3 , 5, 0);
-	run_zop_unfold(3 , 5, 1);
-	run_zop_unfold(3 , 5, 2);
-	run_zop_unfold(3 , 5, 3);
-	run_zop_unfold(3 , 5, 4);
-	run_zop_unfold(3 , 5, 5);
-	run_zop_unfold(3 , 5, 6);
-	run_zop_unfold(3 , 5, 7);
-
-	run_zop_unfold(3 , 6, 0);
-	run_zop_unfold(3 , 6, 1);
-	run_zop_unfold(3 , 6, 2);
-	run_zop_unfold(3 , 6, 3);
-	run_zop_unfold(3 , 6, 4);
-	run_zop_unfold(3 , 6, 5);
-	run_zop_unfold(3 , 6, 6);
-	run_zop_unfold(3 , 6, 7);
-
-	run_zop_unfold(3 , 7, 0);
-	run_zop_unfold(3 , 7, 1);
-	run_zop_unfold(3 , 7, 2);
-	run_zop_unfold(3 , 7, 3);
-	run_zop_unfold(3 , 7, 4);
-	run_zop_unfold(3 , 7, 5);
-	run_zop_unfold(3 , 7, 6);
-	run_zop_unfold(3 , 7, 7);
-
-	assert(0);
-	return NULL;
-}
-
-
-#define WARPSIZE 32
-
-static void getBlockSize3_internal(int block[3], const long dims[3], int threads)
-{
-	block[0] = 1;
-	block[1] = 1;
-	block[2] = 1;
-
-	while ((threads >= 2) && (block[0] < dims[0])) {
-
-		block[0] *= 2;
-		threads /= 2;
-	}
-
-	while ((threads >= 2) && (block[1] < dims[1])) {
-
-		block[1] *= 2;
-		threads /= 2;
-	}
-
-	while ((threads >= 2) && (block[2] < dims[2])) {
-
-		block[2] *= 2;
-		threads /= 2;
-	}
-
-	block[2] = MIN(block[2], 64);
-}
-
-static dim3 getBlockSize3(const long dims[3], int threads)
-{
-	int block[3];
-
-	getBlockSize3_internal(block, dims, threads);
-
-	return dim3(block[0], block[1], block[2]);
-}
 
 static long gridsize_int(long N, int blocksize)
 {
 	return MIN(65535, (N + blocksize - 1) / blocksize); // 65535 is maximum for y and z dim
 }
 
-static dim3 getGridSize3(const long dims[3], int threads)
+
+static cuda_strides_3D get_strides(int D, int grd_size[3], const long dims[], const long ostrs[], const long istrs1[], const long istrs2[], size_t size, int threads)
 {
-	int block[3];
+	assert(D <= 3);
 
-	getBlockSize3_internal(block, dims, threads);
+	cuda_strides_3D strs = strs_ini;
 
-	return dim3(gridsize_int(dims[0], block[0]), gridsize_int(dims[1], block[1]), gridsize_int(dims[2], block[2]));
+	strs.N = 3;
+
+	for (int i = 0; i < D; i++) {
+
+		strs.dims[i] = dims[i];
+		strs.ostrs[i] = ostrs[i] / size;
+		strs.istrs1[i] = istrs1[i] / size;
+		strs.istrs2[i] = istrs2[i] / size;
+		strs.sistrs1[i] = istrs1[i] / size;
+		strs.sistrs2[i] = istrs2[i] / size;
+	}
+
+	while ((threads >= 2) && (BLK_SIZE(strs.blockDim[0]) < strs.dims[0]) && (BLK_SIZE(strs.blockDim[0]) < 32)) {
+
+		strs.blockDim[0]++;
+		threads /= 2;
+	}
+
+	for (int i = 0; i < 20; i++) {
+
+		int j = 1 + i % 2;
+
+		if ((threads >= 2) && (BLK_SIZE(strs.blockDim[j]) < strs.dims[j])) {
+
+			strs.blockDim[j]++;
+			threads /= 2;
+		}
+	}
+
+	while ((threads >= 2) && (BLK_SIZE(strs.blockDim[0]) < strs.dims[0])) {
+
+		strs.blockDim[0]++;
+		threads /= 2;
+	}
+
+	unsigned long const1 = (md_nontriv_dims(D, dims) & (~md_nontriv_strides(D, istrs1)));
+	unsigned long const2 = (md_nontriv_dims(D, dims) & (~md_nontriv_strides(D, istrs2)));
+
+	long block_dims[3];
+
+	for (int i = 0; i < 3; i++) {
+
+		block_dims[i] = BLK_SIZE(strs.blockDim[i]);
+		grd_size[i] = gridsize_int(strs.dims[i], block_dims[i]);
+	}
+
+	long block_dims_src1[3];
+	long block_dims_src2[3];
+
+	md_select_dims(3, ~const1, block_dims_src1, block_dims);
+	md_select_dims(3, ~const2, block_dims_src2, block_dims);
+
+	strs.shared1_size = md_calc_size(3, block_dims_src1);
+	strs.shared2_size = md_calc_size(3, block_dims_src2);
+
+	long block_strides_src1[3];
+	long block_strides_src2[3];
+	md_calc_strides(3, block_strides_src1, block_dims_src1, 1);
+	md_calc_strides(3, block_strides_src2, block_dims_src2, 1);
+
+	for (int i = 0; i < 3; i++) {
+
+		if (0 != const1)
+			strs.sistrs1[i] = block_strides_src1[i];
+
+		if (0 != const2)
+			strs.sistrs2[i] = block_strides_src2[i];
+	}
+
+	strs.const1 = const1;
+	strs.const2 = const2;
+
+	return strs;
 }
 
 template <fOp fop>
@@ -533,47 +327,24 @@ static void cuda_fop_unfold(int D, const long dims[], const long ostrs[], float*
 {
 	assert(D <= 3);
 
-	cuda_strides_3D strs = strs_ini;
-
-	strs.N = D;
-
-	for (int i = 0; i < D; i++) {
-
-		strs.dims[i] = dims[i];
-		strs.ostrs[i] = ostrs[i] / sizeof(float);
-		strs.istrs1[i] = istrs1[i] / sizeof(float);
-		strs.istrs2[i] = istrs2[i] / sizeof(float);
-	}
-
-	CUDA_ERROR_PTR(dst, src1, src2);
-
-	unsigned long const1 = md_nontriv_dims(D, dims) & (~md_nontriv_strides(D, istrs1));
-	unsigned long const2 = md_nontriv_dims(D, dims) & (~md_nontriv_strides(D, istrs2));
-
-	kern_fOp_unfold* func = get_kern_fop_unfold<fop>(D, (unsigned int)const1, (unsigned int)const2);
-
 	static int threads = -1;
 
 	if (-1 == threads) {
 
 		cudaFuncAttributes attr;
-		cudaFuncGetAttributes(&attr, func);
+		cudaFuncGetAttributes(&attr, kern_fop_unfold_generic<fop>);
 		threads = attr.maxThreadsPerBlock;
 	}
 
-	dim3 blockDim = getBlockSize3(strs.dims, threads);
-	dim3 gridDim = getGridSize3(strs.dims, threads);
+	int grd_size[3];
+	cuda_strides_3D strs = get_strides(D, grd_size, dims, ostrs, istrs1, istrs2, sizeof(float), threads);
 
-	int size1 = 0;
-	int size2 = 0;
+	CUDA_ERROR_PTR(dst, src1, src2);
 
-	if (const1)
-		size1 = (!MD_IS_SET(const1, 0) ? blockDim.x : 1) * (!MD_IS_SET(const1, 1) ? blockDim.y : 1) * (!MD_IS_SET(const1, 2) ? blockDim.z : 1);
+	dim3 blockDim = dim3(threads, 1, 1);
+	dim3 gridDim = dim3(grd_size[0], grd_size[1], grd_size[2]);
 
-	if (const2)
-		size2 = (!MD_IS_SET(const2, 0) ? blockDim.x : 1) * (!MD_IS_SET(const2, 1) ? blockDim.y : 1) * (!MD_IS_SET(const2, 2) ? blockDim.z : 1);
-
-	func<<<gridDim, blockDim, sizeof(float) * (size1 + size2), cuda_get_stream()>>>(strs, dst, src1, src2);
+	kern_fop_unfold_generic<fop><<<gridDim, blockDim, sizeof(float) * (strs.shared1_size + strs.shared2_size), cuda_get_stream()>>>(strs, dst, src1, src2);
 	CUDA_KERNEL_ERROR;
 }
 
@@ -582,47 +353,24 @@ static void cuda_zop_unfold(int D, const long dims[], const long ostrs[], _Compl
 {
 	assert(D <= 3);
 
-	cuda_strides_3D strs = strs_ini;
-
-	strs.N = D;
-
-	for (int i = 0; i < D; i++) {
-
-		strs.dims[i] = dims[i];
-		strs.ostrs[i] = ostrs[i] / sizeof(_Complex float);
-		strs.istrs1[i] = istrs1[i] / sizeof(_Complex float);
-		strs.istrs2[i] = istrs2[i] / sizeof(_Complex float);
-	}
-
-	CUDA_ERROR_PTR(dst, src1, src2);
-
-	unsigned long const1 = md_nontriv_dims(D, dims) & (~md_nontriv_strides(D, istrs1));
-	unsigned long const2 = md_nontriv_dims(D, dims) & (~md_nontriv_strides(D, istrs2));
-
-	kern_zOp_unfold* func = get_kern_zop_unfold<zop>(D, (unsigned int)const1, (unsigned int)const2);
-
 	static int threads = -1;
 
 	if (-1 == threads) {
 
 		cudaFuncAttributes attr;
-		cudaFuncGetAttributes(&attr, func);
+		cudaFuncGetAttributes(&attr, kern_zop_unfold_generic<zop>);
 		threads = attr.maxThreadsPerBlock;
 	}
 
-	dim3 blockDim = getBlockSize3(strs.dims, threads);
-	dim3 gridDim = getGridSize3(strs.dims, threads);
+	int grd_size[3];
+	cuda_strides_3D strs = get_strides(D, grd_size, dims, ostrs, istrs1, istrs2, sizeof(cuFloatComplex), 1024);
 
-	int size1 = 0;
-	int size2 = 0;
+	CUDA_ERROR_PTR(dst, src1, src2);
 
-	if (const1)
-		size1 = (!MD_IS_SET(const1, 0) ? blockDim.x : 1) * (!MD_IS_SET(const1, 1) ? blockDim.y : 1) * (!MD_IS_SET(const1, 2) ? blockDim.z : 1);
+	dim3 blockDim = dim3(1024, 1, 1);
+	dim3 gridDim = dim3(grd_size[0], grd_size[1], grd_size[2]);
 
-	if (const2)
-		size2 = (!MD_IS_SET(const2, 0) ? blockDim.x : 1) * (!MD_IS_SET(const2, 1) ? blockDim.y : 1) * (!MD_IS_SET(const2, 2) ? blockDim.z : 1);
-
-	func<<<gridDim, blockDim, sizeof(cuFloatComplex) * (size1 + size2), cuda_get_stream()>>>(strs, (cuFloatComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
+	kern_zop_unfold_generic<zop><<<gridDim, blockDim, sizeof(cuFloatComplex) * (strs.shared1_size + strs.shared2_size), cuda_get_stream()>>>(strs, (cuFloatComplex*)dst, (const cuFloatComplex*)src1, (const cuFloatComplex*)src2);
 	CUDA_KERNEL_ERROR;
 }
 
