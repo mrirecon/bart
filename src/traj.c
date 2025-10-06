@@ -111,6 +111,7 @@ int main_traj(int argc, char* argv[argc])
 		OPT_SET('3', &conf.d3d, "3D"),
 		OPT_SET('c', &conf.asym_traj, "asymmetric trajectory [DC sampled]"),
 		OPT_SET('E', &conf.mems_traj, "multi-echo multi-spoke trajectory"),
+		OPTL_SET(0, "mems-legacy", &conf.mems_legacy, "OLD multi-echo multi-spoke trajectory"),
 		OPTL_VEC2(0, "z-us", &z_usamp, "accel", "(undersampling in z-direction.)"),
 		OPT_INFILE('C', &custom_angle_file, "file", "custom_angle file [phi + i * psi]"),
 		OPT_INFILE('V', &gdelays_file, "file", "(custom_gdelays)"),
@@ -307,8 +308,14 @@ int main_traj(int argc, char* argv[argc])
 			 */
 			int sample = i + D - X;
 
-			if (conf.mems_traj && (1 == e % 2))
-			       sample =	D - i;
+			// for MEMS, we sample the beginning of each odd echo (legacy) or add M_PI to base angle of echo
+			if (conf.mems_traj && (1 == e % 2)) {
+
+				if (conf.mems_legacy)
+					sample = D - i;
+				else
+					sample = i;
+			}
 
 			double read = (float)sample + (conf.asym_traj ? 0 : 0.5) - (float)D / 2.;
 

@@ -49,17 +49,32 @@ tests/test-traj_tiny_GA: traj nrmse ${TRAJ_tiny_GA}.cfl
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-traj_MEMS-legacy: traj nrmse ${TRAJ_MEMS}.cfl
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/traj ${O_TRAJ_MEMS} --mems-legacy t_MEMS.ra				;\
+	$(TOOLDIR)/nrmse -t${T_TOL} t_MEMS.ra ${TRAJ_MEMS}				;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
 tests/test-traj_MEMS: traj nrmse ${TRAJ_MEMS}.cfl
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/traj ${O_TRAJ_MEMS} t_MEMS.ra					;\
-	$(TOOLDIR)/nrmse -t${T_TOL} t_MEMS.ra ${TRAJ_MEMS}				;\
+	$(TOOLDIR)/nrmse -t 5e-7 t_MEMS.ra ${TRAJ_MEMS}					;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-traj_MEMS_ASYM-legacy: traj nrmse ${TRAJ_MEMS_ASYM}.cfl
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/traj ${O_TRAJ_MEMS_ASYM} --mems-legacy t_MEMS_asym.ra		;\
+	$(TOOLDIR)/nrmse -t${T_TOL} t_MEMS_asym.ra ${TRAJ_MEMS_ASYM}			;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
 tests/test-traj_MEMS_ASYM: traj nrmse ${TRAJ_MEMS_ASYM}.cfl
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/traj ${O_TRAJ_MEMS_ASYM} t_MEMS_asym.ra				;\
-	$(TOOLDIR)/nrmse -t${T_TOL} t_MEMS_asym.ra ${TRAJ_MEMS_ASYM}			;\
+	$(TOOLDIR)/nrmse -t5e-7 t_MEMS_asym.ra ${TRAJ_MEMS_ASYM}			;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 

@@ -36,6 +36,7 @@ const struct traj_conf traj_defaults = {
 	.transverse = false,
 	.asym_traj = false,
 	.mems_traj = false,
+	.mems_legacy = false,
 	.accel = 1,
 	.tiny_gold = 0,
 	.rational = false,
@@ -223,7 +224,9 @@ void calc_base_angles(double base_angle[DIMS], int Y, int E, struct traj_conf co
 			 * Magn Reson Med 82:1000-1011 (2019)
 			 */
 
-			angle_e = angle_s / E;
+			angle_e = angle_s / E + M_PI;
+			if (conf.mems_legacy)
+				angle_e = angle_s / E;
 			angle_t = golden_angle;
 		}
 

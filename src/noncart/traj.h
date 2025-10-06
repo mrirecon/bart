@@ -11,6 +11,7 @@ struct traj_conf {
 	_Bool transverse;
 	_Bool asym_traj;
 	_Bool mems_traj;
+	_Bool mems_legacy;
 	_Bool rational;
 	_Bool double_base;
 	unsigned long aligned_flags;
