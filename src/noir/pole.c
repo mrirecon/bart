@@ -260,7 +260,7 @@ static struct lseg_s extract_phase_poles_2d_sign(struct pole_config_s conf, int 
 	ret.pos = xmalloc(sizeof(vec3_t[nlabel][2]));
 
 	int diameter = roundf(ceil(conf.diameter * MAX(dims[(normal + 1) % 3], dims[(normal + 2) % 3])));
-	float offset = (diameter / 2. - diameter / 2.);
+	float offset = (diameter / 2 - diameter / 2.);
 
 	for(int i = 0; i < nlabel; i++) {
 
