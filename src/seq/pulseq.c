@@ -18,6 +18,7 @@
 #include "seq/config.h"
 #include "seq/event.h"
 #include "seq/seq.h"
+#include "seq/misc.h"
 
 #include "pulseq.h"
 
@@ -243,12 +244,8 @@ static int check_existing_shape(const struct pulseq* ps, const struct shape* sha
 	return -1;
 }
 
-static void grad_to_pulseq(int grad_id[3], struct pulseq *ps, struct seq_sys sys, int N, const struct seq_event ev[N])
+static void grad_to_pulseq(int grad_id[3], struct pulseq *ps, struct seq_sys sys, long grad_start, long grad_len, double g[MAX_GRAD_POINTS][3])
 {
-	double g[MAX_GRAD_POINTS][3];
-	seq_compute_gradients(MAX_GRAD_POINTS, g, 10., N, ev);
-	long grad_len = (seq_block_end_flat(N, ev) + seq_block_rdt(N, ev)) / GRAD_RASTER_TIME;
-
 	if (0 == grad_len)
 		grad_len = 2; // dummy
 
@@ -257,7 +254,7 @@ static void grad_to_pulseq(int grad_id[3], struct pulseq *ps, struct seq_sys sys
 	for (int a = 0; a < 3; a++) {
 
 		for (int i = 0; i < grad_len; i++)
-			g_axis[i] = - g[i][a] / sys.grad.max_amplitude; // -1. for constistency
+			g_axis[i] = - g[i + grad_start][a] / sys.grad.max_amplitude; // -1. for constistency
 
 		int sid = ps->shapes->len + 1;
 		struct shape tmp_shape = make_compressed_shape(sid, grad_len, g_axis);
@@ -297,9 +294,9 @@ static double phase_pulseq(const struct seq_event* ev)
 	return (ret < 0.) ? (ret + 2. * M_PI) : ret;
 }
 
-static int adc_to_pulseq(struct pulseq *ps, int N, const struct seq_event ev[N])
+static int adc_to_pulseq(struct pulseq *ps, int i_adc, long block_start, int N, const struct seq_event ev[N])
 {
-	int adc_idx = events_idx(0, SEQ_EVENT_ADC, N, ev);
+	int adc_idx = events_idx(i_adc, SEQ_EVENT_ADC, N, ev);
 	if (0 > adc_idx)
 		return 0;
 
@@ -310,7 +307,7 @@ static int adc_to_pulseq(struct pulseq *ps, int N, const struct seq_event ev[N])
 		.id = adc_id,
 		.num = (uint64_t)lround(ev[adc_idx].adc.columns * ev[adc_idx].adc.os),
 		.dwell = (uint64_t)lround(ev[adc_idx].adc.dwell_ns / ev[adc_idx].adc.os),
-		.delay = ev[adc_idx].start,
+		.delay = ev[adc_idx].start - block_start,
 		.freq = ev[adc_idx].adc.freq,
 		.phase = phase_pulseq(&ev[adc_idx])
 	};
@@ -376,9 +373,9 @@ static int label_set(struct pulseq* ps, const char* set, struct seq_event adc_ev
 	return idx + 1;
 }
 
-static int ext_to_pulseq(struct pulseq *ps, int N, const struct seq_event ev[N])
+static int ext_to_pulseq(struct pulseq *ps, int i_adc, int N, const struct seq_event ev[N])
 {
-	int adc_idx = events_idx(0, SEQ_EVENT_ADC, N, ev);
+	int adc_idx = events_idx(i_adc, SEQ_EVENT_ADC, N, ev);
 	if (0 > adc_idx)
 		return 0;
 
@@ -389,7 +386,7 @@ static int ext_to_pulseq(struct pulseq *ps, int N, const struct seq_event ev[N])
 
 	int ext_id = ps->extensions->len + 1;
 
-	for (int i = 0; i < 3; i++) {
+	for (int i = 0; i < labels; i++) {
 
 		struct extension e = {
 
@@ -442,35 +439,59 @@ static int rf_to_pulseq(struct pulseq *ps, int M, const struct rf_shape rf_shape
 
 void events_to_pulseq(struct pulseq *ps, enum block mode, long tr, struct seq_sys sys, int M, const struct rf_shape rf_shapes[M], int N, const struct seq_event ev[N])
 {
-	unsigned long dur = seq_block_end(N, ev, mode, tr) / (1.e6 * ps->block_raster_time);
+	int n_blocks = MAX(1, events_counter(SEQ_EVENT_ADC, N, ev));
+
+	if (1 < events_counter(SEQ_EVENT_PULSE, N, ev))
+		error("Multiple RFs per block not supported\n");
+
+	long dur = seq_block_end(N, ev, mode, tr) / (1.e6 * ps->block_raster_time);
 	ps->total_duration += dur * ps->block_raster_time;
 
+	double grad_shapes[MAX_GRAD_POINTS][3];
+	seq_compute_gradients(MAX_GRAD_POINTS, grad_shapes, 10., N, ev);
+	long grad_len = (seq_block_end_flat(N, ev) + seq_block_rdt(N, ev)) / GRAD_RASTER_TIME;
 
-	if (0 < events_counter(SEQ_EVENT_ADC, N, ev))
-		error("Multiple ADCs per block not supported\n");
+	if (grad_len > dur)
+		error("Gradient length %ld exceeds block duration %ld\n", grad_len, dur);
 
-	int adc_id = adc_to_pulseq(ps, N, ev);
+	long dur_split = dur;
+	long grad_start = 0;
 
-	int ext_id = 0;
-	if (adc_id)
-		ext_id = ext_to_pulseq(ps, N, ev);
+	for (int i = 0; i < n_blocks; i++) {
 
-	int rf_id = rf_to_pulseq(ps, M, rf_shapes, N, ev);
+		int adc_id = adc_to_pulseq(ps, i, grad_start * 10, N, ev);
 
-	int g_id[3] = { 0, 0, 0 };
-	grad_to_pulseq(g_id, ps, sys, N, ev);
+		if ((i != (n_blocks - 1)) && (0 < adc_id))
+			dur_split = (round_up_GRT(ev[events_idx(i, SEQ_EVENT_ADC, N, ev)].end) + 10.) / GRAD_RASTER_TIME - grad_start;
+		else
+			dur_split = dur - grad_start;
 
-	struct ps_block b = {
+		int ext_id = 0;
+		if (adc_id)
+			ext_id = ext_to_pulseq(ps, i, N, ev);
 
-		.num = ps->ps_blocks->len + 1,
-		.dur = dur,
-		.rf = rf_id,
-		.g = { g_id[0], g_id[1], g_id[2] },
-		.adc = adc_id,
-		.ext = ext_id
-	};
+		int rf_id = 0;
+		if (0 == i)
+			rf_id = rf_to_pulseq(ps, M, rf_shapes, N, ev);
 
-	VEC_ADD(ps->ps_blocks, b);
+		int g_id[3] = { 0, 0, 0 };
+
+		grad_to_pulseq(g_id, ps, sys, grad_start, MIN(grad_len, dur_split), grad_shapes);
+
+		grad_start += dur_split;
+
+		struct ps_block b = {
+
+			.num = ps->ps_blocks->len + 1,
+			.dur = (unsigned long)dur_split,
+			.rf = rf_id,
+			.g = { g_id[0], g_id[1], g_id[2] },
+			.adc = adc_id,
+			.ext = ext_id
+		};
+
+		VEC_ADD(ps->ps_blocks, b);
+	}
 }
 
 
