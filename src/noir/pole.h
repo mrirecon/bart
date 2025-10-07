@@ -13,6 +13,7 @@ struct pole_config_s {
 	float thresh;
 	unsigned long avg_flag;
 	int normal;
+	_Bool espirit;
 };
 
 extern struct pole_config_s pole_config_default;

@@ -54,6 +54,7 @@ int main_phasepole(int argc, char* argv[argc])
 
 		OPTL_SELECT('e', "estimate", enum mode_t, &mode, POLE_MODE_ESTIMATE, "Estimate phase poles (input is sensitivity maps / output is singularity positions)"),
 		OPTL_SELECT('s', "sample", enum mode_t, &mode, POLE_MODE_SAMPLE, "Sample phase poles (input is position / phase)"),
+		OPTL_SET(0, "espirit", &conf.espirit, "Use ESPIRiT mode (diameter=1, no closing)"),
 
 		OPTL_VEC3('x', "dims", &mydims, "x:y:z", "Explicitly specify image dimensions"),
 		OPT_OUTFILE('c', &pmap_file, "<curl>", "output curl map"),

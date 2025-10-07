@@ -29,6 +29,7 @@ struct pole_config_s pole_config_default = {
 	.segments = 10,
 	.avg_flag = COIL_FLAG,
 	.normal = -1,
+	.espirit = false,
 };
 
 static void get_circle_coords(struct pole_config_s* conf, long pos[3], int index, int normal, int diameter, bool twoD)
@@ -68,8 +69,17 @@ static void compute_curl_map_normal(struct pole_config_s conf, int N, const long
 	if (dims[(normal + 1) % 3] != dims[(normal + 2) % 3])
 		debug_printf(DP_DEBUG1, "Non-square dimensions detected (%ld, %ld, %ld): ", dims[0], dims[1], dims[2]);
 
-	int diameter = roundf(ceil(conf.diameter * MAX(dims[(normal + 1) % 3], dims[(normal + 2) % 3])));
-	debug_printf(DP_DEBUG1, "Circle diameter set to %d (%.3f * %ld).\n", diameter, conf.diameter,  MAX(dims[(normal + 1) % 3], dims[(normal + 2) % 3]));
+	int diameter;
+
+	if (conf.espirit) {
+
+		diameter = 1;
+		debug_printf(DP_DEBUG1, "Circle diameter set to 1pixel (ESPIRiT mode).\n");
+	} else {
+
+		diameter = roundf(ceil(conf.diameter * MAX(dims[(normal + 1) % 3], dims[(normal + 2) % 3])));
+		debug_printf(DP_DEBUG1, "Circle diameter set to %d (%.3f * %ld).\n", diameter, conf.diameter,  MAX(dims[(normal + 1) % 3], dims[(normal + 2) % 3]));
+	}
 
 	bool twoD = false;
 
@@ -235,12 +245,15 @@ static struct lseg_s extract_phase_poles_2d_sign(struct pole_config_s conf, int 
 	complex float* wgh = md_alloc_sameplace(3, dims, CFL_SIZE, curl_map);
 	md_zmul(3, dims, wgh, binary, curl_map);
 
-	int dmin = lroundf(ceilf(((-1 == conf.closing) ? conf.diameter / 2. : conf.closing) * MAX(dims[(normal + 1) % 3], dims[(normal + 2) % 3])));
-	long mdims[3];
-	complex float* mask = md_structuring_element_cube(3, mdims, dmin, md_nontriv_dims(3, dims), curl_map);
+	if (conf.closing != 0. && !conf.espirit) {
 
-	md_closing(3, mdims, mask, dims, binary, binary, CONV_TRUNCATED);
-	md_free(mask);
+		int dmin = lroundf(ceilf(((-1 == conf.closing) ? conf.diameter / 2. : conf.closing) * MAX(dims[(normal + 1) % 3], dims[(normal + 2) % 3])));
+		long mdims[3];
+		complex float* mask = md_structuring_element_cube(3, mdims, dmin, md_nontriv_dims(3, dims), curl_map);
+
+		md_closing(3, mdims, mask, dims, binary, binary, CONV_TRUNCATED);
+		md_free(mask);
+	}
 
 	long sdims[3];
 	complex float* strc = md_structuring_element_cube(3, sdims, 1, md_nontriv_dims(3, dims), curl_map);
@@ -259,7 +272,7 @@ static struct lseg_s extract_phase_poles_2d_sign(struct pole_config_s conf, int 
 	ret.N = 0;
 	ret.pos = xmalloc(sizeof(vec3_t[nlabel][2]));
 
-	int diameter = roundf(ceil(conf.diameter * MAX(dims[(normal + 1) % 3], dims[(normal + 2) % 3])));
+	int diameter = (conf.espirit) ? 1 : roundf(ceil(conf.diameter * MAX(dims[(normal + 1) % 3], dims[(normal + 2) % 3])));
 	float offset = (diameter / 2 - diameter / 2.);
 
 	for(int i = 0; i < nlabel; i++) {
