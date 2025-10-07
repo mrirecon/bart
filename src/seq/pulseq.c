@@ -105,7 +105,7 @@ static struct shape make_compressed_shape(int id, int len, const double val[len]
 		}
 		else {
 
-			if (count > 2)
+			if (count >= 2)
 				VEC_ADD(shape.values, count - 2);
 
 			VEC_ADD(shape.values, der_i);
@@ -115,7 +115,7 @@ static struct shape make_compressed_shape(int id, int len, const double val[len]
 		}
 	}
 
-	if (count > 2)
+	if (count >= 2)
 		VEC_ADD(shape.values, count - 2);
 
 	if ((int)(0.75 * len) < shape.values->len) {
