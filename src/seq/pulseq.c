@@ -236,7 +236,7 @@ static void grad_to_pulseq(int grad_id[3], struct pulseq *ps, struct seq_sys sys
 	long grad_len = (seq_block_end_flat(N, ev) + seq_block_rdt(N, ev)) / GRAD_RASTER_TIME;
 
 	if (0 == grad_len)
-		grad_len = 1; // dummy
+		grad_len = 2; // dummy
 
 	double g_axis[grad_len];
 
@@ -383,6 +383,7 @@ void pulseq_writef(FILE *fp, struct pulseq *ps)
 	fprintf(fp, "GradientRasterTime %.e\n", ps->gradient_raster_time);
 	fprintf(fp, "RadiofrequencyRasterTime %.e\n", ps->rf_raster_time);
 	fprintf(fp, "FOV %.3f %.3f %.3f \n", ps->fov[0], ps->fov[1], ps->fov[2]);
+	fprintf(fp, "PhaseResolution 1.0 \n"); // we have to set this for the interpreter [ otherwise small LIN counter --> crash]
 	fprintf(fp, "TotalDuration %.5f\n", ps->total_duration);
 
 	fprintf(fp, "\n\n# Format of blocks:\n");
