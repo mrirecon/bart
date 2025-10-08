@@ -101,6 +101,7 @@ const struct seq_config seq_config_defaults = {
 		.mag_prep = PREP_OFF,
 		.ti = 0.,
 		.init_delay_sec = 0.,
+		.inv_delay_time_sec = 0.,
 	},
 
 	.sys = {

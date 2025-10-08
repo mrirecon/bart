@@ -302,6 +302,16 @@ int seq_block(int N, struct seq_event ev[N], struct seq_state* seq_state, const 
 	} else if (2 == seq_state->pos[COEFF_DIM]) {
 
 		md_max_dims(DIMS, (COEFF2_FLAG | PHS2_FLAG) & ~msm_flag, seq_state->pos, seq_state->pos, last_idx);
+
+		if (md_check_equal_dims(DIMS, last_idx, seq_state->pos, (SEQ_FLAGS & ~(BATCH_FLAG | msm_flag)))
+			&& (0. < seq->magn.inv_delay_time_sec)) {
+
+				seq_state->mode = BLOCK_POST;
+				ev[0].type = SEQ_EVENT_WAIT;
+				ev[0].end = 1.E6 * seq->magn.inv_delay_time_sec;
+				return 1;
+		}
+
 		return 0;
 	}
 

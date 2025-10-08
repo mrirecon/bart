@@ -81,18 +81,18 @@ static bool test_block_minv_multislice(void)
 {
 	const enum block blocks[21] = {
 		BLOCK_KERNEL_NOISE,
-		BLOCK_PRE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE,
-		BLOCK_PRE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE,
-		BLOCK_PRE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE,
-		BLOCK_PRE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE,
+		BLOCK_PRE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_POST,
+		BLOCK_PRE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_POST,
+		BLOCK_PRE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_POST,
+		BLOCK_PRE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_POST,
 	};
 
-	struct seq_state seq_state = { 0 };;
+	struct seq_state seq_state = { 0 };
 	struct seq_config seq = seq_config_defaults;
 	seq.enc.order = SEQ_ORDER_SEQ_MS;
 	seq.magn.ti = 100;
 	seq.magn.mag_prep = PREP_IR_NON;
-	// seq.magn.inv_delay_time = 100;
+	seq.magn.inv_delay_time_sec = 100.;
 
 	int i = 0;
 	int inversions = 0;

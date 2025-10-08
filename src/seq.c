@@ -124,6 +124,7 @@ int main_seq(int argc, char* argv[argc])
 		OPTL_SELECT(0, "IR_NON", enum mag_prep, &seq.magn.mag_prep, PREP_IR_NON, "Magn. preparation: Nonselective Inversion (default: off)"),
 		OPTL_DOUBLE(0, "TI", &seq.magn.ti, "TI", "Inversion time [us]"),
 		OPTL_DOUBLE(0, "init_delay", &seq.magn.init_delay_sec, "init_delay_sec", "Initial delay of measurement (seconds)"),
+		OPTL_DOUBLE(0, "inv_delay", &seq.magn.inv_delay_time_sec, "inv_delay_time_sec", "Inversion delay time (seconds)"),
 
 		// gradient mode
 		OPTL_SELECT(0, "gradient-normal", enum gradient_mode, &gradient_mode, GRAD_NORMAL, "Gradient normal mode (default: fast)"),
