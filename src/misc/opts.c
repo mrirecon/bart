@@ -1467,8 +1467,9 @@ void cmdline(int* argcp, char* argv[*argcp], int m, const struct arg_s args[m], 
 
 	int next_opt = options(argcp, argv, buf, help_str, n, opts, m, args, false);
 
+#ifndef  BARTDLL
 	save_command_line(*argcp, argv);
-
+#endif
 
 	if (   (*argcp - next_opt < min_args)
 		|| (*argcp - next_opt > max_args)) {

@@ -45,14 +45,6 @@
 
 
 
-struct error_jumper_s {
-
-	bool initialized;
-	jmp_buf buf;
-};
-
-extern struct error_jumper_s error_jumper;	// FIXME should not be extern
-
 struct error_jumper_s error_jumper = { .initialized = false };
 
 

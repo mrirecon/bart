@@ -18,10 +18,12 @@
 #include "seq/flash.h"
 #include "seq/misc.h"
 #include "seq/mag_prep.h"
+#include "seq/opts.h"
 #include "seq/ui_enums.h"
 
 #include "helpers.h"
 
+#define MAX_LENGTH_OPTS_STR 4096
 
 int seq_raga_spokes(const struct seq_config* seq)
 {
@@ -301,4 +303,26 @@ void seq_set_fov_pos(int N, int M, const float* shifts, struct seq_config* seq)
 
 	if (1 == seq->geom.mb_factor)
 		seq->geom.sms_distance = -999.; // UI information
+}
+
+
+int seq_read_config_from_file(struct seq_config* seq, const char* filename)
+{
+	if (NULL == filename)
+		return 0;
+
+	FILE* fp = fopen(filename, "r");
+	if (NULL == fp)
+		return 0;
+
+	char buffer[MAX_LENGTH_OPTS_STR + 1];
+
+	if (NULL == fgets(buffer, sizeof(buffer), fp)) {
+
+		fclose(fp);
+		return 0;
+	}
+	fclose(fp);
+
+	return read_config_from_str(seq, buffer);
 }

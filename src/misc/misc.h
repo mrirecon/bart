@@ -14,6 +14,8 @@
 #include <stddef.h>
 #include <stdarg.h>
 #include <stdnoreturn.h>
+#include <setjmp.h>
+#include <stdbool.h>
 
 #include "misc/nested.h"
 
@@ -92,6 +94,14 @@ extern __attribute__((noreturn)) void error(const char* str, ...);
 #undef assert
 #define assert(expr) do { if (!(expr)) error("Assertion '" #expr "' failed in %s:%d\n",  __FILE__, __LINE__); } while (0)
 #endif
+
+struct error_jumper_s {
+
+	_Bool initialized;
+	jmp_buf buf;
+};
+
+extern struct error_jumper_s error_jumper;	// FIXME should not be extern
 
 extern int error_catcher(int fun(int argc, char* argv[__VLA(argc)]), int argc, char* argv[__VLA(argc)]);
 

@@ -8,10 +8,47 @@
 #include "seq/flash.h"
 #include "seq/seq.h"
 #include "seq/helpers.h"
+#include "seq/opts.h"
 
 #include "utest.h"
 
 #define FLASH_EVENTS 14
+
+
+static bool test_command(void)
+{
+	struct seq_config seq = seq_config_defaults;
+	seq.geom.baseres = 250;
+
+	if (!read_config_from_str(&seq, "bart seq --BR 200 --FOV 305\0"))
+		return false;
+
+	if (200 != seq.geom.baseres)
+		return false;
+
+	if (305 != seq.geom.fov)
+		return false;
+
+	return true;
+}
+
+UT_REGISTER_TEST(test_command);
+
+
+static bool test_command2(void)
+{
+	struct seq_config seq = seq_config_defaults;
+	seq.geom.baseres = 250;
+	
+	const char* filename = "/path/not/existing/file.config";
+
+	if (!seq_read_config_from_file(&seq, filename))
+		return true;
+
+	return false;
+}
+
+UT_REGISTER_TEST(test_command2);
 
 
 static bool test_flash_events(void)

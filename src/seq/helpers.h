@@ -125,6 +125,8 @@ BARTLIB_API extern void BARTLIB_CALL seq_set_fov_pos(int N, int M, const float* 
 
 
 
+BARTLIB_API int BARTLIB_CALL seq_read_config_from_file(struct seq_config* seq, const char* filename);
+
 #include "misc/cppwrap.h"
 
 #endif // _SEQ_HELPERS_H
