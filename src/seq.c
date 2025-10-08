@@ -144,8 +144,7 @@ int main_seq(int argc, char* argv[argc])
 
 
 	set_loop_dims_and_sms(&seq, seq.loop_dims[PHS2_DIM], seq.loop_dims[SLICE_DIM], seq.loop_dims[PHS1_DIM],
-				seq.loop_dims[TIME_DIM], seq.loop_dims[TE_DIM],
-				seq.loop_dims[BATCH_DIM], 1, 1, 1, seq.geom.mb_factor);
+				seq.loop_dims[TIME_DIM], seq.loop_dims[TE_DIM], 1, 1);
 
 	if (0 > samples)
 		samples = (0. > dt) ? 1000 : (seq.phys.tr / dt);

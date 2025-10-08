@@ -16,7 +16,7 @@
 
 
 void set_loop_dims_and_sms(struct seq_config* seq, long /* partitions*/ , long total_slices, long radial_views,
-	long frames, long echoes, long inv_reps, long phy_phases, long averages, int sms, long mb_factor)
+	long frames, long echoes, long phy_phases, long averages)
 {
 	switch (seq->enc.order) {
 
@@ -33,13 +33,11 @@ void set_loop_dims_and_sms(struct seq_config* seq, long /* partitions*/ , long t
 		break;
 	}
 
-	seq->geom.mb_factor = sms ? mb_factor : 1;
 	seq->loop_dims[SLICE_DIM] = (seq->geom.mb_factor > 1) ? seq->geom.mb_factor : total_slices;
 	seq->loop_dims[PHS2_DIM] = (seq->geom.mb_factor > 1) ? total_slices / seq->geom.mb_factor : 1;
 	if ((seq->loop_dims[PHS2_DIM] * seq->loop_dims[SLICE_DIM]) != total_slices)
 		seq->loop_dims[PHS2_DIM] = -1; //mb groups
 
-	seq->loop_dims[BATCH_DIM] = inv_reps;
 	seq->loop_dims[TIME_DIM] = frames;
 
 	if ((PEMODE_RAGA == seq->enc.pe_mode)

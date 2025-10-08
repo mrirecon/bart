@@ -172,7 +172,7 @@ static bool test_raga_spokes(void)
 	const int expected_spokes = 8;
 	seq.enc.pe_mode = PEMODE_RAGA;
 	seq.enc.order = SEQ_ORDER_AVG_OUTER;
-	set_loop_dims_and_sms(&seq, 1, 1, 5, expected_spokes, 1, 1, 1, 1, 0, 1);
+	set_loop_dims_and_sms(&seq, 1, 1, 5, expected_spokes, 1, 1, 1);
 
 	const int max_E = 200;
 	struct seq_event ev[max_E];
@@ -208,7 +208,7 @@ static bool test_raga_spokes_full(void)
 
 	const int spk = 377;
 	seq.enc.pe_mode = PEMODE_RAGA;
-	set_loop_dims_and_sms(&seq, 1, 1, spk, spk, 1, 1, 1, 1, 0, 1);
+	set_loop_dims_and_sms(&seq, 1, 1, spk, spk, 1, 1, 1);
 
 	const int max_E = 200;
 	struct seq_event ev[max_E];

@@ -19,9 +19,9 @@
 
 static bool rf_spoiling_spoiled(void)
 {
-	const double ref[20] = { 
+	const double ref[20] = {
 
-		50., 150., 300., 140., 30.,  
+		50., 150., 300., 140., 30.,
 		330.,  320.,  0.,  90., 230.,
 		60.,  300.,  230.,  210.,  240.,
 		320.,  90.,  270.,  140.,  60.
@@ -33,7 +33,7 @@ static bool rf_spoiling_spoiled(void)
 	struct seq_state seq_state = { };
 
 	seq.enc.order = SEQ_ORDER_AVG_OUTER;
-	set_loop_dims_and_sms(&seq, 1, 2, 2, 10, 1, 1, 1, 1, 0, 1);
+	set_loop_dims_and_sms(&seq, 1, 2, 2, 10, 1, 1, 1);
 
 	seq.loop_dims[COEFF_DIM] = 1;
 	seq.loop_dims[COEFF2_DIM] = 1;
@@ -175,7 +175,7 @@ static bool test_sms(void)
 				return false;
 		}
 	}
-		
+
 	return true;
 }
 

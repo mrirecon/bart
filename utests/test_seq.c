@@ -35,7 +35,8 @@ static bool test_block_minv_init_delay(void)
 	const int max_E = 200;
 	struct seq_event ev[max_E];
 
-	set_loop_dims_and_sms(&seq, 1, 2, 3, 3, 1, 2, 1, 1, 0, 1);
+	seq.loop_dims[BATCH_DIM] = 2;
+	set_loop_dims_and_sms(&seq, 1, 2, 3, 3, 1, 1, 1);
 	int pre_blocks = 0;
 
 	do {
@@ -99,7 +100,8 @@ static bool test_block_minv_multislice(void)
 	const int max_E = 200;
 	struct seq_event ev[max_E];
 
-	set_loop_dims_and_sms(&seq, 1, 2, 3, 3, 1, 2, 1, 1, 0, 1);
+	seq.loop_dims[BATCH_DIM] = 2;
+	set_loop_dims_and_sms(&seq, 1, 2, 3, 3, 1, 1, 1);
 
 	do {
 
