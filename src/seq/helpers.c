@@ -8,10 +8,31 @@
 #include "num/multind.h"
 
 #include "misc/mri.h"
+#include "misc/misc.h"
+
+#include "noncart/traj.h"
 
 #include "seq/config.h"
+#include "seq/anglecalc.h"
+#include "seq/flash.h"
+#include "seq/misc.h"
 
 #include "helpers.h"
+
+
+int seq_raga_spokes(const struct seq_config* seq)
+{
+	if ((PEMODE_RAGA == seq->enc.pe_mode) || (PEMODE_RAGA_ALIGNED == seq->enc.pe_mode))
+		return raga_spokes(seq->geom.baseres, seq->enc.tiny);
+	else
+		return seq->loop_dims[PHS1_DIM];
+}
+
+int seq_check_equal_dims(int D, const long dims1[D], const long dims2[D], unsigned long flags)
+{
+	return md_check_equal_dims(D, dims1, dims2, flags);
+}
+
 
 
 long seq_get_slices(const struct seq_config* seq)
