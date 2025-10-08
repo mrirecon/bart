@@ -24,6 +24,9 @@
 #define SCALE_GRAD 0.82
 
 
+int prep_grad_ro(struct grad_trapezoid* grad, long echo, const struct seq_config* seq);
+
+
 static double start_rf(const struct seq_config* seq)
 {
 	double sli_ampl = slice_amplitude(seq);
@@ -31,10 +34,10 @@ static double start_rf(const struct seq_config* seq)
 	return round_up_raster(MAX(sli_ampl * seq->sys.grad.inv_slew_rate, seq->sys.coil_control_lead), seq->sys.raster_rf);
 }
 
-static double ro_shift(const struct seq_config* seq)
+static double ro_shift(long echo, const struct seq_config* seq)
 {
 	double start_flat = start_rf(seq) + seq->phys.rf_duration / 2.
-				+ seq->phys.te[0] - adc_time_to_echo(seq);
+				+ seq->phys.te[echo] - adc_time_to_echo(seq);
 
 	double shift = seq->sys.raster_grad - (round_up_raster(start_flat, seq->sys.raster_grad) - start_flat);
 
@@ -52,17 +55,17 @@ static double available_time_RF_SLI(int ro, const struct seq_config* seq)
 	return seq->phys.te[0] - seq->phys.rf_duration / 2.
 		- ampl * seq->sys.grad.inv_slew_rate
 		- adc_time_to_echo(seq)
-		- ro_shift(seq);
+		- ro_shift(0, seq);
 }
 
-static double ro_time_to_echo(long /* echo */, const struct seq_config* seq)
+static double ro_time_to_echo(long echo, const struct seq_config* seq)
 {
-	return ro_shift(seq) + adc_time_to_echo(seq);
+	return ro_shift(echo, seq) + adc_time_to_echo(seq);
 }
 
 static long ro_time_after_echo(long echo, const struct seq_config* seq)
 {
-	return round_up_raster(adc_duration(seq) + ro_shift(seq), seq->sys.raster_grad) 
+	return round_up_raster(adc_duration(seq) + ro_shift(echo, seq), seq->sys.raster_grad) 
 		- ro_time_to_echo(echo, seq);
 }
 
@@ -77,7 +80,7 @@ static int prep_grad_ro_deph(struct grad_trapezoid* grad, const struct seq_confi
 
 	double mom = amp *
 		(0.5 * amp * seq->sys.grad.inv_slew_rate
-		+ ro_shift(seq) + adc_rounding + adc_echo);
+		+ ro_shift(0, seq) + adc_rounding + adc_echo);
 
 	struct grad_limits limits = seq->sys.grad;
 	limits.max_amplitude *= SCALE_GRAD;
@@ -89,7 +92,7 @@ static int prep_grad_ro_deph(struct grad_trapezoid* grad, const struct seq_confi
 }
 
 
-static int prep_grad_ro(struct grad_trapezoid* grad, const struct seq_config* seq)
+int prep_grad_ro(struct grad_trapezoid* grad, long echo, const struct seq_config* seq)
 {
 	*grad = (struct grad_trapezoid){ 0 };
 
@@ -99,7 +102,7 @@ static int prep_grad_ro(struct grad_trapezoid* grad, const struct seq_config* se
 		return 0;
 
 	grad->rampup = ampl * seq->sys.grad.inv_slew_rate;
-	grad->flat = round_up_raster(adc_duration(seq) + ro_shift(seq), seq->sys.raster_grad);
+	grad->flat = round_up_raster(adc_duration(seq) + ro_shift(echo, seq), seq->sys.raster_grad);
 	grad->rampdown = ampl * seq->sys.grad.inv_slew_rate;
 	grad->ampl = ampl;
 
@@ -158,10 +161,10 @@ long min_tr_flash(const struct seq_config* seq)
 
 
 	struct grad_trapezoid last_ro;
-	prep_grad_ro(&last_ro, /*seq->loop_dims[TE_DIM] - 1,*/ seq);
+	prep_grad_ro(&last_ro, seq->loop_dims[TE_DIM] - 1, seq);
 
 	double last_ro_start = start_rf(seq) + seq->phys.rf_duration + available_time_RF_SLI(1, seq) 
-				- seq->phys.te/*[0]*/ + seq->phys.te/*[seq->loop_dims[TE_DIM] - 1]*/; // available_time_RF_SLI only adds first echo, but we need te[echo]
+				- seq->phys.te[0] + seq->phys.te[seq->loop_dims[TE_DIM] - 1]; // available_time_RF_SLI only adds first echo, but we need te[echo]
 
 	return round_up_raster(last_ro_start + grad_duration(&last_ro) + time_after_RO, seq->sys.raster_grad);
 }
@@ -195,12 +198,12 @@ void min_te_flash(const struct seq_config* seq, long* min_te, long* fil_te)
 	}
 
 	time = 0;
-	fil_te[0] = seq->phys.te/*[0]*/ - min_te[0];
+	fil_te[0] = seq->phys.te[0] - min_te[0];
 
 	for (long echo = 1; echo < seq->loop_dims[TE_DIM]; echo++) {
 
 		time += fil_te[echo - 1];
-		fil_te[echo] = seq->phys.te/*[echo]*/ - min_te[echo] - time;
+		fil_te[echo] = seq->phys.te[echo] - min_te[echo] - time;
 	}
 }
 
@@ -211,8 +214,9 @@ struct flash_timing {
 	double slice;
 	double slice_rephaser;
 	double readout_dephaser;
-	double readout;
-	double adc;
+	double readout_blip; // actually MAX_NO_ECHOES
+	double readout[MAX_NO_ECHOES];
+	double adc[MAX_NO_ECHOES];
 };
 
 
@@ -224,8 +228,17 @@ static struct flash_timing flash_compute_timing(const struct seq_config *seq)
 	timing.RF = start_rf(seq);
 	timing.readout_dephaser = timing.RF + seq->phys.rf_duration;
 	timing.slice_rephaser = timing.readout_dephaser + seq->sys.grad.inv_slew_rate * slice_amplitude(seq);
-	timing.readout = timing.readout_dephaser + available_time_RF_SLI(1, seq);
-	timing.adc = round_up_raster(timing.RF + seq->phys.rf_duration / 2. + seq->phys.te - adc_time_to_echo(seq), seq->sys.raster_rf);
+
+	timing.readout_blip = -1.; // calc when gradient was prepared
+
+	for (int i = 0; i < seq->loop_dims[TE_DIM]; i++) {
+
+		timing.readout[i] = timing.readout_dephaser + available_time_RF_SLI(1, seq) - seq->phys.te[0]
+				+ seq->phys.te[i]; // available_time_RF_SLI only adds first echo, but we need te[echo]
+
+		// FIXME; before SI conversion: timing.adc[i] = timing.RF + seq->phys.rf_duration / 2. + seq->phys.te[i] - floor(adc_time_to_echo(seq));
+		timing.adc[i] = round_up_raster(timing.RF + seq->phys.rf_duration / 2. + seq->phys.te[i] - adc_time_to_echo(seq), seq->sys.raster_rf);
+	}
 
 	return timing;
 }
@@ -263,6 +276,9 @@ int flash(int N, struct seq_event ev[N], struct seq_state* seq_state, const stru
 	if (!prep_grad_sli_reph(&slice_rephaser, seq))
 		return ERROR_PREP_GRAD_SLI_REPH;
 
+	if ((grad_total_time(&slice) - 1.e-3) > timing.slice_rephaser)
+		return ERROR_SLI_TIMING;
+
 	i += seq_grad_to_event(ev + i, timing.slice_rephaser, &slice_rephaser, projSLICE);
 
 
@@ -281,15 +297,15 @@ int flash(int N, struct seq_event ev[N], struct seq_state* seq_state, const stru
 
 	struct grad_trapezoid readout;
 
-	if (!prep_grad_ro(&readout, seq))
+	if (!prep_grad_ro(&readout, seq_state->pos[TE_DIM], seq))
 		return ERROR_PREP_GRAD_RO_RO;
 
-	i += seq_grad_to_event(ev + i, timing.readout, &readout, projX);
-	i += seq_grad_to_event(ev + i, timing.readout, &readout, projY);
+	i += seq_grad_to_event(ev + i, timing.readout[seq_state->pos[TE_DIM]], &readout, projX);
+	i += seq_grad_to_event(ev + i, timing.readout[seq_state->pos[TE_DIM]], &readout, projY);
 
 
 
-	i += prep_adc(ev + i, timing.adc, rf_spoil_phase, seq_state, seq);
+	i += prep_adc(ev + i, timing.adc[seq_state->pos[TE_DIM]], rf_spoil_phase, seq_state, seq);
 
 
 	if (seq_block_end_flat(i, ev, seq->sys.raster_grad) > seq->phys.tr)
