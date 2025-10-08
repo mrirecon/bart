@@ -98,7 +98,7 @@ static bool test_flash_te(void)
 
 	double te[seq.loop_dims[TE_DIM]];
 	events_get_te(seq.loop_dims[TE_DIM], te, E, ev);
-	if (0 != (seq.phys.te - te[0]))
+	if (0 != (seq.phys.te[0] - te[0]))
 		return false;
 
 	return true;

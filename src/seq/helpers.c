@@ -150,11 +150,8 @@ static void seq_standard_conf_to_bart(struct seq_config* seq, struct seq_standar
 {
 
 	seq->phys.tr = std->tr;
-#if 0
 	for (int i = 0; i < MAX_NO_ECHOES; i++)
 		seq->phys.te[i] = std->te[i];
-#endif
-	seq->phys.te = std->te[0];
 
 	seq->phys.dwell = std->dwell;
 	seq->phys.os = 2.;
@@ -363,7 +360,7 @@ void seq_print_info_config(int N, char* info, const struct seq_config* seq)
 	sprintf(line, "\nTR\t\t\t\t\t%f", seq->phys.tr);
 	strcat(info, line);
 	for (int i = 0; i < seq->loop_dims[TE_DIM]; i++) {
-		sprintf(line, "\nTE[%d]\t\t\t\t\t%f", i, seq->phys.te/*[i]*/);
+		sprintf(line, "\nTE[%d]\t\t\t\t\t%f", i, seq->phys.te[i]);
 		strcat(info, line);
 	}
 

@@ -34,7 +34,7 @@ static double start_rf(const struct seq_config* seq)
 static double ro_shift(const struct seq_config* seq)
 {
 	double start_flat = start_rf(seq) + seq->phys.rf_duration / 2.
-				+ seq->phys.te - adc_time_to_echo(seq);
+				+ seq->phys.te[0] - adc_time_to_echo(seq);
 
 	double shift = seq->sys.raster_grad - (round_up_raster(start_flat, seq->sys.raster_grad) - start_flat);
 
@@ -49,7 +49,7 @@ static double available_time_RF_SLI(int ro, const struct seq_config* seq)
 {
 	double ampl = ro ? ro_amplitude(seq) : slice_amplitude(seq);
 
-	return seq->phys.te - seq->phys.rf_duration / 2.
+	return seq->phys.te[0] - seq->phys.rf_duration / 2.
 		- ampl * seq->sys.grad.inv_slew_rate
 		- adc_time_to_echo(seq)
 		- ro_shift(seq);
