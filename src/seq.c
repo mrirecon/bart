@@ -102,6 +102,7 @@ int main_seq(int argc, char* argv[argc])
 		// encoding
 		OPTL_UINT(0, "pe_mode", &seq->conf->enc.pe_mode, "pe_mode", "Phase-encoding mode"),
 		OPTL_SELECT(0, "turn", enum pe_mode, &seq->conf->enc.pe_mode, PEMODE_TURN, "turn-based PE (default: RAGA)"),
+		OPTL_SELECT(0, "mems", enum pe_mode, &seq->conf->enc.pe_mode, PEMODE_MEMS_HYB, "multi-echo/multi-spoke PE (default: RAGA)"),
 		OPTL_SELECT(0, "raga", enum pe_mode, &seq->conf->enc.pe_mode, PEMODE_RAGA, "RAGA PE"),
 		OPTL_SELECT(0, "raga_al", enum pe_mode, &seq->conf->enc.pe_mode, PEMODE_RAGA_ALIGNED, "RAGA-aligned PE (default: RAGA)"),
 		OPTL_ULONG(0, "raga_flags", &seq->conf->enc.aligned_flags, "raga_aligned_flags", "RAGA aligned flags (by bitmask)"),
@@ -111,6 +112,7 @@ int main_seq(int argc, char* argv[argc])
 
 		OPTL_PINT(0, "tiny", &seq->conf->enc.tiny, "tiny", "Tiny golden-ratio index"),
 
+		OPTL_LONG('e', "echoes", &seq->conf->loop_dims[TE_DIM], "echoes", "Number of echoes"),
 		OPTL_LONG('r', "lines", &seq->conf->loop_dims[PHS1_DIM], "lines", "Number of phase encoding lines"),
 		OPTL_LONG('z', "partitions", &seq->conf->loop_dims[PHS2_DIM], "partitions", "Number of partitions (3D) or SMS groups (2D)"),
 		OPTL_LONG('t', "measurements", &seq->conf->loop_dims[TIME_DIM], "measurements", "Number of measurements / frames (RAGA: total number of spokes)"),
