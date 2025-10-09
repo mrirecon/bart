@@ -365,7 +365,7 @@ MODULES_sim = -lseq -lsimu
 MODULES_morphop = -lnlops -llinops -lgeom
 MODULES_psf = -lnoncart -llinops
 MODULES_nlinvnet = -lnetworks -lnoir -liter -lnn -lnlops -llinops -lnoncart -lgrecon -lnetworks -lsense -liter -llinops -lwavelet -llowrank -lnoncart -lnlops -lnn
-MODULES_grog = -lcalib
+MODULES_grog = -lcalib -llinops
 MODULES_affinereg = -lmotion -liter -lnlops -llinops
 MODULES_estmotion = -lmotion -lnn -liter -lnlops -llinops
 MODULES_interpolate = -lmotion -liter -lnlops -llinops
@@ -374,7 +374,7 @@ MODULES_stl = -lstl
 MODULES_estscaling = -lsense -llinops
 MODULES_pulse = -lseq
 MODULES_bloch = -lseq -lsimu
-MODULES_trajcor = -lcalib -lnoncart
+MODULES_trajcor = -lcalib -lnoncart -llinops
 MODULES_seq = -lseq -lnoncart -lsimu
 
 
@@ -780,8 +780,9 @@ lib/libismrm.a: CPPFLAGS += $(ISMRM_H)
 lib/libbox.a: CPPFLAGS += -include src/main.h
 
 # lib calib
-UTARGETS += test_grog
+UTARGETS += test_grog test_casorati
 MODULES_test_grog += -lcalib -lnoncart -lsimu -lgeom
+MODULES_test_casorati+= -lcalib -llinops -liter
 
 # lib linop
 UTARGETS += test_linop_matrix test_linop test_padding
