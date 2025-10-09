@@ -86,6 +86,7 @@ int main_reconet(int argc, char* argv[argc])
 
 		OPTL_FLOAT(0, "fix-lambda", &(config.dc_lambda_fixed), "f", "fix lambda to specified value (-1 means train lambda)"),
 		OPTL_FLOAT(0, "lambda-init", &(config.dc_lambda_init), "f", "initialize lambda with specified value"),
+		OPTL_FLOAT(0, "lambda-min", &(config.dc_lambda_min), "f", "constraint minimum value for lambda (only if train lambda)"),
 		OPTL_SET(0, "gradient-step", &(config.dc_gradient), "use gradient steps for data-consistency"),
 		OPTL_SET(0, "gradient-max-eigen", &(config.dc_scale_max_eigen), "scale stepsize by inverse max eigen value of A^HA"),
 		OPTL_SET(0, "proximal-mapping", &(config.dc_proxmap), "use proximal mapping for data-consistency"),

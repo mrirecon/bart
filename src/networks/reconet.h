@@ -29,6 +29,7 @@ struct reconet_s {
 	int dc_max_iter;
 	_Bool dc_none;
 	_Bool dc_proxmap_warmstart;
+	float dc_lambda_min;
 
 	//network initialization
 	_Bool normalize;
