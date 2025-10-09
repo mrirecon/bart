@@ -137,3 +137,69 @@ static bool test_block_minv_multislice(void)
 }
 
 UT_REGISTER_TEST(test_block_minv_multislice);
+
+
+static bool test_fov_shift(void)
+{
+	const int slices = 3;
+
+	float in[3] = {-27, 0, 27};
+	float good[3] = {0, 0, 0};
+
+
+	float gui_shift[slices][4];
+	for (int i = 0; i < slices; i++) {
+
+		gui_shift[i][0] = 0;
+		gui_shift[i][1] = 0;
+		gui_shift[i][2] = in[i]; // slice shift
+	}
+
+	struct seq_config seq = seq_config_defaults;
+
+	seq.geom.mb_factor = 3;
+	set_loop_dims_and_sms(&seq, 1, slices, 1, 1, 1, 1, 1);
+	set_fov_pos(slices, 4, &gui_shift[0][0], &seq);
+	
+	if (0 < fabs(seq.geom.sms_distance - 27.))
+		return false;
+
+	for (int i = 0; i < slices; i++)
+		if (0 < fabs(seq.geom.shift[i][2] - good[i]))
+			return false;
+
+	return true;
+}
+
+UT_REGISTER_TEST(test_fov_shift);
+
+static bool test_fov_shift3x3(void)
+{
+	const int slices = 9;
+	float in[9] = {-36, -27, -18, -9, 0, 9, 18, 27, 36};
+	float good[9] = {-9, 0, 9, -9, 0, 9, -9, 0, 9};
+
+	float gui_shift[slices][4];
+	for (int i = 0; i < slices; i++) {
+
+		gui_shift[i][0] = 0;
+		gui_shift[i][1] = 0;
+		gui_shift[i][2] = in[i]; // slice shift
+	}
+
+	struct seq_config seq = seq_config_defaults;
+
+	seq.geom.mb_factor = 3;
+	set_loop_dims_and_sms(&seq, 1, slices, 1, 1, 1, 1, 1);
+	set_fov_pos(slices, 4, &gui_shift[0][0], &seq);
+	
+	if (0 < fabs(seq.geom.sms_distance - 27.))
+		return false;
+	for (int i = 0; i < slices; i++)
+		if (0 < fabs(seq.geom.shift[i][2] - good[i]))
+			return false;
+
+	return true;
+}
+
+UT_REGISTER_TEST(test_fov_shift3x3);

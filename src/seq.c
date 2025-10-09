@@ -55,6 +55,7 @@ int main_seq(int argc, char* argv[argc])
 
 	float dt = -1.;
 	long samples = -1;
+	float dist = 1.;
 
 	struct seq_state seq_state = { };
 	struct seq_config seq = seq_config_defaults;
@@ -72,6 +73,7 @@ int main_seq(int argc, char* argv[argc])
 		OPT_LONG('N', &samples, "samples", "Number of samples (default: 1000)"),
 
 		OPT_DOVEC3('s', &seq.geom.shift[0], "RO:PE:SL", "FOV shift (mm) of first slice"),
+		OPTL_FLOAT(0, "dist", &dist, "dist", "slice distance factor [1 / slice_thickness] (default: 1.)"),
 
 		// contrast mode
 		OPTL_SELECT(0, "no-spoiling", enum flash_contrast, &seq.phys.contrast, CONTRAST_NO_SPOILING, "spoiling off (default: rf random)"),
@@ -146,6 +148,29 @@ int main_seq(int argc, char* argv[argc])
 
 	set_loop_dims_and_sms(&seq, seq.loop_dims[PHS2_DIM], seq.loop_dims[SLICE_DIM], seq.loop_dims[PHS1_DIM],
 				seq.loop_dims[TIME_DIM], seq.loop_dims[TE_DIM], 1, 1);
+
+
+	const long total_slices = get_slices(&seq);
+
+	if ((1 < total_slices) && (0. < dist)) {
+
+		float shift[total_slices][3];
+		memset(shift, 0, sizeof shift);
+
+		for (int i = 0; i < total_slices; i++) {
+
+			shift[i][0] = seq.geom.shift[i][0];
+			shift[i][1] = seq.geom.shift[i][1];
+			shift[i][2] = (i - 0.5 * (total_slices - 1)) * dist * seq.geom.slice_thickness;
+		}
+
+		set_fov_pos(total_slices, 3, &shift[0][0], &seq);
+
+		debug_printf(DP_INFO, "slice shifts [mm]:\n\t%d %f \t\n", 0, seq.geom.shift[0][2]);
+		for (int i = 1; i < total_slices; i++)
+			debug_printf(DP_INFO, "\t%d: %f \n", i, seq.geom.shift[i][2]);
+		debug_printf(DP_INFO, "\n");
+	}
 
 	if (0 > samples)
 		samples = (0. > dt) ? 1000 : (seq.phys.tr / dt);
