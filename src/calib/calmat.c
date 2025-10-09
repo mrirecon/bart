@@ -20,6 +20,8 @@
 #include "misc/mri2.h"
 #include "misc/debug.h"
 
+#include "linops/casorati.h"
+
 #include "calmat.h"
 
 
@@ -172,6 +174,16 @@ void covariance_function(const long kdims[3], int N, complex float cov[N][N], co
 	gram_matrix(N, cov, L, MD_CAST_ARRAY2(const complex float, 2, calmat_dims, cm, 0, 1));
 
 	md_free(cm);
+}
+
+// use FFT to compute covariance function
+// R. A. Lobos, C. -C. Chan and J. P. Haldar. New Theory and Faster Computations
+// for Subspace-Based Sensitivity Map Estimation in Multichannel MRI. IEEE TMI 2024; 43: 286-296
+void covariance_function_fft(const long kdims[3], int N, complex float cov[N][N], const long calreg_dims[4], const complex float* data)
+{
+	long kdims2[4] = { kdims[0], kdims[1], kdims[2], calreg_dims[3] };
+
+	casorati_gram(N, cov, 4, kdims2, calreg_dims, data);
 }
 
 

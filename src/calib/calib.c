@@ -46,6 +46,8 @@
 #include "calib/walsh.h"
 #include "calib/softweight.h"
 
+#include "linops/casorati.h"
+
 #include "calib.h"
 
 #ifdef USE_CUDA
@@ -792,7 +794,7 @@ void compute_kernels(const struct ecalib_conf* conf, long nskerns_dims[5], compl
 			nskerns[i * N + j] = ((*vec)[j][N - 1 - i]) * (conf->weighting ? val[N - 1 - i] : 1.);
 #endif
 #else
-	covariance_function(conf->kdims, N, *vec, caldims, caldata);
+	covariance_function_fft(conf->kdims, N, *vec, caldims, caldata);
 	time += timestamp();
 
 	debug_printf(DP_DEBUG1, " done (%.3fs)\nEigen decomposition... (size: %ld) ... ", time, N);

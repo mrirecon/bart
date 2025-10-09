@@ -64,3 +64,40 @@ static bool test_linop_casoratiH(void)
 UT_REGISTER_TEST(test_linop_casoratiH);
 
 
+static bool test_covariance_function(void)
+{
+	long kdims[4] = { 6, 6, 1, 32 };
+	long dims[4] = { 24, 24, 1, 32 };
+
+	long M = md_calc_size(4, kdims);
+
+	complex float (*cov2)[M][M] = md_alloc(2, MD_DIMS(M, M), CFL_SIZE);
+	complex float (*cov1)[M][M] = md_alloc(2, MD_DIMS(M, M), CFL_SIZE);
+
+	complex float* data = md_alloc(4, dims, CFL_SIZE);
+	md_gaussian_rand(4, dims, data);
+
+	double time = -timestamp();
+	covariance_function(kdims, M, (*cov1), dims, data);
+
+	time += timestamp();
+	debug_printf(DP_DEBUG1, "Covariance time: %es\n", time);
+	time = -timestamp();
+
+	covariance_function_fft(kdims, M, (*cov2), dims, data);
+
+	time += timestamp();
+	debug_printf(DP_DEBUG1, "FFT time: %es\n", time);
+
+	float err = md_znrmse(2, MD_DIMS(M, M), &(*cov2)[0][0], &(*cov1)[0][0]);
+
+	md_free(cov1);
+	md_free(cov2);
+	md_free(data);
+
+	debug_printf(DP_INFO, "Casorati Gram matrix error: %f\n", err);
+
+	UT_RETURN_ASSERT(err < 1.E-6);
+}
+
+UT_REGISTER_TEST(test_covariance_function);
