@@ -827,6 +827,8 @@ UTARGETS += test_ode test_nlmeans test_rand test_matexp
 UTARGETS += test_blas test_mdfft test_ops test_ops_p test_flpmath2 test_convcorr test_specfun test_qform test_fft test_gaussians test_md_gaussians
 UTARGETS += test_lapack
 UTARGETS += test_morph
+UTARGETS += test_linalg_rand
+MODULES_test_linalg_rand += -llinops
 ifeq ($(MPI),1)
 UTARGETS += test_mpi test_mpi_multind test_mpi_flpmath test_mpi_fft
 endif

@@ -11,6 +11,10 @@ extern void lapack_svd_econ(long M, long N,
 		     float S[(N > M) ? M : N],
 		     complex float A[N][M]);
 
+extern void lapack_qr_econ(long M, long N,
+		    complex float R[N][(N > M) ? M : N],
+		    complex float A[N][M]);
+
 extern void lapack_eig_double(long N, double eigenval[N], complex double matrix[N][N]);
 extern void lapack_svd_double(long M, long N, complex double U[M][M], complex double VH[N][N], double S[(N > M) ? M : N], complex double A[N][M]);
 extern void lapack_matrix_multiply(long M, long N, long K, complex float C[M][N], const complex float A[M][K], const complex float B[K][N]);

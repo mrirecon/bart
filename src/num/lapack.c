@@ -63,6 +63,26 @@ void lapack_svd_econ(long M, long N,
 	PTR_FREE(superb);
 }
 
+// A = QR in Fortran notation
+// A is overwritten with Q only A[MIN(M,N)][M] are valid on exit
+void lapack_qr_econ(long M, long N,
+		    complex float R[N][(N > M) ? M : N],
+		    complex float A[N][M])
+{
+	PTR_ALLOC(complex float[MIN(M, N)], tau);
+	LAPACKE(cgeqrf, M, N, &A[0][0], M, *tau);
+
+	if (NULL != R) {
+
+		for (int i = 0; i < N; i++)
+			for (int j = 0; j < MIN(M, N); j++)
+				R[i][j] = (i <= j) ? A[i][j] : 0.;
+	}
+
+	LAPACKE(cungqr, M, MIN(M, N), MIN(M, N), &A[0][0], M, *tau);
+	PTR_FREE(tau);
+}
+
 void lapack_eig_double(long N, double eigenval[N], complex double matrix[N][N])
 {
 	LAPACKE(zheev, 'V', 'U', N, &matrix[0][0], N, eigenval);
