@@ -419,7 +419,7 @@ struct nlop_s* nlop_link(const struct nlop_s* x, int oo, int ii)
 	assert(oo < OO);
 
 	PTR_ALLOC(struct nlop_s, n);
-	PTR_ALLOC(const struct linop_s*[II - 1][OO - 1], der);
+	PTR_ALLOC(const struct linop_s*[II - 1 ?: 1][OO - 1 ?: 1], der);
 
 	//assert(operator_ioflags(x->op) == ((1u << OO) - 1));
 
@@ -799,10 +799,10 @@ struct nlop_s* nlop_stack_multiple_F(int N, const struct nlop_s* nlops[N], int I
 
 	if (container)
 		return (struct nlop_s*)nlop_stack_container_create_F(N, nlops, II, in_stack_dim, OO, out_stack_dim);
-	
+
 	if (1 == N)
 		return (struct nlop_s*)nlops[0];
-	
+
 	assert(!multigpu);
 
 	auto result = (struct nlop_s*)nlops[0];
