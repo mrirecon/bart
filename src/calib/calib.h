@@ -28,6 +28,9 @@ struct ecalib_conf {
 	_Bool automate;
 	_Bool phase_normalize;
 	int econdim;
+	_Bool nystroem;
+	long nystroem_os;
+	long nystroem_K;
 };
 
 extern const struct ecalib_conf ecalib_defaults;

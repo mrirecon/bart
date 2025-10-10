@@ -24,6 +24,7 @@
 #include "num/multind.h"
 #include "num/fft.h"
 #include "num/init.h"
+#include "num/rand.h"
 
 #include "calib/calib.h"
 #include "calib/estvar.h"
@@ -78,6 +79,7 @@ int main_ecalib(int argc, char* argv[argc])
 		OPT_SET('1', &one, "perform only first part of the calibration"),
 		OPT_CLEAR('P', &conf.rotphase, "Do not rotate the phase with respect to the first principal component"),
 		OPT_SET('N', &conf.phase_normalize, "Use phase normalization"),
+		OPT_SET('A', &conf.nystroem, "Approximate eigenvalue decomposition using Nyström"),
 		OPT_CLEAR('O', &conf.orthiter, "()"),
 		OPTL_INT('i', "orthiter", &conf.num_orthiter, "orthiter", "()"),
 		OPT_FLOAT('b', &conf.perturb, "", "()"),
@@ -176,6 +178,7 @@ int main_ecalib(int argc, char* argv[argc])
 	// FIXME: we should scale the data
 	bart_use_gpu = conf.usegpu;
 	num_init_gpu_support();
+	num_rand_init(0);
 
         if ((conf.var < 0.) && (conf.weighting || (conf.crop < 0.))) {
 

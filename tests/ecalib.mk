@@ -66,8 +66,19 @@ tests/test-ecalib-econ: ecalib nrmse $(TESTS_OUT)/shepplogan_coil_ksp.ra
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-ecalib-nystroem: noise ecalib nrmse $(TESTS_OUT)/shepplogan_coil_ksp.ra
+	set -e ; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/noise -n 400 $(TESTS_OUT)/shepplogan_coil_ksp.ra ksp.ra		;\
+	$(TOOLDIR)/ecalib -m1 -A -c0 ksp.ra coils1.ra					;\
+	$(TOOLDIR)/ecalib -m1    -c0 ksp.ra coils2.ra					;\
+	$(TOOLDIR)/nrmse -t 0.0002 coils1.ra coils2.ra					;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
 TESTS += tests/test-ecalib tests/test-ecalib-auto tests/test-ecalib-rotation
 TESTS += tests/test-ecalib-rotation2
 TESTS += tests/test-ecalib-phase
 TESTS += tests/test-ecalib-econ
+TESTS += tests/test-ecalib-nystroem
 TESTS_GPU += tests/test-ecalib-gpu

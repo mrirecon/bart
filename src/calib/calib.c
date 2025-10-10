@@ -676,6 +676,9 @@ const struct ecalib_conf ecalib_defaults = {
 	.automate = false,
 	.phase_normalize = false,
 	.econdim = -2,
+	.nystroem = false,
+	.nystroem_os = 20,
+	.nystroem_K = 40,
 };
 
 
@@ -803,7 +806,7 @@ static void perturb(const long dims[2], complex float* vecs, float amt)
 }
 
 
-static long number_of_kernels(const struct ecalib_conf* conf, long N, const float val[N])
+static long number_of_kernels(const struct ecalib_conf* conf, long N, long K, const float val[K])
 {
 	long n = 0;
 
@@ -824,7 +827,7 @@ static long number_of_kernels(const struct ecalib_conf* conf, long N, const floa
 		assert(-1 == conf->numsv);
 		assert(-1. == conf->percentsv);
 
-		for (int i = 0; i < N; i++)
+		for (int i = 0; i < K; i++)
 			if (val[i] / val[0] > sqrtf(conf->threshold))
 				n++;
 	}
@@ -836,7 +839,7 @@ static long number_of_kernels(const struct ecalib_conf* conf, long N, const floa
 
 	float tr = 0.;
 
-	for (int i = 0; i < N; i++) {
+	for (int i = 0; i < K; i++) {
 
 		tr += powf(val[i], 2.);
 
@@ -872,65 +875,101 @@ void compute_kernels(const struct ecalib_conf* conf, long nskerns_dims[5], compl
 	assert(NULL != val);
 	assert(SN == N);
 
-	debug_printf(DP_DEBUG1, "Build calibration matrix and SVD...");
-	double time = -timestamp();
+	long K = N;
 
-#ifdef CALMAT_SVD
-	calmat_svd(conf->kdims, N, *vec, val, caldims, caldata);
+	if (conf->nystroem) {
 
-	if (conf->weighting)
-		soft_weight_singular_vectors(N, conf->var, conf->kdims, caldims, val, val);
+		K = conf->nystroem_K;
 
-	for (int i = 0; i < N; i++)
-		for (int j = 0; j < N; j++)
-#ifndef FLIP
-			nskerns[i * N + j] = ((*vec)[j][i]) * (conf->weighting ? val[i] : 1.);
-#else
-			nskerns[i * N + j] = ((*vec)[j][N - 1 - i]) * (conf->weighting ? val[N - 1 - i] : 1.);
-#endif
-#else
-	covariance_function_fft(conf->kdims, N, *vec, caldims, caldata);
-	time += timestamp();
+		if (0 < conf->numsv)
+			K = conf->numsv + 1;
 
-	debug_printf(DP_DEBUG1, " done (%.3fs)\nEigen decomposition... (size: %ld) ... ", time, N);
-
-	time = -timestamp();
-
-	// we could apply Nystroem method here to speed it up
-
-	float tmp_val[N];
-	lapack_eig(N, tmp_val, *vec);
-
-	// reverse and square root, test for smaller null to avoid NaNs
-	for (int i = 0; i < N; i++)
-		val[i] = (tmp_val[N - 1 - i] < 0.) ? 0. : sqrtf(tmp_val[N - 1 - i]);
-
-	if (conf->weighting)
-		soft_weight_singular_vectors(N, conf-> var, conf->kdims, caldims, val, val);
-
-	for (int i = 0; i < N; i++)
-		for (int j = 0; j < N; j++)
-#ifndef FLIP
-			nskerns[i * N + j] = (*vec)[N - 1 - i][j] * (conf->weighting ? val[i] : 1.);	// flip
-#else
-			nskerns[i * N + j] = (*vec)[i][j] * (conf->weighting ? val[N - 1 - i] : 1.);	// flip
-#endif
-#endif
-
-	if (conf->perturb > 0.) {
-
-		long dims[2] = { N, N };
-		perturb(dims, nskerns, conf->perturb);
+		if (0. < conf->percentsv)
+			K = ceil(N * conf->percentsv) + 1;
 	}
 
-	time += timestamp();
-	debug_printf(DP_DEBUG1, " done (%.3fs)\n", time);
+	do {
+		if (K + conf->nystroem_os >= N)
+			K = N;
+
+		float tmp_val[K];
+
+		debug_printf(DP_DEBUG1, "Build calibration matrix and SVD...");
+		double time = -timestamp();
+
+#ifdef CALMAT_SVD
+		calmat_svd(conf->kdims, N, *vec, val, caldims, caldata);
+
+		if (conf->weighting)
+			soft_weight_singular_vectors(N, conf->var, conf->kdims, caldims, val, val);
+
+		for (int i = 0; i < N; i++)
+			for (int j = 0; j < N; j++)
+#ifndef FLIP
+				nskerns[i * N + j] = ((*vec)[j][i]) * (conf->weighting ? val[i] : 1.);
+#else
+				nskerns[i * N + j] = ((*vec)[j][N - 1 - i]) * (conf->weighting ? val[N - 1 - i] : 1.);
+#endif
+#else
+
+		if (K == N) {
+
+			covariance_function_fft(conf->kdims, N, *vec, caldims, caldata);
+			time += timestamp();
+
+			debug_printf(DP_DEBUG1, " done (%.3fs)\nEigen decomposition... (size: %ld) ... ", time, N);
+
+			time = -timestamp();
+
+			lapack_eig(N, tmp_val, *vec);
+		} else {
+
+			debug_printf(DP_DEBUG1, " using Nyström (K=%ld) ... ", K);
+			casorati_gram_eig_nystroem(K, conf->nystroem_os, N, tmp_val, *vec, 4, nskerns_dims, caldims, caldata);
+		}
+
+		time += timestamp();
+		debug_printf(DP_DEBUG1, " done (%.3fs)\n", time);
+
+
+		// reverse and square root, test for smaller null to avoid NaNs
+		for (int i = 0; i < K; i++)
+			val[i] = (tmp_val[K - 1 - i] < 0.) ? 0. : sqrtf(tmp_val[K - 1 - i]);
+
+		if (conf->weighting)
+			soft_weight_singular_vectors(K, conf-> var, conf->kdims, caldims, val, val);
+
+		for (int i = 0; i < K; i++)
+			for (int j = 0; j < N; j++)
+#ifndef FLIP
+				nskerns[i * N + j] = (*vec)[K - 1 - i][j] * (conf->weighting ? val[i] : 1.);	// flip
+#else
+				nskerns[i * N + j] = (*vec)[i][j] * (conf->weighting ? val[N - 1 - i] : 1.);	// flip
+#endif
+#endif
+
+		if (conf->perturb > 0.) {
+
+			long dims[2] = { K, N };
+			perturb(dims, nskerns, conf->perturb);
+		}
 
 #ifndef FLIP
-	nskerns_dims[4] = number_of_kernels(conf, N, val);
+		nskerns_dims[4] = number_of_kernels(conf, N, K, val);
 #else
-	nskerns_dims[4] = N - number_of_kernels(conf, N, val);
+		nskerns_dims[4] = K - number_of_kernels(conf, N, K, val);
 #endif
+
+		if (nskerns_dims[4] < K)
+			break;
+
+		debug_printf(DP_DEBUG1, "Redo Nystöm kernel estimation as all (K=%ld) kernels are used.\n", K);
+
+		K *= 2;
+		nskerns_dims[4] = N;
+
+	} while (true);
+
 
 	PTR_FREE(vec);
 }

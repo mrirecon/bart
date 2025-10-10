@@ -14,6 +14,7 @@
 #include "num/casorati.h"
 #include "num/fft.h"
 #include "num/multiplace.h"
+#include "num/linalg_rand.h"
 
 #include "linops/linop.h"
 
@@ -304,5 +305,26 @@ void casorati_gram(int M, complex float out[M][M], int N, const long kdims[N], c
 	//	 transpose is equivalent to conjugate for self-adjoint matrix
 	md_zconj(2, MD_DIMS(M, M), &out[0][0], &out[0][0]);
 }
+
+
+void casorati_gram_eig_nystroem(int K, int P, int M, float eig[K], complex float out[K][M], int N, const long kdims[N], const long dims[N], const complex float* data)
+{
+	assert(M == md_calc_size(N, kdims));
+
+	long kdimsB[N + 1];
+	long dimsB[N + 1];
+
+	kdimsB[N] = K + P;
+	dimsB[N] = 1;
+	md_copy_dims(N, kdimsB, kdims);
+	md_copy_dims(N, dimsB, dims);
+
+	const struct linop_s* lop_casorati = linop_casorati_create(N + 1, kdimsB, dimsB, data);
+	randomized_eig_block(lop_casorati->normal, 1, M, K, P, out, eig);
+	linop_free(lop_casorati);
+
+	md_zconj(2, MD_DIMS(M, K), &out[0][0], &out[0][0]);
+}
+
 
 
