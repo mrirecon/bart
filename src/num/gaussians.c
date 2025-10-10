@@ -31,7 +31,7 @@ float gaussian_pdf(int N, const complex float m[N], const
 	float f = powf(M_PI, -N);
 	float d = cabsf(mat_det(N, icov));
 
-	return f * d * expf(-1. * sum);
+	return f * d * expf(-sum);
 }
 
 
@@ -43,7 +43,7 @@ float gaussian_mix_pdf(int M, int N, const float coeff[M], const complex float m
 	for (int i = 0; i < M; i++)
 		sum += coeff[i];
 
-	assert(1. == sum);
+	assert(fabsf(1. - sum) < 1.E-6);
 
 	sum = 0.;
 	for (int i = 0; i < M; i++)
@@ -57,8 +57,7 @@ float gaussian_mix_pdf(int M, int N, const float coeff[M], const complex float m
 void gaussian_sample(int N, const complex float m[N],
 		const complex float icov[N][N], complex float x[N])
 {
-	complex float u[N];
-	memset(u, 0, sizeof u); // maybe-uninitialized
+	complex float u[N] = { }; // maybe-uninitialized
 
 	for (int i = 0; i < N; i++)
 		u[i] = gaussian_rand() / sqrtf(2.);
@@ -93,8 +92,10 @@ void gaussian_mix_sample(int M, int N, const float coeff[M], const complex float
 			break;
 	}
 
-	assert(1. >= icoeff);
-	assert(ind < M);
+	assert(1.0001 >= icoeff);
+	assert(ind <= M);
+	if (ind == M)
+		ind--;
 
 	gaussian_sample(N, m[ind], icov[ind], x);
 }
@@ -165,8 +166,6 @@ void gaussian_multiply(int N, complex float m[N],
 		const complex float m2[N],
 		const complex float icov2[N][N])
 {
-	mat_add(N, N, icov, icov1, icov2);
-
 	complex float m1b[N];
 	mat_vecmul(N, N, m1b, icov1, m1);
 
@@ -175,10 +174,35 @@ void gaussian_multiply(int N, complex float m[N],
 
 	vec_saxpy(N, m1b, 1., m2b);
 
+	mat_add(N, N, icov, icov1, icov2);
+
 	complex float cov[N][N];
 	mat_inverse(N, cov, icov);
 	mat_vecmul(N, N, m, cov, m1b);
 }
+
+
+float gaussian_multiply_factor(int N,
+		const complex float m1[N],
+		const complex float icov1[N][N],
+		const complex float m2[N],
+		const complex float icov2[N][N])
+{
+	complex float cov1[N][N];
+	mat_inverse(N, cov1, icov1);
+
+	complex float cov2[N][N];
+	mat_inverse(N, cov2, icov2);
+
+	complex float cov[N][N];
+	mat_add(N, N, cov, cov1, cov2);
+
+	complex float icov[N][N];
+	mat_inverse(N, icov, cov);
+
+	return gaussian_pdf(N, m1, icov, m2);
+}
+
 
 /**
  * Calculates the gradient of the Gaussian exponent

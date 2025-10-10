@@ -15,6 +15,9 @@ extern void gaussian_mix_score(int M, int N, const float coeff[M], const complex
 extern void gaussian_multiply(int N, complex float m[N], complex float icov[N][N],
 		const complex float m1[N], const complex float icov1[N][N],
 		const complex float m2[N], const complex float icov2[N][N]);
+extern float gaussian_multiply_factor(int N,
+		const complex float m1[N], const complex float icov1[N][N],
+		const complex float m2[N], const complex float icov2[N][N]);
 extern void gaussian_convolve(int N, complex float m[N], complex float sqr_cov[N][N],
 		const complex float m1[N], const complex float sqr_cov1[N][N],
 		const complex float m2[N], const complex float sqr_cov2[N][N]);

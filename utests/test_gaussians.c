@@ -206,7 +206,12 @@ static bool test_gaussian_mult(void)
 	float valb2 = gaussian_pdf(1, m2, v2, xb);
 	float valb  = gaussian_pdf(1, m, v, xb);
 
-	if (1.E-8 < fabsf(vala1 * vala2 * valb - vala * valb1 * valb2))
+	float z = gaussian_multiply_factor(1, m1, v1, m2, v2);
+
+	if (1.E-8 < fabsf(vala1 * vala2 - z * vala))
+		return false;
+
+	if (1.E-8 < fabsf(valb1 * valb2 - z * valb))
 		return false;
 
 	return true;
