@@ -16,7 +16,7 @@
 
 
 float gaussian_pdf(int N, const complex float m[N], const
-		complex float isqr_cov[N][N], const complex float x[N])
+		complex float icov[N][N], const complex float x[N])
 {
 	complex float u[N];
 
@@ -24,23 +24,30 @@ float gaussian_pdf(int N, const complex float m[N], const
 	vec_saxpy(N, u, -1., m);
 
 	complex float v[N];
-	mat_vecmul(N, N, v, isqr_cov, u);
+	mat_vecmul(N, N, v, icov, u);
 
-	float sum = crealf(vec_dot(N, v, v));
+	float sum = crealf(vec_dot(N, v, u));
 
-	float f = pow(M_PI, -N);
-	float d = pow(cabsf(mat_det(N, isqr_cov)), 2. * N);
-	return f * d * exp(-1. * sum);
+	float f = powf(M_PI, -N);
+	float d = cabsf(mat_det(N, icov));
+
+	return f * d * expf(-1. * sum);
 }
 
 
 float gaussian_mix_pdf(int M, int N, const float coeff[M], const complex float m[M][N],
-		const complex float isqr_cov[M][N][N], const complex float x[N])
+		const complex float icov[M][N][N], const complex float x[N])
 {
 	float sum = 0.;
 
 	for (int i = 0; i < M; i++)
-		sum += coeff[i] * gaussian_pdf(N, m[i], isqr_cov[i], x);
+		sum += coeff[i];
+
+	assert(1. == sum);
+
+	sum = 0.;
+	for (int i = 0; i < M; i++)
+		sum += coeff[i] * gaussian_pdf(N, m[i], icov[i], x);
 
 	return sum;
 }
@@ -48,13 +55,21 @@ float gaussian_mix_pdf(int M, int N, const float coeff[M], const complex float m
 
 
 void gaussian_sample(int N, const complex float m[N],
-		const complex float sqr_cov[N][N], complex float x[N])
+		const complex float icov[N][N], complex float x[N])
 {
 	complex float u[N];
 	memset(u, 0, sizeof u); // maybe-uninitialized
 
 	for (int i = 0; i < N; i++)
 		u[i] = gaussian_rand() / sqrtf(2.);
+
+	complex float sqr_cov[N][N];
+	mat_inverse(N, sqr_cov, icov);
+#if 0
+	for (int i = 0; i < N; i++)
+		sqr_cov[i][i] += 0.001;	// epislon
+#endif
+	cholesky(N, sqr_cov);
 
 	mat_vecmul(N, N, x, sqr_cov, u);
 
@@ -64,7 +79,7 @@ void gaussian_sample(int N, const complex float m[N],
 
 
 void gaussian_mix_sample(int M, int N, const float coeff[M], const complex float m[M][N],
-		const complex float sqr_cov[M][N][N], complex float x[N])
+		const complex float icov[M][N][N], complex float x[N])
 {
 	float r = uniform_rand();
 
@@ -81,17 +96,14 @@ void gaussian_mix_sample(int M, int N, const float coeff[M], const complex float
 	assert(1. >= icoeff);
 	assert(ind < M);
 
-	gaussian_sample(N, m[ind], sqr_cov[ind], x);
+	gaussian_sample(N, m[ind], icov[ind], x);
 }
 
 
 
-void gaussian_score(int N, const complex float m[N], const complex float isqr_cov[N][N],
+void gaussian_score(int N, const complex float m[N], const complex float icov[N][N],
 		const complex float x[N], complex float sc[N])
 {
-	complex float icov[N][N];
-	mat_mul(N, N, N, icov, isqr_cov, isqr_cov); // FIXME conj
-
 	complex float u[N];
 	vec_zero(N, u);
 	vec_saxpy(N, u, -2., x);
@@ -101,7 +113,7 @@ void gaussian_score(int N, const complex float m[N], const complex float isqr_co
 
 
 void gaussian_mix_score(int M, int N, const float coeff[M], const complex float m[M][N],
-		const complex float isqr_cov[M][N][N],
+		const complex float icov[M][N][N],
 		const complex float x[N], complex float sc[N])
 {
 	vec_zero(N, sc);
@@ -110,14 +122,14 @@ void gaussian_mix_score(int M, int N, const float coeff[M], const complex float 
 
 	for (int i = 0; i < M; i++) {
 
-		c[i] = coeff[i] * gaussian_pdf(N, m[i], isqr_cov[i], x);
+		c[i] = coeff[i] * gaussian_pdf(N, m[i], icov[i], x);
 		no += c[i];
 	}
 
 	for (int i = 0; i < M; i++) {
 
 		complex float u[N];
-		gaussian_score(N, m[i], isqr_cov[i], x, u);
+		gaussian_score(N, m[i], icov[i], x, u);
 
 		vec_saxpy(N, sc, c[i] / no, u);
 	}
@@ -125,43 +137,47 @@ void gaussian_mix_score(int M, int N, const float coeff[M], const complex float 
 
 
 void gaussian_convolve(int N, complex float m[N],
-		complex float sqr_cov[N][N],
+		complex float icov[N][N],
 		const complex float m1[N],
-		const complex float sqr_cov1[N][N],
+		const complex float icov1[N][N],
 		const complex float m2[N],
-		const complex float sqr_cov2[N][N])
+		const complex float icov2[N][N])
 {
-	assert(1 == N);
-	assert(0. <= crealf(sqr_cov1[0][0]));
-	assert(0. <= crealf(sqr_cov2[0][0]));
-	assert(0. == cimagf(sqr_cov1[0][0]));
-	assert(0. == cimagf(sqr_cov2[0][0]));
+	vec_copy(N, m, m1);
+	vec_saxpy(N, m, 1., m2);
 
-	m[0] = m1[0] + m2[0];
+	complex float cov1[N][N];
+	mat_inverse(N, cov1, icov1);
 
-	sqr_cov[0][0] = sqrtf(powf(crealf(sqr_cov1[0][0]), 2.) + powf(crealf(sqr_cov2[0][0]), 2.));
+	complex float cov2[N][N];
+	mat_inverse(N, cov2, icov2);
+
+	complex float cov[N][N];
+	mat_add(N, N, cov, cov1, cov2);
+	mat_inverse(N, icov, cov);
 }
 
 
 void gaussian_multiply(int N, complex float m[N],
-		complex float isqr_cov[N][N],
+		complex float icov[N][N],
 		const complex float m1[N],
-		const complex float isqr_cov1[N][N],
+		const complex float icov1[N][N],
 		const complex float m2[N],
-		const complex float isqr_cov2[N][N])
+		const complex float icov2[N][N])
 {
-	assert(1 == N);
-	assert(0. <= crealf(isqr_cov1[0][0]));
-	assert(0. <= crealf(isqr_cov2[0][0]));
-	assert(0. == cimagf(isqr_cov1[0][0]));
-	assert(0. == cimagf(isqr_cov2[0][0]));
+	mat_add(N, N, icov, icov1, icov2);
 
-	float v1 = powf(crealf(isqr_cov1[0][0]), -2.);
-	float v2 = powf(crealf(isqr_cov2[0][0]), -2.);
+	complex float m1b[N];
+	mat_vecmul(N, N, m1b, icov1, m1);
 
-	m[0] = (v1 * m1[0] + v2 * m2[0]) / (v1 + v2);
+	complex float m2b[N];
+	mat_vecmul(N, N,  m2b, icov2, m2);
 
-	isqr_cov[0][0] = sqrtf(powf(crealf(isqr_cov1[0][0]), 2.) + powf(crealf(isqr_cov2[0][0]), 2.));
+	vec_saxpy(N, m1b, 1., m2b);
+
+	complex float cov[N][N];
+	mat_inverse(N, cov, icov);
+	mat_vecmul(N, N, m, cov, m1b);
 }
 
 /**

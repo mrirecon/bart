@@ -142,6 +142,40 @@ static bool test_md_gaussian_score_multigauss(complex float s)
     return true;
 }
 
+
+static bool test_md_gaussian_score_2d_both(complex float s)
+{
+	long dims_score[4] = { 2, };
+	long dims_x[4]     = { 2, };
+	long dims_mu[4]    = { 2, };
+	long dims_vars[4]  = { 1, }; // only one variance implementation
+	long dims_ws[4]    = { 1, };
+
+	complex float x[2]    = { 0.5 - 0.1i, 0.5 + 0.1i };
+	complex float mu[2]   = { 0.3, 1.2 };
+	complex float vars[1] = { s };
+	complex float ws[1]   = { 1. };
+	complex float score[2];
+	complex float score2[2];
+
+	complex float visqrt[2][2] = {
+		{ powf(s, -1.), 0. },
+		{ 0., powf(s, -1.) },
+	};
+
+	md_gaussian_score(1, dims_score, score, dims_x, x, dims_mu, mu, dims_vars, vars, dims_ws, ws);
+	gaussian_score(2, mu, visqrt, x, score2);
+
+	if (cabsf(score[0] - score2[0]) > 1.E-6)
+		return false;
+
+	if (cabsf(score[1] - score2[1]) > 1.E-6)
+		return false;
+
+	return true;
+}
+
+
 static bool test_md_gaussian_score()
 {
     for (float s = 0.1; s < 1.3; s += 0.1)
@@ -150,6 +184,10 @@ static bool test_md_gaussian_score()
 
     for (float s = 0.1; s < 1.3; s += 0.1)
         if (!test_md_gaussian_score_2d(s))
+            return false;
+
+    for (float s = 0.1; s < 1.3; s += 0.1)
+        if (!test_md_gaussian_score_2d_both(s))
             return false;
 
     for (float s = 0.1; s < 1.3; s += 0.1)
@@ -168,5 +206,6 @@ static bool test_md_gaussian_score()
 }
 
 UT_REGISTER_TEST(test_md_gaussian_score);
+
 
 

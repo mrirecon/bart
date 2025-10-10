@@ -1,4 +1,4 @@
-/* Copyright 2023-2024. Institute of Biomedical Imaging. TU Graz.
+/* Copyright 2023-2025. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
@@ -14,7 +14,7 @@
 static bool test_gaussian_pdf0(float s)
 {
 	complex float m[1] = { 0.1 + 0.2i };
-	complex float v[1][1] = { { powf(s, -0.5) } };
+	complex float v[1][1] = { { powf(s, -1.) } };
 	complex float x[1] = { 0.5 - 0.1i };
 
 	float val1 = gaussian_pdf(1, m, v, x);
@@ -23,7 +23,7 @@ static bool test_gaussian_pdf0(float s)
 
 	float val2 = exp(-dist / s) / (s * M_PI);
 
-	if (fabsf(val1 - val2) > 1.E-1)
+	if (fabsf(val1 - val2) > 1.E-6)
 		return false;
 
 	return true;
@@ -41,12 +41,12 @@ static bool test_gaussian_pdf1(void)
 UT_REGISTER_TEST(test_gaussian_pdf1);
 
 
-static bool test_gaussian_pdf(void)
+static bool test_gaussian_pdf2(float s)
 {
 	complex float m[2] = { 0., 1. };
 	complex float v[2][2] = {
-		{ 0.5, 0.1 },
-		{ 0.1, 1. },
+		{ 0.5 * s, 0.1 },
+		{ 0.1, 1. * s },
 	};
 
 	complex float x1[2] = { 0.3, 0.5 };
@@ -63,33 +63,69 @@ static bool test_gaussian_pdf(void)
 	float sum = 0.;
 
 	for (int i = 0; i < 20; i++) {
-		for (int j = 0; j < 20; j++) {
+	for (int j = 0; j < 20; j++) {
+	for (int k = 0; k < 20; k++) {
+	for (int l = 0; l < 20; l++) {
 
-			complex float x[1] = { 
-				(i / 2. - 5.) + 1.i * (j / 2. - 5.)
-			};
+		complex float x[2] = {
+			(i / 2. - 5.) + 1.i * (j / 2. - 5.),
+			(k / 2. - 5.) + 1.i * (l / 2. - 5.)
+		};
 
-			complex float m1[1] = { 0. };
-			complex float v1[1][1] = { { 0.5 } };
-			sum += gaussian_pdf(1, m1, v1, x);
-		}
-	}
+		complex float m1[2] = { 0., 0. };
+		complex float v1[2][2] = { { 0.5, 0. }, { 0., 0.5 } };
+		sum += gaussian_pdf(2, m1, v1, x);
+	}}}}
 
-	// the 4.f is for the oversampling x2
-	if (fabsf(1.f - sum / 4.f) > 1.E-3)
+	// the 16.f is for the oversampling x2
+	if (fabsf(1.f - sum / 16.f) > 1.E-3)
 		return false;
 
-	return true;	
+	return true;
+}
+
+
+
+static bool test_gaussian_pdf(void)
+{
+	if (!test_gaussian_pdf2(1.))
+		return false;
+
+	if (!test_gaussian_pdf2(2.))
+		return false;
+
+	return true;
 }
 
 UT_REGISTER_TEST(test_gaussian_pdf);
+
+
+
+static bool test_gaussian_mix_pdf(void)
+{
+	complex float m[2][2] = { { 0., 1. }, { 0., 1. } };
+	complex float v[2][2][2] = {
+		{ { 0.5, 0.1 }, { 0.1, 1. }, },
+		{ { 0.5, 0.1 }, { 0.1, 1. }, },
+	};
+
+	complex float x1[2] = { 0.3, 0.5 };
+	float val1 = gaussian_pdf(2, m[0], v[0], x1);
+
+	float coeff[2] = { 0.2, 0.8 };
+	float val2 = gaussian_mix_pdf(2, 2, coeff, m, v, x1);
+
+	return fabsf(val1 - val2) < UT_TOL;
+}
+
+UT_REGISTER_TEST(test_gaussian_mix_pdf);
 
 
 static bool test_gaussian_score0(float s)
 {
 	complex float m[1] = { 0. };
 	complex float v[1][1] = {
-		{ powf(s, -0.5) },
+		{ powf(s, -1.) },
 	};
 
 	complex float x[1] = { 0.3 };
@@ -109,8 +145,8 @@ static bool test_gaussian_score2(float s)
 {
 	complex float m[2] = { 0.3, 1.2 };
 	complex float v[2][2] = {
-		{ powf(s, -0.5), 0. },
-		{ 0., powf(s, -0.5) },
+		{ powf(s, -1.), 0. },
+		{ 0., powf(s, -1.) },
 	};
 
 	complex float x[2] = { 0.5 - 0.1i, 0.5 + 0.1i };
@@ -157,7 +193,7 @@ static bool test_gaussian_mult(void)
 
 	gaussian_multiply(1, m, v, m1, v1, m2, v2);
 
-	if ((0.5 != m[0]) || (sqrtf(2.) != v[0][0]))
+	if ((0.5 != m[0]) || (2. != v[0][0]))
 		return false;
 
 	complex float xa[1] = { 0.3 };
@@ -177,4 +213,26 @@ static bool test_gaussian_mult(void)
 }
 
 UT_REGISTER_TEST(test_gaussian_mult);
+
+
+static bool test_gaussian_conv(void)
+{
+	complex float m1[1] = { 0.5 };
+	complex float m2[1] = { 1. };
+	complex float v1[1][1] = { { 0.25 } };
+	complex float v2[1][1] = { { 0.5 } };
+
+	complex float m[1];
+	complex float v[1][1];
+
+	gaussian_convolve(1, m, v, m1, v1, m2, v2);
+
+	if ((1.5 != m[0]) || (1.E-7 < cabsf(1. - 6. * v[0][0])))
+		return false;
+
+	return true;
+}
+
+UT_REGISTER_TEST(test_gaussian_conv);
+
 
