@@ -574,6 +574,18 @@ void caltwo(const struct ecalib_conf* conf, const long out_dims[DIMS], complex f
 		complex float* slc_emaps = (emaps == NULL) ? NULL : md_alloc_sameplace(DIMS, sedims, CFL_SIZE, in_data);
 		bool* slc_msk = (NULL == msk) ? NULL : md_alloc_sameplace(3, smsk_dims, sizeof(bool), in_data);
 
+		complex float* slc_out_cpu = slc_out;
+		complex float* slc_emaps_cpu = slc_emaps;
+
+#ifdef USE_CUDA
+		if (conf->usegpu) {
+
+			slc_out_cpu = md_alloc(DIMS, sout_dims, CFL_SIZE);
+			slc_emaps_cpu = (NULL != slc_emaps) ? md_alloc(DIMS, sedims, CFL_SIZE) : NULL;
+		}
+#endif
+
+
 		long pos[DIMS] = { 0 };
 
 		double time = -timestamp();
@@ -598,10 +610,16 @@ void caltwo(const struct ecalib_conf* conf, const long out_dims[DIMS], complex f
 
 			eigenmaps(sout_dims, slc_out, slc_emaps, slc_cov, msk ? smsk_dims : 0, slc_msk, conf->orthiter, conf->num_orthiter, conf->usegpu);
 
-			md_copy_block(DIMS, pos, out_dims, out_data, sout_dims, slc_out, CFL_SIZE);
+			if (slc_out != slc_out_cpu)
+				md_copy(DIMS, sout_dims, slc_out_cpu, slc_out, CFL_SIZE);
+
+			if (slc_emaps != slc_emaps_cpu)
+				md_copy(DIMS, sedims, slc_emaps_cpu, slc_emaps, CFL_SIZE);
+
+			md_copy_block(DIMS, pos, out_dims, out_data, sout_dims, slc_out_cpu, CFL_SIZE);
 
 			if (NULL != emaps)
-				md_copy_block(DIMS, pos, edims, emaps, sedims, slc_emaps, CFL_SIZE);
+				md_copy_block(DIMS, pos, edims, emaps, sedims, slc_emaps_cpu, CFL_SIZE);
 		}
 
 		md_free(slc_in);
@@ -613,6 +631,12 @@ void caltwo(const struct ecalib_conf* conf, const long out_dims[DIMS], complex f
 
 		if (conf->usegpu)
 			md_free(in_data);
+
+		if (slc_emaps != slc_emaps_cpu)
+			md_free(slc_emaps_cpu);
+
+		if (slc_out != slc_out_cpu)
+			md_free(slc_out_cpu);
 
 		time += timestamp();
 		debug_printf(DP_DEBUG1, "done (%.3fs).\n", time);
