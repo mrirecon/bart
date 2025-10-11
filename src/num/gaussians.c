@@ -43,7 +43,7 @@ float gaussian_mix_pdf(int M, int N, const float coeff[M], const complex float m
 	for (int i = 0; i < M; i++)
 		sum += coeff[i];
 
-	assert(fabsf(1. - sum) < 1.E-6);
+	assert(fabs(1. - sum) < 1.E-6);
 
 	sum = 0.;
 	for (int i = 0; i < M; i++)
@@ -57,7 +57,8 @@ float gaussian_mix_pdf(int M, int N, const float coeff[M], const complex float m
 void gaussian_sample(int N, const complex float m[N],
 		const complex float icov[N][N], complex float x[N])
 {
-	complex float u[N] = { }; // maybe-uninitialized
+	complex float u[N];
+	memset(u, 0, sizeof u);	// maybe-uninitialized
 
 	for (int i = 0; i < N; i++)
 		u[i] = gaussian_rand() / sqrtf(2.);
@@ -201,6 +202,28 @@ float gaussian_multiply_factor(int N,
 	mat_inverse(N, icov, cov);
 
 	return gaussian_pdf(N, m1, icov, m2);
+}
+
+
+
+void gaussian_mix_multiply(int M, int N, float coeff[M], complex float m[M][N], complex float icov[M][N][N],
+	const complex float m1[N], const complex float icov1[N][N],
+	const float coeff2[M], const complex float m2[M][N], const complex float icov2[M][N][N])
+{
+	float sum = 0.;
+
+	for (int i = 0; i < M; i++) {
+
+		gaussian_multiply(N, m[i], icov[i], m1, icov1, m2[i], icov2[i]);
+
+		coeff[i] = coeff2[i] * gaussian_multiply_factor(N, m1, icov1, m2[i], icov2[i]);
+
+		sum += coeff[i];
+	}
+
+	// normalize to 1.
+	for (int i = 0; i < M; i++)
+		coeff[i] /= sum;
 }
 
 

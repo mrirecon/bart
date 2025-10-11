@@ -220,6 +220,41 @@ static bool test_gaussian_mult(void)
 UT_REGISTER_TEST(test_gaussian_mult);
 
 
+
+static bool test_gaussian_mix_mult(void)
+{
+	complex float m1[1] = { 0. };
+	complex float v1[1][1] = { { 1. } };
+	complex float m2[2][1] = { { 1. }, { -1. } };
+	complex float v2[2][1][1] = { { { 1. } }, { { 0.5 } } };
+	float c2[2] = { 0.2, 0.8 };
+
+	float c[2];
+	complex float m[2][1];
+	complex float v[2][1][1];
+
+	gaussian_mix_multiply(2, 1, c, m, v, m1, v1, c2, m2, v2);
+
+	complex float xa[1] = { 0.3 };
+	float vala1 = gaussian_pdf(1, m1, v1, xa);
+	float vala2 = gaussian_mix_pdf(2, 1, c2, m2, v2, xa);
+	float vala  = gaussian_mix_pdf(2, 1, c, m, v, xa);
+
+	complex float xb[1] = { 0.1 + 0.2i };
+	float valb1 = gaussian_pdf(1, m1, v1, xb);
+	float valb2 = gaussian_mix_pdf(2, 1, c2, m2, v2, xb);
+	float valb  = gaussian_mix_pdf(2, 1, c, m, v, xb);
+
+	// this does not check normalization as the simple product is not
+	if (1.E-8 < fabsf(vala1 * vala2 * valb - vala * valb1 * valb2))
+		return false;
+
+	return true;
+}
+
+UT_REGISTER_TEST(test_gaussian_mix_mult);
+
+
 static bool test_gaussian_conv(void)
 {
 	complex float m1[1] = { 0.5 };
@@ -232,12 +267,57 @@ static bool test_gaussian_conv(void)
 
 	gaussian_convolve(1, m, v, m1, v1, m2, v2);
 
-	if ((1.5 != m[0]) || (1.E-7 < cabsf(1. - 6. * v[0][0])))
+	if ((1.5 != m[0]) || (1.E-7 < cabs(1. - 6. * v[0][0])))
 		return false;
 
 	return true;
 }
 
 UT_REGISTER_TEST(test_gaussian_conv);
+
+
+static bool test_gaussian_sample(void)
+{
+	complex float m[1] = { 0.1 + 0.2i };
+	complex float v[1][1] = { { 3. } };
+
+	float bins[10][10] = { };
+
+	for (int i = 0; i < 10000; i++) {
+
+		complex float s[1];
+		gaussian_sample(1, m, v, s);
+
+		int x = (int)roundf(10. * crealf(s[0]) + 5.);
+		int y = (int)roundf(10. * cimagf(s[0]) + 5.);
+
+		if (x < 0 || x >= 10 || y < 0 || y >= 10)
+			continue;
+
+		bins[x][y]++;
+	}
+
+	float pdf[10][10];
+
+	for (int i = 0; i < 10; i++) {
+		for (int j = 0; j < 10; j++) {
+
+			complex float x[1] = {
+				((i - 5.) + 1.i * (j - 5.)) / 10.
+			};
+
+			pdf[i][j] = gaussian_pdf(1, m, v, x);
+
+			float rel = fabs(bins[i][j] - pdf[i][j] * 100.);
+			if (rel > 30)
+				return false;
+		}
+	}
+
+	return true;
+}
+
+UT_REGISTER_TEST(test_gaussian_sample);
+
 
 
