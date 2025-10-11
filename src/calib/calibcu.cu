@@ -91,20 +91,32 @@ static __device__ void gram_schmidtcu(int M, int N, cuFloatComplex* evals, cuFlo
 	}
 }
 
-static __device__ inline void mat_mulcu(int M, int N, cuFloatComplex* A, cuFloatComplex* B, cuFloatComplex* C, long offset, long stride)
+static __device__ long upper_triag_idx(long j, long i)
 {
-	cuFloatComplex tmp;
+	if (i > j)
+		return - (j + ((i + 1) * i) / 2);
 
+	return i + ((j + 1) * j) / 2;
+}
+
+static __device__ inline void mat_mulcu_upperdiag(int M, int N, cuFloatComplex* A, cuFloatComplex* B, cuFloatComplex* C, long offset, long stride)
+{
 	for (int i = 0; i < M; i++) {
 
-		tmp = make_cuFloatComplex(0., 0.);
-		for (int j = 0; j < N; j++)
-			tmp = cuCaddf(tmp, cuCmulf(B[j + i * N], C[offset + (threadIdx.y + j * N) * stride]));
-		A[threadIdx.y + i * N] = tmp;
+		A[threadIdx.y + i * N] = make_cuFloatComplex(0., 0.);
+
+		for (int j = 0; j < N; j++) {
+
+			cuFloatComplex val;
+			long idx = upper_triag_idx(j, threadIdx.y);
+			val = (0 > idx) ? cuConjf(C[offset - idx * stride]) : C[offset + idx * stride];
+
+			A[threadIdx.y + i * N] = cuCaddf(A[threadIdx.y + i * N], cuCmulf(B[j + i * N], val));
+		}
 	}
 }
 
-static __global__ void eigenmapscu_kern(cuFloatComplex* in_filled, cuFloatComplex* in, cuFloatComplex* out, cuFloatComplex* vals, int iter, int x, int y, int z, int N, int M)
+static __global__ void eigenmapscu_kern(cuFloatComplex* in, cuFloatComplex* out, cuFloatComplex* vals, int iter, int x, int y, int z, int N, int M)
 {
 	const int offset = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -119,21 +131,6 @@ static __global__ void eigenmapscu_kern(cuFloatComplex* in_filled, cuFloatComple
 
 	long stride = x * y * z;
 
-	if (threadIdx.y == 0) {
-
-		int l = 0;
-
-		for (int i = 0; i < N; i++) {
-
-			for (int j = 0; j <= i; j++)
-				in_filled[offset + stride * (i * N + j)] = in[offset + (l++)*x*y*z];
-
-			for (int j = 0; j < i; j++)
-				in_filled[offset + stride * (j * N + i)] = cuConjf(in_filled[offset + stride * (i * N + j)]);
-		}
-	}
-	__syncthreads();
-
 	for (int i = 0; i < M; i++)
 		tmp1[threadIdx.y + i * N] = (threadIdx.y == i) ? make_cuFloatComplex(1., 0.) : make_cuFloatComplex(0., 0.);
 	__syncthreads();
@@ -144,7 +141,7 @@ static __global__ void eigenmapscu_kern(cuFloatComplex* in_filled, cuFloatComple
 			tmp2[threadIdx.y + j * N] = tmp1[threadIdx.y + j *N ];
 		__syncthreads();
 
-		mat_mulcu(M, N, tmp1, tmp2, in_filled, offset, stride);
+		mat_mulcu_upperdiag(M, N, tmp1, tmp2, in, offset, stride);
 		__syncthreads();
 
 		gram_schmidtcu(M, N, evals, tmp1, tmp2);
@@ -188,7 +185,6 @@ void eigenmapscu(const long dims[5], _Complex float* optr, _Complex float* eptr,
 
 	cuFloatComplex* optr_device = (cuFloatComplex*)md_alloc_gpu(5, dims, sizeof(cuFloatComplex));
 	cuFloatComplex* imgcov2_device = (cuFloatComplex*)md_alloc_gpu(5, imgcov2_dims, sizeof(cuFloatComplex));
-	cuFloatComplex* imgcov2_device_filled = (cuFloatComplex*)md_alloc_gpu(5, imgcov2_df_dims, sizeof(cuFloatComplex));
 	cuFloatComplex* eptr_device = (cuFloatComplex*)md_alloc_gpu(5, eptr_dims, sizeof(cuFloatComplex));
 
 	md_copy(5, imgcov2_dims, imgcov2_device, imgcov2, sizeof(cuFloatComplex));
@@ -221,14 +217,13 @@ void eigenmapscu(const long dims[5], _Complex float* optr, _Complex float* eptr,
 	dim3 blocks(numBlocks); // if numBlocks > ~65,000, need to distribute over x, y, z dims
 	size_t sharedMem = memPerPoint * pointsPerBlock;
 
-	eigenmapscu_kern<<<blocks, threads, sharedMem, cuda_get_stream()>>>(imgcov2_device_filled, imgcov2_device, optr_device, eptr_device, num_orthiter, x, y, z, N, M);
+	eigenmapscu_kern<<<blocks, threads, sharedMem, cuda_get_stream()>>>(imgcov2_device, optr_device, eptr_device, num_orthiter, x, y, z, N, M);
 	CUDA_KERNEL_ERROR;
 
 	md_copy(5, dims, optr, optr_device, sizeof(_Complex float));
 	md_copy(5, eptr_dims, eptr, eptr_device, sizeof(_Complex float));
 
 	md_free(imgcov2_device);
-	md_free(imgcov2_device_filled);
 	md_free(optr_device);
 	md_free(eptr_device);
 }
