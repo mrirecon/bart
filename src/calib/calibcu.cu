@@ -21,6 +21,7 @@
 #include <cuComplex.h>
 
 #include "misc/mri.h"
+#include "misc/debug.h"
 
 #include "num/multind.h"
 #include "num/flpmath.h"
@@ -180,8 +181,12 @@ void eigenmapscu(const long dims[5], _Complex float* optr, _Complex float* eptr,
 	md_select_dims(5, ~(COIL_FLAG|MAPS_FLAG), imgcov2_df_dims, dims);
 	imgcov2_df_dims[3] = N * N;
 
+	static bool printed = false;
+	if (!printed) {
 
-	printf("CUDA Pointwise Eigendecomposition...\n");
+		debug_printf(DP_INFO, "CUDA Pointwise Eigendecomposition...\n");
+		printed = true;
+	}
 
 	cuFloatComplex* optr_device = (cuFloatComplex*)md_alloc_gpu(5, dims, sizeof(cuFloatComplex));
 	cuFloatComplex* imgcov2_device = (cuFloatComplex*)md_alloc_gpu(5, imgcov2_dims, sizeof(cuFloatComplex));
