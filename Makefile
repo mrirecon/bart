@@ -279,16 +279,16 @@ ISMRM_BASE ?= /usr/local/ismrmrd/
 
 # Main build targets
 #
-TBASE=show slice crop resize join transpose squeeze flatten zeros ones flip circshift extract repmat bitmask reshape version delta copy casorati vec poly index multicfl tee trx compress
-TFLP=scale invert conj fmac saxpy sdot spow cpyphs creal carg normalize cdf97 pattern nrmse mip avg cabs zexp calc unwrap
-TNUM=fft fftmod fftshift noise bench threshold conv rss filter nlmeans mandelbrot wavelet window var std fftrot roistat pol2mask conway morphop hist
-TRECO=pics pocsense sqpics itsense nlinv moba nufft nufftbase rof tgv ictv sake wave lrmatrix estdims estshift estdelay wavepsf wshfl rtnlinv mobafit grog denoise estscaling
-TCALIB=ecalib ecaltwo caldir walsh cc ccapply rovir calmat svd estvar whiten rmfreq ssa bin psf ncalib phasepole
-TMRI=homodyne poisson twixread fakeksp looklocker upat fovshift seq
-TSIM=phantom traj signal epg sim pulse raga stl bloch grid trajcor coils
-TIO=tee toimg toraw multicfl trx
-TNN=reconet nnet onehotenc measure mnist tensorflow nlinvnet sample
-TMOTION=affinereg interpolate estmotion
+TBASE+=show slice crop resize join transpose squeeze flatten zeros ones flip circshift extract repmat bitmask reshape version delta copy casorati vec poly index multicfl tee trx compress
+TFLP+=scale invert conj fmac saxpy sdot spow cpyphs creal carg normalize cdf97 pattern nrmse mip avg cabs zexp calc unwrap
+TNUM+=fft fftmod fftshift noise bench threshold conv rss filter nlmeans mandelbrot wavelet window var std fftrot roistat pol2mask conway morphop hist
+TRECO+=pics pocsense sqpics itsense nlinv moba nufft nufftbase rof tgv ictv sake wave lrmatrix estdims estshift estdelay wavepsf wshfl rtnlinv mobafit grog denoise estscaling
+TCALIB+=ecalib ecaltwo caldir walsh cc ccapply rovir calmat svd estvar whiten rmfreq ssa bin psf ncalib phasepole
+TMRI+=homodyne poisson twixread fakeksp looklocker upat fovshift seq
+TSIM+=phantom traj signal epg sim pulse raga stl bloch grid trajcor coils
+TIO+=tee toimg toraw multicfl trx
+TNN+=reconet nnet onehotenc measure mnist tensorflow nlinvnet sample
+TMOTION+=affinereg interpolate estmotion
 
 TBASE:=$(sort $(TBASE))
 TFLP:=$(sort $(TFLP))
