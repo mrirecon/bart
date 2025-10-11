@@ -8,7 +8,7 @@ shift
 fail=0
 for test in "$@"
 do
-	echo "${UTEST_RUN}" ./"${test}"
+#	echo "${UTEST_RUN}" ./"${test}"
 	${UTEST_RUN} ./"${test}"
 	EX=$?
 	if [ 0 -ne "${EX}" ]
