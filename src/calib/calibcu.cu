@@ -205,6 +205,13 @@ void eigenmapscu(const long dims[5], _Complex float* optr, _Complex float* eptr,
 	const int cmemPerThread = 108;
 	pointsPerBlock = MIN(pointsPerBlock, maxRegsPerBlock / (N * regsPerThread));
 	pointsPerBlock = MIN(pointsPerBlock, maxCmemPerBlock / (N * cmemPerThread));
+
+	int tmp = pointsPerBlock;
+	pointsPerBlock = 1;
+	while (2 * pointsPerBlock <= tmp)
+		pointsPerBlock *= 2;
+
+
 	assert(pointsPerBlock > 0);
 
 	dim3 threads(pointsPerBlock, N, 1);
