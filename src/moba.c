@@ -113,7 +113,7 @@ int main_moba(int argc, char* argv[argc])
 	const char* psf_file = NULL;
 	const char* traj_file = NULL;
 	const char* init_file = NULL;
-        const char* input_b1 = NULL;
+	const char* input_b1 = NULL;
 	const char* input_b0 = NULL;
 	const char* input_sens = NULL;
 	const char* input_TE = NULL;
@@ -124,21 +124,21 @@ int main_moba(int argc, char* argv[argc])
 
 	long img_vec[3] = { };
 
-        struct moba_conf_s data;
+	struct moba_conf_s data;
 
-        data.sim.seq = simdata_seq_defaults;
-        data.sim.voxel = simdata_voxel_defaults;
-        data.sim.pulse = simdata_pulse_defaults;
+	data.sim.seq = simdata_seq_defaults;
+	data.sim.voxel = simdata_voxel_defaults;
+	data.sim.pulse = simdata_pulse_defaults;
 	data.sim.pulse.sinc = pulse_sinc_defaults;
-        data.sim.pulse.hs = pulse_hypsec_defaults;
-        data.sim.grad = simdata_grad_defaults;
+	data.sim.pulse.hs = pulse_hypsec_defaults;
+	data.sim.grad = simdata_grad_defaults;
 	data.sim.other = simdata_other_defaults;
-        data.other = moba_other_defaults;
+	data.other = moba_other_defaults;
 
         // FIXME: Move to separate function to reuse it for sim.c
-        struct opt_s seq_opts[] = {
+	struct opt_s seq_opts[] = {
 
-                /* Sequence Specific Parameters */
+		/* Sequence Specific Parameters */
 		OPTL_SELECT(0, "BSSFP", enum sim_seq, &(data.sim.seq.seq_type), SEQ_BSSFP, "bSSFP"),
 		OPTL_SELECT(0, "IR-BSSFP", enum sim_seq, &(data.sim.seq.seq_type), SEQ_IRBSSFP, "Inversion-Recovery bSSFP"),
 		OPTL_SELECT(0, "FLASH", enum sim_seq, &(data.sim.seq.seq_type), SEQ_FLASH, "FLASH"),
@@ -153,40 +153,40 @@ int main_moba(int argc, char* argv[argc])
 		OPTL_FLOAT(0, "ppl", &(data.sim.seq.prep_pulse_length), "float", "Preparation Pulse Length [s]"),
 		OPTL_PINT(0, "av-spokes", &(data.sim.seq.averaged_spokes), "", "Number of averaged consecutive spokes"),
 
-        	/* Pulse Specific Parameters */
+		/* Pulse Specific Parameters */
 		OPTL_FLOAT(0, "Trf", &(data.sim.pulse.rf_end), "float", "Pulse Duration [s]"), /* Assumes to start at t=0 */
 		OPTL_FLOAT(0, "FA", &(CAST_UP(&data.sim.pulse.sinc)->flipangle), "float", "Flipangle [deg]"),
 		OPTL_FLOAT(0, "BWTP", &(data.sim.pulse.sinc.bwtp), "float", "Bandwidth-Time-Product"),
 
-                /* Voxel Specific Parameters */
-                OPTL_FLOAT(0, "off", &(data.sim.voxel.w), "float", "Off-Resonance [rad/s]"),
+		/* Voxel Specific Parameters */
+		OPTL_FLOAT(0, "off", &(data.sim.voxel.w), "float", "Off-Resonance [rad/s]"),
 
 		/* Slice Profile Parameters */
-                OPTL_FLOAT(0, "sl-grad", &(data.sim.grad.sl_gradient_strength), "float", "Strength of slice-selection gradient [T/m]"),
-                OPTL_FLOAT(0, "slice-thickness", &(data.sim.seq.slice_thickness), "float", "Thickness of simulated slice. [m]"),
+		OPTL_FLOAT(0, "sl-grad", &(data.sim.grad.sl_gradient_strength), "float", "Strength of slice-selection gradient [T/m]"),
+		OPTL_FLOAT(0, "slice-thickness", &(data.sim.seq.slice_thickness), "float", "Thickness of simulated slice. [m]"),
 		OPTL_FLOAT(0, "nom-slice-thickness", &(data.sim.seq.nom_slice_thickness), "float", "Nominal thickness of simulated slice. [m]"),
-        };
+	};
 
-        struct opt_s sim_opts[] = {
+	struct opt_s sim_opts[] = {
 
-                OPTL_SELECT(0, "ODE", enum sim_type, &(data.sim.seq.type), SIM_ODE, "full ordinary differential equation solver based simulation"),
-                OPTL_SELECT(0, "STM", enum sim_type, &(data.sim.seq.type), SIM_STM, "state-transition matrix based simulation (default)"),
+		OPTL_SELECT(0, "ODE", enum sim_type, &(data.sim.seq.type), SIM_ODE, "full ordinary differential equation solver based simulation"),
+ 		OPTL_SELECT(0, "STM", enum sim_type, &(data.sim.seq.type), SIM_STM, "state-transition matrix based simulation (default)"),
         };
 
 
 	int tvscales_N = 4;
 	float tvscales[4] = { 0. };
 
-        struct opt_s other_opts[] = {
+	struct opt_s other_opts[] = {
 
 		// FIXME: MGRE can have 5 parameters
-                OPTL_FLVECN(0, "pscale", data.other.scale,"Scaling of parameters in model-based reconstruction"),
-                OPTL_FLVECN(0, "pinit", data.other.initval, "Initial values of parameters in model-based reconstruction"),
-                OPTL_INFILE(0, "b1map", &input_b1, "[deg]", "Input B1 map as cfl file"),
+		OPTL_FLVECN(0, "pscale", data.other.scale,"Scaling of parameters in model-based reconstruction"),
+		OPTL_FLVECN(0, "pinit", data.other.initval, "Initial values of parameters in model-based reconstruction"),
+		OPTL_INFILE(0, "b1map", &input_b1, "[deg]", "Input B1 map as cfl file"),
 		OPTL_INFILE(0, "b0map", &input_b0, "[rad/s]", "Input B0 map as cfl file"),
 		OPTL_INFILE(0, "ksp-sens", &input_sens, "", "Input kspace sensitivities"),
 		OPTL_INFILE(0, "echo", &input_TE, "", "Input Echo times for IR multi-echo gradient-echo [ms]"), // FIXME: SI units here!
-                OPTL_FLVEC4(0, "tvscale", &tvscales, "s1:s2:s3:s4", "Scaling of derivatives in TV penalty"),
+		OPTL_FLVEC4(0, "tvscale", &tvscales, "s1:s2:s3:s4", "Scaling of derivatives in TV penalty"),
 		OPTL_FLOAT(0, "b1-sobolev-a", &(data.other.b1_sobolev_a), "", "(a in 1 + a * \\Laplace^-b/2)"),
 		OPTL_FLOAT(0, "b1-sobolev-b", &(data.other.b1_sobolev_b), "", "(a in 1 + a * \\Laplace^-b/2)"),
 		OPTL_FLOAT(0, "ode-tol", &(data.sim.other.ode_tol), "f", "ODE tolerance value [def: 1e-5]"),
@@ -202,15 +202,15 @@ int main_moba(int argc, char* argv[argc])
 
 	const struct opt_s opts[] = {
 
-                //FIXME: Sort options into optimization and others interface
+		// FIXME: Sort options into optimization and others interface
 		{ 'r', NULL, true, OPT_SPECIAL, opt_reg_moba, &ropts, "<T>:A:B:C", "generalized regularization options (-rh for help)" },
 		OPT_SELECT('L', enum mdb_t, &conf.mode, MDB_T1, "T1 mapping using model-based look-locker"),
-                OPT_SELECT('P', enum mdb_t, &conf.mode, MDB_T1_PHY, "T1 mapping using reparameterized (M0, R1, alpha) model-based look-locker (TR required!)"),
+		OPT_SELECT('P', enum mdb_t, &conf.mode, MDB_T1_PHY, "T1 mapping using reparameterized (M0, R1, alpha) model-based look-locker (TR required!)"),
 		OPT_SET('F', &t2_old_flag, "(T2 mapping using model-based Fast Spin Echo)"),
 		OPT_SELECT('T', enum mdb_t, &conf.mode, MDB_T2, "T2 mapping using model-based Fast Spin Echo"),
 		OPT_SELECT('G', enum mdb_t, &conf.mode, MDB_MGRE, "T2* mapping using model-based multiple gradient echo"),
 		OPT_SELECT('D', enum mdb_t, &conf.mode, MDB_IR_MGRE, "Joint T1 and T2* mapping using model-based IR multiple gradient echo"),
-                OPTL_SELECT(0, "bloch", enum mdb_t, &conf.mode, MDB_BLOCH, "Bloch model-based reconstruction"),
+		OPTL_SELECT(0, "bloch", enum mdb_t, &conf.mode, MDB_BLOCH, "Bloch model-based reconstruction"),
 		OPT_UINT('m', &conf.mgre_model, "model", "Select the MGRE model from enum { WF = 0, WFR2S, WF2R2S, R2S, PHASEDIFF, ..., WF_fB0, WF_R2S, T1_R2S, W_T1_F_T1_RS2 } [default: WFR2S]"),
 		OPT_PINT('l', &conf.opt_reg, "\b1/-l2", "  toggle l1-wavelet or l2 regularization."), // extra spaces needed because of backspace \b earlier
 		OPT_PINT('i', &conf.iter, "iter", "Number of Newton steps"),
@@ -253,9 +253,9 @@ int main_moba(int argc, char* argv[argc])
 		OPTL_FLOAT(0, "scale_data", &scaling, "", "scaling factor for data"),
 		OPTL_FLOAT(0, "scale_psf", &scaling_psf, "", "(scaling factor for PSF)"),
 		OPTL_SET(0, "normalize_scaling", &normalize_scaling, "(normalize scaling by data / PSF)"),
-                OPTL_SUBOPT(0, "seq", "...", "configure sequence parameters", ARRAY_SIZE(seq_opts), seq_opts),
-                OPTL_SUBOPT(0, "sim", "...", "configure simulation parameters", ARRAY_SIZE(sim_opts), sim_opts),
-                OPTL_SUBOPT(0, "other", "...", "configure other parameters", ARRAY_SIZE(other_opts), other_opts),
+		OPTL_SUBOPT(0, "seq", "...", "configure sequence parameters", ARRAY_SIZE(seq_opts), seq_opts),
+		OPTL_SUBOPT(0, "sim", "...", "configure simulation parameters", ARRAY_SIZE(sim_opts), sim_opts),
+		OPTL_SUBOPT(0, "other", "...", "configure other parameters", ARRAY_SIZE(other_opts), other_opts),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
