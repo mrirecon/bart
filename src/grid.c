@@ -21,7 +21,8 @@
 
 #include "simu/grid.h"
 
-static const char help_str[] = "Compute sampling grid for domains x-space/ k-space x time.";
+
+static const char help_str[] = "Compute sampling grid for x-space / k-space (and time).";
 
 int main_grid(int argc, char* argv[argc])
 {
@@ -40,22 +41,22 @@ int main_grid(int argc, char* argv[argc])
 
 	const struct opt_s opts[] = {
 
-		OPT_SET('k', &go.kspace, "Compute for k-space."),
-		OPT_INFILE('t', &traj_file, "trajectory file", "Sampling trajectory for k-space of shape (3, Nx, N) which should be extended by time.\n"),
-		OPT_VECN('D', sdims, "Dimensions x-space/ k-space per basis vector."),
-		OPT_LONG('T', &timedim, "dt", "Dimension time domain.\n"),
-		OPTL_FLVEC3(0, "b1", &go.b0, "f1:f2:f3", "First basis vector."), //
-		OPTL_FLVEC3(0, "b2", &go.b1, "f1:f2:f3", "Second basis vector."), //
-		OPTL_FLVEC3(0, "b3", &go.b2, "f1:f2:f3", "Third basis vector."), //
-		OPTL_FLOAT(0, "bt", &go.bt, "f1", "Time direction."), //
+		OPT_SET('k', &go.kspace, "Compute k-space grid"),
+		OPT_INFILE('t', &traj_file, "Trajectory file", "Sampling trajectory for k-space\n"),
+		OPT_VECN('D', sdims, "Size of x-space / k-space"),
+		OPT_LONG('T', &timedim, "T", "Number of time points"),
+		OPTL_FLVEC3(0, "b1", &go.b0, "f1:f2:f3", "First basis vector"),
+		OPTL_FLVEC3(0, "b2", &go.b1, "f1:f2:f3", "Second basis vector"),
+		OPTL_FLVEC3(0, "b3", &go.b2, "f1:f2:f3", "Third basis vector"),
+		OPTL_FLOAT(0, "bt", &go.bt, "f1", "Time step."),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
 	num_init();
 
-	if (NULL != traj_file && (-1 != sdims[0] || -1 != sdims[1] || -1 != sdims[2]))
-		error("trajectory file *and* spatial/fourier dims cannot be provided together.\n");
+	if ((NULL != traj_file) && ((-1 != sdims[0]) || (-1 != sdims[1]) || (-1 != sdims[2])))
+		error("Trajectory file and spatial/Fourier dims cannot be provided together.\n");
 
 	complex float* traj = NULL;
 	long tdims[DIMS];
@@ -81,29 +82,17 @@ int main_grid(int argc, char* argv[argc])
 			go.dims[TIME_DIM] = tdims[TIME_DIM];
 	}
 
-	if (0 == go.bt)
-		go.bt = 1;
+	if (0. == go.bt)
+		go.bt = 1.;
 
-	if ((0 == go.b0[0]) && (0 == go.b0[1]) && (0 == go.b0[2])) {
-
+	if ((0. == go.b0[0]) && (0. == go.b0[1]) && (0. == go.b0[2]))
 		go.b0[0] = 0.5;
-		go.b0[1] = 0;
-		go.b0[2] = 0;
-	}
 
-	if ((0 == go.b1[0]) && (0 == go.b1[1]) && (0 == go.b1[2])) {
-
-		go.b1[0] = 0;
+	if ((0. == go.b1[0]) && (0. == go.b1[1]) && (0. == go.b1[2]))
 		go.b1[1] = 0.5;
-		go.b1[2] = 0;
-	}
 
-	if ((0 == go.b2[0]) && (0 == go.b2[1]) && (0 == go.b2[2])) {
-
-		go.b2[0] = 0;
-		go.b2[1] = 0;
+	if ((0. == go.b2[0]) && (0. == go.b2[1]) && (0. == go.b2[2]))
 		go.b2[2] = 0.5;
-	}
 
 	long gdims[DIMS];
 

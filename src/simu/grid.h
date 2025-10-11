@@ -1,10 +1,3 @@
-/* Copyright 2025. TU Graz. Institute of Biomedical Imaging.
- * All rights reserved. Use of this source code is governed by
- * a BSD-style license which can be found in the LICENSE file.
- *
- * Authors:
- * 2025 Martin Heide
- */
 
 #ifndef GRID_H
 #define GRID_H 1
@@ -30,7 +23,7 @@ extern struct grid_opts grid_opts_init;
 extern struct grid_opts grid_opts_defaults;
 extern struct grid_opts grid_opts_coilcoeff;
 
-extern float* compute_grid(int D, long gdims[D], struct grid_opts* go, const long tdims[D], const _Complex float* traj);
+extern float* compute_grid(int D, long gdims[D], struct grid_opts* go, const long tdims[D], const complex float* traj);
 
 #endif
 
