@@ -54,7 +54,8 @@ static __device__ cuFloatComplex vec_dot(int N, const cuFloatComplex* vec1, cons
 {
 	__syncthreads();
 
-	tmp[threadIdx.y] = cuCmulf(vec1[threadIdx.y], cuConjf(vec2[threadIdx.y]));
+	for (int k = threadIdx.y; k < N; k += blockDim.y)
+		tmp[k] = cuCmulf(vec1[k], cuConjf(vec2[k]));
 
 	__syncthreads();
 
@@ -80,7 +81,10 @@ static __device__ void gram_schmidtcu(int M, int N, cuFloatComplex* evals, cuFlo
 		for (int j = i + 1; j <= M - 1; j++) {
 
 			cuFloatComplex dot = vec_dot(N, vecs + i * N, vecs + j * N, vecs_tmp);
-			vecs[threadIdx.y + i * N] = cuCaddf(vecs[threadIdx.y + i * N], cuCmulf(vecs[threadIdx.y + j * N], cuFloatComplexScale(dot, -1.)));
+
+			for (int k = threadIdx.y; k < N; k += blockDim.y)
+				vecs[k + i * N] = cuCaddf(vecs[k + i * N], cuCmulf(vecs[k + j * N], cuFloatComplexScale(dot, -1.)));
+
 			__syncthreads();
 		}
 
@@ -88,7 +92,9 @@ static __device__ void gram_schmidtcu(int M, int N, cuFloatComplex* evals, cuFlo
 		norm = sqrtf(norm);
 
 		evals[i] = make_cuFloatComplex(norm, 0.);
-		vecs[threadIdx.y + i * N] = cuFloatComplexScale(vecs[threadIdx.y + i * N], 1. / norm);
+
+		for (int k = threadIdx.y; k < N; k += blockDim.y)
+			vecs[k + i * N] = cuFloatComplexScale(vecs[k + i * N], 1. / norm);
 	}
 }
 
@@ -104,15 +110,18 @@ static __device__ inline void mat_mulcu_upperdiag(int M, int N, cuFloatComplex* 
 {
 	for (int i = 0; i < M; i++) {
 
-		A[threadIdx.y + i * N] = make_cuFloatComplex(0., 0.);
+		for (int k = threadIdx.y; k < N; k += blockDim.y) {
 
-		for (int j = 0; j < N; j++) {
+			A[k + i * N] = make_cuFloatComplex(0., 0.);
 
-			cuFloatComplex val;
-			long idx = upper_triag_idx(j, threadIdx.y);
-			val = (0 > idx) ? cuConjf(C[offset - idx * stride]) : C[offset + idx * stride];
+			for (int j = 0; j < N; j++) {
 
-			A[threadIdx.y + i * N] = cuCaddf(A[threadIdx.y + i * N], cuCmulf(B[j + i * N], val));
+				cuFloatComplex val;
+				long idx = upper_triag_idx(j, k);
+				val = (0 > idx) ? cuConjf(C[offset - idx * stride]) : C[offset + idx * stride];
+
+				A[k + i * N] = cuCaddf(A[k + i * N], cuCmulf(B[j + i * N], val));
+			}
 		}
 	}
 }
@@ -133,14 +142,15 @@ static __global__ void eigenmapscu_kern(cuFloatComplex* in, cuFloatComplex* out,
 	long stride = x * y * z;
 
 	for (int i = 0; i < M; i++)
-		tmp1[threadIdx.y + i * N] = (threadIdx.y == i) ? make_cuFloatComplex(1., 0.) : make_cuFloatComplex(0., 0.);
+		for (int k = threadIdx.y; k < N; k += blockDim.y)
+			tmp1[k + i * N] = (k == i) ? make_cuFloatComplex(1., 0.) : make_cuFloatComplex(0., 0.);
 	__syncthreads();
 
 	for (int i = 0; i < iter; i++) {
 
-		for (int j = 0; j < M; j++)
-			tmp2[threadIdx.y + j * N] = tmp1[threadIdx.y + j *N ];
-		__syncthreads();
+		cuFloatComplex* tmp = tmp1;
+		tmp1 = tmp2;
+		tmp2 = tmp;
 
 		mat_mulcu_upperdiag(M, N, tmp1, tmp2, in, offset, stride);
 		__syncthreads();
@@ -150,7 +160,8 @@ static __global__ void eigenmapscu_kern(cuFloatComplex* in, cuFloatComplex* out,
 	}
 
 	for (int i = 0; i < M; i++)
-		out[offset + (i * N + threadIdx.y) * x * y * z] = tmp1[N * (M - 1 - i) + threadIdx.y];
+		for (int k = threadIdx.y; k < N; k += blockDim.y)
+			out[offset + (i * N + k) * x * y * z] = tmp1[N * (M - 1 - i) + k];
 
 	if (threadIdx.y == 0)
 		if (vals)
