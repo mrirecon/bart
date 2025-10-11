@@ -91,7 +91,7 @@ static __device__ void gram_schmidtcu(int M, int N, cuFloatComplex* evals, cuFlo
 	}
 }
 
-static __device__ inline void mat_mulcu(int M, int N, cuFloatComplex* A, cuFloatComplex* B, cuFloatComplex* C, int offset)
+static __device__ inline void mat_mulcu(int M, int N, cuFloatComplex* A, cuFloatComplex* B, cuFloatComplex* C, long offset, long stride)
 {
 	cuFloatComplex tmp;
 
@@ -99,7 +99,7 @@ static __device__ inline void mat_mulcu(int M, int N, cuFloatComplex* A, cuFloat
 
 		tmp = make_cuFloatComplex(0., 0.);
 		for (int j = 0; j < N; j++)
-			tmp = cuCaddf(tmp, cuCmulf(B[j + i * N], C[offset * N * N + threadIdx.y + j * N]));
+			tmp = cuCaddf(tmp, cuCmulf(B[j + i * N], C[offset + (threadIdx.y + j * N) * stride]));
 		A[threadIdx.y + i * N] = tmp;
 	}
 }
@@ -117,6 +117,8 @@ static __global__ void eigenmapscu_kern(cuFloatComplex* in_filled, cuFloatComple
 	tmp2 = tmp1 + M * N;
 	evals = tmp2 + M * N;
 
+	long stride = x * y * z;
+
 	if (threadIdx.y == 0) {
 
 		int l = 0;
@@ -124,10 +126,10 @@ static __global__ void eigenmapscu_kern(cuFloatComplex* in_filled, cuFloatComple
 		for (int i = 0; i < N; i++) {
 
 			for (int j = 0; j <= i; j++)
-				in_filled[offset*N*N + i*N + j] = in[offset + (l++)*x*y*z];
+				in_filled[offset + stride * (i * N + j)] = in[offset + (l++)*x*y*z];
 
 			for (int j = 0; j < i; j++)
-				in_filled[offset*N*N + j*N + i] = cuConjf(in_filled[offset*N*N + i*N + j]);
+				in_filled[offset + stride * (j * N + i)] = cuConjf(in_filled[offset + stride * (i * N + j)]);
 		}
 	}
 	__syncthreads();
@@ -142,7 +144,7 @@ static __global__ void eigenmapscu_kern(cuFloatComplex* in_filled, cuFloatComple
 			tmp2[threadIdx.y + j * N] = tmp1[threadIdx.y + j *N ];
 		__syncthreads();
 
-		mat_mulcu(M, N, tmp1, tmp2, in_filled, offset);
+		mat_mulcu(M, N, tmp1, tmp2, in_filled, offset, stride);
 		__syncthreads();
 
 		gram_schmidtcu(M, N, evals, tmp1, tmp2);
