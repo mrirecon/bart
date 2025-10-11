@@ -49,50 +49,45 @@ static __device__ __host__ inline cuFloatComplex cuFloatComplexScale(cuFloatComp
 	return c;
 }
 
-
-static __device__ void gram_schmidtcu(int M, int N, cuFloatComplex* evals, cuFloatComplex* vecs)
+static __device__ cuFloatComplex vec_dot(int N, const cuFloatComplex* vec1, const cuFloatComplex* vec2, cuFloatComplex* tmp)
 {
-	cuFloatComplex val1;
-	cuFloatComplex val2;
-	for (int i = M-1; i >= 0; i--) {
+	__syncthreads();
 
-		val1 = vecs[threadIdx.y + i * N];
-		__syncthreads();
+	tmp[threadIdx.y] = cuCmulf(vec1[threadIdx.y], cuConjf(vec2[threadIdx.y]));
+
+	__syncthreads();
+
+	if (threadIdx.y == 0) {
+
+		cuFloatComplex dot = make_cuFloatComplex(0., 0.);
+		for (int k = 0; k < N; k++)
+			dot = cuCaddf(dot, tmp[k]);
+
+		tmp[0] = dot;
+	}
+
+	__syncthreads();
+
+	return tmp[0];
+}
+
+
+static __device__ void gram_schmidtcu(int M, int N, cuFloatComplex* evals, cuFloatComplex* vecs, cuFloatComplex* vecs_tmp)
+{
+	for (int i = M - 1; i >= 0; i--) {
 
 		for (int j = i + 1; j <= M - 1; j++) {
 
-			val2 = vecs[threadIdx.y + j * N];
-			__syncthreads();
-			vecs[threadIdx.y + i * N] = cuCmulf(val1, cuConjf(val2));
-			__syncthreads();
-
-			if (threadIdx.y == 0) {
-
-				cuFloatComplex tmp = make_cuFloatComplex(0., 0.);
-				for (int k = 0; k < N; k++)
-					tmp = cuCaddf(tmp, vecs[k + i * N]);
-				vecs[i*N] = cuFloatComplexScale(tmp, -1.);
-			}
-
-			__syncthreads();
-			val1 = cuCaddf(val1, cuCmulf(val2, vecs[i * N]));
+			cuFloatComplex dot = vec_dot(N, vecs + i * N, vecs + j * N, vecs_tmp);
+			vecs[threadIdx.y + i * N] = cuCaddf(vecs[threadIdx.y + i * N], cuCmulf(vecs[threadIdx.y + j * N], cuFloatComplexScale(dot, -1.)));
 			__syncthreads();
 		}
 
-		vecs[threadIdx.y + i*N] = cuCmulf(val1, cuConjf(val1));
-		__syncthreads();
+		float norm = cuCrealf(vec_dot(N, vecs + i * N, vecs + i * N, vecs_tmp));
+		norm = sqrtf(norm);
 
-		if (threadIdx.y == 0) {
-
-			cuFloatComplex tmp = make_cuFloatComplex(0., 0.);
-			for (int k = 0; k < N; k++)
-				tmp = cuCaddf(tmp, vecs[k + i * N]);
-
-			evals[i] = make_cuFloatComplex(sqrt(cuCrealf(tmp)), 0.);
-		}
-
-		__syncthreads();
-		vecs[threadIdx.y + i*N] = cuFloatComplexScale(val1, 1. / cuCrealf(evals[i]));
+		evals[i] = make_cuFloatComplex(norm, 0.);
+		vecs[threadIdx.y + i * N] = cuFloatComplexScale(vecs[threadIdx.y + i * N], 1. / norm);
 	}
 }
 
@@ -150,7 +145,7 @@ static __global__ void eigenmapscu_kern(cuFloatComplex* in_filled, cuFloatComple
 		mat_mulcu(M, N, tmp1, tmp2, in_filled, offset);
 		__syncthreads();
 
-		gram_schmidtcu(M, N, evals, tmp1);
+		gram_schmidtcu(M, N, evals, tmp1, tmp2);
 		__syncthreads();
 	}
 
