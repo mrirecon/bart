@@ -258,6 +258,21 @@ static unsigned long clear_singletons(int N, const long dims[N], unsigned long f
 
 void fftmod2(int N, const long dims[N], unsigned long flags, const long ostrs[N], complex float* dst, const long istrs[N], const complex float* src)
 {
+	long bdims[N];
+	md_select_dims(N, ~flags, bdims, dims);
+
+	if (4 < md_calc_size(N, bdims)) {
+
+		long fdims[N];
+		md_select_dims(N, flags, fdims, dims);
+		complex float* tmp = md_alloc_sameplace(N, fdims, CFL_SIZE, dst);
+		md_zfill(N, fdims, tmp, 1.);
+		fftmod(N, fdims, flags, tmp, tmp);
+		md_zmul2(N, dims, ostrs, dst, istrs, src, MD_STRIDES(N, fdims, CFL_SIZE), tmp);
+		md_free(tmp);
+		return;
+	}
+
 	fftmod2_r(N, dims, clear_singletons(N, dims, flags), ostrs, dst, istrs, src, false, 0.);
 }
 
@@ -269,6 +284,21 @@ void fftmod2(int N, const long dims[N], unsigned long flags, const long ostrs[N]
  */
 void ifftmod2(int N, const long dims[N], unsigned long flags, const long ostrs[N], complex float* dst, const long istrs[N], const complex float* src)
 {
+	long bdims[N];
+	md_select_dims(N, ~flags, bdims, dims);
+
+	if (4 < md_calc_size(N, bdims)) {
+
+		long fdims[N];
+		md_select_dims(N, flags, fdims, dims);
+		complex float* tmp = md_alloc_sameplace(N, fdims, CFL_SIZE, dst);
+		md_zfill(N, fdims, tmp, 1.);
+		ifftmod(N, fdims, flags, tmp, tmp);
+		md_zmul2(N, dims, ostrs, dst, istrs, src, MD_STRIDES(N, fdims, CFL_SIZE), tmp);
+		md_free(tmp);
+		return;
+	}
+
 	fftmod2_r(N, dims, clear_singletons(N, dims, flags), ostrs, dst, istrs, src, true, 0.);
 }
 
