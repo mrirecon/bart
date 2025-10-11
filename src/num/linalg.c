@@ -192,10 +192,23 @@ void mat_mul(int A, int B, int C, complex float x[A][C], const complex float y[A
 }
 
 
+static
+void mat_minor(int N, int a, int b, complex float min[N - 1][N - 1], const complex float mat[N][N])
+{
+	for (int i = 0; i < N; i++) {
+		for (int j = 0; j < N; j++) {
+
+			if (i == a || j == b)
+				continue;
+
+			min[i - (i > a)][j - (j > b)] = mat[i][j];
+		}
+	}
+}
+
+
 complex float mat_det(int N, const complex float mat[N][N])
 {
-	assert(N <= 2);
-
 	if (0 == N)
 		return 0.;
 
@@ -205,7 +218,17 @@ complex float mat_det(int N, const complex float mat[N][N])
 	if (2 == N)
 		return mat[0][0] * mat[1][1] - mat[0][1] * mat[1][0];
 
-	return 0.;
+	complex float det = 0.;
+	complex float sub[N - 1][N - 1];
+
+	for (int i = 0; i < N; i++) {
+
+		mat_minor(N, i, 0, sub, mat);
+
+		det += ((0 == i % 2) ? 1. : -1.) * mat[i][0] * mat_det(N - 1, sub);
+	}
+
+	return det;
 }
 
 

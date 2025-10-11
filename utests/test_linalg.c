@@ -1,9 +1,7 @@
 /* Copyright 2016-2019. Martin Uecker.
+ * Copyright 2021-2025. Graz University of Technology.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
- *
- * Authors:
- * 2016-2019 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  */
 
 #include <math.h>
@@ -12,6 +10,20 @@
 
 #include "utest.h"
 
+
+
+static bool test_mat_det(void)
+{
+	const complex float M[3][3] = {
+		{ -2., -1., 2. },
+		{ 2., 1., 4. },
+		{ -3, 3., -1. },
+	};
+
+	return 54. == mat_det(3, M);
+}
+
+UT_REGISTER_TEST(test_mat_det);
 
 
 static bool test_mat_pinv(void)
@@ -637,3 +649,4 @@ static bool test_logm(void)
 
 
 UT_REGISTER_TEST(test_logm);
+
