@@ -199,34 +199,43 @@ void eigenmapscu(const long dims[5], _Complex float* optr, _Complex float* eptr,
 
 	md_copy(5, imgcov2_dims, imgcov2_device, imgcov2, sizeof(cuFloatComplex));
 
+	static int mthreads = -1;
+
+	if (-1 == mthreads) {
+
+		cudaFuncAttributes attr;
+		cudaFuncGetAttributes(&attr, eigenmapscu_kern);
+		mthreads = attr.maxThreadsPerBlock;
+	}
 
 	struct cudaDeviceProp mycudaDeviceProperties;
 	cudaGetDeviceProperties(&mycudaDeviceProperties, 0);
 	const int maxSharedMemPerBlock = mycudaDeviceProperties.sharedMemPerBlock;
-	const int maxThreadsPerBlock = mycudaDeviceProperties.maxThreadsPerBlock;
-	const int memPerPoint = (2*M*N + M) * sizeof(cuFloatComplex);
-	int pointsPerBlock = MIN(maxThreadsPerBlock/N, maxSharedMemPerBlock/memPerPoint);
-	const int maxRegsPerBlock = mycudaDeviceProperties.regsPerBlock;
-	const int maxCmemPerBlock = mycudaDeviceProperties.totalConstMem;
-	// determined by --ptxas-options="-v". cmem is constant mem used for 1) kernel args, 2) user defined constants, 3) compiler-generated constants
-	const int regsPerThread = 36;
-	const int cmemPerThread = 108;
-	pointsPerBlock = MIN(pointsPerBlock, maxRegsPerBlock / (N * regsPerThread));
-	pointsPerBlock = MIN(pointsPerBlock, maxCmemPerBlock / (N * cmemPerThread));
+	const int memPerPoint = (2 * M * N + M) * sizeof(cuFloatComplex);
+	int max_points_per_block = maxSharedMemPerBlock / memPerPoint;
+	assert(0 < max_points_per_block);
 
-	int tmp = pointsPerBlock;
-	pointsPerBlock = 1;
-	while (2 * pointsPerBlock <= tmp)
-		pointsPerBlock *= 2;
+	int ythreads = 1;
+	while (2 * ythreads <= mthreads)
+		ythreads *= 2;
 
-	assert(pointsPerBlock > 0);
+	int xthreads = 1;
+
+	while (2 * xthreads <= max_points_per_block && 1 < ythreads && xthreads < 32) {
+
+		xthreads *= 2;
+		ythreads /= 2;
+	}
+
+	while (ythreads > N)
+		ythreads /= 2;
 
 	long V = md_calc_size(3, dims);
 
-	dim3 threads(pointsPerBlock, N, 1);
-	int numBlocks = (V + (pointsPerBlock - 1)) / pointsPerBlock;
+	dim3 threads(xthreads, ythreads, 1);
+	int numBlocks = (V + (xthreads - 1)) / xthreads;
 	dim3 blocks(numBlocks); // if numBlocks > ~65,000, need to distribute over x, y, z dims
-	size_t sharedMem = memPerPoint * pointsPerBlock;
+	size_t sharedMem = memPerPoint * xthreads;
 
 	eigenmapscu_kern<<<blocks, threads, sharedMem, cuda_get_stream()>>>(imgcov2_device, optr_device, eptr_device, num_orthiter, V, N, M);
 	CUDA_KERNEL_ERROR;
