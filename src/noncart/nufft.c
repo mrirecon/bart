@@ -1636,8 +1636,8 @@ static void toeplitz_mult_lowmem(const struct nufft_data* data, int i, complex f
 			long ciT_strs[data->N];
 			md_calc_strides(data->N, ciT_strs, data->ciT_dims, CFL_SIZE);
 
-			if (data->conf.upper_triag)
-				md_tenmul_upper_triag2(5, 6, data->N + 1, MD_REAL_DIMS(data->N, mdims), MD_REAL_STRS(data->N, ciT_strs, FL_SIZE), (float*)gridT, MD_REAL_STRS(data->N, data->cim_strs, FL_SIZE), (float*)grid, MD_REAL_DIMS(data->N, data->psf_dims), MD_REAL_STRS(data->N, data->psf_strs, 0), (float*)cpsf);
+			if (data->conf.upper_triag) // shifted indexing (6, 7) as real dim is first
+				md_tenmul_upper_triag2(6, 7, data->N + 1, MD_REAL_DIMS(data->N, mdims), MD_REAL_STRS(data->N, ciT_strs, FL_SIZE), (float*)gridT, MD_REAL_STRS(data->N, data->cim_strs, FL_SIZE), (float*)grid, MD_REAL_DIMS(data->N, data->psf_dims), MD_REAL_STRS(data->N, data->psf_strs, 0), (float*)cpsf);
 			else
 				md_tenmul2(data->N + 1, MD_REAL_DIMS(data->N, mdims), MD_REAL_STRS(data->N, ciT_strs, FL_SIZE), (float*)gridT, MD_REAL_STRS(data->N, data->cim_strs, FL_SIZE), (float*)grid, MD_REAL_STRS(data->N, data->psf_strs, 0), (float*)cpsf);
 		} else {
