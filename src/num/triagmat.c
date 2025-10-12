@@ -353,9 +353,9 @@ static void vptr_md_fmac_upper_triag2(int dim1, int dim2, int N, int D, const lo
 							MAX(strs[0][5], strs[0][6]) / (long)FL_SIZE,
 							MAX(strs[1][5], strs[1][6]) / (long)FL_SIZE,
 							MAX(strs[2][5], strs[2][6]) / (long)FL_SIZE,
-							&MD_ACCESS(N, strs[0], pos, (float*)args[0]),
-							&MD_ACCESS(N, strs[1], pos, (float*)args[1]),
-							&MD_ACCESS(N, strs[2], pos, (float*)args[2]));
+							&MD_ACCESS(D, strs[0], pos, (float*)args[0]),
+							&MD_ACCESS(D, strs[1], pos, (float*)args[1]),
+							&MD_ACCESS(D, strs[2], pos, (float*)args[2]));
 
 		} while (md_next(D, dims[0], ~((MD_BIT(7) - 1) | MD_BIT(D - 1)), pos));
 
