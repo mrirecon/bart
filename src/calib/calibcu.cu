@@ -104,17 +104,18 @@ static __device__ long upper_triag_idx(long j, long i)
 
 static __device__ inline void mat_mulcu_upperdiag(int M, int N, cuFloatComplex* A, cuFloatComplex* B, cuFloatComplex* C, long offset, long stride)
 {
-	for (int i = 0; i < M; i++) {
+	for (int k = threadIdx.y; k < N; k += blockDim.y) {
 
-		for (int k = threadIdx.y; k < N; k += blockDim.y) {
+		for (int j = 0; j < N; j++) {
 
-			A[k + i * N] = make_cuFloatComplex(0., 0.);
+			cuFloatComplex val;
+			long idx = upper_triag_idx(j, k);
+			val = (0 > idx) ? cuConjf(C[offset - idx * stride]) : C[offset + idx * stride];
 
-			for (int j = 0; j < N; j++) {
+			for (int i = 0; i < M; i++) {
 
-				cuFloatComplex val;
-				long idx = upper_triag_idx(j, k);
-				val = (0 > idx) ? cuConjf(C[offset - idx * stride]) : C[offset + idx * stride];
+				if (0 == j)
+					A[k + i * N] = make_cuFloatComplex(0., 0.);
 
 				A[k + i * N] = cuCaddf(A[k + i * N], cuCmulf(B[j + i * N], val));
 			}
