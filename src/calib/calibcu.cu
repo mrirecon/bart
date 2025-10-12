@@ -54,16 +54,12 @@ static __device__ cuFloatComplex vec_dot(int N, const cuFloatComplex* vec1, cons
 {
 	__syncthreads();
 
-	for (int k = threadIdx.y; k < N; k += blockDim.y)
-		tmp[k] = cuCmulf(vec1[k], cuConjf(vec2[k]));
-
-	__syncthreads();
-
 	if (threadIdx.y == 0) {
 
 		cuFloatComplex dot = make_cuFloatComplex(0., 0.);
+
 		for (int k = 0; k < N; k++)
-			dot = cuCaddf(dot, tmp[k]);
+			dot = cuCaddf(dot, cuCmulf(vec1[k], cuConjf(vec2[k])));
 
 		tmp[0] = dot;
 	}
@@ -126,56 +122,53 @@ static __device__ inline void mat_mulcu_upperdiag(int M, int N, cuFloatComplex* 
 	}
 }
 
-static __global__ void eigenmapscu_kern(cuFloatComplex* in, cuFloatComplex* out, cuFloatComplex* vals, int iter, int x, int y, int z, int N, int M)
+static __global__ void eigenmapscu_kern(cuFloatComplex* in, cuFloatComplex* out, cuFloatComplex* vals, int iter, long V, int N, int M)
 {
-	const int offset = blockIdx.x * blockDim.x + threadIdx.x;
+	for (long boffset = blockDim.x * blockIdx.x; boffset < V; boffset += blockDim.x * gridDim.x) {
 
-	if (offset > x * y * z - 1)
-		return;
+		long offset = boffset + threadIdx.x;
 
-	extern __shared__ cuFloatComplex sdata[];
-	cuFloatComplex *tmp1, *tmp2, *evals;
-	tmp1 = sdata + threadIdx.x * (2 * M * N + M);
-	tmp2 = tmp1 + M * N;
-	evals = tmp2 + M * N;
+		extern __shared__ cuFloatComplex sdata[];
+		cuFloatComplex *tmp1, *tmp2, *evals;
+		tmp1 = sdata + threadIdx.x * (2 * M * N + M);
+		tmp2 = tmp1 + M * N;
+		evals = tmp2 + M * N;
 
-	long stride = x * y * z;
+		for (int i = 0; i < M; i++)
+			for (int k = threadIdx.y; k < N; k += blockDim.y)
+				tmp1[k + i * N] = (k == i) ? make_cuFloatComplex(1., 0.) : make_cuFloatComplex(0., 0.);
 
-	for (int i = 0; i < M; i++)
-		for (int k = threadIdx.y; k < N; k += blockDim.y)
-			tmp1[k + i * N] = (k == i) ? make_cuFloatComplex(1., 0.) : make_cuFloatComplex(0., 0.);
-	__syncthreads();
-
-	for (int i = 0; i < iter; i++) {
-
-		cuFloatComplex* tmp = tmp1;
-		tmp1 = tmp2;
-		tmp2 = tmp;
-
-		mat_mulcu_upperdiag(M, N, tmp1, tmp2, in, offset, stride);
 		__syncthreads();
 
-		gram_schmidtcu(M, N, evals, tmp1, tmp2);
-		__syncthreads();
-	}
+		for (int i = 0; i < iter; i++) {
 
-	for (int i = 0; i < M; i++)
-		for (int k = threadIdx.y; k < N; k += blockDim.y)
-			out[offset + (i * N + k) * x * y * z] = tmp1[N * (M - 1 - i) + k];
+			cuFloatComplex* tmp = tmp1;
+			tmp1 = tmp2;
+			tmp2 = tmp;
 
-	if (threadIdx.y == 0)
-		if (vals)
+			if (offset < V)
+				mat_mulcu_upperdiag(M, N, tmp1, tmp2, in, offset, V);
+
+			__syncthreads();
+
+			gram_schmidtcu(M, N, evals, tmp1, tmp2);
+			__syncthreads();
+		}
+
+		for (int i = 0; (i < M) && (offset < V); i++)
+			for (int k = threadIdx.y; k < N; k += blockDim.y)
+				out[offset + (i * N + k) * V] = tmp1[N * (M - 1 - i) + k];
+
+		if ((offset < V) && (threadIdx.y) == 0 && vals)
 			for (int i = 0; i < M; i++)
-				vals[offset + i * x * y * z] = evals[M - 1 - i];
+				vals[offset + i * V] = evals[M - 1 - i];
+	}
 }
 
 
 
 void eigenmapscu(const long dims[5], _Complex float* optr, _Complex float* eptr, const _Complex float* imgcov2, int num_orthiter)
 {
-	const int x = (int) dims[0];
-	const int y = (int) dims[1];
-	const int z = (int) dims[2];
 	const int N = (int) dims[3];
 	const int M = (int) dims[4];
 
@@ -225,15 +218,16 @@ void eigenmapscu(const long dims[5], _Complex float* optr, _Complex float* eptr,
 	while (2 * pointsPerBlock <= tmp)
 		pointsPerBlock *= 2;
 
-
 	assert(pointsPerBlock > 0);
 
+	long V = md_calc_size(3, dims);
+
 	dim3 threads(pointsPerBlock, N, 1);
-	int numBlocks = (x*y*z + (pointsPerBlock-1)) / pointsPerBlock;
+	int numBlocks = (V + (pointsPerBlock - 1)) / pointsPerBlock;
 	dim3 blocks(numBlocks); // if numBlocks > ~65,000, need to distribute over x, y, z dims
 	size_t sharedMem = memPerPoint * pointsPerBlock;
 
-	eigenmapscu_kern<<<blocks, threads, sharedMem, cuda_get_stream()>>>(imgcov2_device, optr_device, eptr_device, num_orthiter, x, y, z, N, M);
+	eigenmapscu_kern<<<blocks, threads, sharedMem, cuda_get_stream()>>>(imgcov2_device, optr_device, eptr_device, num_orthiter, V, N, M);
 	CUDA_KERNEL_ERROR;
 
 	md_copy(5, dims, optr, optr_device, sizeof(_Complex float));
