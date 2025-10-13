@@ -44,7 +44,7 @@ tests/test-raga-single: raga extract vec transpose nrmse
 	$(TOOLDIR)/extract 2 0 5 i2.ra i2e.ra			;\
 	$(TOOLDIR)/nrmse -t 0.000001 ie.ra i2e.ra		;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
-	touch $@-
+	touch $@
 
  TESTS += tests/test-raga-single
 
