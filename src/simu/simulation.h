@@ -31,7 +31,7 @@ extern const struct simdata_voxel simdata_voxel_defaults;
 
 struct simdata_seq {
 
-        enum sim_type type;
+	enum sim_type type;
 	enum sim_seq seq_type;
 	enum sim_model model;
 	float tr;
@@ -41,15 +41,15 @@ struct simdata_seq {
 
 	bool perfect_inversion;
 	float inversion_pulse_length;
-        float inversion_spoiler;
+	float inversion_spoiler;
 
 	float prep_pulse_length;
 
-        int averaged_spokes;
+	int averaged_spokes;
 	float slice_thickness;
 	float nom_slice_thickness;
 
-        bool pulse_applied;
+	bool pulse_applied;
 };
 
 extern const struct simdata_seq simdata_seq_defaults;
@@ -70,7 +70,7 @@ struct simdata_other {
 
 	float ode_tol;
 	float stm_tol;
-        float sampling_rate;
+	float sampling_rate;
 };
 
 extern const struct simdata_other simdata_other_defaults;
@@ -90,9 +90,9 @@ struct simdata_pulse {
 	float phase;
 
 	struct pulse_sinc sinc;
-        struct pulse_sms sms;
+	struct pulse_sms sms;
 	struct pulse_rect rect;
-        struct pulse_hypsec hs;
+	struct pulse_hypsec hs;
 	struct pulse_arb arb;
 	struct pulse_gauss gauss;
 };
