@@ -97,3 +97,27 @@ tests/test-seq-raga-ordering: seq traj extract raga bin nrmse
 
 
 TESTS +=  tests/test-seq-raga-ordering
+
+
+tests/test-seq-raga-ind: seq raga nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	;\
+	$(TOOLDIR)/raga -s1 377 ind_ref.ra			;\
+	$(TOOLDIR)/seq -r 377 --raga -R ind_seq.ra  	;\
+	$(TOOLDIR)/nrmse -t 0. ind_ref.ra ind_seq.ra	;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+TESTS +=  tests/test-seq-raga-ind
+
+
+tests/test-seq-raga-ind-multislice: seq raga nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	;\
+	$(TOOLDIR)/raga -s1 -m3 377 ind_ref.ra			;\
+	$(TOOLDIR)/seq -r 377 -m3 --raga -R ind_seq.ra  	;\
+	$(TOOLDIR)/nrmse -t 0. ind_ref.ra ind_seq.ra	;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+TESTS +=  tests/test-seq-raga-ind-multislice

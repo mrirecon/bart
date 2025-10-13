@@ -42,6 +42,7 @@ int main_seq(int argc, char* argv[argc])
 	const char* grad_file = NULL;
 	const char* mom_file = NULL;
 	const char* adc_file = NULL;
+	const char* raga_file = NULL;
 	const char* seq_file = NULL;
 
 	struct arg_s args[] = {
@@ -98,6 +99,7 @@ int main_seq(int argc, char* argv[argc])
 		OPTL_SELECT(0, "raga_al", enum pe_mode, &seq.enc.pe_mode, PEMODE_RAGA_ALIGNED, "RAGA-aligned PE (default: RAGA)"),
 
 		OPTL_SET(0, "chrono", &chrono, "save gradients/moments/sampling in chronological order (RAGA)"),
+		OPT_OUTFILE('R', &raga_file, "file", "raga indices"),
 
 		OPTL_PINT(0, "tiny", &seq.enc.tiny, "tiny", "Tiny golden-ratio index"),
 
@@ -152,6 +154,9 @@ int main_seq(int argc, char* argv[argc])
 
 	if ((PEMODE_RAGA != seq.enc.pe_mode) && (PEMODE_RAGA_ALIGNED != seq.enc.pe_mode))
 		chrono = true;
+
+	if ((NULL != raga_file) && (((PEMODE_RAGA != seq.enc.pe_mode) && (PEMODE_RAGA_ALIGNED != seq.enc.pe_mode)) || chrono))
+		error("RAGA indices only for raga pe mode and non chronologic mode\n");
 
 	// FIXME, this should be moved in system configurations
 	switch (gradient_mode) {
@@ -229,9 +234,16 @@ int main_seq(int argc, char* argv[argc])
 	long astrs[DIMS];
 	md_calc_strides(DIMS, astrs, adims, CFL_SIZE);
 
+	long ind_dims[DIMS];
+	md_select_dims(DIMS, ~(READ_FLAG | PHS1_FLAG), ind_dims, adims);
+
+	long ind_strs[DIMS];
+	md_calc_strides(DIMS, ind_strs, ind_dims, CFL_SIZE);
+
 	complex float* out_grad = NULL;
 	complex float* out_mom = NULL;
 	complex float* out_adc = NULL;
+	complex float* out_raga = NULL;
 
 	if (NULL != grad_file)
 		out_grad = create_cfl(grad_file, DIMS, mdims);
@@ -241,6 +253,9 @@ int main_seq(int argc, char* argv[argc])
 
 	if (NULL != adc_file)
 		out_adc = create_cfl(adc_file, DIMS, adims);
+
+	if (NULL != raga_file)
+		out_raga = create_cfl(raga_file, DIMS, ind_dims);
 
 	struct pulseq ps;
 	struct rf_shape rf_shapes[MAX_RF_PULSES];
@@ -304,6 +319,13 @@ int main_seq(int argc, char* argv[argc])
 
 			if (0 > adc_idx)
 				error("No ADC found - try chronologic ordering");
+
+			if (NULL != out_raga) {
+
+				pos_save[PHS2_DIM] = pos_save[PHS2_DIM] * seq.loop_dims[PHS1_DIM] + pos_save[PHS1_DIM];
+				pos_save[PHS1_DIM] = 0;
+				MD_ACCESS(DIMS, ind_strs, pos_save, out_raga) = ev[adc_idx].adc.pos[PHS1_DIM];
+			}
 
 			md_copy_dims(DIMS, pos_save, ev[adc_idx].adc.pos);
 		}
@@ -379,6 +401,9 @@ debug_print_events:
 
 	if (NULL != adc_file)
 		unmap_cfl(DIMS, adims, out_adc);
+
+	if (NULL != raga_file)
+		unmap_cfl(DIMS, ind_dims, out_raga);
 
 	if (NULL != seq_file) {
 
