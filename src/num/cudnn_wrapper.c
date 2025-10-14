@@ -104,49 +104,6 @@ static cudnnHandle_t get_handle(void)
 	return handle[cuda_get_stream_id()];
 }
 
-
-static cudnnTensorDescriptor_t bart_to_cudnn_float_tensor_descriptor(int D, const long dims[D], const long str[D])
-{
-	int nbDims = MAX(D, 3);
-	int dimA[nbDims];
-	int strideA[nbDims];
-
-	for (int i = 0; i < nbDims; i++) {
-
-		dimA[i] = 1;
-		strideA[i] = 1;
-	}
-
-	dimA[D - 1] = dims[0];
-	strideA[D - 1] = str[0] ? str[0] / (long)FL_SIZE : 1;
-
-	for (int i = 1; i < (int)D; i++) {
-
-		dimA[D - 1 - i] = dims[i];
-		strideA[D - 1 - i] = str[i] ? str[i] / (int)FL_SIZE : strideA[D - i] * dimA[D - i];
-	}
-
-	cudnnTensorDescriptor_t result;
-	CUDNN_ERROR(cudnnCreateTensorDescriptor(&result));
-	CUDNN_ERROR(cudnnSetTensorNdDescriptor(result, CUDNN_DATA_FLOAT, nbDims, dimA, strideA));
-
-	return result;
-}
-
-static void cudnn_smul2(int D, const long dims[D], const long ostr[D], float* optr, const long istr[D], const float* iptr, float val)
-{
-	cudnnTensorDescriptor_t odesc = bart_to_cudnn_float_tensor_descriptor(D, dims, ostr);
-	cudnnTensorDescriptor_t idesc = bart_to_cudnn_float_tensor_descriptor(D, dims, istr);
-
-	float alpha = val;
-	float beta = 0;
-
-	CUDNN_CALL(cudnnTransformTensor(get_handle(), &alpha, idesc, iptr, &beta, odesc, optr));
-
-	CUDNN_ERROR(cudnnDestroyTensorDescriptor(odesc));
-	CUDNN_ERROR(cudnnDestroyTensorDescriptor(idesc));
-}
-
 #define MAX_DIMS 16
 struct conv_desc_s {
 
@@ -177,9 +134,9 @@ static int flag_to_index(unsigned long flag)
 	if (1 != bitcount(flag))
 		return -1;
 
-	for (int i = 0; i < 8 * sizeof(flag); i++)
+	for (int i = 0; i < 8 * (long)sizeof(flag); i++)
 		if (MD_IS_SET(flag, i))
-			return (int)i;
+			return i;
 	return -1;
 }
 
