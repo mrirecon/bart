@@ -125,6 +125,21 @@ void eulermaruyama(int maxiter, float alpha, float step,
 	float* x, const float *b,
 	struct iter_monitor_s* monitor);
 
+void preconditioned_eulermaruyama(int maxiter, float alpha,
+	float step, long N,
+	const struct vec_iter_s* vops,
+	struct iter_op_s op,
+	struct iter_op_p_s* thresh,
+	float* x, const float* b,
+	long M,
+	struct iter_op_s prec_adj,
+	struct iter_op_s prec_inormal,
+	float diag_prec,
+	int max_prec_iter,
+	float prec_tol,
+	long batchsize,
+	struct iter_monitor_s* monitor);
+
 void sgd(int epochs, int batches,
 	float learning_rate, float batchnorm_momentum,
 	const float (*learning_rate_schedule)[epochs][batches],
@@ -247,8 +262,8 @@ double power(int maxiter,
 	struct iter_op_s op,
 	float* u, float*b);
 
-void chambolle_pock(float alpha, int maxiter, float epsilon, float tau, float sigma, 
-	float sigma_tau_ratio, float theta, 
+void chambolle_pock(float alpha, int maxiter, float epsilon, float tau, float sigma,
+	float sigma_tau_ratio, float theta,
 	float decay, _Bool adapt_stepsize,
 	int O, long N, long M[O],
 	const struct vec_iter_s* vops,

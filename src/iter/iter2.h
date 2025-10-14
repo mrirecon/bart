@@ -79,7 +79,6 @@ struct iter2_call_s {
 };
 
 
-
 #include "misc/cppwrap.h"
 
 

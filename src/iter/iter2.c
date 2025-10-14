@@ -297,10 +297,20 @@ void iter2_eulermaruyama(const iter_conf* _conf,
 
 	auto conf = CAST_DOWN(iter_eulermaruyama_conf, _conf);
 
-	eulermaruyama(conf->maxiter, conf->super.alpha, conf->step, size, select_vecops(image_adj),
-		OPERATOR2ITOP(normaleq_op), &OPERATOR_P2ITOP(prox_ops[0]), image, image_adj, monitor);
-}
+	if (NULL == conf->lop_prec && 0. == conf->diag_prec) {
 
+		eulermaruyama(conf->maxiter, conf->super.alpha, conf->step, size, select_vecops(image_adj),
+			OPERATOR2ITOP(normaleq_op), &OPERATOR_P2ITOP(prox_ops[0]), image, image_adj, monitor);
+	} else {
+
+		const struct iovec_s* cod_prec = linop_codomain(conf->lop_prec);
+
+		preconditioned_eulermaruyama(conf->maxiter, conf->super.alpha, conf->step, size, select_vecops(image_adj),
+			OPERATOR2ITOP(normaleq_op), &OPERATOR_P2ITOP(prox_ops[0]), image, image_adj,
+			2 * md_calc_size(cod_prec->N, cod_prec->dims), OPERATOR2ITOP(conf->lop_prec->adjoint), OPERATOR2ITOP(conf->lop_prec->normal), conf->diag_prec,
+			conf->max_prec_iter, conf->prec_tol, conf->batchsize, monitor);
+	}
+}
 
 
 void iter2_fista(const iter_conf* _conf,

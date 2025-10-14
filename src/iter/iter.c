@@ -1,10 +1,10 @@
 /* Copyright 2013-2018. The Regents of the University of California.
  * Copyright 2017. University of Oxford.
  * Copyright 2018-2019. Martin Uecker.
- * All rights reserved. Use of this source code is governed by 
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * Authors: 
+ * Authors:
  * 2012-2019 Martin Uecker <uecker@eecs.berkeley.edu>
  * 2014-2018 Jon Tamir <jtamir@eecs.berkeley.edu>
  * 2014 Frank Ong <frankong@berkeley.edu>
@@ -90,6 +90,12 @@ const struct iter_eulermaruyama_conf iter_eulermaruyama_defaults = {
 
 	.maxiter = 50,
 	.step = 0.95,
+
+	.lop_prec = NULL,
+	.diag_prec = 0.,
+	.prec_tol = 0,
+	.max_prec_iter = 10,
+	.batchsize = 1,
 };
 
 const struct iter_fista_conf iter_fista_defaults = {

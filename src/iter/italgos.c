@@ -404,6 +404,89 @@ void eulermaruyama(int maxiter, float alpha,
 	vops->del(r);
 }
 
+/**
+ *
+ */
+void preconditioned_eulermaruyama(int maxiter, float alpha,
+	float step, long N,
+	const struct vec_iter_s* vops,
+	struct iter_op_s op,
+	struct iter_op_p_s* thresh,
+	float* x, const float* b,
+	long M,
+	struct iter_op_s prec_adj,
+	struct iter_op_s prec_normal,
+	float diag_prec,
+	int max_prec_iter,
+	float prec_tol,
+	long /*batchsize*/,
+	struct iter_monitor_s* monitor)
+{
+	float* r = vops->allocate(N);
+	float* o = vops->allocate(N);
+	float* t = vops->allocate(N);
+	float* n = vops->allocate(M);
+
+	for (int i = 0; i < maxiter; i++) {
+
+		iter_monitor(monitor, vops, x);
+		vops->copy(N, t, x);
+
+		// the gradients are scaled so that with unitary operators the
+		// data is assumed to have complex Gaussian noise with s = 1
+		// (which cancels the 1/2 in the algorithm)
+
+		iter_op_call(op, r, t);		// r = A x
+		vops->xpay(N, -1., r, b);	// r = b - r = b - A x
+
+		// compute gradient due to prox
+		if (thresh) {	// plug&play
+
+			iter_op_p_call(*thresh, step * alpha, o, t);
+
+			vops->axpy(N, t, -1., t);
+			vops->axpy(N, t, +1., o);
+			vops->sub(N, t, t, x);
+		} else {
+
+			vops->clear(N, t);
+		}
+
+		iter_op_call(prec_normal, o, x);
+		vops->axpy(N, o, diag_prec, x);
+
+		vops->axpy(N, o, step, r);
+		vops->add(N, o, o, t);
+
+		// warmstarted CG with gradient of prox
+		vops->axpy(N, x, 1. / diag_prec, t);
+
+		vops->rand(M, n);
+		iter_op_call(prec_adj, r, n);
+		vops->axpy(N, o, sqrtf(step), r);
+
+		if (0. < diag_prec) {
+
+			vops->rand(N, r);
+			vops->axpy(N, o, sqrtf(step * diag_prec), r);
+
+			// warmstarted CG with gradient of prox
+			vops->axpy(N, x, sqrtf(step / diag_prec), r);
+		}
+
+#if 0		//FIXME: batched conjgrad makes more sense but is currently slow.
+		if (1 < batchsize)
+			conjgrad_batch(max_prec_iter, 0, prec_tol, N / batchsize / 2, 1, batchsize, vops, prec_normal, o, t, NULL);
+		else
+#endif
+		conjgrad(max_prec_iter, diag_prec, prec_tol, N, vops, prec_normal, x, o, NULL);
+	}
+
+	vops->del(o);
+	vops->del(t);
+	vops->del(n);
+	vops->del(r);
+}
 
 
 /**
