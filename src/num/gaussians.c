@@ -271,7 +271,7 @@ void md_grad_gaussian(int D, const long dims_grad[D],
 /**
  * Calculates the log-expression of given Gaussians
  *
- * log_gauss = - 0.5 * n * m * log(pi) - 0.5 * n * m * log(vars) - (x - mus) / vars @ (x - mus); dims -> {1,1,C,B}
+ * log_gauss = - n * m * log(pi) - n * m * log(vars) - (x - mus) / vars @ (x - mus); dims -> {1,1,C,B}
  *
  **/
 void md_log_gaussian(int D, const long dims_log_gauss[D], complex float* log_gauss,
@@ -309,10 +309,12 @@ void md_log_gaussian(int D, const long dims_log_gauss[D], complex float* log_gau
 	//md_zsub2(D, dims_grad, strs_grad, diff, strs_x, x, strs_mu, mu);
 
 	md_ztenmulc2(D, dims_grad, strs_log_gauss, xmuvarxmu, strs_grad, diff, strs_grad, grad);
-	md_zlog2(D, dims_vars, strs_vars, log_vars, strs_vars, vars);
-	md_zsmul2(D, dims_vars, strs_vars, tmp0, strs_vars, log_vars, -0.5 * dims_x[0] * dims_x[1]);
+	md_zsmul(D, dims_log_gauss, xmuvarxmu, xmuvarxmu, 0.5);
 
-	md_zsadd2(D, dims_vars, strs_vars, tmp0, strs_vars, tmp0, -0.5 * dims_x[0] * dims_x[1] * M_PI);
+	md_zlog2(D, dims_vars, strs_vars, log_vars, strs_vars, vars);
+	md_zsmul2(D, dims_vars, strs_vars, tmp0, strs_vars, log_vars, -1. * dims_x[0] * dims_x[1]);
+
+	md_zsadd2(D, dims_vars, strs_vars, tmp0, strs_vars, tmp0, -1. * dims_x[0] * dims_x[1] * M_PI);
 
 	md_zsmul2(D, dims_log_gauss, strs_log_gauss, log_gauss, strs_log_gauss, xmuvarxmu, -1);
 	md_zaxpy2(D, dims_log_gauss, strs_log_gauss, log_gauss, 1, strs_vars, tmp0);
@@ -331,7 +333,7 @@ void md_log_gaussian(int D, const long dims_log_gauss[D], complex float* log_gau
  *
  * gamma = exp(z - zmax) / sum_C exp(z - zmax); dims -> {1,1,C,B}
  *
- * where:	z = log(ws) - 0.5 * n * m * log(pi) - 0.5 * n * m * log(vars) - (x - mus) / vars @ (x - mus); dims -> {1,1,C,B}
+ * where:	z = log(ws) - n * m * log(pi) - n * m * log(vars) - (x - mus) / vars @ (x - mus); dims -> {1,1,C,B}
  *		zmax =  max_C (z); dims -> {1,1,1,B}
  *
  **/

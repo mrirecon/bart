@@ -87,7 +87,7 @@ tests/test-sample-gauss1d_mean_gpu: sample avg var cabs calc scale ones nrmse ze
 	$(TOOLDIR)/scale 1+1i mu.ra mu.ra							;\
 	$(TOOLDIR)/ones 16 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 vars.ra				;\
 	$(TOOLDIR)/scale 0.5 vars.ra vars.ra						;\
-	$(TOOLDIR)/sample --sigma max=10.,min=0.001 -g -N100 -K100 -s100 --gmm mean=mu.ra,var=vars.ra --gamma=0.001 -S1000 out.ra 	;\
+	$(TOOLDIR)/sample --sigma max=10.,min=0.001 -g -N100 -K100 -s100 --gmm mean=mu.ra,var=vars.ra --gamma=0.075 -S1000 out.ra 	;\
 	$(TOOLDIR)/calc zimag out.ra out_imag.ra						;\
 	$(TOOLDIR)/calc zreal out.ra out_real.ra						;\
 	$(TOOLDIR)/avg 32768 out_real.ra out_avg_real.ra					;\
@@ -108,7 +108,7 @@ tests/test-sample-gauss1d_mean_real_gpu: sample avg var cabs calc scale ones nrm
 	$(TOOLDIR)/scale 1+1i mu.ra mu.ra							;\
 	$(TOOLDIR)/ones 16 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 vars.ra				;\
 	$(TOOLDIR)/scale 0.5 vars.ra vars.ra							;\
-	$(TOOLDIR)/sample --sigma max=10.,min=0.001 -g -N100 -K100 -s100 --gmm mean=mu.ra,var=vars.ra -r --gamma=0.001 -S1000 out.ra 	;\
+	$(TOOLDIR)/sample --sigma max=10.,min=0.001 -g -N100 -K100 -s100 --gmm mean=mu.ra,var=vars.ra -r --gamma=0.075 -S1000 out.ra 	;\
 	$(TOOLDIR)/calc zimag out.ra out_imag.ra						;\
 	$(TOOLDIR)/calc zreal out.ra out_real.ra						;\
 	$(TOOLDIR)/avg 32768 out_real.ra out_avg_real.ra					;\
@@ -172,7 +172,7 @@ tests/test-sample-gauss1d_mean_pc: sample avg var cabs calc scale ones nrmse zer
 	$(TOOLDIR)/scale 1+1i mu.ra mu.ra							;\
 	$(TOOLDIR)/ones 16 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 vars.ra				;\
 	$(TOOLDIR)/scale 0.5 vars.ra vars.ra						;\
-	$(TOOLDIR)/sample --sigma max=10.,min=0.001 -N50 -K20 -p -s111 --gamma=0.0025 --gmm mean=mu.ra,var=vars.ra -S1000 out.ra 	;\
+	$(TOOLDIR)/sample --sigma max=10.,min=0.001 -N100 -K20 -p -s111 --gamma=0.05 --gmm mean=mu.ra,var=vars.ra -S1000 out.ra 	;\
 	$(TOOLDIR)/calc zimag out.ra out_imag.ra						;\
 	$(TOOLDIR)/calc zreal out.ra out_real.ra						;\
 	$(TOOLDIR)/avg 32768 out_real.ra out_avg_real.ra					;\
