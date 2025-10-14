@@ -418,7 +418,7 @@ static nn_t data_consistency_gradientstep_create(const struct reconet_s* config,
 	result = nn_set_in_type_F(result, 0, "lambda", IN_OPTIMIZE);
 
 	auto iov = nn_generic_domain(result, 0, "lambda");
-	auto prox_conv = operator_project_pos_real_create(iov->N, iov->dims);
+	auto prox_conv = operator_project_min_real_create(iov->N, iov->dims, config->dc_lambda_min);
 
 	result = nn_set_prox_op_F(result, 0, "lambda", prox_conv);
 
@@ -754,7 +754,7 @@ static nn_t reconet_create(const struct reconet_s* config, int Nb, enum NETWORK_
 
 		} else {
 
-			network = nn_set_prox_op_F(network, 0, "lambda", operator_project_pos_real_create(N + 1, lam_dims));
+			network = nn_set_prox_op_F(network, 0, "lambda", operator_project_min_real_create(N, lam_dims, config->dc_lambda_min));
 			network = nn_set_in_type_F(network, 0, "lambda", IN_OPTIMIZE);
 			network = nn_set_initializer_F(network, 0, "lambda", init_const_create(config->dc_lambda_init));
 
