@@ -414,7 +414,7 @@ static int rf_to_pulseq(struct pulseq *ps, int M, const struct rf_shape rf_shape
 	int pulse_id = ev[rf_idx].pulse.shape_id;
 	int mag_id = 3 * pulse_id + 1;
 
-	double ampl = rf_shapes[pulse_id].max / (2. * M_PI);
+	double ampl = rf_shapes[pulse_id].max / (2. * M_PI) * (ev[rf_idx].pulse.fa / rf_shapes[pulse_id].fa_prep);
 
 	int time_id = 0;
 
