@@ -193,9 +193,6 @@ int main_sample(int argc, char* argv[argc])
 	const struct nlop_s* nlop = NULL;
 	img_dims[BATCH_DIM] = batchsize;
 
-	long sample_dims[DIMS];
-	md_singleton_dims(DIMS, sample_dims);
-
 	float min_var = 0.0f;
 
 	if (NULL != graph) {
@@ -305,15 +302,16 @@ int main_sample(int argc, char* argv[argc])
 
 	assert(0 == N % save_mod);
 
-	md_copy_dims(DIMS, sample_dims, img_dims);
-	sample_dims[ITER_DIM] = N / save_mod;
+	long out_dims[DIMS];
+	md_copy_dims(DIMS, out_dims, img_dims);
+	out_dims[ITER_DIM] = N / save_mod;
 
-	complex float* samples_denoised = (mmse_file ? create_cfl : anon_cfl)(mmse_file, DIMS, sample_dims);
+	complex float* expectation = (mmse_file ? create_cfl : anon_cfl)(mmse_file, DIMS, out_dims);
 
-	complex float* out = create_cfl(samples_file, DIMS, sample_dims);
+	complex float* out = create_cfl(samples_file, DIMS, out_dims);
 	long pos[DIMS] = { [0 ... DIMS - 1] = 0 };
 
-	complex float* samples = my_alloc(DIMS, sample_dims, CFL_SIZE);
+	complex float* samples = my_alloc(DIMS, img_dims, CFL_SIZE);
 
 	md_gaussian_rand(DIMS, img_dims, samples);
 	md_zsmul(DIMS, img_dims, samples, samples, 1 / sqrtf(2.)); // cplx var 1
@@ -385,8 +383,8 @@ int main_sample(int argc, char* argv[argc])
 			md_zsmul(DIMS, img_dims, tmp_exp, tmp_exp, var_i / 2);
 			md_zaxpy(DIMS, img_dims, tmp_exp, 1, samples);
 
-			md_copy_block(DIMS, pos, sample_dims, samples_denoised, img_dims, tmp_exp, CFL_SIZE);
-			md_copy_block(DIMS, pos, sample_dims, out, img_dims, samples, CFL_SIZE);
+			md_copy_block(DIMS, pos, out_dims, expectation, img_dims, tmp_exp, CFL_SIZE);
+			md_copy_block(DIMS, pos, out_dims, out, img_dims, samples, CFL_SIZE);
 
 			md_free(tmp_exp);
 		}
@@ -403,8 +401,8 @@ int main_sample(int argc, char* argv[argc])
 	md_free(AHy);
 
 	md_free(samples);
-	unmap_cfl(DIMS, sample_dims, out);
-	unmap_cfl(DIMS, sample_dims, samples_denoised);
+	unmap_cfl(DIMS, out_dims, out);
+	unmap_cfl(DIMS, out_dims, expectation);
 
 	return 0;
 }
