@@ -227,20 +227,19 @@ int main_sample(int argc, char* argv[argc])
 
 		img_dims[0] = means_dims[0];
 		img_dims[1] = means_dims[1];
+		img_dims[2] = means_dims[2];
 
 		// check if ws are given, otherwise use uniform weights over all mean peaks
 		complex float* ws = NULL;
 
 		if (NULL == ws_file) {
 
-			md_copy_dims(DIMS, ws_dims, means_dims);
+			md_select_dims(DIMS, ~md_nontriv_dims(DIMS, img_dims), ws_dims, means_dims);
 
 			ws = md_alloc_sameplace(DIMS, ws_dims, CFL_SIZE, means);
 
-			int num_gaussians = means_dims[COIL_DIM];
-
-			for (int i = 0; i < num_gaussians; i++)
-				ws[i] = 1.0f / num_gaussians;
+			long num_gaussians = md_calc_size(DIMS, ws_dims);
+			md_zfill(DIMS, ws_dims, ws, 1. / num_gaussians);
 
 			debug_printf(DP_WARN, "No weighting specified. Uniform weigths are set.\n");
 
@@ -278,6 +277,9 @@ int main_sample(int argc, char* argv[argc])
 
 			debug_printf(DP_DEBUG2, "Minimum variance in vars: %f\n", min_var);
 		}
+
+		assert(md_check_equal_dims(DIMS, means_dims, vars_dims, ~md_nontriv_dims(DIMS, img_dims)));
+		assert(md_check_equal_dims(DIMS, means_dims, ws_dims, ~md_nontriv_dims(DIMS, img_dims)));
 
 		nlop = nlop_gmm_score_create(DIMS, img_dims, means_dims, means, vars_dims, vars, ws_dims, ws);
 
