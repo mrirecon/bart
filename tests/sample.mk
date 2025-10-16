@@ -9,7 +9,6 @@ tests/test-sample-gmm1d_mean: sample ones zeros join cabs calc scale ones nrmse
 	$(TOOLDIR)/ones 16 1 1 1 2 1 1 1 1 1 1 1 1 1 1 1 1 vars.ra				;\
 	$(TOOLDIR)/scale 0.0001 vars.ra vars.ra							;\
 	$(TOOLDIR)/ones 16 1 1 1 2 1 1 1 1 1 1 1 1 1 1 1 1 ws.ra				;\
-	$(TOOLDIR)/scale 0.5 ws.ra ws.ra							;\
 	$(TOOLDIR)/sample --sigma max=10,min=0.01 -N50 -K20 --gmm mean=mu.ra,var=vars.ra,w=ws.ra --gamma=0.1 -S1 out.ra	;\
 	$(TOOLDIR)/calc zreal out.ra out_real.ra						;\
 	$(TOOLDIR)/cabs out_real.ra out_real.ra							;\
@@ -21,7 +20,7 @@ tests/test-sample-gmm1d_mean: sample ones zeros join cabs calc scale ones nrmse
 	rm *.ra; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-# tests for correct weighting of the sampled gaussians in the gmm (0.7 (for mean 0) to 0.3 (for mean 1) -> -0.3 on average) fo real and imag part; abs value due to scaling issue
+# tests for correct weighting of the sampled gaussians in the gmm (0.75 (for mean 0) to 0.25 (for mean 1) -> -0.3 on average) fo real and imag part; abs value due to scaling issue
 tests/test-sample-gmm1d_weigthing: sample cabs calc avg zeros join ones scale nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
 	$(TOOLDIR)/ones 2 1 1 t.ra								;\
@@ -31,14 +30,13 @@ tests/test-sample-gmm1d_weigthing: sample cabs calc avg zeros join ones scale nr
 	$(TOOLDIR)/ones 16 1 1 1 2 1 1 1 1 1 1 1 1 1 1 1 1 vars.ra				;\
 	$(TOOLDIR)/scale 0.0001 vars.ra vars.ra							;\
 	$(TOOLDIR)/ones 16 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 w1.ra				;\
-	$(TOOLDIR)/scale 0.5 w1.ra w1.ra							;\
 	$(TOOLDIR)/ones 16 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 w2.ra				;\
-	$(TOOLDIR)/scale 0.5 w2.ra w2.ra							;\
+	$(TOOLDIR)/scale 3 w2.ra w2.ra								;\
 	$(TOOLDIR)/join 3 w1.ra w2.ra ws.ra							;\
-	$(TOOLDIR)/sample --sigma max=10.,min=0.001 -N50 -K20 -s100 --gmm mean=mu.ra,var=vars.ra,w=ws.ra --gamma=0.05 -S1000 out.ra	;\
+	$(TOOLDIR)/sample --sigma max=10.,min=0.001 -N50 -K20 -s100 --gmm mean=mu.ra,var=vars.ra,w=ws.ra --gamma=0.1 -S1000 out.ra	;\
 	$(TOOLDIR)/avg 32768 out.ra o_avg.ra							;\
 	$(TOOLDIR)/ones 1 1 o.ra								;\
-	$(TOOLDIR)/scale 0.5 o.ra o.ra								;\
+	$(TOOLDIR)/scale 0.25 o.ra o.ra								;\
 	$(TOOLDIR)/calc zreal o_avg.ra o_avg_real.ra						;\
 	$(TOOLDIR)/calc zimag o_avg.ra o_avg_imag.ra						;\
 	$(TOOLDIR)/cabs o_avg_real.ra o_avg_real.ra						;\
@@ -59,9 +57,7 @@ tests/test-sample-gmm2d: sample reshape calc cabs avg ones scale zeros join nrms
 	$(TOOLDIR)/ones 16 1 1 1 2 1 1 1 1 1 1 1 1 1 1 1 1 vars.ra				;\
 	$(TOOLDIR)/scale 0.0001 vars.ra vars.ra							;\
 	$(TOOLDIR)/ones 16 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 w1.ra				;\
-	$(TOOLDIR)/scale 0.5 w1.ra w1.ra							;\
 	$(TOOLDIR)/ones 16 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 w2.ra				;\
-	$(TOOLDIR)/scale 0.5 w2.ra w2.ra							;\
 	$(TOOLDIR)/join 3 w1.ra w2.ra ws.ra							;\
 	$(TOOLDIR)/sample --sigma max=10.,min=0.001 -N50 -K20 -s100 --gmm mean=mu.ra,var=vars.ra,w=ws.ra --gamma=0.025 -S1000 out.ra ;\
 	$(TOOLDIR)/reshape 3 4 1 out.ra out.ra							;\
@@ -211,11 +207,9 @@ tests/test-sample-gmm_img_gpu: phantom scale join ones sample nrmse
 	$(TOOLDIR)/scale 0.25 mean2.ra mean2.ra							;\
 	$(TOOLDIR)/join 3 mean1.ra mean2.ra mu.ra						;\
 	$(TOOLDIR)/ones 4 1 1 1 2 vars.ra							;\
-	$(TOOLDIR)/scale 0.00001 vars.ra vars.ra					;\
+	$(TOOLDIR)/scale 0.00001 vars.ra vars.ra						;\
 	$(TOOLDIR)/ones 4 1 1 1 1 w1.ra								;\
-	$(TOOLDIR)/scale 0.5 w1.ra w1.ra							;\
 	$(TOOLDIR)/ones 4 1 1 1 1 w2.ra								;\
-	$(TOOLDIR)/scale 0.5 w2.ra w2.ra							;\
 	$(TOOLDIR)/join 3 w1.ra w2.ra ws.ra							;\
 	$(TOOLDIR)/sample --sigma max=10,min=0.001 -g -N100 -K100 -s111 --gmm mean=mu.ra,var=vars.ra,w=ws.ra --gamma=0.01 -S1 out.ra											;\
 	$(TOOLDIR)/nrmse -t 0.0001 mean1.ra out.ra						;\
@@ -224,7 +218,87 @@ tests/test-sample-gmm_img_gpu: phantom scale join ones sample nrmse
 	rm *.ra; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-TESTS += tests/test-sample-gmm1d_mean tests/test-sample-gmm1d_weigthing tests/test-sample-gauss1d_mean_ancestral tests/test-sample-gauss1d_mean_pc tests/test-sample-gmm2d
+# tests 2D prior sampling (small amount of samples due to time; error bound is set higher)
+tests/test-sample-gmm-2D-weighting-prior: vec scale join ones sample nrmse transpose repmat threshold fmac bart measure
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP); export BART_TOOLBOX_DIR=$(ROOTDIR);\
+	$(TOOLDIR)/ones 1 2 mu1.ra							;\
+	$(TOOLDIR)/scale -- -1 mu1.ra mu2.ra						;\
+	$(TOOLDIR)/vec -- -1 1 mu3.ra							;\
+	$(TOOLDIR)/vec -- 1 -1 mu4.ra							;\
+	$(TOOLDIR)/join 3 mu1.ra mu2.ra mu3.ra mu4.ra mu.ra				;\
+	$(TOOLDIR)/vec 0 0 0 0 var.ra 							;\
+	$(TOOLDIR)/transpose 0 3 var.ra var.ra 						;\
+	$(TOOLDIR)/vec 5 3 1 1 ws.ra							;\
+	$(TOOLDIR)/transpose 0 3 ws.ra ws.ra						;\
+	$(TOOLDIR)/sample --dims 2:1 --sigma max=10,min=0.01 -S100 --gamma=0.1 --gmm mean=mu.ra,var=var.ra,w=ws.ra -N100 -K100 samples.ra  expect.ra 							;\
+	$(TOOLDIR)/repmat 15 100 mu.ra  mus.ra 						;\
+	$(ROOTDIR)/bart -l8 -e4 measure --mse mus.ra  samples.ra  l2.ra 	;\
+	$(TOOLDIR)/threshold -M 0.1 l2.ra w.ra 						;\
+	$(TOOLDIR)/fmac -s32768 w.ra w.ra					;\
+	$(TOOLDIR)/scale 0.1 w.ra w.ra							;\
+	$(TOOLDIR)/nrmse -t 0.075 w.ra ws.ra						;\
+	rm *.ra; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+# tests 2D posterior sampling, likelhood on 2 different weigthed peaks (5/3 -> 0.625, 0.375)
+tests/test-sample-gmm-2D-weighting-posterior1: vec scale join ones sample nrmse transpose repmat threshold fmac bart zeros
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/ones 1 2 mu1.ra							;\
+	$(TOOLDIR)/scale -- -1 mu1.ra mu2.ra						;\
+	$(TOOLDIR)/vec -- -1 1 mu3.ra							;\
+	$(TOOLDIR)/vec -- 1 -1 mu4.ra							;\
+	$(TOOLDIR)/join 3 mu1.ra mu2.ra mu3.ra mu4.ra mu.ra				;\
+	$(TOOLDIR)/vec 0 0 0 0 var.ra 							;\
+	$(TOOLDIR)/transpose 0 3 var.ra var.ra 						;\
+	$(TOOLDIR)/vec 5 3 1 1 ws.ra							;\
+	$(TOOLDIR)/transpose 0 3 ws.ra ws.ra						;\
+	$(TOOLDIR)/zeros 1 2 ksp.ra 							;\
+	$(TOOLDIR)/ones 1 2 coil.ra 							;\
+	$(TOOLDIR)/scale 100 ksp.ra ksp.ra 						;\
+	$(TOOLDIR)/scale 100 coil.ra coil.ra 						;\
+	$(TOOLDIR)/vec 1 0 pat.ra 							;\
+	$(TOOLDIR)/sample --dims 2:1 --sigma max=10,min=0.01 -S100 --gamma=0.5 --gmm mean=mu.ra,var=var.ra,w=ws.ra --posterior k=ksp.ra,s=coil.ra,p=pat.ra,precond=10 -N10 -K10 samples.ra expect.ra							 ;\
+	$(TOOLDIR)/repmat 15 100 mu.ra mus.ra						;\
+	$(ROOTDIR)/bart -l8 -r mu.ra measure --mse mus.ra samples.ra l2.ra		;\
+	$(TOOLDIR)/threshold -M 0.1 l2.ra w.ra 						;\
+	$(TOOLDIR)/fmac -s32768 w.ra w.ra						;\
+	$(TOOLDIR)/scale 0.1 w.ra w.ra							;\
+	$(TOOLDIR)/vec 6.25 3.75 0 0 wnew.ra						;\
+	$(TOOLDIR)/transpose 3 0 wnew.ra wnew.ra					;\
+	$(TOOLDIR)/nrmse -t 0.01 w.ra wnew.ra						;\
+	rm *.ra; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+# tests 2D posterior sampling, likelhood on 2 same weigthed peaks (1/1 -> 0.5, 0.5)
+tests/test-sample-gmm-2D-weighting-posterior2: vec scale join ones sample nrmse transpose repmat threshold fmac bart zeros
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/ones 1 2 mu1.ra							;\
+	$(TOOLDIR)/scale -- -1 mu1.ra mu2.ra						;\
+	$(TOOLDIR)/vec -- -1 1 mu3.ra							;\
+	$(TOOLDIR)/vec -- 1 -1 mu4.ra							;\
+	$(TOOLDIR)/join 3 mu1.ra mu2.ra mu3.ra mu4.ra mu.ra				;\
+	$(TOOLDIR)/vec 0 0 0 0 var.ra 							;\
+	$(TOOLDIR)/transpose 0 3 var.ra var.ra 						;\
+	$(TOOLDIR)/vec 5 3 1 1 ws.ra							;\
+	$(TOOLDIR)/transpose 0 3 ws.ra ws.ra						;\
+	$(TOOLDIR)/zeros 1 2 ksp.ra 							;\
+	$(TOOLDIR)/ones 1 2 coil.ra 							;\
+	$(TOOLDIR)/scale 100 ksp.ra ksp.ra 						;\
+	$(TOOLDIR)/scale 100 coil.ra coil.ra 						;\
+	$(TOOLDIR)/vec 0 1 pat.ra 							;\
+	$(TOOLDIR)/sample --dims 2:1 --sigma max=10,min=0.01 -S100 --gamma=0.5 --gmm mean=mu.ra,var=var.ra,w=ws.ra --posterior k=ksp.ra,s=coil.ra,p=pat.ra,precond=10 -N10 -K10 samples.ra expect.ra	;\
+	$(TOOLDIR)/repmat 15 100 mu.ra mus.ra						;\
+	$(ROOTDIR)/bart -l8 -r mu.ra measure --mse mus.ra samples.ra l2.ra		;\
+	$(TOOLDIR)/threshold -M 0.1 l2.ra w.ra 						;\
+	$(TOOLDIR)/fmac -s32768 w.ra w.ra						;\
+	$(TOOLDIR)/scale 0.1 w.ra w.ra							;\
+	$(TOOLDIR)/vec 0 0 5 5 wnew.ra							;\
+	$(TOOLDIR)/transpose 3 0 wnew.ra wnew.ra					;\
+	$(TOOLDIR)/nrmse -t 0.06 w.ra wnew.ra						;\
+	rm *.ra; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+TESTS += tests/test-sample-gmm1d_mean tests/test-sample-gmm1d_weigthing tests/test-sample-gauss1d_mean_ancestral tests/test-sample-gauss1d_mean_pc tests/test-sample-gmm2d tests/test-sample-gmm-2D-weighting-prior tests/test-sample-gmm-2D-weighting-posterior1 tests/test-sample-gmm-2D-weighting-posterior2
 
 TESTS_GPU += tests/test-sample-gauss1d_mean_gpu tests/test-sample-gauss1d_var_gpu tests/test-sample-gmm_img_gpu tests/test-sample-gauss1d_mean_real1_gpu tests/test-sample-gauss1d_mean_real_gpu
 
