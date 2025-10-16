@@ -246,6 +246,10 @@ int main_sample(int argc, char* argv[argc])
 		} else {
 
 			ws = load_cfl(ws_file, DIMS, ws_dims);
+
+			float wsum = md_zasum(DIMS, ws_dims, ws);
+			md_zsmul(DIMS, ws_dims, ws, ws, 1. / wsum);
+			
 		}
 
 		complex float* vars = NULL;
