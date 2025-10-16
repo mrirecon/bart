@@ -217,7 +217,31 @@ void pulse_shapes_to_pulseq(struct pulseq *ps, int N, const struct rf_shape rf_s
 }
 
 
-static int check_existing_shape(const struct pulseq* ps, const struct shape* shape2)
+static bool check_empty_shape(const int len, const double shape[len])
+{
+	double sum = 0.;
+
+	for (int j = 0; j < len; j++)
+		sum = sum + fabs(shape[j]);
+
+	if ((0 == len) || (1.e-6 > sum))
+		return true;
+
+	return false;
+}
+
+static int find_grad_id(const struct pulseq* ps, int shape_id)
+{
+	for (int i = 0; i < ps->gradients->len; i++) {
+
+		if (ps->gradients->data[i].shape_id == shape_id)
+			return ps->gradients->data[i].id;
+	}
+
+	return -1;
+}
+
+static int check_existing_gradient_shape(const struct pulseq* ps, const struct shape* shape2)
 {
 	for (int i = 0; i < ps->shapes->len; i++) {
 
@@ -238,7 +262,7 @@ static int check_existing_shape(const struct pulseq* ps, const struct shape* sha
 		}
 
 		if (equal)
-			return sh.id;
+			return find_grad_id(ps, sh.id);
 	}
 
 	return -1;
@@ -246,9 +270,6 @@ static int check_existing_shape(const struct pulseq* ps, const struct shape* sha
 
 static void grad_to_pulseq(int grad_id[3], struct pulseq *ps, struct seq_sys sys, long grad_start, long grad_len, double g[MAX_GRAD_POINTS][3])
 {
-	if (0 == grad_len)
-		grad_len = 2; // dummy
-
 	double g_axis[grad_len];
 
 	for (int a = 0; a < 3; a++) {
@@ -256,33 +277,36 @@ static void grad_to_pulseq(int grad_id[3], struct pulseq *ps, struct seq_sys sys
 		for (int i = 0; i < grad_len; i++)
 			g_axis[i] = - g[i + grad_start][a] / sys.grad.max_amplitude; // -1. for constistency
 
+		if (check_empty_shape(grad_len, g_axis))
+			continue;
+
 		int sid = ps->shapes->len + 1;
 		struct shape tmp_shape = make_compressed_shape(sid, grad_len, g_axis);
 
-		int sid2 = check_existing_shape(ps, &tmp_shape);
+		int gid2 = check_existing_gradient_shape(ps, &tmp_shape);
 
-		if (0 < sid2) {
+		if (0 < gid2) {
 
-			debug_printf(DP_DEBUG3, "re-using existing gradient shape %d instead of %d\n", sid2, sid);
+			debug_printf(DP_DEBUG3, "re-using existing gradient %d instead of new shape_id %d\n", gid2, sid);
 			xfree(tmp_shape.values);
-			sid = sid2;
+			grad_id[a] = gid2;
 		}
 		else {
 
 			auto _tmp = tmp_shape.values;
 			VEC_ADD(ps->shapes, tmp_shape);
 			(void)_tmp;
+
+			grad_id[a] = ps->gradients->len + 1;
+			struct gradient g = {
+
+				.id = grad_id[a],
+				.amp = sys.grad.max_amplitude * sys.gamma,
+				.shape_id = sid
+			};
+
+			VEC_ADD(ps->gradients, g);
 		}
-
-		grad_id[a] = ps->gradients->len + 1;
-		struct gradient g = {
-
-			.id = grad_id[a],
-			.amp = sys.grad.max_amplitude * sys.gamma,
-			.shape_id = sid
-		};
-
-		VEC_ADD(ps->gradients, g);
 	}
 }
 
@@ -402,6 +426,23 @@ static int ext_to_pulseq(struct pulseq *ps, int i_adc, int N, const struct seq_e
 	return ext_id;
 }
 
+static int check_existing_rf(const struct pulseq* ps, const struct rfpulse* rf)
+{
+	for (int i = 0; i < ps->rfpulses->len; i++) {
+
+		if (   (ps->rfpulses->data[i].mag_id == rf->mag_id)
+		    && (ps->rfpulses->data[i].ph_id == rf->ph_id)
+		    && (ps->rfpulses->data[i].time_id == rf->time_id)
+		    && (ps->rfpulses->data[i].delay == rf->delay)
+		    && (1e-5 > fabs(ps->rfpulses->data[i].mag - rf->mag))
+		    && (1e-5 > fabs(ps->rfpulses->data[i].freq - rf->freq))
+		    && (1e-5 > fabs(ps->rfpulses->data[i].phase - rf->phase)))
+			return ps->rfpulses->data[i].id;
+	}
+
+	return -1;
+}
+
 static int rf_to_pulseq(struct pulseq *ps, int M, const struct rf_shape rf_shapes[M], int N, const struct seq_event ev[N])
 {
 	int rf_idx = events_idx(0, SEQ_EVENT_PULSE, N, ev);
@@ -432,6 +473,14 @@ static int rf_to_pulseq(struct pulseq *ps, int M, const struct rf_shape rf_shape
 		.freq = ev[rf_idx].pulse.freq,
 		.phase = phase_pulseq(&ev[rf_idx])
 	};
+
+	int rf_id2 = check_existing_rf(ps, &rf);
+
+	if (0 < rf_id2) {
+
+		debug_printf(DP_DEBUG3, "re-using existing RF %d \n", rf_id2);
+		return rf_id2;
+	}
 
 	VEC_ADD(ps->rfpulses, rf);
 	return rf_id;
