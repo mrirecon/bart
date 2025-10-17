@@ -1025,6 +1025,10 @@ static complex float* load_cfl_internal(const char* name, int D, long dimensions
 				stream_attach(strm, addr, true, true);
 			} else {
 
+				struct stat st;
+				if (-1 == stat(filename, &st))
+					error("Reading datafile for stream.\n");
+
 				addr = shared_cfl(D, dimensions, filename);
 				//FIXME: MAP_PRIVATE states: It is unspecified whether changes made to the file
 				//       after the mmap() call are visible in the mapped region.
