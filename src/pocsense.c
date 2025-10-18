@@ -3,7 +3,7 @@
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * Authors: 
+ * Authors:
  * 2012-2016 Martin Uecker
  * 2014 Jonathan Tamir
  */
@@ -46,7 +46,7 @@
 
 static const char help_str[] = "Perform POCSENSE reconstruction.";
 
-	
+
 
 int main_pocsense(int argc, char* argv[argc])
 {
@@ -89,7 +89,7 @@ int main_pocsense(int argc, char* argv[argc])
 	else
 		error("Unknown regularization type.\n");
 
-	
+
 	int N = DIMS;
 
 	long dims[N];
@@ -108,23 +108,23 @@ int main_pocsense(int argc, char* argv[argc])
 	num_init_gpu_support();
 
 
-	
+
 	long dims1[N];
-	
+
 	md_select_dims(N, ~(COIL_FLAG|MAPS_FLAG), dims1, dims);
 
 
 	// -----------------------------------------------------------
 	// memory allocation
-	
+
 	complex float* result = create_cfl(out_file, N, ksp_dims);
 	complex float* pattern = md_alloc(N, dims1, CFL_SIZE);
 
 
 	// -----------------------------------------------------------
 	// pre-process data
-	
-	float scaling = estimate_scaling(ksp_dims, NULL, kspace_data);
+
+	float scaling = estimate_scaling(ksp_dims, NULL, kspace_data, -1);
 	md_zsmul(N, ksp_dims, kspace_data, kspace_data, 1. / scaling);
 
 	estimate_pattern(N, ksp_dims, COIL_FLAG, pattern, kspace_data);
@@ -132,7 +132,7 @@ int main_pocsense(int argc, char* argv[argc])
 
 	// -----------------------------------------------------------
 	// l1-norm threshold operator
-	
+
 	const struct operator_p_s* thresh_op = NULL;
 
 	if (l1wav) {
@@ -161,7 +161,7 @@ int main_pocsense(int argc, char* argv[argc])
 
 	// -----------------------------------------------------------
 	// italgo interface
-	
+
 	italgo_fun2_t italgo = NULL;
 	iter_conf* iconf = NULL;
 
@@ -193,7 +193,7 @@ int main_pocsense(int argc, char* argv[argc])
 	// pocsense recon
 
 	debug_printf(DP_INFO, "Reconstruction...\n");
-	
+
 	fftmod(N, ksp_dims, FFT_FLAGS, kspace_data, kspace_data);
 
 	if (bart_use_gpu)
@@ -215,7 +215,7 @@ int main_pocsense(int argc, char* argv[argc])
 	linop_free(eye);
 
 	md_free(pattern);
-	
+
 	if (NULL != thresh_op)
 		operator_p_free(thresh_op);
 

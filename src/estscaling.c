@@ -39,11 +39,13 @@ int main_estscaling(int argc, char* argv[argc])
 
 	bool invert = false;
 	long img_vec[3] = { 0, 0, 0 };
+	float p = -1.;
 
 	const struct opt_s opts[] = {
 
 		OPT_SET('i', &invert, "invert scaling (to directly multiply k-space data)"),
 		OPT_VEC3('x', &img_vec, "x:y:z", "image dimensions"),
+		OPTL_FLOAT('p', "percentile", &p, "p", "use p-percentile for scaling"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -60,7 +62,7 @@ int main_estscaling(int argc, char* argv[argc])
 	md_select_dims(DIMS, ~BATCH_FLAG, slc_dims, ksp_dims);
 
 	for (long i = 0; i < ksp_dims[BATCH_DIM]; i++)
-		scaling[i] = estimate_scaling(slc_dims, NULL, ksp + i * md_calc_size(DIMS, slc_dims));
+		scaling[i] = estimate_scaling(slc_dims, NULL, ksp + i * md_calc_size(DIMS, slc_dims), p);
 
 	unmap_cfl(DIMS, ksp_dims, ksp);
 

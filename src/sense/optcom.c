@@ -1,9 +1,9 @@
 /* Copyright 2013. The Regents of the University of California.
  * Copyright 2021. Martin Uecker.
- * All rights reserved. Use of this source code is governed by 
+ * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
- 
+
 #include <complex.h>
 #include <stdbool.h>
 #include <assert.h>
@@ -26,14 +26,14 @@
 
 
 
-/** 
+/**
  * Optimally combine coil images.
  *
  * Assumptions:
  * @param data fully sampled data
  * @param sens physical (unormalized) coil sensitivities
  * @param alpha the best estimator has alpha > 0.
- */ 
+ */
 void optimal_combine(const long dims[DIMS], float alpha, complex float* image, const complex float* sens, const complex float* data)
 {
 	long dims_one[DIMS];
@@ -52,7 +52,7 @@ void optimal_combine(const long dims[DIMS], float alpha, complex float* image, c
 	md_zss(DIMS, dims, COIL_FLAG, norm, sens);
 	md_zdiv_reg(DIMS, dims_img, image, image, norm, alpha);
 
-	md_free(norm);	
+	md_free(norm);
 }
 
 
@@ -69,7 +69,7 @@ void rss_combine(const long dims[DIMS], complex float* image, const complex floa
 
 
 
-float estimate_scaling_norm(float rescale, int imsize, complex float* tmpnorm, bool compat)
+float estimate_scaling_norm(float rescale, int imsize, complex float* tmpnorm, bool compat, float p)
 {
 	zsort(imsize, tmpnorm);
 
@@ -82,13 +82,20 @@ float estimate_scaling_norm(float rescale, int imsize, complex float* tmpnorm, b
 	if (compat)
 		scale = median;
 
+	if (0. < p) {
+
+		assert(1. >= p);
+		int idx = MIN(imsize - 1, trunc(imsize * p));
+		scale = cabsf(tmpnorm[idx]) / rescale;
+	}
+
 	debug_printf(DP_DEBUG1, "Scaling: %f%c (max = %f/p90 = %f/median = %f)\n", scale, (scale == max) ? '!' : ' ', max, p90, median);
 
 	return scale;
 }
 
 
-extern float estimate_scaling_cal(const long dims[DIMS], const complex float* sens, const long cal_dims[DIMS], const complex float* cal_data, bool compat)
+extern float estimate_scaling_cal(const long dims[DIMS], const complex float* sens, const long cal_dims[DIMS], const complex float* cal_data, bool compat, float p)
 {
 	long img_dims[DIMS];
 	md_select_dims(DIMS, ~COIL_FLAG, img_dims, cal_dims);
@@ -113,7 +120,7 @@ extern float estimate_scaling_cal(const long dims[DIMS], const complex float* se
 	complex float* tmp = md_alloc(DIMS, img_dims, CFL_SIZE);
 	md_copy(DIMS, img_dims, tmp, tmp1, CFL_SIZE);
 
-	float scale = estimate_scaling_norm(rescale, imsize, tmp, compat);
+	float scale = estimate_scaling_norm(rescale, imsize, tmp, compat, p);
 
 	md_free(tmp1);
 	md_free(tmp);
@@ -122,7 +129,7 @@ extern float estimate_scaling_cal(const long dims[DIMS], const complex float* se
 }
 
 
-static float estimate_scaling_internal(const long dims[DIMS], const complex float* sens, const long strs[DIMS], const complex float* data, bool compat)
+static float estimate_scaling_internal(const long dims[DIMS], const complex float* sens, const long strs[DIMS], const complex float* data, bool compat, float p)
 {
 	assert(1 == dims[MAPS_DIM]);
 
@@ -131,7 +138,7 @@ static float estimate_scaling_internal(const long dims[DIMS], const complex floa
 	// maybe we should just extract a fixed-sized block here?
 	complex float* tmp = extract_calib2(small_dims, cal_size, dims, strs, data, false);
 
-	float scaling = estimate_scaling_cal(dims, sens, small_dims, tmp, compat);
+	float scaling = estimate_scaling_cal(dims, sens, small_dims, tmp, compat, p);
 
 	md_free(tmp);
 
@@ -141,22 +148,22 @@ static float estimate_scaling_internal(const long dims[DIMS], const complex floa
 
 
 
-float estimate_scaling2(const long dims[DIMS], const complex float* sens, const long strs[DIMS], const complex float* data2)
-{	
-	return estimate_scaling_internal(dims, sens, strs, data2, false);
+float estimate_scaling2(const long dims[DIMS], const complex float* sens, const long strs[DIMS], const complex float* data2, float p)
+{
+	return estimate_scaling_internal(dims, sens, strs, data2, false, p);
 }
 
-float estimate_scaling(const long dims[DIMS], const complex float* sens, const complex float* data2)
+float estimate_scaling(const long dims[DIMS], const complex float* sens, const complex float* data2, float p)
 {
 	long strs[DIMS];
 	md_calc_strides(DIMS, strs, dims, CFL_SIZE);
 
-	return estimate_scaling2(dims, sens, strs, data2);
+	return estimate_scaling2(dims, sens, strs, data2, p);
 }
 
 float estimate_scaling_old2(const long dims[DIMS], const complex float* sens, const long strs[DIMS], const complex float* data)
 {
-	return estimate_scaling_internal(dims, sens, strs, data, true);
+	return estimate_scaling_internal(dims, sens, strs, data, true, -1);
 }
 
 
@@ -219,7 +226,7 @@ void replace_kspace2(const long dims[DIMS], complex float* out, const complex fl
 	rss_combine(dims, out, data);
 //	optimal_combine(dims, 0.1, out, sens, data);
 
-	md_free(data);	
+	md_free(data);
 }
 
 

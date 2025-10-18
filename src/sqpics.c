@@ -452,14 +452,14 @@ int main_sqpics(int argc, char* argv[argc])
 
 		if (NULL == traj_file) {
 
-			scaling = estimate_scaling(ksp_dims, NULL, kspace);
+			scaling = estimate_scaling(ksp_dims, NULL, kspace, -1);
 
 		} else {
 
 			complex float* adj = md_alloc(DIMS, img_dims, CFL_SIZE);
 
 			linop_adjoint(forward_op, DIMS, img_dims, adj, DIMS, ksp_dims, kspace);
-			scaling = estimate_scaling_norm(1., md_calc_size(DIMS, img_dims), adj, false);
+			scaling = estimate_scaling_norm(1., md_calc_size(DIMS, img_dims), adj, false, -1);
 
 			md_free(adj);
 		}

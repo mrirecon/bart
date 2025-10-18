@@ -721,7 +721,7 @@ int main_pics(int argc, char* argv[argc])
 
 		if (NULL == traj_file) {
 
-			scaling = estimate_scaling(ksp_dims, NULL, kspace_p);
+			scaling = estimate_scaling(ksp_dims, NULL, kspace_p, -1);
 
 		} else {
 
@@ -729,7 +729,7 @@ int main_pics(int argc, char* argv[argc])
 
 			linop_adjoint(forward_op, DIMS, img_dims, adj, DIMS, ksp_dims, kspace_p);
 
-			scaling = estimate_scaling_norm(1., md_calc_size(DIMS, img_dims), adj, false);
+			scaling = estimate_scaling_norm(1., md_calc_size(DIMS, img_dims), adj, false, -1);
 
 			md_free(adj);
 		}
