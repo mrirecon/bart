@@ -220,8 +220,23 @@ static long get_chrono_slice(const struct seq_state* seq_state, const struct seq
 	return (1 < seq->geom.mb_factor) ? seq_state->pos[PHS2_DIM] + seq_state->pos[SLICE_DIM] * seq->loop_dims[PHS2_DIM] : seq_state->pos[SLICE_DIM];
 }
 
+static int check_settings(const struct seq_config* seq)
+{
+	if (0 > seq->loop_dims[PHS2_DIM])
+		return ERROR_SETTING_DIM;
+
+	if (PEMODE_RAGA_MEMS == seq->enc.pe_mode)
+		return ERROR_ROT_ANGLE;
+
+	return 1;
+}
+
 int seq_block(int N, struct seq_event ev[N], struct seq_state* seq_state, const struct seq_config* seq)
 {
+	int err = check_settings(seq);
+	if (1 > err)
+		return err;
+
 	seq_state->chrono_slice = get_chrono_slice(seq_state, seq);
 
 	if (BLOCK_KERNEL_PREPARE == seq_state->mode) {
