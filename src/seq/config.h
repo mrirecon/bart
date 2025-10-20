@@ -54,8 +54,11 @@ enum mag_prep {
 
 enum pe_mode {
 
+	PEMODE_TURN = 2,
+	PEMODE_MEMS_HYB,
 	PEMODE_RAGA,
 	PEMODE_RAGA_ALIGNED,
+	PEMODE_RAGA_MEMS
 };
 
 

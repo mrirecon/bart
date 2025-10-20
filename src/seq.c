@@ -95,6 +95,7 @@ int main_seq(int argc, char* argv[argc])
 
 		// encoding
 		OPTL_UINT(0, "pe_mode", &seq.enc.pe_mode, "pe_mode", "Phase-encoding mode"),
+		OPTL_SELECT(0, "turn", enum pe_mode, &seq.enc.pe_mode, PEMODE_TURN, "turn-based PE (default: RAGA)"),
 		OPTL_SELECT(0, "raga", enum pe_mode, &seq.enc.pe_mode, PEMODE_RAGA, "RAGA PE"),
 		OPTL_SELECT(0, "raga_al", enum pe_mode, &seq.enc.pe_mode, PEMODE_RAGA_ALIGNED, "RAGA-aligned PE (default: RAGA)"),
 
