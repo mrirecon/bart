@@ -123,7 +123,7 @@ int main_sample(int argc, char* argv[argc])
 
 	long save_mod = 0;
 
-	float gamma_base = 1.;
+	float gamma_base = 0.5;
 
 	long img_dims[DIMS];
 	md_singleton_dims(DIMS, img_dims);
@@ -259,8 +259,8 @@ int main_sample(int argc, char* argv[argc])
 			md_copy_dims(DIMS, vars_dims, ws_dims);
 
 			vars = md_alloc_sameplace(DIMS, vars_dims, CFL_SIZE, means);
-			md_zfill(DIMS, vars_dims, vars, 1.0f);
-			debug_printf(DP_WARN, "No variance specified. Set to 1.\n");
+			md_zfill(DIMS, vars_dims, vars, 0);
+			debug_printf(DP_WARN, "No variance specified. Set to 0.\n");
 
 		} else {
 
