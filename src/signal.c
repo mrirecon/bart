@@ -247,9 +247,8 @@ int main_signal(int argc, char* argv[argc])
 		default: assert(0);
 		}
 
-                complex float out[N];
-
-                get_signal(&parm, N, out, mxy);
+		complex float out[N];
+		get_signal(&parm, N, out, mxy);
 
 		md_copy_block(DIMS, pos, dims, signals, dims1, out, CFL_SIZE);
 

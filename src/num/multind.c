@@ -836,8 +836,10 @@ void md_copy2(int D, const long dim[D], const long ostr[D], void* optr, const lo
 
 					dst = vptr_resolve(dst);
 					src = vptr_resolve(src);
+
 					md_copy(D, cdims, dst, src, size);
 				}
+
 				continue;
 			}
 
@@ -850,6 +852,7 @@ void md_copy2(int D, const long dim[D], const long ostr[D], void* optr, const lo
 				if (mpi_accessible(src)) {
 
 					src = vptr_resolve_unchecked(src);
+
 					md_copy(D, cdims, dst, src, size);
 				}
 
@@ -2448,7 +2451,7 @@ void* md_mpi_moveF(int D, unsigned long f, const long dims[D], const void* ptr, 
 }
 
 /**
- * Register usual memory as didtributed pointer.
+ * Register usual memory as distributed pointer.
  * If writeback, all data in mpi pointer is synced back to wrapped pointer on free.
  */
 void* md_mpi_wrap(int D, unsigned long f, const long dims[D], const void* ptr, size_t size, bool writeback)
