@@ -40,15 +40,23 @@ static void print_cfl(int N, const long dims[N], const complex float* data, cons
 
 	long T = md_calc_size(N, dims);
 
-	const char* allowed_fmts[2][4] = {
+	const char* allowed_fmts[2][8] = {
 	      { "%%+%*[0-9.]f%%+%*[0-9.]fi%n",
 		"%%+%*[0-9.]e%%+%*[0-9.]ei%n",
 		"%%+%*[0-9.]f,%%+%*[0-9.]f%n",
-		"%%+%*[0-9.]e,%%+%*[0-9.]e%n", },
+		"%%+%*[0-9.]e,%%+%*[0-9.]e%n",
+		"%%%*[0-9.]f%%+%*[0-9.]fi%n",
+		"%%%*[0-9.]e%%+%*[0-9.]ei%n",
+		"%%%*[0-9.]f,%%+%*[0-9.]f%n",
+		"%%%*[0-9.]e,%%+%*[0-9.]e%n", },
 	      { "%%+%*[0-9.]f%n",
 		"%%+%*[0-9.]e%n",
 		"%%+%*[0-9.]f%n",
-		"%%+%*[0-9.]e%n", },
+		"%%+%*[0-9.]e%n",
+		"%%%*[0-9.]f%n",
+		"%%%*[0-9.]e%n",
+		"%%%*[0-9.]f%n",
+		"%%%*[0-9.]e%n", },
 	};
 
 	// ensure that the input format string matches one of the valid format templates
