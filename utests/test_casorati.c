@@ -95,7 +95,7 @@ static bool test_covariance_function(void)
 	md_free(cov2);
 	md_free(data);
 
-	debug_printf(DP_INFO, "Casorati Gram matrix error: %f\n", err);
+	debug_printf(DP_DEBUG1, "Casorati Gram matrix error: %f\n", err);
 
 	UT_RETURN_ASSERT(err < 1.E-6);
 }
