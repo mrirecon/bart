@@ -28,6 +28,17 @@ tests/test-trajcor3: traj trajcor nrmse
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-trajcor4: traj trajcor nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
+	OPTS="-r -y65 -x128 -o2 -D"					;\
+	DELAY="-q1:2:3"							;\
+	$(TOOLDIR)/traj $$OPTS traj.ra					;\
+	$(TOOLDIR)/traj $$OPTS $$DELAY traj_gd.ra			;\
+	$(TOOLDIR)/trajcor $$DELAY traj.ra traj_cor.ra			;\
+	$(TOOLDIR)/nrmse -t1.e-6 traj_gd.ra traj_cor.ra			;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 
 tests/test-trajcor-file: traj trajcor vec nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
@@ -39,4 +50,4 @@ tests/test-trajcor-file: traj trajcor vec nrmse
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-TESTS += tests/test-trajcor tests/test-trajcor2 tests/test-trajcor3 tests/test-trajcor-file
+TESTS += tests/test-trajcor tests/test-trajcor2 tests/test-trajcor3 tests/test-trajcor4 tests/test-trajcor-file

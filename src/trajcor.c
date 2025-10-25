@@ -64,7 +64,10 @@ int main_trajcor(int argc, char* argv[argc])
 	if (!traj_is_radial(DIMS, dimstraj, traj))
 		error("Trajectory is not radial with same dk!\n");
 
+	float scale = traj_radial_deltak(DIMS, dimstraj, traj);
+
 	complex float* outtraj = create_cfl(outputtraj_file, N, dimstraj);
+	md_copy(DIMS, dimstraj, outtraj, traj, CFL_SIZE);
 
 	long gdmat_dims[DIMS];
 	md_singleton_dims(N, gdmat_dims);
@@ -145,7 +148,7 @@ int main_trajcor(int argc, char* argv[argc])
 	}
 
 	md_free(dir);
-	md_zadd2(N, dimstraj, MD_STRIDES(N, dimstraj, CFL_SIZE), outtraj, MD_STRIDES(N, dimstraj, CFL_SIZE), traj, MD_STRIDES(N, dir_dims, CFL_SIZE), offset);
+	md_zaxpy2(N, dimstraj, MD_STRIDES(N, dimstraj, CFL_SIZE), outtraj, scale, MD_STRIDES(N, dir_dims, CFL_SIZE), offset);
 
 	md_free(offset);
 	md_free(mat);
