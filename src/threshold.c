@@ -2,7 +2,7 @@
  * Copyright 2015-2017. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
- * 
+ *
  * Authors:
  * 2013-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  * 2015-2016 Jon Tamir <jtamir@eecs.berkeley.edu>
@@ -141,6 +141,15 @@ static void binary_thresh_max(int D, const long dims[D], float lambda, complex f
 		out[i] = (cabsf(in[i]) < lambda) ? 1. : 0.;
 }
 
+static void binary_thresh_equal(int D, const long dims[D], float lambda, complex float* out, const complex float* in)
+{
+	long size = md_calc_size(DIMS, dims);
+
+#pragma omp parallel for
+	for (long i = 0; i < size; i++)
+		out[i] = (cabsf(in[i]) == lambda) ? 1. : 0.;
+}
+
 
 
 static const char help_str[] = "Perform (soft) thresholding with parameter lambda.";
@@ -161,8 +170,8 @@ int main_threshold(int argc, char* argv[argc])
 	};
 
 	unsigned long flags = 0;
-        
-	enum th_type { NONE, WAV, LLR, DFW, MPDFW, HARD, HARD_MAX, BINARY, BINARY_MAX } th_type = NONE;
+
+	enum th_type { NONE, WAV, LLR, DFW, MPDFW, HARD, HARD_MAX, BINARY, BINARY_MAX, BINARY_EQUAL } th_type = NONE;
 	int llrblk = 8;
 
 
@@ -175,6 +184,7 @@ int main_threshold(int argc, char* argv[argc])
 		OPT_SELECT('D', enum th_type, &th_type, DFW, "divergence-free wavelet soft-thresholding"),
 		OPT_SELECT('B', enum th_type, &th_type, BINARY, "thresholding with binary output where (val>lambda)"),
 		OPT_SELECT('M', enum th_type, &th_type, BINARY_MAX, "thresholding with binary output where (val<lambda)"),
+		OPT_SELECT('E', enum th_type, &th_type, BINARY_EQUAL, "thresholding with binary output where (val=lambda)"),
 		OPT_ULONG('j', &flags, "bitmask", "joint soft-thresholding"),
 		OPT_PINT('b', &llrblk, "blocksize", "locally low rank block size"),
 	};
@@ -197,7 +207,7 @@ int main_threshold(int argc, char* argv[argc])
 	case LLR:
 		lrthresh(N, dims, llrblk, lambda, flags, odata, idata);
 		break;
- 
+
 	case DFW:
 		dfthresh(N, dims, lambda, odata, idata);
 		break;
@@ -216,6 +226,10 @@ int main_threshold(int argc, char* argv[argc])
 
 	case BINARY_MAX:
 		binary_thresh_max(N, dims, lambda, odata, idata);
+		break;
+
+	case BINARY_EQUAL:
+		binary_thresh_equal(N, dims, lambda, odata, idata);
 		break;
 
 	default:
