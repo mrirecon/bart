@@ -101,10 +101,10 @@ int main_estdelay(int argc, char* argv[argc])
 
 		debug_printf(DP_WARN, "odd number of samples\n");
 
-		if (fabsf(dc_shift/scale - 0.0f) > 0.0001)
+		if (fabsf(dc_shift / scale - 0.0f) > 0.0001)
 			debug_printf(DP_WARN, "DC is shifted by: %f [sample], 1 sample = %f [1/FOV]\n", dc_shift, scale);
 
-	} else if (fabsf(dc_shift/scale - 0.5f) > 0.0001) {
+	} else if (fabsf(dc_shift / scale - 0.5f) > 0.0001) {
 
 		debug_printf(DP_WARN, "DC is shifted by: %f [sample], 1 sample = %f [1/FOV]\n", dc_shift, scale);
 	}

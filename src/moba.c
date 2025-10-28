@@ -171,7 +171,7 @@ int main_moba(int argc, char* argv[argc])
 
 		OPTL_SELECT(0, "ODE", enum sim_type, &(data.sim.seq.type), SIM_ODE, "full ordinary differential equation solver based simulation"),
  		OPTL_SELECT(0, "STM", enum sim_type, &(data.sim.seq.type), SIM_STM, "state-transition matrix based simulation (default)"),
-        };
+	};
 
 
 	int tvscales_N = 4;
@@ -194,7 +194,7 @@ int main_moba(int argc, char* argv[argc])
 		OPTL_SET(0,"no-sens-l2", &data.other.no_sens_l2, "(Turn off l2 regularization on coils)"),
 		OPTL_SET(0,"no-sens-deriv", &data.other.no_sens_deriv, "(Turn off coil updates)"),
 		OPTL_SET(0,"export-ksp-sens", &data.other.export_ksp_coils, "(Export coil sensitivities in ksp)"),
-        };
+	};
 
 	opt_reg_init(&ropts);
 
@@ -610,14 +610,14 @@ int main_moba(int argc, char* argv[argc])
 		        md_zmul2(DIMS, img_dims, img_strs, img, img_strs, img, msk_strs, mask);
 	}
 
-        // Scale parameter maps
+	// Scale parameter maps
 
-        long tmp_dims[DIMS];
-        md_select_dims(DIMS, FFT_FLAGS|MAPS_FLAG|TIME_FLAG|SLICE_FLAG|TIME2_FLAG, tmp_dims, grid_dims);
+	long tmp_dims[DIMS];
+	md_select_dims(DIMS, FFT_FLAGS|MAPS_FLAG|TIME_FLAG|SLICE_FLAG|TIME2_FLAG, tmp_dims, grid_dims);
 
-        complex float* tmp = md_alloc(DIMS, tmp_dims, CFL_SIZE);
+	complex float* tmp = md_alloc(DIMS, tmp_dims, CFL_SIZE);
 
-        long pos[DIMS] = { [0 ... DIMS - 1] = 0 };
+	long pos[DIMS] = { [0 ... DIMS - 1] = 0 };
 
 	// assert(img_dims[COEFF_DIM] <= (long)ARRAY_SIZE(data.other.scale));
 

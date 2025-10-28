@@ -84,7 +84,6 @@ float traj_radial_dcshift(int N, const long tdims[N], const complex float* traj)
 
 float traj_radial_deltak(int N, const long tdims[N], const complex float* traj)
 {
-
 	long tdims1[N];
 	md_select_dims(N, ~MD_BIT(1), tdims1, tdims);
 
