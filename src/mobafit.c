@@ -239,6 +239,9 @@ int main_mobafit(int argc, char* argv[argc])
 		OPTL_FLOAT(0, "ref_scan_ppm", &(sim.cest.ref_scan_ppm), "float", "Offset for ref. scan [ppm]"),
 	};
 
+	bool use_lm = false;
+	int liniter = 50;
+
 	const struct opt_s opts[] = {
 
 #if 0
@@ -261,6 +264,8 @@ int main_mobafit(int argc, char* argv[argc])
 		OPTL_FLVECN(0, "init", init0, "Initial values of parameters in model-based reconstruction"),
 		OPTL_FLVECN(0, "scale", scale0, "Scaling"),
 
+		OPTL_SET(0, "levenberg-marquardt", &(use_lm), "Use Levenberg-Marquardt instead of Gauss-Newton"),
+		OPTL_INT(0, "liniter", &liniter, "iter", "(iterations for solving linearized problem)"),
 		OPTL_ULONG(0, "min-flag", &(bounds.min_flags), "flags", "Apply minimum constraint on selected maps"),
 		OPTL_ULONG(0, "max-flag", &(bounds.max_flags), "flags", "Apply maximum constraint on selected maps"),
 		OPTL_ULONG(0, "max-mag-flag", &(bounds.max_norm_flags), "flags", "Apply maximum magnitude constraint on selected maps"),
@@ -588,6 +593,11 @@ int main_mobafit(int argc, char* argv[argc])
 	struct iter3_irgnm_conf irgnm_conf = iter3_irgnm_defaults;
 	irgnm_conf.iter = iter;
 
+	struct iter3_levenberg_marquardt_conf lm_conf = iter3_levenberg_marquardt_defaults;
+	lm_conf.Bi = md_calc_size(3, x_patch_dims);
+	lm_conf.iter = iter;
+	lm_conf.cgiter = liniter;
+
 
 	complex float* y_patch = NULL;
 	complex float* x_patch = NULL;
@@ -620,10 +630,19 @@ int main_mobafit(int argc, char* argv[argc])
 			continue;
 		}
 
-		iter4_irgnm2(CAST_UP(&irgnm_conf), nlop,
-				2 * md_calc_size(DIMS, x_patch_dims), (float*)x_patch, NULL,
-				2 * md_calc_size(DIMS, y_patch_dims), (const float*)y_patch, lsqr,
-				(struct iter_op_s){ mobafit_bound, CAST_UP(&bounds) });
+		if (use_lm) {
+
+			iter4_levenberg_marquardt(CAST_UP(&lm_conf), nlop,
+					2 * md_calc_size(DIMS, x_patch_dims), (float*)x_patch, NULL,
+					2 * md_calc_size(DIMS, y_patch_dims), (const float*)y_patch, NULL,
+					(struct iter_op_s){ mobafit_bound, CAST_UP(&bounds) });
+		} else {
+
+			iter4_irgnm2(CAST_UP(&irgnm_conf), nlop,
+					2 * md_calc_size(DIMS, x_patch_dims), (float*)x_patch, NULL,
+					2 * md_calc_size(DIMS, y_patch_dims), (const float*)y_patch, lsqr,
+					(struct iter_op_s){ mobafit_bound, CAST_UP(&bounds) });
+		}
 
 		md_copy_block(DIMS, pos, x_dims, x, x_patch_dims, x_patch, CFL_SIZE);
 
