@@ -22,6 +22,7 @@
 #include "seq/config.h"
 #include "seq/event.h"
 #include "seq/seq.h"
+#include "seq/helpers.h"
 #include "seq/misc.h"
 
 #include "pulseq.h"
@@ -130,6 +131,23 @@ static struct shape make_compressed_shape(int id, int len, const double val[len]
 	return shape;
 }
 
+static double fovz(const struct seq_config* seq)
+{
+	long slices = seq_get_slices(seq);
+
+	double min_pos = seq->geom.shift[0][2];
+	double max_pos = seq->geom.shift[0][2];
+
+	for (int i = 1; i < slices; i++) {
+
+		min_pos = MIN(seq->geom.shift[i][2], min_pos);
+		max_pos = MAX(seq->geom.shift[i][2], max_pos);
+	}
+
+	return (max_pos - min_pos + seq->geom.slice_thickness
+			+ seq->geom.sms_distance * (seq->geom.mb_factor - 1));
+}
+
 void pulseq_init(struct pulseq *ps, const struct seq_config* seq)
 {
 	*ps = (struct pulseq) {
@@ -142,7 +160,7 @@ void pulseq_init(struct pulseq *ps, const struct seq_config* seq)
 		.fov = {
 			seq->geom.fov,
 			seq->geom.fov,
-			seq->geom.slice_thickness * seq->loop_dims[SLICE_DIM],
+			fovz(seq),
 		},
 		.total_duration = 0.,
 		.label_flags = md_nontriv_dims(DIMS, seq->loop_dims)
