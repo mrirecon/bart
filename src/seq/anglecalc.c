@@ -62,6 +62,8 @@ void traj_conf_from_seq(struct traj_conf *conf, const struct seq_config* seq)
 		conf->Y = seq->loop_dims[PHS1_DIM];
 		conf->tiny_gold = seq->enc.tiny;
 
+		conf->aligned_flags |= seq->enc.aligned_flags;
+
 		conf->raga_inc = raga_increment(conf->Y, conf->tiny_gold);
 	}
 }

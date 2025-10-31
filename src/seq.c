@@ -104,6 +104,7 @@ int main_seq(int argc, char* argv[argc])
 		OPTL_SELECT(0, "turn", enum pe_mode, &seq->conf->enc.pe_mode, PEMODE_TURN, "turn-based PE (default: RAGA)"),
 		OPTL_SELECT(0, "raga", enum pe_mode, &seq->conf->enc.pe_mode, PEMODE_RAGA, "RAGA PE"),
 		OPTL_SELECT(0, "raga_al", enum pe_mode, &seq->conf->enc.pe_mode, PEMODE_RAGA_ALIGNED, "RAGA-aligned PE (default: RAGA)"),
+		OPTL_ULONG(0, "raga_flags", &seq->conf->enc.aligned_flags, "raga_aligned_flags", "RAGA aligned flags (by bitmask)"),
 
 		OPTL_SET(0, "chrono", &chrono, "save gradients/moments/sampling in chronological order (RAGA)"),
 		OPT_OUTFILE('R', &raga_file, "file", "raga indices"),

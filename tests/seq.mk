@@ -51,7 +51,7 @@ TESTS +=  tests/test-seq-raga-sms
 tests/test-seq-raga-sms-al: seq traj extract nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
 	$(TOOLDIR)/traj -x 256 -o 2. -y 377 -m3 -r -A -s 1 -l --double-base trj_ref.ra 		;\
-	$(TOOLDIR)/seq -r 377 --raga_al --chrono --mb_factor=3 -m3 samples.ra			;\
+	$(TOOLDIR)/seq -r 377 --raga --raga_flags 8192 --chrono --mb_factor=3 -m3 samples.ra	;\
 	$(TOOLDIR)/extract 0 0 3 samples.ra trj_seq.ra						;\
 	$(TOOLDIR)/nrmse -t 3E-7 trj_ref.ra trj_seq.ra						;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
@@ -64,7 +64,7 @@ TESTS +=  tests/test-seq-raga-sms-al
 tests/test-seq-raga-sms-al-frame: seq traj extract nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
 	$(TOOLDIR)/traj -x 256 -o 2. -y 377 -m3 -r -A -s 1 -l -t3 --double-base trj_ref.ra	;\
-	$(TOOLDIR)/seq -r 377 -t1131 --raga_al --chrono --mb_factor=3 -m3 samples.ra		;\
+	$(TOOLDIR)/seq -r 377 -t1131 --raga --raga_flags 8192 --chrono --mb_factor=3 -m3 samples.ra		;\
 	$(TOOLDIR)/extract 0 0 3 samples.ra trj_seq.ra						;\
 	$(TOOLDIR)/nrmse -t 3E-7 trj_ref.ra trj_seq.ra						;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
@@ -124,7 +124,7 @@ TESTS +=  tests/test-seq-raga-ordering
 
 tests/test-seq-raga-ind: seq raga nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	;\
-	$(TOOLDIR)/raga -s1 377 ind_ref.ra			;\
+	$(TOOLDIR)/raga -s1 377 ind_ref.ra		;\
 	$(TOOLDIR)/seq -r 377 --raga -R ind_seq.ra  	;\
 	$(TOOLDIR)/nrmse -t 0. ind_ref.ra ind_seq.ra	;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
@@ -136,8 +136,8 @@ TESTS +=  tests/test-seq-raga-ind
 
 tests/test-seq-raga-ind-multislice: seq raga nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	;\
-	$(TOOLDIR)/raga -s1 -m3 377 ind_ref.ra			;\
-	$(TOOLDIR)/seq -r 377 -m3 --raga -R ind_seq.ra  	;\
+	$(TOOLDIR)/raga -s1 -m3 377 ind_ref.ra		;\
+	$(TOOLDIR)/seq -r 377 -m3 --raga -R ind_seq.ra  ;\
 	$(TOOLDIR)/nrmse -t 0. ind_ref.ra ind_seq.ra	;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
