@@ -47,9 +47,9 @@ int main_seq(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_OUTFILE(false, &grad_file, "gradients (x,y,z)"),
-		ARG_OUTFILE(false, &mom_file, "0th moment (x,y,z)"),
 		ARG_OUTFILE(false, &adc_file, "0th moment (x,y,z) at sample points, sample_points, phase of adc"),
+		ARG_OUTFILE(false, &grad_file, "gradients (x,y,z) per imaging block"),
+		ARG_OUTFILE(false, &mom_file, "0th moment (x,y,z) per imaging block"),
 		ARG_OUTFILE(false, &seq_file,  "pulseq file"),
 	};
 
