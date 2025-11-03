@@ -49,7 +49,7 @@ int main_seq(int argc, char* argv[argc])
 
 		ARG_OUTFILE(false, &grad_file, "gradients (x,y,z)"),
 		ARG_OUTFILE(false, &mom_file, "0th moment (x,y,z)"),
-		ARG_OUTFILE(false, &adc_file, "phase of adc, and 0th moment (x,y,z) at sample points"),
+		ARG_OUTFILE(false, &adc_file, "0th moment (x,y,z) at sample points, sample_points, phase of adc"),
 		ARG_OUTFILE(false, &seq_file,  "pulseq file"),
 	};
 
@@ -385,12 +385,12 @@ int main_seq(int argc, char* argv[argc])
 				for (int i = 0; i < 3; i++)
 					m0_adc[i] = m0_adc[i] / scale;
 
-				MD_ACCESS(DIMS, astrs, (pos_save[READ_DIM] = 0, pos_save), out_adc) = MD_ACCESS(DIMS, adc_strs, (pos_save[READ_DIM] = 0, pos_save), adc);
-				MD_ACCESS(DIMS, astrs, (pos_save[READ_DIM] = 1, pos_save), out_adc) = MD_ACCESS(DIMS, adc_strs, (pos_save[READ_DIM] = 1, pos_save), adc);
+				MD_ACCESS(DIMS, astrs, (pos_save[READ_DIM] = 0, pos_save), out_adc) = m0_adc[0];
+				MD_ACCESS(DIMS, astrs, (pos_save[READ_DIM] = 1, pos_save), out_adc) = m0_adc[1];
+				MD_ACCESS(DIMS, astrs, (pos_save[READ_DIM] = 2, pos_save), out_adc) = m0_adc[2];
 
-				MD_ACCESS(DIMS, astrs, (pos_save[READ_DIM] = 2, pos_save), out_adc) = m0_adc[0];
-				MD_ACCESS(DIMS, astrs, (pos_save[READ_DIM] = 3, pos_save), out_adc) = m0_adc[1];
-				MD_ACCESS(DIMS, astrs, (pos_save[READ_DIM] = 4, pos_save), out_adc) = m0_adc[2];
+				MD_ACCESS(DIMS, astrs, (pos_save[READ_DIM] = 3, pos_save), out_adc) = MD_ACCESS(DIMS, adc_strs, (pos_save[READ_DIM] = 0, pos_save), adc);
+				MD_ACCESS(DIMS, astrs, (pos_save[READ_DIM] = 4, pos_save), out_adc) = MD_ACCESS(DIMS, adc_strs, (pos_save[READ_DIM] = 1, pos_save), adc);
 
 				pos_save[READ_DIM] = 0;
 
