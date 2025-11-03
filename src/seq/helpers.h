@@ -133,6 +133,10 @@ BARTLIB_API extern long BARTLIB_CALL seq_get_slices(const struct seq_config* seq
 BARTLIB_API extern void BARTLIB_CALL seq_set_fov_pos(int N, int M, const float* shifts, struct seq_config* seq);
 
 
+BARTLIB_API extern void BARTLIB_CALL seq_print_info_config(int N, char* info, const struct seq_config* seq);
+BARTLIB_API extern void BARTLIB_CALL seq_print_info_radial_views(int N, char* info, const struct seq_config* seq);
+
+
 
 BARTLIB_API int BARTLIB_CALL seq_read_config_from_file(struct seq_config* seq, const char* filename);
 

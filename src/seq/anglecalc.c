@@ -101,3 +101,22 @@ double get_rot_angle(const long pos[DIMS], const struct seq_config* seq)
 	return angle;
 }
 
+
+
+int check_gen_fib(int spokes, int tiny_ga)
+{
+	if (0 == spokes % 2)
+		return 0;
+
+	int i = 0;
+
+	while (spokes >= gen_fibonacci(tiny_ga, i)) {
+
+		if (spokes == gen_fibonacci(tiny_ga, i))
+			return 1;
+
+		i++;
+	}
+
+	return 0;
+}

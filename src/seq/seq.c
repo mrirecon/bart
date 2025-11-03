@@ -17,6 +17,7 @@
 #include "seq/misc.h"
 
 #include "seq/adc_rf.h"
+#include "seq/anglecalc.h"
 #include "seq/pulse.h"
 #include "seq/flash.h"
 #include "seq/mag_prep.h"
