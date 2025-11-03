@@ -69,6 +69,9 @@ int main_seq(int argc, char* argv[argc])
 	bool chrono = false;
 	bool support = false;
 
+	long custom_params_long[MAX_PARAMS_LONG] = { 0 };
+	double custom_params_double[MAX_PARAMS_DOUBLE] = { 0. };
+
 	const struct opt_s opts[] = {
 
 		OPT_FLOAT('d', &dt, "dt", "time-increment per sample (default: seq.phys.tr / 1000)"),
@@ -135,6 +138,10 @@ int main_seq(int argc, char* argv[argc])
 		OPTL_SELECT(0, "gradient-whisper", enum gradient_mode, &gradient_mode, GRAD_WHISPER, "Gradient whispher mode (default: fast)"),
 
 		OPTL_SET(0, "support", &support, "save support points of gradient"),
+
+		OPTL_VECN(0, "CUSTOM_LONG", custom_params_long, "custom long parameters"),
+		OPTL_DOVECN(0, "CUSTOM_DOUBLE", custom_params_double, "custom double parameters"),
+		OPTL_VECN(0, "LOOP", seq->conf->loop_dims, "sequence loop dimensions"),
 	};
 
 	num_rand_init(0ULL);
@@ -143,7 +150,11 @@ int main_seq(int argc, char* argv[argc])
 
 	num_rand_init(0ULL);
 
-	if ((seq.loop_dims[TIME_DIM] < seq.loop_dims[PHS1_DIM]) &&
+	if (custom_params_long[0] > 0)
+		seq_ui_interface_custom_params(0, seq->conf, MAX_PARAMS_LONG, custom_params_long, MAX_PARAMS_DOUBLE, custom_params_double);
+
+	if ((1 == seq.loop_dims[TIME_DIM]) &&
+		(seq.loop_dims[TIME_DIM] < seq.loop_dims[PHS1_DIM]) &&
 		((PEMODE_RAGA == seq.enc.pe_mode) || (PEMODE_RAGA_ALIGNED == seq.enc.pe_mode))) {
 
 		if (0 < raga_full_frames)
