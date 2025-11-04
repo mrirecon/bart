@@ -10,6 +10,7 @@ import subprocess as sp
 import tempfile as tmp
 import os
 import sys
+import threading
 
 if __spec__.parent:
     from . import cfl
@@ -171,12 +172,8 @@ def bart_postprocess(nargout, ERR, infiles, infiles_kw, outfiles):
 def execute_cmd(cmd):
     """
     Execute a command in a shell.
-    Print and catch the output.
+    Print and catch the output (stdout + stderr) in real time.
     """
-
-    errcode = 0
-    stdout = ""
-    stderr = ""
 
     # remove empty strings from cmd
     cmd = [item for item in cmd if len(item)]
@@ -184,24 +181,29 @@ def execute_cmd(cmd):
     # execute cmd
     proc = sp.Popen(cmd, stdout=sp.PIPE, stderr=sp.PIPE, universal_newlines=True)
 
-    # print to stdout
-    for stdout_line in iter(proc.stdout.readline, ""):
-        stdout += stdout_line
-        print(stdout_line, end="")
-    proc.stdout.close()
+    def read_stream(stream, buffer):
+        for line in iter(stream.readline, ""):
+            buffer.append(line)
+            print(line, end="")
+        stream.close()
 
-    # in case of error, print to stderr
+    stdout_lines, stderr_lines = [], []
+
+    t_out = threading.Thread(target=read_stream, args=(proc.stdout, stdout_lines))
+    t_err = threading.Thread(target=read_stream, args=(proc.stderr, stderr_lines))
+
+    t_out.start()
+    t_err.start()
+
+    t_out.join()
+    t_err.join()
+
     errcode = proc.wait()
-    if errcode:
-        stderr = "".join(proc.stderr.readlines())
-        print(stderr)
-    proc.stderr.close()
-
-    return errcode, stdout, stderr
+    return errcode, "".join(stdout_lines), "".join(stderr_lines)
 
 
 
-wasm_bart_ok = False;
+wasm_bart_ok = False
 
 async def get_wasm_cfl(name):
     await wasm_async_call(f"get_cfl('{name}')")
@@ -218,7 +220,7 @@ async def wasm_load_bart():
     wasm_bart_ok = True
 
 async def run_wasm_cmd(shell_cmd, infiles, infiles_kw, outfiles):
-    global wasm_bart_ok;
+    global wasm_bart_ok
     try:
         if not wasm_bart_ok:
             await wasm_load_bart()
@@ -265,7 +267,7 @@ async def wasm_async_call(cmd):
     if 0 != ret[0]:
         raise Exception(f"Error in JS call: {ret[1]}")
 
-    return ret[1];
+    return ret[1]
 
 
 if isWASM:
