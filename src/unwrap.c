@@ -7,11 +7,9 @@
 #include <assert.h>
 #include <math.h>
 
-#include "linops/finite_diff.h"
 #include "num/flpmath.h"
 #include "num/multind.h"
 
-#include "misc/debug.h"
 #include "misc/opts.h"
 #include "misc/misc.h"
 #include "misc/mmio.h"

@@ -369,7 +369,6 @@ MODULES_grog = -lcalib -llinops
 MODULES_affinereg = -lmotion -liter -lnlops -llinops
 MODULES_estmotion = -lmotion -lnn -liter -lnlops -llinops
 MODULES_interpolate = -lmotion -liter -lnlops -llinops
-MODULES_unwrap = -llinops
 MODULES_stl = -lstl
 MODULES_estscaling = -lsense -llinops
 MODULES_pulse = -lseq

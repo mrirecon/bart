@@ -4290,6 +4290,75 @@ void md_zfdiff_backwards0(int D, const long dims[D], int d, complex float* out, 
 	md_clear2(D, zdims, MD_STRIDES(D, dims, CFL_SIZE), out + (md_calc_offset(D, MD_STRIDES(D, dims, CFL_SIZE), pos) / (long)CFL_SIZE), sizeof(complex float));
 }
 
+/*
+ * Implements cumulative sum operator (order 1 for now)
+ * using circular shift: cumsum(x) = x + circshift(x,1) + circshift(x,2) + ...
+ *
+ * out = cumsum(in)
+ */
+static void md_zcumsum_core2(int D, const long dims[D], unsigned long flags, complex float* tmp, complex float* tmp2, const long ostrs[D], complex float* out, const long istrs[D], const complex float* in)
+{
+	md_copy2(D, dims, ostrs, out, istrs, in, sizeof(complex float));
+	md_copy2(D, dims, istrs, tmp, istrs, in, sizeof(complex float));
+
+	long zdims[D];
+	long center[D];
+
+	md_select_dims(D, ~0UL, zdims, dims);
+	memset(center, 0, (size_t)(D * (long)sizeof(long)));
+
+	for (int i = 0; i < D; i++) {
+
+		if (MD_IS_SET(flags, i)) {
+
+			for (int d = 1; d < dims[i]; d++) {
+
+				center[i] = d;
+				md_circ_shift2(D, dims, center, istrs, tmp2, istrs, tmp, sizeof(complex float));
+				zdims[i] = d;
+
+				md_clear2(D, zdims, istrs, tmp2, sizeof(complex float));
+				md_zadd2(D, dims, ostrs, out, istrs, tmp2, ostrs, out);
+			}
+			md_copy2(D, dims, ostrs, tmp, ostrs, out, sizeof(complex float));
+
+			center[i] = 0;
+			zdims[i] = dims[i];
+		}
+	}
+}
+
+
+/*
+ * Cumulative sum along dimensions specified by flags (without strides)
+ *
+ * out = cumsum(in)
+ */
+void md_zcumsum(int D, const long dims[D], unsigned long flags, complex float* out, const complex float* in)
+{
+	long str[D];
+	md_calc_strides(D, str, dims, sizeof(complex float));
+	md_zcumsum2(D, dims, flags, str, out, str, in);
+}
+
+
+/*
+ * Cumulative sum along dimensions specified by flags (with strides)
+ *
+ * out = cumsum(in)
+ */
+void md_zcumsum2(int D, const long dims[D], unsigned long flags, const long ostrs[D], complex float* out, const long istrs[D], const complex float* in)
+{
+	complex float* tmp = md_alloc_sameplace(D, dims, CFL_SIZE, out);
+	complex float* tmp2 = md_alloc_sameplace(D, dims, CFL_SIZE, out);
+
+	md_zcumsum_core2(D, dims, flags, tmp, tmp2, ostrs, out, istrs, in);
+
+	md_free(tmp);
+	md_free(tmp2);
+}
+
+
 
 // DO NOT USE DIRECTLY - this is used internally by fftmod from fft.[ch]
 void md_zfftmod2(int D, const long dims[D], const long ostrs[D], complex float* optr, const long istrs[D], const complex float* iptr, bool inv, double phase)
