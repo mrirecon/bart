@@ -31,7 +31,7 @@ helpstr=$(cat <<- EOF
 EOF
 )
 
-usage="Usage: rtreco.sh [-h,l,f,n,T,A] [(-R|-G|-S|-N)] [-p <# virt. chan.>] [-l <logfile>] [-L <timestamp logfile>] [-s <spokes per frame>] [-t <TURNS=5 / Tiny GA=1>] <kspace> <output> [<coils>]"
+usage="Usage: rtreco.sh [-h,l,f,n,T,A,d] [(-R|-G|-S|-N)] [-p <# virt. chan.>] [-l <logfile>] [-L <timestamp logfile>] [-s <spokes per frame>] [-t <TURNS=5 / Tiny GA=1>] <kspace> <output> [<coils>]"
 
 TURNS=
 ROVIR=false
@@ -50,14 +50,18 @@ SLW=false
 CC_NONE=false
 PHASE_POLE=
 FAST=" --fast"
+GD_CORR=true
+
 : "${NLMEANS_OPTS:=-p3 -d3 -H0.00005 3}"
+: "${NLINV_OPTS:=--cgiter=10 -S --real-time --sens-os=1.25 -i6}"
+: "${ESTDELAY_OPTS:=-R -p20 -r2}"
 
 export TMPDIR=/dev/shm/
 export TMP_TEMPLATE=tmp.rtreco.XXXXXXXXXX
 
 export OMP_NUM_THREADS=1
 
-while getopts "hl:t:fnRTp:SGL:s:ANP" opt; do
+while getopts "hl:t:fnRTp:SGL:s:ANPd" opt; do
         case $opt in
 	h)
 		echo "$usage"
@@ -108,6 +112,9 @@ while getopts "hl:t:fnRTp:SGL:s:ANP" opt; do
 	N)
 		CC_NONE=true
 	;;
+	d)
+		GD_CORR=false
+	;;
         \?)
 		echo "$usage" >&2
 		exit 1
@@ -129,7 +136,8 @@ else
 	: "${TURNS:=5}"
 fi
 
-
+export GD_CORR
+export ESTDELAY_OPTS
 export ROVIR
 export TURNS
 export DELAY
@@ -199,8 +207,8 @@ delay () (
 	START=$2
 	END=$3
 
-	SRC=$(readlink -f $4)
-	DST=$(readlink -f $5)
+	SRC=$(get_file $4)
+	DST=$(get_file $5)
 
 	WORKDIR=$(mktemp --tmpdir -d $TMP_TEMPLATE 2>/dev/null)
 	trap 'rm -rf "$WORKDIR"' EXIT
@@ -378,6 +386,11 @@ trajectory () (
 	KSP=$(readlink -f $1)
 	DST=$(readlink -f $2)
 
+	GRAD_DELAYS=
+	if [ $# -eq 3 ]; then
+		GRAD_DELAYS=$(readlink -f $3)
+	fi
+
 	WORKDIR=$(mktemp --tmpdir -d $TMP_TEMPLATE 2>/dev/null)
 	trap 'rm -rf "$WORKDIR"' EXIT
 	cd "$WORKDIR" || exit
@@ -390,38 +403,71 @@ trajectory () (
 	PHS1=$(echo $dims | cut -f3 -d' ')
 	TOT=$(echo $dims | cut -f11 -d' ')
 
+	DST1=$DST
+	trj_gd=
+	gd_delay_dim=10
+	if $GD_CORR; then
+		DST1=trj.fifo
+		trj_gd=trj_gd.fifo
+	fi
+
 	if $RAGA; then
 		TOPTS="$TOPTS -x$READ -y$SPOKE_FF"
 
-		bart show -m ksp_tmp.fifo > /dev/null &
+		bart traj $TOPTS - 					|\
+		bart repmat 10 $FULL_FRAMES - trj_full
+		rebin_raga trj_full trj_rebinned.fifo			&
+		bart tee -n -i trj_rebinned.fifo $trj_gd $DST1	 	&
 
-		set -x
-		bart traj $TOPTS - |\
-		bart repmat 10 $FULL_FRAMES - trj_tmp;
-		rebin_raga trj_tmp $DST
-		set +x
-	elif $SLW; then
-		TOPTS="$TOPTS -x$READ -y$PHS1 -t$TURNS"
-
-		bart traj $TOPTS -					|\
-		bart repmat 11 $((TOT / TURNS)) - -			|\
-		bart reshape $(bart bitmask 10 11) $TOT 1 -  -		|\
-		bart copy --stream 1024 - $DST
+		if $GD_CORR; then
+			bart -r ksp_tmp.fifo copy ksp_tmp.fifo ksp_gd.fifo &
+		fi
 	else
 		TOPTS="$TOPTS -x$READ -y$PHS1 -t$TURNS"
 
 		bart traj $TOPTS trj_tmp
-		bart reshape -- $(bart bitmask 2 10) $((PHS1 * TURNS)) 1 trj_tmp trj_gd.fifo &
+		if $SLW && ! $GD_CORR; then
+			bart repmat 11 $((TOT / TURNS)) trj_tmp -		|\
+			bart reshape $(bart bitmask 10 11) $TOT 1 - $DST1 	&
+		else
+			bart copy trj_tmp $DST1					&
+		fi
 
-		bart 		reshape -s 2048 -- $(bart bitmask 2 10 11) $((PHS1 * TURNS)) 1 $((TOT / TURNS)) ksp_tmp.fifo -		| \
-		bart -t4 -r - 	estdelay -p10 -R -r2 -- trj_gd.fifo - predelay.fifo &
+		if $GD_CORR; then
+			gd_delay_dim=11
+			bart reshape $(bart bitmask 2 10)			\
+				$((PHS1 * TURNS)) 1 trj_tmp $trj_gd		&
 
-
-		delay 11 $DELAY $DELAY predelay.fifo postdelay.fifo &
-
-		bart -t4 -r postdelay.fifo 	traj $TOPTS -V postdelay.fifo -- -								| \
-		bart 				reshape -s 1024 -- $(bart bitmask 2 10 11) $PHS1 $TOT 1 - $DST
+			bart 	reshape -s 2048 $(bart bitmask 2 10 11) 	\
+				$((PHS1 * TURNS)) 1 $((TOT / TURNS)) 		\
+				ksp_tmp.fifo ksp_gd.fifo 			&
+		fi
 	fi
+
+	if $GD_CORR; then
+		echo "estdelay options: $ESTDELAY_OPTS"				>&2
+
+		bart -t4 -r ksp_gd.fifo estdelay $ESTDELAY_OPTS			\
+			$trj_gd ksp_gd.fifo - 					|\
+		bart tee -n $GRAD_DELAYS predelay.fifo 				&
+
+		delay $gd_delay_dim $DELAY $DELAY predelay.fifo delays.fifo 	&
+
+		bart -t4 -r delays.fifo						\
+			trajcor -V delays.fifo $DST1 trj_cor.fifo		&
+
+		if $RAGA; then
+			bart -r trj_cor.fifo copy trj_cor.fifo $DST		&
+		else
+			bart reshape -s 1024 $(bart bitmask 2 10 11) 		\
+				$PHS1 $TOT 1 trj_cor.fifo $DST
+		fi
+	else
+		bart show -m ksp_tmp.fifo > /dev/null &
+	fi
+
+	# prevent early deletion of static files:
+	wait
 )
 
 
@@ -629,7 +675,7 @@ build_pipeline ()
 	echo "Reconstruction: $REC" 	>> $LOGFILE
 
 	reshape_radial_ksp $KSP - |\
-	bart tee -n --out0 meta.fifo ksp0.fifo &
+	BART_STREAM_LOG=$TIMELOG'_incoming' bart tee -n --out0 meta.fifo ksp0.fifo &
 
 	dims=$(bart show -m meta.fifo | tail -n1 | cut -f2-)
 
@@ -656,8 +702,9 @@ build_pipeline ()
 	RDIMS=$((READ/2))
 	GDIMS=$(echo "scale=0;($RDIMS*$OVERGRIDDING+0.5)/1" | bc -l)
 
+	: ${IMG_SIZE:=$GDIMS:$GDIMS:1}
 
-	trajectory ksp_gd.fifo trj.fifo &
+	trajectory ksp_gd.fifo trj.fifo $GRAD_DELAYS &
 
 
 	if $ROVIR ; then
@@ -698,9 +745,9 @@ build_pipeline ()
 		bart -r - flip 3 - $OUT &
 	else
 
-		BART_STREAM_LOG=$TIMELOG bart nlinv		\
-			--cgiter=10 -S --real-time $FAST $PHASE_POLE $GPU	\
-			--sens-os=1.25 -i6 -x$GDIMS:$GDIMS:1	\
+		BART_STREAM_LOG=$TIMELOG bart nlinv			\
+			$NLINV_OPTS					\
+			$FAST $PHASE_POLE $GPU -x$IMG_SIZE 		\
 			-t trj_reco.fifo ksp_reco.fifo - $COILS_TMP |\
 		bart -r - flip 3 - -				| \
 		bart -r - resize -c 0 $RDIMS 1 $RDIMS - $OUT	&
@@ -716,10 +763,10 @@ build_pipeline ()
 		filter 5 reco.fifo reco_fil.fifo &
 		if $NLMEANS; then
 
-			OMP_NUM_THREADS=16 BART_STREAM_LOG=$TIMELOG''_filter bart -r reco_fil.fifo \
+			OMP_NUM_THREADS=16 BART_STREAM_LOG=$TIMELOG${TIMELOG:+_filter} bart -r reco_fil.fifo \
 				nlmeans $NLMEANS_OPTS reco_fil.fifo $REC &
 		else
-			BART_STREAM_LOG=$TIMELOG''_filter bart -r reco_fil.fifo copy reco_fil.fifo $REC &
+			BART_STREAM_LOG=$TIMELOG${TIMELOG:+_filter} bart -r reco_fil.fifo copy reco_fil.fifo $REC &
 
 		fi
 	fi
