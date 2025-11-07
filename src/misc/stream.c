@@ -1292,7 +1292,9 @@ static void stream_init_log(stream_t s)
 	snprintf(logfile_path, logfile_len, "%s%s%s", streamlog_prefix, s->filename, suffix2);
 
 	s->stream_logfile = fopen(logfile_path, "a");
-	assert(s->stream_logfile);
+	if (!s->stream_logfile)
+		error("Failed to open stream logfile with 'a' flag: %s.\n", logfile_path);
+
 	xfree(logfile_path);
 
 	s->stream_ts = xmalloc(sizeof(double) * (unsigned long)s->data->tot);
