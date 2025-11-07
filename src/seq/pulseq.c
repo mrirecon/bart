@@ -164,7 +164,7 @@ void pulseq_init(struct pulseq *ps, const struct seq_config* seq)
 		},
 		.total_duration = 0.,
 		.label_flags = md_nontriv_dims(DIMS, seq->loop_dims)
-			& SEQ_FLAGS & ~(COEFF_FLAG | COEFF2_FLAG| ITER_FLAG), // MDH dimension to write
+			& (SEQ_FLAGS | TE_FLAG) & ~(COEFF_FLAG | COEFF2_FLAG| ITER_FLAG), // MDH dimension to write
 	};
 }
 
@@ -526,7 +526,7 @@ void events_to_pulseq(struct pulseq *ps, enum block mode, double tr, struct seq_
 		int adc_id = adc_to_pulseq(ps, i, grad_start * 10, N, ev);
 
 		if ((i != (n_blocks - 1)) && (0 < adc_id))
-			dur_split = (round_up_raster((ev[events_idx(i, SEQ_EVENT_ADC, N, ev)].end), ps->block_raster_time) + ps->block_raster_time) / ps->block_raster_time - grad_start;
+			dur_split = (round_up_raster((ev[events_idx(i, SEQ_EVENT_ADC, N, ev)].end), ps->block_raster_time) + 2. * ps->block_raster_time) / ps->block_raster_time - grad_start;
 		else
 			dur_split = dur - grad_start;
 
