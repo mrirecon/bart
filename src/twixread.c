@@ -54,6 +54,7 @@ struct entry_s {
 static void xread(int fd, void* buf, size_t size)
 {
 	size_t rsize = (size_t)read(fd, buf, size);
+
 	if (size != rsize)
 		error("Error reading %zu bytes, read returned %zu\n", size, rsize);
 }
@@ -184,9 +185,9 @@ enum adc_flags {
 	unused58,
 	unsued59,
 	unused60,
-	WIP_1, // Mark scans for WIP application "type 1"
-	WIP_2, // Mark scans for WIP application "type 2"
-	WIP_3, // Mark scans for WIP application "type 3"
+	WIP_1,
+	WIP_2,
+	WIP_3,
 
 };
 
@@ -301,11 +302,12 @@ static bool adc_to_skip(bool noise, bool refscan, bool refscan_ac, uint64_t adc_
 static void debug_print_flags(int dblevel, uint64_t adc_flag)
 {
 	debug_printf(dblevel, "-------------\n");
+
 	for (int f = ACQEND; f <= WIP_3; f++)
 		if (MD_IS_SET(adc_flag, f))
 			debug_printf(dblevel, "\t%s\n", flag_strings[f]);
+
 	debug_printf(dblevel, "Image scan? %d\n", is_image_adc(adc_flag));
-	debug_printf(dblevel, "-------------\n");
 }
 
 struct mdh1 {
@@ -331,7 +333,7 @@ struct mdh2 {	// second part of mdh
 };
 
 
-static enum adc_return skip_to_next(const char* hdr, int fd, off_t offset)
+static void skip_to_next(const char* hdr, int fd, off_t offset)
 {
 	struct mdh1 mdh1;
 	memcpy(&mdh1, hdr, sizeof(mdh1));
@@ -343,8 +345,6 @@ static enum adc_return skip_to_next(const char* hdr, int fd, off_t offset)
 
 	if (-1 == lseek(fd, dma_length - offset, SEEK_CUR))
 		error("seeking\n");
-
-	return ADC_SKIP;
 }
 
 
@@ -378,8 +378,11 @@ static enum adc_return siemens_bounds(bool vd, bool noise, bool refscan, bool re
 			return ADC_END;
 
 
-		if (adc_to_skip(noise, refscan, refscan_ac, mdh.evalinfo))
-			return skip_to_next(vd ? scan_hdr : chan_hdr, fd, offset);
+		if (adc_to_skip(noise, refscan, refscan_ac, mdh.evalinfo)) {
+
+			skip_to_next(vd ? scan_hdr : chan_hdr, fd, offset);
+			return ADC_SKIP;
+		}
 
 
 		if (0 == max[READ_DIM]) {
@@ -392,7 +395,9 @@ static enum adc_return siemens_bounds(bool vd, bool noise, bool refscan, bool re
 		if ((max[READ_DIM] != mdh.samples) || (max[COIL_DIM] != mdh.channels)) {
 
 			debug_printf(DP_DEBUG1, "Wrong number of channels or samples, skipping ADC\n");
-			return skip_to_next(vd ? scan_hdr : chan_hdr, fd, offset);
+
+			skip_to_next(vd ? scan_hdr : chan_hdr, fd, offset);
+			return ADC_SKIP;
 		}
 
 		pos[PHS1_DIM]	= mdh.sLC[0];
@@ -454,7 +459,8 @@ static enum adc_return siemens_adc_read(bool vd, int fd, bool noise, bool refsca
 
 			ssize_t offset = sizeof(scan_hdr) + sizeof(chan_hdr);
 
-			return skip_to_next(vd ? scan_hdr : chan_hdr, fd, offset);
+			skip_to_next(vd ? scan_hdr : chan_hdr, fd, offset);
+			return ADC_SKIP;
 		}
 
 
@@ -699,7 +705,7 @@ int main_twixread(int argc, char* argv[argc])
 	}
 
 
-	debug_printf(DP_DEBUG1, "___ reading measured data (%ld adcs).\n", adcs);
+	debug_printf(DP_DEBUG1, "Reading measured data (%ld adcs).\n", adcs);
 
 	long adc_dims[DIMS];
 	md_select_dims(DIMS, READ_FLAG|COIL_FLAG, adc_dims, dims);
@@ -796,8 +802,9 @@ int main_twixread(int argc, char* argv[argc])
 
 			complex float zero[1] = { 0. };
 
-			if (!md_compare2(DIMS, adc_dims, strs, &(MD_ACCESS(DIMS, strs, pos, out)), sstrs, zero, CFL_SIZE))
-				error("Read same ADC position twice!\n Check squashed dimensions?\n");
+			if (!md_compare2(DIMS, adc_dims, strs, &MD_ACCESS(DIMS, strs, pos, out), sstrs, zero, CFL_SIZE))
+				error("Read same ADC position twice!\n"
+				      "Check squashed dimensions.\n");
 
 			// FIXME: odims not working with MPI data
 			md_copy_block(DIMS, pos, (0 < bin) ? odims : dims, out, adc_dims, buf, CFL_SIZE);
