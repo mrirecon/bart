@@ -1,11 +1,13 @@
 /* Copyright 2014-2015. The Regents of the University of California.
- * Copyright 2015-2017. Martin Uecker.
+ * Copyright 2015-2021. Martin Uecker.
+ * Copyright 2020-2022. University Medical Center Göttingen.
+ * Copyright 2022-2025. Graz University of Technology.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2014 Frank Ong
- * 2014-2017 Martin Uecker
+ * 2014-2025 Martin Uecker
  */
 
 #include <stdbool.h>
@@ -80,16 +82,16 @@ int main_nufft(int argc, char* argv[argc])
 		OPT_VEC3('D', &coilim_vec, "", "(dimensions, long deprecated)"),
 		OPT_SET('t', &nufft_conf_options.toeplitz, "Toeplitz embedding for inverse NUFFT"),
 		OPT_CLEAR('r', &nufft_conf_options.toeplitz, "turn-off Toeplitz embedding for inverse NUFFT"),
-		OPT_SET('c', &precond, "Preconditioning for inverse NUFFT"),
+		OPT_SET('c', &precond, "preconditioning for inverse NUFFT"),
 		OPT_FLOAT('l', &lambda, "lambda", "l2 regularization"),
 		OPT_PINT('m', &cgconf.maxiter, "iter", "max. number of iterations (inverse only)"),
 		OPT_SET('P', &nufft_conf_options.periodic, "periodic k-space"),
 		OPT_SET('s', &dft, "DFT"),
 		OPT_SET('g', &bart_use_gpu, "GPU"),
 		OPT_CLEAR('1', &nufft_conf_options.decomp, "use/return oversampled grid"),
-		OPTL_SET(0, "lowmem", &nufft_conf_options.lowmem, "Use low-mem mode of the nuFFT"),
-		OPTL_SET(0, "zero-mem", &nufft_conf_options.zero_overhead, "Use zero-overhead mode of the nuFFT"),
-		OPTL_CLEAR(0, "no-precomp", &precomp, "Use low-low-mem mode of the nuFFT"),
+		OPTL_SET(0, "lowmem", &nufft_conf_options.lowmem, "use low-mem mode of the nuFFT"),
+		OPTL_SET(0, "zero-mem", &nufft_conf_options.zero_overhead, "use zero-overhead mode of the nuFFT"),
+		OPTL_CLEAR(0, "no-precomp", &precomp, "turn off precomputation"),
 		OPT_INFILE('B', &basis_file, "file", "temporal (or other) basis"),
 		OPT_INFILE('p', &pattern_file, "file", "weighting of nufft"),
 		OPTL_FLOAT('o', "oversampling", &(nufft_conf_options.os), "o", "oversample grid by factor (default: o=2; required for Toeplitz)"),
