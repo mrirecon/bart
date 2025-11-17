@@ -80,6 +80,7 @@ const struct iter_ist_conf iter_ist_defaults = {
 	.continuation = 1.,
 	.hogwild = false,
 	.tol = 0.,
+	.last = false,
 };
 
 const struct iter_eulermaruyama_conf iter_eulermaruyama_defaults = {

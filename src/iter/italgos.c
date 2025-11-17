@@ -167,6 +167,7 @@ void landweber_sym(int maxiter, float epsilon, float alpha,
  * @param maxiter maximum number of iterations
  * @param epsilon stop criterion
  * @param tau (step size) weighting on the residual term, A^H (b - Ax)
+ * @param last final application of threshold function
  * @param N size of input, x
  * @param vops vector ops definition
  * @param op linear operator, e.g. A
@@ -175,7 +176,7 @@ void landweber_sym(int maxiter, float epsilon, float alpha,
  * @param b observations
  * @param monitor compute objective value, errors, etc.
  */
-void ist(int maxiter, float epsilon, float tau, long N,
+void ist(int maxiter, float epsilon, float tau, bool last, long N,
 		const struct vec_iter_s* vops,
 		ist_continuation_t ist_continuation,
 		struct iter_op_s op,
@@ -205,12 +206,13 @@ void ist(int maxiter, float epsilon, float tau, long N,
 		if (NULL != ist_continuation)
 			ist_continuation(&itrdata);
 
+		iter_op_p_call(thresh, itrdata.scale * itrdata.tau, x, x);
+
 		iter_op_call(op, r, x);		// r = A x
 		vops->xpay(N, -1., r, b);	// r = b - r = b - A x
 
 		itrdata.rsnew = vops->norm(N, r);
 
-		iter_op_p_call(thresh, itrdata.scale * itrdata.tau, x, x);
 
 		debug_printf(DP_DEBUG3, "#It %03d: %f \n", itrdata.iter, itrdata.rsnew / itrdata.rsnot);
 
@@ -218,6 +220,12 @@ void ist(int maxiter, float epsilon, float tau, long N,
 			break;
 
 		vops->axpy(N, x, itrdata.tau, r);
+	}
+
+	if (!last) {
+
+		iter_monitor(monitor, vops, x);
+		iter_op_p_call(thresh, itrdata.scale * itrdata.tau, x, x);
 	}
 
 	debug_printf(DP_DEBUG3, "\n");

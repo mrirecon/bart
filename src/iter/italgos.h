@@ -165,7 +165,7 @@ struct ist_data {
 typedef void CLOSURE_TYPE(ist_continuation_t)(struct ist_data* itrdata);
 
 
-void ist(int maxiter, float epsilon, float tau,
+void ist(int maxiter, float epsilon, float tau, _Bool last,
 	long N,
 	const struct vec_iter_s* vops,
 	ist_continuation_t ist_continuation,

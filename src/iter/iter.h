@@ -57,6 +57,7 @@ struct iter_ist_conf {
 	float continuation;
 	_Bool hogwild;
 	float tol;
+	_Bool last;
 };
 
 
