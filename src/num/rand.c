@@ -83,21 +83,29 @@ void rand_state_update(struct bart_rand_state* state, unsigned long long seed)
 	state->ctr2 = 0;
 }
 
-struct bart_rand_state* rand_state_create(unsigned long long seed)
+static void warn_bart_rand_state(void)
 {
 	if (cfl_loop_desc_active()) {
 
 		static bool warned = false;
 
-#pragma		omp critical
 		if (!warned) {
 
-			warned = true;
+#pragma			omp critical
+			if (!warned) {
 
-			if (0 != (cfl_loop_rand_flags & cfl_loop_get_flags()))
-				debug_printf(DP_WARN, "rand_state_create provides identical random numbers for each cfl loop iteration.\n");
+				warned = true;
+
+				if (0 != (~cfl_loop_rand_flags & cfl_loop_get_flags()))
+					debug_printf(DP_WARN, "rand_state_create provides identical random numbers for each cfl loop iteration for dims with bitmask %lu\n", ~cfl_loop_rand_flags & cfl_loop_get_flags());
+			}
 		}
 	}
+}
+
+struct bart_rand_state* rand_state_create(unsigned long long seed)
+{
+	warn_bart_rand_state();
 
 	struct bart_rand_state* state = xmalloc(sizeof *state);
 
@@ -151,6 +159,8 @@ void num_rand_init(unsigned long long seed)
 
 	if (use_obsolete_rng())
 		assert(seed <= UINT_MAX);
+
+	warn_bart_rand_state();
 
 #pragma omp critical(global_rand_state)
 	rand_state_update(&global_rand_state[cfl_loop_worker_id()], seed);
