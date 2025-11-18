@@ -172,7 +172,7 @@ int cfl_loop_worker_id(void)
 		return 0;
 
 	if (1 < mpi_get_num_procs()) {
-		
+
 		int procno = mpi_get_rank();
 
 		if (MAX_WORKER <= procno)
@@ -215,9 +215,9 @@ int cfl_loop_num_workers(void)
 	}
 
 	if (1 < cfl_loop_desc.omp_threads) {
-		
+
 		int omp_threads = cfl_loop_desc.omp_threads;
-		
+
 		if (MAX_WORKER < omp_threads)
 			error("Maximum supported number of OMP workers exceeded!\n");
 
@@ -320,12 +320,12 @@ void cfl_loop_get_pos(int D, long pos[D])
 
 
 struct cfl_file_desc_s {
-	
+
 	void* file_addr;
 	void* data_addr;
 
 	int D;
-	long* file_dims; 
+	long* file_dims;
 	long* data_dims;
 	long* pos;
 
@@ -407,7 +407,7 @@ static void* create_worker_buffer(int D, long dims[D], void* addr, bool output)
 		for (int i = 1; i < mpi_get_num_procs(); i++) {
 
 			complex float* src = NULL;
-			
+
 			if (mpi_is_main_proc()) {
 
 				long tpos[D];
@@ -862,6 +862,9 @@ static complex float* create_cfl_internal(const char* name, int D, const long di
 
 		if (!md_check_equal_dims(MIN(cfl_loop_desc.D, D), dimensions, MD_SINGLETON_DIMS(cfl_loop_desc.D), cfl_loop_desc.flags))
 			io_error("Loop over altered dimensions!\n");
+
+		if (io_check_if_opened(name))
+			error("Overwriting file %s inside loop that is already opened!\n", name);
 
 		for (int i = 0; i < MIN(D, cfl_loop_desc.D); ++i)
 			dims[i] = MD_IS_SET(cfl_loop_desc.flags, i) ? cfl_loop_desc.loop_dims[i] : dimensions[i];

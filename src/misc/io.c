@@ -346,6 +346,36 @@ void io_unlink_if_opened(const char* name)
 	}
 }
 
+bool io_check_if_opened(const char* name)
+{
+	const struct iofile_s* iop = iofiles;
+
+	while (NULL != iop) {
+
+		if ((0 == strcmp(name, iop->name)) && iop->open) {
+
+			enum file_types_e type = file_type(name);
+
+			switch (type) {
+
+			case FILE_TYPE_RA:
+			case FILE_TYPE_COO:
+			case FILE_TYPE_CFL:
+			case FILE_TYPE_SHM:
+			case FILE_TYPE_MEM:
+				return true;
+
+			case FILE_TYPE_PIPE:
+				return false;
+			}
+		}
+
+		iop = iop->prev;
+	}
+
+	return false;
+}
+
 
 int write_cfl_header(int fd, const char* filename, int n, const long dimensions[n])
 {

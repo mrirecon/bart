@@ -45,6 +45,7 @@ extern void io_unregister(const char* name);
 extern void io_close(const char* name);
 
 extern void io_unlink_if_opened(const char* name);
+extern _Bool io_check_if_opened(const char* name);
 
 extern void io_memory_cleanup(void);
 
