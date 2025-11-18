@@ -15,6 +15,7 @@
 #include "num/flpmath.h"
 #include "num/init.h"
 
+#include "misc/debug.h"
 #include "misc/mmio.h"
 #include "misc/misc.h"
 #include "misc/opts.h"
@@ -58,6 +59,15 @@ int main_compress(int argc, char* argv[argc])
 
 	complex float* in = load_cfl(in_file, DIMS, idims);
 	complex float* mask = load_cfl(mask_file, DIMS, mdims);
+
+	if (!decompress && !md_check_compat(DIMS, ~md_nontriv_dims(DIMS, mdims), idims, mdims)) {
+
+		debug_printf(DP_INFO, "Input: ");
+		debug_print_dims(DP_INFO, DIMS, idims);
+		debug_printf(DP_INFO, "Mask:  ");
+		debug_print_dims(DP_INFO, DIMS, mdims);
+		error("Dimensions of input and mask do not match!\n");
+	}
 
 	long* index = md_alloc_sameplace(DIMS, mdims, sizeof(long), mask);
 
