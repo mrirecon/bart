@@ -80,7 +80,7 @@ int main_trajcor(int argc, char* argv[argc])
 		delays = load_cfl(gdelays_file, DIMS, gdims);
 
 		assert((3 == gdims[0] || (6 == gdims[0])));
-		assert(md_check_compat(DIMS - 1, ~0UL, dimstraj + 1, gdims + 1));
+		assert(md_check_compat(DIMS - 1, ~md_nontriv_dims(DIMS - 1, gdims + 1), dimstraj + 1, gdims + 1));
 
 	} else {
 
@@ -114,11 +114,16 @@ int main_trajcor(int argc, char* argv[argc])
 	md_copy2(DIMS, slc_dims, mat_strs, mat + (3 * 1 + 1), gstrs, delays + 0, CFL_SIZE);
 	md_copy2(DIMS, slc_dims, mat_strs, mat + (3 * 0 + 1), gstrs, delays + 2, CFL_SIZE);
 	md_copy2(DIMS, slc_dims, mat_strs, mat + (3 * 1 + 0), gstrs, delays + 2, CFL_SIZE);
-	md_copy2(DIMS, slc_dims, mat_strs, mat + (3 * 2 + 2), gstrs, delays + 3, CFL_SIZE);
-	md_copy2(DIMS, slc_dims, mat_strs, mat + (3 * 0 + 2), gstrs, delays + 4, CFL_SIZE);
-	md_copy2(DIMS, slc_dims, mat_strs, mat + (3 * 2 + 0), gstrs, delays + 4, CFL_SIZE);
-	md_copy2(DIMS, slc_dims, mat_strs, mat + (3 * 1 + 2), gstrs, delays + 5, CFL_SIZE);
-	md_copy2(DIMS, slc_dims, mat_strs, mat + (3 * 2 + 1), gstrs, delays + 5, CFL_SIZE);
+
+	if (6 == gdims[0]) {
+
+		md_copy2(DIMS, slc_dims, mat_strs, mat + (3 * 2 + 2), gstrs, delays + 3, CFL_SIZE);
+		md_copy2(DIMS, slc_dims, mat_strs, mat + (3 * 0 + 2), gstrs, delays + 4, CFL_SIZE);
+		md_copy2(DIMS, slc_dims, mat_strs, mat + (3 * 2 + 0), gstrs, delays + 4, CFL_SIZE);
+		md_copy2(DIMS, slc_dims, mat_strs, mat + (3 * 1 + 2), gstrs, delays + 5, CFL_SIZE);
+		md_copy2(DIMS, slc_dims, mat_strs, mat + (3 * 2 + 1), gstrs, delays + 5, CFL_SIZE);
+	}
+
 	unmap_cfl(DIMS, gdims, delays);
 
 
