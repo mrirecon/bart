@@ -89,7 +89,7 @@ __global__ void kern_gaussian_rand(long N, cuFloatComplex* dst, struct philox_st
 	for (long i = start; i < N; i += stride) {
 
 		state.ctr1 = ctr1;
-		state.ctr2 = (uint64_t) i;
+		state.ctr2 = (uint64_t) i + offset;
 		dst[i] = cuComplexDoubleToFloat(gaussian_stable_rand(state));
 	}
 }
