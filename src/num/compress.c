@@ -65,12 +65,16 @@ static void compress_kern(long stride, long N, void* dst, long istrs, const long
 
 void md_decompress2(int N, const long odims[N], const long ostrs[N], void* dst, const long idims[N], const long istrs[N], const void* src, const long mdims[N], const long mstrs[N], const long* index, const void* fill, size_t size)
 {
-	assert(1 == bitcount(md_nontriv_dims(N, mdims) & md_nontriv_dims(N, idims)));
+	assert(1 >= bitcount(md_nontriv_dims(N, mdims) & md_nontriv_dims(N, idims)));
 
 	int flat_idx = 0;
 	for (int i = 0; i < N; i++)
 		if (1 != mdims[i] && 1 != idims[i])
 			flat_idx = i;
+
+	long midx = ffs(md_nontriv_dims(N, mdims)) - 1;
+	if (0 == (bitcount(md_nontriv_dims(N, mdims) & md_nontriv_dims(N, idims))))
+		flat_idx = midx;
 
 	long istrs2[N];
 	md_select_strides(N, ~MD_BIT(flat_idx), istrs2, istrs);
@@ -80,8 +84,6 @@ void md_decompress2(int N, const long odims[N], const long ostrs[N], void* dst, 
 
 	long pos[N];
 	md_set_dims(N, pos, 0);
-
-	long midx = ffs(md_nontriv_dims(N, mdims)) - 1;
 
 	unsigned long merge_flags = MD_BIT(midx);
 	long merge_size = mdims[midx];
@@ -124,20 +126,22 @@ void md_decompress2(int N, const long odims[N], const long ostrs[N], void* dst, 
 
 void md_compress2(int N, const long odims[N], const long ostrs[N], void* dst, const long idims[N], const long istrs[N], const void* src, const long mdims[N], const long mstrs[N], const long* index, size_t size)
 {
-	assert(1 == bitcount(md_nontriv_dims(N, mdims) & md_nontriv_dims(N, odims)));
+	assert(1 >= bitcount(md_nontriv_dims(N, mdims) & md_nontriv_dims(N, odims)));
 
 	int flat_idx = 0;
 	for (int i = 0; i < N; i++)
 		if (1 != mdims[i] && 1 != odims[i])
 			flat_idx = i;
 
+	long midx = ffs(md_nontriv_dims(N, mdims)) - 1;
+	if (0 == (bitcount(md_nontriv_dims(N, mdims) & md_nontriv_dims(N, odims))))
+		flat_idx = midx;
+
 	long ostrs2[N];
 	md_select_strides(N, ~MD_BIT(flat_idx), ostrs2, ostrs);
 
 	long pos[N];
 	md_set_dims(N, pos, 0);
-
-	long midx = ffs(md_nontriv_dims(N, mdims)) - 1;
 
 	unsigned long merge_flags = MD_BIT(midx);
 	long merge_size = mdims[midx];
