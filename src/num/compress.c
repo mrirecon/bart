@@ -171,10 +171,10 @@ void md_compress2(int N, const long odims[N], const long ostrs[N], void* dst, co
 
 #ifdef USE_CUDA
 		if (gpu)
-			cuda_compress(ostrs[flat_idx], merge_size, tdst, mstrs[midx] / (long)sizeof(long), tindex, ostrs[midx], tsrc, size);
+			cuda_compress(ostrs[flat_idx], merge_size, tdst, mstrs[midx] / (long)sizeof(long), tindex, istrs[midx], tsrc, size);
 		else
 #endif
-		compress_kern(ostrs[flat_idx], merge_size, tdst, mstrs[midx] / (long)sizeof(long), tindex, ostrs[midx], tsrc, size);
+		compress_kern(ostrs[flat_idx], merge_size, tdst, mstrs[midx] / (long)sizeof(long), tindex, istrs[midx], tsrc, size);
 
 	} while (md_next(N, idims, ~merge_flags, pos));
 }
