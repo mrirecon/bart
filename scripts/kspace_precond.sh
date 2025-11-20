@@ -26,6 +26,7 @@ usage="Usage: $0 [-h] [-g] [-B <basis>] [-p <pattern>] <ones> <trajectory> <outp
 
 GPU=""
 BASIS=""
+PATTERN=""
 
 while getopts "hgB:p:" opt; do
         case $opt in
