@@ -43,8 +43,8 @@ export BART_TOOLBOX_PATH=$(root)
 MAKEFILES = $(wildcard $(root)/Makefiles/Makefile.*)
 ALLMAKEFILES = $(root)/Makefile $(wildcard $(root)/Makefile.* $(root)/*.mk $(root)/rules/*.mk $(root)/Makefiles/Makefile.*)
 
--include Makefile.$(NNAME)
 -include Makefile.local
+-include Makefile.$(NNAME)
 -include $(MAKEFILES)
 
 # some operations might still be non deterministic
