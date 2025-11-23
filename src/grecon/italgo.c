@@ -115,6 +115,7 @@ struct iter italgo_config(enum algo_t algo, int nr_penalties, const struct reg_s
 		isconf->maxiter = maxiter;
 		isconf->step = step;
 		isconf->hogwild = hogwild;
+		isconf->last = fista.last;
 
 		PTR_ALLOC(struct iter_call_s, iter2_ist_data);
 		SET_TYPEID(iter_call_s, iter2_ist_data);

@@ -338,7 +338,8 @@ int main_pics(int argc, char* argv[argc])
 		OPTL_STRING(0, "wavelet", &wtype_str, "name", "wavelet type (haar,dau2,cdf44)"),
 		OPTL_ULONG(0, "mpi", &mpi_flags, "flags", "distribute over this dimensions with use of MPI"),
 		OPTL_FLVEC3(0, "fista_pqr", &fista.params, "p:q:r", "parameters for FISTA acceleration"),
-		OPTL_SET(0, "fista_last", &fista.last, "end iteration with call to data consistency"),
+		OPTL_SET(0, "fista_last", &fista.last, "(end iteration with call to data consistency)"),
+		OPTL_SET(0, "ist_last", &fista.last, "end iteration with call to data consistency"),
 		OPTL_INFILE(0, "motion-field", &motion_file, "file", "motion field"),
 		OPTL_SUBOPT(0, "nufft-conf", "...", "configure nufft", N_nufft_conf_opts, nufft_conf_opts),
 	};
