@@ -11,7 +11,8 @@ extern int seq_sample_rf_shapes(int N, struct rf_shape pulse[__VLA(N)], const st
 extern void seq_compute_gradients(int M, double gradients[__VLA(M)][3], double dt, int N, const struct seq_event ev[__VLA(N)]);
 
 
-extern double idea_phase_nco(int set, const struct seq_event* ev);
+extern double idea_nco_freq(const struct seq_event* ev);
+extern double idea_nco_phase(int set, const struct seq_event* ev);
 extern double idea_pulse_scaling(const struct rf_shape* pulse);
 extern double idea_pulse_norm_sum(const struct rf_shape* pulse);
 extern void idea_cfl_to_sample(const struct rf_shape* pulse, int idx, float* mag, float* pha);

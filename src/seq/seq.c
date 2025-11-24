@@ -150,9 +150,13 @@ void seq_compute_gradients(int M, double gradients[M][3], double dt, int N, cons
 }
 
 
-double idea_phase_nco(int set, const struct seq_event* ev)
+double idea_nco_freq(const struct seq_event* ev)
 {
-	double freq = (SEQ_EVENT_PULSE == ev->type) ? ev->pulse.freq : ev->adc.freq;
+	return (SEQ_EVENT_PULSE == ev->type) ? ev->pulse.freq : ev->adc.freq;
+}
+
+double idea_nco_phase(int set, const struct seq_event* ev)
+{
 	double phase_mid = (SEQ_EVENT_PULSE == ev->type) ? ev->pulse.phase : ev->adc.phase;
 
 	if (0 == set)
@@ -160,7 +164,7 @@ double idea_phase_nco(int set, const struct seq_event* ev)
 
 	double time = (set) ? (ev->mid - ev->start) : (ev->end - ev->mid);
 
-	return phase_clamp(-freq * 0.000360 * time + phase_mid);
+	return phase_clamp(- idea_nco_freq(ev) * 0.000360 * time + phase_mid);
 }
 
 double idea_pulse_scaling(const struct rf_shape* pulse)
