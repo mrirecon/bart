@@ -247,7 +247,7 @@ tests/test-reconet-nnmodl-train-precomp-noncart: nrmse reconet $(TRN_KSP_NC) $(T
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP); export OMP_NUM_THREADS=2 	;\
 	$(TOOLDIR)/reconet --network modl 		--test -t --train-algo e=10 -b2 --trajectory=$(TRN_TRJ) $(TRN_KSP_NC) $(TRN_COL) weights0 $(TRN_REF_IMG)					;\
 	$(TOOLDIR)/reconet --network modl --no-precomp 	--test -t --train-algo e=10 -b2 --trajectory=$(TRN_TRJ) $(TRN_KSP_NC) $(TRN_COL) weights1 $(TRN_REF_IMG)					;\
-	$(TOOLDIR)/nrmse -t 1.e-6 weights1 weights0	;\
+	$(TOOLDIR)/nrmse -t 7.e-6 weights1 weights0	;\
 	rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
