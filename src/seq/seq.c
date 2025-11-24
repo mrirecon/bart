@@ -150,19 +150,10 @@ void seq_compute_gradients(int M, double gradients[M][3], double dt, int N, cons
 }
 
 
-
-static double adc_nco_correction(double freq, double dwell, double os)
-{
-	return freq * 0.000360 * (-0.5 * (dwell / os));
-}
-
 double idea_phase_nco(int set, const struct seq_event* ev)
 {
 	double freq = (SEQ_EVENT_PULSE == ev->type) ? ev->pulse.freq : ev->adc.freq;
 	double phase_mid = (SEQ_EVENT_PULSE == ev->type) ? ev->pulse.phase : ev->adc.phase;
-
-	if (SEQ_EVENT_ADC == ev->type)
-		phase_mid = phase_clamp(phase_mid + adc_nco_correction(ev->adc.freq, ev->adc.dwell_ns / 1000., ev->adc.os));
 
 	if (0 == set)
 		phase_mid = -1. * phase_mid;
