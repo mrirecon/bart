@@ -137,6 +137,43 @@ static const struct linop_s* get_sense_linop(long img_dims[DIMS], long ksp_dims[
 	return linop_chain_FF(linop_fmac_dims_create(DIMS, cim_dims, img_dims, col_dims, sens), lop_sense);
 }
 
+static void get_init(int N, long img_dims[N], complex float* samples, float sigma, const struct linop_s* A, const complex float* AHy, int iter)
+{
+	md_gaussian_rand(N, img_dims, samples);
+	md_zsmul(N, img_dims, samples, samples, 1 / sqrtf(2.)); // cplx var 1
+
+	md_zsmul(DIMS, img_dims, samples, samples, sigma);
+
+	if ((NULL == A) || linop_is_null(A))
+		return;
+
+	const struct iovec_s* cod = linop_codomain(A);
+	assert(N == cod->N);
+	long ksp_dims[N];
+	md_copy_dims(N, ksp_dims, cod->dims);
+
+	complex float* tmp_ksp = md_alloc_sameplace(N, ksp_dims, CFL_SIZE, samples);
+	md_gaussian_rand(DIMS, ksp_dims, tmp_ksp);
+	md_zsmul(DIMS, ksp_dims, tmp_ksp, tmp_ksp, 1. / sqrt(2));
+
+	complex float* tmp_AHy = md_alloc_sameplace(DIMS, img_dims, CFL_SIZE, samples);
+	linop_adjoint(A, N, img_dims, tmp_AHy, N, ksp_dims, tmp_ksp);
+	md_zadd(N, img_dims, tmp_AHy, tmp_AHy, AHy);
+
+	md_zsmul(DIMS, img_dims, samples, samples, 1. / (sigma * sigma));
+	md_zadd(N, img_dims, tmp_AHy, tmp_AHy, samples);
+	md_zsmul(DIMS, img_dims, samples, samples, (sigma * sigma));
+
+	struct iter_conjgrad_conf conf = iter_conjgrad_defaults;
+	conf.maxiter = iter;
+	conf.l2lambda = 1. / (sigma * sigma);
+
+	iter2_conjgrad(CAST_UP(&conf), A->normal, 0, NULL, NULL, NULL, NULL, 2 * md_calc_size(DIMS, img_dims), (float*)(samples), (const float*)tmp_AHy, NULL);
+
+	md_free(tmp_AHy);
+	md_free(tmp_ksp);
+}
+
 
 
 int main_sample(int argc, char* argv[argc])
@@ -457,12 +494,6 @@ int main_sample(int argc, char* argv[argc])
 
 	complex float* samples = my_alloc(DIMS, img_dims, CFL_SIZE);
 
-	md_gaussian_rand(DIMS, img_dims, samples);
-	md_zsmul(DIMS, img_dims, samples, samples, 1 / sqrtf(2.)); // cplx var 1
-
-	debug_printf(DP_DEBUG2, "sig=%.4f\n", get_sigma(1., sigma_min, sigma_max));
-	md_zsmul(DIMS, img_dims, samples, samples, get_sigma(1., sigma_min, sigma_max));
-
 	complex float* AHy = my_alloc(DIMS, img_dims, CFL_SIZE);
 	md_clear(DIMS, img_dims, AHy, CFL_SIZE);
 
@@ -471,7 +502,7 @@ int main_sample(int argc, char* argv[argc])
 	if (posterior) {
 
 		if (0 == precond)
-		maxeigen = estimate_maxeigenval_sameplace(linop->normal, 30, samples);
+			maxeigen = estimate_maxeigenval_sameplace(linop->normal, 30, samples);
 
 		long img_single_dims[DIMS];
 		md_select_dims(DIMS, ~BATCH_FLAG, img_single_dims, img_dims);
@@ -491,6 +522,7 @@ int main_sample(int argc, char* argv[argc])
 		linop = linop_null_create(DIMS, img_dims, DIMS, img_dims);
 	}
 
+	get_init(DIMS, img_dims, samples, get_sigma(1., sigma_min, sigma_max), (0 < precond) ? linop : NULL, AHy, precond);
 
 	for (int i = N - 1; i >= 0; i--) {
 
