@@ -164,6 +164,7 @@ int main_sample(int argc, char* argv[argc])
 	const char* sens_file = NULL;
 	const char* traj_file = NULL;
 	const char* pattern_file = NULL;
+	const char* mask_file = NULL;
 
 	long img_dims[DIMS];
 	md_singleton_dims(DIMS, img_dims);
@@ -211,6 +212,7 @@ int main_sample(int argc, char* argv[argc])
 		OPTL_SUBOPT(0, "gmm", "", "generate a Gaussian mixture model for sampling", ARRAY_SIZE(gmm_opts), gmm_opts),
 		OPTL_SUBOPT(0, "cunet", "", "sampling with conditional unet", ARRAY_SIZE(cunet_opts), cunet_opts),
 		OPTL_STRING(0, "external-graph", &graph, "weights", ".pt or .tf file with weights"),
+		OPTL_INFILE(0, "mask", &mask_file, "mask", "FoV mask for output of network"),
 		OPTL_FLOAT(0, "gamma", &gamma_base, "gamma", "scaling of stepsize for Langevin iteration"),
 		OPT_INT('N', &N, "N", "number of noise levels"),
 		OPT_INT('K', &K, "K", "number of Langevin steps per level"),
@@ -319,6 +321,19 @@ int main_sample(int argc, char* argv[argc])
 			nlop = nlop_prepend_FF(nlop_from_linop_F(linop_scale_create(1, MD_DIMS(1), sqrtf(0.5))), nlop, 1);
 			sigma_max *= sqrtf(2.);
 			sigma_min *= sqrtf(2.);
+		}
+
+		if (NULL != mask_file) {
+
+			long msk_dims[DIMS];
+			complex float* msk = load_cfl(mask_file, DIMS, msk_dims);
+
+			assert(md_check_equal_dims(DIMS, msk_dims, img_dims, md_nontriv_dims(DIMS, msk_dims)));
+
+			const struct linop_s* lop_msk = linop_cdiag_create(DIMS, img_dims, md_nontriv_dims(DIMS, msk_dims), msk);
+			nlop = nlop_append_FF(nlop, 0, nlop_from_linop_F(lop_msk));
+
+			unmap_cfl(DIMS, msk_dims, msk);
 		}
 
 		nlop = nlop_expectation_to_score(nlop);
