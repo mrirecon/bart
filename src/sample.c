@@ -19,6 +19,7 @@
 #include "num/iovec.h"
 #include "num/rand.h"
 #include "num/ops_p.h"
+#include "num/fft.h"
 
 #include "misc/mmio.h"
 #include "misc/debug.h"
@@ -82,9 +83,17 @@ static void print_stats(int dl, float t, long img_dims[DIMS], const complex floa
 	float std_corner;
 	md_copy(1, MD_DIMS(1), &std_corner, std_device, FL_SIZE);
 
+	complex float* tmp = md_alloc_sameplace(DIMS, img_dims, CFL_SIZE, samples);
+	fftuc(DIMS, img_dims, 7, tmp, samples);
+	md_zstd2(DIMS, corn_dims, ~0ul, MD_SINGLETON_STRS(DIMS), std_device, MD_STRIDES(DIMS, img_dims, CFL_SIZE), tmp);
+	md_free(tmp);
+
+	float kstd_corner;
+	md_copy(1, MD_DIMS(1), &kstd_corner, std_device, FL_SIZE);
+
 	md_free(std_device);
 
-	debug_printf(dl, "t=%.2f; sig=%.4f; zstd/sig=%.2f; zstd(corner)/sig=%.2f\n", t, sigma, std_samples / sigma, std_corner / sigma);
+	debug_printf(dl, "t=%.2f; sig=%.4f; zstd/sig=%.2f; zstd(corner)/sig=%.2f; zstd(kspace corner)/sig=%.2f\n", t, sigma, std_samples / sigma, std_corner / sigma, kstd_corner / sigma);
 }
 
 
