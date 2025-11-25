@@ -13,6 +13,7 @@
 #include <string.h>
 #include <math.h>
 
+#include "misc/misc.h"
 #include "num/flpmath.h"
 #include "num/multind.h"
 #include "num/init.h"
@@ -176,6 +177,7 @@ int main_sample(int argc, char* argv[argc])
 	const char* mask_file = NULL;
 
 	bool annealed = false;
+	int precond = -1;
 
 	long img_dims[DIMS];
 	md_singleton_dims(DIMS, img_dims);
@@ -211,6 +213,7 @@ int main_sample(int argc, char* argv[argc])
 		OPTL_INFILE('t', "traj", &traj_file, "traj", "k-space trajectory"),
 		OPTL_INFILE('p', "pattern", &pattern_file, "pattern", "Pattern file"),
 		OPTL_SET(0, "annealed", &annealed, "use annealed likelihood"),
+		OPTL_INT(0, "precond", &precond, "precond", "number of preconditioning cg iterations, 0 disables preconditioning"),
 	};
 
 	const struct opt_s opts[] = {
@@ -258,6 +261,9 @@ int main_sample(int argc, char* argv[argc])
 
 	num_rand_init(seed);
 
+	if (annealed && (-1 == precond))
+		precond = 0;
+
 	const struct nlop_s* nlop = NULL;
 	const struct linop_s* linop = NULL;
 
@@ -291,6 +297,9 @@ int main_sample(int argc, char* argv[argc])
 
 		if (NULL != traj_file)
 			unmap_cfl(DIMS, trj_dims, traj);
+
+		if (-1 == precond)
+			precond = 10;
 	}
 
 	img_dims[BATCH_DIM] = batchsize;
@@ -461,6 +470,7 @@ int main_sample(int argc, char* argv[argc])
 
 	if (posterior) {
 
+		if (0 == precond)
 		maxeigen = estimate_maxeigenval_sameplace(linop->normal, 30, samples);
 
 		long img_single_dims[DIMS];
@@ -546,13 +556,23 @@ int main_sample(int argc, char* argv[argc])
 		const struct operator_p_s* score_op_p = prox_nlgrad_create(nlop_fixed, 1, 1., -1, true); // convert grad to prox; mind the SIGN for the score
 
 		float gamma = gamma_base / (1 / (var_i + min_var) + maxeigen_iter);
-		debug_printf(DP_DEBUG2, "gamma: %.5f\n", gamma);
 
+		// run K Langevin steps
 		struct iter_eulermaruyama_conf em_conf = iter_eulermaruyama_defaults;
 		em_conf.step = gamma;
 		em_conf.maxiter = K;
 
-		// run K Langevin steps
+		if (0 < precond) {
+
+			em_conf.step = gamma_base;
+			em_conf.maxiter = K;
+			em_conf.lop_prec = linop_iter;
+			em_conf.max_prec_iter = precond;
+			em_conf.diag_prec = 1. / var_i;
+			em_conf.batchsize = batchsize;
+		}
+
+		debug_printf(DP_DEBUG2, "gamma: %.2e\n", em_conf.step);
 		iter2_eulermaruyama(CAST_UP(&em_conf), linop_iter->normal, 1, &score_op_p, NULL, NULL, NULL, 2 * md_calc_size(DIMS,img_dims), (float*)samples, (float*)AHy_iter, NULL);
 
 		if (0 == i % save_mod) {
