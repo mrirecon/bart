@@ -175,6 +175,8 @@ int main_sample(int argc, char* argv[argc])
 	const char* pattern_file = NULL;
 	const char* mask_file = NULL;
 
+	bool annealed = false;
+
 	long img_dims[DIMS];
 	md_singleton_dims(DIMS, img_dims);
 	img_dims[0] = 256;
@@ -207,7 +209,8 @@ int main_sample(int argc, char* argv[argc])
 		OPTL_INFILE('k', "kspace", &kspace_file, "kspace", "kspace file"),
 		OPTL_INFILE('s', "sens", &sens_file, "sens", "sensitivities"),
 		OPTL_INFILE('t', "traj", &traj_file, "traj", "k-space trajectory"),
-		OPTL_INFILE('p', "pattern", &pattern_file, "pattern", "Pattern file")
+		OPTL_INFILE('p', "pattern", &pattern_file, "pattern", "Pattern file"),
+		OPTL_SET(0, "annealed", &annealed, "use annealed likelihood"),
 	};
 
 	const struct opt_s opts[] = {
@@ -488,6 +491,22 @@ int main_sample(int argc, char* argv[argc])
 
 		print_stats(DP_DEBUG2, (float)i / N, img_dims, samples, sqrtf(var_ip));
 
+		float maxeigen_iter = maxeigen;
+		const struct linop_s* linop_iter = linop_clone(linop);
+		complex float* AHy_iter = AHy;
+
+		if (annealed) {
+
+			float scale = get_sigma(((float)i) / N, 1., 1./ sigma_max / sqrtf(maxeigen));
+
+			AHy_iter = md_alloc_sameplace(DIMS, img_dims, CFL_SIZE, samples);
+			md_zsmul(DIMS, img_dims, AHy_iter, AHy, powf(scale, 2));
+			maxeigen_iter *= powf(scale, 2);
+
+			linop_iter = linop_chain_FF(linop_scale_create(DIMS, img_dims, scale), linop_iter);
+		}
+
+
 		if (ancestral || predictor_corrector) {
 
 			complex float* tmp = md_alloc_sameplace(DIMS, img_dims, CFL_SIZE, samples);
@@ -501,8 +520,8 @@ int main_sample(int argc, char* argv[argc])
 
 				complex float* tmp1 = md_alloc_sameplace(DIMS, img_dims, CFL_SIZE, samples);
 
-				linop_normal(linop, DIMS, img_dims, tmp1, samples);
-				md_zsub(DIMS, img_dims, tmp1, AHy, tmp1);
+				linop_normal(linop_iter, DIMS, img_dims, tmp1, samples);
+				md_zsub(DIMS, img_dims, tmp1, AHy_iter, tmp1);
 
 				md_zadd(DIMS, img_dims, tmp, tmp, tmp1);
 				md_free(tmp1);
@@ -526,7 +545,7 @@ int main_sample(int argc, char* argv[argc])
 		const struct nlop_s* nlop_fixed = nlop_set_input_const(nlop, 1, 1, MD_DIMS(1), true, &fixed_noise_scale);
 		const struct operator_p_s* score_op_p = prox_nlgrad_create(nlop_fixed, 1, 1., -1, true); // convert grad to prox; mind the SIGN for the score
 
-		float gamma = gamma_base / (1 / (var_i + min_var) + maxeigen);
+		float gamma = gamma_base / (1 / (var_i + min_var) + maxeigen_iter);
 		debug_printf(DP_DEBUG2, "gamma: %.5f\n", gamma);
 
 		struct iter_eulermaruyama_conf em_conf = iter_eulermaruyama_defaults;
@@ -534,7 +553,7 @@ int main_sample(int argc, char* argv[argc])
 		em_conf.maxiter = K;
 
 		// run K Langevin steps
-		iter2_eulermaruyama(CAST_UP(&em_conf), linop->normal, 1, &score_op_p, NULL, NULL, NULL, 2 * md_calc_size(DIMS,img_dims), (float*)samples, (float*)AHy, NULL);
+		iter2_eulermaruyama(CAST_UP(&em_conf), linop_iter->normal, 1, &score_op_p, NULL, NULL, NULL, 2 * md_calc_size(DIMS,img_dims), (float*)samples, (float*)AHy_iter, NULL);
 
 		if (0 == i % save_mod) {
 
@@ -555,6 +574,9 @@ int main_sample(int argc, char* argv[argc])
 
 		operator_p_free(score_op_p);
 		nlop_free(nlop_fixed);
+		linop_free(linop_iter);
+		if (AHy_iter != AHy)
+			md_free(AHy_iter);
 	}
 
 	print_stats(DP_DEBUG2, 0., img_dims, samples, get_sigma(0., sigma_min, sigma_max));
