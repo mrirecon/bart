@@ -8,6 +8,8 @@ extern double slice_amplitude(const struct seq_config* seq);
 extern double ro_amplitude(const struct seq_config* seq);
 extern long round_up_GRT(double val_usec);
 
+extern double round_up_raster(double time, double raster_time);
+
 struct grad_trapezoid;
 struct grad_limits;
 extern int gradient_prepare_with_timing(struct grad_trapezoid* grad, double moment, struct grad_limits sys);

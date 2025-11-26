@@ -25,6 +25,16 @@ long round_up_GRT(double val_usec)
 	return lVal_usec;
 }
 
+double round_up_raster(double time, double raster_time)
+{
+	if (0. > time)
+		return 0.;
+
+	double units = time / raster_time - 1e-2 * raster_time;
+
+	return ceil(units) * raster_time;
+}
+
 double ro_amplitude(const struct seq_config* seq)
 {
 	return 1.E6 / (seq->geom.fov * seq->phys.dwell * seq->sys.gamma);
