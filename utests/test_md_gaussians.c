@@ -29,9 +29,9 @@ static bool test_md_gaussian_score_1d(complex float s)
 
 	md_gaussian_score(4, dims_score, score, dims_x, x, dims_mu, mu, dims_vars, vars, dims_ws, ws);
 
-	// Analytical gradient: -2 * x / s
+	// Analytical gradient: - x / s
 
-	if (cabsf(score[0] - (- 2.f * x[0] / s)) > 1.E-6)
+	if (cabsf(score[0] - (- 1.f * x[0] / s)) > 1.E-6)
 		return false;
 
 	return true;
@@ -54,9 +54,9 @@ static bool test_md_gaussian_score_2d(complex float s)
 	md_gaussian_score(4, dims_score, score, dims_x, x, dims_mu, mu, dims_vars, vars, dims_ws, ws);
 
 	// Check each dimension
-	if (cabsf(x[0] - mu[0] +  0.5f * s * score[0]) > 1.E-6)
+	if (cabsf(x[0] - mu[0] +  s * score[0]) > 1.E-6)
 		return false;
-	if (cabsf(x[1] - mu[1] +  0.5f * s * score[1]) > 1.E-6)
+	if (cabsf(x[1] - mu[1] +  s * score[1]) > 1.E-6)
 		return false;
 
 	return true;
@@ -80,7 +80,7 @@ static bool test_md_gaussian_score_4d(complex float s)
 
 	// Check each element in the 2x2 array
 	for (int i = 0; i < 4; i++)
-		if (cabsf(x[i] - mu[i] + 0.5f * s * score[i]) > 1.E-6) // real valued variance
+		if (cabsf(x[i] - mu[i] + s * score[i]) > 1.E-6)
 			return false;
 
 	return true;
@@ -103,13 +103,13 @@ static bool test_md_gaussian_score_multisamples(complex float s)
 	md_gaussian_score(4, dims_score, score, dims_x, x, dims_mu, mu, dims_vars, vars, dims_ws, ws);
 
 	// Check each dimension
-	if (cabsf(x[0] - mu[0] + 0.5f * s * score[0]) > 1.E-6) // real valued variance
+	if (cabsf(x[0] - mu[0] + s * score[0]) > 1.E-6) // real valued variance
 		return false;
-	if (cabsf(x[1] - mu[1] + 0.5f * s * score[1]) > 1.E-6)
+	if (cabsf(x[1] - mu[1] + s * score[1]) > 1.E-6)
 		return false;
-	if (cabsf(x[2] - mu[0] + 0.5f * s * score[2]) > 1.E-6)
+	if (cabsf(x[2] - mu[0] + s * score[2]) > 1.E-6)
 		return false;
-	if (cabsf(x[3] - mu[1] + 0.5f * s * score[3]) > 1.E-6)
+	if (cabsf(x[3] - mu[1] + s * score[3]) > 1.E-6)
 		return false;
 
 	return true;
@@ -132,10 +132,10 @@ static bool test_md_gaussian_score_multigauss(complex float s)
 	md_gaussian_score(4, dims_score, score, dims_x, x, dims_mu, mu, dims_vars, vars, dims_ws, ws);
 
 	// Check each dimension
-	// Analytical: score = 2 * x / sigma^2
-	if (cabsf(score[0] + 2.f * (x[0] / vars[0])) > 1.E-6)
+	// Analytical: score = x / sigma^2
+	if (cabsf(score[0] + (x[0] / vars[0])) > 1.E-6)
 		return false;
-	if (cabsf(score[1] + 2.f * (x[1] / vars[1])) > 1.E-6)
+	if (cabsf(score[1] + (x[1] / vars[1])) > 1.E-6)
 		return false;
 
 	return true;

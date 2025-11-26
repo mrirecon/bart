@@ -108,8 +108,8 @@ void gaussian_score(int N, const complex float m[N], const complex float icov[N]
 {
 	complex float u[N];
 	vec_zero(N, u);
-	vec_saxpy(N, u, -2., x);
-	vec_saxpy(N, u, +2., m);
+	vec_saxpy(N, u, -1., x);
+	vec_saxpy(N, u, +1., m);
 	mat_vecmul(N, N, sc, icov, u);
 }
 
@@ -229,8 +229,9 @@ void gaussian_mix_multiply(int M, int N, float coeff[M], complex float m[M][N], 
 
 /**
  * Calculates the gradient of the Gaussian exponent
+ * (we compute the complex conjugate gradient in wirtinger calculus, which eliminates the factor 2)
  *
- * grad = 2 * (x - mus) / vars; dims -> {n,m,C,B}
+ * grad = (x - mus) / vars; dims -> {n,m,C,B}
  *
  * where:	n, m = dimension of sample
  *		C = number of Gaussians
@@ -261,7 +262,6 @@ void md_grad_gaussian(int D, const long dims_grad[D],
 
 	md_zadd2(D, dims_grad, strs_grad, tmp, strs_x, x, strs_mu, tmu);
 	md_zmul2(D, dims_grad, strs_grad, grad, strs_grad, tmp, strs_vars, tvars);
-	md_zsmul2(D, dims_grad, strs_grad, grad, strs_grad, grad, 2);
 
 	md_free(tmu);
 	md_free(tvars);
@@ -309,7 +309,6 @@ void md_log_gaussian(int D, const long dims_log_gauss[D], complex float* log_gau
 	//md_zsub2(D, dims_grad, strs_grad, diff, strs_x, x, strs_mu, mu);
 
 	md_ztenmulc2(D, dims_grad, strs_log_gauss, xmuvarxmu, strs_grad, diff, strs_grad, grad);
-	md_zsmul(D, dims_log_gauss, xmuvarxmu, xmuvarxmu, 0.5);
 
 	md_zlog2(D, dims_vars, strs_vars, log_vars, strs_vars, vars);
 	md_zsmul2(D, dims_vars, strs_vars, tmp0, strs_vars, log_vars, -1. * dims_x[0] * dims_x[1]);
@@ -400,7 +399,7 @@ void md_mixture_weights(int D, const long dims_gamma[D], complex float* gamma,
 /**
  * Calculates the score of the GMM according to the log-sum-exp trick
  *
- * score = - sum_C gamma * 2 * (x - mus) / vars; dims -> {n,m,1,B}
+ * score = - sum_C gamma * (x - mus) / vars; dims -> {n,m,1,B}
  *
  * where:	C = number of Gaussians in the GMM
  *		gamma = weigthing term of the log-sum-exp trick; dims -> {1,1,C,B}

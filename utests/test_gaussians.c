@@ -54,7 +54,7 @@ static bool test_gaussian_pdf2(float s)
 
 	complex float x2[2] = { -0.3, 1.5 };
 	float val2 = gaussian_pdf(2, m, v, x2);
-	
+
 	if (val1 != val2)	// symmetry
 		return false;
 
@@ -133,9 +133,9 @@ static bool test_gaussian_score0(float s)
 
 	gaussian_score(1, m, v, x, sc);
 
-	// \nabla_x log (exp(-x^2 / s)) = - \nabla_x x^2 / s = - 2 x / s
+	// \nabla_x log (exp(-x^2 / s)) = - \nabla_x x^2 / s = - x / s
 
-	if (cabsf(sc[0] - (-2.f * x[0] / s)) > 1.E-6)
+	if (cabsf(sc[0] - (-1.f * x[0] / s)) > 1.E-6)
 		return false;
 
 	return true;
@@ -154,10 +154,10 @@ static bool test_gaussian_score2(float s)
 
 	gaussian_score(2, m, v, x, sc);
 
-	if (cabsf(x[0] - m[0] + 0.5f * s * sc[0]) > 1.E-7)
+	if (cabsf(x[0] - m[0] + s * sc[0]) > 1.E-7)
 		return false;
 
-	if (cabsf(x[1] - m[1] + 0.5f * s * sc[1]) > 1.E-7)
+	if (cabsf(x[1] - m[1] + s * sc[1]) > 1.E-7)
 		return false;
 
 	return true;

@@ -208,12 +208,19 @@ int main_sample(int argc, char* argv[argc])
 		nlop = nlop_reshape_in_F(nlop, 0, DIMS, img_dims);
 		nlop = nlop_reshape_out_F(nlop, 0, DIMS, img_dims);
 
-		nlop = nlop_expectation_to_score(nlop);
-
 		auto par = nlop_generic_domain(nlop, 1);
 
 		if (1 < md_calc_size(par->N, par->dims))
 			nlop = nlop_chain2_FF(nlop_from_linop_F(linop_repmat_create(par->N, par->dims, ~0ul)), 0, nlop, 1);
+
+		if (real_valued) {
+
+			nlop = nlop_prepend_FF(nlop_from_linop_F(linop_scale_create(1, MD_DIMS(1), sqrtf(0.5))), nlop, 1);
+			sigma_max *= sqrtf(2.);
+			sigma_min *= sqrtf(2.);
+		}
+
+		nlop = nlop_expectation_to_score(nlop);
 
 		nlop_unset_derivatives(nlop);
 
@@ -249,7 +256,7 @@ int main_sample(int argc, char* argv[argc])
 
 			float wsum = md_zasum(DIMS, ws_dims, ws);
 			md_zsmul(DIMS, ws_dims, ws, ws, 1. / wsum);
-			
+
 		}
 
 		complex float* vars = NULL;
@@ -296,12 +303,6 @@ int main_sample(int argc, char* argv[argc])
 
 	nlop = nlop_reshape_in_F(nlop, 1, 1, (long[1]) { 1 }); // reshape noise scale from [1,1,1....1] to [1]
 
-	if (real_valued) {
-
-		nlop = nlop_prepend_FF(nlop_from_linop_F(linop_scale_create(1, MD_DIMS(1), sqrtf(0.5))), nlop, 1);
-		sigma_max *= sqrtf(2.);
-		sigma_min *= sqrtf(2.);
-	}
 
 	if (0 == save_mod)
 		save_mod = N;
@@ -351,7 +352,7 @@ int main_sample(int argc, char* argv[argc])
 			nlop_apply(nlop_fixed, DIMS, img_dims, tmp, DIMS, img_dims, samples);
 			nlop_free(nlop_fixed);
 
-			md_zaxpy(DIMS, img_dims, samples, dvar / 2.f, tmp);
+			md_zaxpy(DIMS, img_dims, samples, dvar, tmp);
 
 			md_gaussian_rand(DIMS, img_dims, tmp);
 			md_zsmul(DIMS, img_dims, tmp, tmp, 1 / sqrtf(2.)); // cplx var 1
@@ -368,8 +369,6 @@ int main_sample(int argc, char* argv[argc])
 		complex float fixed_noise_scale = sqrtf(var_i);
 		const struct nlop_s* nlop_fixed = nlop_set_input_const(nlop, 1, 1, MD_DIMS(1), true, &fixed_noise_scale);
 		const struct operator_p_s* score_op_p = prox_nlgrad_create(nlop_fixed, 1, 1., -1, true); // convert grad to prox; mind the SIGN for the score
-
-		score_op_p = prox_scale_arg_create_F(score_op_p, 0.5); // scale due to implementation of em (add 0.5 factor)
 
 		float gamma = gamma_base / (1 / (var_i + min_var) + maxeigen);
 		debug_printf(DP_DEBUG2, "gamma: %.5f\n", gamma);
