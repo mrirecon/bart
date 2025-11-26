@@ -112,6 +112,9 @@ struct seq_sys {
 	struct grad_limits grad; // inv_slew_rate in us / (mT/m), max_amplitude in mT/m
 	double coil_control_lead; // us
 	double min_duration_ro_rf; // us
+	double raster_grad; // us
+	double raster_rf; // us
+	double raster_dwell; // us
 };
 
 

@@ -111,6 +111,9 @@ const struct seq_config seq_config_defaults = {
 		.grad.max_amplitude = 24.,
 		.coil_control_lead = 100.,
 		.min_duration_ro_rf = 213.,
+		.raster_grad = 10.,
+		.raster_rf = 1.,
+		.raster_dwell = .1,
 	},
 
 	.order = { [0 ... DIMS - 1] = 1 },
