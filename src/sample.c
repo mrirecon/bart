@@ -374,12 +374,8 @@ int main_sample(int argc, char* argv[argc])
 		if (1 < md_calc_size(par->N, par->dims))
 			nlop = nlop_chain2_FF(nlop_from_linop_F(linop_repmat_create(par->N, par->dims, ~0ul)), 0, nlop, 1);
 
-		if (real_valued) {
-
+		if (real_valued)
 			nlop = nlop_prepend_FF(nlop_from_linop_F(linop_scale_create(1, MD_DIMS(1), sqrtf(0.5))), nlop, 1);
-			sigma_max *= sqrtf(2.);
-			sigma_min *= sqrtf(2.);
-		}
 
 		if (NULL != mask_file) {
 
