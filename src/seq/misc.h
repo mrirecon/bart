@@ -11,7 +11,7 @@ extern double round_up_raster(double time, double raster_time);
 
 struct grad_trapezoid;
 struct grad_limits;
-extern int gradient_prepare_with_timing(struct grad_trapezoid* grad, double moment, struct grad_limits sys);
+extern int gradient_prepare_with_timing(struct grad_trapezoid* grad, double moment, const struct seq_config* seq);
 
 #endif // _SEQ_MISC_H
 

@@ -31,16 +31,16 @@ double slice_amplitude(const struct seq_config* seq)
 	return 1.E6 * seq->phys.bwtp / (seq->sys.gamma * seq->phys.rf_duration * seq->geom.slice_thickness);
 }
 
-int gradient_prepare_with_timing(struct grad_trapezoid* grad, double moment, struct grad_limits sys)
+int gradient_prepare_with_timing(struct grad_trapezoid* grad, double moment, const struct seq_config* seq)
 {
-	if (2 * GRAD_RASTER_TIME > (grad->rampup + grad->flat + grad->rampdown))
+	if (2 * seq->sys.raster_grad > (grad->rampup + grad->flat + grad->rampdown))
 		return 0;
 
 	grad->ampl = moment / (0.5 * grad->rampup + grad->flat + 0.5 * grad->rampdown);
 
-	if ((fabs(grad->ampl) > sys.max_amplitude)
-	    || (fabs(grad->ampl) * sys.inv_slew_rate > grad->rampup)
-		|| (fabs(grad->ampl) * sys.inv_slew_rate > grad->rampdown))
+	if ((fabs(grad->ampl) > seq->sys.grad.max_amplitude)
+	    || (fabs(grad->ampl) * seq->sys.grad.inv_slew_rate > grad->rampup)
+		|| (fabs(grad->ampl) * seq->sys.grad.inv_slew_rate > grad->rampdown))
 			return 0;
 
 	return 1;
