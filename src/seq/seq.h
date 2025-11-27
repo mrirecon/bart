@@ -16,9 +16,9 @@ extern double idea_pulse_scaling(const struct rf_shape* pulse);
 extern double idea_pulse_norm_sum(const struct rf_shape* pulse);
 extern void idea_cfl_to_sample(const struct rf_shape* pulse, int idx, float* mag, float* pha);
 
-extern long seq_block_end(int N, const struct seq_event ev[__VLA(N)], enum block mode, long tr);
-extern long seq_block_end_flat(int N, const struct seq_event ev[__VLA(N)]);
-extern long seq_block_rdt(int N, const struct seq_event ev[__VLA(N)]);
+extern double seq_block_end(int N, const struct seq_event ev[__VLA(N)], enum block mode, double tr, double raster);
+extern double seq_block_end_flat(int N, const struct seq_event ev[__VLA(N)], double raster);
+extern double seq_block_rdt(int N, const struct seq_event ev[__VLA(N)], double raster);
 
 extern int seq_block(int N, struct seq_event ev[__VLA(N)], struct seq_state* seq_state, const struct seq_config* seq);
 extern int seq_continue(struct seq_state* seq_state, const struct seq_config* seq);

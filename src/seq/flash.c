@@ -36,7 +36,7 @@ static double ro_shift(const struct seq_config* seq)
 	double start_flat = start_rf(seq) + seq->phys.rf_duration / 2.
 				+ 1. * seq->phys.te - adc_time_to_echo(seq);
 
-	return (GRAD_RASTER_TIME - (round_up_GRT(start_flat) - (long)start_flat)) % GRAD_RASTER_TIME;
+	return lround(seq->sys.raster_grad - (round_up_raster(start_flat, seq->sys.raster_grad) - (long)start_flat)) % lround(seq->sys.raster_grad);
 }
 
 
@@ -77,7 +77,7 @@ static int prep_grad_ro(struct grad_trapezoid* grad, const struct seq_config* se
 		return 0;
 
 	grad->rampup = ampl * seq->sys.grad.inv_slew_rate;
-	grad->flat = round_up_GRT(adc_duration(seq) + ro_shift(seq));
+	grad->flat = round_up_raster(adc_duration(seq) + ro_shift(seq), seq->sys.raster_grad);
 	grad->rampdown = ampl * seq->sys.grad.inv_slew_rate;
 	grad->ampl = ampl;
 
@@ -208,7 +208,7 @@ int flash(int N, struct seq_event ev[N], struct seq_state* seq_state, const stru
 	i += prep_adc(ev + i, timing.adc, rf_spoil_phase, seq_state, seq);
 
 
-	if (seq_block_end_flat(i, ev) > seq->phys.tr)
+	if (seq_block_end_flat(i, ev, seq->sys.raster_grad) > seq->phys.tr)
 		return ERROR_END_FLAT_KERNEL;
 
 	if (((PEMODE_RAGA == seq->enc.pe_mode) || (PEMODE_RAGA_ALIGNED == seq->enc.pe_mode))

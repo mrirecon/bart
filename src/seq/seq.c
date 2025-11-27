@@ -196,23 +196,23 @@ void idea_cfl_to_sample(const struct rf_shape* pulse, int idx, float* mag, float
 
 
 
-long seq_block_end(int N, const struct seq_event ev[N], enum block mode, long tr)
+double seq_block_end(int N, const struct seq_event ev[N], enum block mode, double tr, double raster)
 {
 	if ((BLOCK_PRE == mode) || (BLOCK_POST == mode))
-		return round_up_GRT(events_end_time(N, ev, 0, 0));
+		return round_up_raster(events_end_time(N, ev, 0, 0), raster);
 	else
 		return tr;
 }
 
-long seq_block_end_flat(int N, const struct seq_event ev[N])
+double seq_block_end_flat(int N, const struct seq_event ev[N], double raster)
 {
-	return round_up_GRT(events_end_time(N, ev, 1, 1));
+	return round_up_raster(events_end_time(N, ev, 1, 1), raster);
 }
 
 
-long seq_block_rdt(int N, const struct seq_event ev[N])
+double seq_block_rdt(int N, const struct seq_event ev[N], double raster)
 {
-	return round_up_GRT(events_end_time(N, ev, 1, 0) - seq_block_end_flat(N, ev));
+	return round_up_raster(events_end_time(N, ev, 1, 0) - seq_block_end_flat(N, ev, raster), raster);
 }
 
 static long get_chrono_slice(const struct seq_state* seq_state, const struct seq_config* seq)

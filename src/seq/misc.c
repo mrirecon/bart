@@ -11,20 +11,6 @@
 #include "misc.h"
 
 
-long round_up_GRT(double val_usec)
-{
-	if (val_usec < 0)
-		return 0;
-
-	long lVal_usec = ceil(val_usec);
-	long rem = lVal_usec % GRAD_RASTER_TIME;
-
-	if (rem)
-		lVal_usec += GRAD_RASTER_TIME - rem;
-
-	return lVal_usec;
-}
-
 double round_up_raster(double time, double raster_time)
 {
 	if (0. > time)

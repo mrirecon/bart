@@ -59,7 +59,7 @@ static bool test_block_minv_init_delay(void)
 			pre_blocks++;
 
 		// correct delay_meas_time
-		if ((BLOCK_PRE == seq_state.mode) && (1 == E) && (1.E6 * seq.magn.init_delay_sec != seq_block_end(E, ev, seq_state.mode, seq.phys.tr)))
+		if ((BLOCK_PRE == seq_state.mode) && (1 == E) && (1.E6 * seq.magn.init_delay_sec != seq_block_end(E, ev, seq_state.mode, seq.phys.tr, seq.sys.raster_grad)))
 			return false;
 		else if ((BLOCK_PRE == seq_state.mode) && (1 < E) && (1. * seq.magn.ti != (ev[E - 1].end - ev[E - 1].start)))
 			return false;
@@ -123,7 +123,7 @@ static bool test_block_minv_multislice(void)
 			inversions++;
 
 		// correct ti in mag_prep block
-		if ((BLOCK_PRE == seq_state.mode) && (2 == E) && (1. * seq.magn.ti != seq_block_end(E, ev, seq_state.mode, seq.phys.tr)))
+		if ((BLOCK_PRE == seq_state.mode) && (2 == E) && (1. * seq.magn.ti != seq_block_end(E, ev, seq_state.mode, seq.phys.tr, seq.sys.raster_grad)))
 			return false;
 
 		i++;

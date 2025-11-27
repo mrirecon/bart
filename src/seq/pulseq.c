@@ -444,12 +444,12 @@ void events_to_pulseq(struct pulseq *ps, enum block mode, long tr, struct seq_sy
 	if (1 < events_counter(SEQ_EVENT_PULSE, N, ev))
 		error("Multiple RFs per block not supported\n");
 
-	long dur = seq_block_end(N, ev, mode, tr) / (1.e6 * ps->block_raster_time);
+	long dur = lround(seq_block_end(N, ev, mode, tr, 1.E6 * ps->block_raster_time) / (1.e6 * ps->block_raster_time));
 	ps->total_duration += dur * ps->block_raster_time;
 
 	double grad_shapes[MAX_GRAD_POINTS][3];
 	seq_compute_gradients(MAX_GRAD_POINTS, grad_shapes, 10., N, ev);
-	long grad_len = (seq_block_end_flat(N, ev) + seq_block_rdt(N, ev)) / GRAD_RASTER_TIME;
+	long grad_len = (seq_block_end_flat(N, ev, 1.E6 * ps->block_raster_time) + seq_block_rdt(N, ev, 1.E6 * ps->block_raster_time)) / (1.E6 * ps->block_raster_time);
 
 	if (grad_len > dur)
 		error("Gradient length %ld exceeds block duration %ld\n", grad_len, dur);
@@ -462,7 +462,7 @@ void events_to_pulseq(struct pulseq *ps, enum block mode, long tr, struct seq_sy
 		int adc_id = adc_to_pulseq(ps, i, grad_start * 10, N, ev);
 
 		if ((i != (n_blocks - 1)) && (0 < adc_id))
-			dur_split = (round_up_GRT(ev[events_idx(i, SEQ_EVENT_ADC, N, ev)].end) + 10.) / GRAD_RASTER_TIME - grad_start;
+			dur_split = (round_up_raster((ev[events_idx(i, SEQ_EVENT_ADC, N, ev)].end), ps->block_raster_time) + ps->block_raster_time) / ps->block_raster_time - grad_start;
 		else
 			dur_split = dur - grad_start;
 

@@ -20,7 +20,7 @@
 #endif
 
 
-void linearize_events(int N, struct seq_event ev[__VLA(N)], double* start_block, enum block mode, long tr)
+void linearize_events(int N, struct seq_event ev[__VLA(N)], double* start_block, enum block mode, long tr, double raster)
 {
 	if ((0 >= N) || (0. > *start_block))
 		return;
@@ -32,7 +32,7 @@ void linearize_events(int N, struct seq_event ev[__VLA(N)], double* start_block,
 		ev[i].end   += *start_block;
 	}
 
-	*start_block += (double)seq_block_end(N, ev, mode, tr);
+	*start_block += seq_block_end(N, ev, mode, tr, raster);
 }
 
 

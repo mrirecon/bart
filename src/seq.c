@@ -400,7 +400,7 @@ int main_seq(int argc, char* argv[argc])
 		}
 
 debug_print_events:
-		linearize_events(E, ev, &seq_state.start_block, seq_state.mode, seq.phys.tr);
+		linearize_events(E, ev, &seq_state.start_block, seq_state.mode, seq.phys.tr, seq.sys.raster_grad);
 
 		for (int i = 0; i < E; i++) {
 
@@ -413,7 +413,7 @@ debug_print_events:
 			debug_printf(DP_DEBUG3, "\n");
 		}
 
-		debug_printf(DP_DEBUG3, "seq_block_end_flat: %ld\n", seq_block_end_flat(E, ev));
+		debug_printf(DP_DEBUG3, "seq_block_end_flat: %f\n", seq_block_end_flat(E, ev, seq.sys.raster_grad));
 
 
 	} while (seq_continue(&seq_state, &seq));
