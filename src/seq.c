@@ -323,7 +323,7 @@ int main_seq(int argc, char* argv[argc])
 		if (BLOCK_KERNEL_IMAGE != seq_state.mode)
 			goto debug_print_events;
 
-		debug_printf(DP_DEBUG1, "end of last event: %.2f \t end of calc: %.2f\n",
+		debug_printf(DP_DEBUG1, "end of last event: %.8f \t end of calc: %.8f\n",
 				events_end_time(E, ev, 1, 0), samples * ddt);
 
 		if (support)
@@ -404,11 +404,29 @@ debug_print_events:
 
 		for (int i = 0; i < E; i++) {
 
-			debug_printf(DP_DEBUG3, "event[%d]:\t%.2f\t\t%.2f\t\t%.2f\t\t", i,
+			debug_printf(DP_DEBUG3, "event[%d]:\t%.8f\t\t%.8f\t\t%.8f\t\t", i,
 					ev[i].start, ev[i].mid, ev[i].end);
 
-			if (SEQ_EVENT_GRADIENT == ev[i].type)
-				debug_printf(DP_DEBUG3, "||\t%.2f\t\t%.2f\t\t%.2f", ev[i].grad.ampl[0], ev[i].grad.ampl[1],ev[i].grad.ampl[2]);
+			switch (ev[i].type) {
+
+			case SEQ_EVENT_GRADIENT:
+
+				debug_printf(DP_DEBUG3, "||\t%.5f\t\t%.5f\t\t%.5f", ev[i].grad.ampl[0], ev[i].grad.ampl[1],ev[i].grad.ampl[2]);
+				break;
+
+			case SEQ_EVENT_PULSE:
+
+				debug_printf(DP_DEBUG3, "|| SEQ_EVENT_PULSE \t freq: %.2f\t\t phase: %.2f", ev[i].pulse.freq, ev[i].pulse.phase);
+				break;
+
+			case SEQ_EVENT_ADC:
+
+				debug_printf(DP_DEBUG3, "|| SEQ_EVENT_ADC \t freq: %.2f\t\t phase: %.2f", ev[i].adc.freq, ev[i].adc.phase);
+				break;
+
+			default:
+
+			}
 
 			debug_printf(DP_DEBUG3, "\n");
 		}
