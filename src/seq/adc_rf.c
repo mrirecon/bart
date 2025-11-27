@@ -145,7 +145,7 @@ double adc_time_to_echo(const struct seq_config* seq)
 
 double adc_duration(const struct seq_config* seq)
 {
-	return ceil(seq->phys.dwell * seq->geom.baseres);
+	return round_up_raster(seq->phys.dwell * seq->geom.baseres, seq->sys.raster_rf);
 }
 
 static double adc_nco_freq(double proj_angle, long chrono_slice, const struct seq_config* seq)

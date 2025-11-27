@@ -28,7 +28,7 @@ static double start_rf(const struct seq_config* seq)
 {
 	double sli_ampl = slice_amplitude(seq);
 
-	return ceil(MAX(sli_ampl * seq->sys.grad.inv_slew_rate, seq->sys.coil_control_lead));
+	return round_up_raster(MAX(sli_ampl * seq->sys.grad.inv_slew_rate, seq->sys.coil_control_lead), seq->sys.raster_rf);
 }
 
 static double ro_shift(const struct seq_config* seq)
@@ -95,7 +95,7 @@ static int prep_grad_sli(struct grad_trapezoid* grad, const struct seq_config* s
 	if (seq->sys.grad.max_amplitude < ampl)
 		return 0;
 
-	grad->rampup = ceil(MAX(ampl * seq->sys.grad.inv_slew_rate, seq->sys.coil_control_lead)); //round_up for start of rf pulse
+	grad->rampup = round_up_raster(MAX(ampl * seq->sys.grad.inv_slew_rate, seq->sys.coil_control_lead), seq->sys.raster_rf); //round_up for start of rf pulse
 	grad->flat = seq->phys.rf_duration;
 	grad->rampdown = ampl * seq->sys.grad.inv_slew_rate;
 	grad->ampl = ampl;
