@@ -55,60 +55,58 @@ In: Proc Intl Soc Mag Reson Med 2023; 31:4947.
 Uecker M, Lustig M.
 Estimating Absolute-Phase Maps Using ESPIRiT and Virtual Conjugate Coils.
 Magn Reson Med 2017; 77:1201-1207.
-https://github.com/mrirecon/vcc-espirit
+https://gitlab.tugraz.at/ibi/mrirecon/papers/vcc-espirit
 
 Rosenzweig S, Holme HCM, Wilke RN, Voit D, Frahm J, Uecker M.
-Simultaneous Multi-Slice Reconstruction Using Regularized Nonlinear Inversion:
-SMS-NLINV.
+Simultaneous Multi-Slice Reconstruction Using Regularized Nonlinear Inversion: SMS-NLINV.
 Magn Reson Med 2018; 79:2057-2066.
-https://github.com/mrirecon/sms-nlinv
+https://gitlab.tugraz.at/ibi/mrirecon/papers/sms-nlinv
 
 Rosenzweig S, Holme HCM, Uecker M.
-Simple Auto-Calibrated Gradient Delay Estimation From Few Spokes Using Radial
-Intersections (RING).
+Simple Auto-Calibrated Gradient Delay Estimation From Few Spokes Using Radial Intersections (RING).
 Magn Reson Med 2019; 81:1898-1906.
-https://github.com/mrirecon/ring
+https://gitlab.tugraz.at/ibi/mrirecon/papers/ring
 
 Holme HCM, Rosenzweig S, Ong F, Wilke RN, Lustig M, Uecker M.
-ENLIVE: An Efficient Nonlinear Method for Calibrationless and Robust Parallel
-Imaging.
+ENLIVE: An Efficient Nonlinear Method for Calibrationless and Robust Parallel Imaging.
 Scientific Reports 2019; 9:3034.
-https://github.com/mrirecon/enlive
+https://gitlab.tugraz.at/ibi/mrirecon/papers/enlive
 
 Wang X, Kohler F, Unterberg-Buchwald C, Lotz J, Frahm J, Uecker M.
 Model-based myocardial T1 mapping with sparsity constraints using single-shot
 inversion-recovery radial FLASH cardiovascular magnetic resonance.
 J Cardioviasc Magn Reson 2019; 21:60.
-https://github.com/mrirecon/myocardial-t1-mapping
+https://gitlab.tugraz.at/ibi/mrirecon/papers/myocardial-t1-mapping
 
 Rosenzweig S, Scholand N, Holme HCM, Uecker M.
-Cardiac and Respiratory Self-Gating in Radial MRI using an Adapted Singular
-Spectrum Analysis (SSA-FARY).
+Cardiac and Respiratory Self-Gating in Radial MRI using an Adapted Singular Spectrum Analysis (SSA-FARY).
 IEEE Trans Med Imag 2020; 39:3029-3041.
-https://github.com/mrirecon/SSA-FARY
+https://gitlab.tugraz.at/ibi/mrirecon/papers/SSA-FARY
 
 Wang X, Rosenzweig S, Scholand N, Holme HCM, Uecker M.
 Model-based Reconstruction for Simultaneous Multi-slice T1 Mapping using
 Single-shot Inversion-recovery Radial FLASH.
 Magn Reson Med 2021; 85:1258-1271.
-https://github.com/mrirecon/sms-t1-mapping
+https://gitlab.tugraz.at/ibi/mrirecon/papers/sms-t1-mapping
 
 Wang X, Tan Z, Scholand N, Roeloffs V, Uecker M.
 Physics-based Reconstruction Methods for Magnetic Resonance Imaging.
 Philos. Trans. R. Soc. A. 2021; 379:20200196.
-https://github.com/mrirecon/physics-recon
+https://gitlab.tugraz.at/ibi/mrirecon/papers/physics-recon
 
 Wang X, Rosenzweig S, Roeloffs V, Blumenthal M, Scholand N, Tan Z,
 Holme HCM, Unterberg-Buchwald C, Hinkel R, Uecker M.
 Free-breathing myocardial T1 mapping using inversion-recovery radial FLASH
 and motion-resolved model-based reconstruction.
 Magn Reson Med 2023; 89;1368-1384.
-https://github.com/mrirecon/motion-resolved-myocardial-T1-mapping
+https://gitlab.tugraz.at/ibi/mrirecon/papers/motion-resolved-myocardial-T1-mapping
 
 Scholand N, Wang X, Roeloffs V, Rosenzweig S, Uecker M.
 Quantitative MRI by nonlinear inversion of the Bloch equations.
 Magn Reson Med 2023; 90:520-538.
-https://github.com/mrirecon/bloch-moba
+https://gitlab.tugraz.at/ibi/mrirecon/papers/bloch-moba
+
+
 
 
 
