@@ -8,13 +8,11 @@ Annual Meeting ISMRM, Toronto 2015,
 In: Proc Intl Soc Mag Reson Med 2015; 23:2486.
 
 Uecker M, Virtue P, Ong F, Murphy MJ, Alley MT, Vasanawala SS, Lustig M.
-Software Toolbox and Programming Library for Compressed Sensing and
-Parallel Imaging,
+Software Toolbox and Programming Library for Compressed Sensing and Parallel Imaging.
 ISMRM Workshop on Data Sampling and Image Reconstruction, Sedona 2013.
 
-Tamir JI, Ong F, Cheng JY, Uecker M, Lustig M. Generalized Magnetic
-Resonance Image Reconstruction using The Berkeley Advanced
-Reconstruction Toolbox,
+Tamir JI, Ong F, Cheng JY, Uecker M, Lustig M.
+Generalized Magnetic Resonance Image Reconstruction using The Berkeley Advanced Reconstruction Toolbox.
 ISMRM Workshop on Data Sampling and Image Reconstruction, Sedona 2016.
 
 Uecker M.
@@ -47,6 +45,10 @@ Blumenthal M, Holme HCM, Uecker M.
 Scaling nuFFT Memory-Overhead Down to Zero: Computational Trade-Offs and
 Memory-Efficient PICS-Reconstructions with BART.
 In: Proc Intl Soc Mag Reson Med 2023; 31:4947.
+
+Blumenthal M, Uecker M.
+Large-scale High-Dimensional Image Reconstruction via Delayed and Distributed Computing with BART.
+In: Proc Intl Soc Mag Reson Med 2025; 33:1281.
 
 
 
@@ -101,12 +103,25 @@ and motion-resolved model-based reconstruction.
 Magn Reson Med 2023; 89;1368-1384.
 https://gitlab.tugraz.at/ibi/mrirecon/papers/motion-resolved-myocardial-T1-mapping
 
+Blumenthal M, Luo G, Schilling M, Holme HCM, Uecker M.
+Deep, deep learning with BART.
+Magn Reson med 2023; 89:678-693.
+https://gitlab.tugraz.at/ibi/mrirecon/papers/deep-deep-learning-with-bart
+
 Scholand N, Wang X, Roeloffs V, Rosenzweig S, Uecker M.
 Quantitative MRI by nonlinear inversion of the Bloch equations.
 Magn Reson Med 2023; 90:520-538.
 https://gitlab.tugraz.at/ibi/mrirecon/papers/bloch-moba
 
+Blumenthal M, Fantinato C, Unterberg-Buchwald C, Haltmeier M, Wang X, Uecker M.
+Self-supervised learning for improved calibrationless radial MRI with NLINV-Net.
+Magn Reson Med 2024; 92:2447-2463.
+https://gitlab.tugraz.at/ibi/mrirecon/papers/nlinv-net
 
+Scholand N, Schaten P, Graf C, Mackner D, Holme HCM, Blumenthal M, Mao A, Assländer J, Uecker M.
+Rational approximation of golden angles: Accelerated reconstructions for radial MRI.
+Magn Reson Med 2025; 93:51-66.
+https://gitlab.tugraz.at/ibi/mrirecon/papers/raga
 
 
 
@@ -431,10 +446,12 @@ to Video and Image Reconstruction.
 SIAM J Imaging Sci 2014; 7:2258-2300.
 
 Schloegl M, Holler M, Schwarzl A, Bredies K, Stollberger R.
-Infimal convolution of total generalized variation functionals
-for dynamic MRI.
+Infimal convolution of total generalized variation functionals for dynamic MRI.
 Magn Reson Med 2017; 78:142-155.
 
+Luo G, Blumenthal M, Heide M, Uecker M.
+Bayesian MRI reconstruction with joint uncertainty estimation using diffusion models.
+Magn Reson Med 2023; 90:295-311.
 
 
 
@@ -486,6 +503,15 @@ Magn Reson Med 2019; 81:1898-1906.
 
 
 
+- sequences -
+(commands: seq)
+
+Kelvin J. Layton, Stefan Kroboth, Feng Jia, Sebastian Littin, Huijun Yu,
+Jochen Leupold, Jon-Fredrik Nielsen, Tony Stöcker, Maxim Zaitsev.
+Pulseq: A rapid and hardware-independent pulse sequence prototyping framework
+Magn Reson Med 2017; 77:1544-1552.
+
+
 
 - acceleration with graphical processing units -
 (commands: pocsense, nufft, pics, nlinv)
@@ -500,6 +526,15 @@ Murphy M, Alley M, Demmel J, Keutzer K, Vasanawala S, Lustig M.
 Fast ℓ1-SPIRiT Compressed Sensing Parallel Imaging MRI: Scalable
 Parallel Implementation and Clinically Feasible Runtime.
 IEEE Trans Med Imaging 2012; 31:1250-1262.
+
+Blumenthal M, Holme HCM, Uecker M.
+Scaling nuFFT Memory-Overhead Down to Zero: Computational Trade-Offs and
+Memory-Efficient PICS-Reconstructions with BART.
+In: Proc Intl Soc Mag Reson Med 2023; 31:4947.
+
+Blumenthal M, Uecker M.
+Large-scale High-Dimensional Image Reconstruction via Delayed and Distributed Computing with BART.
+In: Proc Intl Soc Mag Reson Med 2025; 33:1281.
 
 
 
