@@ -125,7 +125,7 @@ tests/test-sample-gauss1d_mean_real1_gpu: sample avg std cabs calc scale ones nr
 	$(TOOLDIR)/scale 1+1i mu.ra mu.ra							;\
 	$(TOOLDIR)/ones 16 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 vars.ra				;\
 	$(TOOLDIR)/scale 0.001 vars.ra vars.ra							;\
-	$(TOOLDIR)/sample --sigma max=100.,min=5 -g -N100 -K100 -s100 --gmm mean=mu.ra,var=vars.ra -r --gamma=0.0025 -S10000 out.ra 	;\
+	$(TOOLDIR)/sample --sigma max=100.,min=5 -g -N100 -K100 -s100 --gmm mean=mu.ra,var=vars.ra -r --gamma=0.01 -S10000 out.ra 	;\
 	$(TOOLDIR)/calc zimag out.ra out_imag.ra						;\
 	$(TOOLDIR)/calc zreal out.ra out_real.ra						;\
 	$(TOOLDIR)/avg 32768 out_real.ra out_avg_real.ra					;\
@@ -134,9 +134,9 @@ tests/test-sample-gauss1d_mean_real1_gpu: sample avg std cabs calc scale ones nr
 	$(TOOLDIR)/ones 1 1 o.ra								;\
 	$(TOOLDIR)/scale 5 o.ra o_std.ra							;\
 	$(TOOLDIR)/scale 0+1i o.ra o_imag.ra							;\
-	$(TOOLDIR)/nrmse -t 0.05 out_avg_real.ra o.ra						;\
-	$(TOOLDIR)/nrmse -t 0.05 out_avg_imag.ra o_imag.ra					;\
-	$(TOOLDIR)/nrmse -t 0.05 out_std.ra o_std.ra						;\
+	$(TOOLDIR)/nrmse -t 0.04 out_avg_real.ra o.ra						;\
+	$(TOOLDIR)/nrmse -t 0.04 out_avg_imag.ra o_imag.ra					;\
+	$(TOOLDIR)/nrmse -t 0.04 out_std.ra o_std.ra						;\
 	rm *.ra; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
@@ -189,11 +189,11 @@ tests/test-sample-gauss1d_var_gpu: sample avg var cabs calc scale ones nrmse zer
 	$(TOOLDIR)/ones 2 1 1 mu.ra								;\
 	$(TOOLDIR)/scale 1+1i mu.ra mu.ra							;\
 	$(TOOLDIR)/ones 16 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 vars.ra				;\
-	$(TOOLDIR)/sample --sigma max=10.,min=1 -g -N500 -K100 -s100 --gmm mean=mu.ra,var=vars.ra --gamma=0.001 -S1000 out.ra 	;\
+	$(TOOLDIR)/sample --sigma max=10.,min=1 -g -N200 -K100 -s100 --gmm mean=mu.ra,var=vars.ra --gamma=0.005 -S1000 out.ra 	;\
 	$(TOOLDIR)/var 32768 out.ra out_var.ra 							;\
 	$(TOOLDIR)/ones 1 1 o.ra								;\
 	$(TOOLDIR)/scale 2 o.ra o_var.ra							;\
-	$(TOOLDIR)/nrmse -t 0.05 out_var.ra o_var.ra						;\
+	$(TOOLDIR)/nrmse -t 0.04 out_var.ra o_var.ra						;\
 	rm *.ra; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
