@@ -160,7 +160,7 @@ static nn_t cunet_level_create(struct nn_cunet_conf_s* conf, int level, const lo
 {
 	const char* prefix = ptr_printf("level_%d", level);
 
-	static nn_t network = NULL;
+	nn_t network = NULL;
 
 	if (level == conf->levels) {
 
