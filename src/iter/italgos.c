@@ -419,7 +419,7 @@ void preconditioned_eulermaruyama(int maxiter, float alpha,
 	float diag_prec,
 	int max_prec_iter,
 	float prec_tol,
-	long /*batchsize*/,
+	long batchsize,
 	struct iter_monitor_s* monitor)
 {
 	float* r = vops->allocate(N);
@@ -474,12 +474,10 @@ void preconditioned_eulermaruyama(int maxiter, float alpha,
 			vops->axpy(N, x, sqrtf(step / diag_prec), r);
 		}
 
-#if 0		//FIXME: batched conjgrad makes more sense but is currently slow.
 		if (1 < batchsize)
-			conjgrad_batch(max_prec_iter, 0, prec_tol, N / batchsize / 2, 1, batchsize, vops, prec_normal, o, t, NULL);
+			conjgrad_batch(max_prec_iter, diag_prec, NULL, prec_tol, N / batchsize / 2, 1, batchsize, vops, prec_normal, x, o, NULL);
 		else
-#endif
-		conjgrad(max_prec_iter, diag_prec, prec_tol, N, vops, prec_normal, x, o, NULL);
+			conjgrad(max_prec_iter, diag_prec, prec_tol, N, vops, prec_normal, x, o, NULL);
 	}
 
 	vops->del(o);
