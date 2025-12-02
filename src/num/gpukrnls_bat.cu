@@ -111,6 +111,17 @@ __global__ static void kern_xpay_bat(long Bi, long N, long Bo, const float* _bet
 
 extern "C" void cuda_xpay_bat(long Bi, long N, long Bo, const float* beta, float* a, const float* x)
 {
+	if (1 == Bi && (Bo * 1000 < N)) {
+
+		float* beta_cpu = (float*) xmalloc(sizeof(float) * Bo);
+		cuda_memcpy(sizeof(float) * Bo, beta_cpu, beta);
+
+		for (long bo = 0; bo < Bo; bo++)
+			cuda_xpay(2 * N, beta_cpu[bo], a + 2 * N * bo, x + 2 * N * bo);
+		free(beta_cpu);
+		return;
+	}
+
 	dim3 blockDim = getBlockSize2(Bi, Bo, (const void*)kern_xpay_bat);
 	dim3 gridDim = getGridSize2(Bi, Bo, (const void*)kern_xpay_bat);
 
@@ -150,6 +161,18 @@ __global__ static void kern_axpy_bat(long Bi, long N, long Bo, cuFloatComplex* _
 
 extern "C" void cuda_axpy_bat(long Bi, long N, long Bo, float* a, const float* alpha, const float* x)
 {
+	if (1 == Bi && (Bo * 1000 < N)) {
+
+		float* alpha_cpu = (float*) xmalloc(sizeof(float) * Bo);
+		cuda_memcpy(sizeof(float) * Bo, alpha_cpu, alpha);
+
+		for (long bo = 0; bo < Bo; bo++)
+			cuda_axpbz(2 * N, a + 2 * N * bo, 1, a + 2 * N * bo, alpha_cpu[bo], x + 2 * N * bo);
+
+		free(alpha_cpu);
+		return;
+	}
+
 	dim3 blockDim = getBlockSize2(Bi, Bo, (const void*)kern_axpy_bat);
 	dim3 gridDim = getGridSize2(Bi, Bo, (const void*)kern_axpy_bat);
 
@@ -189,6 +212,19 @@ __global__ static void kern_dot_bat(long Bi, long N, long Bo, float* dst, const 
 
 extern "C" void cuda_dot_bat(long Bi, long N, long Bo, float* dst, const float* x, const float* y)
 {
+	if (1 == Bi && (Bo * 1000 < N)) {
+
+		float* dst_cpu = (float*) xmalloc(sizeof(float) * Bo);
+
+		for (long bo = 0; bo < Bo; bo++)
+			dst_cpu[bo] = cuda_dot(2 * N, x + 2 * N * bo, y + 2 * N * bo);
+
+		cuda_memcpy(sizeof(float) * Bo, dst, dst_cpu);
+		free(dst_cpu);
+
+		return;
+	}
+
 	dim3 blockDim = getBlockSize2(Bi, Bo, (const void*)kern_dot_bat);
 	dim3 gridDim = getGridSize2(Bi, Bo, (const void*)kern_dot_bat);
 
