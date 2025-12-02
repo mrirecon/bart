@@ -308,7 +308,7 @@ static void stack_container_fun(const nlop_data_t* _data, int N, complex float* 
 	for (int j = 0; j < Nnlops; j++) {
 
 		if (d->split_mpi) {
-		
+
 			if (mpi_get_rank() != j % mpi_get_num_procs())
 				continue;
 
@@ -327,7 +327,7 @@ static void stack_container_fun(const nlop_data_t* _data, int N, complex float* 
 		nlop_generic_apply_unchecked(d->nlops[j], N, targs);
 	}
 
-	if (d->split_mpi && (1 < mpi_get_num_procs()))  {	
+	if (d->split_mpi && (1 < mpi_get_num_procs()))  {
 
 		for (int i = 0; i < Nnlops; i++) {
 
@@ -371,7 +371,7 @@ static void stack_container_der(const nlop_data_t* _data, int o, int i, complex 
 		for (int j = 0; j < Nnlops; j++) {
 
 			complex float* dst = (void*)_dst + d->offsets[j][o];
-		
+
 			auto iov = nlop_generic_codomain(d->nlops[j], o);
 			mpi_bcast2(iov->N, iov->dims, iov->strs, dst, (long)iov->size, j % mpi_get_num_procs());
 		}
@@ -393,7 +393,7 @@ static void stack_container_adj(const nlop_data_t* _data, int o, int i, complex 
 	if (d->dup[i]) {
 
 		md_clear(dom->N, dom->dims, _dst, dom->size);
-		
+
 		for(int j = 0; j < streams; j++) {
 
 			tmp[j] = md_alloc_sameplace(dom->N, dom->dims, dom->size, _dst);
@@ -407,7 +407,7 @@ static void stack_container_adj(const nlop_data_t* _data, int o, int i, complex 
 	for (int j = 0; j < Nnlops; j++) {
 
 		if (d->split_mpi) {
-		
+
 			if (mpi_get_rank() != j % mpi_get_num_procs())
 				continue;
 
@@ -427,7 +427,7 @@ static void stack_container_adj(const nlop_data_t* _data, int o, int i, complex 
 
 			md_free(tmp2);
 		} else {
-	
+
 			linop_adjoint_unchecked(nlop_get_derivative(d->nlops[j], o, i), dst, src);
 		}
 	}
@@ -471,7 +471,7 @@ static void stack_container_nrm(const nlop_data_t* _data, int o, int i, complex 
 	if (d->dup[i]) {
 
 		md_clear(dom->N, dom->dims, _dst, dom->size);
-		
+
 		for(int j = 0; j < streams; j++) {
 
 			tmp[j] = md_alloc_sameplace(dom->N, dom->dims, dom->size, _dst);
@@ -485,7 +485,7 @@ static void stack_container_nrm(const nlop_data_t* _data, int o, int i, complex 
 	for (int j = 0; j < Nnlops; j++) {
 
 		if (d->split_mpi) {
-		
+
 			if (mpi_get_rank() != j % mpi_get_num_procs())
 				continue;
 
@@ -505,7 +505,7 @@ static void stack_container_nrm(const nlop_data_t* _data, int o, int i, complex 
 
 			md_free(tmp2);
 		} else {
-	
+
 			linop_normal_unchecked(nlop_get_derivative(d->nlops[j], o, i), dst, src);
 		}
 	}
@@ -595,7 +595,7 @@ static const struct nlop_s* nlop_stack_container_internal_create(int N, const st
 		DO[i] = iov->N;
 		max_DO = MAX(max_DO, iov->N);
 	}
-	
+
 
 	for (int i = 0; i < II; i++) {
 
@@ -693,7 +693,7 @@ static const struct nlop_s* nlop_stack_container_internal_create(int N, const st
 				auto iov = nlop_generic_codomain(nlops[j], i);
 				pos[sd] += iov->dims[sd];
 			}
-				
+
 		}
 	}
 
@@ -715,7 +715,7 @@ static const struct nlop_s* nlop_stack_container_internal_create(int N, const st
 
 				auto iov = nlop_generic_domain(nlops[j], i);
 				pos[sd] += iov->dims[sd];
-			}			
+			}
 		}
 	}
 
@@ -742,7 +742,7 @@ static const struct nlop_s* nlop_stack_container_internal_create(int N, const st
 				&& (in_stack_dim[0] >= 0)
 				&& (   (in_stack_dim[0] == max_DI - 1)
 				    || (1 == md_calc_size(max_DI - in_stack_dim[0] - 1, nl_idims[0] + in_stack_dim[0] + 1)));
-				
+
 	d->simple_flatten_out =    (1 == OO)
 				&& (out_stack_dim[0] >= 0)
 				&& (   (out_stack_dim[0] == max_DO - 1)
@@ -776,14 +776,14 @@ static const struct nlop_s* nlop_stack_container_internal_create(int N, const st
 			if (null_op)
 				result = nlop_no_der_F(result, o, i);
 		}
-			
+
 
 	for (int i = 0; i < II; i++)
 		result = nlop_reshape_in_F(result, i, DI[i], nl_idims[i]);
-	
+
 	for (int i = 0; i < OO; i++)
 		result = nlop_reshape_out_F(result, i, DO[i], nl_odims[i]);
-	
+
 	return result;
 }
 
@@ -793,7 +793,7 @@ static const struct nlop_s* nlop_stack_container_internal_create_F(int N, const 
 
 	for (int i = 0; i < N; i++)
 		nlop_free(nlops[i]);
-	
+
 	return result;
 }
 
@@ -815,7 +815,7 @@ struct stack_flatten_trafo_s {
 	long osize;
 
 	int N;
-	
+
 	long* ioff;
 	long* ooff;
 
@@ -899,7 +899,7 @@ static struct nlop_s* nlop_flatten_stacked_transform_input_create(int N, const s
 	long (*ioff)[II][N] = (void*)d->ioff;
 
 	long* st_dims[II];
-	
+
 	for (int i = 0; i < II; i++) {
 
 		for (int j = 0; j < N; j++) {
@@ -958,7 +958,7 @@ static struct nlop_s* nlop_flatten_stacked_transform_input_create(int N, const s
 			(*ooff)[i][j] = d->osize;
 			d->osize += md_calc_size((*D)[i][j], (*dims)[i][j]);
 		}
-	
+
 	d->dup = false;
 	for (int i = 0; i < II; i++)
 		d->dup = d->dup || (-1 == in_stack_dim[i]);
@@ -1049,7 +1049,7 @@ static struct nlop_s* nlop_flatten_stacked_transform_output_create(int N, const 
 			(*ioff)[i][j] = d->isize;
 			d->isize += md_calc_size((*D)[i][j], (*dims)[i][j]);
 		}
-	
+
 	d->dup = false;
 
 	long odims[1] = { d->osize };
@@ -1064,7 +1064,7 @@ const struct nlop_s* nlop_flatten_stacked(const struct nlop_s* nlop)
 	if (NULL == _data)
 		return NULL;
 
-	auto data = CAST_MAYBE(stack_container_s, _data);	
+	auto data = CAST_MAYBE(stack_container_s, _data);
 	if (NULL == data)
 		return NULL;
 
@@ -1081,12 +1081,12 @@ const struct nlop_s* nlop_flatten_stacked(const struct nlop_s* nlop)
 
 	int istack_dims[1] = { 0 };
 	int ostack_dims[1] = { 0 };
-	
+
 	auto result = nlop_stack_container_internal_create_F(data->Nnlops, nlops, 1, istack_dims, 1, ostack_dims, data->split_mpi);
 
 	if (NULL != itrafo)
 		result = nlop_chain_FF(itrafo, result);
-	
+
 	if (NULL == otrafo)
 		return result;
 
