@@ -393,6 +393,22 @@ tests/test-reconet-nnmodl-train-mpi-noncart: bart nrmse reconet $(TRN_KSP_NC) $(
 	rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-reconet-nnmodl-train-mpi-gpu: bart nrmse reconet $(TRN_KSP) $(TRN_COL) $(TRN_REF_IMG)
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP); export OMP_NUM_THREADS=2 	;\
+	                 $(TOOLDIR)/reconet --network modl -g --resnet-block=no-batch-normalization --test -t --train-algo e=10 -b4 $(TRN_KSP) $(TRN_COL) weights0 $(TRN_REF_IMG)	;\
+	mpirun -n 2 $(ROOTDIR)/bart reconet --network modl -g --resnet-block=no-batch-normalization --test -t --train-algo e=10 -b4 $(TRN_KSP) $(TRN_COL) weights1 $(TRN_REF_IMG)	;\
+	$(TOOLDIR)/nrmse -t 1.e-4 weights1 weights0	;\
+	rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-reconet-nnmodl-train-mpi-gpu-noncart: bart nrmse reconet $(TRN_KSP_NC) $(TRN_COL) $(TRN_REF_IMG) $(TRN_TRJ)
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	;\
+	        			    $(TOOLDIR)/reconet --network modl -g --resnet-block=no-batch-normalization --test -t --train-algo e=10 -b2 --trajectory=$(TRN_TRJ) $(TRN_KSP_NC) $(TRN_COL) weights0 $(TRN_REF_IMG)	;\
+	BART_GPU_STREAMS=2 mpirun -n 2 $(ROOTDIR)/bart reconet --network modl -g --resnet-block=no-batch-normalization --test -t --train-algo e=10 -b2 --trajectory=$(TRN_TRJ) $(TRN_KSP_NC) $(TRN_COL) weights1 $(TRN_REF_IMG)	;\
+	$(TOOLDIR)/nrmse -t 1.e-5 weights1 weights0	;\
+	rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 tests/test-reconet-nnmodl-tensorflow2: nrmse multicfl reconet $(TRN_KSP) $(TRN_REF_IMG) $(TRN_COL) $(TST_KSP) $(TST_REF_IMG) $(TST_COL)
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP); export OMP_NUM_THREADS=1 													;\
 	CUDA_VISIBLE_DEVICES=-1 PYTHONPATH=$(ROOTDIR)/python python3 $(ROOTDIR)/tests/network_tf2.py ;\
@@ -484,4 +500,8 @@ TESTS += tests/test-reconet-nnmodl-tensorflow1
 
 TESTS_gpu += tests/test-reconet-nnmodl-tensorflow1-gpu
 TESTS_gpu += tests/test-reconet-nnmodl-tensorflow2-gpu
+endif
+
+ifeq ($(MPI), 1)
+TESTS_GPU += tests/test-reconet-nnmodl-train-mpi-gpu-noncart tests/test-reconet-nnmodl-train-mpi-gpu
 endif

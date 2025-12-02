@@ -312,7 +312,7 @@ static void stack_container_fun(const nlop_data_t* _data, int N, complex float* 
 			if (mpi_get_rank() != j % mpi_get_num_procs())
 				continue;
 
-			if (thread_id() != (j / mpi_get_num_procs()) % streams)
+			if ((1 < streams) && (thread_id() != (j / mpi_get_num_procs()) % streams))
 				continue;
 		}
 
@@ -356,7 +356,7 @@ static void stack_container_der(const nlop_data_t* _data, int o, int i, complex 
 			if (mpi_get_rank() != j % mpi_get_num_procs())
 				continue;
 
-			if (thread_id() != (j / mpi_get_num_procs()) % streams)
+			if ((1 < streams) && (thread_id() != (j / mpi_get_num_procs()) % streams))
 				continue;
 		}
 
@@ -401,6 +401,7 @@ static void stack_container_adj(const nlop_data_t* _data, int o, int i, complex 
 		}
 	}
 
+	//required as gpu calls outside omp parallel region reset streams
 	streams = (d->split_mpi) ? set_streams(Nnlops) : 1;
 
 #pragma omp parallel num_threads(streams)
@@ -411,7 +412,7 @@ static void stack_container_adj(const nlop_data_t* _data, int o, int i, complex 
 			if (mpi_get_rank() != j % mpi_get_num_procs())
 				continue;
 
-			if (thread_id() != (j / mpi_get_num_procs()) % streams)
+			if ((1 < streams) && (thread_id() != (j / mpi_get_num_procs()) % streams))
 				continue;
 		}
 
@@ -479,6 +480,7 @@ static void stack_container_nrm(const nlop_data_t* _data, int o, int i, complex 
 		}
 	}
 
+	//required as gpu calls outside omp parallel region reset streams
 	streams = (d->split_mpi) ? set_streams(Nnlops) : 1;
 
 #pragma omp parallel num_threads(streams)
@@ -489,7 +491,7 @@ static void stack_container_nrm(const nlop_data_t* _data, int o, int i, complex 
 			if (mpi_get_rank() != j % mpi_get_num_procs())
 				continue;
 
-			if (thread_id() != (j / mpi_get_num_procs()) % streams)
+			if ((1 < streams) && (thread_id() != (j / mpi_get_num_procs()) % streams))
 				continue;
 		}
 
