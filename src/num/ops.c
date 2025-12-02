@@ -1785,7 +1785,6 @@ const struct operator_s* operator_permute(const struct operator_s* op, int N, co
 {
 	assert(N == operator_nr_args(op));
 
-	unsigned long flags = 0;
 	bool io_flags[N];
 	int D[N];
 	const long* dims[N];
@@ -1794,7 +1793,6 @@ const struct operator_s* operator_permute(const struct operator_s* op, int N, co
 	for (int i = 0; i < N; i++) {
 
 		assert(perm[i] < N);
-		flags |= MD_BIT(perm[i]);
 
 		const struct iovec_s* io = operator_arg_domain(op, perm[i]);
 
@@ -1804,8 +1802,6 @@ const struct operator_s* operator_permute(const struct operator_s* op, int N, co
 
 		io_flags[i] = op->io_flags[perm[i]];
 	}
-
-	assert(((int)sizeof(flags) <= N) || (MD_BIT(N) == flags + 1));
 
 	// op = operator_ref(op);
 	PTR_ALLOC(struct permute_data_s, data);
