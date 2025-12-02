@@ -2,6 +2,7 @@
 typedef struct bart_lock bart_lock_t;
 
 extern void bart_lock(bart_lock_t* lock);
+extern _Bool bart_trylock(bart_lock_t* lock);
 extern void bart_unlock(bart_lock_t* lock);
 extern void bart_lock_destroy(bart_lock_t* x);
 extern bart_lock_t* bart_lock_create(void);
