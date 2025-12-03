@@ -611,7 +611,7 @@ int main_sample(int argc, char* argv[argc])
 
 			// compute expectation value at current noise level
 			nlop_apply(nlop_fixed, DIMS, img_dims, tmp_exp, DIMS, img_dims, samples);
-			md_zsmul(DIMS, img_dims, tmp_exp, tmp_exp, var_i / 2);
+			md_zsmul(DIMS, img_dims, tmp_exp, tmp_exp, var_i);
 			md_zaxpy(DIMS, img_dims, tmp_exp, 1, samples);
 
 			md_copy_block(DIMS, pos, out_dims, expectation, img_dims, tmp_exp, CFL_SIZE);
