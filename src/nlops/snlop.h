@@ -4,7 +4,6 @@
 
 #include "misc/types.h"
 #include "misc/shrdptr.h"
-#include "misc/debug.h"
 
 struct nlop_s;
 struct snlop_s;
@@ -17,17 +16,17 @@ typedef void (*nlop_arg_del_f)(const struct nlop_arg_s* a);
 
 struct nlop_arg_s {
 
-    struct shared_obj_s sptr;
-    TYPEID* TYPEID;
+	struct shared_obj_s sptr;
+	TYPEID* TYPEID;
 
-    nlop_arg_reshape_f reshape;
-    nlop_arg_dup_f dup;
-    nlop_arg_stack_f stack;
-    nlop_arg_del_f del;
+	nlop_arg_reshape_f reshape;
+	nlop_arg_dup_f dup;
+	nlop_arg_stack_f stack;
+	nlop_arg_del_f del;
 
-    struct snlop_s* x;
-    const char* name;
-    _Bool fixed_name;
+	struct snlop_s* x;
+	const char* name;
+	_Bool fixed_name;
 };
 
 typedef struct nlop_arg_s* arg_t;
@@ -90,7 +89,7 @@ extern arg_t snlop_dup(arg_t a, arg_t b);
 extern _Bool snlop_check(snlop_t snlop);
 extern _Bool arg_check(arg_t arg);
 
-extern void snlop_debug(enum debug_levels dl, struct snlop_s* x);
+extern void snlop_debug(int dl, struct snlop_s* x);
 
 extern struct list_s* snlop_get_oargs(int N, arg_t args[N]);
 extern void snlop_prune_oargs(arg_t oarg, struct list_s* keep_args);

@@ -65,7 +65,7 @@ int arg_ref_count(const struct nlop_arg_s* x)
 	if (NULL == x)
 		return -1;
 
-	return x->sptr.refcount;	
+	return x->sptr.refcount;
 }
 
 void arg_init(arg_t arg)
@@ -83,7 +83,7 @@ void arg_init(arg_t arg)
 static struct nlop_arg_s* arg_create(struct snlop_s* x)
 {
 	PTR_ALLOC(struct nlop_arg_s, arg);
-	
+
 	arg_init(arg);
 	arg->x = x;
 
@@ -114,7 +114,7 @@ static int get_arg_name_count(const char* name)
 		reg_arg_names = list_create();
 
 	struct reg_arg_name* x = list_get_first_item(reg_arg_names, name,  cmp_names, false);
-	
+
 	if (NULL == x) {
 
 		PTR_ALLOC(struct reg_arg_name , n);
@@ -128,7 +128,7 @@ static int get_arg_name_count(const char* name)
 }
 
 void arg_set_name(arg_t arg, const char* name)
-{	
+{
 	if ('_' == name[strlen(name) - 1]) {
 
 		arg_set_name_F(arg, ptr_printf("%s%d", name, get_arg_name_count(name)));
@@ -137,7 +137,7 @@ void arg_set_name(arg_t arg, const char* name)
 
 	if (NULL != arg->name)
 		xfree(arg->name);
-	
+
 	arg->name = strdup(name);
 }
 
@@ -181,25 +181,25 @@ static struct snlop_s* snlop_create(void)
 void snlop_free(const struct snlop_s* x)
 {
 	arg_t arg = (arg_t)list_pop(x->iargs);
-	
+
 	while (NULL != arg) {
-		
+
 		arg->x = NULL;
 		arg_unref(arg);
 		arg = (arg_t)list_pop(x->iargs);
 	}
 
 	arg = (arg_t)list_pop(x->oargs);
-	
+
 	while (NULL != arg) {
-		
+
 		arg->x = NULL;
 		arg_unref(arg);
 		arg = (arg_t)list_pop(x->oargs);
 	}
 
 	arg = (arg_t)list_pop(x->targs);
-	
+
 	while (NULL != arg) {
 
 		arg_unref(arg);
@@ -229,22 +229,22 @@ bool snlop_check(snlop_t snlop)
 
 	if (II != list_count(snlop->iargs))
 		return false;
-	
+
 	if (OO != list_count(snlop->oargs))
 		return false;
 
 	for (int i = 0; i < II; i++)
 		if (snlop_get_iarg(snlop, i)->x != snlop)
 			return false;
-	
+
 	for (int i = 0; i < OO; i++)
 		if (snlop_get_oarg(snlop, i)->x != snlop)
 			return false;
-	
+
 	for (int i = 0; i < list_count(snlop->targs); i++)
 		if (((arg_t)list_get_item(snlop->targs, i))->x != snlop)
 			return false;
-	
+
 	return true;
 }
 
@@ -313,7 +313,7 @@ static void snlop_link(arg_t oarg, arg_t iarg, bool keep)
 
 	int i = snlop_get_idx(iarg, false);
 	int o = snlop_get_idx(oarg, true);
-	
+
 	if (keep) {
 
 		auto cod = nlop_generic_codomain(snlop->x, o);
@@ -321,7 +321,7 @@ static void snlop_link(arg_t oarg, arg_t iarg, bool keep)
 		nlop = nlop_combine_FF(nlop, snlop->x);
 		nlop = nlop_dup_F(nlop, 0, i + 1);
 		nlop = nlop_link_F(nlop, o + 1, 0);
-		
+
 		snlop->x = nlop;
 
 		arg_t iarg = list_remove_item(snlop->iargs, i);
@@ -364,7 +364,7 @@ static void snlop_merge_args(struct snlop_s* a, struct snlop_s* b)
 	}
 
 	arg = list_pop(b->oargs);
-	
+
 	while (NULL != arg) {
 
 		arg->x = a;
@@ -373,7 +373,7 @@ static void snlop_merge_args(struct snlop_s* a, struct snlop_s* b)
 	}
 
 	arg = list_pop(b->targs);
-	
+
 	while (NULL != arg) {
 
 		list_append(a->targs, arg);
@@ -388,7 +388,7 @@ static void snlop_combine(struct snlop_s* a, struct snlop_s* b)
 
 	assert(snlop_check(a));
 	assert(snlop_check(b));
-	
+
 	if ((NULL == b) || (NULL == b->x)) {
 
 		snlop_free(b);
@@ -415,7 +415,7 @@ static void snlop_combine(struct snlop_s* a, struct snlop_s* b)
 	} else {
 
 		snlop_free(b);
-	}	
+	}
 }
 
 
@@ -431,14 +431,14 @@ void snlop_chain(int N, arg_t oargs[N], arg_t iargs[N], bool keep)
 
 	for (int i = 0; i < N; i++)
 		snlop_combine(iargs[0] -> x, iargs[i]->x);
-	
+
 	for (int i = 0; i < N; i++)
 		if (arg_is_input(oargs[0]) && !arg_is_input(oargs[i]))
 			snlop_combine(oargs[i]->x, oargs[0]->x);
 		else
 			snlop_combine(oargs[0]->x, oargs[i]->x);
-		
-	
+
+
 	assert(iargs[0] -> x != oargs[0] -> x);
 	snlop_combine(iargs[0] -> x, oargs[0]->x);
 
@@ -447,7 +447,7 @@ void snlop_chain(int N, arg_t oargs[N], arg_t iargs[N], bool keep)
 
 	for (int i = 0; i < N; i++)
 		snlop_link(oargs[i], iargs[i], keep);
-	
+
 	assert(snlop_check(snlop));
 }
 
@@ -481,7 +481,7 @@ arg_t snlop_const(int N, const long dims[N], const _Complex float* data, const c
 	snlop->x = nlop_const_create(N, dims, true, data);
 
 	assert(snlop_check(snlop));
-	
+
 	return arg;
 }
 
@@ -496,13 +496,13 @@ snlop_t snlop_from_nlop_F(const struct nlop_s* nlop)
 	ret->user = false;
 
 	ret->x = nlop;
-	
+
 	for (int i = 0; i < nlop_get_nr_in_args(nlop); i++) {
 
 		arg_t arg = arg_create(ret);
 		list_append(ret->iargs, arg);
 	}
-	
+
 	for (int i = 0; i < nlop_get_nr_out_args(nlop); i++) {
 
 		arg_t arg = arg_create(ret);
@@ -606,7 +606,7 @@ const struct iovec_s* arg_get_iov(arg_t arg)
 
 		const struct iovec_s* a = arg_get_iov_in(arg);
 		const struct iovec_s* b = arg_get_iov_out(arg);
-		
+
 		if (!iovec_check(a, b->N, b->dims, b->strs))
 			error("Argument is input and output with different shapes!\n Use specific function!\n");
 
@@ -657,7 +657,7 @@ const struct nlop_s* nlop_from_snlop_F(snlop_t snlop, int OO, arg_t oargs[OO], i
 				j = -1;
 			}
 		}
-		
+
 		operm[i] = idx;
 	}
 
@@ -666,9 +666,9 @@ const struct nlop_s* nlop_from_snlop_F(snlop_t snlop, int OO, arg_t oargs[OO], i
 
 	while (OO < nlop_get_nr_out_args(ret))
 		ret = nlop_del_out_F(ret, OO);
-	
+
 	ret = nlop_optimize_graph_F(ret);
-	
+
 	snlop_free(snlop);
 
 	return ret;
@@ -678,7 +678,7 @@ void snlop_del_arg(arg_t arg)
 {
 	snlop_t snlop = arg->x;
 	int o = snlop_get_idx(arg, true);
-	
+
 	assert(0 <= o);
 
 	snlop->x = nlop_optimize_graph(nlop_del_out_F(snlop->x, o));
@@ -736,7 +736,7 @@ arg_t arg_reshape_in(arg_t arg, int N, const long dims[N])
 		ret = arg->reshape(arg, N, dims);
 	else
 		ret = arg_create(arg->x);
-	
+
 	int i = snlop_get_idx(arg, false);
 	arg->x->x = nlop_reshape_in_F(arg->x->x, i, N, dims);
 
@@ -749,7 +749,7 @@ arg_t arg_reshape(arg_t arg, int N, const long dims[N])
 {
 	if (arg_is_input(arg) && arg_is_output(arg))
 		error("Argument is input and output!\n Use specific function!\n");
-	
+
 	if (arg_is_input(arg))
 		return arg_reshape_in(arg, N, dims);
 	else
@@ -759,48 +759,48 @@ arg_t arg_reshape(arg_t arg, int N, const long dims[N])
 
 arg_t snlop_stack(arg_t a, arg_t b, int stack_dim)
 {
-    const struct iovec_s* iova = arg_get_iov(a);
-    const struct iovec_s* iovb = arg_get_iov(b);
+	const struct iovec_s* iova = arg_get_iov(a);
+	const struct iovec_s* iovb = arg_get_iov(b);
 
 	arg_t ret = NULL;
 	if (NULL != a->stack)
 		ret = a->stack(a, b, stack_dim, false);
-	
+
 	if ((NULL == ret) && (NULL != b->stack))
 		ret = b->stack(a, b, stack_dim, false);
 
-    assert(0 <= stack_dim);
+	assert(0 <= stack_dim);
 
-    int N = MAX(iova->N, iovb->N);
-    N = MAX(N, stack_dim + 1);
+	int N = MAX(iova->N, iovb->N);
+	N = MAX(N, stack_dim + 1);
 
-    long adims[N];
-    long bdims[N];
-    long odims[N];
+	long adims[N];
+	long bdims[N];
+	long odims[N];
 
-    md_singleton_dims(N, adims);
-    md_singleton_dims(N, bdims);
+	md_singleton_dims(N, adims);
+	md_singleton_dims(N, bdims);
 
-    md_copy_dims(iova->N, adims, iova->dims);
-    md_copy_dims(iovb->N, bdims, iovb->dims);
+	md_copy_dims(iova->N, adims, iova->dims);
+	md_copy_dims(iovb->N, bdims, iovb->dims);
 
-    for (int i = 0; i < N; i++) {
+	for (int i = 0; i < N; i++) {
 
-        odims[i] = adims[i];
+		odims[i] = adims[i];
 
-        if (i == stack_dim)
-            odims[i] += bdims[i];
-        else    
-            assert(adims[i] == bdims[i]);
-    }
+		if (i == stack_dim)
+			odims[i] += bdims[i];
+		else
+			assert(adims[i] == bdims[i]);
+	}
 
-    const struct nlop_s* nlop = nlop_stack_create(N, odims, adims, bdims, stack_dim);
-    
-    nlop = nlop_reshape_in_F(nlop, 0, iova->N, iova->dims);
-    nlop = nlop_reshape_in_F(nlop, 1, iovb->N, iovb->dims);
-    
+	const struct nlop_s* nlop = nlop_stack_create(N, odims, adims, bdims, stack_dim);
+
+	nlop = nlop_reshape_in_F(nlop, 0, iova->N, iova->dims);
+	nlop = nlop_reshape_in_F(nlop, 1, iovb->N, iovb->dims);
+
    arg_t arg =  snlop_append_nlop_generic_F(2, (arg_t[2]){ a, b }, nlop, true);
-	
+
 	if (NULL != ret) {
 
 		snlop_replace_oarg(ret, arg);
@@ -812,48 +812,48 @@ arg_t snlop_stack(arg_t a, arg_t b, int stack_dim)
 
 arg_t snlop_stack_F(arg_t a, arg_t b, int stack_dim)
 {
-    const struct iovec_s* iova = arg_get_iov(a);
-    const struct iovec_s* iovb = arg_get_iov(b);
+	const struct iovec_s* iova = arg_get_iov(a);
+	const struct iovec_s* iovb = arg_get_iov(b);
 
 	arg_t ret = NULL;
 	if (NULL != a->stack)
 		ret = a->stack(a, b, stack_dim, false);
-	
+
 	if ((NULL == ret) && (NULL != b->stack))
 		ret = b->stack(a, b, stack_dim, false);
 
-    assert(0 <= stack_dim);
+	assert(0 <= stack_dim);
 
-    int N = MAX(iova->N, iovb->N);
-    N = MAX(N, stack_dim + 1);
+	int N = MAX(iova->N, iovb->N);
+	N = MAX(N, stack_dim + 1);
 
-    long adims[N];
-    long bdims[N];
-    long odims[N];
+	long adims[N];
+	long bdims[N];
+	long odims[N];
 
-    md_singleton_dims(N, adims);
-    md_singleton_dims(N, bdims);
+	md_singleton_dims(N, adims);
+	md_singleton_dims(N, bdims);
 
-    md_copy_dims(iova->N, adims, iova->dims);
-    md_copy_dims(iovb->N, bdims, iovb->dims);
+	md_copy_dims(iova->N, adims, iova->dims);
+	md_copy_dims(iovb->N, bdims, iovb->dims);
 
-    for (int i = 0; i < N; i++) {
+	for (int i = 0; i < N; i++) {
 
-        odims[i] = adims[i];
+		odims[i] = adims[i];
 
-        if (i == stack_dim)
-            odims[i] += bdims[i];
-        else    
-            assert(adims[i] == bdims[i]);
-    }
+		if (i == stack_dim)
+			odims[i] += bdims[i];
+		else
+			assert(adims[i] == bdims[i]);
+	}
 
-    const struct nlop_s* nlop = nlop_stack_create(N, odims, adims, bdims, stack_dim);
-    
-    nlop = nlop_reshape_in_F(nlop, 0, iova->N, iova->dims);
-    nlop = nlop_reshape_in_F(nlop, 1, iovb->N, iovb->dims);
-    
-    arg_t arg =  snlop_append_nlop_generic_F(2, (arg_t[2]){ a, b }, nlop, false);
-	
+	const struct nlop_s* nlop = nlop_stack_create(N, odims, adims, bdims, stack_dim);
+
+	nlop = nlop_reshape_in_F(nlop, 0, iova->N, iova->dims);
+	nlop = nlop_reshape_in_F(nlop, 1, iovb->N, iovb->dims);
+
+	arg_t arg =  snlop_append_nlop_generic_F(2, (arg_t[2]){ a, b }, nlop, false);
+
 	if (NULL != ret) {
 
 		snlop_replace_oarg(ret, arg);
@@ -865,47 +865,47 @@ arg_t snlop_stack_F(arg_t a, arg_t b, int stack_dim)
 
 arg_t snlop_stack_in(arg_t a, arg_t b, int stack_dim)
 {
-    const struct iovec_s* iova = arg_get_iov_in(a);
-    const struct iovec_s* iovb = arg_get_iov_in(b);
+	const struct iovec_s* iova = arg_get_iov_in(a);
+	const struct iovec_s* iovb = arg_get_iov_in(b);
 
 	arg_t ret = NULL;
 	if (NULL != a->stack)
 		ret = a->stack(a, b, stack_dim, false);
-	
+
 	if ((NULL == ret) && (NULL != b->stack))
 		ret = b->stack(a, b, stack_dim, false);
 
-    assert(0 <= stack_dim);
+	assert(0 <= stack_dim);
 
-    int N = MAX(iova->N, iovb->N);
-    N = MAX(N, stack_dim + 1);
+	int N = MAX(iova->N, iovb->N);
+	N = MAX(N, stack_dim + 1);
 
-    long adims[N];
-    long bdims[N];
-    long odims[N];
+	long adims[N];
+	long bdims[N];
+	long odims[N];
 
-    md_singleton_dims(N, adims);
-    md_singleton_dims(N, bdims);
+	md_singleton_dims(N, adims);
+	md_singleton_dims(N, bdims);
 
-    md_copy_dims(iova->N, adims, iova->dims);
-    md_copy_dims(iovb->N, bdims, iovb->dims);
+	md_copy_dims(iova->N, adims, iova->dims);
+	md_copy_dims(iovb->N, bdims, iovb->dims);
 
-    for (int i = 0; i < N; i++) {
+	for (int i = 0; i < N; i++) {
 
-        odims[i] = adims[i];
+		odims[i] = adims[i];
 
-        if (i == stack_dim)
-            odims[i] += bdims[i];
-        else    
-            assert(adims[i] == bdims[i]);
-    }
+		if (i == stack_dim)
+			odims[i] += bdims[i];
+		else
+			assert(adims[i] == bdims[i]);
+	}
 
-    const struct nlop_s* nlop = nlop_destack_create(N, adims, bdims, odims, stack_dim);
-    
-    nlop = nlop_reshape_out_F(nlop, 0, iova->N, iova->dims);
-    nlop = nlop_reshape_out_F(nlop, 1, iovb->N, iovb->dims);
-    
-    arg_t arg = snlop_prepend_nlop_generic_F(2, (arg_t[2]){ a, b }, nlop);
+	const struct nlop_s* nlop = nlop_destack_create(N, adims, bdims, odims, stack_dim);
+
+	nlop = nlop_reshape_out_F(nlop, 0, iova->N, iova->dims);
+	nlop = nlop_reshape_out_F(nlop, 1, iovb->N, iovb->dims);
+
+	arg_t arg = snlop_prepend_nlop_generic_F(2, (arg_t[2]){ a, b }, nlop);
 
 	if (NULL != ret) {
 
@@ -926,19 +926,19 @@ arg_t snlop_dup(arg_t a, arg_t b)
 	int ia = snlop_get_idx(a, false);
 	int ib = snlop_get_idx(b, false);
 
-	x->x = nlop_dup_F(x->x, ia, ib);	
+	x->x = nlop_dup_F(x->x, ia, ib);
 
 	arg_t ret = NULL;
 
 	if (NULL != a->stack)
 		ret = a->dup(a, b);
-	
+
 	if ((NULL == ret) && (NULL != b->dup))
 		ret = b->dup(a, b);
-	
+
 	if (NULL == ret)
 		ret = arg_create(x);
-	
+
 	arg_unref(list_remove_item(x->iargs, ib));
 	snlop_replace_iarg(ret, a);
 
@@ -946,7 +946,7 @@ arg_t snlop_dup(arg_t a, arg_t b)
 }
 
 
-void snlop_debug(enum debug_levels dl, struct snlop_s* x)
+void snlop_debug(int dl, struct snlop_s* x)
 {
 	int II = nlop_get_nr_in_args(x->x);
 
@@ -994,12 +994,12 @@ list_t snlop_get_oargs(int N, arg_t args[N])
 	for (int i = 0; i < N; i++) {
 
 		snlop_t snlop = args[i]->x;
-		
+
 		for (int j = 0; j < list_count(snlop->oargs); j++)
 			list_append(ret, list_get_item(snlop->oargs, j));
 	}
 
-	return ret;		
+	return ret;
 }
 
 void snlop_prune_oargs(arg_t oarg, list_t keep_args)
