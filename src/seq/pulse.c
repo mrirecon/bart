@@ -290,7 +290,7 @@ const struct pulse_hypsec pulse_hypsec_defaults = {
 	.super.TYPEID = &TYPEID2(pulse_hypsec),
 //	.pulse.phase = 0.,
 
-	.a0 = 14.,
+	.a0 = 14.E-6,
 	.beta = 800.,
 	.mu = 4.9, /* sech(x)=0.01*/
 	.A = 1.,

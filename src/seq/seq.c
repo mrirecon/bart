@@ -62,7 +62,7 @@ int seq_sample_rf_shapes(int N, struct rf_shape pulse[N], const struct seq_confi
 
 		struct pulse_hypsec hs = pulse_hypsec_defaults;
 
-		pulse_hypsec_init(seq->sys.gamma, &hs);
+		pulse_hypsec_init(1E6 * seq->sys.gamma, &hs);
 
 		pulse[idx].max = hs.A;
 		pulse[idx].integral = pulse_hypsec_integral(&hs);

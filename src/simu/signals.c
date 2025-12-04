@@ -352,12 +352,12 @@ complex float calc_fat_modulation(float b0, float TE, enum fat_spec fs)
 		 * ISMRM fat-water toolbox v1 (2012)
 		 * Hernando D.
 		 */
-		ppm[0] = -3.80; amp[0] = 0.087;
-		ppm[1] = -3.40; amp[1] = 0.693;
-		ppm[2] = -2.60; amp[2] = 0.128;
-		ppm[3] = -1.94; amp[3] = 0.004;
-		ppm[4] = -0.39; amp[4] = 0.039;
-		ppm[5] = +0.60; amp[5] = 0.048;
+		ppm[0] = -3.80E-6; amp[0] = 0.087;
+		ppm[1] = -3.40E-6; amp[1] = 0.693;
+		ppm[2] = -2.60E-6; amp[2] = 0.128;
+		ppm[3] = -1.94E-6; amp[3] = 0.004;
+		ppm[4] = -0.39E-6; amp[4] = 0.039;
+		ppm[5] = +0.60E-6; amp[5] = 0.048;
 
 		break;
 
@@ -367,12 +367,12 @@ complex float calc_fat_modulation(float b0, float TE, enum fat_spec fs)
 		 * In vivo characterization of the liver fat 1H MR spectrum. 
 		 * NMR Biomed 24:784-790 (2011)
 		 */
-		ppm[0] = -3.80; amp[0] = 0.086;
-		ppm[1] = -3.40; amp[1] = 0.537;
-		ppm[2] = -2.60; amp[2] = 0.165;
-		ppm[3] = -1.94; amp[3] = 0.046;
-		ppm[4] = -0.39; amp[4] = 0.052;
-		ppm[5] = +0.60; amp[5] = 0.114;
+		ppm[0] = -3.80E-6; amp[0] = 0.086;
+		ppm[1] = -3.40E-6; amp[1] = 0.537;
+		ppm[2] = -2.60E-6; amp[2] = 0.165;
+		ppm[3] = -1.94E-6; amp[3] = 0.046;
+		ppm[4] = -0.39E-6; amp[4] = 0.052;
+		ppm[5] = +0.60E-6; amp[5] = 0.114;
 
 		break;
 

@@ -9,7 +9,7 @@
 #include "misc/cppwrap.h"
 
 #ifndef GYRO
-#define GYRO 42.57747892
+#define GYRO 42.57747892E6
 #endif
 
 enum mri_dims {
