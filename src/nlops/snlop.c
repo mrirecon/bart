@@ -113,18 +113,21 @@ static int get_arg_name_count(const char* name)
 	if (NULL == reg_arg_names)
 		reg_arg_names = list_create();
 
-	struct reg_arg_name* x = list_get_first_item(reg_arg_names, name,  cmp_names, false);
+	struct reg_arg_name* x = list_get_first_item(reg_arg_names, name, cmp_names, false);
 
 	if (NULL == x) {
 
-		PTR_ALLOC(struct reg_arg_name , n);
+		PTR_ALLOC(struct reg_arg_name, n);
+
 		n->counter = 0;
 		n->name = strdup(name);
+
 		list_append(reg_arg_names, PTR_PASS(n));
+
 		x = list_get_item(reg_arg_names, list_count(reg_arg_names) - 1);
 	}
 
-	return (x->counter)++;
+	return x->counter++;
 }
 
 void arg_set_name(arg_t arg, const char* name)
@@ -325,25 +328,32 @@ static void snlop_link(arg_t oarg, arg_t iarg, bool keep)
 		snlop->x = nlop;
 
 		arg_t iarg = list_remove_item(snlop->iargs, i);
+
 		if (!arg_is_output(iarg))
 			iarg->x = NULL;
+
 		arg_unref(iarg);
 
 		list_push(snlop->oargs, list_remove_item(snlop->oargs, o));
 
 		assert(snlop_check(snlop));
+
 	} else {
 
 		snlop->x = nlop_link_F(snlop->x, o, i);
 
 		arg_t iarg = list_remove_item(snlop->iargs, i);
+
 		if (!arg_is_output(iarg))
 			iarg->x = NULL;
+
 		arg_unref(iarg);
 
 		arg_t oarg = list_remove_item(snlop->oargs, o);
+
 		if (!arg_is_input(oarg))
 			oarg->x = NULL;
+
 		arg_unref(oarg);
 
 		assert(snlop_check(snlop));
@@ -412,6 +422,7 @@ static void snlop_combine(struct snlop_s* a, struct snlop_s* b)
 		assert(snlop_check(b));
 
 		snlop_free(a);
+
 	} else {
 
 		snlop_free(b);
@@ -432,17 +443,21 @@ void snlop_chain(int N, arg_t oargs[N], arg_t iargs[N], bool keep)
 	for (int i = 0; i < N; i++)
 		snlop_combine(iargs[0] -> x, iargs[i]->x);
 
-	for (int i = 0; i < N; i++)
+	for (int i = 0; i < N; i++) {
+
 		if (arg_is_input(oargs[0]) && !arg_is_input(oargs[i]))
 			snlop_combine(oargs[i]->x, oargs[0]->x);
 		else
 			snlop_combine(oargs[0]->x, oargs[i]->x);
+	}
 
 
 	assert(iargs[0] -> x != oargs[0] -> x);
+
 	snlop_combine(iargs[0] -> x, oargs[0]->x);
 
 	struct snlop_s* snlop = iargs[0] -> x;
+
 	assert(snlop_check(snlop));
 
 	for (int i = 0; i < N; i++)
@@ -455,16 +470,18 @@ void snlop_chain(int N, arg_t oargs[N], arg_t iargs[N], bool keep)
 
 arg_t snlop_input(int N, const long dims[N], const char* name)
 {
-
 	struct snlop_s* snlop = snlop_create();
 	snlop->user = false;
+
 	struct nlop_arg_s* arg = arg_create(snlop);
 
 	list_append(snlop->iargs, arg_ref(arg));
 	list_append(snlop->oargs, arg);
 
 	snlop->x = nlop_from_linop_F(linop_identity_create(N, dims));
+
 	arg->name = strdup(name);
+
 	assert(snlop_check(snlop));
 
 	return arg;
@@ -472,10 +489,11 @@ arg_t snlop_input(int N, const long dims[N], const char* name)
 
 arg_t snlop_const(int N, const long dims[N], const _Complex float* data, const char* /*name*/)
 {
-
 	struct snlop_s* snlop = snlop_create();
 	snlop->user = false;
+
 	struct nlop_arg_s* arg = arg_create(snlop);
+
 	list_append(snlop->oargs, arg);
 
 	snlop->x = nlop_const_create(N, dims, true, data);
@@ -541,8 +559,11 @@ arg_t snlop_append_nlop_generic_F(int N, arg_t oargs[N], const struct nlop_s* nl
 arg_t snlop_append_nlop_F(arg_t oarg, const struct nlop_s* nlop, bool keep)
 {
 	assert(snlop_check(oarg->x));
+
 	arg_t ret = snlop_append_nlop_generic_F(1, (arg_t[1]){ oarg }, nlop, keep);
+
 	assert(snlop_check(ret->x));
+
 	return ret;
 }
 
@@ -573,8 +594,11 @@ arg_t snlop_prepend_nlop_generic_F(int N, arg_t iargs[N], const struct nlop_s* n
 arg_t snlop_prepend_nlop_F(arg_t iarg, const struct nlop_s* nlop)
 {
 	assert(snlop_check(iarg->x));
+
 	arg_t ret = snlop_prepend_nlop_generic_F(1, (arg_t[1]){ iarg }, nlop);
+
 	assert(snlop_check(ret->x));
+
 	return ret;
 }
 
@@ -634,6 +658,7 @@ const struct nlop_s* nlop_from_snlop_F(snlop_t snlop, int OO, arg_t oargs[OO], i
 	for (int i = 0; i < II; i++) {
 
 		iperm[i] = snlop_get_idx(iargs[i], false);
+
 		if (-1 == iperm[i])
 			error("Argument %d is not an input of snlop!\n", i);
 	}
@@ -641,6 +666,7 @@ const struct nlop_s* nlop_from_snlop_F(snlop_t snlop, int OO, arg_t oargs[OO], i
 	for (int i = 0; i < OO; i++) {
 
 		operm[i] = snlop_get_idx(oargs[i], true);
+
 		if (-1 == operm[i])
 			error("Argument %d is not an output of snlop!\n", i);
 	}
@@ -682,12 +708,14 @@ void snlop_del_arg(arg_t arg)
 	assert(0 <= o);
 
 	snlop->x = nlop_optimize_graph_F(nlop_del_out_F(snlop->x, o));
+
 	arg_unref(list_remove_item(snlop->oargs, o));
 }
 
 arg_t snlop_clone_arg(arg_t arg)
 {
 	const struct iovec_s* iov = arg_get_iov(arg);
+
 	return snlop_append_nlop_F(arg, nlop_from_linop_F(linop_identity_create(iov->N, iov->dims)), true);
 }
 
@@ -695,6 +723,7 @@ snlop_t snlop_from_arg(arg_t arg)
 {
 	arg->x->x = nlop_optimize_graph_F(arg->x->x);
 	arg->x->user = true;
+
 	return arg->x;
 }
 
@@ -704,7 +733,9 @@ void snlop_replace_iarg(arg_t narg, arg_t oarg)
 	int i = snlop_get_idx(oarg, false);
 
 	arg_unref(list_remove_item(x->iargs, i));
+
 	list_insert(x->iargs, narg, i);
+
 	narg->x = x;
 }
 
@@ -714,7 +745,9 @@ void snlop_replace_oarg(arg_t narg, arg_t oarg)
 	int i = snlop_get_idx(oarg, true);
 
 	arg_unref(list_remove_item(x->oargs, i));
+
 	list_insert(x->oargs, narg, i);
+
 	narg->x = x;
 }
 
@@ -799,7 +832,7 @@ arg_t snlop_stack(arg_t a, arg_t b, int stack_dim)
 	nlop = nlop_reshape_in_F(nlop, 0, iova->N, iova->dims);
 	nlop = nlop_reshape_in_F(nlop, 1, iovb->N, iovb->dims);
 
-   arg_t arg =  snlop_append_nlop_generic_F(2, (arg_t[2]){ a, b }, nlop, true);
+	arg_t arg =  snlop_append_nlop_generic_F(2, (arg_t[2]){ a, b }, nlop, true);
 
 	if (NULL != ret) {
 
@@ -940,6 +973,7 @@ arg_t snlop_dup(arg_t a, arg_t b)
 		ret = arg_create(x);
 
 	arg_unref(list_remove_item(x->iargs, ib));
+
 	snlop_replace_iarg(ret, a);
 
 	return ret;
@@ -1026,3 +1060,4 @@ void snlop_export_graph(snlop_t snlop, const char* path)
 {
 	nlop_export_graph(path, snlop->x);
 }
+

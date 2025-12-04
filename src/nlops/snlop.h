@@ -1,6 +1,6 @@
 
-#ifndef SNLOP_H
-#define SNLOP_H
+#ifndef _SNLOP_H
+#define _SNLOP_H
 
 #include "misc/types.h"
 #include "misc/shrdptr.h"
@@ -97,3 +97,4 @@ extern void snlop_prune_oargs(arg_t oarg, struct list_s* keep_args);
 extern void snlop_export_graph(snlop_t snlop, const char* path);
 
 #endif
+
