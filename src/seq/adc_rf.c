@@ -104,7 +104,7 @@ int prep_rf_inv(struct seq_event* rf_ev, double start, const struct seq_config* 
 	struct pulse_hypsec hs = pulse_hypsec_defaults;
 	struct pulse* pp = CAST_UP(&hs);
 
-	rf_ev->end = rf_ev->start + 1e6 * pp->duration;
+	rf_ev->end = rf_ev->start + pp->duration;
 
 	const double asym_pulse = 0.5;
 	rf_ev->mid = rf_ev->start + (rf_ev->end - rf_ev->start) * asym_pulse;
@@ -166,7 +166,7 @@ int prep_adc(struct seq_event* adc_ev, double start, double rf_spoil_phase,
 	adc_ev->start = start;
 	adc_ev->end = adc_ev->start + adc_duration(seq);
 
-	adc_ev->adc.dwell_ns = (long)(seq->phys.dwell * 1000. + 0.5);
+	adc_ev->adc.dwell_ns = (long)(seq->phys.dwell * 1.E9 + 0.5);
 	adc_ev->adc.columns = seq->geom.baseres;
 
 	adc_ev->mid = adc_ev->start + adc_time_to_echo(seq);

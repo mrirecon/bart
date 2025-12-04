@@ -83,8 +83,8 @@ void set_fov_pos(int N, int M, const float* shifts, struct seq_config* seq)
 		if (1 < seq->geom.mb_factor) {
 
 			seq->geom.shift[i][2] = shifts[(total_slices / 2) * M + 2]
-								+ (1. * seq->geom.sms_distance / seq->loop_dims[PHS2_DIM]) 
-											* (i % seq->loop_dims[PHS2_DIM] - floor(seq->loop_dims[PHS2_DIM] / 2.));
+						+ (seq->geom.sms_distance / seq->loop_dims[PHS2_DIM]) 
+						* (i % seq->loop_dims[PHS2_DIM] - floor(seq->loop_dims[PHS2_DIM] / 2.));
 		}
 		else {
 

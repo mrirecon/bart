@@ -23,12 +23,12 @@ double round_up_raster(double time, double raster_time)
 
 double ro_amplitude(const struct seq_config* seq)
 {
-	return 1.E6 / (seq->geom.fov * seq->phys.dwell * seq->sys.gamma);
+	return 1. / (seq->geom.fov * seq->phys.dwell * seq->sys.gamma);
 }
 
 double slice_amplitude(const struct seq_config* seq)
 {
-	return 1.E6 * seq->phys.bwtp / (seq->sys.gamma * seq->phys.rf_duration * seq->geom.slice_thickness);
+	return seq->phys.bwtp / (seq->sys.gamma * seq->phys.rf_duration * seq->geom.slice_thickness);
 }
 
 int gradient_prepare_with_timing(struct grad_trapezoid* grad, double moment, const struct seq_config* seq)

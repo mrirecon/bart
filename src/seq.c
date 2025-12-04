@@ -72,7 +72,7 @@ int main_seq(int argc, char* argv[argc])
 		OPT_FLOAT('d', &dt, "dt", "time-increment per sample (default: seq.phys.tr / 1000)"),
 		OPT_LONG('N', &samples, "samples", "Number of samples (default: 1000)"),
 
-		OPT_DOVEC3('s', &seq.geom.shift[0], "RO:PE:SL", "FOV shift (mm) of first slice"),
+		OPT_DOVEC3('s', &seq.geom.shift[0], "RO:PE:SL", "FOV shift of first slice"),
 		OPTL_FLOAT(0, "dist", &dist, "dist", "slice distance factor [1 / slice_thickness] (default: 1.)"),
 
 		// contrast mode
@@ -80,19 +80,19 @@ int main_seq(int argc, char* argv[argc])
 		OPTL_SELECT(0, "spoiled", enum flash_contrast, &seq.phys.contrast, CONTRAST_RF_SPOILED, "RF_SPOILED (inc: 50 deg, gradient on) (default: rf random)"),
 
 		// FOV and resolution
-		OPTL_DOUBLE(0, "FOV", &seq.geom.fov, "FOV", "Field Of View [mm]"),
+		OPTL_DOUBLE(0, "FOV", &seq.geom.fov, "FOV", "Field Of View"),
 		OPTL_PINT(0, "BR", &seq.geom.baseres, "BR", "Base Resolution"),
-		OPTL_DOUBLE(0, "slice_thickness", &seq.geom.slice_thickness, "slice_thickness", "Slice thickness [mm]"),
+		OPTL_DOUBLE(0, "slice_thickness", &seq.geom.slice_thickness, "slice_thickness", "Slice thickness"),
 
 		// basic sequence parameters
 		OPTL_DOUBLE(0, "FA", &seq.phys.flip_angle, "flip angle", "Flip angle [deg]"),
-		OPTL_DOUBLE(0, "TR", &seq.phys.tr, "TR", "TR [us]"),
-		OPTL_DOUBLE(0, "TE", &seq.phys.te, "TE", "TE [us]"),
+		OPTL_DOUBLE(0, "TR", &seq.phys.tr, "TR", "TR"),
+		OPTL_DOUBLE(0, "TE", &seq.phys.te, "TE", "TE"),
 		OPTL_DOUBLE(0, "BWTP", &seq.phys.bwtp, "BWTP", "Bandwidth Time Product"),
 
 		// others sequence parameters
-		OPTL_DOUBLE(0, "rf_duration", &seq.phys.rf_duration, "rf_duration", "RF pulse duration [us]"),
-		OPTL_DOUBLE(0, "dwell", &seq.phys.dwell, "dwell", "Dwell time [us]"),
+		OPTL_DOUBLE(0, "rf_duration", &seq.phys.rf_duration, "rf_duration", "RF pulse duration"),
+		OPTL_DOUBLE(0, "dwell", &seq.phys.dwell, "dwell", "Dwell time"),
 		OPTL_DOUBLE(0, "os", &seq.phys.os, "os", "Oversampling factor"),
 
 		// encoding
@@ -118,13 +118,13 @@ int main_seq(int argc, char* argv[argc])
 
 		// sms
 		OPTL_PINT(0, "mb_factor", &seq.geom.mb_factor, "mb_factor", "Multi-band factor"),
-		OPTL_DOUBLE(0, "sms_distance", &seq.geom.sms_distance, "sms_distance", "SMS slice distance [mm]"),
+		OPTL_DOUBLE(0, "sms_distance", &seq.geom.sms_distance, "sms_distance", "SMS slice distance"),
 
 		// magnetization preparation
 		OPTL_SELECT(0, "IR_NON", enum mag_prep, &seq.magn.mag_prep, PREP_IR_NON, "Magn. preparation: Nonselective Inversion (default: off)"),
-		OPTL_DOUBLE(0, "TI", &seq.magn.ti, "TI", "Inversion time [us]"),
-		OPTL_DOUBLE(0, "init_delay", &seq.magn.init_delay_sec, "init_delay_sec", "Initial delay of measurement (seconds)"),
-		OPTL_DOUBLE(0, "inv_delay", &seq.magn.inv_delay_time_sec, "inv_delay_time_sec", "Inversion delay time (seconds)"),
+		OPTL_DOUBLE(0, "TI", &seq.magn.ti, "TI", "Inversion time"),
+		OPTL_DOUBLE(0, "init_delay", &seq.magn.init_delay, "init_delay", "Initial delay of measurement"),
+		OPTL_DOUBLE(0, "inv_delay", &seq.magn.inv_delay_time, "inv_delay_time", "Inversion delay time"),
 
 		// gradient mode
 		OPTL_SELECT(0, "gradient-normal", enum gradient_mode, &gradient_mode, GRAD_NORMAL, "Gradient normal mode (default: fast)"),
@@ -168,7 +168,7 @@ int main_seq(int argc, char* argv[argc])
 
 		set_fov_pos(total_slices, 3, &shift[0][0], &seq);
 
-		debug_printf(DP_INFO, "slice shifts [mm]:\n\t%d %f \t\n", 0, seq.geom.shift[0][2]);
+		debug_printf(DP_INFO, "slice shifts:\n\t%d %f \t\n", 0, seq.geom.shift[0][2]);
 		for (int i = 1; i < total_slices; i++)
 			debug_printf(DP_INFO, "\t%d: %f \n", i, seq.geom.shift[i][2]);
 		debug_printf(DP_INFO, "\n");
@@ -189,13 +189,13 @@ int main_seq(int argc, char* argv[argc])
 	switch (gradient_mode) {
 
 	case GRAD_NORMAL:
-		seq.sys.grad.max_amplitude = 22.;
-		seq.sys.grad.inv_slew_rate = 10 * sqrt(2.);
+		seq.sys.grad.max_amplitude = 22.E-3;
+		seq.sys.grad.inv_slew_rate = 10.E-3 * sqrt(2.);
 		break;
 
 	case GRAD_WHISPER:
-		seq.sys.grad.max_amplitude = 22.;
-		seq.sys.grad.inv_slew_rate = 20 * sqrt(2.);
+		seq.sys.grad.max_amplitude = 22.E-3;
+		seq.sys.grad.inv_slew_rate = 20.E-3 * sqrt(2.);
 		break;
 
 	case GRAD_FAST:

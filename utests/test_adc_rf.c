@@ -69,8 +69,8 @@ static bool test_sinc(void)
 	if (rfs != 1)
 		return false;
 
-	if (rf_shape[0].samples != 1 * seq.phys.rf_duration)
-		return 0;
+	if (rf_shape[0].samples != 1E6 * seq.phys.rf_duration)
+		return false;
 
 	// expected in reference implementation
 	const double good_norm = 330.154932 / 2.;
@@ -121,10 +121,10 @@ static bool test_sms(void)
 	if (rfs != 3)
 		return false;
 
-	if ((rf_shape[0].samples != 1 * seq.phys.rf_duration)
-	    || (rf_shape[1].samples != 1 * seq.phys.rf_duration)
-	    || (rf_shape[2].samples != 1 * seq.phys.rf_duration))
-		return 0;
+	if ((rf_shape[0].samples != 1E6 * seq.phys.rf_duration)
+	    || (rf_shape[1].samples != 1E6 * seq.phys.rf_duration)
+	    || (rf_shape[2].samples != 1E6 * seq.phys.rf_duration))
+		return false;
 
 	// expected in reference implementation
 	const double good_norm = 110.051648 / 2.;

@@ -64,28 +64,28 @@ enum pe_mode {
 
 struct seq_phys {
 
-	double tr; // us
-	double te; // us
+	double tr;
+	double te;
 
-	double dwell; // us (FIXME calc from br and bandwidth?)
+	double dwell;
 	double os;
 
 	enum flash_contrast contrast;
-	double rf_duration; // us
+	double rf_duration;
 	double flip_angle; // deg
 	double bwtp;
 };
 
 struct seq_geom {
 
-	double fov; // mm
-	double slice_thickness; // mm
-	double shift[MAX_SLICES][3]; // [ro, pe, slice] in mm
+	double fov;
+	double slice_thickness;
+	double shift[MAX_SLICES][3]; // [ro, pe, slice]
 
-	int baseres; // 1
+	int baseres;
 
 	int mb_factor;
-	double sms_distance; // mm
+	double sms_distance;
 };
 
 struct seq_enc {
@@ -99,21 +99,21 @@ struct seq_enc {
 struct seq_magn {
 
 	enum mag_prep mag_prep;
-	double ti; // us
-	double init_delay_sec; // sec
-	double inv_delay_time_sec; // sec
+	double ti;
+	double init_delay;
+	double inv_delay_time;
 };
 
 struct seq_sys {
 
-	double gamma; // MHz/T
+	double gamma; // Hz/T
 	double b0; // T
-	struct grad_limits grad; // inv_slew_rate in us / (mT/m), max_amplitude in mT/m
-	double coil_control_lead; // us
-	double min_duration_ro_rf; // us
-	double raster_grad; // us
-	double raster_rf; // us
-	double raster_dwell; // us
+	struct grad_limits grad; // inv_slew_rate in s / (T/m), max_amplitude in T/m
+	double coil_control_lead;
+	double min_duration_ro_rf;
+	double raster_grad;
+	double raster_rf;
+	double raster_dwell;
 };
 
 

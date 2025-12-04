@@ -26,8 +26,8 @@ static bool test_block_minv_init_delay(void)
 	struct seq_state seq_state = { 0 };
 	struct seq_config seq = seq_config_defaults;
 	seq.enc.order = SEQ_ORDER_AVG_OUTER;
-	seq.magn.init_delay_sec = 1;
-	seq.magn.ti = 100;
+	seq.magn.init_delay = 1.;
+	seq.magn.ti = 100.E-3;
 	seq.magn.mag_prep = PREP_IR_NON;
 
 	int i = 0;
@@ -59,9 +59,9 @@ static bool test_block_minv_init_delay(void)
 			pre_blocks++;
 
 		// correct delay_meas_time
-		if ((BLOCK_PRE == seq_state.mode) && (1 == E) && (1.E6 * seq.magn.init_delay_sec != seq_block_end(E, ev, seq_state.mode, seq.phys.tr, seq.sys.raster_grad)))
+		if ((BLOCK_PRE == seq_state.mode) && (1 == E) && (seq.magn.init_delay != seq_block_end(E, ev, seq_state.mode, seq.phys.tr, seq.sys.raster_grad)))
 			return false;
-		else if ((BLOCK_PRE == seq_state.mode) && (1 < E) && (1. * seq.magn.ti != (ev[E - 1].end - ev[E - 1].start)))
+		else if ((BLOCK_PRE == seq_state.mode) && (1 < E) && (1.E-4 * UT_TOL < fabs(seq.magn.ti - (ev[E - 1].end - ev[E - 1].start))))
 			return false;
 
 		i++;
@@ -90,9 +90,9 @@ static bool test_block_minv_multislice(void)
 	struct seq_state seq_state = { 0 };
 	struct seq_config seq = seq_config_defaults;
 	seq.enc.order = SEQ_ORDER_SEQ_MS;
-	seq.magn.ti = 100;
+	seq.magn.ti = 100.E-3;
 	seq.magn.mag_prep = PREP_IR_NON;
-	seq.magn.inv_delay_time_sec = 100.;
+	seq.magn.inv_delay_time = 100.;
 
 	int i = 0;
 	int inversions = 0;
@@ -123,7 +123,7 @@ static bool test_block_minv_multislice(void)
 			inversions++;
 
 		// correct ti in mag_prep block
-		if ((BLOCK_PRE == seq_state.mode) && (2 == E) && (1. * seq.magn.ti != seq_block_end(E, ev, seq_state.mode, seq.phys.tr, seq.sys.raster_grad)))
+		if ((BLOCK_PRE == seq_state.mode) && (2 == E) && (seq.magn.ti != seq_block_end(E, ev, seq_state.mode, seq.phys.tr, seq.sys.raster_grad)))
 			return false;
 
 		i++;
@@ -152,7 +152,7 @@ static bool test_fov_shift(void)
 
 		gui_shift[i][0] = 0;
 		gui_shift[i][1] = 0;
-		gui_shift[i][2] = in[i]; // slice shift
+		gui_shift[i][2] = 1.E-3 * in[i]; // slice shift
 	}
 
 	struct seq_config seq = seq_config_defaults;
@@ -160,8 +160,7 @@ static bool test_fov_shift(void)
 	seq.geom.mb_factor = 3;
 	set_loop_dims_and_sms(&seq, 1, slices, 1, 1, 1, 1, 1);
 	set_fov_pos(slices, 4, &gui_shift[0][0], &seq);
-	
-	if (0 < fabs(seq.geom.sms_distance - 27.))
+	if (1.E-2 *  UT_TOL < fabs(seq.geom.sms_distance - 27.E-3))
 		return false;
 
 	for (int i = 0; i < slices; i++)
@@ -184,7 +183,7 @@ static bool test_fov_shift3x3(void)
 
 		gui_shift[i][0] = 0;
 		gui_shift[i][1] = 0;
-		gui_shift[i][2] = in[i]; // slice shift
+		gui_shift[i][2] = 1.E-3 * in[i]; // slice shift
 	}
 
 	struct seq_config seq = seq_config_defaults;
@@ -193,10 +192,10 @@ static bool test_fov_shift3x3(void)
 	set_loop_dims_and_sms(&seq, 1, slices, 1, 1, 1, 1, 1);
 	set_fov_pos(slices, 4, &gui_shift[0][0], &seq);
 	
-	if (0 < fabs(seq.geom.sms_distance - 27.))
+	if (1.E-2 *  UT_TOL < fabs(seq.geom.sms_distance - 27.E-3))
 		return false;
 	for (int i = 0; i < slices; i++)
-		if (0 < fabs(seq.geom.shift[i][2] - good[i]))
+		if (1.E-2 *  UT_TOL < fabs(seq.geom.shift[i][2] - 1.E-3 * good[i]))
 			return false;
 
 	return true;

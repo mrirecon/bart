@@ -37,17 +37,17 @@ int seq_sample_rf_shapes(int N, struct rf_shape pulse[N], const struct seq_confi
 
 		const float alpha = 0.5;
 
-		pulse[idx].samples = 1 * seq->phys.rf_duration;
+		pulse[idx].samples = lround(1.E6 * seq->phys.rf_duration);
 
 		if (MAX_RF_SAMPLES < pulse[idx].samples)
 			return -1;
 
-		double dwell = 1.E-6 * seq->phys.rf_duration / pulse[idx].samples;
+		double dwell = seq->phys.rf_duration / pulse[idx].samples;
 
 		struct pulse_sms ps = pulse_sms_defaults;
 
-		pulse_sms_init(&ps, 1.E-6 * seq->phys.rf_duration, seq->phys.flip_angle, 0., seq->phys.bwtp, alpha,
-			seq->geom.mb_factor, idx, 1.E-3 * seq->geom.sms_distance, 1.E-3 * seq->geom.slice_thickness);
+		pulse_sms_init(&ps, seq->phys.rf_duration, seq->phys.flip_angle, 0., seq->phys.bwtp, alpha,
+			seq->geom.mb_factor, idx, seq->geom.sms_distance, seq->geom.slice_thickness);
 
 		pulse[idx].max = ps.A; // this is scaled by fa / fa_prep
 		pulse[idx].integral = pulse_sms_integral(&ps);
@@ -62,7 +62,7 @@ int seq_sample_rf_shapes(int N, struct rf_shape pulse[N], const struct seq_confi
 
 		struct pulse_hypsec hs = pulse_hypsec_defaults;
 
-		pulse_hypsec_init(1E6 * seq->sys.gamma, &hs);
+		pulse_hypsec_init(seq->sys.gamma, &hs);
 
 		pulse[idx].max = hs.A;
 		pulse[idx].integral = pulse_hypsec_integral(&hs);
@@ -71,9 +71,9 @@ int seq_sample_rf_shapes(int N, struct rf_shape pulse[N], const struct seq_confi
 		struct pulse* pp = CAST_UP(&hs);
 
 		pulse[idx].sar_calls = seq->loop_dims[BATCH_DIM];
-		pulse[idx].sar_dur = round(1.E6 * pp->duration); // otherwise preparation fails
+		pulse[idx].sar_dur = pp->duration;
 
-		pulse[idx].samples = lround(0.5 * pulse[idx].sar_dur);
+		pulse[idx].samples = lround(0.5 * 1E6 * pulse[idx].sar_dur);
 
 		if (MAX_RF_SAMPLES < pulse[idx].samples)
 			return -1;
@@ -164,7 +164,7 @@ double idea_nco_phase(int set, const struct seq_event* ev)
 
 	double time = (set) ? (ev->mid - ev->start) : (ev->end - ev->mid);
 
-	return phase_clamp(- idea_nco_freq(ev) * 0.000360 * time + phase_mid);
+	return phase_clamp(- idea_nco_freq(ev) * 360. * time + phase_mid);
 }
 
 double idea_pulse_scaling(const struct rf_shape* pulse)
@@ -174,7 +174,7 @@ double idea_pulse_scaling(const struct rf_shape* pulse)
 
 double idea_pulse_norm_sum(const struct rf_shape* pulse)
 {
-	double dwell = 1.e-6 * pulse->sar_dur / pulse->samples;
+	double dwell = pulse->sar_dur / pulse->samples;
 	return ((pulse->integral / dwell) / pulse->max);
 }
 
@@ -262,7 +262,7 @@ int seq_block(int N, struct seq_event ev[N], struct seq_state* seq_state, const 
 		if (md_check_equal_dims(DIMS, zeros, seq_state->pos, ~0UL)) {
 
 			seq_state->mode = BLOCK_PRE;
-			return wait_time_to_event(ev, 0., 1.E6 * seq->magn.init_delay_sec);
+			return wait_time_to_event(ev, 0., seq->magn.init_delay);
 		}
 		else if (md_check_equal_dims(DIMS, (zeros[COEFF2_DIM] = 1, zeros), seq_state->pos, ~0UL)) {
 
@@ -299,11 +299,11 @@ int seq_block(int N, struct seq_event ev[N], struct seq_state* seq_state, const 
 		md_max_dims(DIMS, (COEFF2_FLAG | PHS2_FLAG) & ~msm_flag, seq_state->pos, seq_state->pos, last_idx);
 
 		if (md_check_equal_dims(DIMS, last_idx, seq_state->pos, (SEQ_FLAGS & ~(BATCH_FLAG | msm_flag)))
-			&& (0. < seq->magn.inv_delay_time_sec)) {
+			&& (0. < seq->magn.inv_delay_time)) {
 
 				seq_state->mode = BLOCK_POST;
 				ev[0].type = SEQ_EVENT_WAIT;
-				ev[0].end = 1.E6 * seq->magn.inv_delay_time_sec;
+				ev[0].end = seq->magn.inv_delay_time;
 				return 1;
 		}
 

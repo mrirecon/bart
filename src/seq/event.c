@@ -98,8 +98,8 @@ int wait_time_to_event(struct seq_event* ev, double start, double dur)
  */
 void events_get_te(int E, double te[E], int N, const struct seq_event ev[N])
 {
-	long rf_mid = -1;
-	long adc_mid[E];
+	double rf_mid = -1;
+	double adc_mid[E];
 
 	int e = 0;
 	for (int i = 0; i < N; i++) {

@@ -142,9 +142,9 @@ void pulseq_init(struct pulseq *ps, const struct seq_config* seq)
 	ps->gradient_raster_time = 1.e-5;
 	ps->block_raster_time = 1.e-5;
 	ps->rf_raster_time = 1.e-6;
-	ps->fov[0] = 1.e-3 * seq->geom.fov;
-	ps->fov[1] = 1.e-3 * seq->geom.fov;
-	ps->fov[2] = 1.e-3 * seq->geom.slice_thickness * seq->loop_dims[SLICE_DIM];
+	ps->fov[0] = seq->geom.fov;
+	ps->fov[1] = seq->geom.fov;
+	ps->fov[2] = seq->geom.slice_thickness * seq->loop_dims[SLICE_DIM];
 	ps->total_duration = 0.;
 
 	ps->label_flags = md_nontriv_dims(DIMS, seq->loop_dims) & SEQ_FLAGS & ~(COEFF_FLAG | COEFF2_FLAG| ITER_FLAG); // MDH dimension to write
@@ -203,13 +203,13 @@ void pulse_shapes_to_pulseq(struct pulseq *ps, int N, const struct rf_shape rf_s
 			idea_cfl_to_sample(&rf_shapes[i], j, &m, &p);
 			mag[j] = (double)m;
 			pha[j] = round(1.e5 * (double)p / (2 * M_PI)) * 1.e-5;
-			time[j] = round(j * rf_shapes[i].sar_dur / rf_shapes[i].samples / (1.e6 * ps->rf_raster_time));
+			time[j] = round(j * rf_shapes[i].sar_dur / rf_shapes[i].samples / ps->rf_raster_time);
 		}
 
 		VEC_ADD(ps->shapes, make_compressed_shape(mag_id, samples, mag));
 		VEC_ADD(ps->shapes, make_compressed_shape(mag_id + 1, samples, pha));
 
-		if (rf_shapes[i].samples != (1.e-6 / ps->rf_raster_time) * rf_shapes[i].sar_dur)
+		if (rf_shapes[i].samples != (rf_shapes[i].sar_dur / ps->rf_raster_time))
 			VEC_ADD(ps->shapes, make_compressed_shape(mag_id + 2, samples, time));
 		else
 		 	VEC_ADD(ps->shapes, make_compressed_shape(mag_id + 2, 2, tmp));
@@ -278,7 +278,7 @@ static void grad_to_pulseq(int grad_id[3], struct pulseq *ps, struct seq_sys sys
 		struct gradient g = {
 
 			.id = grad_id[a],
-			.amp = sys.grad.max_amplitude * sys.gamma * 1.e3,
+			.amp = sys.grad.max_amplitude * sys.gamma,
 			.shape_id = sid
 		};
 
@@ -290,7 +290,7 @@ static double phase_pulseq(const struct seq_event* ev)
 {
 	double phase_mid = (SEQ_EVENT_PULSE == ev->type) ? ev->pulse.phase : ev->adc.phase;
 	double freq = (SEQ_EVENT_PULSE == ev->type) ? ev->pulse.freq : ev->adc.freq;
-	double ret = fmod(DEG2RAD(- freq * 0.000360 * (ev->mid - ev->start) + phase_mid), 2. * M_PI);
+	double ret = fmod(DEG2RAD(- freq * 360. * (ev->mid - ev->start) + phase_mid), 2. * M_PI);
 	return (ret < 0.) ? (ret + 2. * M_PI) : ret;
 }
 
@@ -418,7 +418,7 @@ static int rf_to_pulseq(struct pulseq *ps, int M, const struct rf_shape rf_shape
 
 	int time_id = 0;
 
-	if (rf_shapes[pulse_id].samples != (1.e-6 / ps->rf_raster_time) * rf_shapes[pulse_id].sar_dur)
+	if (rf_shapes[pulse_id].samples != (rf_shapes[pulse_id].sar_dur / ps->rf_raster_time))
 		time_id = mag_id + 2;
 
 	struct rfpulse rf = {
@@ -437,19 +437,19 @@ static int rf_to_pulseq(struct pulseq *ps, int M, const struct rf_shape rf_shape
 	return rf_id;
 }
 
-void events_to_pulseq(struct pulseq *ps, enum block mode, long tr, struct seq_sys sys, int M, const struct rf_shape rf_shapes[M], int N, const struct seq_event ev[N])
+void events_to_pulseq(struct pulseq *ps, enum block mode, double tr, struct seq_sys sys, int M, const struct rf_shape rf_shapes[M], int N, const struct seq_event ev[N])
 {
 	int n_blocks = MAX(1, events_counter(SEQ_EVENT_ADC, N, ev));
 
 	if (1 < events_counter(SEQ_EVENT_PULSE, N, ev))
 		error("Multiple RFs per block not supported\n");
 
-	long dur = lround(seq_block_end(N, ev, mode, tr, 1.E6 * ps->block_raster_time) / (1.e6 * ps->block_raster_time));
+	long dur = lround(seq_block_end(N, ev, mode, tr, ps->block_raster_time) / ps->block_raster_time);
 	ps->total_duration += dur * ps->block_raster_time;
 
 	double grad_shapes[MAX_GRAD_POINTS][3];
 	seq_compute_gradients(MAX_GRAD_POINTS, grad_shapes, 10., N, ev);
-	long grad_len = (seq_block_end_flat(N, ev, 1.E6 * ps->block_raster_time) + seq_block_rdt(N, ev, 1.E6 * ps->block_raster_time)) / (1.E6 * ps->block_raster_time);
+	long grad_len = lround((seq_block_end_flat(N, ev, ps->block_raster_time) + seq_block_rdt(N, ev, ps->block_raster_time)) / ps->block_raster_time);
 
 	if (grad_len > dur)
 		error("Gradient length %ld exceeds block duration %ld\n", grad_len, dur);

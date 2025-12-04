@@ -72,23 +72,23 @@ const int seq_loop_order_multislice[DIMS] = {
 const struct seq_config seq_config_defaults = {
 
 	.phys = {
-		.tr = 3110.,
-		.te = 1900.,
-		.dwell = 4.0,
+		.tr = 3.11E-3,
+		.te = 1.90E-3,
+		.dwell = 4.E-6,
 		.os = 2.,
 		.contrast = CONTRAST_RF_RANDOM,
-		.rf_duration = 620.,
+		.rf_duration = 620.E-6,
 		.flip_angle = 6.,
 		.bwtp = 3.8,
 	},
 
 	.geom = {
-		.fov = 256,
-		.slice_thickness = 6.,
+		.fov = .256,
+		.slice_thickness = .006,
 		.shift = { [0 ... MAX_SLICES - 1] = { 0., 0., 0. } },
 		.baseres = 256,
 		.mb_factor = 1,
-		.sms_distance = 20.,
+		.sms_distance = .020,
 	},
 
 	.enc = {
@@ -100,20 +100,20 @@ const struct seq_config seq_config_defaults = {
 	.magn = {
 		.mag_prep = PREP_OFF,
 		.ti = 0.,
-		.init_delay_sec = 0.,
-		.inv_delay_time_sec = 0.,
+		.init_delay = 0.,
+		.inv_delay_time = 0.,
 	},
 
 	.sys = {
-		.gamma = 42.575575,
+		.gamma = 42.575575E6,
 		.b0 = 2.893620,
-		.grad.inv_slew_rate = 7.848885540911,
-		.grad.max_amplitude = 24.,
-		.coil_control_lead = 100.,
-		.min_duration_ro_rf = 213.,
-		.raster_grad = 10.,
-		.raster_rf = 1.,
-		.raster_dwell = .1,
+		.grad.inv_slew_rate = .007848885540911,
+		.grad.max_amplitude = .024,
+		.coil_control_lead = 100.E-6,
+		.min_duration_ro_rf = 213.E-6,
+		.raster_grad = 1.E-5,
+		.raster_rf = 1.E-6,
+		.raster_dwell = 1.E-7,
 	},
 
 	.order = { [0 ... DIMS - 1] = 1 },

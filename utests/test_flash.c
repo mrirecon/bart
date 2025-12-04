@@ -119,10 +119,10 @@ static bool test_flash_mom2(void)
 	if (FLASH_EVENTS != E)
 		return false;
 
-	const int samples = seq.phys.tr;
+	const int samples = lround(1.E6 * seq.phys.tr);
 	float m0[samples][3];
-	compute_moment0(samples, m0, 1., E, ev);
-	long adc_mid = ev[events_idx(0, SEQ_EVENT_ADC, E, ev)].mid;
+	compute_moment0(samples, m0, 1.E-6, E, ev);
+	long adc_mid = 1E6 * ev[events_idx(0, SEQ_EVENT_ADC, E, ev)].mid;
 
 	if (UT_TOL < fabs( m0[adc_mid][0] + m0[adc_mid - 1][0]))
 		return false;
@@ -138,9 +138,9 @@ static bool test_flash_phase(void)
 	struct seq_state seq_state = { 0 };
 	seq_state.mode = BLOCK_KERNEL_IMAGE;
 	struct seq_config seq = seq_config_defaults;
-	seq.geom.shift[0][0] = 10.;
-	seq.geom.shift[0][1] = 20.;
-	seq.geom.shift[0][2] = 30.;
+	seq.geom.shift[0][0] = 10.E-3;
+	seq.geom.shift[0][1] = 20.E-3;
+	seq.geom.shift[0][2] = 30.E-3;
 	seq.enc.pe_mode = PEMODE_RAGA;
 
 	int E = 200;

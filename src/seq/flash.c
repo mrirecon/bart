@@ -34,9 +34,14 @@ static double start_rf(const struct seq_config* seq)
 static double ro_shift(const struct seq_config* seq)
 {
 	double start_flat = start_rf(seq) + seq->phys.rf_duration / 2.
-				+ 1. * seq->phys.te - adc_time_to_echo(seq);
+				+ seq->phys.te - adc_time_to_echo(seq);
 
-	return lround(seq->sys.raster_grad - (round_up_raster(start_flat, seq->sys.raster_grad) - (long)start_flat)) % lround(seq->sys.raster_grad);
+	double shift = seq->sys.raster_grad - (round_up_raster(start_flat, seq->sys.raster_grad) - start_flat);
+
+	if (seq->sys.raster_grad <= shift)
+		return 0.;
+
+	return shift;
 }
 
 

@@ -107,7 +107,7 @@ static bool test_rf_shape1(void)
 	if (3 != ps.shapes->len)
 		return false;
 
-	if (seq.phys.rf_duration != ps.shapes->data[0].values->len)
+	if (1E6 * seq.phys.rf_duration != ps.shapes->data[0].values->len)
 		return false;
 
 	for (int i = 0; i < ps.shapes->data[0].values->len; i++) {
@@ -204,7 +204,7 @@ static bool test_events_to_pulseq(void)
 	if (1 != ps.ps_blocks->len)
 		return false;
 
-	if (UT_TOL < fabs(seq.phys.tr * 1e-6 - ps.total_duration))
+	if (UT_TOL < fabs(seq.phys.tr - ps.total_duration))
 	 	return false;
 
 	// check ADC
@@ -214,7 +214,7 @@ static bool test_events_to_pulseq(void)
 	if ((seq.geom.baseres * 2) != (int)ps.adcs->data[0].num)
 		return false;
 
-	if ((seq.phys.dwell / 2. * 1000.) != ps.adcs->data[0].dwell)
+	if ((seq.phys.dwell / 2. * 1.E9) != ps.adcs->data[0].dwell)
 		return false;
 
 
