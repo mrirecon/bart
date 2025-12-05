@@ -55,6 +55,7 @@ int main_seq(int argc, char* argv[argc])
 
 	float dt = -1.;
 	long samples = -1;
+	double rel_shift[3] = { };
 	long raga_full_frames = 0;
 	float dist = 1.;
 
@@ -74,6 +75,7 @@ int main_seq(int argc, char* argv[argc])
 		OPT_LONG('N', &samples, "samples", "Number of samples (default: 1000)"),
 
 		OPT_DOVEC3('s', &seq.geom.shift[0], "RO:PE:SL", "FOV shift of first slice"),
+		OPT_DOVEC3('S', &rel_shift, "RO:PE:SL", "relative FOV shift of first slice"),
 		OPTL_FLOAT(0, "dist", &dist, "dist", "slice distance factor [1 / slice_thickness] (default: 1.)"),
 
 		// contrast mode
@@ -160,6 +162,19 @@ int main_seq(int argc, char* argv[argc])
 
 
 	const long total_slices = get_slices(&seq);
+
+	if ((0. < fabs(rel_shift[0])) || (0. < fabs(rel_shift[1])) || (0. < fabs(rel_shift[2]))) {
+
+		if ((0. < fabs(seq.geom.shift[0][0])) || (0. < fabs(seq.geom.shift[0][1])) || (0. < fabs(seq.geom.shift[0][2])))
+			error("Choose either relative or absolute FOV shift");
+
+		for (int i = 0; i < total_slices; i++) {
+
+			seq.geom.shift[i][0] = rel_shift[0] * seq.geom.fov;
+			seq.geom.shift[i][1] = rel_shift[1] * seq.geom.fov;
+			seq.geom.shift[i][2] = rel_shift[2] * seq.geom.slice_thickness;
+		}
+	}
 
 	if ((1 < total_slices) && (0. < dist)) {
 

@@ -80,6 +80,17 @@ tests/test-seq-offcenter: seq traj extract scale phantom fovshift fmac nrmse
 TESTS +=  tests/test-seq-offcenter
 
 
+tests/test-seq-relative-fovshift: seq traj extract scale phantom fovshift fmac nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/seq -s 0.0256:0.0128:0	-r 377 --no-spoiling samples_abs.ra	;\
+	$(TOOLDIR)/seq -S 0.1:0.05:0 		-r 377 --no-spoiling samples_rel.ra	;\
+	$(TOOLDIR)/nrmse -t 0 samples_abs.ra samples_rel.ra				;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+TESTS +=  tests/test-seq-relative-fovshift
+
 
 tests/test-seq-raga-ordering: seq traj extract raga bin nrmse 
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)				;\
