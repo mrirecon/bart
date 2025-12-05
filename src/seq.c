@@ -55,6 +55,7 @@ int main_seq(int argc, char* argv[argc])
 
 	float dt = -1.;
 	long samples = -1;
+	long raga_full_frames = 0;
 	float dist = 1.;
 
 	struct seq_state seq_state = { };
@@ -109,6 +110,7 @@ int main_seq(int argc, char* argv[argc])
 		OPTL_LONG('r', "lines", &seq.loop_dims[PHS1_DIM], "lines", "Number of phase encoding lines"),
 		OPTL_LONG('z', "partitions", &seq.loop_dims[PHS2_DIM], "partitions", "Number of partitions (3D) or SMS groups (2D)"),
 		OPTL_LONG('t', "measurements", &seq.loop_dims[TIME_DIM], "measurements", "Number of measurements / frames (RAGA: total number of spokes)"),
+		OPTL_LONG('f', "raga_full_frames", &raga_full_frames, "raga_full_frames", "Number of full frames (only RAGA)"),
 		OPTL_LONG('m', "slices", &seq.loop_dims[SLICE_DIM], "slices", "Number of slices of multiband factor (SMS)"),
 		OPTL_LONG('i', "inversions", &seq.loop_dims[BATCH_DIM], "inversions", "Number of inversions"),
 
@@ -139,12 +141,17 @@ int main_seq(int argc, char* argv[argc])
 
 	num_rand_init(0ULL);
 
-	if ((1 == seq.loop_dims[TIME_DIM]) &&
-		(seq.loop_dims[TIME_DIM] < seq.loop_dims[PHS1_DIM]) &&
+	if ((seq.loop_dims[TIME_DIM] < seq.loop_dims[PHS1_DIM]) &&
 		((PEMODE_RAGA == seq.enc.pe_mode) || (PEMODE_RAGA_ALIGNED == seq.enc.pe_mode))) {
 
-		debug_printf(DP_INFO, "Set total number of spokes to %ld (full frame for RAGA encoding)\n", seq.loop_dims[PHS1_DIM]);
-		seq.loop_dims[TIME_DIM] = seq.loop_dims[PHS1_DIM];
+		if (0 < raga_full_frames)
+			seq.loop_dims[TIME_DIM] = raga_full_frames * seq.loop_dims[PHS1_DIM];
+
+		if (1 == seq.loop_dims[TIME_DIM]) {
+
+			debug_printf(DP_INFO, "Set total number of spokes to %ld (full frame for RAGA encoding)\n", seq.loop_dims[PHS1_DIM]);
+			seq.loop_dims[TIME_DIM] = seq.loop_dims[PHS1_DIM];
+		}
 	}
 
 
