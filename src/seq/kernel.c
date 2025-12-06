@@ -75,7 +75,7 @@ void compute_adc_samples(int D, const long adc_dims[D], complex float* adc, int 
 		if (SEQ_EVENT_ADC != ev[i].type)
 			continue;
 
-		double dwell = (ev[i].end - ev[i].start) / (ev[i].adc.columns * ev[i].adc.os);
+		double dwell = 1.E-9 * ev[i].adc.dwell_ns /  ev[i].adc.os;
 
 		long pos[DIMS] = { };
 		pos[TE_DIM] = e;

@@ -11,6 +11,18 @@ tests/test-seq-raga: seq traj extract nrmse
 
 TESTS +=  tests/test-seq-raga
 
+tests/test-seq-raga2: seq traj extract nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)		;\
+	$(TOOLDIR)/traj -x 256 -o 2. -y 377 -r -D trj_ref.ra 	;\
+	$(TOOLDIR)/seq -r 377 --dwell 4.2E-6 --raga samples.ra grad.ra mom.ra 	;\
+	$(TOOLDIR)/extract 0 0 3 samples.ra trj_seq.ra		;\
+	$(TOOLDIR)/nrmse -t 3E-7 trj_ref.ra trj_seq.ra		;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+TESTS +=  tests/test-seq-raga2
+
 tests/test-seq-raga-chrono: seq traj extract nrmse 
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)				;\
 	$(TOOLDIR)/traj -x 256 -o 2. -y 377 -r -A -s 1 --double-base trj_ref.ra ;\
