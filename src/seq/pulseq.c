@@ -448,7 +448,7 @@ void events_to_pulseq(struct pulseq *ps, enum block mode, double tr, struct seq_
 	ps->total_duration += dur * ps->block_raster_time;
 
 	double grad_shapes[MAX_GRAD_POINTS][3];
-	seq_compute_gradients(MAX_GRAD_POINTS, grad_shapes, 10., N, ev);
+	seq_compute_gradients(MAX_GRAD_POINTS, grad_shapes, ps->gradient_raster_time, N, ev);
 	long grad_len = lround((seq_block_end_flat(N, ev, ps->block_raster_time) + seq_block_rdt(N, ev, ps->block_raster_time)) / ps->block_raster_time);
 
 	if (grad_len > dur)
