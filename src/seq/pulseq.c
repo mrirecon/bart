@@ -331,7 +331,7 @@ static int adc_to_pulseq(struct pulseq *ps, int i_adc, long block_start, int N, 
 		.id = adc_id,
 		.num = (uint64_t)lround(ev[adc_idx].adc.columns * ev[adc_idx].adc.os),
 		.dwell = (uint64_t)lround(ev[adc_idx].adc.dwell_ns / ev[adc_idx].adc.os),
-		.delay = ev[adc_idx].start - block_start,
+		.delay = round(1.E6 * (ev[adc_idx].start - block_start)),
 		.freq = ev[adc_idx].adc.freq,
 		.phase = phase_pulseq(&ev[adc_idx])
 	};
@@ -469,7 +469,7 @@ static int rf_to_pulseq(struct pulseq *ps, int M, const struct rf_shape rf_shape
 		.mag_id = mag_id,
 		.ph_id = mag_id + 1,
 		.time_id = time_id,
-		.delay = (uint64_t)(ev[rf_idx].start),
+		.delay = round(1.E6 * ev[rf_idx].start),
 		.freq = ev[rf_idx].pulse.freq,
 		.phase = phase_pulseq(&ev[rf_idx])
 	};
