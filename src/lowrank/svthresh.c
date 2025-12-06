@@ -187,7 +187,7 @@ float maxsingular(long M, long N, /*const*/ complex float* d)
 	complex float* U = md_alloc(2, dimsU, sizeof(complex float));
 	complex float* VT = md_alloc(2, dimsV, sizeof(complex float));
 
-	float* S = xmalloc((size_t)(MIN(M, N) * (long)sizeof(float)));
+	float* S = xmalloc(sizeof(float[MIN(M, N)]));
 
 	// SVD
 	lapack_svd_econ(M, N, (complex float (*)[])U,

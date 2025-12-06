@@ -145,7 +145,7 @@ static void lowrank(float alpha, int D, const long dims[D], complex float* matri
 		complex float* VT = md_alloc(2, dimsV, CFL_SIZE);
 		//	complex float* U = create_cfl("U", 2, dimsU);
 		//	complex float* VT = create_cfl("VT", 2, dimsV);
-		float* S = xmalloc((size_t)(MIN(N, M) * (long)sizeof(float)));
+		float* S = xmalloc(sizeof(float[MIN(N, M)]));
 
 		debug_printf(DP_INFO, "SVD..\n");
 

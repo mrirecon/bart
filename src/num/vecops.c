@@ -42,7 +42,7 @@
 static float* allocate(long N)
 {
 	assert(N >= 0);
-	return xmalloc((size_t)N * sizeof(float));
+	return xmalloc(sizeof(float[N]));
 }
 
 static void del(float* vec)
@@ -593,7 +593,7 @@ static float klargest_complex_partsort(int N, int k, const complex float* ar)
 {
 	assert(k <= N);
 
-	complex float* tmp = xmalloc((size_t)(N * (long)sizeof(complex float)));
+	complex float* tmp = xmalloc(sizeof(complex float[N]));
 	copy(2 * N, (float*)tmp, (const float*)ar);
 
 	float thr = quickselect_complex(tmp, N, k);

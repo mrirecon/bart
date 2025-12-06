@@ -436,7 +436,7 @@ extern void md_copy_dims(int D, long odims[D], const long idims[D]);
  */
 void md_copy_order(int D, int odims[D], const int idims[D])
 {
-	memcpy(odims, idims, (size_t)(D * (int)sizeof(int)));
+	memcpy(odims, idims, sizeof(int[D]));
 }
 
 
@@ -1293,8 +1293,8 @@ void md_copy_block(int D, const long pos[D], const long odim[D], void* optr, con
  */
 void md_resize(int D, const long odim[D], void* optr, const long idim[D], const void* iptr, size_t size)
 {
-	long pos[D];
-	memset(pos, 0, (size_t)(D * (long)sizeof(long)));
+	long pos[D]; // = { };
+	memset(pos, 0, sizeof(long[D]));
 
 	for (int i = 0; i < D; i++) {
 
@@ -1316,8 +1316,8 @@ void md_resize(int D, const long odim[D], void* optr, const long idim[D], const 
  */
 void md_pad(int D, const void* val, const long odim[D], void* optr, const long idim[D], const void* iptr, size_t size)
 {
-	long pos[D];
-	memset(pos, 0, (size_t)(D * (long)sizeof(long)));
+	long pos[D]; // = { };
+	memset(pos, 0, sizeof(long[D]));
 
 	md_fill(D, odim, optr, val, size);
 	md_copy_block(D, pos, odim, optr, idim, iptr, size);

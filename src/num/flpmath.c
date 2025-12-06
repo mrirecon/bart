@@ -4302,10 +4302,10 @@ static void md_zcumsum_core2(int D, const long dims[D], unsigned long flags, com
 	md_copy2(D, dims, istrs, tmp, istrs, in, sizeof(complex float));
 
 	long zdims[D];
-	long center[D];
-
 	md_select_dims(D, ~0UL, zdims, dims);
-	memset(center, 0, (size_t)(D * (long)sizeof(long)));
+
+	long center[D]; // = { };
+	memset(center, 0, sizeof center);
 
 	for (int i = 0; i < D; i++) {
 
@@ -4320,6 +4320,7 @@ static void md_zcumsum_core2(int D, const long dims[D], unsigned long flags, com
 				md_clear2(D, zdims, istrs, tmp2, sizeof(complex float));
 				md_zadd2(D, dims, ostrs, out, istrs, tmp2, ostrs, out);
 			}
+
 			md_copy2(D, dims, ostrs, tmp, ostrs, out, sizeof(complex float));
 
 			center[i] = 0;

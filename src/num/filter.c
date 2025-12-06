@@ -48,17 +48,19 @@ static void sort_complex_floats(int N, complex float ar[N])
 
 float median_float(int N, const float ar[N])
 {
-	float tmp[N];
-	memcpy(tmp, ar, (size_t)(N * (long)sizeof(float)));
+	float tmp[N]; // = { };
+	memcpy(tmp, ar, sizeof tmp);
+
 	sort_floats(N, tmp);
+
 	return (1 == N % 2) ? tmp[(N - 1) / 2] : ((tmp[(N - 1) / 2 + 0] + tmp[(N - 1) / 2 + 1]) / 2.);
 }
 
 complex float median_complex_float(int N, const complex float ar[N])
 {
 	complex float (*tmp)[N] = xmalloc(sizeof *tmp);
+	memcpy(*tmp, ar, sizeof *tmp);
 
-	memcpy(*tmp, ar, (size_t)(N * (long)sizeof(complex float)));
 	sort_complex_floats(N, *tmp);
 
 	complex float result;

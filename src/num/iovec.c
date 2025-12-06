@@ -35,11 +35,11 @@ void iovec_init2(struct iovec_s* n, int N, const long dims[N], const long strs[N
 	n->N = N;
 
 	PTR_ALLOC(long[N], ndims);
-	memcpy(*ndims, dims, (size_t)(N * (long)sizeof(long)));
+	memcpy(*ndims, dims, sizeof(long[N]));
 	n->dims = *PTR_PASS(ndims);
 
 	PTR_ALLOC(long[N], nstrs);
-	memcpy(*nstrs, strs, (size_t)(N * (long)sizeof(long)));
+	memcpy(*nstrs, strs, sizeof(long[N]));
 	n->strs = *PTR_PASS(nstrs);
 
 	n->size = size;

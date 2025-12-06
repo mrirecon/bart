@@ -524,8 +524,8 @@ void mdb_irgnm_l1(const struct mdb_irgnm_l1_conf* conf,
 	auto cd = nlop_codomain(nlop);
 	auto dm = nlop_domain(nlop);
 
-	assert(M * (long)sizeof(float) == md_calc_size(cd->N, cd->dims) * (long)cd->size);
-	assert(N * (long)sizeof(float) == md_calc_size(dm->N, dm->dims) * (long)dm->size);
+	assert((long)sizeof(float[M]) == md_calc_size(cd->N, cd->dims) * (long)cd->size);
+	assert((long)sizeof(float[N]) == md_calc_size(dm->N, dm->dims) * (long)dm->size);
 
 	const struct operator_p_s* inv_op = NULL;
 

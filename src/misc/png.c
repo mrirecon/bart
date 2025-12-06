@@ -57,7 +57,7 @@ static int png_write_anyrgb(const char* name, int w, int h, int nbytes, bool rgb
 	png_init_io(structp, fp);
 	png_write_info(structp, infop);
 
-	row_ptrs = xmalloc((size_t)((long)sizeof(png_bytep) * h));
+	row_ptrs = xmalloc(sizeof(png_bytep[h]));
 	row_size = png_get_rowbytes(structp, infop);
 
 	for (int i = 0; i < h; i++)

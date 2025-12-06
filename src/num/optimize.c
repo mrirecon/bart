@@ -198,8 +198,8 @@ static void compute_permutation(int N, int ord[N], const long strs[N])
 
 static void reorder_long(int N, int ord[N], long x[N])
 {
-	long tmp[N];
-	memcpy(tmp, x, (size_t)(N * (long)sizeof(long)));
+	long tmp[N];	// = { };
+	memcpy(tmp, x, sizeof(long[N]));
 
 	for (int i = 0; i < N; i++)
 		x[i] = tmp[ord[i]];

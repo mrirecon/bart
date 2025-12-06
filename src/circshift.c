@@ -49,7 +49,7 @@ int main_circshift(int argc, char* argv[argc])
 		error("Dimension out of range");
 
 	long center[N];
-	memset(center, 0, (size_t)(N * (long)sizeof(long)));
+	memset(center, 0, sizeof(long[N]));
 	center[dim] = shift;
 
 	complex float* idata = load_cfl(in_file, N, dims);

@@ -631,12 +631,12 @@ int main_sqpics(int argc, char* argv[argc])
 
 	nr_penalties++;
 
-	const float** biases = xmalloc(sizeof(float*) * (unsigned long)nr_penalties);
+	const float* (*biases)[nr_penalties] = xmalloc(sizeof *biases);
 
 	for (int i = 0; i < nr_penalties - 1; i++)
-		biases[i] = NULL;
+		(*biases)[i] = NULL;
 
-	biases[nr] = (float*)kspace;
+	(*biases)[nr] = (float*)kspace;
 
 
 
@@ -694,7 +694,7 @@ int main_sqpics(int argc, char* argv[argc])
 
 
 	long size = 2 * md_calc_size(DIMS, img_dims);
-	iter2_admm(CAST_UP(&mmconf), NULL, nr_penalties, thresh_ops, trafos, biases, NULL, size, (float*)image, NULL, NULL);
+	iter2_admm(CAST_UP(&mmconf), NULL, nr_penalties, thresh_ops, trafos, *biases, NULL, size, (float*)image, NULL, NULL);
 
 
 #if 0

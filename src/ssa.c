@@ -171,7 +171,7 @@ int main_ssa(int argc, char* argv[argc])
 		back = create_cfl(backproj_file, DIMS, back_dims);
 	}
 
-	float* S_square = xmalloc((unsigned long)N * sizeof(float));
+	float* S_square = xmalloc(sizeof(float[N]));
 
 	if (econ)
 		ssa_fary_econ(kernel_dims, cal_dims, A_dims, A, U, S_square, back, rank, group);

@@ -127,8 +127,8 @@ void iter4_irgnm(const iter3_conf* _conf,
 
 	assert(NULL == pinv); // better we allow this only with irgnm2
 
-	assert(M * (long)sizeof(float) == md_calc_size(cd->N, cd->dims) * (long)cd->size);
-	assert(N * (long)sizeof(float) == md_calc_size(dm->N, dm->dims) * (long)dm->size);
+	assert((long)sizeof(float[M]) == md_calc_size(cd->N, cd->dims) * (long)cd->size);
+	assert((long)sizeof(float[N]) == md_calc_size(dm->N, dm->dims) * (long)dm->size);
 
 	auto conf = CAST_DOWN(iter3_irgnm_conf, _conf);
 
@@ -204,8 +204,8 @@ void iter4_irgnm2(const iter3_conf* _conf,
 	auto cd = nlop_codomain(nlop);
 	auto dm = nlop_domain(nlop);
 
-	assert(M * (long)sizeof(float) == md_calc_size(cd->N, cd->dims) * (long)cd->size);
-	assert(N * (long)sizeof(float) == md_calc_size(dm->N, dm->dims) * (long)dm->size);
+	assert((long)sizeof(float[M]) == md_calc_size(cd->N, cd->dims) * (long)cd->size);
+	assert((long)sizeof(float[N]) == md_calc_size(dm->N, dm->dims) * (long)dm->size);
 
 	auto conf = CAST_DOWN(iter3_irgnm_conf, _conf);
 
@@ -237,8 +237,8 @@ void iter4_lbfgs(const iter3_conf* _conf,
 	auto cd = nlop_codomain(nlop);
 	auto dm = nlop_domain(nlop);
 
-	assert(M * (long)sizeof(float) == md_calc_size(cd->N, cd->dims) * (long)cd->size);
-	assert(N * (long)sizeof(float) == md_calc_size(dm->N, dm->dims) * (long)dm->size);
+	assert((long)sizeof(float[M]) == md_calc_size(cd->N, cd->dims) * (long)cd->size);
+	assert((long)sizeof(float[N]) == md_calc_size(dm->N, dm->dims) * (long)dm->size);
 	assert(2 == M);
 	assert(NULL == src);
 	assert(NULL == ref);
@@ -269,8 +269,8 @@ void iter4_levenberg_marquardt(const iter3_conf* _conf,
 	auto cd = nlop_codomain(nlop);
 	auto dm = nlop_domain(nlop);
 
-	assert(M * (long)sizeof(float) == md_calc_size(cd->N, cd->dims) * (long)cd->size);
-	assert(N * (long)sizeof(float) == md_calc_size(dm->N, dm->dims) * (long)dm->size);
+	assert((long)sizeof(float[M]) == md_calc_size(cd->N, cd->dims) * (long)cd->size);
+	assert((long)sizeof(float[N]) == md_calc_size(dm->N, dm->dims) * (long)dm->size);
 
 	auto conf = CAST_DOWN(iter3_levenberg_marquardt_conf, _conf);
 

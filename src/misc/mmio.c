@@ -492,7 +492,7 @@ static const void* free_worker_buffer(int D, long dims[D], const void* addr)
 	}
 
 	if (   (desc->file_addr > desc->data_addr)
-	    || (desc->data_addr > desc->file_addr + ((long)sizeof(complex float) * md_calc_size(desc->D, desc->file_dims))))
+	    || (desc->data_addr > desc->file_addr + (sizeof(complex float[md_calc_size(desc->D, desc->file_dims)]))))
 		md_free(desc->data_addr);
 
 	addr = desc->file_addr;
@@ -673,7 +673,7 @@ complex float* create_zcoo(const char* name, int D, const long dimensions[D])
 {
 	long dims[D + 1];
 	dims[0] = 2; // complex
-	memcpy(dims + 1, dimensions, (size_t)(D * (long)sizeof(long)));
+	memcpy(dims + 1, dimensions, sizeof(long[D]));
 
 	return (complex float*)create_coo(name, D + 1, dims);
 }
@@ -979,7 +979,7 @@ complex float* load_zcoo(const char* name, int D, long dimensions[D])
 	if (2 != dims[0])
 		error("Loading coo file %s\n", name);
 
-	memcpy(dimensions, dims + 1, (size_t)(D * (long)sizeof(long)));
+	memcpy(dimensions, dims + 1, sizeof(long[D]));
 
 	return (complex float*)data;
 }
@@ -1109,7 +1109,7 @@ static complex float* load_cfl_internal(const char* name, int D, long dimensions
 
 	if (1 < mpi_get_num_procs() && !mpi_shared_files) {
 
-		mpi_sync_val(dimensions, D * (long)sizeof(long));
+		mpi_sync_val(dimensions, (long)sizeof(long[D]));
 
 		if (!mpi_is_main_proc())
 			addr = anon_cfl(NULL, D, dimensions);
