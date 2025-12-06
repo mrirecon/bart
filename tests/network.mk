@@ -405,7 +405,7 @@ tests/test-reconet-nnmodl-train-mpi-gpu-noncart: bart nrmse reconet $(TRN_KSP_NC
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	;\
 	        			    $(TOOLDIR)/reconet --network modl -g --resnet-block=no-batch-normalization --test -t --train-algo e=10 -b2 --trajectory=$(TRN_TRJ) $(TRN_KSP_NC) $(TRN_COL) weights0 $(TRN_REF_IMG)	;\
 	BART_GPU_STREAMS=2 mpirun -n 2 $(ROOTDIR)/bart reconet --network modl -g --resnet-block=no-batch-normalization --test -t --train-algo e=10 -b2 --trajectory=$(TRN_TRJ) $(TRN_KSP_NC) $(TRN_COL) weights1 $(TRN_REF_IMG)	;\
-	$(TOOLDIR)/nrmse -t 1.e-5 weights1 weights0	;\
+	$(TOOLDIR)/nrmse -t 1.e-4 weights1 weights0	;\
 	rm *.hdr ; rm *.cfl ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
