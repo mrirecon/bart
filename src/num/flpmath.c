@@ -1,6 +1,6 @@
 /* Copyright 2013-2018 The Regents of the University of California.
  * Copyright 2016-2022. Uecker Lab. University Medical Center Göttingen.
- * Copyright 2023-2024. Institute of Biomedical Imaging. TU Graz.
+ * Copyright 2023-2025. Institute of Biomedical Imaging. TU Graz.
  * Copyright 2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
@@ -4256,7 +4256,7 @@ void md_zfdiff0(int D, const long dims[D], int d, complex float* out, const comp
 	long zdims[D];
 	md_select_dims(D, ~MD_BIT(d), zdims, dims);
 
-	md_clear2(D, zdims, MD_STRIDES(D, dims, CFL_SIZE), out, sizeof(complex float));
+	md_clear2(D, zdims, MD_STRIDES(D, dims, CFL_SIZE), out, CFL_SIZE);
 }
 
 /**
@@ -4282,12 +4282,15 @@ void md_zfdiff_backwards0(int D, const long dims[D], int d, complex float* out, 
 	long zdims[D];
 	md_select_dims(D, ~MD_BIT(d), zdims, dims);
 
-	long pos[D];
+	long pos[D]; // = { };
 	for (int i = 0; i < D; i++)
 		pos[i] = 0;
+
 	pos[d] = dims[d] - 1;
 
-	md_clear2(D, zdims, MD_STRIDES(D, dims, CFL_SIZE), out + (md_calc_offset(D, MD_STRIDES(D, dims, CFL_SIZE), pos) / (long)CFL_SIZE), sizeof(complex float));
+	long strs[D];
+	md_calc_strides(D, strs, dims, CFL_SIZE);
+	md_clear2(D, zdims, MD_STRIDES(D, dims, CFL_SIZE), &MD_ACCESS(D, strs, pos, out), CFL_SIZE);
 }
 
 /*
@@ -4298,8 +4301,8 @@ void md_zfdiff_backwards0(int D, const long dims[D], int d, complex float* out, 
  */
 static void md_zcumsum_core2(int D, const long dims[D], unsigned long flags, complex float* tmp, complex float* tmp2, const long ostrs[D], complex float* out, const long istrs[D], const complex float* in)
 {
-	md_copy2(D, dims, ostrs, out, istrs, in, sizeof(complex float));
-	md_copy2(D, dims, istrs, tmp, istrs, in, sizeof(complex float));
+	md_copy2(D, dims, ostrs, out, istrs, in, CFL_SIZE);
+	md_copy2(D, dims, istrs, tmp, istrs, in, CFL_SIZE);
 
 	long zdims[D];
 	md_select_dims(D, ~0UL, zdims, dims);
@@ -4309,23 +4312,23 @@ static void md_zcumsum_core2(int D, const long dims[D], unsigned long flags, com
 
 	for (int i = 0; i < D; i++) {
 
-		if (MD_IS_SET(flags, i)) {
+		if (!MD_IS_SET(flags, i))
+			continue;
 
-			for (int d = 1; d < dims[i]; d++) {
+		for (int d = 1; d < dims[i]; d++) {
 
-				center[i] = d;
-				md_circ_shift2(D, dims, center, istrs, tmp2, istrs, tmp, sizeof(complex float));
-				zdims[i] = d;
+			center[i] = d;
+			md_circ_shift2(D, dims, center, istrs, tmp2, istrs, tmp, CFL_SIZE);
+			zdims[i] = d;
 
-				md_clear2(D, zdims, istrs, tmp2, sizeof(complex float));
-				md_zadd2(D, dims, ostrs, out, istrs, tmp2, ostrs, out);
-			}
-
-			md_copy2(D, dims, ostrs, tmp, ostrs, out, sizeof(complex float));
-
-			center[i] = 0;
-			zdims[i] = dims[i];
+			md_clear2(D, zdims, istrs, tmp2, CFL_SIZE);
+			md_zadd2(D, dims, ostrs, out, istrs, tmp2, ostrs, out);
 		}
+
+		md_copy2(D, dims, ostrs, tmp, ostrs, out, CFL_SIZE);
+
+		center[i] = 0;
+		zdims[i] = dims[i];
 	}
 }
 
@@ -4338,7 +4341,7 @@ static void md_zcumsum_core2(int D, const long dims[D], unsigned long flags, com
 void md_zcumsum(int D, const long dims[D], unsigned long flags, complex float* out, const complex float* in)
 {
 	long str[D];
-	md_calc_strides(D, str, dims, sizeof(complex float));
+	md_calc_strides(D, str, dims, CFL_SIZE);
 	md_zcumsum2(D, dims, flags, str, out, str, in);
 }
 
