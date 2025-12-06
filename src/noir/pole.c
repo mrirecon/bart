@@ -75,6 +75,7 @@ static void compute_curl_map_normal(struct pole_config_s conf, int N, const long
 
 		diameter = 1;
 		debug_printf(DP_DEBUG1, "Circle diameter set to 1pixel (ESPIRiT mode).\n");
+
 	} else {
 
 		diameter = roundf(ceil(conf.diameter * MAX(dims[(normal + 1) % 3], dims[(normal + 2) % 3])));
@@ -85,11 +86,13 @@ static void compute_curl_map_normal(struct pole_config_s conf, int N, const long
 
 	long odims[N];
 	md_copy_dims(N, odims, dims);
+
 	for (int i = 0; i < 3; i++) {
 
 		if (1 != dims[i]) {
 
 			odims[i] -= diameter;
+
 		} else {
 
 			assert(i == normal);
@@ -137,6 +140,7 @@ static void compute_curl_map_normal(struct pole_config_s conf, int N, const long
 	md_free(angle);
 }
 
+
 void compute_curl_map(struct pole_config_s conf, int N, const long curl_dims[N], int dim, complex float* curl_map, const long sens_dims[N], const complex float* sens)
 {
 	assert(dim < N);
@@ -145,6 +149,7 @@ void compute_curl_map(struct pole_config_s conf, int N, const long curl_dims[N],
 	if (1 == curl_dims[dim]) {
 
 		int normal = conf.normal;
+
 		for (int i = 0; i < 3; i++)
 			if (1 == sens_dims[i])
 				normal = i;
@@ -152,6 +157,7 @@ void compute_curl_map(struct pole_config_s conf, int N, const long curl_dims[N],
 		assert(-1 != normal && normal < 3);
 
 		compute_curl_map_normal(conf, N, sens_dims, curl_map, sens, normal);
+
 	} else {
 
 		for (int i = 0; i < curl_dims[dim]; i++)
@@ -188,6 +194,7 @@ void compute_curl_weighting(struct pole_config_s conf, int N, const long curl_di
 	md_free(wgh);
 }
 
+
 void average_curl_map(int N, const long pmap_dims[N], complex float* red_curl_map, const long curl_dims[N], int dim, complex float* curl_map, complex float* wgh_map)
 {
 	long tmp_dims[N];
@@ -204,6 +211,7 @@ void average_curl_map(int N, const long pmap_dims[N], complex float* red_curl_ma
 
 		md_zabs(N, tmp_dims, tmp, tmp);
 		md_reduce_zmax(N, tmp_dims, MD_BIT(dim), red_curl_map, tmp);
+
 	} else {
 
 		md_copy(N, tmp_dims, red_curl_map, tmp, CFL_SIZE);
@@ -213,7 +221,7 @@ void average_curl_map(int N, const long pmap_dims[N], complex float* red_curl_ma
 }
 
 
-static struct lseg_s extract_phase_poles_2d_sign(struct pole_config_s conf, int N, const long dims[N], const _Complex float* curl_map, bool pos)
+static struct lseg_s extract_phase_poles_2d_sign(struct pole_config_s conf, int N, const long dims[N], const complex float* curl_map, bool pos)
 {
 	assert((3 == bitcount(md_nontriv_dims(3, dims))) || (2 == bitcount(md_nontriv_dims(3, dims))));
 	assert(1 == md_calc_size(N - 3, dims + 3));
@@ -236,13 +244,15 @@ static struct lseg_s extract_phase_poles_2d_sign(struct pole_config_s conf, int 
 
 	struct lseg_s ret = { .N = 0, .pos = NULL };
 
-	if (0 == md_znorm(3, dims, binary)) {
+	if (0. == md_znorm(3, dims, binary)) {
 
 		md_free(binary);
+
 		return ret;
 	}
 
 	complex float* wgh = md_alloc_sameplace(3, dims, CFL_SIZE, curl_map);
+
 	md_zmul(3, dims, wgh, binary, curl_map);
 
 	if (conf.closing != 0. && !conf.espirit) {
@@ -259,6 +269,7 @@ static struct lseg_s extract_phase_poles_2d_sign(struct pole_config_s conf, int 
 	complex float* strc = md_structuring_element_cube(3, sdims, 1, md_nontriv_dims(3, dims), curl_map);
 
 	complex float* labels = md_alloc_sameplace(3, dims, CFL_SIZE, curl_map);
+
 	long nlabel = md_label(3, dims, labels, binary, sdims, strc);
 
 	md_free(binary);
@@ -272,23 +283,21 @@ static struct lseg_s extract_phase_poles_2d_sign(struct pole_config_s conf, int 
 	ret.N = 0;
 	ret.pos = xmalloc(sizeof(vec3_t[nlabel][2]));
 
-	int diameter = (conf.espirit) ? 1 : roundf(ceil(conf.diameter * MAX(dims[(normal + 1) % 3], dims[(normal + 2) % 3])));
-	float offset = (diameter / 2 - diameter / 2.);
+	int diameter = conf.espirit ? 1 : roundf(ceil(conf.diameter * MAX(dims[(normal + 1) % 3], dims[(normal + 2) % 3])));
+	float offset = diameter / 2 - diameter / 2.;
 
-	for(int i = 0; i < nlabel; i++) {
+	for (int i = 0; i < nlabel; i++) {
 
-		for (int j = 0; j < 3; j++) {
-
-			com[i][j] = (com[i][j] + (1 != dims[j] ? offset : 0.) - dims[j] / 2) / (float)dims[j];
-		}
+		for (int j = 0; j < 3; j++)
+			com[i][j] = (com[i][j] + ((1 != dims[j]) ? offset : 0.) - dims[j] / 2) / (float)dims[j];
 
 		debug_printf(DP_DEBUG1, "Found%s pole at %f %f %f.\n", pos ? "" : " conjugate", com[i][0], com[i][1], com[i][2]);
 
-		vec3_copy((ret.pos)[ret.N][0], com[i]);
-		vec3_copy((ret.pos)[ret.N][1], com[i]);
+		vec3_copy(ret.pos[ret.N][0], com[i]);
+		vec3_copy(ret.pos[ret.N][1], com[i]);
 
-		(ret.pos)[ret.N][0][normal] = (pos) ? -1. : 1.;
-		(ret.pos)[ret.N][1][normal] = (pos) ? 1. : -1.;
+		ret.pos[ret.N][0][normal] = pos ? -1. : 1.;
+		ret.pos[ret.N][1][normal] = pos ? 1. : -1.;
 
 		ret.N++;
 	}
@@ -297,7 +306,7 @@ static struct lseg_s extract_phase_poles_2d_sign(struct pole_config_s conf, int 
 }
 
 
-struct lseg_s extract_phase_poles_2D(struct pole_config_s conf, int N, const long dims[N], const _Complex float* curl_map)
+struct lseg_s extract_phase_poles_2D(struct pole_config_s conf, int N, const long dims[N], const complex float* curl_map)
 {
 	struct lseg_s pos = extract_phase_poles_2d_sign(conf, N, dims, curl_map, true);
 	struct lseg_s neg = extract_phase_poles_2d_sign(conf, N, dims, curl_map, false);
@@ -341,7 +350,7 @@ static void get_coord_transform(vec3_t evec[3], const vec3_t r1, const vec3_t r2
 	evec[0][1] = 0;
 	evec[0][2] = 0.;
 
-	if (fabsf(vec3_sdot(evec[0], evec[2])) > 0.8) {
+	if (0.8 < fabsf(vec3_sdot(evec[0], evec[2]))) {
 
 		evec[0][0] = 0.;
 		evec[0][1] = 1.;
@@ -356,7 +365,7 @@ static void get_coord_transform(vec3_t evec[3], const vec3_t r1, const vec3_t r2
 
 
 
-void sample_phase_pole_2D(int N, const long dims[N], _Complex float* dst, int D, const float r[D][2][3])
+void sample_phase_pole_2D(int N, const long dims[N], complex float* dst, int D, const float r[D][2][3])
 {
 	assert(2 == bitcount(md_nontriv_dims(3, dims)));
 
@@ -402,8 +411,8 @@ void sample_phase_pole_2D(int N, const long dims[N], _Complex float* dst, int D,
 	}
 
 	const long* dimsp = dims;
-	float* centerp0 = &(center[0][0]);
-	float* evecp0 = &(evec[0][0][0]);
+	float* centerp0 = &center[0][0];
+	float* evecp0 = &evec[0][0][0];
 	float* Lp = L;
 
 
@@ -417,6 +426,7 @@ void sample_phase_pole_2D(int N, const long dims[N], _Complex float* dst, int D,
 		for (int i = 0; i < D; i++) {
 
 			vec3_t fpos;
+
 			for (int j = 0; j < 3; j++)
 				fpos[j] = pos[j] / (float)dimsp[j] - (*centerp)[i][j];
 
@@ -425,7 +435,8 @@ void sample_phase_pole_2D(int N, const long dims[N], _Complex float* dst, int D,
 
 			complex float val = vec3_sdot(fpos, (*evecp)[i][0]) + vec3_sdot(fpos, (*evecp)[i][1]) * 1.i;
 			complex float mag = cabsf(val);
-			val = (0 == mag) ? 1. : val / mag;
+
+			val = (0. == mag) ? 1. : val / mag;
 			ret *= val;
 		}
 
@@ -442,6 +453,7 @@ bool phase_pole_correction(struct pole_config_s conf, int N, const long pmap_dim
 	md_copy_dims(N, curl_dims, sens_dims);
 
 	int normal = conf.normal;
+
 	for (int i = 0; i < 3; i++)
 		if (1 == curl_dims[i])
 			normal = i;
@@ -477,6 +489,7 @@ bool phase_pole_correction(struct pole_config_s conf, int N, const long pmap_dim
 
 	return 0 < pos.N;
 }
+
 
 bool phase_pole_correction_loop(struct pole_config_s conf, int N, unsigned long lflags, const long pmap_dims[N], complex float* phase, const long sens_dims[N], const complex float* sens)
 {
@@ -516,6 +529,7 @@ void phase_pole_normalize(int N, const long pdims[N], complex float* phase, cons
 	md_select_dims(N, ~7UL, tpdims, pdims);
 
 	complex float* dot = md_alloc_sameplace(N, tpdims, CFL_SIZE, image);
+
 	md_ztenmulc(N, tpdims, dot, idims, image, idims, timage);
 	md_zphsr(N, tpdims, dot, dot);
 
@@ -524,3 +538,4 @@ void phase_pole_normalize(int N, const long pdims[N], complex float* phase, cons
 	md_free(timage);
 	md_free(dot);
 }
+
