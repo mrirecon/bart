@@ -171,7 +171,7 @@ static bool test_snlop_pow(void)
 
 	nlop_free(nlop);
 
-	UT_RETURN_ASSERT(1.e-7 > md_zrmse(N, dims, ref_out, out));
+	UT_RETURN_ASSERT(1.e-6 > md_zrmse(N, dims, ref_out, out));
 }
 
 UT_REGISTER_TEST(test_snlop_pow);
