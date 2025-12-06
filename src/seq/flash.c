@@ -58,9 +58,14 @@ static double available_time_RF_SLI(int ro, const struct seq_config* seq)
 static int prep_grad_ro_deph(struct grad_trapezoid* grad, const struct seq_config* seq)
 {
 	double amp = ro_amplitude(seq);
+	double adc_echo = adc_time_to_echo(seq);
+	double adc_rounding = seq->sys.raster_dwell * 
+		((int)(adc_echo / seq->sys.raster_dwell) % 
+			(int)(adc_echo / seq->sys.raster_rf));
+
 	double mom = amp *
 		(0.5 * amp * seq->sys.grad.inv_slew_rate
-		+ ro_shift(seq) + adc_time_to_echo(seq));
+		+ ro_shift(seq) + adc_rounding + adc_echo);
 
 	struct grad_limits limits = seq->sys.grad;
 	limits.max_amplitude *= SCALE_GRAD;
@@ -146,7 +151,7 @@ static struct flash_timing flash_compute_timing(const struct seq_config *seq)
 	timing.readout_dephaser = timing.RF + seq->phys.rf_duration;
 	timing.slice_rephaser = timing.readout_dephaser + seq->sys.grad.inv_slew_rate * slice_amplitude(seq);
 	timing.readout = timing.readout_dephaser + available_time_RF_SLI(1, seq);
-	timing.adc = timing.RF + seq->phys.rf_duration / 2. + seq->phys.te - adc_time_to_echo(seq);
+	timing.adc = round_up_raster(timing.RF + seq->phys.rf_duration / 2. + seq->phys.te - adc_time_to_echo(seq), seq->sys.raster_rf);
 
 	return timing;
 }

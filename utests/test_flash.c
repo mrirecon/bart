@@ -87,15 +87,15 @@ static bool test_flash_mom1(void)
 
 	double mom[3];
 	moment_sum(mom, ev[e_adc].mid, E, ev);
-	if (UT_TOL < (fabs(mom[0]) + fabs(mom[1]) + fabs(mom[2])))
+	if (1E-5 * UT_TOL < (fabs(mom[0]) + fabs(mom[1]) + fabs(mom[2])))
 		return false;
 
 	moment_sum(mom, ev[e_rf].mid + 1e-12, E, ev);
-	if (UT_TOL < (fabs(mom[0]) + fabs(mom[1]) + fabs(mom[2])))
+	if (1E-5 * UT_TOL < (fabs(mom[0]) + fabs(mom[1]) + fabs(mom[2])))
 		return false;
 
 	moment_sum(mom, ev[e_adc].start, E, ev);
-	if (UT_TOL < fabs(mom[2]))
+	if (1E-5 * UT_TOL < fabs(mom[2]))
 		return false;
 
 	return true;
@@ -103,6 +103,81 @@ static bool test_flash_mom1(void)
 
 UT_REGISTER_TEST(test_flash_mom1);
 
+
+static bool test_flash_mom1b(void)
+{
+	struct seq_state seq_state = { 0 };
+	struct seq_config seq = seq_config_defaults;
+	seq.phys.te = 2E-3;
+	seq.phys.dwell = 4.3E-6;
+
+	int E = 200;
+	struct seq_event ev[E];
+
+	seq_state.mode = BLOCK_KERNEL_IMAGE;
+	E = flash(E, ev, &seq_state, &seq);
+
+	if (FLASH_EVENTS != E)
+		return false;
+
+	int e_adc = events_idx(0, SEQ_EVENT_ADC, E, ev);
+	int e_rf = events_idx(0, SEQ_EVENT_PULSE, E, ev);
+
+	double mom[3];
+	moment_sum(mom, ev[e_adc].mid, E, ev);
+	if (1E-5 * UT_TOL < (fabs(mom[0]) + fabs(mom[1]) + fabs(mom[2])))
+		return false;
+
+	moment_sum(mom, ev[e_rf].mid + 1e-12, E, ev);
+	if (1E-5 * UT_TOL < (fabs(mom[0]) + fabs(mom[1]) + fabs(mom[2])))
+		return false;
+
+	moment_sum(mom, ev[e_adc].start, E, ev);
+	if (1E-5 * UT_TOL < fabs(mom[2]))
+		return false;
+
+	return true;
+}
+
+UT_REGISTER_TEST(test_flash_mom1b);
+
+
+static bool test_flash_mom1c(void)
+{
+	struct seq_state seq_state = { 0 };
+	struct seq_config seq = seq_config_defaults;
+	seq.phys.te = 2E-3;
+	seq.phys.dwell = 4.1E-6;
+
+	int E = 200;
+	struct seq_event ev[E];
+
+	seq_state.mode = BLOCK_KERNEL_IMAGE;
+	E = flash(E, ev, &seq_state, &seq);
+
+	if (FLASH_EVENTS != E)
+		return false;
+
+	int e_adc = events_idx(0, SEQ_EVENT_ADC, E, ev);
+	int e_rf = events_idx(0, SEQ_EVENT_PULSE, E, ev);
+
+	double mom[3];
+	moment_sum(mom, ev[e_adc].mid, E, ev);
+	if (1E-5 * UT_TOL < (fabs(mom[0]) + fabs(mom[1]) + fabs(mom[2])))
+		return false;
+
+	moment_sum(mom, ev[e_rf].mid + 1e-12, E, ev);
+	if (1E-5 * UT_TOL < (fabs(mom[0]) + fabs(mom[1]) + fabs(mom[2])))
+		return false;
+
+	moment_sum(mom, ev[e_adc].start, E, ev);
+	if (1E-5 * UT_TOL < fabs(mom[2]))
+		return false;
+
+	return true;
+}
+
+UT_REGISTER_TEST(test_flash_mom1c);
 
 
 static bool test_flash_mom2(void)
