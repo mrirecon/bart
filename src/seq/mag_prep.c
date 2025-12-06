@@ -18,14 +18,14 @@ int mag_prep(struct seq_event ev[6], const struct seq_config* seq)
 
 		double projSLICE[3] = { 0. , 0. , 1. };
 
-		i += prep_rf_inv(ev + i, 800, seq);
+		i += prep_rf_inv(ev + i, 800E-6, seq);
 
 		struct grad_trapezoid spoil = {
 
-			.ampl = 8,
-			.rampup = 800,
-			.flat = 8200,
-			.rampdown = 600,
+			.ampl = .008,
+			.rampup = 800E-6,
+			.flat = 8200E-6,
+			.rampdown = 600E-6,
 		};
 
 		i += seq_grad_to_event(ev + i, ev[i - 1].end, &spoil, projSLICE);
