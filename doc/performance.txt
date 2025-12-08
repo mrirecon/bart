@@ -1,0 +1,83 @@
+Performance Optimization Options in BART
+----------------------------------------
+
+In MRI reconstruction, the main computational cost is typically dominated by FFT
+operations, while some calibration methods additionally rely on fast linear
+algebra routines provided by BLAS and LAPACK. One of BART’s core design goals is
+portability: the toolbox is intended to run generically and reproducibly across
+different architectures and operating systems. As a consequence, default
+settings are often conservative and may not provide optimal performance.
+This document summarizes selected runtime and compile-time options that can
+significantly improve computational performance.
+
+1.) FFT Performance
+-------------------
+BART uses FFTW3 as its FFT backend. By default, FFT plans are generated using the
+FFTW_ESTIMATE flag (see https://www.fftw.org/fftw3_doc/Planner-Flags.html). This
+choice enables fast and deterministic plan creation, but typically results in
+FFT plans that are suboptimal with respect to runtime performance.
+By setting the environment variable
+
+	$ BART_USE_FFTW_WISDOM=1 bart ...
+
+BART uses the FFTW_MEASURE flag when generating FFT plans. This allows FFTW to
+benchmark multiple plans and select a faster one, at the cost of a slightly
+longer planning phase. The resulting FFTW wisdom is stored in the directory
+specified by BART_TOOLBOX_PATH and reused in subsequent BART executions.
+In our experiments, this option provided speedups of up to four-fold on AMD CPUs
+and up to two-fold on Intel CPUs.
+
+2.) BLAS and LAPACK Configuration
+---------------------------------
+By default, BART links against the system BLAS library, which often resolves to
+an OpenBLAS implementation using pthread-based parallelization. Since BART
+itself uses OpenMP for threading, more efficient thread reuse can be achieved by
+linking against an OpenBLAS library compiled with OpenMP support.
+On Debian-based systems, such an implementation can be installed via the
+package
+
+	$ libopenblas-openmp-dev
+
+Because some legacy BLAS implementations are not thread-safe, BART
+conservatively calls BLAS routines from a single thread by default. If the
+linked BLAS library is known to be thread-safe, this restriction can be lifted
+by compiling BART with
+
+	BLAS_THREADSAFE=1 make
+
+BART can also be explicitly linked against OpenBLAS by compiling with
+        
+	OPENBLAS=1 make
+
+This option implicitly enables BLAS threading support. However, if OpenBLAS is
+built with pthread support, its internal parallelization is disabled to avoid
+thread oversubscription when used together with OpenMP.
+
+3.) Non-Deterministic GPU Kernels
+---------------------------------
+Certain GPU-based reduction and convolution operations can be significantly
+accelerated by using atomic additions. Because atomic operations introduce a
+non-deterministic summation order, floating-point results may exhibit small
+run-to-run variations. To ensure reproducibility, this behavior is disabled by
+default.
+Non-deterministic GPU kernels can be enabled at compile time by setting
+
+	NON_DETERMINISTIC=1 make
+
+It should be noted that the adjoint NUFFT always uses atomic operations during
+gridding, independent of this setting. Fully deterministic results can only be
+achieved by using the single-threaded CPU-based adjoint NUFFT.
+
+4.) cuDNN Acceleration
+----------------------
+Some convolution operations can be accelerated by using cuDNN as a backend
+instead of BART’s internal implementation. Support for cuDNN can be enabled at
+compile time by setting
+
+	CUDNN=1 make
+
+Additional performance gains may be achieved by allowing cuDNN to use Tensor
+Cores. This option is disabled by default, as it may reduce numerical precision.
+Tensor Core usage can be enabled at runtime by setting the environment variable
+
+	$ BART_CUDNN_USE_TENSORCORE=1 bart ...
