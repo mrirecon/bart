@@ -124,6 +124,7 @@ static const struct linop_s* get_sense_linop(long img_dims[DIMS], long ksp_dims[
 	if (NULL != traj) {
 
 		lop_sense = nufft_create2(DIMS, ksp_dims, cim_dims, traj_dims, traj, pat_dims, pat, MD_SINGLETON_DIMS(DIMS), NULL, nufft_conf_defaults);
+
 	} else {
 
 		lop_sense = linop_fftc_create(DIMS, col_dims, FFT_FLAGS);
@@ -355,6 +356,7 @@ int main_sample(int argc, char* argv[argc])
 			nn_weights_t weights = load_nn_weights(cunet_weights);
 			nlop = nn_get_nlop_wo_weights_F(cunet, weights, true);
 			nn_weights_free(weights);
+
 		} else {
 
 			// generates nlop from tf or pt graph
@@ -623,6 +625,7 @@ int main_sample(int argc, char* argv[argc])
 		operator_p_free(score_op_p);
 		nlop_free(nlop_fixed);
 		linop_free(linop_iter);
+
 		if (AHy_iter != AHy)
 			md_free(AHy_iter);
 	}

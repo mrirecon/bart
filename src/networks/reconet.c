@@ -1150,9 +1150,10 @@ void apply_reconet(struct reconet_s* config, struct named_data_list_s* data)
 
 void eval_reconet(struct reconet_s* config, struct named_data_list_s* data)
 {
-
 	auto dom_rec = named_data_list_get_iovec(data, "reference");
+
 	complex float* tmp_out = md_alloc(dom_rec->N, dom_rec->dims, CFL_SIZE);
+
 	named_data_list_append(data, dom_rec->N, dom_rec->dims, tmp_out, "reconstruction");
 
 	apply_reconet(config, data);

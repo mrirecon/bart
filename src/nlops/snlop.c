@@ -444,7 +444,7 @@ void snlop_chain(int N, arg_t oargs[N], arg_t iargs[N], bool keep)
 
 	for (int i = 0; i < N; i++)
 		snlop_combine(iargs[0]->x, iargs[i]->x);
-
+	
 	for (int i = 0; i < N; i++) {
 
 		if (arg_is_input(oargs[0]) && !arg_is_input(oargs[i]))
@@ -793,6 +793,7 @@ arg_t snlop_stack(arg_t a, arg_t b, int stack_dim)
 	const struct iovec_s* iovb = arg_get_iov(b);
 
 	arg_t ret = NULL;
+
 	if (NULL != a->stack)
 		ret = a->stack(a, b, stack_dim, false);
 
@@ -840,12 +841,14 @@ arg_t snlop_stack(arg_t a, arg_t b, int stack_dim)
 	return arg;
 }
 
+
 arg_t snlop_stack_F(arg_t a, arg_t b, int stack_dim)
 {
 	const struct iovec_s* iova = arg_get_iov(a);
 	const struct iovec_s* iovb = arg_get_iov(b);
 
 	arg_t ret = NULL;
+
 	if (NULL != a->stack)
 		ret = a->stack(a, b, stack_dim, false);
 
