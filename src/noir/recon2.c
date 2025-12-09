@@ -118,7 +118,7 @@ static void phasepole_correction(struct pole_config_s conf, const struct noir2_s
 	linop_forward_unchecked(lop_col, col, dst + md_calc_size(N, linop_domain(d->lop_im)->dims));
 
 	long pdims[N];
-	md_select_dims(d->N, ~SENS_FLAGS, pdims, col_dims);
+	md_select_dims(d->N, ~COIL_FLAG, pdims, col_dims);
 
 	complex float* phase = md_alloc_sameplace(d->N, pdims, CFL_SIZE, col);
 	md_zfill(d->N, pdims, phase, 1.);
