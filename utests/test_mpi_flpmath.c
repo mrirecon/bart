@@ -149,6 +149,12 @@ static bool test_mpi_zfmacc2_34(void)	{ return test_mpi_z3op(md_zfmacc2,	MD_BIT(
 UT_REGISTER_TEST(test_mpi_zfmacc2_3);
 UT_REGISTER_TEST(test_mpi_zfmacc2_34);
 
+static bool test_mpi_zadd2_3(void)		{ return test_mpi_z3op(md_zadd2,	MD_BIT(3))		; }
+static bool test_mpi_zadd2_34(void)		{ return test_mpi_z3op(md_zadd2,	MD_BIT(3)|MD_BIT(4))	; }
+
+UT_REGISTER_TEST(test_mpi_zadd2_3);
+UT_REGISTER_TEST(test_mpi_zadd2_34);
+
 static bool test_mpi_r3op(r3op_t test_fun, unsigned long mpi_flags)
 {
 	enum { N = 5};

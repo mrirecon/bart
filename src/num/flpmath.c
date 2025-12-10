@@ -1936,7 +1936,14 @@ void md_axpy(int D, const long dims[D], float* optr, float val, const float* ipt
  */
 void md_zadd2(int D, const long dims[D], const long ostr[D], complex float* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)
 {
-	MAKE_Z3OP_FROM_REAL(add, D, dims, ostr, optr, istr1, iptr1, istr2, iptr2);
+	bool mpi = mpi_is_reduction(D, dims, ostr, optr, CFL_SIZE, istr1, iptr1, CFL_SIZE)
+		|| mpi_is_reduction(D, dims, ostr, optr, CFL_SIZE, istr2, iptr2, CFL_SIZE);
+
+	complex float* toptr = mpi ? mpi_reduction_sum_buffer_create(optr) : optr;
+
+	MAKE_Z3OP_FROM_REAL(add, D, dims, ostr, toptr, istr1, iptr1, istr2, iptr2);
+
+	mpi_reduction_sum_buffer((float*)optr, (float*)toptr);
 }
 
 
