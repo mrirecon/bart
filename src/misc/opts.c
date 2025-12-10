@@ -963,13 +963,10 @@ bool opt_float(void* ptr, char /*c*/, const char* optarg)
 
 bool opt_double(void* ptr, char /*c*/, const char* optarg)
 {
-	complex float val;
+	double val;
 
-	if (0 != parse_cfl(&val, optarg))
+	if (0 != parse_double(&val, optarg))
 		error("Could not parse argument to opt_double: %s!\n", optarg);
-
-	if (0.f != cimagf(val))
-		error("Argument \"%s\" to opt_double is not real\n", optarg);
 
 	*(double*)ptr = val;
 

@@ -260,11 +260,11 @@ ok:
 int parse_double(double res[1], const char* str)
 {
 	char* tail;
-	float re = strtof(str, &tail);
+	double re = strtod(str, &tail);
 
 	if ('\0' != tail[0])
 		return -1;
-	res[0] = (double)re;
+	res[0] = re;
 	return 0;
 }
 
