@@ -82,7 +82,7 @@ tests/test-seq-offcenter: seq traj extract scale phantom fovshift fmac nrmse
 	$(TOOLDIR)/extract 0 4 5 samples.ra adc_phase.ra				;\
 	$(TOOLDIR)/scale 0.5 trj_ref.ra trj_scale.ra					;\
 	$(TOOLDIR)/phantom -k -t trj_scale.ra ksp.ra					;\
-	$(TOOLDIR)/fovshift -s 0.2:0.1:0 -t trj_ref.ra ksp.ra ksp_ref.ra		;\
+	$(TOOLDIR)/fovshift -s 0.1:0.05:0 -t trj_ref.ra ksp.ra ksp_ref.ra		;\
 	$(TOOLDIR)/fmac adc_phase.ra ksp.ra ksp_seq.ra					;\
 	$(TOOLDIR)/nrmse -t 1E-6 ksp_ref.ra ksp_seq.ra					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
