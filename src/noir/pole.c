@@ -521,6 +521,10 @@ bool phase_pole_correction_loop(struct pole_config_s conf, int N, unsigned long 
 	md_set_dims(N, pos, 0);
 
 	do {
+		//FIXME: this should probybly be moved to src/noir/recon2.c
+		if (0 != pos[MAPS_DIM])
+			continue;
+
 		ret = phase_pole_correction(conf, N, npmap_dims, &MD_ACCESS(N, pmap_strs, pos, phase), nsens_dims, &MD_ACCESS(N, sens_strs, pos, sens)) || ret;
 
 	} while (md_next(N, pmap_dims, lflags, pos));
