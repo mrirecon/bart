@@ -267,6 +267,69 @@ static bool test_flash_mom1c(void)
 UT_REGISTER_TEST(test_flash_mom1c);
 
 
+static bool test_flash_mom_meco(void)
+{
+	struct seq_state seq_state = { 0 };
+	struct seq_config seq = seq_config_defaults;
+	seq.enc.pe_mode = PEMODE_MEMS_HYB;
+	seq.loop_dims[TE_DIM] = 5;
+	seq.loop_dims[PHS1_DIM] = 7;
+
+	seq.enc.tiny = 2;
+	seq.loop_dims[TE_DIM] = 7;
+	seq.phys.tr = 13.8E-3;
+	seq.phys.te[0] =  1.81E-3;
+	seq.phys.te[1] =  3.61E-3;
+	seq.phys.te[2] =  5.41E-3;
+	seq.phys.te[3] =  7.21E-3;
+	seq.phys.te[4] =  9.01E-3;
+	seq.phys.te[5] = 10.90E-3;
+	seq.phys.te[6] = 12.70E-3;
+	seq.geom.fov = 220E-3;
+	seq.geom.baseres = 220;
+	seq.phys.dwell = 5.4E-6;
+	seq.phys.rf_duration = 400E-6;
+	seq.phys.bwtp = 1.;
+	seq.geom.slice_thickness = 5.E-3;
+
+
+	int E = 200;
+	struct seq_event ev[E];
+
+	seq_state.mode = BLOCK_KERNEL_IMAGE;
+	E = flash(E, ev, &seq_state, &seq);
+
+	if (FLASH_EVENTS_MECO != E)
+		return false;
+
+	int e_rf = events_idx(0, SEQ_EVENT_PULSE, E, ev);
+
+	double mom[3];
+
+	moment_sum(mom, ev[e_rf].mid + 1e-12, E, ev);
+	if (1E-5 * UT_TOL < (fabs(mom[0]) + fabs(mom[1]) + fabs(mom[2])))
+		return false;
+
+
+	for (int i = 0; i < seq.loop_dims[TE_DIM]; i++) {
+
+		int e_adc = events_idx(i, SEQ_EVENT_ADC, E, ev);
+
+		moment_sum(mom, ev[e_adc].mid, E, ev);
+		if (1E-5 * UT_TOL < (fabs(mom[0]) + fabs(mom[1]) + fabs(mom[2])))
+			return false;
+
+		moment_sum(mom, ev[e_adc].start, E, ev);
+		if (1E-5 * UT_TOL < fabs(mom[2]))
+			return false;
+	}
+
+	return true;
+}
+
+UT_REGISTER_TEST(test_flash_mom_meco);
+
+
 static bool test_flash_mom2(void)
 {
 	struct seq_state seq_state = { 0 };
