@@ -14,8 +14,14 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <limits.h>
-#include <sys/mman.h>
 #include <stdio.h>
+
+#ifdef _WIN32
+#include "win/mman.h"
+#include "win/open_patch.h"
+#else
+#include <sys/mman.h>
+#endif
 
 #include "num/multind.h"
 #include "num/optimize.h"
