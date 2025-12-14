@@ -28,6 +28,7 @@
 #ifdef _WIN32
 #include "win/mman.h"
 #include "win/open_patch.h"
+#define mprotect _mprotect
 #else
 #include <sys/mman.h>
 #endif
@@ -43,6 +44,11 @@
 #include "misc/stream.h"
 
 #include "mmio.h"
+
+// for Windows DLLs
+#ifndef MAP_NORESERVE
+#define MAP_NORESERVE 0UL
+#endif
 
 // for BSD compatibility
 #ifndef MAP_ANONYMOUS
