@@ -1,6 +1,7 @@
 #ifndef _RAND_H
 #define _RAND_H
 
+#include "misc/dllspec.h"
 #include "misc/cppwrap.h"
 
 
@@ -13,7 +14,7 @@ extern void md_rand_one(int D, const long dims[__VLA(D)], _Complex float* dst, d
 extern void gaussian_rand_vec(long N, float* dst);
 extern void uniform_rand_vec(long N, float* dst);
 
-extern void num_rand_init(unsigned long long seed);
+BARTLIB_API extern void BARTLIB_CALL num_rand_init(unsigned long long seed);
 
 struct bart_rand_state;
 

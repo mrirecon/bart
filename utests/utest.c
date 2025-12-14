@@ -66,7 +66,14 @@ void abort_or_print(const char* testname)
 	}
 
 	if (1 == abort_on_error)
+#ifndef BARTDLL
 		error("%s failed\n", testname);
+#else
+	{
+		debug_printf(DP_ERROR, "%s failed\n", testname);
+		abort();
+	}
+#endif
 	else
 		debug_printf(DP_ERROR, "%s failed\n", testname);
 }
@@ -83,13 +90,14 @@ int main(int argc, char* argv[])
 	int num_tests_run = 0;
 	int num_tests_pass = 0;
 
+#ifndef UTEST_WINE
 #ifdef UTEST_GPU
 	bart_use_gpu = true;
 	num_init_gpu_support();
 #else
 	num_init();
 #endif
-
+#endif
 	num_rand_init(0ULL);
 
 	for (ut_test_f** ptr = &_utests_begin; ptr != &_utests_end; ptr++) {
@@ -106,7 +114,9 @@ int main(int argc, char* argv[])
 
 	debug_printf(good ? DP_INFO : DP_ERROR, "%20s: %2d/%2d passed.\n", argv[0], num_tests_pass, num_tests_run);
 
+#ifndef BARTDLL
 	deinit_mpi();
+#endif
 
 	exit(good ? 0 : 1);
 }

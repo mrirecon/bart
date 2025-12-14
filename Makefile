@@ -835,6 +835,7 @@ MODULES_test_fib += -lnoncart
 
 # lib seq
 UTARGETS += test_gradient test_events test_angle_calc test_adc_rf test_flash test_seq test_pulseq
+UTARGETS_WINE += test_seq.win
 MODULES_test_gradient += -lseq
 MODULES_test_events += -lseq
 MODULES_test_angle_calc += -lseq -lsimu -lnoncart
@@ -1037,6 +1038,9 @@ lib/libbart.a: CPPFLAGS = -I$(srcdir)/
 lib/libbart.a: $(seqobjs) $(miscobjs) $(filter-out $(WIN_NOT_SUPPORTED:.win.o=.o),$(numobjs)) $(winobjs) $(noncartobjs) $(linopsobjs) $(waveletobjs) $(geomobjs) $(simuobjs)
 	$(AR) rcs $@ $^
 
+$(UTARGETS_WINE): CC = $(MINGWCC)
+$(UTARGETS_WINE): CPPFLAGS = -D BARTLIB_EXPORTS -I$(srcdir)/
+$(UTARGETS_WINE): CFLAGS = -D NO_PNG -D NOLAPACKE -D NO_FFTW -D NO_LAPACK -D NO_BLAS -D NO_FIFO -D BARTDLL
 
 .SECONDEXPANSION:
 $(CTARGETS): commands/% : src/main.c $(srcdir)/%.o $$(MODULES_%) $(MODULES)
@@ -1071,6 +1075,11 @@ UTESTS_GPU=$(shell $(root)/utests/utests_gpu-collect.sh ./utests/$@.c)
 $(UTARGETS_GPU): % : utests/utest.c utests/%.o $$(MODULES_%) $(MODULES)
 	$(CC) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) -DUTESTS="$(UTESTS_GPU)" -DUTEST_GPU $+ $(FFTW_L) $(CUDA_L) $(BLAS_L) $(LIBS) -lm $(LIBRT) -o $@
 
+UTESTS_WINE=$(shell $(root)/utests/utests-collect.sh ./utests/$(@:.win=).c)
+
+.SECONDEXPANSION:
+$(UTARGETS_WINE): % : utests/utest.c utests/%.o bart.dll
+	$(MINGWCC) $(CFLAGS) $(CPPFLAGS) -lbart -L. -DUTESTS="$(UTESTS_WINE)" -DUTEST_WINE -o $(@:.win=.exe) $+ -lm
 
 
 # linker script version - does not work on MacOS X
@@ -1149,6 +1158,11 @@ utests_gpu-all: $(UTARGETS_GPU)
 utest_gpu: utests_gpu-all
 	@echo ALL GPU UNIT TESTS PASSED.
 
+utest_wine-all: $(UTARGETS_WINE)
+	./utests/utests_run.sh "WINE" "wine" $(UTARGETS_WINE:.win=.exe)
+
+utest_wine: utest_wine-all
+	@echo ALL WINE UNIT TESTS PASSED.
 
 
 .PHONY: clean

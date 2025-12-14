@@ -2,6 +2,7 @@
 #ifndef _SEQ_CONFIG_H
 #define _SEQ_CONFIG_H
 
+#include "misc/dllspec.h"
 #include "misc/cppwrap.h"
 #include "misc/mri.h"
 
@@ -139,7 +140,7 @@ struct seq_state {
 };
 
 
-extern const struct seq_config seq_config_defaults;
+BARTLIB_API extern const struct seq_config seq_config_defaults;
 
 #include "misc/cppwrap.h"
 

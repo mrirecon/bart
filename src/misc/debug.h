@@ -11,6 +11,7 @@
 #include <stdarg.h>
 #include <stddef.h>
 
+#include "misc/dllspec.h"
 #include "misc/cppwrap.h"
 
 extern void dump_cfl(const char* name, int D, const long dimensions[__VLA(D)], const _Complex float* x);
@@ -24,7 +25,7 @@ extern _Bool debug_logging;
 enum debug_levels { DP_ERROR, DP_WARN, DP_INFO, DP_DEBUG1, DP_DEBUG2, DP_DEBUG3, DP_DEBUG4, DP_TRACE, DP_ALL };
 
 
-extern void debug_printf(int level, const char* fmt, ...) __attribute__((format(printf,2,3)));
+BARTLIB_API extern void BARTLIB_CALL debug_printf(int level, const char* fmt, ...) __attribute__((format(printf,2,3)));
 extern void debug_vprintf(int level, const char* fmt, va_list ap);
 
 #ifdef REDEFINE_PRINTF_FOR_TRACE

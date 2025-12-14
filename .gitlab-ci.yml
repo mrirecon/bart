@@ -412,6 +412,14 @@ UTest_wasm:
      - Build_wasm
 
 
+UTest_Wine:
+  stage: test1
+  script:
+    #- apt-get update -qq && apt-get install -y wine mingw-w64
+    - AUTOCLEAN=0 WERROR=1 BARTDLL=1 make utest_wine
+  needs: [Build_WinDLL]
+  dependencies:
+     - Build_WinDLL
 
 
 IntTest:
