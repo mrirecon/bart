@@ -6,6 +6,22 @@
  * 2024 Philip Schaten <philip.schaten@tugraz.at>
  */
 
+#ifdef _WIN32
+
+#include <assert.h>
+#include "lock.h"
+
+void bart_lock(bart_lock_t* lock) { assert(0); }
+void bart_unlock(bart_lock_t* lock) { assert(0); }
+void bart_lock_destroy(bart_lock_t* x) { assert(0); }
+bart_lock_t* bart_lock_create(void) { assert(0); }
+void bart_cond_wait(bart_cond_t* cond, bart_lock_t* lock) { assert(0); }
+void bart_cond_notify_all(bart_cond_t* cond) { assert(0); }
+void bart_cond_destroy(bart_cond_t* x) { assert(0); }
+bart_cond_t* bart_cond_create(void) { assert(0); }
+
+#else
+
 #ifdef __APPLE__
 #	include <pthread.h>
 #else
@@ -137,3 +153,4 @@ void bart_cond_destroy(bart_cond_t* cond)
 	xfree(cond);
 }
 
+#endif
