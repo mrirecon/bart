@@ -1112,7 +1112,11 @@ static int toolgraph_create_node_fd(const char* tool_name, int dirfd, char** nod
 	if (snprintf(name, (unsigned)l, "%s_%d_%d", tool_name ? : "", (int)timestamp(), getpid()) >= l)
 		error("graph_generate_name.\n");
 
+#ifdef _WIN32
+	int fd = -1;
+#else
 	int fd = openat(dirfd, name, O_RDWR|O_CREAT|O_EXCL, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
+#endif
 
 	if (-1 == fd)
 		error("graph_generate_name.\n");
