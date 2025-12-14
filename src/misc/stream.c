@@ -485,7 +485,11 @@ void stream_ensure_fifo(const char* name)
 {
 	struct stat statbuf = { };
 	if (0 != stat(name, &statbuf))
+#ifndef NO_FIFO
 		mkfifo(name, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
+#else
+		error("BART compiled without fifo support, but requested an output stream that should be a fifo.\n");
+#endif
 
 	if (0 != stat(name, &statbuf))
 		error("stat / mkfifo.\n");
