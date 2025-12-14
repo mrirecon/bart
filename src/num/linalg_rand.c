@@ -20,6 +20,13 @@
 
 #include "linalg_rand.h"
 
+#ifdef NO_LAPACK
+void lapack_svd_econ(long M, long N, complex float U[(N > M) ? M : N][M], complex float VH[N][(N > M) ? M : N],
+			float S[(N > M) ? M : N], complex float A[N][M]) { assert(0); }
+void lapack_qr_econ(long M, long N,  complex float R[N][(N > M) ? M : N], complex float A[N][M]) { assert(0); }
+void lapack_eig(long N, float eigenval[N], complex float matrix[N][N]) { assert(0); }
+#endif
+
 /*
  * Finding Structure with Randomness: Probabilistic Algorithms for Constructing Approximate Matrix Decompositions
  * N. Halko, P. G. Martinsson, and J. A. Tropp
