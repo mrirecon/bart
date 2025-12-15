@@ -2519,7 +2519,16 @@ void* md_gpu_move(int D, const long dims[D], const void* ptr, size_t size)
 	if (NULL == ptr)
 		return NULL;
 
-	void* gpu_ptr = md_alloc_gpu(D, dims, size);
+	void* gpu_ptr = NULL;
+
+	if (is_vptr(ptr)) {
+
+		gpu_ptr = vptr_alloc_sameplace(D, dims, size, ptr);
+		vptr_set_gpu(gpu_ptr);
+	} else {
+
+		gpu_ptr = md_alloc_gpu(D, dims, size);
+	}
 
 	md_copy(D, dims, gpu_ptr, ptr, size);
 
