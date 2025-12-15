@@ -147,6 +147,11 @@ extern char* construct_filename(int D, const long loopdims[__VLA(D)], const long
 #define DEG2RAD(d) ((d) * M_PI / 180.)
 #define RAD2DEG(r) ((r) / M_PI * 180.)
 
+#ifdef _WIN32
+#define ffs(x)  __builtin_ffs(x)
+#define ffsl(x) __builtin_ffsl(x)
+#endif
+
 
 #include "misc/cppwrap.h"
 

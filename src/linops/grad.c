@@ -20,9 +20,6 @@
 
 #include "grad.h"
 
-#ifdef __MINGW32__
-#define ffs __builtin_ffs
-#endif
 
 typedef void (*md_zfdiff_core_t)(int D, const long dims[D], int d, bool adj, const long ostr[D], complex float* out, const long istr[D], const complex float* in);
 
