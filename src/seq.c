@@ -59,12 +59,10 @@ int main_seq(int argc, char* argv[argc])
 	long raga_full_frames = 0;
 	float dist = 1.;
 
-	struct seq_state seq_state = { };
-	struct seq_config seq = seq_config_defaults;
+	struct bart_seq* seq = bart_seq_alloc();
+	bart_seq_defaults(seq);
 
 	enum gradient_mode gradient_mode = GRAD_FAST;
-
-	seq.enc.order = SEQ_ORDER_AVG_OUTER;
 
 	bool chrono = false;
 	bool support = false;
@@ -74,70 +72,69 @@ int main_seq(int argc, char* argv[argc])
 
 	const struct opt_s opts[] = {
 
-		OPT_FLOAT('d', &dt, "dt", "time-increment per sample (default: seq.phys.tr / 1000)"),
+		OPT_FLOAT('d', &dt, "dt", "time-increment per sample (default: seq->conf->phys.tr / 1000)"),
 		OPT_LONG('N', &samples, "samples", "Number of samples (default: 1000)"),
 
-		OPT_DOVEC3('s', &seq.geom.shift[0], "RO:PE:SL", "FOV shift of first slice"),
+		OPT_DOVEC3('s', &seq->conf->geom.shift[0], "RO:PE:SL", "FOV shift of first slice"),
 		OPT_DOVEC3('S', &rel_shift, "RO:PE:SL", "relative FOV shift of first slice"),
 		OPTL_FLOAT(0, "dist", &dist, "dist", "slice distance factor [1 / slice_thickness] (default: 1.)"),
 
 		// contrast mode
-		OPTL_SELECT(0, "no-spoiling", enum flash_contrast, &seq.phys.contrast, CONTRAST_NO_SPOILING, "spoiling off (default: rf random)"),
-		OPTL_SELECT(0, "spoiled", enum flash_contrast, &seq.phys.contrast, CONTRAST_RF_SPOILED, "RF_SPOILED (inc: 50 deg, gradient on) (default: rf random)"),
+		OPTL_SELECT(0, "no-spoiling", enum flash_contrast, &seq->conf->phys.contrast, CONTRAST_NO_SPOILING, "spoiling off (default: rf random)"),
+		OPTL_SELECT(0, "spoiled", enum flash_contrast, &seq->conf->phys.contrast, CONTRAST_RF_SPOILED, "RF_SPOILED (inc: 50 deg, gradient on) (default: rf random)"),
 
 		// FOV and resolution
-		OPTL_DOUBLE(0, "FOV", &seq.geom.fov, "FOV", "Field Of View"),
-		OPTL_PINT(0, "BR", &seq.geom.baseres, "BR", "Base Resolution"),
-		OPTL_DOUBLE(0, "slice_thickness", &seq.geom.slice_thickness, "slice_thickness", "Slice thickness"),
+		OPTL_DOUBLE(0, "FOV", &seq->conf->geom.fov, "FOV", "Field Of View"),
+		OPTL_PINT(0, "BR", &seq->conf->geom.baseres, "BR", "Base Resolution"),
+		OPTL_DOUBLE(0, "slice_thickness", &seq->conf->geom.slice_thickness, "slice_thickness", "Slice thickness"),
 
 		// basic sequence parameters
-		OPTL_DOUBLE(0, "FA", &seq.phys.flip_angle, "flip angle", "Flip angle [deg]"),
-		OPTL_DOUBLE(0, "TR", &seq.phys.tr, "TR", "TR"),
-		OPTL_DOUBLE(0, "TE", &seq.phys.te, "TE", "TE"),
-		OPTL_DOUBLE(0, "BWTP", &seq.phys.bwtp, "BWTP", "Bandwidth Time Product"),
+		OPTL_DOUBLE(0, "FA", &seq->conf->phys.flip_angle, "flip angle", "Flip angle [deg]"),
+		OPTL_DOUBLE(0, "TR", &seq->conf->phys.tr, "TR", "TR"),
+		OPTL_DOUBLE(0, "TE", &seq->conf->phys.te, "TE", "TE"),
+		OPTL_DOUBLE(0, "BWTP", &seq->conf->phys.bwtp, "BWTP", "Bandwidth Time Product"),
 
 		// others sequence parameters
-		OPTL_DOUBLE(0, "rf_duration", &seq.phys.rf_duration, "rf_duration", "RF pulse duration"),
-		OPTL_DOUBLE(0, "dwell", &seq.phys.dwell, "dwell", "Dwell time"),
-		OPTL_DOUBLE(0, "os", &seq.phys.os, "os", "Oversampling factor"),
+		OPTL_DOUBLE(0, "rf_duration", &seq->conf->phys.rf_duration, "rf_duration", "RF pulse duration"),
+		OPTL_DOUBLE(0, "dwell", &seq->conf->phys.dwell, "dwell", "Dwell time"),
+		OPTL_DOUBLE(0, "os", &seq->conf->phys.os, "os", "Oversampling factor"),
 
 		// encoding
-		OPTL_UINT(0, "pe_mode", &seq.enc.pe_mode, "pe_mode", "Phase-encoding mode"),
-		OPTL_SELECT(0, "turn", enum pe_mode, &seq.enc.pe_mode, PEMODE_TURN, "turn-based PE (default: RAGA)"),
-		OPTL_SELECT(0, "raga", enum pe_mode, &seq.enc.pe_mode, PEMODE_RAGA, "RAGA PE"),
-		OPTL_SELECT(0, "raga_al", enum pe_mode, &seq.enc.pe_mode, PEMODE_RAGA_ALIGNED, "RAGA-aligned PE (default: RAGA)"),
+		OPTL_UINT(0, "pe_mode", &seq->conf->enc.pe_mode, "pe_mode", "Phase-encoding mode"),
+		OPTL_SELECT(0, "turn", enum pe_mode, &seq->conf->enc.pe_mode, PEMODE_TURN, "turn-based PE (default: RAGA)"),
+		OPTL_SELECT(0, "raga", enum pe_mode, &seq->conf->enc.pe_mode, PEMODE_RAGA, "RAGA PE"),
+		OPTL_SELECT(0, "raga_al", enum pe_mode, &seq->conf->enc.pe_mode, PEMODE_RAGA_ALIGNED, "RAGA-aligned PE (default: RAGA)"),
 
 		OPTL_SET(0, "chrono", &chrono, "save gradients/moments/sampling in chronological order (RAGA)"),
 		OPT_OUTFILE('R', &raga_file, "file", "raga indices"),
 
-		OPTL_PINT(0, "tiny", &seq.enc.tiny, "tiny", "Tiny golden-ratio index"),
+		OPTL_PINT(0, "tiny", &seq->conf->enc.tiny, "tiny", "Tiny golden-ratio index"),
 
-		OPTL_LONG('r', "lines", &seq.loop_dims[PHS1_DIM], "lines", "Number of phase encoding lines"),
-		OPTL_LONG('z', "partitions", &seq.loop_dims[PHS2_DIM], "partitions", "Number of partitions (3D) or SMS groups (2D)"),
-		OPTL_LONG('t', "measurements", &seq.loop_dims[TIME_DIM], "measurements", "Number of measurements / frames (RAGA: total number of spokes)"),
+		OPTL_LONG('r', "lines", &seq->conf->loop_dims[PHS1_DIM], "lines", "Number of phase encoding lines"),
+		OPTL_LONG('z', "partitions", &seq->conf->loop_dims[PHS2_DIM], "partitions", "Number of partitions (3D) or SMS groups (2D)"),
+		OPTL_LONG('t', "measurements", &seq->conf->loop_dims[TIME_DIM], "measurements", "Number of measurements / frames (RAGA: total number of spokes)"),
 		OPTL_LONG('f', "raga_full_frames", &raga_full_frames, "raga_full_frames", "Number of full frames (only RAGA)"),
-		OPTL_LONG('m', "slices", &seq.loop_dims[SLICE_DIM], "slices", "Number of slices of multiband factor (SMS)"),
-		OPTL_LONG('i', "inversions", &seq.loop_dims[BATCH_DIM], "inversions", "Number of inversions"),
+		OPTL_LONG('m', "slices", &seq->conf->loop_dims[SLICE_DIM], "slices", "Number of slices of multiband factor (SMS)"),
+		OPTL_LONG('i', "inversions", &seq->conf->loop_dims[BATCH_DIM], "inversions", "Number of inversions"),
 
 		// order
-		OPTL_SELECT(0, "sequential-multislice", enum seq_order, &seq.enc.order, SEQ_ORDER_SEQ_MS, "seq_order: sequential multislice (default: avg outer)"),
-		OPTL_SELECT(0, "avg-inner", enum seq_order, &seq.enc.order, SEQ_ORDER_AVG_INNER, "seq_order: average inner (default: avg outer)"),
+		OPTL_SELECT(0, "sequential-multislice", enum seq_order, &seq->conf->enc.order, SEQ_ORDER_SEQ_MS, "seq_order: sequential multislice (default: avg outer)"),
+		OPTL_SELECT(0, "avg-inner", enum seq_order, &seq->conf->enc.order, SEQ_ORDER_AVG_INNER, "seq_order: average inner (default: avg outer)"),
 
 		// sms
-		OPTL_PINT(0, "mb_factor", &seq.geom.mb_factor, "mb_factor", "Multi-band factor"),
-		OPTL_DOUBLE(0, "sms_distance", &seq.geom.sms_distance, "sms_distance", "SMS slice distance"),
+		OPTL_PINT(0, "mb_factor", &seq->conf->geom.mb_factor, "mb_factor", "Multi-band factor"),
+		OPTL_DOUBLE(0, "sms_distance", &seq->conf->geom.sms_distance, "sms_distance", "SMS slice distance"),
 
 		// magnetization preparation
-		OPTL_SELECT(0, "IR_NON", enum mag_prep, &seq.magn.mag_prep, PREP_IR_NON, "Magn. preparation: Nonselective Inversion (default: off)"),
-		OPTL_DOUBLE(0, "TI", &seq.magn.ti, "TI", "Inversion time"),
-		OPTL_DOUBLE(0, "init_delay", &seq.magn.init_delay, "init_delay", "Initial delay of measurement"),
-		OPTL_DOUBLE(0, "inv_delay", &seq.magn.inv_delay_time, "inv_delay_time", "Inversion delay time"),
+		OPTL_SELECT(0, "IR_NON", enum mag_prep, &seq->conf->magn.mag_prep, PREP_IR_NON, "Magn. preparation: Nonselective Inversion (default: off)"),
+		OPTL_DOUBLE(0, "TI", &seq->conf->magn.ti, "TI", "Inversion time"),
+		OPTL_DOUBLE(0, "init_delay", &seq->conf->magn.init_delay, "init_delay", "Initial delay of measurement"),
+		OPTL_DOUBLE(0, "inv_delay", &seq->conf->magn.inv_delay_time, "inv_delay_time", "Inversion delay time"),
 
 		// gradient mode
 		OPTL_SELECT(0, "gradient-normal", enum gradient_mode, &gradient_mode, GRAD_NORMAL, "Gradient normal mode (default: fast)"),
 		OPTL_SELECT(0, "gradient-whisper", enum gradient_mode, &gradient_mode, GRAD_WHISPER, "Gradient whispher mode (default: fast)"),
 
-		OPTL_SET(0, "support", &support, "save support points of gradient"),
 
 		OPTL_VECN(0, "CUSTOM_LONG", custom_params_long, "custom long parameters"),
 		OPTL_DOVECN(0, "CUSTOM_DOUBLE", custom_params_double, "custom double parameters"),
@@ -153,35 +150,35 @@ int main_seq(int argc, char* argv[argc])
 	if (custom_params_long[0] > 0)
 		seq_ui_interface_custom_params(0, seq->conf, MAX_PARAMS_LONG, custom_params_long, MAX_PARAMS_DOUBLE, custom_params_double);
 
-	if ((1 == seq.loop_dims[TIME_DIM]) &&
-		(seq.loop_dims[TIME_DIM] < seq.loop_dims[PHS1_DIM]) &&
-		((PEMODE_RAGA == seq.enc.pe_mode) || (PEMODE_RAGA_ALIGNED == seq.enc.pe_mode))) {
+	if ((1 == seq->conf->loop_dims[TIME_DIM]) &&
+		(seq->conf->loop_dims[TIME_DIM] < seq->conf->loop_dims[PHS1_DIM]) &&
+		((PEMODE_RAGA == seq->conf->enc.pe_mode) || (PEMODE_RAGA_ALIGNED == seq->conf->enc.pe_mode))) {
 
 		if (0 < raga_full_frames)
-			seq.loop_dims[TIME_DIM] = raga_full_frames * seq.loop_dims[PHS1_DIM];
+			seq->conf->loop_dims[TIME_DIM] = raga_full_frames * seq->conf->loop_dims[PHS1_DIM];
 
-		if (1 == seq.loop_dims[TIME_DIM]) {
+		if (1 == seq->conf->loop_dims[TIME_DIM]) {
 
-			debug_printf(DP_INFO, "Set total number of spokes to %ld (full frame for RAGA encoding)\n", seq.loop_dims[PHS1_DIM]);
-			seq.loop_dims[TIME_DIM] = seq.loop_dims[PHS1_DIM];
+			debug_printf(DP_INFO, "Set total number of spokes to %ld (full frame for RAGA encoding)\n", seq->conf->loop_dims[PHS1_DIM]);
+			seq->conf->loop_dims[TIME_DIM] = seq->conf->loop_dims[PHS1_DIM];
 		}
 	}
 
 
 	seq_ui_interface_loop_dims(0, seq->conf, DIMS, seq->conf->loop_dims);
 
-	const long total_slices = seq_get_slices(&seq);
+	const long total_slices = seq_get_slices(seq->conf);
 
 	if ((0. < fabs(rel_shift[0])) || (0. < fabs(rel_shift[1])) || (0. < fabs(rel_shift[2]))) {
 
-		if ((0. < fabs(seq.geom.shift[0][0])) || (0. < fabs(seq.geom.shift[0][1])) || (0. < fabs(seq.geom.shift[0][2])))
+		if ((0. < fabs(seq->conf->geom.shift[0][0])) || (0. < fabs(seq->conf->geom.shift[0][1])) || (0. < fabs(seq->conf->geom.shift[0][2])))
 			error("Choose either relative or absolute FOV shift");
 
 		for (int i = 0; i < total_slices; i++) {
 
-			seq.geom.shift[i][0] = rel_shift[0] * seq.geom.fov;
-			seq.geom.shift[i][1] = rel_shift[1] * seq.geom.fov;
-			seq.geom.shift[i][2] = rel_shift[2] * seq.geom.slice_thickness;
+			seq->conf->geom.shift[i][0] = rel_shift[0] * seq->conf->geom.fov;
+			seq->conf->geom.shift[i][1] = rel_shift[1] * seq->conf->geom.fov;
+			seq->conf->geom.shift[i][2] = rel_shift[2] * seq->conf->geom.slice_thickness;
 		}
 	}
 
@@ -192,41 +189,41 @@ int main_seq(int argc, char* argv[argc])
 
 		for (int i = 0; i < total_slices; i++) {
 
-			shift[i][0] = seq.geom.shift[i][0];
-			shift[i][1] = seq.geom.shift[i][1];
-			shift[i][2] = (i - 0.5 * (total_slices - 1)) * dist * seq.geom.slice_thickness;
+			shift[i][0] = seq->conf->geom.shift[0][0];
+			shift[i][1] = seq->conf->geom.shift[0][1];
+			shift[i][2] = (i - 0.5 * (total_slices - 1)) * dist * seq->conf->geom.slice_thickness;
 		}
 
-		seq_set_fov_pos(total_slices, 3, &shift[0][0], &seq);
+		seq_set_fov_pos(total_slices, 3, &shift[0][0], seq->conf);
 
-		debug_printf(DP_INFO, "slice shifts:\n\t%d %f \t\n", 0, seq.geom.shift[0][2]);
+		debug_printf(DP_INFO, "slice shifts:\n\t%d %f \t\n", 0, seq->conf->geom.shift[0][2]);
 		for (int i = 1; i < total_slices; i++)
-			debug_printf(DP_INFO, "\t%d: %f \n", i, seq.geom.shift[i][2]);
+			debug_printf(DP_INFO, "\t%d: %f \n", i, seq->conf->geom.shift[i][2]);
 		debug_printf(DP_INFO, "\n");
 	}
 
 	if (0 > samples)
-		samples = (0. > dt) ? 1000 : (seq.phys.tr / dt);
+		samples = (0. > dt) ? 1000 : (seq->conf->phys.tr / dt);
 
-	double ddt = (0 > dt) ? seq.phys.tr / samples : ceil(dt * 1.e6) / 1.e6; //FIXME breaks with float
+	double ddt = (0 > dt) ? seq->conf->phys.tr / samples : ceil(dt * 1.e6) / 1.e6; //FIXME breaks with float
 
-	if ((PEMODE_RAGA != seq.enc.pe_mode) && (PEMODE_RAGA_ALIGNED != seq.enc.pe_mode))
+	if ((PEMODE_RAGA != seq->conf->enc.pe_mode) && (PEMODE_RAGA_ALIGNED != seq->conf->enc.pe_mode))
 		chrono = true;
 
-	if ((NULL != raga_file) && (((PEMODE_RAGA != seq.enc.pe_mode) && (PEMODE_RAGA_ALIGNED != seq.enc.pe_mode)) || chrono))
+	if ((NULL != raga_file) && (((PEMODE_RAGA != seq->conf->enc.pe_mode) && (PEMODE_RAGA_ALIGNED != seq->conf->enc.pe_mode)) || chrono))
 		error("RAGA indices only for raga pe mode and non chronologic mode\n");
 
 	// FIXME, this should be moved in system configurations
 	switch (gradient_mode) {
 
 	case GRAD_NORMAL:
-		seq.sys.grad.max_amplitude = 22.E-3;
-		seq.sys.grad.inv_slew_rate = 10.E-3 * sqrt(2.);
+		seq->conf->sys.grad.max_amplitude = 22.E-3;
+		seq->conf->sys.grad.inv_slew_rate = 10.E-3 * sqrt(2.);
 		break;
 
 	case GRAD_WHISPER:
-		seq.sys.grad.max_amplitude = 22.E-3;
-		seq.sys.grad.inv_slew_rate = 20.E-3 * sqrt(2.);
+		seq->conf->sys.grad.max_amplitude = 22.E-3;
+		seq->conf->sys.grad.inv_slew_rate = 20.E-3 * sqrt(2.);
 		break;
 
 	case GRAD_FAST:
@@ -234,13 +231,11 @@ int main_seq(int argc, char* argv[argc])
 	}
 
 
-	struct seq_event ev[MAX_EVENTS];
-
-	debug_printf(DP_INFO, "loops: %ld \t dims: ", md_calc_size(DIMS, seq.loop_dims));
-	debug_print_dims(DP_INFO, DIMS, seq.loop_dims);
+	debug_printf(DP_INFO, "loops: %ld \t dims: ", md_calc_size(DIMS, seq->conf->loop_dims));
+	debug_print_dims(DP_INFO, DIMS, seq->conf->loop_dims);
 
 	long kernel_dims[DIMS];
-	md_select_dims(DIMS, ~(COEFF_FLAG | COEFF2_FLAG | ITER_FLAG), kernel_dims, seq.loop_dims);
+	md_select_dims(DIMS, ~(COEFF_FLAG | COEFF2_FLAG | ITER_FLAG), kernel_dims, seq->conf->loop_dims);
 
 	debug_printf(DP_INFO, "kernels: %ld \t dims: ", md_calc_size(DIMS, kernel_dims));
 	debug_print_dims(DP_INFO, DIMS, kernel_dims);
@@ -252,20 +247,20 @@ int main_seq(int argc, char* argv[argc])
 
 	if (support) {
 
-		seq_state.mode = BLOCK_KERNEL_PREPARE;
+		seq->state->mode = BLOCK_KERNEL_PREPARE;
 
-		E = seq_block(MAX_EVENTS, ev, &seq_state, &seq);
+		E = seq_block(seq->N, seq->event, seq->state, seq->conf);
 
-		seq_state.mode = BLOCK_UNDEFINED;
+		seq->state->mode = BLOCK_UNDEFINED;
 
 		for (int i = 0; i < DIMS; i++)
-			seq_state.pos[i] = 0;
+			seq->state->pos[i] = 0;
 
 		assert(NULL == mom_file);
 	}
 
 	mdims[PHS2_DIM] *= mdims[PHS1_DIM];
-	mdims[PHS1_DIM] = support ? events_counter(SEQ_EVENT_GRADIENT, E, ev) : samples;
+	mdims[PHS1_DIM] = support ? events_counter(SEQ_EVENT_GRADIENT, E, seq->event) : samples;
 	mdims[READ_DIM] = support ? 6 : 3;
 
 	double g2[samples][mdims[READ_DIM]];
@@ -278,7 +273,7 @@ int main_seq(int argc, char* argv[argc])
 	md_copy_dims(DIMS, adims, kernel_dims);
 
 	adims[PHS2_DIM] *= adims[PHS1_DIM]; // consistency with traj tool
-	adims[PHS1_DIM] = seq.geom.baseres * seq.phys.os;
+	adims[PHS1_DIM] = seq->conf->geom.baseres * seq->conf->phys.os;
 	adims[READ_DIM] = 5;
 
 	long adc_dims[DIMS];
@@ -314,79 +309,78 @@ int main_seq(int argc, char* argv[argc])
 		out_raga = create_cfl(raga_file, DIMS, ind_dims);
 
 	struct pulseq ps;
-	struct rf_shape rf_shapes[MAX_RF_PULSES];
-	int rfs = seq_sample_rf_shapes(MAX_RF_PULSES, rf_shapes, &seq);
+
+	int rfs = seq_sample_rf_shapes(seq->P, seq->rf_shape, seq->conf);
 
 	debug_printf(DP_INFO, "Nr. of RF shapes: %d\n", rfs);
 
 	for (int i = 0; i < rfs; i++) {
 
-		double s = seq_pulse_scaling(&rf_shapes[i]);
-		double n = seq_pulse_norm_sum(&rf_shapes[i]);
+		double s = seq_pulse_scaling(&seq->rf_shape[i]);
+		double n = seq_pulse_norm_sum(&seq->rf_shape[i]);
 
 		debug_printf(DP_DEBUG3, "RF pulse %d: scale = %f, sum = %f\n", i, s, n);
 	}
 
 	if (NULL != seq_file) {
 
-		pulseq_init(&ps, &seq);
-		pulse_shapes_to_pulseq(&ps, rfs, rf_shapes);
+		pulseq_init(&ps, seq->conf);
+		pulse_shapes_to_pulseq(&ps, rfs, seq->rf_shape);
 	}
 
 	do {
-		debug_print_dims(DP_DEBUG2, DIMS, seq_state.pos);
+		debug_print_dims(DP_DEBUG2, DIMS, seq->state->pos);
 
-		E = seq_block(MAX_EVENTS, ev, &seq_state, &seq);
+		E = seq_block(seq->N, seq->event, seq->state, seq->conf);
 
 		if (0 < E)
-			debug_printf(DP_DEBUG2, "block mode: %d ; E: %d \n", seq_state.mode, E);
+			debug_printf(DP_DEBUG2, "block mode: %d ; E: %d \n", seq->state->mode, E);
 
 
 		if (0 > E)
 			error("Sequence not possible! - check seq_config, %d] \n", E);
 
-		if ((BLOCK_KERNEL_NOISE == seq_state.mode) || (0 == E)) // no noise_scan with pulseq
+		if ((BLOCK_KERNEL_NOISE == seq->state->mode) || (0 == E)) // no noise_scan with pulseq
 			goto debug_print_events;
 
 		if (NULL != seq_file)
-			events_to_pulseq(&ps, seq_state.mode, seq.phys.tr, seq.sys, rfs, rf_shapes, E, ev);
+			events_to_pulseq(&ps, seq->state->mode, seq->conf->phys.tr, seq->conf->sys, rfs, seq->rf_shape, E, seq->event);
 
-		if (BLOCK_KERNEL_IMAGE != seq_state.mode)
+		if (BLOCK_KERNEL_IMAGE != seq->state->mode)
 			goto debug_print_events;
 
 		debug_printf(DP_DEBUG1, "end of last event: %.8f \t end of calc: %.8f\n",
-				events_end_time(E, ev, 1, 0), samples * ddt);
+				events_end_time(E, seq->event, 1, 0), samples * ddt);
 
 		if (support)
-			gradients_support(samples, g2, E, ev);
+			gradients_support(samples, g2, E, seq->event);
 		else
-			seq_compute_gradients(samples, g2, ddt, E, ev);
+			seq_compute_gradients(samples, g2, ddt, E, seq->event);
 
-		compute_moment0(samples, m0, ddt, E, ev);
+		compute_moment0(samples, m0, ddt, E, seq->event);
 
 
 		long pos_save[DIMS];
-		md_copy_dims(DIMS, pos_save, seq_state.pos);
-
+		md_copy_dims(DIMS, pos_save, seq->state->pos);
 
 		if (!chrono) {
 
-			int adc_idx = events_idx(0, SEQ_EVENT_ADC, E, ev);
+			int adc_idx = events_idx(0, SEQ_EVENT_ADC, E, seq->event);
 
 			if (0 > adc_idx)
 				error("No ADC found - try chronologic ordering");
 
 			if (NULL != out_raga) {
 
-				pos_save[PHS2_DIM] = pos_save[PHS2_DIM] * seq.loop_dims[PHS1_DIM] + pos_save[PHS1_DIM];
+				pos_save[PHS2_DIM] = pos_save[PHS2_DIM] * seq->conf->loop_dims[PHS1_DIM] + pos_save[PHS1_DIM];
 				pos_save[PHS1_DIM] = 0;
-				MD_ACCESS(DIMS, ind_strs, pos_save, out_raga) = ev[adc_idx].adc.pos[PHS1_DIM];
+				MD_ACCESS(DIMS, ind_strs, pos_save, out_raga) = seq->event[adc_idx].adc.pos[PHS1_DIM];
 			}
 
-			md_copy_dims(DIMS, pos_save, ev[adc_idx].adc.pos);
+			md_copy_dims(DIMS, pos_save, seq->event[adc_idx].adc.pos);
 		}
 
-		pos_save[PHS2_DIM] = pos_save[PHS2_DIM] * seq.loop_dims[PHS1_DIM] + pos_save[PHS1_DIM];
+		pos_save[PHS2_DIM] = pos_save[PHS2_DIM] * seq->conf->loop_dims[PHS1_DIM] + pos_save[PHS1_DIM];
 		pos_save[PHS1_DIM] = 0;
 
 		do {
@@ -402,16 +396,16 @@ int main_seq(int argc, char* argv[argc])
 
 			complex float* adc = md_alloc(DIMS, adc_dims, CFL_SIZE);
 
-			compute_adc_samples(DIMS, adc_dims, adc, E, ev);
+			compute_adc_samples(DIMS, adc_dims, adc, E, seq->event);
 
 			double m0_adc[3];
 
-			float scale = seq.phys.dwell * ro_amplitude(&seq);
+			float scale = seq->conf->phys.dwell * ro_amplitude(seq->conf);
 
 			do {
 				assert(0 == pos_save[READ_DIM]);
 
-				moment_sum(m0_adc, MD_ACCESS(DIMS, adc_strs, pos_save, adc), E, ev);
+				moment_sum(m0_adc, MD_ACCESS(DIMS, adc_strs, pos_save, adc), E, seq->event);
 
 				for (int i = 0; i < 3; i++)
 					m0_adc[i] = m0_adc[i] / scale;
@@ -431,28 +425,28 @@ int main_seq(int argc, char* argv[argc])
 		}
 
 debug_print_events:
-		linearize_events(E, ev, &seq_state.start_block, seq_state.mode, seq.phys.tr, seq.sys.raster_grad);
+		linearize_events(E, seq->event, &seq->state->start_block, seq->state->mode, seq->conf->phys.tr, seq->conf->sys.raster_grad);
 
 		for (int i = 0; i < E; i++) {
 
 			debug_printf(DP_DEBUG3, "event[%d]:\t%.8f\t\t%.8f\t\t%.8f\t\t", i,
-					ev[i].start, ev[i].mid, ev[i].end);
+					seq->event[i].start, seq->event[i].mid, seq->event[i].end);
 
-			switch (ev[i].type) {
+			switch (seq->event[i].type) {
 
 			case SEQ_EVENT_GRADIENT:
 
-				debug_printf(DP_DEBUG3, "||\t%.5f\t\t%.5f\t\t%.5f", ev[i].grad.ampl[0], ev[i].grad.ampl[1],ev[i].grad.ampl[2]);
+				debug_printf(DP_DEBUG3, "||\t%.5f\t\t%.5f\t\t%.5f", seq->event[i].grad.ampl[0], seq->event[i].grad.ampl[1],seq->event[i].grad.ampl[2]);
 				break;
 
 			case SEQ_EVENT_PULSE:
 
-				debug_printf(DP_DEBUG3, "|| SEQ_EVENT_PULSE \t freq: %.2f\t\t phase: %.2f", ev[i].pulse.freq, ev[i].pulse.phase);
+				debug_printf(DP_DEBUG3, "|| SEQ_EVENT_PULSE \t freq: %.2f\t\t phase: %.2f", seq->event[i].pulse.freq, seq->event[i].pulse.phase);
 				break;
 
 			case SEQ_EVENT_ADC:
 
-				debug_printf(DP_DEBUG3, "|| SEQ_EVENT_ADC \t freq: %.2f\t\t phase: %.2f", ev[i].adc.freq, ev[i].adc.phase);
+				debug_printf(DP_DEBUG3, "|| SEQ_EVENT_ADC \t freq: %.2f\t\t phase: %.2f", seq->event[i].adc.freq, seq->event[i].adc.phase);
 				break;
 
 			default:
@@ -462,10 +456,10 @@ debug_print_events:
 			debug_printf(DP_DEBUG3, "\n");
 		}
 
-		debug_printf(DP_DEBUG3, "seq_block_end_flat: %f\n", seq_block_end_flat(E, ev, seq.sys.raster_grad));
+		debug_printf(DP_DEBUG3, "seq_block_end_flat: %f\n", seq_block_end_flat(E, seq->event, seq->conf->sys.raster_grad));
 
 
-	} while (seq_continue(&seq_state, &seq));
+	} while (seq_continue(seq->state, seq->conf));
 
 	if (NULL != grad_file)
 		unmap_cfl(DIMS, mdims, out_grad);
@@ -487,6 +481,8 @@ debug_print_events:
 		pulseq_writef(fp, &ps);
 		fclose(fp);
 	}
+
+	bart_seq_free(seq);
 
 	return 0;
 }
