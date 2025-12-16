@@ -6,7 +6,6 @@
 
 #include "misc/mri.h"
 
-#define MAX_EVENTS 2048
 #define MAX_RF_SAMPLES 8192
 
 enum seq_event_type { SEQ_EVENT_PULSE, SEQ_EVENT_GRADIENT, SEQ_EVENT_ADC, SEQ_EVENT_WAIT , SEQ_EVENT_TRIGGER, SEQ_EVENT_OUTPUT };

@@ -23,13 +23,6 @@ enum seq_order {
 	SEQ_ORDER_AVG_INNER,
 };
 
-enum context {
-
-	CONTEXT_NORMAL,
-	CONTEXT_BINARY,
-	CONTEXT_UPDATE
-};
-
 enum mag_prep {
 
 	PREP_OFF,
@@ -86,8 +79,6 @@ struct seq_standard_conf {
 	int trigger_out;
 
 	enum seq_order enc_order;
-
-	enum context context;
 };
 
 

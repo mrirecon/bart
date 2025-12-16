@@ -22,6 +22,42 @@
 
 #include "seq.h"
 
+#define MAX_EVENTS 2048
+#define MAX_RF_PULSES 32
+
+struct bart_seq* bart_seq_alloc(void)
+{
+	struct bart_seq* seq = NULL;
+	seq = xmalloc(sizeof *seq);
+
+	seq->conf = xmalloc(sizeof *(seq->conf));
+	seq->state = xmalloc(sizeof *(seq->state));
+
+	seq->N = MAX_EVENTS;
+	seq->event = xmalloc((size_t)seq->N * (sizeof *(seq->event)));
+
+	seq->P = MAX_RF_PULSES;
+	seq->rf_shape = xmalloc((size_t)seq->P * (sizeof *(seq->rf_shape)));
+
+	return seq;
+}
+
+void bart_seq_defaults(struct bart_seq* seq)
+{
+	memcpy(seq->conf, &seq_config_defaults, sizeof *(seq->conf));
+	memset(seq->state, 0, sizeof *(seq->state));
+	memset(seq->event, 0, (size_t)seq->N * (sizeof *(seq->event)));
+	memset(seq->rf_shape, 0, (size_t)seq->P * (sizeof *(seq->rf_shape)));
+}
+
+void bart_seq_free(struct bart_seq* seq)
+{
+	xfree(seq->conf);
+	xfree(seq->state);
+	xfree(seq->event);
+	xfree(seq->rf_shape);
+	xfree(seq);
+}
 
 int seq_sample_rf_shapes(int N, struct rf_shape pulse[N], const struct seq_config* seq)
 {

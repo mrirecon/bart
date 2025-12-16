@@ -7,10 +7,8 @@
 #include "misc/mri.h"
 
 #include "seq/gradient.h"
-
-#define MAX_RF_PULSES 32
-#define MAX_SLICES 64
-#define MAX_GRAD_POINTS 8192
+#include "seq/helpers.h"
+#include "seq/seq.h"
 
 #define SEQ_FLAGS (PHS1_FLAG|PHS2_FLAG|COEFF_FLAG|COEFF2_FLAG|TIME_FLAG|TIME2_FLAG|SLICE_FLAG|AVG_FLAG|BATCH_FLAG)
 
@@ -19,36 +17,12 @@ extern const int seq_loop_order_avg_inner[DIMS];
 extern const int seq_loop_order_avg_outer[DIMS];
 extern const int seq_loop_order_multislice[DIMS];
 
-enum seq_order {
-
-	SEQ_ORDER_AVG_OUTER,
-	SEQ_ORDER_SEQ_MS,
-	SEQ_ORDER_AVG_INNER,
-};
-
-enum block {
-
-	BLOCK_UNDEFINED,
-	BLOCK_PRE,
-	BLOCK_KERNEL_CHECK,
-	BLOCK_KERNEL_PREPARE,
-	BLOCK_KERNEL_NOISE,
-	BLOCK_KERNEL_DUMMY ,
-	BLOCK_KERNEL_IMAGE,
-	BLOCK_POST 
-};
 
 enum flash_contrast {
 
 	CONTRAST_NO_SPOILING = 0,
 	CONTRAST_RF_RANDOM,
 	CONTRAST_RF_SPOILED
-};
-
-enum mag_prep {
-
-	PREP_OFF,
-	PREP_IR_NON,
 };
 
 
@@ -143,17 +117,6 @@ struct seq_config {
 	int order[DIMS];
 	long loop_dims[DIMS];
 };
-
-struct seq_state {
-
-	enum block mode;
-	long chrono_slice;
-	enum context context;
-	int seq_ut; //perform ut
-	long pos[DIMS];
-	double start_block;
-};
-
 
 BARTLIB_API extern const struct seq_config seq_config_defaults;
 
