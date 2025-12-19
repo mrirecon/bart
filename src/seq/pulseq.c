@@ -1,4 +1,4 @@
-/* Copyright 2025. Institute of Biomedical Imaging. TU Graz.
+/* Copyright 2025-2026. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
@@ -192,7 +192,7 @@ void pulse_shapes_to_pulseq(struct pulseq *ps, int N, const struct rf_shape rf_s
 
 		for (int j = 0; j < samples; j++) {
 
-			idea_cfl_to_sample(&rf_shapes[i], j, &m, &p);
+			seq_cfl_to_sample(&rf_shapes[i], j, &m, &p);
 			mag[j] = (double)m;
 			pha[j] = round(1.e5 * (double)p / (2 * M_PI)) * 1.e-5;
 			time[j] = round(j * rf_shapes[i].sar_dur / rf_shapes[i].samples / ps->rf_raster_time);

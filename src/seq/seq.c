@@ -1,4 +1,4 @@
-/* Copyright 2025. Institute of Biomedical Imaging. TU Graz.
+/* Copyright 2025-2026. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
@@ -150,12 +150,12 @@ void seq_compute_gradients(int M, double gradients[M][3], double dt, int N, cons
 }
 
 
-double idea_nco_freq(const struct seq_event* ev)
+double seq_nco_freq(const struct seq_event* ev)
 {
 	return (SEQ_EVENT_PULSE == ev->type) ? ev->pulse.freq : ev->adc.freq;
 }
 
-double idea_nco_phase(int set, const struct seq_event* ev)
+double seq_nco_phase(int set, const struct seq_event* ev)
 {
 	double phase_mid = (SEQ_EVENT_PULSE == ev->type) ? ev->pulse.phase : ev->adc.phase;
 
@@ -164,21 +164,21 @@ double idea_nco_phase(int set, const struct seq_event* ev)
 
 	double time = (set) ? (ev->mid - ev->start) : (ev->end - ev->mid);
 
-	return phase_clamp(- idea_nco_freq(ev) * 360. * time + phase_mid);
+	return phase_clamp(- seq_nco_freq(ev) * 360. * time + phase_mid);
 }
 
-double idea_pulse_scaling(const struct rf_shape* pulse)
+double seq_pulse_scaling(const struct rf_shape* pulse)
 {
 	return 180. / M_PI * pulse->integral;
 }
 
-double idea_pulse_norm_sum(const struct rf_shape* pulse)
+double seq_pulse_norm_sum(const struct rf_shape* pulse)
 {
 	double dwell = pulse->sar_dur / pulse->samples;
 	return ((pulse->integral / dwell) / pulse->max);
 }
 
-void idea_cfl_to_sample(const struct rf_shape* pulse, int idx, float* mag, float* pha)
+void seq_cfl_to_sample(const struct rf_shape* pulse, int idx, float* mag, float* pha)
 {
 	assert(idx < pulse->samples);
 

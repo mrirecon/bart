@@ -1,3 +1,7 @@
+/* Copyright 2025-2026. Institute of Biomedical Imaging. TU Graz.
+ * All rights reserved. Use of this source code is governed by
+ * a BSD-style license which can be found in the LICENSE file.
+ */
 
 #include <complex.h>
 #include <math.h>
@@ -64,7 +68,7 @@ static bool test_sinc(void)
 	float shape_pha[MAX_RF_SAMPLES];
 
 	for (int i =0; i < rf_shape[0].samples; i++)
-		idea_cfl_to_sample(&rf_shape[0], i, &shape_mag[i], &shape_pha[i]);
+		seq_cfl_to_sample(&rf_shape[0], i, &shape_mag[i], &shape_pha[i]);
 
 	if (rfs != 1)
 		return false;
@@ -75,8 +79,8 @@ static bool test_sinc(void)
 	// expected in reference implementation
 	const double good_norm = 330.154932 / 2.;
 
-	double s = idea_pulse_scaling(&rf_shape[0]);
-	double n = idea_pulse_norm_sum(&rf_shape[0]);
+	double s = seq_pulse_scaling(&rf_shape[0]);
+	double n = seq_pulse_norm_sum(&rf_shape[0]);
 
 	if (fabs(s - seq.phys.flip_angle) > 1E-6)
 		return false;
@@ -129,11 +133,11 @@ static bool test_sms(void)
 	// expected in reference implementation
 	const double good_norm = 110.051648 / 2.;
 
-	double s = idea_pulse_scaling(&rf_shape[0]);
+	double s = seq_pulse_scaling(&rf_shape[0]);
 
-	double n0 = idea_pulse_norm_sum(&rf_shape[0]);
-	double n1 = idea_pulse_norm_sum(&rf_shape[1]);
-	double n2 = idea_pulse_norm_sum(&rf_shape[2]);
+	double n0 = seq_pulse_norm_sum(&rf_shape[0]);
+	double n1 = seq_pulse_norm_sum(&rf_shape[1]);
+	double n2 = seq_pulse_norm_sum(&rf_shape[2]);
 
 	if (fabs(s - seq.phys.flip_angle) > 1e-6)
 		return false;
@@ -164,7 +168,7 @@ static bool test_sms(void)
 		float shape_pha[MAX_RF_SAMPLES];
 
 		for (int i =0; i < rf_shape[0].samples; i++)
-			idea_cfl_to_sample(&rf_shape[m], i, &shape_mag[i], &shape_pha[i]);
+			seq_cfl_to_sample(&rf_shape[m], i, &shape_mag[i], &shape_pha[i]);
 
 		for (int i = 0; i < 7; i++) {
 

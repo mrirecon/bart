@@ -1,4 +1,4 @@
-/* Copyright 2025. Institute of Biomedical Imaging. TU Graz.
+/* Copyright 2025-2026. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -312,8 +312,8 @@ int main_seq(int argc, char* argv[argc])
 
 	for (int i = 0; i < rfs; i++) {
 
-		double s = idea_pulse_scaling(&rf_shapes[i]);
-		double n = idea_pulse_norm_sum(&rf_shapes[i]);
+		double s = seq_pulse_scaling(&rf_shapes[i]);
+		double n = seq_pulse_norm_sum(&rf_shapes[i]);
 
 		debug_printf(DP_DEBUG3, "RF pulse %d: scale = %f, sum = %f\n", i, s, n);
 	}
