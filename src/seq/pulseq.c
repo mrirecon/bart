@@ -77,6 +77,7 @@ static struct shape make_shape(int id, int num, int len, const double val[len])
 		int count = 1;
 
 		double update = val[i];
+
 		if (compression && (0 < i) && (i < len - 1) && (val[i - 1] == val[i]))
 			count += val[++i];
 
@@ -93,12 +94,11 @@ static struct shape make_compressed_shape(int id, int len, const double val[len]
 	struct shape shape = { id, len, vec_init() };
 
 	double der = 0.;
-
 	int count = 0;
 
-	for(int i = 0; i < len; i++) {
+	for (int i = 0; i < len; i++) {
 
-		double der_i  = val[i] - ((0 == i) ? 0. : val[i - 1]);
+		double der_i = val[i] - ((0 == i) ? 0. : val[i - 1]);
 		der_i = (1.e-8 > fabs(der_i)) ? 0. : der_i;
 
 		if (1.e-12 > fabs(der - der_i)) {
@@ -107,8 +107,8 @@ static struct shape make_compressed_shape(int id, int len, const double val[len]
 				VEC_ADD(shape.values, der_i);
 
 			count++;
-		}
-		else {
+
+		} else {
 
 			if (count >= 2)
 				VEC_ADD(shape.values, count - 2);
@@ -186,6 +186,7 @@ void pulse_shapes_to_pulseq(struct pulseq *ps, int N, const struct rf_shape rf_s
 {
 	assert(0 == ps->shapes->len);
 	double tmp[2];
+
 	for (int i = 0; i < N; i++) {
 
 		long samples = rf_shapes[i].samples;
@@ -224,19 +225,15 @@ static bool check_empty_shape(const int len, const double shape[len])
 	for (int j = 0; j < len; j++)
 		sum = sum + fabs(shape[j]);
 
-	if ((0 == len) || (1.e-6 > sum))
-		return true;
-
-	return false;
+	return ((0 == len) || (1.e-6 > sum));
 }
+
 
 static int find_grad_id(const struct pulseq* ps, int shape_id)
 {
-	for (int i = 0; i < ps->gradients->len; i++) {
-
+	for (int i = 0; i < ps->gradients->len; i++)
 		if (ps->gradients->data[i].shape_id == shape_id)
 			return ps->gradients->data[i].id;
-	}
 
 	return -1;
 }
@@ -275,7 +272,7 @@ static void grad_to_pulseq(int grad_id[3], struct pulseq *ps, struct seq_sys sys
 	for (int a = 0; a < 3; a++) {
 
 		for (int i = 0; i < grad_len; i++)
-			g_axis[i] = - g[i + grad_start][a] / sys.grad.max_amplitude; // -1. for constistency
+			g_axis[i] = - g[i + grad_start][a] / sys.grad.max_amplitude; // -1. for consistency
 
 		if (check_empty_shape(grad_len, g_axis))
 			continue;
@@ -288,16 +285,17 @@ static void grad_to_pulseq(int grad_id[3], struct pulseq *ps, struct seq_sys sys
 		if (0 < gid2) {
 
 			debug_printf(DP_DEBUG3, "re-using existing gradient %d instead of new shape_id %d\n", gid2, sid);
-			xfree(tmp_shape.values);
-			grad_id[a] = gid2;
-		}
-		else {
 
-			auto _tmp = tmp_shape.values;
+			xfree(tmp_shape.values);
+
+			grad_id[a] = gid2;
+
+		} else {
+
 			VEC_ADD(ps->shapes, tmp_shape);
-			(void)_tmp;
 
 			grad_id[a] = ps->gradients->len + 1;
+
 			struct gradient g = {
 
 				.id = grad_id[a],
@@ -321,11 +319,14 @@ static double phase_pulseq(const struct seq_event* ev)
 static int adc_to_pulseq(struct pulseq *ps, int i_adc, long block_start, int N, const struct seq_event ev[N])
 {
 	int adc_idx = events_idx(i_adc, SEQ_EVENT_ADC, N, ev);
+
 	if (0 > adc_idx)
 		return 0;
 
 	assert(SEQ_EVENT_ADC == ev[adc_idx].type);
+
 	int adc_id = ps->adcs->len + 1;
+
 	struct adc a = {
 
 		.id = adc_id,
@@ -337,6 +338,7 @@ static int adc_to_pulseq(struct pulseq *ps, int i_adc, long block_start, int N, 
 	};
 
 	VEC_ADD(ps->adcs, a);
+
 	return adc_id;
 }
 
@@ -446,6 +448,7 @@ static int check_existing_rf(const struct pulseq* ps, const struct rfpulse* rf)
 static int rf_to_pulseq(struct pulseq *ps, int M, const struct rf_shape rf_shapes[M], int N, const struct seq_event ev[N])
 {
 	int rf_idx = events_idx(0, SEQ_EVENT_PULSE, N, ev);
+
 	if (0 > rf_idx)
 		return 0;
 
@@ -486,6 +489,7 @@ static int rf_to_pulseq(struct pulseq *ps, int M, const struct rf_shape rf_shape
 	return rf_id;
 }
 
+
 void events_to_pulseq(struct pulseq *ps, enum block mode, double tr, struct seq_sys sys, int M, const struct rf_shape rf_shapes[M], int N, const struct seq_event ev[N])
 {
 	int n_blocks = MAX(1, events_counter(SEQ_EVENT_ADC, N, ev));
@@ -498,6 +502,7 @@ void events_to_pulseq(struct pulseq *ps, enum block mode, double tr, struct seq_
 
 	double grad_shapes[MAX_GRAD_POINTS][3];
 	seq_compute_gradients(MAX_GRAD_POINTS, grad_shapes, ps->gradient_raster_time, N, ev);
+
 	long grad_len = lround((seq_block_end_flat(N, ev, ps->block_raster_time) + seq_block_rdt(N, ev, ps->block_raster_time)) / ps->block_raster_time);
 
 	if (grad_len > dur)
@@ -615,9 +620,11 @@ void pulseq_writef(FILE *fp, struct pulseq *ps)
 #undef	ACCESS
 
 	fprintf(fp, "\n[SHAPES]\n");
+
 	for (int i = 0; i < ps->shapes->len; i++) {
 
 		fprintf(fp, "\nshape_id %d\n", i + 1);
+
 		struct shape sh = ps->shapes->data[i];
 
 		fprintf(fp, "num_samples %d\n", sh.num);
@@ -637,6 +644,5 @@ void pulseq_writef(FILE *fp, struct pulseq *ps)
 
 	pulseq_free(ps);
 }
-
 
 
