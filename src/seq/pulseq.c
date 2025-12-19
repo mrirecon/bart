@@ -220,12 +220,11 @@ void pulse_shapes_to_pulseq(struct pulseq *ps, int N, const struct rf_shape rf_s
 
 static bool check_empty_shape(const int len, const double shape[len])
 {
-	double sum = 0.;
-
 	for (int j = 0; j < len; j++)
-		sum = sum + fabs(shape[j]);
+		if (0. != shape[j])
+			return false;
 
-	return ((0 == len) || (1.e-6 > sum));
+	return true;
 }
 
 
