@@ -1271,35 +1271,35 @@ extern "C" void cuda_zfftmod_3d(const long dims[3], _Complex float* dst, const _
 	if (   ((dims[0] == 1) || (dims[0] % 4 == 0))
 	    && ((dims[1] == 1) || (dims[1] % 4 == 0))
 	    && ((dims[2] == 1) || (dims[2] % 4 == 0)))
-		{
-			double rem = phase - floor(phase);
-			double sgn = inv ? -1. : 1.;
+	{
+		double rem = phase - floor(phase);
+		double sgn = inv ? -1. : 1.;
 
-			cuDoubleComplex scale = zexpD(make_cuDoubleComplex(0, M_PI * 2. * sgn * rem));
+	cuDoubleComplex scale = zexpD(make_cuDoubleComplex(0, M_PI * 2. * sgn * rem));
 
-			if ((1 != dims[0]) && (0 != dims[0] % 8)) {
+	if ((1 != dims[0]) && (0 != dims[0] % 8)) {
 
-				scale.x *= -1;
-				scale.y *= -1;
-			}
+		scale.x *= -1;
+		scale.y *= -1;
+	}
 
-			if ((1 != dims[1]) && (0 != dims[1] % 8)) {
+	if ((1 != dims[1]) && (0 != dims[1] % 8)) {
 
-				scale.x *= -1;
-				scale.y *= -1;
-			}
+		scale.x *= -1;
+		scale.y *= -1;
+	}
 
-			if ((1 != dims[2]) && (0 != dims[2] % 8)) {
+	if ((1 != dims[2]) && (0 != dims[2] % 8)) {
 
-				scale.x *= -1;
-				scale.y *= -1;
-			}
+		scale.x *= -1;
+		scale.y *= -1;
+	}
 
 
-			kern_fftmod_3d_4<<<getGridSize3(dims, (const void*)kern_fftmod_3d_4), getBlockSize3(dims, (const void*)kern_fftmod_3d), 0, cuda_get_stream()>>>(dims[0], dims[1], dims[2], (cuFloatComplex*)dst, (const cuFloatComplex*)src, inv, scale);
-			CUDA_KERNEL_ERROR;
-			return;
-		}
+	kern_fftmod_3d_4<<<getGridSize3(dims, (const void*)kern_fftmod_3d_4), getBlockSize3(dims, (const void*)kern_fftmod_3d), 0, cuda_get_stream()>>>(dims[0], dims[1], dims[2], (cuFloatComplex*)dst, (const cuFloatComplex*)src, inv, scale);
+	CUDA_KERNEL_ERROR;
+	return;
+}
 
 	kern_fftmod_3d<<<getGridSize3(dims, (const void*)kern_fftmod_3d), getBlockSize3(dims, (const void*)kern_fftmod_3d), 0, cuda_get_stream()>>>(dims[0], dims[1], dims[2], (cuFloatComplex*)dst, (const cuFloatComplex*)src, inv, phase);
 	CUDA_KERNEL_ERROR;
@@ -1639,10 +1639,11 @@ __global__ static void kern_reduce_zsumD(long N, cuDoubleComplex* dst, const cuD
 
 	__syncthreads();
 
-	for (unsigned int s = blockDim.x / 2; s > 0; s >>= 1){
+	for (unsigned int s = blockDim.x / 2; s > 0; s >>= 1) {
 
 		if (tidx < s)
 			sdata_cD[tidx] = cuCadd(sdata_cD[tidx], sdata_cD[tidx + s]);
+
 		__syncthreads();
 	}
 
@@ -1703,10 +1704,11 @@ __global__ static void kern_reduce_sumD(long N, double* dst, const double* src)
 
 	__syncthreads();
 
-	for (unsigned int s = blockDim.x / 2; s > 0; s >>= 1){
+	for (unsigned int s = blockDim.x / 2; s > 0; s >>= 1) {
 
 		if (tidx < s)
 			sdata_D[tidx] += sdata_D[tidx + s];
+
 		__syncthreads();
 	}
 
@@ -1767,10 +1769,11 @@ __global__ static void kern_cdot(long N, cuDoubleComplex* dst, const cuFloatComp
 
 	__syncthreads();
 
-	for (unsigned int s = blockDim.x / 2; s > 0; s >>= 1){
+	for (unsigned int s = blockDim.x / 2; s > 0; s >>= 1) {
 
 		if (tidx < s)
 			sdata_cD[tidx] = cuCadd(sdata_cD[tidx], sdata_cD[tidx + s]);
+
 		__syncthreads();
 	}
 
@@ -1818,10 +1821,11 @@ __global__ static void kern_dot(long N, double* dst, const float* src1, const fl
 
 	__syncthreads();
 
-	for (unsigned int s = blockDim.x / 2; s > 0; s >>= 1){
+	for (unsigned int s = blockDim.x / 2; s > 0; s >>= 1) {
 
 		if (tidx < s)
 			sdata_D[tidx] += sdata_D[tidx + s];
+
 		__syncthreads();
 	}
 
@@ -1858,12 +1862,4 @@ extern "C" double cuda_norm(long N, const float* src)
 {
 	return sqrt(cuda_dot(N, src, src));
 }
-
-
-
-
-
-
-
-
 
