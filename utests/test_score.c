@@ -50,11 +50,11 @@ static bool test_nlop_score_to_expect(void)
 {
 	// if the gaussian variance is much smaller than the additional noise,
 	// the expectation should be the mean
-	enum { N = 2 };
-	long dims[N] = { 2, 3 };
+	enum { N = 4 };
+	long dims[N] = { 2, 3, 1, 1, };
 	complex float mean = 10;
 
-	const struct nlop_s* score_nlop = get_gaussian_score(2, dims, 0.1f, mean);
+	const struct nlop_s* score_nlop = get_gaussian_score(N, dims, 0.1f, mean);
 	const struct nlop_s* expect_nlop = nlop_score_to_expectation(score_nlop);
 
 	complex float* in = md_alloc(N, dims, CFL_SIZE);
@@ -81,11 +81,11 @@ UT_REGISTER_TEST(test_nlop_score_to_expect);
 
 static bool test_nlop_score_to_expect_reverse(void)
 {
-	enum { N = 2 };
-	long dims[N] = { 2, 3 };
+	enum { N = 4 };
+	long dims[N] = { 2, 3, 1, 1 };
 
-	const struct nlop_s* score_nlop1 = get_gaussian_score(2, dims, 0.1f, 0.3);
-	const struct nlop_s* score_nlop2 = nlop_expectation_to_score(nlop_score_to_expectation(get_gaussian_score(2, dims, 0.1f, 0.3)));
+	const struct nlop_s* score_nlop1 = get_gaussian_score(N, dims, 0.1f, 0.3);
+	const struct nlop_s* score_nlop2 = nlop_expectation_to_score(nlop_score_to_expectation(get_gaussian_score(N, dims, 0.1f, 0.3)));
 
 	score_nlop1 = nlop_prepend_FF(nlop_zss_create(N, MD_SINGLETON_DIMS(N), 0), score_nlop1, 1);
 	score_nlop2 = nlop_prepend_FF(nlop_zss_create(N, MD_SINGLETON_DIMS(N), 0), score_nlop2, 1);
@@ -109,11 +109,11 @@ static bool test_nn_score_to_expect(void)
 {
 	// if the gaussian variance is much smaller than the additional noise,
 	// the expectation should be the mean
-	enum { N = 2 };
-	long dims[N] = { 2, 3 };
+	enum { N = 4 };
+	long dims[N] = { 2, 3, 1, 1 };
 	complex float mean = 10;
 
-	const struct nn_s* score_nlop = get_gaussian_score_nn(2, dims, 0.1f, mean);
+	const struct nn_s* score_nlop = get_gaussian_score_nn(N, dims, 0.1f, mean);
 	const struct nn_s* expect_nlop = nn_score_to_expectation(score_nlop);
 
 	complex float* in = md_alloc(N, dims, CFL_SIZE);
@@ -140,11 +140,11 @@ UT_REGISTER_TEST(test_nn_score_to_expect);
 
 static bool test_nn_score_to_expect_reverse(void)
 {
-	enum { N = 2 };
-	long dims[N] = { 2, 3 };
+	enum { N = 4 };
+	long dims[N] = { 2, 3, 1, 1 };
 
-	const struct nn_s* score_nlop1 = get_gaussian_score_nn(2, dims, 0.1f, 0.3);
-	const struct nn_s* score_nlop2 = nn_expectation_to_score(nn_score_to_expectation(get_gaussian_score_nn(2, dims, 0.1f, 0.3)));
+	const struct nn_s* score_nlop1 = get_gaussian_score_nn(N, dims, 0.1f, 0.3);
+	const struct nn_s* score_nlop2 = nn_expectation_to_score(nn_score_to_expectation(get_gaussian_score_nn(N, dims, 0.1f, 0.3)));
 
 	score_nlop1 = nn_chain2_FF(nn_from_nlop_F(nlop_zss_create(N, MD_SINGLETON_DIMS(N), 0)), 0, NULL, score_nlop1, 1, NULL);
 	score_nlop2 = nn_chain2_FF(nn_from_nlop_F(nlop_zss_create(N, MD_SINGLETON_DIMS(N), 0)), 0, NULL, score_nlop2, 1, NULL);

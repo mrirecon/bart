@@ -241,6 +241,7 @@ void md_grad_gaussian(int D, const long dims_grad[D],
 	complex float* grad, const long dims_x[D], const complex float* x, const long dims_mu[D],
 	const complex float* mu, const long dims_vars[D], const complex float* vars)
 {
+	assert(4 <= D);
 	long strs_x[D];
 	long strs_mu[D];
 	long strs_vars[D];
@@ -279,8 +280,9 @@ void md_log_gaussian(int D, const long dims_log_gauss[D], complex float* log_gau
 		const long dims_mu[D], const complex float* mu,
 		const long dims_vars[D], const complex float* vars)
 {
+	assert(4 <= D);
 	long dims_grad[D];
-	md_max_dims(D, ~0ul, dims_grad, dims_mu, dims_x);
+	md_max_dims(D, ~0UL, dims_grad, dims_mu, dims_x);
 
 	long strs_x[D];
 	long strs_mu[D];
@@ -304,7 +306,8 @@ void md_log_gaussian(int D, const long dims_log_gauss[D], complex float* log_gau
 
 	//FIXME: workaraound as efficient strides for sub not available
 	complex float* tmu = md_alloc_sameplace(D, dims_mu, CFL_SIZE, mu);
-	md_zsmul(D, dims_mu, tmu, mu, -1);
+
+	md_zsmul(D, dims_mu, tmu, mu, -1.);
 	md_zadd2(D, dims_grad, strs_grad, diff, strs_x, x, strs_mu, tmu);
 	//md_zsub2(D, dims_grad, strs_grad, diff, strs_x, x, strs_mu, mu);
 
@@ -315,8 +318,8 @@ void md_log_gaussian(int D, const long dims_log_gauss[D], complex float* log_gau
 
 	md_zsadd2(D, dims_vars, strs_vars, tmp0, strs_vars, tmp0, -1. * dims_x[0] * dims_x[1] * M_PI);
 
-	md_zsmul2(D, dims_log_gauss, strs_log_gauss, log_gauss, strs_log_gauss, xmuvarxmu, -1);
-	md_zaxpy2(D, dims_log_gauss, strs_log_gauss, log_gauss, 1, strs_vars, tmp0);
+	md_zsmul2(D, dims_log_gauss, strs_log_gauss, log_gauss, strs_log_gauss, xmuvarxmu, -1.);
+	md_zaxpy2(D, dims_log_gauss, strs_log_gauss, log_gauss, 1., strs_vars, tmp0);
 
 	md_free(grad);
 	md_free(diff);
@@ -340,15 +343,16 @@ void md_mixture_weights(int D, const long dims_gamma[D], complex float* gamma,
 		const long dims_log_gauss[D], complex float* log_gauss,
 		const long dims_ws[D], const complex float* ws)
 {
+	assert(4 <= D);
 	long dims_zmax[D];
-	unsigned long flags = 0; // flags for batchsize and number of gaussians
+	unsigned long flags = 0UL; // flags for batchsize and number of gaussians
 
 	flags = md_nontriv_dims(D, dims_log_gauss) & ~md_nontriv_dims(D, dims_ws);
 
 	md_select_dims(D, flags, dims_zmax, dims_gamma);
 
 	long dims_nb_gauss[D];
-	md_min_dims(D, ~0u, dims_nb_gauss, dims_ws, dims_gamma); // zmax has batdim
+	md_min_dims(D, ~0UL, dims_nb_gauss, dims_ws, dims_gamma); // zmax has batdim
 
 	long strs_log_gauss[D];
 	long strs_ws[D];
@@ -367,7 +371,7 @@ void md_mixture_weights(int D, const long dims_gamma[D], complex float* gamma,
 	complex float* tmp2 = md_alloc_sameplace(D, dims_log_gauss, CFL_SIZE, log_gauss);
 
 	md_zlog2(D, dims_log_gauss, strs_log_gauss, z, strs_ws, ws);
-	md_zaxpy2(D, dims_log_gauss, strs_log_gauss, z, 1, strs_log_gauss, log_gauss);
+	md_zaxpy2(D, dims_log_gauss, strs_log_gauss, z, 1., strs_log_gauss, log_gauss);
 	md_reduce_zmax(D, dims_log_gauss, md_nontriv_dims(D, dims_nb_gauss), zmax, z);
 
 	//FIXME: workaraound as efficient strides for sub not available
@@ -413,20 +417,21 @@ void md_gaussian_score(int D, const long dims_score[D], complex float* score,
 		const long dims_vars[D], const complex float* vars,
 		const long dims_ws[D], const complex float* ws)
 {
+	assert(4 <= D);
 	long grad_dims[D];
-	md_max_dims(D, ~0ul, grad_dims, dims_mu, dims_score);
+	md_max_dims(D, ~0UL, grad_dims, dims_mu, dims_score);
 
 	assert(md_check_compat(D, ~0UL, grad_dims, dims_x));
 	assert(md_check_compat(D, ~0UL, grad_dims, dims_mu));
 	assert(md_check_equal_dims(D, dims_score, dims_x, ~0UL));
 
 	long dims_log_gauss[D];
-	unsigned long flags = 0; // flags for batchsize and number of gaussians
+	unsigned long flags = 0UL; // flags for batchsize and number of gaussians
 	flags = md_nontriv_dims(D, dims_mu) & md_nontriv_dims(D, dims_x);
 	md_select_dims(D, ~flags, dims_log_gauss, grad_dims);
 
 	long nb_gauss_dims[D];
-	md_min_dims(D, ~0u, nb_gauss_dims, dims_vars, dims_mu);
+	md_min_dims(D, ~0UL, nb_gauss_dims, dims_vars, dims_mu);
 
 	long strs_grad[D];
 	md_calc_strides(D, strs_grad, grad_dims, CFL_SIZE);
@@ -439,7 +444,7 @@ void md_gaussian_score(int D, const long dims_score[D], complex float* score,
 	md_mixture_weights(D, dims_log_gauss, gamma, dims_log_gauss, log_gauss, dims_ws, ws);
 	md_grad_gaussian(D, grad_dims, grad, dims_x, x, dims_mu, mu, dims_vars, vars);
 	md_zmul2(D, grad_dims, strs_grad, grad, MD_STRIDES(D, dims_log_gauss, CFL_SIZE), gamma, strs_grad, grad);
-	md_zsmul2(D, grad_dims, strs_grad, grad, strs_grad, grad, -1);
+	md_zsmul2(D, grad_dims, strs_grad, grad, strs_grad, grad, -1.);
 
 	md_zsum(D, grad_dims, ~md_nontriv_dims(D, dims_score), score, grad);
 
