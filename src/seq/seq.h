@@ -2,6 +2,12 @@
 #ifndef _SEQ_H
 #define _SEQ_H
 
+// intended to additionally include in sequence
+// (besides event.h helpers.h custom_ui.h)
+// we do not allow _Complex and bool here
+
+// DO NOT CHANGE THIS HEADER !
+
 #include "misc/dllspec.h"
 #include "misc/cppwrap.h"
 
