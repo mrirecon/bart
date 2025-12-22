@@ -218,13 +218,13 @@ and add the folder to the Matlab path.
 
 If you are a git user, you can simply clone our public repository:
 
-    $ git clone https://github.com/mrirecon/bart
+    $ git clone https://codeberg.org/mrirecon/bart
 
 
 Otherwise, please download the latest version as a zip file
 from Github:
 
-	http://github.com/mrirecon/bart/releases/latest
+	http://codeberg.org/mrirecon/bart/releases/latest
 
 and unpack it somewhere on your computer.
 
