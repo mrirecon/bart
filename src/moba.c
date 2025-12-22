@@ -135,7 +135,7 @@ int main_moba(int argc, char* argv[argc])
 	data.sim.other = simdata_other_defaults;
 	data.other = moba_other_defaults;
 
-        // FIXME: Move to separate function to reuse it for sim.c
+	// FIXME: Move to separate function to reuse it for sim.c
 	struct opt_s seq_opts[] = {
 
 		/* Sequence Specific Parameters */
@@ -528,9 +528,9 @@ int main_moba(int argc, char* argv[argc])
 
 	assert(md_check_bounds(DIMS, 0, img_dims, init_dims));
 
-        // Load passed B1
+	// Load passed B1
 
-        const complex float* b1 = NULL;
+	const complex float* b1 = NULL;
 	long b1_dims[DIMS];
 
 	if (NULL != input_b1) {
@@ -583,7 +583,7 @@ int main_moba(int argc, char* argv[argc])
 
 	// mask
 
-        // Idea:        Speed up md-function based nlops by skipping zero parts,
+	// Idea:        Speed up md-function based nlops by skipping zero parts,
 	//              not required for Bloch model, because other_conf.fov_reduction_factor
 	//              constrains the k-space coverage there
 
@@ -606,7 +606,7 @@ int main_moba(int argc, char* argv[argc])
 
 		data.other.fov_reduction_factor = restrict_fov;
 
-                if (MDB_BLOCH != conf.mode)
+		if (MDB_BLOCH != conf.mode)
 		        md_zmul2(DIMS, img_dims, img_strs, img, img_strs, img, msk_strs, mask);
 	}
 
@@ -632,7 +632,7 @@ int main_moba(int argc, char* argv[argc])
 		md_copy_block(DIMS, pos, img_dims, img, tmp_dims, tmp, CFL_SIZE);
 	}
 
-        // Transform B1 map from image to k-space and add k-space to initialization array (img)
+	// Transform B1 map from image to k-space and add k-space to initialization array (img)
 
 	unsigned long sobolev_flag = 0;
 
@@ -670,7 +670,7 @@ int main_moba(int argc, char* argv[argc])
 #endif
 	moba_recon(&conf, &data, dims, img, sens, pattern, mask, TI, TE_IR_MGRE, b1, b0, k_grid_data, init);
 
-        // Rescale estimated parameter maps
+	// Rescale estimated parameter maps
 
 	for (int i = 0; i < img_dims[COEFF_DIM]; i++) {
 
@@ -686,7 +686,7 @@ int main_moba(int argc, char* argv[argc])
 		md_copy_block(DIMS, pos, img_dims, img, tmp_dims, tmp, CFL_SIZE);
 	}
 
-        md_free(tmp);
+	md_free(tmp);
 	md_free(mask);
 
 	unmap_cfl(DIMS, coil_dims, sens);

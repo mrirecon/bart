@@ -244,7 +244,6 @@ static void prox_nlgrad_apply(const operator_data_t* _data, float mu, complex fl
 			debug_printf(DP_DEBUG1, "Loss: %f\n", crealf(out[0]));
 
 			nlop_adjoint(data->op, dom->N, dom->dims, grd, cod->N, cod->dims, grad_ys);
-
 		}
 
 		if (0 < i) {
@@ -376,8 +375,7 @@ static void auto_norm_apply(const operator_data_t* _data, float mu, complex floa
 		complex float val = MD_ACCESS(N, sstrs, pos, scale);
 
 		md_zsmul2(N, xdims, io->strs, &MD_ACCESS(N, io->strs, pos, y),
-				io->strs, &MD_ACCESS(N, io->strs, pos, y),
-				val);
+				io->strs, &MD_ACCESS(N, io->strs, pos, y), val);
 
 	} while (md_next(N, io->dims, ~data->flags, pos));
 #endif
