@@ -310,11 +310,14 @@ int main_seq(int argc, char* argv[argc])
 
 	struct pulseq ps;
 
-	int rfs = seq_sample_rf_shapes(seq->P, seq->rf_shape, seq->conf);
+	int prepped_rfs = bart_seq_prepare(seq);
+	
+	if (0 > prepped_rfs)
+		error("Sequence preparation failed! - check seq_config, %d] \n", prepped_rfs);
 
-	debug_printf(DP_INFO, "Nr. of RF shapes: %d\n", rfs);
+	debug_printf(DP_INFO, "Nr. of RF shapes: %d\n", prepped_rfs);
 
-	for (int i = 0; i < rfs; i++) {
+	for (int i = 0; i < prepped_rfs; i++) {
 
 		double s = seq_pulse_scaling(&seq->rf_shape[i]);
 		double n = seq_pulse_norm_sum(&seq->rf_shape[i]);
@@ -325,7 +328,7 @@ int main_seq(int argc, char* argv[argc])
 	if (NULL != seq_file) {
 
 		pulseq_init(&ps, seq->conf);
-		pulse_shapes_to_pulseq(&ps, rfs, seq->rf_shape);
+		pulse_shapes_to_pulseq(&ps, prepped_rfs, seq->rf_shape);
 	}
 
 	do {
@@ -344,7 +347,7 @@ int main_seq(int argc, char* argv[argc])
 			goto debug_print_events;
 
 		if (NULL != seq_file)
-			events_to_pulseq(&ps, seq->state->mode, seq->conf->phys.tr, seq->conf->sys, rfs, seq->rf_shape, E, seq->event);
+			events_to_pulseq(&ps, seq->state->mode, seq->conf->phys.tr, seq->conf->sys, prepped_rfs, seq->rf_shape, E, seq->event);
 
 		if (BLOCK_KERNEL_IMAGE != seq->state->mode)
 			goto debug_print_events;

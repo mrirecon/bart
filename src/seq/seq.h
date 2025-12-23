@@ -55,9 +55,10 @@ struct bart_seq {
 	struct rf_shape* rf_shape;
 };
 
-BARTLIB_API struct bart_seq* BARTLIB_CALL bart_seq_alloc(void);
-BARTLIB_API void BARTLIB_CALL bart_seq_defaults(struct bart_seq* seq);
-BARTLIB_API void BARTLIB_CALL bart_seq_free(struct bart_seq* seq);
+BARTLIB_API extern struct bart_seq* BARTLIB_CALL bart_seq_alloc(void);
+BARTLIB_API extern void BARTLIB_CALL bart_seq_defaults(struct bart_seq* seq);
+BARTLIB_API extern int BARTLIB_CALL bart_seq_prepare(struct bart_seq* seq);
+BARTLIB_API extern void BARTLIB_CALL bart_seq_free(struct bart_seq* seq);
 
 
 BARTLIB_API extern int BARTLIB_CALL seq_sample_rf_shapes(int N, struct rf_shape pulse[__VLA(N)], const struct seq_config* seq);

@@ -6,6 +6,7 @@
 #include <math.h>
 
 #include "num/multind.h"
+#include "num/rand.h"
 
 #include "misc/mri.h"
 #include "misc/misc.h"
@@ -49,6 +50,26 @@ void bart_seq_defaults(struct bart_seq* seq)
 	memset(seq->event, 0, (size_t)seq->N * (sizeof *(seq->event)));
 	memset(seq->rf_shape, 0, (size_t)seq->P * (sizeof *(seq->rf_shape)));
 }
+
+int bart_seq_prepare(struct bart_seq* seq)
+{
+	num_rand_init(0ULL); // initialize here since once called before actual sequence start
+
+	seq->state->mode = BLOCK_KERNEL_PREPARE;
+	
+	int N = seq_block(seq->N, seq->event, seq->state, seq->conf);
+
+	if (0 < N)
+		N = seq_sample_rf_shapes(MAX_RF_PULSES, seq->rf_shape, seq->conf);
+	
+	for (int i = 0; i < DIMS; i++)
+		seq->state->pos[i] = 0;
+
+	seq->state->mode = BLOCK_UNDEFINED;
+
+	return N;
+}
+
 
 void bart_seq_free(struct bart_seq* seq)
 {
