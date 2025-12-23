@@ -81,6 +81,22 @@ struct seq_standard_conf {
 	enum seq_order enc_order;
 };
 
+struct seq_interface_conf {
+
+	double tr;
+	long radial_views;
+	long echoes;
+	enum trigger_type trigger_type;
+	double trigger_delay_time;
+	int trigger_pulses;
+	double slice_thickness;
+	double sms_distance;
+	int is3D;
+	int isBSSFP;
+	double raster_grad;
+	double raster_rf;
+	double grad_max_ampl;
+};
 
 
 // for interactive mode
@@ -110,6 +126,8 @@ seq_ui_interface_custom_params(int reverse, struct seq_config* seq, int nl, long
 BARTLIB_API extern void BARTLIB_CALL
 seq_ui_interface_standard_conf(int reverse, struct seq_config* seq, struct seq_standard_conf* std_conf);
 
+BARTLIB_API extern struct seq_interface_conf BARTLIB_CALL
+seq_get_interface_conf(struct seq_config* seq);
 
 BARTLIB_API extern long BARTLIB_CALL seq_get_slices(const struct seq_config* seq);
 BARTLIB_API extern void BARTLIB_CALL seq_set_fov_pos(int N, int M, const float* shifts, struct seq_config* seq);
