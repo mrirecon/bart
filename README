@@ -35,7 +35,7 @@ any confidential information.
 
 Updates and further information can be found here:
 
-	http://mrirecon.github.io/bart/
+	http://mrirecon.codeberg.page/
 
 
 
@@ -195,7 +195,7 @@ BART is supported through WSL 2 which is available on Windows 10. The instructio
 similar to installing on Linux.
 
 Step-by-step instructions are available on the website at:
-	https://mrirecon.github.io/bart/installation_windows.html
+	https://mrirecon.codeberg.page/installation_windows.html
 
 First follow the instructions for Debian/Ubuntu in Section 2.1.1 to install required libraries.
 Next follow the instructions in Section 2.2 to download and compile bart

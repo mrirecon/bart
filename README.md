@@ -16,7 +16,7 @@ NOT FOR DIAGNOSTIC USE. It comes without any warranty
 For more information:
 
 * Basics: [README](./README)
-* Website: https://mrirecon.github.io/bart/
+* Website: https://mrirecon.codeberg.page/
 
 
 Information for Contributors
