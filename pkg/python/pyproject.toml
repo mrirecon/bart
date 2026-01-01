@@ -9,7 +9,7 @@ dependencies = ["numpy"]
 dynamic = ["version"]
 
 [project.urls]
-Homepage = "https://mrirecon.github.io/bart/"
+Homepage = "https://mrirecon.codeberg.page/"
 
 [tool.setuptools.dynamic]
 version = {file = ["version.txt"]}

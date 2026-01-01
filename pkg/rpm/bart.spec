@@ -5,7 +5,7 @@ Epoch:          1
 Summary:        tools for computational magnetic resonance imaging 
 
 License:        BSD
-URL:            https://mrirecon.github.io/bart
+URL:            https://mrirecon.codeberg.page/
 VCS:            {{{ git_repo_vcs }}}
 Source0:        {{{ git_archive path=. source_name=bart dir_name=bart }}}
 

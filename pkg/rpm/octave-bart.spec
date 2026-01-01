@@ -6,7 +6,7 @@ Epoch:          1
 Summary:        Octave bindings for BART
 
 License:        BSD
-URL:            https://mrirecon.github.io/bart
+URL:            https://mrirecon.codeberg.page/
 VCS:            {{{ git_dir_vcs }}}
 Source0:        {{{ git_archive path=. source_name=octave-bart dir_name=octave-bart }}}
 BuildArch:      noarch
@@ -32,7 +32,7 @@ cat > matlab/DESCRIPTION  <<EOF
 Name: %{octpkg}
 Version: %{version}
 Date:  %{build_timestamp}
-Author: See https://mrirecon.github.io/bart/
+Author: See https://mrirecon.codeberg.page/
 Maintainer: Philip Schaten
 Title: %{summary} 
 Description: %{summary}

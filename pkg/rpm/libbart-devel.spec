@@ -5,7 +5,7 @@ Epoch:          1
 Summary:        Development files for BART 
 
 License:        BSD
-URL:            https://mrirecon.github.io/bart
+URL:            https://mrirecon.codeberg.page/
 VCS:            {{{ git_dir_vcs }}}
 Source0:        {{{ git_archive path=. source_name=libbart-devel dir_name=libbart-devel }}}
 
