@@ -10,6 +10,10 @@ struct vptr_shape_s {
 	size_t size;
 };
 
+enum VPTR_LOC { VPTR_CPU, VPTR_GPU, VPTR_CFL, VPTR_ANY, VPTR_LOC_MAX };
+extern long vptr_size[VPTR_LOC_MAX];
+extern long vptr_peak[VPTR_LOC_MAX];
+
 struct vptr_hint_s;
 extern struct vptr_hint_s* vptr_hint_ref(struct vptr_hint_s* hint);
 extern void vptr_hint_free(struct vptr_hint_s* hint);
@@ -84,7 +88,8 @@ extern struct vptr_mapped_dims_s* vptr_mapped_dims_free_and_next(struct vptr_map
 
 
 extern void vptr_debug(int dl, const void* ptr);
-
+extern void print_vptr_cache(int dl);
+extern void print_vptr_stats(int dl);
 
 #include "misc/cppwrap.h"
 

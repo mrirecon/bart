@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <signal.h>
+#include <stddef.h>
 #include <unistd.h>
 
 #ifdef _WIN32
@@ -164,9 +165,8 @@ struct vptr_mem_s {
 
 struct vptr_mem_s vptr_mem_default = { NULL, 1, NULL, 0, 0UL };
 
-enum VPTR_LOC { VPTR_CPU, VPTR_GPU, VPTR_CFL, VPTR_ANY, VPTR_LOC_COUNT, VPTR_LOC_MAX };
-long vptr_size[VPTR_LOC_COUNT] = { 0 };
-long vptr_peak[VPTR_LOC_COUNT] = { 0 };
+long vptr_size[VPTR_LOC_MAX] = { 0 };
+long vptr_peak[VPTR_LOC_MAX] = { 0 };
 
 
 static enum VPTR_LOC vptr_loc_sameplace(enum VPTR_LOC loc)
@@ -411,6 +411,66 @@ static void vptr_debug_mem(int dl, const struct mem_s* mem)
 	if (NULL != mem->backtrace)
 		debug_printf(dl, "allocated at:\n%s", mem->backtrace);
 }
+
+void print_vptr_stats(int dl)
+{
+	debug_printf(dl, "Vptr use %.1f%s (CPU: %.1f%s / GPU: %.1f%s / CFL: %.1f%s), peak was at  %.1f%s (CPU: %.1f%s / GPU: %.1f%s / CFL: %.1f%s)\n",
+			get_byte_size((size_t)vptr_size[VPTR_ANY]), get_byte_unit((size_t)vptr_size[VPTR_ANY]),
+			get_byte_size((size_t)vptr_size[VPTR_CPU]), get_byte_unit((size_t)vptr_size[VPTR_CPU]),
+			get_byte_size((size_t)vptr_size[VPTR_GPU]), get_byte_unit((size_t)vptr_size[VPTR_GPU]),
+			get_byte_size((size_t)vptr_size[VPTR_CFL]), get_byte_unit((size_t)vptr_size[VPTR_CFL]),
+			get_byte_size((size_t)vptr_peak[VPTR_ANY]), get_byte_unit((size_t)vptr_peak[VPTR_ANY]),
+			get_byte_size((size_t)vptr_peak[VPTR_CPU]), get_byte_unit((size_t)vptr_peak[VPTR_CPU]),
+			get_byte_size((size_t)vptr_peak[VPTR_GPU]), get_byte_unit((size_t)vptr_peak[VPTR_GPU]),
+			get_byte_size((size_t)vptr_peak[VPTR_CFL]), get_byte_unit((size_t)vptr_peak[VPTR_CFL])
+		);
+}
+
+void print_vptr_cache(int dl)
+{
+	if (-1 != debug_level && dl > debug_level)
+		return;
+
+	if (NULL == vmap) {
+
+		debug_printf(DP_INFO, "vptr cache empty!\n");
+		return;
+	}
+
+	int N = tree_count(vmap);
+	struct mem_s* mems[N];
+	tree_to_array(vmap, N, (void*)mems);
+
+	int num_vptr[VPTR_LOC_MAX] = { 0 };
+
+	for (int i = 0; i < N; i++)
+		num_vptr[mems[i]->loc] ++;
+
+
+	debug_printf(dl, "%d virtual pointers on CPU using %.1f%s of memory:\n", num_vptr[VPTR_CPU],
+		     get_byte_size((size_t)vptr_size[VPTR_CPU]), get_byte_unit((size_t)vptr_size[VPTR_CPU]));
+
+	for (int i = 0; i < N; i++)
+		if (VPTR_CPU == mems[i]->loc)
+			vptr_debug_mem(dl, mems[i]);
+
+
+	debug_printf(dl, "%d virtual pointers on GPU using %.1f%s of memory:\n", num_vptr[VPTR_GPU],
+		     get_byte_size((size_t)vptr_size[VPTR_GPU]), get_byte_unit((size_t)vptr_size[VPTR_GPU]));
+
+	for (int i = 0; i < N; i++)
+		if (VPTR_GPU == mems[i]->loc)
+			vptr_debug_mem(dl, mems[i]);
+
+
+	debug_printf(dl, "%d virtual pointers on CFL using %.1f%s of memory:\n", num_vptr[VPTR_CFL],
+		     get_byte_size((size_t)vptr_size[VPTR_CFL]), get_byte_unit((size_t)vptr_size[VPTR_CFL]));
+
+	for (int i = 0; i < N; i++)
+		if (VPTR_CFL == mems[i]->loc)
+			vptr_debug_mem(dl, mems[i]);
+}
+
 
 static struct mem_s* search(const void* ptr, bool remove);
 
