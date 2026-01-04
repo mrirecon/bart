@@ -149,6 +149,7 @@ extern _Bool safe_isfinite(float x);
 extern long io_calc_size(int D, const long dims[__VLA(D?:1)], size_t size);
 
 extern char* ptr_printf(const char* fmt, ...) __attribute__((format(printf,1,2)));
+extern void ptr_append_printf(const char** prefix, const char* fmt, ...);
 extern char* ptr_vprintf(const char* fmt, va_list ap);
 extern char* ptr_print_dims(int D, const long dims[__VLA(D)]);
 

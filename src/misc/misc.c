@@ -3,7 +3,7 @@
  * Copyright 2017. University of Oxford.
  * Copyright 2017-2018. Damien Nguyen
  * Copyright 2019-2022. Uecker Lab, University Medical Center Göttingen.
- * Copyright 2022-2025. Institute of Biomedical Imaging. TU Graz.
+ * Copyright 2022-2026. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -721,6 +721,32 @@ char* ptr_printf(const char* fmt, ...)
 	va_end(ap);
 
 	return result;
+}
+
+void ptr_append_printf(const char** prefix, const char* fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+
+	const char* tmp = ptr_vprintf(fmt, ap);
+
+	va_end(ap);
+
+	size_t l1 = NULL != *prefix ? strlen(*prefix) : 0;
+	size_t l2 = strlen(tmp);
+
+	PTR_ALLOC(char[l1 + l2 + 1], result);
+
+	if (NULL != *prefix) {
+
+		memcpy(*result, *prefix, l1);
+		xfree(*prefix);
+	}
+
+	memcpy(*result + l1, tmp, l2 + 1);
+	xfree(tmp);
+
+	*prefix = *PTR_PASS(result);
 }
 
 char* ptr_print_dims(int D, const long dims[D])
