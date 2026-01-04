@@ -48,6 +48,8 @@ struct vptr_hint_s {
 	long* rank;
 	unsigned long mpi_flags;
 
+	unsigned long loop_flags;
+
 	struct shared_obj_s sptr;
 };
 
@@ -86,7 +88,19 @@ static void vptr_hint_del(const struct shared_obj_s* sptr)
 
 struct vptr_hint_s* hint_mpi_create(unsigned long mpi_flags, int N, const long dims[N])
 {
+	return vptr_hint_create(mpi_flags, N, dims, 0);
+}
+
+struct vptr_hint_s* hint_delayed_create(unsigned long delayed_flags)
+{
+	return vptr_hint_create(0UL, 1, MD_DIMS(1), delayed_flags);
+}
+
+struct vptr_hint_s* vptr_hint_create(unsigned long mpi_flags, int N, const long dims[N], unsigned long delayed_flags)
+{
 	PTR_ALLOC(struct vptr_hint_s, x);
+
+	x->loop_flags = delayed_flags;
 
 	long mdims[N];
 	md_select_dims(N, mpi_flags, mdims, dims);
@@ -145,6 +159,12 @@ void vptr_hint_free(struct vptr_hint_s* hint)
 		return;
 
 	shared_obj_destroy(&hint->sptr);
+}
+
+unsigned long vptr_delayed_loop_flags(const void* ptr)
+{
+	struct vptr_hint_s* hint = vptr_get_hint(ptr);
+	return hint ? hint->loop_flags : 0;
 }
 
 
@@ -251,6 +271,8 @@ static void vptr_mem_block_free(struct vptr_mem_s* mem, int idx, enum VPTR_LOC l
 {
 	if ((NULL == mem->mem) || (NULL == mem->mem[idx]))
 		return;
+
+	assert(idx < mem->num_blocks);
 
 	vptr_update_size(loc, -mem->block_size);
 
@@ -654,6 +676,56 @@ void vptr_clear(const void* ptr)
 	}
 }
 
+bool vptr_is_mem_allocated(const void* ptr)
+{
+	struct mem_s* mem = search(ptr, false);
+
+	if (NULL == mem)
+		error("Cannot check allocation of non-virtual pointer!\n");
+
+	return (NULL != mem->blocks.mem);
+}
+
+bool vptr_is_writeback(const void* ptr)
+{
+	struct mem_s* mem = search(ptr, false);
+
+	if (NULL == mem)
+		error("Cannot check writeback flag of non-virtual pointer!\n");
+
+	return mem->writeback;
+}
+
+bool vptr_is_set_clear(const void* ptr)
+{
+	struct mem_s* mem = search(ptr, false);
+
+	if (NULL == mem)
+		error("Cannot check clear flag of non-virtual pointer!\n");
+
+	return mem->clear;
+}
+
+void vptr_unset_clear(const void* ptr)
+{
+	struct mem_s* mem = search(ptr, false);
+
+	if (NULL == mem)
+		error("Cannot unset clear flag of non-virtual pointer!\n");
+
+	mem->clear = false;
+
+	for (int i = 0; i < mem->range.D; i++) {
+
+		struct mem_s* tmem = mem->range.sub_ptr[i];
+
+		if (NULL == tmem)
+			continue;
+
+		tmem->clear = false;
+	}
+}
+
 static void vptr_set_dims_int(struct mem_s* mem, int N, const long dims[N], size_t size, struct vptr_hint_s* hint)
 {
 	assert(0 == mem->range.D);
@@ -890,7 +962,60 @@ void vptr_set_cpu(const void* ptr)
 	vptr_update_loc(mem, VPTR_CPU);
 }
 
+void vptr_set_loop_flags(const void* x, unsigned long flags)
+{
+	if (0 == flags)
+		return;
 
+	struct mem_s* mem = search(x, false);
+	assert(NULL != mem);
+	assert(NULL == mem->blocks.mem);
+
+	mem->blocks.flags |= flags;
+}
+
+
+void vptr_free_mem(int N, const long dims[N], const long strs[N], const void *ptr, size_t size)
+{
+	struct mem_s* mem = search(ptr, false);
+
+	if ((0 < mem->range.D) || (VPTR_CFL == mem->loc) || mem->writeback || !mem->free )
+		return;
+
+	assert(mem);
+	assert(N == mem->shape.N);
+	assert(size == mem->shape.size);
+
+	if (!md_check_equal_dims(N, dims, mem->shape.dims, md_nontriv_dims(N, dims))) {
+
+		debug_print_dims(DP_INFO, N, dims);
+		vptr_debug(DP_INFO, ptr);
+	}
+
+	assert(md_check_equal_dims(N, dims, mem->shape.dims, md_nontriv_dims(N, dims)));
+	assert(md_check_equal_dims(N, strs, MD_STRIDES(N, mem->shape.dims, mem->shape.size), md_nontriv_dims(N, dims)));
+
+
+	if ((~mem->blocks.flags & md_nontriv_dims(mem->shape.N, mem->shape.dims)) & ~md_nontriv_dims(N, dims))
+		return;
+
+	long pos[N];
+	md_set_dims(N, pos, 0);
+	md_unravel_index(N, pos, ~0UL, mem->shape.dims, (ptr - mem->ptr) / (long)mem->shape.size);
+
+	assert(0 == md_ravel_index(N, pos, ~mem->blocks.flags, mem->shape.dims));
+
+	unsigned long lflags = md_nontriv_dims(N, dims) & mem->blocks.flags;
+	for (int i = 0; i < N; i++)
+		assert(!MD_IS_SET(lflags, i) || 0 == pos[i]);
+
+	do {
+		long idx = md_ravel_index(N, pos, mem->blocks.flags, mem->shape.dims);
+
+		vptr_mem_block_free(&mem->blocks, idx, mem->loc, mem->free);
+
+	} while (md_next(N, mem->shape.dims, lflags, pos));
+}
 
 
 bool vptr_free(const void* ptr)
@@ -1090,7 +1215,7 @@ void* vptr_wrap_range(int D, void* ptr[D], bool free)
  * if a bit is not set in any return flag, we access only a slice of the memory
  * if a bit is only set in one return flag, we can access the memory in a single loop
 */
-static void loop_access_dims(int N, unsigned long flags[N], const long adims[N], const long astrs[N], int D, const long mdims[D], long offset)
+void loop_access_dims(int N, unsigned long flags[N], const long adims[N], const long astrs[N], int D, const long mdims[D], long offset)
 {
 	long mstrs[D];
 	md_calc_strides(D, mstrs, mdims, 1);
@@ -1231,8 +1356,6 @@ unsigned long vptr_block_loop_flags(int N, const long dims[N], const long strs[N
 
 	if (NULL == mem)
 		return 0UL;
-
-	vptr_mem_block_init(&mem->blocks);
 
 	check_valid_loop_access(mem, N, dims, strs, size, ptr, true);
 
@@ -1502,6 +1625,13 @@ void mpi_unset_reduction_buffer(const void* ptr)
 			mem->range.sub_ptr[i]->reduction_buffer = false;
 }
 
+bool mpi_is_set_reduction_buffer(const void* ptr)
+{
+	struct mem_s* mem = search(ptr, false);
+	assert(mem);
+	return mem->reduction_buffer;
+}
+
 bool mpi_is_reduction(int N, const long dims[N], const long ostrs[N], const void* optr, size_t osize, const long istrs[N], const void* iptr, size_t isize)
 {
 	struct vptr_mapped_dims_s* mdims = vptr_map_dims(N, dims, 2,
@@ -1585,6 +1715,28 @@ struct vptr_hint_s* vptr_get_hint(const void* ptr)
 	return (NULL != mem) ? mem->hint : NULL;
 }
 
+bool vptr_overlap(const void *ptr1, const void *ptr2)
+{
+	auto vptr2 = search(ptr2, false);
+	assert(NULL != vptr2);
+
+	return ptr1 >= vptr2->ptr && (ptr1 < vptr2->ptr + vptr2->len);
+}
+
+bool vptr_is_same_type(const void *ptr1, const void *ptr2)
+{
+	auto vptr1 = search(ptr1, false);
+	auto vptr2 = search(ptr2, false);
+
+	assert(NULL != vptr2);
+	assert(NULL != vptr2);
+
+	return (vptr1->hint == vptr2->hint)
+	    && md_check_equal_dims(MIN(vptr1->shape.N, vptr2->shape.N), vptr1->shape.dims, vptr2->shape.dims, ~0ul)
+	    && (md_calc_size(vptr1->shape.N, vptr1->shape.dims) == md_calc_size(vptr2->shape.N, vptr2->shape.dims))
+	    && (vptr1->shape.size == vptr2->shape.size)
+	    && vptr1->loc == vptr2->loc;
+}
 
 
 
@@ -1858,5 +2010,71 @@ struct vptr_mapped_dims_s* vptr_mapped_dims_free_and_next(struct vptr_mapped_dim
 
 	return ret;
 }
+
+bool vptr_check_init(int D, const long dim[D], const long str[D], const void* ptr)
+{
+	unsigned long loop_flags = vptr_block_loop_flags(D, dim, str, ptr, 1, true);
+
+	long pos[D?:1];
+	md_set_dims(D, pos, 0);
+
+	bool init = true;
+	struct mem_s* mem = search(ptr, false);
+	assert(mem);
+	assert(0 == mem->range.D);
+
+	if (mem->clear)
+		return true;
+
+	if (0 == mem->shape.N)
+		return false;
+
+	do {
+
+		const void* nptr = ptr + md_calc_offset(D, str, pos);
+
+		if (!mpi_accessible_mult(1, &nptr))
+			continue;
+
+		unsigned long dflags = md_nontriv_dims(mem->shape.N, mem->shape.dims);
+		long idx = md_reravel_index(mem->shape.N, mem->blocks.flags & dflags, dflags, mem->shape.dims, (ptr - mem->ptr) / (long)mem->shape.size);
+		init = init && (NULL != mem->blocks.mem[idx]);
+
+	} while (md_next(D, dim, loop_flags, pos));
+
+	return init;
+}
+
+bool vptr_check_free(int D, const long dim[D], const long str[D], const void* ptr)
+{
+	unsigned long loop_flags = vptr_block_loop_flags(D, dim, str, ptr, 1, true);
+
+	long pos[D?:1];
+	md_set_dims(D, pos, 0);
+
+	struct mem_s* mem = search(ptr, false);
+	assert(mem);
+	assert(0 == mem->range.D);
+
+	if (0 == mem->shape.N)
+		return true;
+
+	bool free = true;
+
+	do {
+		const void* nptr = ptr + md_calc_offset(D, str, pos);
+
+		if (!mpi_accessible_mult(1, &nptr))
+			continue;
+
+		unsigned long dflags = md_nontriv_dims(mem->shape.N, mem->shape.dims);
+		long idx = md_reravel_index(mem->shape.N, mem->blocks.flags & dflags, dflags, mem->shape.dims, (ptr - mem->ptr) / (long)mem->shape.size);
+		free = free && (NULL == mem->blocks.mem[idx]);
+
+	} while (md_next(D, dim, loop_flags, pos));
+
+	return free;
+}
+
 
 
