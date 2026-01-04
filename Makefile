@@ -839,7 +839,7 @@ MODULES_test_pulseq += -lseq -lnoncart
 
 # lib num
 UTARGETS += test_multind test_flpmath test_splines test_linalg test_polynom test_window test_conv
-UTARGETS += test_ode test_nlmeans test_rand test_matexp
+UTARGETS += test_ode test_nlmeans test_rand test_matexp test_delayed
 UTARGETS += test_blas test_mdfft test_ops test_ops_p test_flpmath2 test_convcorr test_specfun test_qform test_fft test_gaussians test_md_gaussians
 UTARGETS += test_lapack
 UTARGETS += test_morph

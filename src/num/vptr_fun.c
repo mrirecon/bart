@@ -1,4 +1,4 @@
-/* Copyright 2024. TU Graz. Institute of Biomedical Imaging.
+/* Copyright 2024-2026. TU Graz. Institute of Biomedical Imaging.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -15,6 +15,7 @@
 
 #include "num/multind.h"
 #include "num/vptr.h"
+#include "num/delayed.h"
 
 #include "vptr_fun.h"
 
@@ -76,21 +77,31 @@ void exec_vptr_fun_internal(vptr_fun_t fun, vptr_fun_data_t* data, int N, int D,
 }
 
 
-void exec_vptr_fun_gen(vptr_fun_t fun, vptr_fun_data_t* data, int N, int D, unsigned long lflags, unsigned long /*wflags*/, unsigned long /*rflags*/, const long* dims[N], const long* strs[N], void* ptr[N], size_t sizes[N], _Bool resolve)
+void exec_vptr_fun_gen(vptr_fun_t fun, vptr_fun_data_t* data, int N, int D, unsigned long lflags, unsigned long wflags, unsigned long rflags, const long* dims[N], const long* strs[N], void* _ptr[N], size_t sizes[N], _Bool resolve)
 {
-	for (int i = 0; i < N; i++) {
+	for (int i = 1; i < N; i++)
+		assert(is_vptr(_ptr[0]) == is_vptr(_ptr[i]));
 
-		if (!is_vptr(ptr[i])) {
+	void* ptr[N];
+	for(int i = 0; i < N; i++)
+		ptr[i] = vptr_resolve_range(_ptr[i]);
 
-			fun(data, N, D, dims, strs, ptr);
+	if (!is_vptr(ptr[0])) {
 
-			if (NULL != data->del)
-				data->del(data);
+		fun(data, N, D, dims, strs, ptr);
 
-			xfree(data);
+		if (NULL != data->del)
+			data->del(data);
 
-			return;
-		}
+		xfree(data);
+
+		return;
+	}
+
+	if (is_delayed(ptr[0])) {
+
+		exec_vptr_fun_delayed(fun, data, N, D, lflags, wflags, rflags, dims, strs, ptr, sizes, resolve);
+		return;
 	}
 
 	exec_vptr_fun_internal(fun, data, N, D, lflags, dims, strs, ptr, sizes, resolve);

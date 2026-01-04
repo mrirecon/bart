@@ -1,6 +1,6 @@
 /* Copyright 2013-2018 The Regents of the University of California.
  * Copyright 2016-2022. Uecker Lab. University Medical Center Göttingen.
- * Copyright 2023-2025. Institute of Biomedical Imaging. TU Graz.
+ * Copyright 2023-2026. Institute of Biomedical Imaging. TU Graz.
  * Copyright 2017. University of Oxford.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
@@ -47,6 +47,7 @@
 #ifdef NO_BLAS
 #include "num/linalg.h"
 #endif
+#include "num/delayed.h"
 
 #include "misc/misc.h"
 #include "misc/types.h"
@@ -276,7 +277,8 @@ static bool make_op_map_dims(int C, int D, const long dim[D], const long* str[C]
 	return true;
 }
 
-static void make_z3op(size_t offset, int D, const long dim[D], const long ostr[D], complex float* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)
+
+void make_z3op(size_t offset, int D, const long dim[D], const long ostr[D], complex float* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)
 {
 	const long* strs[] = { ostr, istr1, istr2 };
 	const size_t size[] = { sizeof(optr[0]), sizeof(iptr1[0]), sizeof(iptr2[0]) };
@@ -290,6 +292,9 @@ static void make_z3op(size_t offset, int D, const long dim[D], const long ostr[D
 		};
 
 		if (make_op_map_dims(ARRAY_SIZE(ptr), D, dim, strs, ptr, size, nary_loop))
+			return;
+
+		if (delayed_queue_make_op(delayed_op_type_z3op, offset, D, dim, 3, (const long*[3]) { ostr, istr1, istr2 }, (const void*[3]) { optr, iptr1, iptr2 }, (const size_t[3]){ sizeof(optr[0]), sizeof(iptr1[0]), sizeof(iptr2[0]) }))
 			return;
 
 		md_nary_resolve(3, D, dim, strs, ptr, nary_loop);
@@ -322,7 +327,7 @@ static void make_z3op(size_t offset, int D, const long dim[D], const long ostr[D
 }
 
 
-static void make_3op(size_t offset, int D, const long dim[D], const long ostr[D], float* optr, const long istr1[D], const float* iptr1, const long istr2[D], const float* iptr2)
+void make_3op(size_t offset, int D, const long dim[D], const long ostr[D], float* optr, const long istr1[D], const float* iptr1, const long istr2[D], const float* iptr2)
 {
 	const long* strs[] = {  ostr, istr1, istr2 };
 	const size_t size[] = { sizeof(optr[0]), sizeof(iptr1[0]), sizeof(iptr2[0]) };
@@ -336,6 +341,9 @@ static void make_3op(size_t offset, int D, const long dim[D], const long ostr[D]
 		};
 
 		if (make_op_map_dims(ARRAY_SIZE(ptr), D, dim, strs, ptr, size, nary_loop))
+			return;
+
+		if (delayed_queue_make_op(delayed_op_type_3op, offset, D, dim, 3, (const long*[3]) { ostr, istr1, istr2 }, (const void*[3]) { optr, iptr1, iptr2 }, (const size_t[3]){ sizeof(optr[0]), sizeof(iptr1[0]), sizeof(iptr2[0]) }))
 			return;
 
 		md_nary_resolve(3, D, dim, strs, ptr, nary_loop);
@@ -361,7 +369,7 @@ static void make_3op(size_t offset, int D, const long dim[D], const long ostr[D]
 				(size_t[3]){ [0 ... 2] = FL_SIZE }, nary_3op);
 }
 
-static void make_z3opd(size_t offset, int D, const long dim[D], const long ostr[D], complex double* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)
+void make_z3opd(size_t offset, int D, const long dim[D], const long ostr[D], complex double* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)
 {
 	const long* strs[] = {  ostr, istr1, istr2 };
 	const size_t size[] = { sizeof(optr[0]), sizeof(iptr1[0]), sizeof(iptr2[0]) };
@@ -375,6 +383,9 @@ static void make_z3opd(size_t offset, int D, const long dim[D], const long ostr[
 		};
 
 		if (make_op_map_dims(ARRAY_SIZE(ptr), D, dim, strs, ptr, size, nary_loop))
+			return;
+
+		if (delayed_queue_make_op(delayed_op_type_z3opd, offset, D, dim, 3, (const long*[3]) { ostr, istr1, istr2 }, (const void*[3]) { optr, iptr1, iptr2 }, (const size_t[3]){ sizeof(optr[0]), sizeof(iptr1[0]), sizeof(iptr2[0]) }))
 			return;
 
 		md_nary_resolve(3, D, dim, strs, ptr, nary_loop);
@@ -393,7 +404,7 @@ static void make_z3opd(size_t offset, int D, const long dim[D], const long ostr[
 			(size_t[3]){ CDL_SIZE, CFL_SIZE, CFL_SIZE }, nary_z3opd);
 }
 
-static void make_3opd(size_t offset, int D, const long dim[D], const long ostr[D], double* optr, const long istr1[D], const float* iptr1, const long istr2[D], const float* iptr2)
+void make_3opd(size_t offset, int D, const long dim[D], const long ostr[D], double* optr, const long istr1[D], const float* iptr1, const long istr2[D], const float* iptr2)
 {
 	const long* strs[] = {  ostr, istr1, istr2 };
 	const size_t size[] = { sizeof(optr[0]), sizeof(iptr1[0]), sizeof(iptr2[0]) };
@@ -407,6 +418,9 @@ static void make_3opd(size_t offset, int D, const long dim[D], const long ostr[D
 		};
 
 		if (make_op_map_dims(ARRAY_SIZE(ptr), D, dim, strs, ptr, size, nary_loop))
+			return;
+
+		if (delayed_queue_make_op(delayed_op_type_3opd, offset, D, dim, 3, (const long*[3]) { ostr, istr1, istr2 }, (const void*[3]) { optr, iptr1, iptr2 }, (const size_t[3]){ sizeof(optr[0]), sizeof(iptr1[0]), sizeof(iptr2[0]) }))
 			return;
 
 		md_nary_resolve(3, D, dim, strs, ptr, nary_loop);
@@ -425,7 +439,7 @@ static void make_3opd(size_t offset, int D, const long dim[D], const long ostr[D
 			(size_t[3]){ DL_SIZE, FL_SIZE, FL_SIZE }, nary_3opd);
 }
 
-static void make_z2op(size_t offset, int D, const long dim[D], const long ostr[D], complex float* optr, const long istr1[D], const complex float* iptr1)
+void make_z2op(size_t offset, int D, const long dim[D], const long ostr[D], complex float* optr, const long istr1[D], const complex float* iptr1)
 {
 	const long* strs[] = { ostr, istr1 };
 	const size_t size[] = { sizeof(optr[0]), sizeof(iptr1[0]) };
@@ -441,6 +455,9 @@ static void make_z2op(size_t offset, int D, const long dim[D], const long ostr[D
 		if (make_op_map_dims(ARRAY_SIZE(ptr), D, dim, strs, ptr, size, nary_loop))
 			return;
 
+		if (delayed_queue_make_op(delayed_op_type_z2op, offset, D, dim, 2, (const long*[2]) { ostr, istr1 }, (const void*[3]) { optr, iptr1 }, (const size_t[3]){ sizeof(optr[0]), sizeof(iptr1[0]) }))
+			return;
+
 		md_nary_resolve(ARRAY_SIZE(ptr), D, dim, strs, ptr, nary_loop);
 		return;
 	}
@@ -453,7 +470,7 @@ static void make_z2op(size_t offset, int D, const long dim[D], const long ostr[D
 	optimized_twoop_oi(D, dim, ostr, optr, istr1, iptr1, (size_t[2]){ CFL_SIZE, CFL_SIZE }, nary_z2op);
 }
 
-static void make_2op(size_t offset, int D, const long dim[D], const long ostr[D], float* optr, const long istr1[D], const float* iptr1)
+void make_2op(size_t offset, int D, const long dim[D], const long ostr[D], float* optr, const long istr1[D], const float* iptr1)
 {
 	const long* strs[] = {  ostr, istr1 };
 	const size_t size[] = { sizeof(optr[0]), sizeof(iptr1[0]) };
@@ -469,6 +486,9 @@ static void make_2op(size_t offset, int D, const long dim[D], const long ostr[D]
 		if (make_op_map_dims(ARRAY_SIZE(ptr), D, dim, strs, ptr, size, nary_loop))
 			return;
 
+		if (delayed_queue_make_op(delayed_op_type_2op, offset, D, dim, 2, (const long*[2]) { ostr, istr1 }, (const void*[3]) { optr, iptr1 }, (const size_t[3]){ sizeof(optr[0]), sizeof(iptr1[0]) }))
+			return;
+
 		md_nary_resolve(ARRAY_SIZE(ptr), D, dim, strs, ptr, nary_loop);
 		return;
 	}
@@ -481,8 +501,7 @@ static void make_2op(size_t offset, int D, const long dim[D], const long ostr[D]
 	optimized_twoop_oi(D, dim, ostr, optr, istr1, iptr1, (size_t[2]){ FL_SIZE, FL_SIZE }, nary_2op);
 }
 
-__attribute__((unused))
-static void make_z2opd(size_t offset, int D, const long dim[D], const long ostr[D], complex double* optr, const long istr1[D], const complex float* iptr1)
+void make_z2opd(size_t offset, int D, const long dim[D], const long ostr[D], complex double* optr, const long istr1[D], const complex float* iptr1)
 {
 	const long* strs[] = { ostr, istr1 };
 	const size_t size[] = { sizeof(optr[0]), sizeof(iptr1[0]) };
@@ -496,6 +515,9 @@ static void make_z2opd(size_t offset, int D, const long dim[D], const long ostr[
 		};
 
 		if (make_op_map_dims(ARRAY_SIZE(ptr), D, dim, strs, ptr, size, nary_loop))
+			return;
+
+		if (delayed_queue_make_op(delayed_op_type_z2opd, offset, D, dim, 2, (const long*[2]) { ostr, istr1 }, (const void*[3]) { optr, iptr1 }, (const size_t[3]){ sizeof(optr[0]), sizeof(iptr1[0]) }))
 			return;
 
 		md_nary_resolve(ARRAY_SIZE(ptr), D, dim, strs, ptr, nary_loop);
@@ -513,7 +535,7 @@ static void make_z2opd(size_t offset, int D, const long dim[D], const long ostr[
 }
 
 
-static void make_2opd(size_t offset, int D, const long dim[D], const long ostr[D], double* optr, const long istr1[D], const float* iptr1)
+void make_2opd(size_t offset, int D, const long dim[D], const long ostr[D], double* optr, const long istr1[D], const float* iptr1)
 {
 	const long* strs[] = { ostr, istr1 };
 	const size_t size[] = { sizeof(optr[0]), sizeof(iptr1[0]) };
@@ -529,6 +551,9 @@ static void make_2opd(size_t offset, int D, const long dim[D], const long ostr[D
 		if (make_op_map_dims(ARRAY_SIZE(ptr), D, dim, strs, ptr, size, nary_loop))
 			return;
 
+		if (delayed_queue_make_op(delayed_op_type_2opd, offset, D, dim, 2, (const long*[2]) { ostr, istr1 }, (const void*[3]) { optr, iptr1 }, (const size_t[3]){ sizeof(optr[0]), sizeof(iptr1[0]) }))
+			return;
+
 		md_nary_resolve(ARRAY_SIZE(ptr), D, dim, strs, ptr, nary_loop);
 		return;
 	}
@@ -541,7 +566,7 @@ static void make_2opd(size_t offset, int D, const long dim[D], const long ostr[D
 	optimized_twoop_oi(D, dim, ostr, optr, istr1, iptr1, (size_t[2]){ DL_SIZE, FL_SIZE }, nary_2opd);
 }
 
-static void make_z2opf(size_t offset, int D, const long dim[D], const long ostr[D], complex float* optr, const long istr1[D], const complex double* iptr1)
+void make_z2opf(size_t offset, int D, const long dim[D], const long ostr[D], complex float* optr, const long istr1[D], const complex double* iptr1)
 {
 	const long* strs[] = { ostr, istr1 };
 	const size_t size[] = { sizeof(optr[0]), sizeof(iptr1[0]) };
@@ -555,6 +580,9 @@ static void make_z2opf(size_t offset, int D, const long dim[D], const long ostr[
 		};
 
 		if (make_op_map_dims(ARRAY_SIZE(ptr), D, dim, strs, ptr, size, nary_loop))
+			return;
+
+		if (delayed_queue_make_op(delayed_op_type_z2opf, offset, D, dim, 2, (const long*[2]) { ostr, istr1 }, (const void*[3]) { optr, iptr1 }, (const size_t[3]){ sizeof(optr[0]), sizeof(iptr1[0]) }))
 			return;
 
 		md_nary_resolve(ARRAY_SIZE(ptr), D, dim, strs, ptr, nary_loop);
@@ -571,9 +599,7 @@ static void make_z2opf(size_t offset, int D, const long dim[D], const long ostr[
 	optimized_twoop_oi(D, dim, ostr, optr, istr1, iptr1, sizes, nary_z2opf);
 }
 
-void* unused2 = make_z2opf;
-
-static void make_2opf(size_t offset, int D, const long dim[D], const long ostr[D], float* optr, const long istr1[D], const double* iptr1)
+void make_2opf(size_t offset, int D, const long dim[D], const long ostr[D], float* optr, const long istr1[D], const double* iptr1)
 {
 	const long* strs[] = { ostr, istr1 };
 	const size_t size[] = { sizeof(optr[0]), sizeof(iptr1[0]) };
@@ -587,6 +613,9 @@ static void make_2opf(size_t offset, int D, const long dim[D], const long ostr[D
 		};
 
 		if (make_op_map_dims(ARRAY_SIZE(ptr), D, dim, strs, ptr, size, nary_loop))
+			return;
+
+		if (delayed_queue_make_op(delayed_op_type_2opf, offset, D, dim, 2, (const long*[2]) { ostr, istr1 }, (const void*[3]) { optr, iptr1 }, (const size_t[3]){ sizeof(optr[0]), sizeof(iptr1[0]) }))
 			return;
 
 		md_nary_resolve(ARRAY_SIZE(ptr), D, dim, strs, ptr, nary_loop);
@@ -3073,6 +3102,24 @@ void md_zatan2r(int D, const long dims[D], complex float* optr, const complex fl
  */
 float md_asum2(int D, const long dims[D], const long strs[D], const float* ptr)
 {
+	float ret = 0.;
+
+	if (is_delayed(ptr)) {
+
+		float* dev_ptr = md_alloc_sameplace(1, MD_DIMS(1), sizeof(ret), ptr);
+		md_clear(1, MD_DIMS(1), dev_ptr, sizeof(ret));
+
+		float* tmp = md_alloc_sameplace(D, dims, FL_SIZE, ptr);
+		md_abs2(D, dims, MD_STRIDES(D, dims, FL_SIZE), tmp, strs, ptr);
+
+		md_add2(D, dims, MD_SINGLETON_STRS(D), dev_ptr, MD_SINGLETON_STRS(D), dev_ptr, MD_STRIDES(D, dims, FL_SIZE), tmp);
+		md_free(tmp);
+
+		md_copy(1, MD_DIMS(1), &ret, dev_ptr, sizeof(ret));
+		md_free(dev_ptr);
+		return ret;
+	}
+
 #if 1
 	if (D == md_calc_blockdim(D, dims, strs, FL_SIZE)) {
 
@@ -3091,7 +3138,6 @@ float md_asum2(int D, const long dims[D], const long strs[D], const float* ptr)
 
 	md_abs2(D, dims, strs1, tmp, strs, ptr);
 
-	float ret = 0.;
 	float* retp = &ret;
 
 #ifdef USE_CUDA
@@ -3582,15 +3628,21 @@ void md_zwavg2_core2(int D, const long dims[D], unsigned long flags, const long 
  */
 void md_zfill2(int D, const long dim[D], const long str[D], complex float* ptr, complex float val)
 {
+	if (is_delayed(ptr)) {
+
+		md_fill2(D, dim, str, ptr, &val, CFL_SIZE);
+		return;
+	}
 #if 1
 	const long (*nstr[1])[D?D:1] = { (const long (*)[D ?: 1])str };
 	void *nptr[1] = { ptr };
 	unsigned long io = 1UL;
 	size_t sizes[1] = { CFL_SIZE };
+	complex float val_copy = val;	//https://gcc.gnu.org/bugzilla/show_bug.cgi?id=121661
 
 	NESTED(void, nary_zfill, (struct nary_opt_data_s* data, void* ptr[]))
 	{
-		data->ops->zfill(data->size, val, ptr[0]);
+		data->ops->zfill(data->size, val_copy, ptr[0]);
 	};
 
 	optimized_nop(1, io, D, dim, nstr, nptr, sizes, nary_zfill);
@@ -4071,6 +4123,12 @@ void md_smin(int D, const long dim[D], float* optr, const float* iptr, float val
  */
 void md_smax2(int D, const long dim[D], const long ostr[D], float* optr, const long istr[D], const float* iptr, float val)
 {
+	if (is_delayed(optr)) {
+
+		make_3op_scalar(md_max2, D, dim, ostr, optr, istr, iptr, val);
+		return;
+	}
+
 #if 0
 	// slow on GPU due to make_3op_scalar
 #if 0
@@ -4100,6 +4158,11 @@ void md_smax2(int D, const long dim[D], const long ostr[D], float* optr, const l
  */
 void md_zsmax2(int D, const long dim[D], const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr, float val)
 {
+	if (is_delayed(optr)) {
+
+		make_z3op_scalar(md_zmax2, D, dim, ostr, optr, istr, iptr, val);
+		return;
+	}
 #if 0
 	complex float* tmp = md_alloc_sameplace(D, dim, CFL_SIZE, iptr);
 	md_zsgreatequal2(D, dim, ostr, tmp, istr, iptr, val);
@@ -4129,8 +4192,6 @@ void md_zsmax2(int D, const long dim[D], const long ostr[D], complex float* optr
  */
 void md_zsmin2(int D, const long dim[D], const long ostr[D], complex float* optr, const long istr[D], const complex float* iptr, float val)
 {
-	// FIXME: we should rather optimize md_zmul2 for this case
-
 	NESTED(void, nary_zsmin, (struct nary_opt_data_s* data, void* ptr[]))
 	{
 		data->ops->zsmin(data->size, val, ptr[0], ptr[1]);
@@ -4462,13 +4523,12 @@ void md_zsum(int D, const long dims[D], unsigned long flags, complex float* dst,
 
 void md_real2(int D, const long dims[D], const long ostrs[D], float* dst, const long istrs[D], const complex float* src)
 {
-#ifdef USE_CUDA
-	if (cuda_ondevice(dst) != cuda_ondevice(src)) {
+	if (is_delayed(dst)) {
 
 		md_copy2(D, dims, ostrs, dst, istrs, (const float*)src + 0, FL_SIZE);
 		return;
 	}
-#endif
+
 	NESTED(void, nary_real, (struct nary_opt_data_s* data, void* ptr[]))
 	{
 		data->ops->real(data->size, ptr[0], ptr[1]);
@@ -4484,13 +4544,12 @@ void md_real(int D, const long dims[D], float* dst, const complex float* src)
 
 void md_imag2(int D, const long dims[D], const long ostrs[D], float* dst, const long istrs[D], const complex float* src)
 {
-#ifdef USE_CUDA
-	if (cuda_ondevice(dst) != cuda_ondevice(src)) {
+	if (is_delayed(dst)) {
 
 		md_copy2(D, dims, ostrs, dst, istrs, (const float*)src + 1, FL_SIZE);
 		return;
 	}
-#endif
+
 	NESTED(void, nary_imag, (struct nary_opt_data_s* data, void* ptr[]))
 	{
 		data->ops->imag(data->size, ptr[0], ptr[1]);
@@ -4508,14 +4567,13 @@ void md_imag(int D, const long dims[D], float* dst, const complex float* src)
 
 void md_zcmpl_real2(int D, const long dims[D], const long ostrs[D], complex float* dst, const long istrs[D], const float* src)
 {
-#ifdef USE_CUDA
-	if (cuda_ondevice(dst) != cuda_ondevice(src)) {
+	if (is_delayed(dst)) {
 
 		md_clear2(D, dims, ostrs, (float*)dst + 0, CFL_SIZE);
 		md_copy2(D, dims, ostrs, (float*)dst + 0, istrs, src, FL_SIZE);
 		return;
 	}
-#endif
+
 	NESTED(void, nary_real, (struct nary_opt_data_s* data, void* ptr[]))
 	{
 		data->ops->zcmpl_real(data->size, ptr[0], ptr[1]);
@@ -4531,14 +4589,13 @@ void md_zcmpl_real(int D, const long dims[D], complex float* dst, const float* s
 
 void md_zcmpl_imag2(int D, const long dims[D], const long ostrs[D], complex float* dst, const long istrs[D], const float* src)
 {
-#ifdef USE_CUDA
-	if (cuda_ondevice(dst) != cuda_ondevice(src)) {
+	if (is_delayed(dst)) {
 
 		md_clear2(D, dims, ostrs, (float*)dst + 0, CFL_SIZE);
 		md_copy2(D, dims, ostrs, (float*)dst + 1, istrs, src, FL_SIZE);
 		return;
 	}
-#endif
+
 	NESTED(void, nary_imag, (struct nary_opt_data_s* data, void* ptr[]))
 	{
 		data->ops->zcmpl_imag(data->size, ptr[0], ptr[1]);
@@ -4555,14 +4612,13 @@ void md_zcmpl_imag(int D, const long dims[D], complex float* dst, const float* s
 
 void md_zcmpl2(int D, const long dims[D], const long ostr[D], complex float* dst, const long istr1[D], const float* src_real, const long istr2[D], const float* src_imag)
 {
-#ifdef USE_CUDA
-	if ((cuda_ondevice(dst) != cuda_ondevice(src_real)) || (cuda_ondevice(dst) != cuda_ondevice(src_imag))) {
+	if (is_delayed(dst)) {
 
 		md_copy2(D, dims, ostr, (float*)dst + 0, istr1, src_real, FL_SIZE);
 		md_copy2(D, dims, ostr, (float*)dst + 1, istr2, src_imag, FL_SIZE);
 		return;
 	}
-#endif
+
 	NESTED(void, nary_zcmpl, (struct nary_opt_data_s* data, void* ptr[]))
 	{
 		data->ops->zcmpl(data->size, ptr[0], ptr[1], ptr[2]);

@@ -31,6 +31,7 @@
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/mpi_ops.h"
+#include "num/delayed.h"
 
 #include "vptr.h"
 
@@ -747,6 +748,9 @@ static void vptr_set_dims_int(struct mem_s* mem, int N, const long dims[N], size
 			mem->blocks.flags = hint->mpi_flags;
 		}
 
+		if (is_delayed(mem->ptr))
+			delayed_alloc(mem->ptr, N, dims, size);
+
 	} else {
 
 		assert(mem->shape.N == N);
@@ -1025,6 +1029,15 @@ bool vptr_free(const void* ptr)
 
 	if (NULL == mem)
 		return false;
+
+	if (!mem->writeback && is_delayed(ptr)) {
+
+		if (0 < mem->shape.N) {
+
+			delayed_free(ptr, mem->shape.N, mem->shape.dims, mem->shape.size);
+			return true;
+		}
+	}
 
 	if (mem->writeback)
 		md_copy(mem->shape.N, mem->shape.dims, mem->blocks.mem[0], mem->ptr, mem->shape.size);

@@ -26,6 +26,7 @@
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/vptr.h"
+#include "num/delayed.h"
 
 #ifdef USE_CUDA
 #include "num/gpuops.h"
@@ -535,6 +536,8 @@ static void md_sample_mpi(int D, const long dims[D], complex float* dst, md_samp
 
 		vec_fun(offset_rand, N, vptr_resolve(dst_offset));
 	};
+
+	delayed_compute(dst);
 
 	md_loop(D, ldims, rand_loop);
 }

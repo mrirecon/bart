@@ -5,6 +5,7 @@
 #include "misc/cppwrap.h"
 
 #include <stdbool.h>
+#include <stddef.h>
 
 #define CFL_SIZE	sizeof(_Complex float)
 #define  FL_SIZE	sizeof(float)
@@ -28,6 +29,17 @@
 	_strs[0] = (size);						\
 	_strs;								\
 })
+
+extern void make_z3op(size_t offset, int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], _Complex float* optr, const long istr1[__VLA(D)], const _Complex float* iptr1, const long istr2[__VLA(D)], const _Complex float* iptr2);
+extern void make_3op(size_t offset, int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], float* optr, const long istr1[__VLA(D)], const float* iptr1, const long istr2[__VLA(D)], const float* iptr2);
+extern void make_z3opd(size_t offset, int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], _Complex double* optr, const long istr1[__VLA(D)], const _Complex float* iptr1, const long istr2[__VLA(D)], const _Complex float* iptr2);
+extern void make_3opd(size_t offset, int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], double* optr, const long istr1[__VLA(D)], const float* iptr1, const long istr2[__VLA(D)], const float* iptr2);
+extern void make_z2op(size_t offset, int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], _Complex float* optr, const long istr1[__VLA(D)], const _Complex float* iptr1);
+extern void make_2op(size_t offset, int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], float* optr, const long istr1[__VLA(D)], const float* iptr1);
+extern void make_z2opd(size_t offset, int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], _Complex double* optr, const long istr1[__VLA(D)], const _Complex float* iptr1);
+extern void make_2opd(size_t offset, int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], double* optr, const long istr1[__VLA(D)], const float* iptr1);
+extern void make_z2opf(size_t offset, int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], _Complex float* optr, const long istr1[__VLA(D)], const _Complex double* iptr1);
+extern void make_2opf(size_t offset, int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], float* optr, const long istr1[__VLA(D)], const double* iptr1);
 
 
 extern void md_mul2(int D, const long dim[__VLA(D)], const long ostr[__VLA(D)], float* optr, const long istr1[__VLA(D)], const float* iptr1, const long istr2[__VLA(D)], const float* iptr2);
