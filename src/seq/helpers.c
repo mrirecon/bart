@@ -143,6 +143,58 @@ void seq_ui_interface_custom_params(int reverse, struct seq_config* seq, int nl,
 		custom_params_to_config(seq, nl, params_long, nd, params_double);
 }
 
+static void seq_standard_conf_to_bart(struct seq_config* seq, struct seq_standard_conf* std)
+{
+
+	seq->phys.tr = std->tr;
+#if 0
+	for (int i = 0; i < MAX_NO_ECHOES; i++)
+		seq->phys.te[i] = std->te[i];
+#endif
+	seq->phys.te = std->te[0];
+
+	seq->phys.dwell = std->dwell;
+	seq->phys.os = 2.;
+	seq->phys.flip_angle = std->flip_angle;
+
+	seq->geom.fov = std->fov;
+	seq->geom.baseres = std->baseres;
+	seq->geom.slice_thickness = std->slice_thickness;
+	// seq->geom.slice_os = 1. + std->slice_os;
+
+	// seq->dim.is3D = std->is3D;
+
+	seq->sys.gamma = std->gamma;
+
+	seq->sys.b0 = std->b0;
+
+	seq->sys.grad.inv_slew_rate = std->grad_min_rise_time;
+	seq->sys.grad.max_amplitude = std->grad_max_ampl;
+
+	seq->sys.coil_control_lead = std->coil_control_lead;
+	seq->sys.min_duration_ro_rf = std->min_duration_ro_rf;
+
+	seq->magn.mag_prep = std->mag_prep;
+
+	seq->magn.ti = (PREP_OFF != seq->magn.mag_prep) ? std->ti : 0;
+
+	seq->trigger.type = std->trigger_type;
+	seq->trigger.delay_time = std->trigger_delay_time;
+	seq->trigger.pulses = std->trigger_pulses;
+	seq->trigger.trigger_out = 1;
+
+	seq->enc.order = std->enc_order;
+}
+
+
+void seq_ui_interface_standard_conf(int reverse, struct seq_config* conf, struct seq_standard_conf* std_conf)
+{
+	(void)reverse;
+
+	seq_standard_conf_to_bart(conf, std_conf);
+}
+
+
 
 void set_loop_dims_and_sms(struct seq_config* seq, long /* partitions*/ , long total_slices, long radial_views,
 	long frames, long echoes, long phy_phases, long averages)
