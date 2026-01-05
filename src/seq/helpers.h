@@ -7,6 +7,9 @@
 
 #include "misc/mri.h"
 
+#define MAX_PARAMS_LONG 64
+#define MAX_PARAMS_DOUBLE 16
+
 // intended to include in sequence
 // (besides config.h, event.h seq.h)
 // we do not allow _Complex and bool here
@@ -30,6 +33,9 @@ BARTLIB_API extern double BARTLIB_CALL seq_total_measure_time(const struct seq_c
 
 BARTLIB_API extern void BARTLIB_CALL set_loop_dims_and_sms(struct seq_config* seq, long partitions, long total_slices, long radial_views,
 	long frames, long echoes, long phy_phases, long averages);
+
+BARTLIB_API extern void BARTLIB_CALL
+seq_ui_interface_custom_params(int reverse, struct seq_config* seq, int nl, long params_long[__VLA(nl)], int nd, double params_double[__VLA(nd)]);
 
 
 BARTLIB_API extern long BARTLIB_CALL seq_get_slices(const struct seq_config* seq);

@@ -18,6 +18,7 @@
 #include "seq/flash.h"
 #include "seq/misc.h"
 #include "seq/mag_prep.h"
+#include "seq/ui_enums.h"
 
 #include "helpers.h"
 
@@ -93,6 +94,54 @@ double seq_total_measure_time(const struct seq_config* seq)
 	return pre_duration + prep_pulse_duration + imaging_duration;
 }
 
+
+
+static void custom_params_to_config(struct seq_config* seq, int nl, const long custom_long[__VLA(nl)], int nd, const double custom_double[__VLA(nd)])
+{
+	seq->enc.pe_mode = (enum pe_mode)custom_long[cil_pe_mode];
+	seq->phys.contrast = (enum flash_contrast)custom_long[cil_contrast];
+
+	seq->geom.mb_factor = (CHECKBOX_ON == custom_long[cil_sms]) ? custom_long[cil_mb_factor] : 1;
+
+	seq->phys.os = 2.;
+
+	seq->enc.tiny = custom_long[cil_tiny];
+	seq->phys.rf_duration = custom_long[cil_rf_duration];
+	seq->magn.init_delay = custom_long[cil_init_delay];
+	seq->loop_dims[BATCH_DIM] = custom_long[cil_inversions];
+	seq->magn.inv_delay_time = custom_long[cil_inv_delay];
+	seq->enc.aligned_flags = (unsigned long)custom_long[cil_RAGA_aligned_flags];
+
+	seq->phys.bwtp = custom_double[cid_BWTP];
+}
+
+
+static void config_to_custom_params(int nl, long custom_long[__VLA(nl)], int nd, double custom_double[__VLA(nd)], const struct seq_config* seq)
+{
+	custom_long[cil_pe_mode] = seq->enc.pe_mode;;
+	custom_long[cil_contrast] = seq->phys.contrast;
+
+	custom_long[cil_mb_factor] = (CHECKBOX_ON == custom_long[cil_sms]) ? seq->geom.mb_factor : 1;
+
+	custom_long[cil_tiny] = seq->enc.tiny;
+	custom_long[cil_rf_duration] = seq->phys.rf_duration;
+	custom_long[cil_init_delay] = seq->magn.init_delay;
+	custom_long[cil_inversions] = seq->loop_dims[BATCH_DIM];
+	custom_long[cil_inv_delay] = seq->magn.inv_delay_time;
+	custom_double[cid_BWTP] = seq->phys.bwtp;
+
+	// FIXME .. consider ICE? old commen: unused but relevant: FIXME check on plausibility?
+	custom_long[cil_sms] = CHECKBOX_OFF;
+}
+
+
+void seq_ui_interface_custom_params(int reverse, struct seq_config* seq, int nl, long params_long[__VLA(nl)], int nd, double params_double[__VLA(nd)])
+{
+	if (reverse)
+		config_to_custom_params(nl, params_long, nd, params_double, seq);
+	else
+		custom_params_to_config(seq, nl, params_long, nd, params_double);
+}
 
 
 void set_loop_dims_and_sms(struct seq_config* seq, long /* partitions*/ , long total_slices, long radial_views,
