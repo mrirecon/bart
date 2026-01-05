@@ -148,6 +148,8 @@ struct seq_state {
 
 	enum block mode;
 	long chrono_slice;
+	enum context context;
+	int seq_ut; //perform ut
 	long pos[DIMS];
 	double start_block;
 };

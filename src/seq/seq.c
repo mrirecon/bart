@@ -12,6 +12,7 @@
 
 #include "seq/config.h"
 #include "seq/event.h"
+#include "seq/helpers.h"
 #include "seq/misc.h"
 
 #include "seq/adc_rf.h"
@@ -215,20 +216,37 @@ static long get_chrono_slice(const struct seq_state* seq_state, const struct seq
 	return (1 < seq->geom.mb_factor) ? seq_state->pos[PHS2_DIM] + seq_state->pos[SLICE_DIM] * seq->loop_dims[PHS2_DIM] : seq_state->pos[SLICE_DIM];
 }
 
-static int check_settings(const struct seq_config* seq)
+static int check_settings(const struct seq_state* seq_state, const struct seq_config* seq)
 {
 	if (0 > seq->loop_dims[PHS2_DIM])
 		return ERROR_SETTING_DIM;
 
+	if (MAX_SLICES < seq_get_slices(seq))
+		return ERROR_SETTING_DIM;
+
 	if (PEMODE_RAGA_MEMS == seq->enc.pe_mode)
 		return ERROR_ROT_ANGLE;
+
+
+	if (CONTEXT_BINARY != seq_state->context) {
+
+		if ((PEMODE_RAGA == seq->enc.pe_mode) || (PEMODE_RAGA_ALIGNED == seq->enc.pe_mode)) {
+
+			if (!check_gen_fib(seq->loop_dims[PHS1_DIM], seq->enc.tiny))
+				return ERROR_SETTING_SPOKES_RAGA;
+		}
+
+
+		if (0 == (seq->loop_dims[PHS1_DIM] % 2))
+			return ERROR_SETTING_SPOKES_EVEN;
+	}
 
 	return 1;
 }
 
 int seq_block(int N, struct seq_event ev[N], struct seq_state* seq_state, const struct seq_config* seq)
 {
-	int err = check_settings(seq);
+	int err = check_settings(seq_state, seq);
 	if (1 > err)
 		return err;
 
