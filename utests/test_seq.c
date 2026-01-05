@@ -30,31 +30,24 @@ static bool test_block_minv_init_delay(void)
 		BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE
 	};
 
-	struct seq_state seq_state = { 0 };
-	struct seq_config seq = seq_config_defaults;
+	struct bart_seq* seq = bart_seq_alloc();
+	bart_seq_defaults(seq);
 
-	seq.magn.init_delay = 1.;
-	seq.magn.ti = 100.E-3;
-	seq.magn.mag_prep = PREP_IR_NON;
+	seq->conf->magn.init_delay = 1.;
+	seq->conf->magn.ti = 100.E-3;
+	seq->conf->magn.mag_prep = PREP_IR_NON;
+
+	seq->conf->loop_dims[BATCH_DIM] = 2;
+	seq->conf->loop_dims[SLICE_DIM] = 2;
+	seq->conf->loop_dims[PHS1_DIM] = 3;
+	seq->conf->loop_dims[TIME_DIM] = 3;
+	seq_ui_interface_loop_dims(0, seq->conf, DIMS, seq->conf->loop_dims);
 
 	int i = 0;
-
-	const int max_E = 200;
-	struct seq_event ev[max_E];
-
-	md_singleton_dims(DIMS, seq.loop_dims);
-
-	seq.loop_dims[BATCH_DIM] = 2;
-	seq.loop_dims[SLICE_DIM] = 2;
-	seq.loop_dims[PHS1_DIM] = 3;
-	seq.loop_dims[TIME_DIM] = 3;
-
-	seq_ui_interface_loop_dims(0, &seq, DIMS, seq.loop_dims);
-
 	int pre_blocks = 0;
 
 	do {
-		int E = seq_block(max_E, ev, &seq_state, &seq);
+		int E = seq_block(seq->N, seq->event, seq->state, seq->conf);
 
 		if (0 > E)
 			return false;
@@ -62,27 +55,29 @@ static bool test_block_minv_init_delay(void)
 		if (0 == E)
 			continue;
 
-		if (blocks[i] != seq_state.mode)
+		if (blocks[i] != seq->state->mode)
 			return false;
 
-		if ((BLOCK_KERNEL_IMAGE == seq_state.mode) && (FLASH_EVENTS != E))
+		if ((BLOCK_KERNEL_IMAGE == seq->state->mode) && (FLASH_EVENTS != E))
 			return false;
 
-		if (BLOCK_PRE == seq_state.mode)
+		if (BLOCK_PRE == seq->state->mode)
 			pre_blocks++;
 
 		// correct delay_meas_time
-		if ((BLOCK_PRE == seq_state.mode) && (1 == E) && (seq.magn.init_delay != seq_block_end(E, ev, seq_state.mode, seq.phys.tr, seq.sys.raster_grad)))
+		if ((BLOCK_PRE == seq->state->mode) && (1 == E) && (seq->conf->magn.init_delay != seq_block_end(E, seq->event, seq->state->mode, seq->conf->phys.tr, seq->conf->sys.raster_grad)))
 			return false;
-		else if ((BLOCK_PRE == seq_state.mode) && (1 < E) && (1.E-4 * UT_TOL < fabs(seq.magn.ti - (ev[E - 1].end - ev[E - 1].start))))
+		else if ((BLOCK_PRE == seq->state->mode) && (1 < E) && (1.E-4 * UT_TOL < fabs(seq->conf->magn.ti - (seq->event[E - 1].end - seq->event[E - 1].start))))
 			return false;
 
 		i++;
 
-	} while (seq_continue(&seq_state, &seq));
+	} while (seq_continue(seq->state, seq->conf));
 
 	if (3 != pre_blocks)
 		return false;
+
+	bart_seq_free(seq);
 
 	return true;
 }
@@ -100,29 +95,25 @@ static bool test_block_minv_multislice(void)
 		BLOCK_PRE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_POST,
 	};
 
-	struct seq_state seq_state = { 0 };
-	struct seq_config seq = seq_config_defaults;
-	seq.enc.order = SEQ_ORDER_SEQ_MS;
-	seq.magn.ti = 100.E-3;
-	seq.magn.mag_prep = PREP_IR_NON;
-	seq.magn.inv_delay_time = 100.;
+	struct bart_seq* seq = bart_seq_alloc();
+	bart_seq_defaults(seq);
+
+	seq->conf->enc.order = SEQ_ORDER_SEQ_MS;
+	seq->conf->magn.ti = 100.E-3;
+	seq->conf->magn.mag_prep = PREP_IR_NON;
+	seq->conf->magn.inv_delay_time = 100.;
+
+	seq->conf->loop_dims[BATCH_DIM] = 2;
+	seq->conf->loop_dims[SLICE_DIM] = 2;
+	seq->conf->loop_dims[PHS1_DIM] = 3;
+	seq->conf->loop_dims[TIME_DIM] = 3;
+	seq_ui_interface_loop_dims(0, seq->conf, DIMS, seq->conf->loop_dims);
 
 	int i = 0;
 	int inversions = 0;
 
-	const int max_E = 200;
-	struct seq_event ev[max_E];
-
-	md_singleton_dims(DIMS, seq.loop_dims);
-	seq.loop_dims[BATCH_DIM] = 2;
-	seq.loop_dims[SLICE_DIM] = 2;
-	seq.loop_dims[PHS1_DIM] = 3;
-	seq.loop_dims[TIME_DIM] = 3;
-
-	seq_ui_interface_loop_dims(0, &seq, DIMS, seq.loop_dims);
-
 	do {
-		int E = seq_block(max_E, ev, &seq_state, &seq);
+		int E = seq_block(seq->N, seq->event, seq->state, seq->conf);
 
 		if (0 > E)
 			return false;
@@ -130,25 +121,27 @@ static bool test_block_minv_multislice(void)
 		if (0 == E)
 			continue;
 
-		if (blocks[i] != seq_state.mode)
+		if (blocks[i] != seq->state->mode)
 			return false;
 
-		if ((BLOCK_KERNEL_IMAGE == seq_state.mode) && (FLASH_EVENTS != E))
+		if ((BLOCK_KERNEL_IMAGE == seq->state->mode) && (FLASH_EVENTS != E))
 			return false;
 
-		if (BLOCK_PRE == seq_state.mode)
+		if (BLOCK_PRE == seq->state->mode)
 			inversions++;
 
 		// correct ti in mag_prep block
-		if ((BLOCK_PRE == seq_state.mode) && (2 == E) && (seq.magn.ti != seq_block_end(E, ev, seq_state.mode, seq.phys.tr, seq.sys.raster_grad)))
+		if ((BLOCK_PRE == seq->state->mode) && (2 == E) && (seq->conf->magn.ti != seq_block_end(E, seq->event, seq->state->mode, seq->conf->phys.tr, seq->conf->sys.raster_grad)))
 			return false;
 
 		i++;
 
-	} while (seq_continue(&seq_state, &seq));
+	} while (seq_continue(seq->state, seq->conf));
 
 	if (4 != inversions)
 		return false;
+
+	bart_seq_free(seq);
 
 	return true;
 }
@@ -173,21 +166,23 @@ static bool test_fov_shift(void)
 		gui_shift[i][2] = 1.E-3 * in[i]; // slice shift
 	}
 
-	struct seq_config seq = seq_config_defaults;
+	struct bart_seq* seq = bart_seq_alloc();
+	bart_seq_defaults(seq);
 
-	md_singleton_dims(DIMS, seq.loop_dims);
-	seq.geom.mb_factor = 3;
-	seq.loop_dims[SLICE_DIM] = slices;
-	seq_ui_interface_loop_dims(0, &seq, DIMS, seq.loop_dims);
+	seq->conf->geom.mb_factor = 3;
+	seq->conf->loop_dims[SLICE_DIM] = slices;
+	seq_ui_interface_loop_dims(0, seq->conf, DIMS, seq->conf->loop_dims);
 
-	seq_set_fov_pos(slices, 4, &gui_shift[0][0], &seq);
+	seq_set_fov_pos(slices, 4, &gui_shift[0][0], seq->conf);
 
-	if (1.E-2 *  UT_TOL < fabs(seq.geom.sms_distance - 27.E-3))
+	if (1.E-2 *  UT_TOL < fabs(seq->conf->geom.sms_distance - 27.E-3))
 		return false;
 
 	for (int i = 0; i < slices; i++)
-		if (0 < fabs(seq.geom.shift[i][2] - good[i]))
+		if (0 < fabs(seq->conf->geom.shift[i][2] - good[i]))
 			return false;
+
+	bart_seq_free(seq);
 
 	return true;
 }
@@ -209,21 +204,23 @@ static bool test_fov_shift3x3(void)
 		gui_shift[i][2] = 1.E-3 * in[i]; // slice shift
 	}
 
-	struct seq_config seq = seq_config_defaults;
+	struct bart_seq* seq = bart_seq_alloc();
+	bart_seq_defaults(seq);
 
-	md_singleton_dims(DIMS, seq.loop_dims);
-	seq.geom.mb_factor = 3;
-	seq.loop_dims[SLICE_DIM] = slices;
-	seq_ui_interface_loop_dims(0, &seq, DIMS, seq.loop_dims);
+	seq->conf->geom.mb_factor = 3;
+	seq->conf->loop_dims[SLICE_DIM] = slices;
+	seq_ui_interface_loop_dims(0, seq->conf, DIMS, seq->conf->loop_dims);
 
-	seq_set_fov_pos(slices, 4, &gui_shift[0][0], &seq);
+	seq_set_fov_pos(slices, 4, &gui_shift[0][0], seq->conf);
 
-	if (1.E-2 *  UT_TOL < fabs(seq.geom.sms_distance - 27.E-3))
+	if (1.E-2 *  UT_TOL < fabs(seq->conf->geom.sms_distance - 27.E-3))
 		return false;
 
 	for (int i = 0; i < slices; i++)
-		if (1.E-2 *  UT_TOL < fabs(seq.geom.shift[i][2] - 1.E-3 * good[i]))
+		if (1.E-2 *  UT_TOL < fabs(seq->conf->geom.shift[i][2] - 1.E-3 * good[i]))
 			return false;
+
+	bart_seq_free(seq);
 
 	return true;
 }

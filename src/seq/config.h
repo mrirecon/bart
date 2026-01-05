@@ -2,8 +2,8 @@
 #ifndef _SEQ_CONFIG_H
 #define _SEQ_CONFIG_H
 
-#include "misc/dllspec.h"
 #include "misc/cppwrap.h"
+
 #include "misc/mri.h"
 
 #include "seq/gradient.h"
@@ -118,7 +118,7 @@ struct seq_config {
 	long loop_dims[DIMS];
 };
 
-BARTLIB_API extern const struct seq_config seq_config_defaults;
+extern const struct seq_config seq_config_defaults;
 
 #include "misc/cppwrap.h"
 
