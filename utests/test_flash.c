@@ -1,5 +1,7 @@
 #include <math.h>
 
+#include "num/multind.h"
+
 #include "seq/config.h"
 #include "seq/event.h"
 #include "seq/kernel.h"
@@ -245,7 +247,10 @@ static bool test_raga_spokes(void)
 
 	const int expected_spokes = 8;
 
-	set_loop_dims_and_sms(&seq, 1, 1, 5, expected_spokes, 1, 1, 1);
+	seq.loop_dims[PHS1_DIM] = 5;
+	seq.loop_dims[TIME_DIM] = expected_spokes;
+
+	seq_ui_interface_loop_dims(0, &seq, DIMS, seq.loop_dims);
 
 	const int max_E = 200;
 	struct seq_event ev[max_E];
@@ -279,7 +284,10 @@ static bool test_raga_spokes_full(void)
 	struct seq_config seq = seq_config_defaults;
 
 	const int spk = 377;
-	set_loop_dims_and_sms(&seq, 1, 1, spk, spk, 1, 1, 1);
+	seq.loop_dims[PHS1_DIM] = spk;
+	seq.loop_dims[TIME_DIM] = spk;
+
+	seq_ui_interface_loop_dims(0, &seq, DIMS, seq.loop_dims);
 
 	const int max_E = 200;
 	struct seq_event ev[max_E];

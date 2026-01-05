@@ -11,6 +11,8 @@
 #include "misc/misc.h"
 #include "misc/mri.h"
 
+#include "num/multind.h"
+
 #include "seq/config.h"
 #include "seq/flash.h"
 #include "seq/helpers.h"
@@ -36,7 +38,11 @@ static bool rf_spoiling_spoiled(void)
 
 	struct seq_state seq_state = { };
 
-	set_loop_dims_and_sms(&seq, 1, 2, 2, 10, 1, 1, 1);
+	seq.loop_dims[SLICE_DIM] = 2;
+	seq.loop_dims[PHS1_DIM] = 2;
+	seq.loop_dims[TIME_DIM] = 10;
+
+	seq_ui_interface_loop_dims(0, &seq, DIMS, seq.loop_dims);
 
 	seq.loop_dims[COEFF_DIM] = 1;
 	seq.loop_dims[COEFF2_DIM] = 1;

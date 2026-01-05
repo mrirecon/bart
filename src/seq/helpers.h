@@ -109,8 +109,9 @@ BARTLIB_API extern long BARTLIB_CALL seq_relevant_readouts_meas_time(const struc
 BARTLIB_API extern double BARTLIB_CALL seq_total_measure_time(const struct seq_config* seq);
 
 
-BARTLIB_API extern void BARTLIB_CALL set_loop_dims_and_sms(struct seq_config* seq, long partitions, long total_slices, long radial_views,
-	long frames, long echoes, long phy_phases, long averages);
+// conversion UI and seq_config
+BARTLIB_API extern void BARTLIB_CALL
+seq_ui_interface_loop_dims(int reverse, struct seq_config* seq, const int D, long dims[__VLA(D)]);
 
 BARTLIB_API extern void BARTLIB_CALL
 seq_ui_interface_custom_params(int reverse, struct seq_config* seq, int nl, long params_long[__VLA(nl)], int nd, double params_double[__VLA(nd)]);

@@ -5,6 +5,8 @@
 
 #include <math.h>
 
+#include "num/multind.h"
+
 #include "seq/config.h"
 #include "seq/event.h"
 #include "seq/kernel.h"
@@ -40,8 +42,15 @@ static bool test_block_minv_init_delay(void)
 	const int max_E = 200;
 	struct seq_event ev[max_E];
 
+	md_singleton_dims(DIMS, seq.loop_dims);
+
 	seq.loop_dims[BATCH_DIM] = 2;
-	set_loop_dims_and_sms(&seq, 1, 2, 3, 3, 1, 1, 1);
+	seq.loop_dims[SLICE_DIM] = 2;
+	seq.loop_dims[PHS1_DIM] = 3;
+	seq.loop_dims[TIME_DIM] = 3;
+
+	seq_ui_interface_loop_dims(0, &seq, DIMS, seq.loop_dims);
+
 	int pre_blocks = 0;
 
 	do {
@@ -104,8 +113,13 @@ static bool test_block_minv_multislice(void)
 	const int max_E = 200;
 	struct seq_event ev[max_E];
 
+	md_singleton_dims(DIMS, seq.loop_dims);
 	seq.loop_dims[BATCH_DIM] = 2;
-	set_loop_dims_and_sms(&seq, 1, 2, 3, 3, 1, 1, 1);
+	seq.loop_dims[SLICE_DIM] = 2;
+	seq.loop_dims[PHS1_DIM] = 3;
+	seq.loop_dims[TIME_DIM] = 3;
+
+	seq_ui_interface_loop_dims(0, &seq, DIMS, seq.loop_dims);
 
 	do {
 		int E = seq_block(max_E, ev, &seq_state, &seq);
@@ -161,8 +175,11 @@ static bool test_fov_shift(void)
 
 	struct seq_config seq = seq_config_defaults;
 
+	md_singleton_dims(DIMS, seq.loop_dims);
 	seq.geom.mb_factor = 3;
-	set_loop_dims_and_sms(&seq, 1, slices, 1, 1, 1, 1, 1);
+	seq.loop_dims[SLICE_DIM] = slices;
+	seq_ui_interface_loop_dims(0, &seq, DIMS, seq.loop_dims);
+
 	seq_set_fov_pos(slices, 4, &gui_shift[0][0], &seq);
 
 	if (1.E-2 *  UT_TOL < fabs(seq.geom.sms_distance - 27.E-3))
@@ -194,10 +211,13 @@ static bool test_fov_shift3x3(void)
 
 	struct seq_config seq = seq_config_defaults;
 
+	md_singleton_dims(DIMS, seq.loop_dims);
 	seq.geom.mb_factor = 3;
-	set_loop_dims_and_sms(&seq, 1, slices, 1, 1, 1, 1, 1);
+	seq.loop_dims[SLICE_DIM] = slices;
+	seq_ui_interface_loop_dims(0, &seq, DIMS, seq.loop_dims);
+
 	seq_set_fov_pos(slices, 4, &gui_shift[0][0], &seq);
-	
+
 	if (1.E-2 *  UT_TOL < fabs(seq.geom.sms_distance - 27.E-3))
 		return false;
 

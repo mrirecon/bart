@@ -195,9 +195,7 @@ void seq_ui_interface_standard_conf(int reverse, struct seq_config* conf, struct
 }
 
 
-
-void set_loop_dims_and_sms(struct seq_config* seq, long /* partitions*/ , long total_slices, long radial_views,
-	long frames, long echoes, long phy_phases, long averages)
+static void loop_dims_to_conf(struct seq_config* seq, const int D, const long in_dims[D])
 {
 	switch (seq->enc.order) {
 
@@ -214,12 +212,16 @@ void set_loop_dims_and_sms(struct seq_config* seq, long /* partitions*/ , long t
 		break;
 	}
 
+	long total_slices = in_dims[SLICE_DIM];
 	seq->loop_dims[SLICE_DIM] = (seq->geom.mb_factor > 1) ? seq->geom.mb_factor : total_slices;
 	seq->loop_dims[PHS2_DIM] = (seq->geom.mb_factor > 1) ? total_slices / seq->geom.mb_factor : 1;
 	if ((seq->loop_dims[PHS2_DIM] * seq->loop_dims[SLICE_DIM]) != total_slices)
 		seq->loop_dims[PHS2_DIM] = -1; //mb groups
 
+	long frames = in_dims[TIME_DIM];
 	seq->loop_dims[TIME_DIM] = frames;
+
+	long radial_views = in_dims[PHS1_DIM];
 
 	if ((PEMODE_RAGA == seq->enc.pe_mode)
 	    || (PEMODE_RAGA_ALIGNED == seq->enc.pe_mode)) {
@@ -231,16 +233,43 @@ void set_loop_dims_and_sms(struct seq_config* seq, long /* partitions*/ , long t
 			seq->loop_dims[ITER_DIM] = radial_views;
 	}
 
-	seq->loop_dims[TIME2_DIM] = phy_phases;
-	seq->loop_dims[AVG_DIM] = averages;
+	if (TRIGGER_OFF != seq->trigger.type)
+		seq->loop_dims[TIME2_DIM] = in_dims[TIME2_DIM];
+	else
+		seq->loop_dims[TIME2_DIM] = 1;
+
+	seq->loop_dims[AVG_DIM] = in_dims[AVG_DIM];
 	seq->loop_dims[PHS1_DIM] = radial_views;
-	seq->loop_dims[TE_DIM] = echoes;
+	seq->loop_dims[TE_DIM] = in_dims[TE_DIM];
 
 	// 2 additional calls for pre_sequence (delay_meas + noise_scan) 
 	// now we assume one block for magn_prep
 	// FIXME: max of prep_scans and loops demanded for (asl-) saturation etc.
 	seq->loop_dims[COEFF2_DIM] = 3;
 	seq->loop_dims[COEFF_DIM] = 3; // pre-/post- and actual kernel calls
+}
+
+static void conf_to_loop_dims(const int D, long dims[D], struct seq_config* seq)
+{
+	dims[SLICE_DIM] = seq->loop_dims[SLICE_DIM];
+	dims[PHS2_DIM] = (seq->geom.mb_factor > 1) ? seq->loop_dims[SLICE_DIM] / seq->geom.mb_factor : 1;
+	if ((dims[PHS2_DIM] * seq->geom.mb_factor != seq->loop_dims[SLICE_DIM]))
+		seq->loop_dims[PHS2_DIM] = -1; //mb groups
+
+	dims[PHS1_DIM] = seq->loop_dims[PHS1_DIM];
+
+	dims[TIME_DIM] = seq->loop_dims[TIME_DIM];
+	dims[TE_DIM] = seq->loop_dims[TE_DIM];
+	dims[AVG_DIM] = seq->loop_dims[AVG_DIM];
+}
+
+void seq_ui_interface_loop_dims(int reverse, struct seq_config* seq, const int D, long dims[__VLA(D)])
+{
+	if (reverse)
+		conf_to_loop_dims(D, dims, seq);
+	else
+		loop_dims_to_conf(seq, D, dims);
+
 }
 
 void seq_set_fov_pos(int N, int M, const float* shifts, struct seq_config* seq)

@@ -157,9 +157,7 @@ int main_seq(int argc, char* argv[argc])
 	}
 
 
-	set_loop_dims_and_sms(&seq, seq.loop_dims[PHS2_DIM], seq.loop_dims[SLICE_DIM], seq.loop_dims[PHS1_DIM],
-				seq.loop_dims[TIME_DIM], seq.loop_dims[TE_DIM], 1, 1);
-
+	seq_ui_interface_loop_dims(0, seq->conf, DIMS, seq->conf->loop_dims);
 
 	const long total_slices = seq_get_slices(&seq);
 
