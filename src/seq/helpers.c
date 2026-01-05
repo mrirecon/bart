@@ -1,4 +1,4 @@
-/* Copyright 2025. Institute of Biomedical Imaging. TU Graz.
+/* Copyright 2025-2026. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
@@ -14,7 +14,7 @@
 #include "helpers.h"
 
 
-long get_slices(const struct seq_config* seq)
+long seq_get_slices(const struct seq_config* seq)
 {
 	return (1 < seq->geom.mb_factor) ? seq->loop_dims[SLICE_DIM] * seq->loop_dims[PHS2_DIM] : seq->loop_dims[SLICE_DIM];
 }
@@ -65,9 +65,10 @@ void set_loop_dims_and_sms(struct seq_config* seq, long /* partitions*/ , long t
 	seq->loop_dims[COEFF2_DIM] = 3;
 	seq->loop_dims[COEFF_DIM] = 3; // pre-/post- and actual kernel calls
 }
-void set_fov_pos(int N, int M, const float* shifts, struct seq_config* seq)
+
+void seq_set_fov_pos(int N, int M, const float* shifts, struct seq_config* seq)
 {
-	long total_slices = get_slices(seq);
+	long total_slices = seq_get_slices(seq);
 	assert(total_slices <= N);
 
 	if (1 < seq->geom.mb_factor)
@@ -91,4 +92,7 @@ void set_fov_pos(int N, int M, const float* shifts, struct seq_config* seq)
 			seq->geom.shift[i][2] = shifts[i * M + 2];
 		}		
 	}
+
+	if (1 == seq->geom.mb_factor)
+		seq->geom.sms_distance = -999.; // UI information
 }

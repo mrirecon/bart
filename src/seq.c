@@ -161,7 +161,7 @@ int main_seq(int argc, char* argv[argc])
 				seq.loop_dims[TIME_DIM], seq.loop_dims[TE_DIM], 1, 1);
 
 
-	const long total_slices = get_slices(&seq);
+	const long total_slices = seq_get_slices(&seq);
 
 	if ((0. < fabs(rel_shift[0])) || (0. < fabs(rel_shift[1])) || (0. < fabs(rel_shift[2]))) {
 
@@ -188,7 +188,7 @@ int main_seq(int argc, char* argv[argc])
 			shift[i][2] = (i - 0.5 * (total_slices - 1)) * dist * seq.geom.slice_thickness;
 		}
 
-		set_fov_pos(total_slices, 3, &shift[0][0], &seq);
+		seq_set_fov_pos(total_slices, 3, &shift[0][0], &seq);
 
 		debug_printf(DP_INFO, "slice shifts:\n\t%d %f \t\n", 0, seq.geom.shift[0][2]);
 		for (int i = 1; i < total_slices; i++)

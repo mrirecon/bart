@@ -1,3 +1,8 @@
+/* Copyright 2025-2026. Institute of Biomedical Imaging. TU Graz.
+ * All rights reserved. Use of this source code is governed by
+ * a BSD-style license which can be found in the LICENSE file.
+ */
+
 #include <math.h>
 
 #include "seq/config.h"
@@ -158,7 +163,7 @@ static bool test_fov_shift(void)
 
 	seq.geom.mb_factor = 3;
 	set_loop_dims_and_sms(&seq, 1, slices, 1, 1, 1, 1, 1);
-	set_fov_pos(slices, 4, &gui_shift[0][0], &seq);
+	seq_set_fov_pos(slices, 4, &gui_shift[0][0], &seq);
 
 	if (1.E-2 *  UT_TOL < fabs(seq.geom.sms_distance - 27.E-3))
 		return false;
@@ -191,7 +196,7 @@ static bool test_fov_shift3x3(void)
 
 	seq.geom.mb_factor = 3;
 	set_loop_dims_and_sms(&seq, 1, slices, 1, 1, 1, 1, 1);
-	set_fov_pos(slices, 4, &gui_shift[0][0], &seq);
+	seq_set_fov_pos(slices, 4, &gui_shift[0][0], &seq);
 	
 	if (1.E-2 *  UT_TOL < fabs(seq.geom.sms_distance - 27.E-3))
 		return false;
