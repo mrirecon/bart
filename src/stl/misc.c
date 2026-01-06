@@ -139,7 +139,7 @@ static void stl_coordinate_limits(int D, long dims[D], double* model, double* mi
 }
 
 // Scales all vertex coordinates by scale vector. It doesnt scale the normal vector.
-static void stl_scale_model(int D, long dims[D], double* model, double scale[3])
+void stl_scale_model(int D, long dims[D], double* model, double scale[3])
 {
         long strs[D];
         md_calc_strides(D, strs, dims, D_SIZE);
@@ -158,7 +158,7 @@ static void stl_scale_model(int D, long dims[D], double* model, double scale[3])
 }
 
 // Shifts all vertex coordinates by shift vector. It doesn't shift the normal vector (shift invariant)
-static void stl_shift_model(int D, long dims[D], double* model, double shift[3])
+void stl_shift_model(int D, long dims[D], double* model, double shift[3])
 {
         long strs[D];
         md_calc_strides(D, strs, dims, D_SIZE);

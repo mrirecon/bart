@@ -18,6 +18,8 @@ extern void stl_center_fov(int D, long dims[D], double* model, double fov_size);
 extern void stl_stats(int D, long dims[D], double* model);
 extern void stl_print(int D, long dims[D], double* model);
 extern void stl_compute_normals(int D, long dims[D], double* model);
+extern void stl_shift_model(int D, long dims[D], double* model, double shift[3]);
+extern void stl_scale_model(int D, long dims[D], double* model, double scale[3]);
 
 extern _Bool stl_fileextension(const char* name);
 extern double* stl_read(int D, long dims[D], const char* name);

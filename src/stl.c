@@ -4,7 +4,7 @@
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2024 Martin Heide 
+ * 2024 Martin Heide
  */
 
 #include <stdbool.h>
@@ -32,8 +32,10 @@ int main_stl(int argc, char* argv[argc])
         bool stat = false;
         bool print = false;
         bool no_nc = false;
+        float scale = 0;
+        float shift[3] = {0, 0, 0};
         enum stl_itype stl_choice = STL_NONE;
-        
+
         struct arg_s args[] = {
 
     		ARG_OUTFILE(true, &out_file, "output"),
@@ -47,6 +49,8 @@ int main_stl(int argc, char* argv[argc])
 
 		OPTL_INFILE(0, "input", &in_file, "", "Path to input file (.stl or cfl file format)."),
                 OPTL_SUBOPT2(0, "model", "<tag> ", "Generic geometric structures are available.", "Internal stl model (help: bart stl --model h).\n", ARRAY_SIZE(model_opts), model_opts),
+		OPT_FLOAT('s', &scale, "scale", "Mulitplicate all coordinates of model with factor."),
+                OPT_FLVEC3('S', &shift, "shift", "Shift all coordinates of model by vector."),
 		OPTL_SET(0, "stat", &stat, "Show statistics of model."),
 		OPTL_SET(0, "print", &print, "Print out model."),
 		OPTL_SET(0, "no-nc", &no_nc, "(Don't recompute normal vectors with double precision.)"),
@@ -73,7 +77,7 @@ int main_stl(int argc, char* argv[argc])
                         model = stl_read(DIMS, dims, in_file);
 
                 } else {
-                        
+
                         complex float* cmodel = load_cfl(in_file, DIMS, dims);
 
                         model = stl_cfl2d(DIMS, dims, cmodel);
@@ -84,12 +88,22 @@ int main_stl(int argc, char* argv[argc])
                 if (!no_nc)
                         stl_compute_normals(DIMS, dims, model);
         }
-        
+
         if (STL_TETRAHEDRON == stl_choice)
                 model = stl_internal_tetrahedron(DIMS, dims);
 
         if (STL_HEXAHEDRON == stl_choice)
                 model = stl_internal_hexahedron(DIMS, dims);
+
+        double dshift[3] = {shift[0], shift[1], shift[2]};
+
+        if (0 != shift[0] || 0 != shift[1] || 0 != shift[2])
+                stl_shift_model(DIMS, dims, model, dshift);
+
+        double sc[3] = {scale, scale, scale};
+
+        if (0 != scale)
+                stl_scale_model(DIMS, dims, model, sc);
 
         if (stat)
                 stl_stats(DIMS, dims, model);
