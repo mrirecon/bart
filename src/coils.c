@@ -60,8 +60,6 @@ int main_coils(int argc, char* argv[argc])
 
 	if (legacy_fov) {
 
-		gopts.veclen[0] = 1;
-		gopts.veclen[1] = 1;
 		gopts.b0[0] = 1;
 		gopts.b1[1] = 1;
 	}

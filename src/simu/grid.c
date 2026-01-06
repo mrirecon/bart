@@ -23,7 +23,6 @@
 struct grid_opts grid_opts_init = {
 
 	.dims = { [0 ... 2] = -1, [3 ... TIME_DIM - 1] = 1, -1, [TIME_DIM + 1 ... DIMS - 1] = 1 },
-	.veclen = { -1., -1., -1., -1. },
 
 	.kspace = false,
 
@@ -36,7 +35,6 @@ struct grid_opts grid_opts_init = {
 struct grid_opts grid_opts_defaults = {
 
 	.dims = { 128, 128, [2 ... DIMS - 1] = 1 },
-	.veclen = { 0.5, 0.5, 0., 0. },
 
 	.kspace = false,
 
@@ -49,7 +47,6 @@ struct grid_opts grid_opts_defaults = {
 struct grid_opts grid_opts_coilcoeff = {
 
 	.dims = { 5, 5, [2 ... DIMS - 1] = 1 },
-	.veclen = { 1., 1., 0., 0. },
 
 	.kspace = true,
 
@@ -65,14 +62,15 @@ float* compute_grid(int D, long gdims[D], struct grid_opts* go, const long tdims
 	// minimum: 1d coord indices x 3d space x 1d coils x 1x coeff x 1d time
 	assert(D >= 7);
 
-	go->veclen[0] = vecf_norm(3, go->b0);
-	go->veclen[1] = vecf_norm(3, go->b1);
-	go->veclen[2] = vecf_norm(3, go->b2);
-	go->veclen[3] = fabsf(go->bt);
+	float veclen[4];
+	veclen[0] = vecf_norm(3, go->b0);
+	veclen[1] = vecf_norm(3, go->b1);
+	veclen[2] = vecf_norm(3, go->b2);
+	veclen[3] = fabsf(go->bt);
 
 	for (int i = 0; i < 3; i++) {
 
-		if (0. == go->veclen[i]) {
+		if (0. == veclen[i]) {
 
 			if (1 < go->dims[i])
 				debug_printf(DP_INFO, "The %dth basis vector has length zero, dim set to one\n", i + 1);
@@ -81,7 +79,7 @@ float* compute_grid(int D, long gdims[D], struct grid_opts* go, const long tdims
 		}
 	}
 
-	if (0 == go->veclen[3]) {
+	if (0 == veclen[3]) {
 
 		if (1 < go->dims[TIME_DIM]) {
 
@@ -148,7 +146,7 @@ float* compute_grid(int D, long gdims[D], struct grid_opts* go, const long tdims
 				// normalization of basis vector during multiplication
 
 				if (go->kspace)
-					c[i] = (pos[i + 1] - s) / (2. * powf(go->veclen[i], 2.));
+					c[i] = (pos[i + 1] - s) / (2. * powf(veclen[i], 2.));
 				else
 					c[i] = (pos[i + 1] - s) / (0.5 * (double)gdims[i + 1]);
 			}

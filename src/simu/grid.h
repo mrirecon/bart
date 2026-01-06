@@ -11,7 +11,6 @@
 struct grid_opts {
 
 	long dims[DIMS];
-	float veclen[4];
 	bool kspace;
 	float b0[3];
 	float b1[3];

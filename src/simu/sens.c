@@ -148,8 +148,6 @@ void cnstr_H2D8CH(long D, struct coil_opts* copts, bool legacy_fov)
 
 	if (legacy_fov) {
 
-		gopts.veclen[0] = 2;
-		gopts.veclen[1] = 2;
 		gopts.b0[0] = 2;
 		gopts.b1[1] = 2;
 	}
@@ -171,15 +169,11 @@ void cnstr_H3D64CH(long D, struct coil_opts* copts, bool legacy_fov)
 
 	struct grid_opts gopts = grid_opts_coilcoeff;
 
-	gopts.veclen[2] = 1;
 	gopts.b2[2] = 1;
 	gopts.dims[2] = 5;
 
 	if (legacy_fov) {
 
-		gopts.veclen[0] = 2;
-		gopts.veclen[1] = 2;
-		gopts.veclen[2] = 2;
 		gopts.b0[0] = 2;
 		gopts.b1[1] = 2;
 		gopts.b2[2] = 2;
