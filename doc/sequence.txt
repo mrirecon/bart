@@ -1,0 +1,78 @@
+INCLUDED HEADERS IN SEQUENCE
+
+	IBI_Radial.h
+		#include "seq.h"
+
+	IBI_Radial.cpp
+		#include "event.h"
+		#include "seq.h"
+		#include "helpers.h"
+		#include "custom_ui.h"
+
+	IBI_Radial_UI.h
+		#include "custom_ui.h"
+
+	IBI_Radial_UI.cpp
+		#include "helpers.h"
+
+
+EXPORTED FUNCTIONS
+
+	MEMORY HANDLING
+		bart_seq_alloc @1
+		bart_seq_defaults @2
+		bart_seq_free @3
+		bart_seq_prepare @4
+
+	EVENT GENERATION
+		seq_block @7
+		seq_continue @14
+
+	SPECIAL TIMING
+		seq_block_end @8
+		seq_block_end_flat @9
+		seq_block_rdt @10
+
+	DISCRETIZATION GRADIENTS/PULSES
+		seq_compute_gradients @13
+		seq_sample_rf_shapes @30
+
+	EVENT/PULSE INTERPRETATION
+		seq_nco_freq @21
+		seq_nco_phase @22
+		seq_cfl_to_sample @11
+		seq_pulse_norm_sum @25
+		seq_pulse_scaling @26
+
+	PREPARE
+		seq_minimum_te @19
+		seq_minimum_tr @20
+
+		seq_total_measure_time_us @32
+		seq_relevant_readouts_meas_time @29
+
+	BART INFO -> SEQUENCE
+		seq_get_interface_conf @17
+		seq_get_slices--> to be in interface_conf
+
+		seq_print_info_config @23
+		seq_print_info_radial_views @24
+
+	CUSTOM_UI + UI INTERFACE
+		seq_custom_ui_free @15
+		seq_custom_ui_init @16
+
+		seq_read_config_from_file: cmdline to UI
+
+		seq_ui_interface_custom_params @33
+		seq_ui_interface_loop_dims @34
+		seq_ui_interface_standard_conf @35
+		seq_set_fov_pos @31
+
+		seq_raga_spokes: set number of spokes in UI (eg. RAGA full frame size)
+
+
+	UTEST + INTERACTIVE?
+		debug_printf
+		num_rand_init
+		seq_check_equal_dims
