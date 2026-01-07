@@ -27,7 +27,7 @@ static bool test_stl_normal_vector(void)
 
         double* model = stl_internal_tetrahedron(DIMS, dims);
 
-        md_calc_strides(DIMS, strs, dims, D_SIZE);
+        md_calc_strides(DIMS, strs, dims, DL_SIZE);
 
         stl_compute_normals(DIMS, dims, model);
 
@@ -39,8 +39,7 @@ static bool test_stl_normal_vector(void)
         double n3[3] = {d1, d1, d1};
 
         double o[3];
-//        double l;
-        bool b = true;        
+        bool b = true;
         double* d;
 
         pos[1] = 3;
@@ -48,12 +47,12 @@ static bool test_stl_normal_vector(void)
         d = &MD_ACCESS(DIMS, strs, pos, model);
         stl_sub_vec3(o, n0, d);
         b = b && (TOL > stl_norm_vec(3, o));
-        
+
         pos[2] = 1;
         d = &MD_ACCESS(DIMS, strs, pos, model);
         stl_sub_vec3(o, n1, d);
         b = b && (TOL > stl_norm_vec(3, o));
-        
+
         pos[2] = 2;
         d = &MD_ACCESS(DIMS, strs, pos, model);
         stl_sub_vec3(o, n2, d);
@@ -80,20 +79,20 @@ static bool test_stl_cfl_double_conversion(void)
         stl_d2cfl(DIMS, dims, model, cmodel);
 
         double* model0 = stl_cfl2d(DIMS, dims, cmodel);
-        
+
         complex float* cmodel0 = md_alloc(DIMS, dims, CFL_SIZE);
         stl_d2cfl(DIMS, dims, model0, cmodel0);
 
         complex float* s = md_alloc(DIMS, dims, CFL_SIZE);
         md_zsub(DIMS, dims, s, cmodel, cmodel0);
-        
+
         complex float r;
         md_zsum(DIMS, dims, ~0UL, &r, s);
         if (0 < sqrt(creal(r) * creal(r) + cimag(r) * cimag(r)))
                 b = false;
         long pos[DIMS], strs[DIMS];
         md_set_dims(DIMS, pos, 0);
-        md_calc_strides(DIMS, strs, dims, D_SIZE);
+        md_calc_strides(DIMS, strs, dims, DL_SIZE);
 
         double d = 0;
         do {
@@ -108,7 +107,7 @@ static bool test_stl_cfl_double_conversion(void)
         md_free(model0);
         md_free(cmodel);
         md_free(model);
-        
+
         return b;
 }
 

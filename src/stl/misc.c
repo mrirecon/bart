@@ -90,7 +90,7 @@ static void stl_coordinate_limits(int D, long dims[D], double* model, double* mi
         max_v[2] = -INFINITY;
 
         long strs[D];
-        md_calc_strides(D, strs, dims, D_SIZE);
+        md_calc_strides(D, strs, dims, DL_SIZE);
         long pos[D];
         md_set_dims(D, pos, 0);
 
@@ -142,7 +142,7 @@ static void stl_coordinate_limits(int D, long dims[D], double* model, double* mi
 void stl_scale_model(int D, long dims[D], double* model, double scale[3])
 {
         long strs[D];
-        md_calc_strides(D, strs, dims, D_SIZE);
+        md_calc_strides(D, strs, dims, DL_SIZE);
 
 #pragma omp parallel for
         for (int i = 0; i < dims[2]; i++) {
@@ -161,7 +161,7 @@ void stl_scale_model(int D, long dims[D], double* model, double scale[3])
 void stl_shift_model(int D, long dims[D], double* model, double shift[3])
 {
         long strs[D];
-        md_calc_strides(D, strs, dims, D_SIZE);
+        md_calc_strides(D, strs, dims, DL_SIZE);
 
 #pragma omp parallel for
         for (int i = 0; i < dims[2]; i++) {
@@ -213,7 +213,7 @@ void stl_print(int D, long dims[D], double* model)
 {
         debug_printf(DP_INFO, "Number of triangles: %ld\n", dims[2]);
         long strs[D], pos[D];
-        md_calc_strides(D, strs, dims, D_SIZE);
+        md_calc_strides(D, strs, dims, DL_SIZE);
         md_set_dims(D, pos, 0);
 
         for (pos[2] = 0; pos[2] < dims[2]; pos[2]++) {
@@ -255,7 +255,7 @@ void stl_print(int D, long dims[D], double* model)
 void stl_compute_normals(int D, long dims[D], double* model)
 {
         long strs[D];
-        md_calc_strides(D, strs, dims, D_SIZE);
+        md_calc_strides(D, strs, dims, DL_SIZE);
 
 #pragma omp parallel for
         for (int i = 0; i < dims[2]; i++) {
@@ -334,7 +334,7 @@ void stl_write_binary(int D, long dims[D], double* model, const char* name)
         *(uint32_t*) &buf[80] = (uint32_t) dims[2];
 
         long strs[D];
-        md_calc_strides(D, strs, dims, D_SIZE);
+        md_calc_strides(D, strs, dims, DL_SIZE);
 
 #pragma omp parallel for        
         for (int i = 0; i < dims[2]; i++) {
@@ -441,7 +441,7 @@ static double* stl_read_ascii(int D, long dims[D], const char* name)
         dims[0] = 3;
         dims[1] = 4;
         dims[2] = N;
-        double* model = md_alloc(D, dims, D_SIZE);
+        double* model = md_alloc(D, dims, DL_SIZE);
         
         char* l0 = NULL;
         char* l1 = NULL;
@@ -465,7 +465,7 @@ static double* stl_read_ascii(int D, long dims[D], const char* name)
         l0 = NULL;
 
         long strs[D], pos[D];
-        md_calc_strides(D, strs, dims, D_SIZE);
+        md_calc_strides(D, strs, dims, DL_SIZE);
         md_set_dims(D, pos, 0);
         
         // ASCII encoded stl files have the following repeating pattern:
@@ -616,9 +616,9 @@ static double* stl_read_binary(int D, long dims[D], const char* name)
         dims[0] = 3;
         dims[1] = 4;
         dims[2] = N;
-        double* model = md_alloc(D, dims, D_SIZE);
+        double* model = md_alloc(D, dims, DL_SIZE);
         long strs[D];
-        md_calc_strides(D, strs, dims, D_SIZE);
+        md_calc_strides(D, strs, dims, DL_SIZE);
 
         long pos0[D];
         md_set_dims(D, pos0, 0);
@@ -686,11 +686,11 @@ bool stl_fileextension(const char* name)
 // convert model in cfl md array to model in double md array
 double* stl_cfl2d(int D, long dims[D], complex float* cmodel)
 {
-        double* model = md_alloc(D, dims, D_SIZE);
+        double* model = md_alloc(D, dims, DL_SIZE);
         long pos[D], dstrs[D], cstrs[D];
 
         md_set_dims(D, pos, 0);
-        md_calc_strides(D, dstrs, dims, D_SIZE);
+        md_calc_strides(D, dstrs, dims, DL_SIZE);
         md_calc_strides(D, cstrs, dims, CFL_SIZE);
 
         do {
@@ -707,7 +707,7 @@ void stl_d2cfl(int D, long dims[D], double* model, complex float* cmodel)
         long dstrs[D], cstrs[D], pos[D];
 
         md_set_dims(D, pos, 0);
-        md_calc_strides(D, dstrs, dims, D_SIZE);
+        md_calc_strides(D, dstrs, dims, DL_SIZE);
         md_calc_strides(D, cstrs, dims, CFL_SIZE);
 
         do {

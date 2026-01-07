@@ -3,13 +3,14 @@
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2024 Martin Heide 
+ * 2024 Martin Heide
  */
 
 #include "models.h"
 #include "misc/debug.h"
 #include "misc/misc.h"
 #include "num/multind.h"
+#include "num/flpmath.h"
 
 #include "stl/misc.h"
 
@@ -18,7 +19,7 @@
 // vertices listed counterclockwise when looked on from outside (right-hand rule).
 //
 // convert vertices in array to contiguous fortran data format and compute normal vector
-static double* stl_internal_model(int D, long dims[D], const void* v) 
+static double* stl_internal_model(int D, long dims[D], const void* v)
 {
         if (3 != dims[0] || 4 != dims[1])
                 error("dimensions do not match dimensions for stl format");
@@ -26,8 +27,8 @@ static double* stl_internal_model(int D, long dims[D], const void* v)
         const double* arr = v;
 
         long strs[D];
-        md_calc_strides(D, strs, dims, D_SIZE);
-        double* model = md_alloc(D, dims, D_SIZE);
+        md_calc_strides(D, strs, dims, DL_SIZE);
+        double* model = md_alloc(D, dims, DL_SIZE);
         long pos[D];
         md_set_dims(D, pos, 0);
 
@@ -59,7 +60,7 @@ static const double stl_hexahedron[12][3][3] = {
         { { -0.45, -0.45, -0.45 }, { 0.45, 0.45, -0.45 }, { 0.45, -0.45, -0.45 } },
 };
 
-double* stl_internal_hexahedron(int D, long dims[D]) 
+double* stl_internal_hexahedron(int D, long dims[D])
 {
         md_set_dims(D, dims, 1);
         dims[0] = 3;
@@ -78,7 +79,7 @@ static const double stl_tetrahedron[4][3][3] = {
         { { -0.45, -0.45, 0.45 }, { -0.45, 0.45, -0.45 }, { 0.45, -0.45, -0.45 } },
 };
 
-double* stl_internal_tetrahedron(int D, long dims[D]) 
+double* stl_internal_tetrahedron(int D, long dims[D])
 {
         md_set_dims(D, dims, 1);
         dims[0] = 3;

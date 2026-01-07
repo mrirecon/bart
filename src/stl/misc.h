@@ -1,11 +1,9 @@
 #ifndef _STLMISC_H
 #define _STLMISC_H
 
-#define TOL 1E-14
+#include "num/flpmath.h"
 
-#define D_SIZE      sizeof(double)
-#define FL_SIZE     sizeof(float)
-#define CFL_SIZE	sizeof(_Complex float)
+#define TOL 1E-14
 
 enum stl_itype { STL_NONE, STL_TETRAHEDRON, STL_HEXAHEDRON };
 
