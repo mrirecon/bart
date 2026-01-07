@@ -19,8 +19,11 @@
 #include "simu/grid.h"
 #include "simu/shape.h"
 
-static void dstr_tripoly(struct coil_opts* copts)
+
+
+static void dstr_tripoly(void* v)
 {
+	struct coil_opts* copts = v;
 	if (NULL != copts->data) {
 
 		struct tri_poly* tp = copts->data;
@@ -129,14 +132,15 @@ complex float* sens_internal_H3D64CH(long D, long dims[D], unsigned long flags)
 	return sens_internal_model(D, dims, flags, 64, true, sens64_coeff);
 }
 
-static complex double simfun_tripoly(const void* v, const long C, double pos[])
+static complex double simfun_tripoly(const void* v, const long C, const float pos[])
 {
 	const struct coil_opts* copts = v;
 	struct tri_poly* t = copts->data;
-	return (copts->kspace ? ktripoly : xtripoly)(t, C, pos);
+	double posd[4] = {pos[0], pos[1], pos[2], pos[3]};
+	return (copts->kspace ? ktripoly : xtripoly)(t, C, posd);
 }
 
-void cnstr_H2D8CH(long D, struct coil_opts* copts, bool legacy_fov)
+static void cnstr_H2D8CH(long D, struct coil_opts* copts, bool legacy_fov)
 {
 	copts->data = xmalloc(sizeof(struct tri_poly));
 	struct tri_poly* t = copts->data;
@@ -159,7 +163,7 @@ void cnstr_H2D8CH(long D, struct coil_opts* copts, bool legacy_fov)
 	copts->dstr = dstr_tripoly;
 }
 
-void cnstr_H3D64CH(long D, struct coil_opts* copts, bool legacy_fov)
+static void cnstr_H3D64CH(long D, struct coil_opts* copts, bool legacy_fov)
 {
 	copts->data = xmalloc(sizeof(struct tri_poly));
 	struct tri_poly* t = copts->data;
@@ -186,7 +190,60 @@ void cnstr_H3D64CH(long D, struct coil_opts* copts, bool legacy_fov)
 	copts->dstr = dstr_tripoly;
 }
 
-static void get_position(long D, double p[4], const long pos[D], const long gdims[D], const float* grid)
+static complex double simfun_nocoil_x(const void* v, const long C, const float pos[])
+{
+	(void) v;
+	(void) C;
+	(void) pos;
+	return 1;
+}
+
+static complex double simfun_nocoil_k(const void* v, const long C, const float pos[])
+{
+	(void) v;
+	(void) C;
+	(void) pos;
+
+	if (0 == pos[0] && 0 == pos[1] && 0 == pos[2])
+		return 1;
+
+	return 0;
+}
+
+static void cnstr_NOCOIL(long D, struct coil_opts* copts, bool legacy_fov)
+{
+	(void) D;
+	(void) legacy_fov;
+	copts->N = 1;
+	copts->fun = copts->kspace ? simfun_nocoil_k : simfun_nocoil_x;
+	copts->dstr = dstr_tripoly;
+}
+
+void cnstr_coils(long D, struct coil_opts* copts, bool legacy_fov)
+{
+	switch (copts->ctype) {
+
+	case HEAD_2D_8CH:
+
+		cnstr_H2D8CH(D, copts, legacy_fov);
+
+		break;
+
+	case HEAD_3D_64CH:
+
+		cnstr_H3D64CH(D, copts, legacy_fov);
+
+		break;
+
+	case COIL_NONE:
+
+		cnstr_NOCOIL(D, copts, legacy_fov);
+
+		break;
+	}
+}
+
+void get_position(long D, float p[4], const long pos[D], const long gdims[D], const float* grid)
 {
 	long poss[D];
 	md_singleton_dims(D, poss);
@@ -204,11 +261,48 @@ void sample_coils(long D, const long sdims[D], complex double* sens, const long 
 
 	NESTED(complex double, fun, (const long pos[]))
 	{
-		double p[4];
+		float p[4];
 		get_position(D, p, pos, gdimsp, grid);
 		return copts->fun(copts, pos[COIL_DIM], p);
 	};
 	md_parallel_zzsample(D, sdims, sens, fun);
+}
+
+// compute trajectory (k-space) or grid (x-space) over which sensitivities are computed
+// for k-space, the support of the fourier trafo of the sensitivities is used
+float* create_senstraj(long D, long gdims[D], struct grid_opts* gopts, struct coil_opts* copts)
+{
+	if (!gopts->kspace)
+		return compute_grid(DIMS, gdims, gopts, NULL, NULL);
+
+	float* grid = NULL;
+	struct tri_poly* t = NULL;
+
+	switch (copts->ctype) {
+
+	// those sensitivities are modeled by trigonometric polynomials with coefficients over t->cpos
+	case HEAD_2D_8CH:
+	case HEAD_3D_64CH:
+
+		t = copts->data;
+		md_copy_dims(DIMS, gdims, t->cpdims);
+		grid = md_alloc(DIMS, gdims, FL_SIZE);
+		md_copy(DIMS, gdims, grid, t->cpos, FL_SIZE);
+
+		break;
+
+	// COIL_NONE is constant in x-space and delta peak in the origin in k-space
+	case COIL_NONE:
+
+		md_singleton_dims(D, gdims);
+		gdims[0] = 4;
+		grid = md_alloc(D, gdims, FL_SIZE);
+		md_clear(D, gdims, grid, FL_SIZE);
+
+		break;
+	}
+
+	return grid;
 }
 
 

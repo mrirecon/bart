@@ -70,26 +70,8 @@ int main_coils(int argc, char* argv[argc])
 	long gdims[DIMS];
 	float* grid = NULL;
 
-	switch (copts.ctype) {
-
-	case HEAD_2D_8CH:
-
-		cnstr_H2D8CH(DIMS, &copts, legacy_fov);
-
-		break;
-
-	case HEAD_3D_64CH:
-
-		cnstr_H3D64CH(DIMS, &copts, legacy_fov);
-
-		break;
-
-	case COIL_NONE:
-
-		assert(0);
-
-		break;
-	}
+	cnstr_coils(DIMS, &copts, legacy_fov);
+	gopts.kspace = copts.kspace;
 
 	if (NULL != traj_file) {
 
@@ -102,20 +84,7 @@ int main_coils(int argc, char* argv[argc])
 
 	} else {
 
-		gopts.kspace = copts.kspace;
-
-		if (gopts.kspace) {
-
-			// case trigonometric polynomials
-			struct tri_poly* t = copts.data;
-			md_copy_dims(DIMS, gdims, t->cpdims);
-			grid = md_alloc(DIMS, gdims, FL_SIZE);
-			md_copy(DIMS, gdims, grid, t->cpos, FL_SIZE);
-
-		} else {
-
-			grid = compute_grid(DIMS, gdims, &gopts, NULL, NULL);
-		}
+		grid = create_senstraj(DIMS, gdims, &gopts, &copts);
 	}
 
 	long odims[DIMS];
