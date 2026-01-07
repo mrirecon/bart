@@ -4,6 +4,8 @@
 
 #include "simu/sens.h"
 
+enum phantom_type { SHEPPLOGAN, CIRC, TIME, SENS, GEOM, STAR, BART, BRAIN, TUBES, RAND_TUBES, NIST, SONAR, GEOMFILE, ELLIPSOID0 };
+
 extern void calc_ellipsoid(int D, long dims[D], _Complex float* out, _Bool d3, _Bool kspace, long tdims[D], long tstrs[D], _Complex float* traj, float ax[3], long center[3], float rot, struct coil_opts* copts);
 
 extern void calc_sens(const long dims[DIMS], complex float* sens, struct coil_opts* copts);

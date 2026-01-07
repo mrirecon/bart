@@ -43,7 +43,7 @@ int main_phantom(int argc, char* argv[argc])
 
 	int geo = -1;
 
-	enum ptype_e { SHEPPLOGAN, CIRC, TIME, SENS, GEOM, STAR, BART, BRAIN, TUBES, RAND_TUBES, NIST, SONAR, GEOMFILE, ELLIPSOID0 } ptype = SHEPPLOGAN;
+	enum phantom_type ptype = SHEPPLOGAN;
 
 	const char* traj_file = NULL;
 	bool basis = false;
@@ -78,19 +78,19 @@ int main_phantom(int argc, char* argv[argc])
 		OPT_PINT('S', &osens, "nc", "Output nc sensitivities"),
 		OPT_SET('k', &kspace, "k-space"),
 		OPT_INFILE('t', &traj_file, "file", "trajectory"),
-		OPT_SELECT('c', enum ptype_e, &ptype, CIRC, "()"),
-		OPT_SELECT('a', enum ptype_e, &ptype, STAR, "()"),
-		OPT_SELECT('m', enum ptype_e, &ptype, TIME, "()"),
-		OPT_SELECT('G', enum ptype_e, &ptype, GEOM, "geometric object phantom"),
-		OPT_SELECT('T', enum ptype_e, &ptype, TUBES, "tubes phantom"),
-		OPTL_SELECT(0, "NIST", enum ptype_e, &ptype, NIST, "NIST phantom (T2 sphere)"),
-                OPTL_SELECT(0, "SONAR", enum ptype_e, &ptype, SONAR, "Diagnostic Sonar phantom"),
-		OPTL_SELECT(0, "BRAIN", enum ptype_e, &ptype, BRAIN, "BRAIN geometry phantom"),
-		OPTL_SELECT(0, "ELLIPSOID", enum ptype_e, &ptype, ELLIPSOID0, "Ellipsoid."),
+		OPT_SELECT('c', enum phantom_type, &ptype, CIRC, "()"),
+		OPT_SELECT('a', enum phantom_type, &ptype, STAR, "()"),
+		OPT_SELECT('m', enum phantom_type, &ptype, TIME, "()"),
+		OPT_SELECT('G', enum phantom_type, &ptype, GEOM, "geometric object phantom"),
+		OPT_SELECT('T', enum phantom_type, &ptype, TUBES, "tubes phantom"),
+		OPTL_SELECT(0, "NIST", enum phantom_type, &ptype, NIST, "NIST phantom (T2 sphere)"),
+                OPTL_SELECT(0, "SONAR", enum phantom_type, &ptype, SONAR, "Diagnostic Sonar phantom"),
+		OPTL_SELECT(0, "BRAIN", enum phantom_type, &ptype, BRAIN, "BRAIN geometry phantom"),
+		OPTL_SELECT(0, "ELLIPSOID", enum phantom_type, &ptype, ELLIPSOID0, "Ellipsoid."),
 		OPTL_VEC3(0, "ellipsoid_center", &ellipsoid_center, "", "x,y,z center coordinates of ellipsoid."),
 		OPTL_FLVEC3(0, "ellipsoid_axes", &ellipsoid_axes, "", "Axes lengths of ellipsoid."),
 		OPT_PINT('N', &N, "num", "Random tubes phantom with num tubes"),
-		OPT_SELECT('B', enum ptype_e, &ptype, BART, "BART logo"),
+		OPT_SELECT('B', enum phantom_type, &ptype, BART, "BART logo"),
 		OPTL_INFILE(0, "FILE", &file_load, "name", "Arbitrary geometry based on multicfl file."),
 		OPT_PINT('x', &xdim, "n", "dimensions in y and z"),
 		OPT_PINT('g', &geo, "n=1,2,3", "select geometry for object phantom"),
