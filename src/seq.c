@@ -405,7 +405,7 @@ int main_seq(int argc, char* argv[argc])
 
 			double m0_adc[3];
 
-			float scale = seq->conf->phys.dwell * ro_amplitude(seq->conf);
+			double scale = 1. / (seq->conf->geom.fov * seq->conf->sys.gamma);
 
 			do {
 				assert(0 == pos_save[READ_DIM]);
