@@ -255,9 +255,18 @@ void get_position(long D, float p[4], const long pos[D], const long gdims[D], co
 		p[poss[0]] = MD_ACCESS(D, MD_STRIDES(D, gdims, FL_SIZE), poss, grid);
 }
 
-void sample_coils(long D, const long sdims[D], complex double* sens, const long gdims[D], const float* grid, const struct coil_opts* copts)
+complex double* sample_coils(long D, long sdims[D], const long gdims[D], const float* grid, const struct coil_opts* copts)
 {
 	const long* gdimsp = gdims; // clang
+
+	md_singleton_dims(D, sdims);
+
+	for (int i = 0; i < 3; i++)
+		sdims[i] = gdims[i+1];
+
+	sdims[COIL_DIM] = copts->N;
+
+	complex double* sens = md_alloc(D, sdims, CDL_SIZE);
 
 	NESTED(complex double, fun, (const long pos[]))
 	{
@@ -266,6 +275,8 @@ void sample_coils(long D, const long sdims[D], complex double* sens, const long 
 		return copts->fun(copts, pos[COIL_DIM], p);
 	};
 	md_parallel_zzsample(D, sdims, sens, fun);
+
+	return sens;
 }
 
 // compute trajectory (k-space) or grid (x-space) over which sensitivities are computed
@@ -273,7 +284,7 @@ void sample_coils(long D, const long sdims[D], complex double* sens, const long 
 float* create_senstraj(long D, long gdims[D], struct grid_opts* gopts, struct coil_opts* copts)
 {
 	if (!gopts->kspace)
-		return compute_grid(DIMS, gdims, gopts, NULL, NULL);
+		return compute_grid(D, gdims, gopts, NULL, NULL);
 
 	float* grid = NULL;
 	struct tri_poly* t = NULL;
@@ -285,9 +296,10 @@ float* create_senstraj(long D, long gdims[D], struct grid_opts* gopts, struct co
 	case HEAD_3D_64CH:
 
 		t = copts->data;
-		md_copy_dims(DIMS, gdims, t->cpdims);
-		grid = md_alloc(DIMS, gdims, FL_SIZE);
-		md_copy(DIMS, gdims, grid, t->cpos, FL_SIZE);
+		md_copy_dims(D, gdims, t->cpdims);
+		md_copy_dims(D, gopts->dims, t->cpdims);
+		grid = md_alloc(D, gdims, FL_SIZE);
+		md_copy(D, gdims, grid, t->cpos, FL_SIZE);
 
 		break;
 

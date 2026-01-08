@@ -19,6 +19,8 @@
 #include "num/flpmath.h"
 #include "num/splines.h"
 #include "num/rand.h"
+#include "num/linalg.h"
+#include "num/vec3.h"
 
 #include "misc/misc.h"
 #include "misc/mri.h"
@@ -28,18 +30,107 @@
 #include "geom/logo.h"
 #include "geom/brain.h"
 
+#include "stl/misc.h"
+
 #include "simu/sens.h"
 #include "simu/coil.h"
 #include "simu/shape.h"
-#include "simu/sens.h"
 #include "simu/shepplogan.h"
-
-#include "phantom.h"
-
-
+#include "simu/phantom.h"
 
 #define MAX_COILS 64
 #define COIL_COEFF 5
+
+struct phantom_opts phantom_opts_defaults = {
+
+	.D = DIMS,
+	.kspace = false,
+	.Nc = -1,
+	.data = NULL,
+	.dstr = NULL,
+	.fun = NULL,
+};
+
+static void dstr_stl(void* v)
+{
+	struct phantom_opts* popts = v;
+
+	if (NULL != popts->data) {
+
+		struct triangle_stack* ts = popts->data;
+		xfree(ts->tri);
+		xfree(popts->data);
+	}
+}
+
+static complex double stl_fun_k(const void* v, const long C, const float k1[])
+{
+	double k[3] = { k1[0], k1[1], k1[2] };
+	(void) C;
+	const struct phantom_opts* popts = v;
+	struct triangle_stack* ts = popts->data;
+	struct triangle* t = ts->tri;
+
+	double n = vec3d_norm(k);
+
+	complex double z = 0;
+
+	if (0 == n) {
+
+		for (int i = 0; i < ts->N; i++)
+			z += t[i].svol;
+
+		return z;
+
+	} else {
+
+		double kc[3], kcr[3];
+
+		for (int i = 0; i < ts->N; i++) {
+
+			vec3d_saxpy(kc, t[i].ctr, -1, k);
+			vec3d_rotax(kcr, t[i].angle, t[i].rot, kc);
+			// z-dirac of triangle in x-space gives z-const in k-space. Therefore, the z-component can be set to zero.
+			kcr[2] = 0;
+			z += kpolygon(3, (double (*)[2]) t[i].poly, kcr) * cexp(-2.j * M_PI * vec3d_sdot(t[i].ctr, k)) * vec3d_sdot(t[i].n, k);
+		}
+
+		return z / (-2.j * M_PI * n * n);
+	}
+}
+
+void phantom_stl_init(struct phantom_opts* popts, int D, long dims[D], double* model)
+{
+	if (!popts->kspace)
+		error("only k-space stl sampling is possible.\n");
+
+	popts->Nc = 1;
+	popts->fun = stl_fun_k;
+	popts->dstr = dstr_stl;
+
+	popts->data = xmalloc(sizeof(struct triangle_stack));
+
+	struct triangle_stack* ts = popts->data;
+
+	ts->N = dims[2];
+	ts->tri = xmalloc((size_t) ts->N * sizeof(struct triangle));
+
+	struct triangle* t = ts->tri;
+
+	long tstrs[D], tdims[D];
+	md_copy_dims(D, tdims, dims);
+	md_calc_strides(D, tstrs, tdims, DL_SIZE);
+
+#pragma omp parallel for
+	for (int i = 0; i < ts->N; i++) {
+
+		long pos[D];
+		md_set_dims(D, pos, 0);
+		pos[2] = i;
+		memcpy(&t[i], &MD_ACCESS(D, tstrs, pos, model), 12 * DL_SIZE);
+		stl_relative_position(&t[i]);
+	}
+}
 
 struct krn2d_data {
 
@@ -1134,3 +1225,134 @@ void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, 
 	md_free(tmp);
 }
 
+complex double* sample_signal(int D, long odims[D], const long gdims_[D], const float* grid, const long sgdims_[D], const float* sgrid, const struct phantom_opts* popts, const struct grid_opts* gopts, const struct coil_opts* copts)
+{
+	const long* gdims = gdims_;
+	const long* sgdims = sgdims_;
+
+	long sodims[D + 1];
+	md_singleton_dims(D + 1, sodims);
+	complex double* sens = sample_coils(D, sodims, sgdims, sgrid, copts);
+
+	md_copy_dims(D, odims, gopts->dims);
+	odims[COIL_DIM] = copts->N;
+	complex double* cdout = md_alloc(D, odims, CDL_SIZE);
+
+	if (copts->kspace) {
+
+		// pre-compute sensitivity coefficients for convolution on their support sgrid and shift convolution dim to D + 1
+		// pre-compute phantom k-space data on trajectory - support and shift convolution dim to D + 1
+		// compute the convolution with values in dim D + 1 for obtaining the final k-space phantom
+
+		long rsodims[D + 1], sgrdims[D + 1], sgdimsl[D + 1];
+		md_singleton_dims(D + 1, rsodims);
+		md_singleton_dims(D + 1, sgrdims);
+		rsodims[D] = sodims[READ_DIM] * sodims[PHS1_DIM] * sodims[PHS2_DIM];
+		rsodims[COIL_DIM] = copts->N;
+		sgrdims[D] = rsodims[D];
+		sgrdims[0] = 4;
+		md_copy_dims(D, sgdimsl, sgdims);
+		sgdimsl[D] = 1;
+
+		float* sgridr = md_alloc(D + 1, sgrdims, FL_SIZE);
+		md_reshape(D + 1, ~READ_FLAG, sgrdims, sgridr, sgdimsl, sgrid, FL_SIZE);
+
+		complex double* sensr = md_alloc(D + 1, rsodims, CDL_SIZE);
+		md_reshape(D + 1, ~COIL_FLAG, rsodims, sensr, sodims, sens, CDL_SIZE);
+
+		long gshdims[D + 1], gdimsl[D + 1];
+		md_singleton_dims(D + 1, gshdims);
+		md_copy_dims(D, gshdims, gdims);
+		md_copy_dims(D, gdimsl, gdims);
+		gshdims[D] = rsodims[D];
+		gdimsl[D] = 1;
+
+		float* gridsh = md_alloc(D + 1, gshdims, FL_SIZE);
+
+		long posgsh[D + 1];
+		md_set_dims(D + 1, posgsh, 0);
+
+		long strss[D + 1], strsg[D + 1], strsgsh[D + 1];
+		md_calc_strides(D + 1, strss, sgrdims, FL_SIZE);
+		md_calc_strides(D + 1, strsgsh, gshdims, FL_SIZE);
+		md_calc_strides(D + 1, strsg, gdimsl, FL_SIZE);
+
+		// compute shifted grid
+		do {
+			vec3_saxpy(&MD_ACCESS(D + 1, strsgsh, posgsh, gridsh), &MD_ACCESS(D + 1, strsg, posgsh, grid), -1, &MD_ACCESS(D + 1, strss, posgsh, sgridr));
+
+		} while(md_next(D + 1, gshdims, ~MD_BIT(0), posgsh));
+
+		long rodims[D + 1];
+		md_singleton_dims(D + 1, rodims);
+		rodims[0] = gshdims[1];
+		rodims[1] = gshdims[2];
+		rodims[2] = gshdims[3];
+		rodims[D] = rsodims[D];
+
+		complex double* routd = md_alloc(D + 1, rodims, CDL_SIZE);
+
+		const long* gshdimscl = gshdims;
+
+		// compute phantom on shifted grid
+		NESTED(complex double, funkr, (const long pos[]))
+		{
+			float k[4];
+			get_position(D + 1, k, pos, gshdimscl, gridsh);
+			return popts->fun(popts, pos[COEFF_DIM], k);
+		};
+
+		md_parallel_zzsample(D + 1, rodims, routd, funkr);
+
+		long odimst[D + 1];
+		md_copy_dims(D + 1, odimst, rodims);
+		odimst[COIL_DIM] = rsodims[COIL_DIM];
+		odimst[D] = 1;
+
+		long rostrs[D + 1], rsostrs[D + 1], ostrst[D + 1];
+
+		md_calc_strides(D + 1, rostrs, rodims, CDL_SIZE);
+		md_calc_strides(D + 1, rsostrs, rsodims, CDL_SIZE);
+		md_calc_strides(D + 1, ostrst, odimst, CDL_SIZE);
+
+		long posgsh1[D + 1];
+		md_set_dims(D + 1, posgsh, 0);
+
+		// TODO replace by zfmac for complex double
+		do {
+			md_copy_dims(D + 1, posgsh1, posgsh);
+			complex double z = 0;
+			for (posgsh1[D] = 0; posgsh1[D] < rodims[D]; posgsh1[D]++)
+				z += MD_ACCESS(D + 1, rostrs, posgsh, routd) * MD_ACCESS(D + 1, rsostrs, posgsh, sensr);
+
+			MD_ACCESS(D + 1, ostrst, posgsh, cdout) = z;
+
+		} while(md_next(D + 1, odimst, ~0UL, posgsh));
+
+		md_free(sensr);
+		md_free(gridsh);
+		md_free(sgridr);
+		md_free(routd);
+
+	} else {
+
+		error("not implemented\n");
+#if 0
+		long sstrs[D];
+		md_calc_strides(D, sstrs, sodims, CDL_SIZE);
+		const long sstrscl = sstrs;
+
+		NESTED(complex double, funx, (const long pos[]))
+		{
+			float x[4];
+			get_position(D, x, pos, gdims, grid);
+			return popts->fun(popts, pos[COEFF_DIM], x) * MD_ACCESS(D, sstrscl, pos, sens);
+		};
+		md_parallel_zzsample(D, odims, cdout, funx);
+#endif
+	}
+
+	md_free(sens);
+
+	return cdout;
+}

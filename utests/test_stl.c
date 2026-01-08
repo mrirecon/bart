@@ -34,10 +34,10 @@ static bool test_stl_normal_vector(void)
 
         double d0 = 0.577350269189626;
         double d1 = -0.577350269189626;
-        double n0[3] = {d0, d0, d1};
-        double n1[3] = {d0, d1, d0};
-        double n2[3] = {d1, d0, d0};
-        double n3[3] = {d1, d1, d1};
+        double n0[3] = { d0, d0, d1 };
+        double n1[3] = { d0, d1, d0 };
+        double n2[3] = { d1, d0, d0 };
+        double n3[3] = { d1, d1, d1 };
 
         double o[3];
         bool b = true;
@@ -46,23 +46,23 @@ static bool test_stl_normal_vector(void)
         pos[1] = 3;
         pos[2] = 0;
         d = &MD_ACCESS(DIMS, strs, pos, model);
-        vec3lf_saxpy(o, n0, -1, d);
-        b = b && (TOL > vec3lf_norm(o));
+        vec3d_saxpy(o, n0, -1, d);
+        b = b && (TOL > vec3d_norm(o));
 
         pos[2] = 1;
         d = &MD_ACCESS(DIMS, strs, pos, model);
-        vec3lf_saxpy(o, n1, -1, d);
-        b = b && (TOL > vec3lf_norm(o));
+        vec3d_saxpy(o, n1, -1, d);
+        b = b && (TOL > vec3d_norm(o));
 
         pos[2] = 2;
         d = &MD_ACCESS(DIMS, strs, pos, model);
-        vec3lf_saxpy(o, n2, -1, d);
-        b = b && (TOL > vec3lf_norm(o));
+        vec3d_saxpy(o, n2, -1, d);
+        b = b && (TOL > vec3d_norm(o));
 
         pos[2] = 3;
         d = &MD_ACCESS(DIMS, strs, pos, model);
-	vec3lf_saxpy(o, n3, -1, d);
-        b = b && (TOL > vec3lf_norm(o));
+	vec3d_saxpy(o, n3, -1, d);
+        b = b && (TOL > vec3d_norm(o));
 
         md_free(model);
         return b;

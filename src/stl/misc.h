@@ -60,5 +60,4 @@ extern double* stl_cfl2d(int D, long dims[D], _Complex float* cmodel);
 extern void stl_d2cfl(int D, long dims[D], double* model, _Complex float* cmodel);
 extern void stl_relative_position(struct triangle* t);
 
-
 #endif

@@ -98,6 +98,9 @@ float* compute_grid(int D, long gdims[D], struct grid_opts* go, const long tdims
 
 		md_copy_dims(D, gdims, tdims);
 		gdims[0] = 4;
+		md_singleton_dims(D, go->dims);
+		go->dims[1] = tdims[1];
+		go->dims[2] = tdims[2];
 
 	} else {
 

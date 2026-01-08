@@ -19,7 +19,7 @@
 #include "misc/debug.h"
 
 #include "simu/phantom.h"
-
+#include "stl/misc.h"
 
 
 static const char help_str[] = "Image and k-space domain phantoms.";
@@ -45,6 +45,7 @@ int main_phantom(int argc, char* argv[argc])
 
 	enum phantom_type ptype = SHEPPLOGAN;
 
+	const char* stl_file = NULL;
 	const char* traj_file = NULL;
 	bool basis = false;
 
@@ -83,6 +84,7 @@ int main_phantom(int argc, char* argv[argc])
 		OPT_SELECT('m', enum phantom_type, &ptype, TIME, "()"),
 		OPT_SELECT('G', enum phantom_type, &ptype, GEOM, "geometric object phantom"),
 		OPT_SELECT('T', enum phantom_type, &ptype, TUBES, "tubes phantom"),
+		OPTL_INFILE(0, "stl", &stl_file, "file", "path to stl file"),
 		OPTL_SELECT(0, "NIST", enum phantom_type, &ptype, NIST, "NIST phantom (T2 sphere)"),
                 OPTL_SELECT(0, "SONAR", enum phantom_type, &ptype, SONAR, "Diagnostic Sonar phantom"),
 		OPTL_SELECT(0, "BRAIN", enum phantom_type, &ptype, BRAIN, "BRAIN geometry phantom"),
@@ -106,6 +108,12 @@ int main_phantom(int argc, char* argv[argc])
 
 	num_init();
 	num_rand_init(randseed);
+
+	if (NULL != stl_file)
+		ptype = STL;
+
+	// avoid model force for stl sampling
+	enum coil_type ctype_ = copts.ctype;
 
 	if (-1 != N) {
 
@@ -322,6 +330,93 @@ int main_phantom(int argc, char* argv[argc])
 	case GEOMFILE:
 
 		calc_cfl_geom(dims, out, kspace, sstrs, samples, D_max, hdims, multifile, &copts);
+		break;
+
+	case STL:
+
+		// prepare phantom sampling grid
+		struct grid_opts gopts = grid_opts_defaults;
+		gopts.kspace = kspace;
+
+		if (NULL == samples) {
+
+			long gd = 0 > xdim ? 128 : xdim;
+
+			gopts.dims[0] = gd;
+			gopts.dims[1] = gd;
+
+			if (d3) {
+
+				gopts.dims[2] = gd;
+				gopts.b2[2] = 0.5;
+			}
+		}
+
+		long gdims[DIMS];
+		float* grid = compute_grid(DIMS, gdims, &gopts, sdims, samples);
+
+		// prepare sensitivity maps and sensitivity sampling grid
+		struct coil_opts coptss = coil_opts_defaults;
+
+		if (0 < sens)
+			coptss.flags = MD_BIT(sens) - 1;
+
+		if (0 < sens && COIL_NONE == ctype_)
+			ctype_ = HEAD_2D_8CH;
+
+		coptss.ctype = ctype_;
+		coptss.kspace = kspace;
+		cnstr_coils(DIMS, &coptss, false);
+
+		struct grid_opts cgopts = gopts;
+		long stdims[DIMS];
+		float* straj = create_senstraj(DIMS, stdims, &cgopts, &coptss);
+
+		// prepare phantom
+		struct phantom_opts popts = phantom_opts_defaults;
+		popts.kspace = kspace;
+
+		long stldims[DIMS];
+		double* model = NULL;
+
+		if (stl_fileextension(stl_file)) {
+
+			model = stl_read(DIMS, stldims, stl_file);
+
+		} else {
+
+			complex float* cmodel = load_cfl(stl_file, DIMS, stldims);
+			model = stl_cfl2d(DIMS, stldims, cmodel);
+			unmap_cfl(DIMS, stldims, cmodel);
+		}
+
+		stl_compute_normals(DIMS, stldims, model);
+		phantom_stl_init(&popts, DIMS, stldims, model);
+
+		long odims[DIMS];
+		complex double* cdout = sample_signal(DIMS, odims, gdims, grid, stdims, straj, &popts, &gopts, &coptss);
+
+		assert(md_check_equal_dims(DIMS, odims, dims, ~0UL));
+
+		coptss.dstr(&coptss);
+		popts.dstr(&popts);
+
+		md_free(model);
+		md_free(straj);
+		md_free(grid);
+
+		long pos[DIMS], ostrs[DIMS], cdostrs[DIMS];
+		md_set_dims(DIMS, pos, 0);
+		md_calc_strides(DIMS, ostrs, odims, CFL_SIZE);
+		md_calc_strides(DIMS, cdostrs, odims, CDL_SIZE);
+
+		do {
+			MD_ACCESS(DIMS, ostrs, pos, out) = MD_ACCESS(DIMS, cdostrs, pos, cdout);
+
+		} while(md_next(DIMS, odims, ~0UL, pos));
+
+		md_free(cdout);
+
 		break;
 	}
 

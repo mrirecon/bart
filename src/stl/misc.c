@@ -28,17 +28,17 @@
 
 struct triangle triangle_defaults = {
 
-	.v0 = {INFINITY, INFINITY, INFINITY},
-	.v1 = {INFINITY, INFINITY, INFINITY},
-	.v2 = {INFINITY, INFINITY, INFINITY},
-	.n = {INFINITY, INFINITY, INFINITY},
-	.e0 = {INFINITY, INFINITY, INFINITY},
-	.e1 = {INFINITY, INFINITY, INFINITY},
-	.ctr = {INFINITY, INFINITY, INFINITY},
-	.rot = {INFINITY, INFINITY, INFINITY},
+	.v0 = { INFINITY, INFINITY, INFINITY },
+	.v1 = { INFINITY, INFINITY, INFINITY },
+	.v2 = { INFINITY, INFINITY, INFINITY },
+	.n = { INFINITY, INFINITY, INFINITY },
+	.e0 = { INFINITY, INFINITY, INFINITY },
+	.e1 = { INFINITY, INFINITY, INFINITY },
+	.ctr = { INFINITY, INFINITY, INFINITY },
+	.rot = { INFINITY, INFINITY, INFINITY },
 	.angle = INFINITY,
 	.svol = INFINITY,
-	.poly = {INFINITY, INFINITY, INFINITY, INFINITY, INFINITY, INFINITY},
+	.poly = { INFINITY, INFINITY, INFINITY, INFINITY, INFINITY, INFINITY },
 };
 
 struct triangle_stack triangle_stack_defaults = {
@@ -251,12 +251,12 @@ void stl_compute_normals(int D, long dims[D], double* model)
 
                 double d1[3], d2[3];
 
-                vec3lf_saxpy(d1, &MD_ACCESS(D, strs, pos0, model), -1, &MD_ACCESS(D, strs, pos1, model));
-                vec3lf_saxpy(d2, &MD_ACCESS(D, strs, pos0, model), -1, &MD_ACCESS(D, strs, pos2, model));
+                vec3d_saxpy(d1, &MD_ACCESS(D, strs, pos0, model), -1, &MD_ACCESS(D, strs, pos1, model));
+                vec3d_saxpy(d2, &MD_ACCESS(D, strs, pos0, model), -1, &MD_ACCESS(D, strs, pos2, model));
 
 		double nt[3];
-		vec3lf_cp(nt, d1, d2);
-		vec3lf_saxpy(&MD_ACCESS(D, strs, posn, model), nt, 1 / vec3lf_norm(nt), NULL);
+		vec3d_cp(nt, d1, d2);
+		vec3d_saxpy(&MD_ACCESS(D, strs, posn, model), nt, 1 / vec3d_norm(nt), NULL);
         }
 }
 
@@ -699,25 +699,25 @@ void stl_d2cfl(int D, long dims[D], double* model, complex float* cmodel)
 // compute relative position (shift, rotation, ...) of the triangle wrt to the origin and z-axis
 void stl_relative_position(struct triangle* t)
 {
-	vec3lf_saxpy(t->e0, t->v0, -1, t->v1);
-	vec3lf_saxpy(t->e1, t->v0, -1, t->v2);
+	vec3d_saxpy(t->e0, t->v0, -1, t->v1);
+	vec3d_saxpy(t->e1, t->v0, -1, t->v2);
 
-	assert(0 < vec3lf_norm(t->e0));
-	assert(0 < vec3lf_norm(t->e1));
+	assert(0 < vec3d_norm(t->e0));
+	assert(0 < vec3d_norm(t->e1));
 
 	// compute b0, b1 as orthogonal basis vectors of the plane which contains the triangle
 	double b0[3], tmp[3], b1[3];
-	vec3lf_saxpy(b0, t->e0, 1 / vec3lf_norm(t->e0), NULL);
-	vec3lf_saxpy(tmp, t->e1, 1 / vec3lf_norm(t->e1), NULL);
+	vec3d_saxpy(b0, t->e0, 1 / vec3d_norm(t->e0), NULL);
+	vec3d_saxpy(tmp, t->e1, 1 / vec3d_norm(t->e1), NULL);
 
 	// b1 is orthogonal component of tmp wrt b0
-	double f = -1 * vec3lf_sdot(b0, tmp) / vec3lf_norm(b0);
-	vec3lf_saxpy(b1, b0, f, tmp);
-	vec3lf_saxpy(b1, b1, 1 / vec3lf_norm(b1), NULL);
+	double f = -1 * vec3d_sdot(b0, tmp) / vec3d_norm(b0);
+	vec3d_saxpy(b1, b0, f, tmp);
+	vec3d_saxpy(b1, b1, 1 / vec3d_norm(b1), NULL);
 
 	// compute angle between normal vector and z axis
 	double ez[3] = {0, 0, 1};
-	t->angle = vec3lf_angle(ez, t->n);
+	t->angle = vec3d_angle(ez, t->n);
 
 	// if normal vector is -ez
 	if (1E-10 > fabs(M_PI - t->angle) || 1E-10 > fabs(t->angle)) {
@@ -728,28 +728,28 @@ void stl_relative_position(struct triangle* t)
 
 	} else {
 
-		vec3lf_cp(t->rot, t->n, ez);
+		vec3d_cp(t->rot, t->n, ez);
 	}
 
-	vec3lf_saxpy(t->rot, t->rot, 1 / vec3lf_norm(t->rot), NULL);
+	vec3d_saxpy(t->rot, t->rot, 1 / vec3d_norm(t->rot), NULL);
 
 	// compute center of triangle
-	vec3lf_set(t->ctr, 0);
-	vec3lf_saxpy(t->ctr, t->v0, (double) 1/3, t->ctr);
-	vec3lf_saxpy(t->ctr, t->v1, (double) 1/3, t->ctr);
-	vec3lf_saxpy(t->ctr, t->v2, (double) 1/3, t->ctr);
+	vec3d_set(t->ctr, 0);
+	vec3d_saxpy(t->ctr, t->v0, (double) 1/3, t->ctr);
+	vec3d_saxpy(t->ctr, t->v1, (double) 1/3, t->ctr);
+	vec3d_saxpy(t->ctr, t->v2, (double) 1/3, t->ctr);
 
 	// compute centered triangle
 	double v0c[3], v1c[3], v2c[3];
-	vec3lf_saxpy(v0c, t->ctr, -1, t->v0);
-	vec3lf_saxpy(v1c, t->ctr, -1, t->v1);
-	vec3lf_saxpy(v2c, t->ctr, -1, t->v2);
+	vec3d_saxpy(v0c, t->ctr, -1, t->v0);
+	vec3d_saxpy(v1c, t->ctr, -1, t->v1);
+	vec3d_saxpy(v2c, t->ctr, -1, t->v2);
 
 	// compute centered rotated triangle
 	double v0cr[3], v1cr[3], v2cr[3];
-	vec3lf_rotax(v0cr, t->angle, t->rot, v0c);
-	vec3lf_rotax(v1cr, t->angle, t->rot, v1c);
-	vec3lf_rotax(v2cr, t->angle, t->rot, v2c);
+	vec3d_rotax(v0cr, t->angle, t->rot, v0c);
+	vec3d_rotax(v1cr, t->angle, t->rot, v1c);
+	vec3d_rotax(v2cr, t->angle, t->rot, v2c);
 
 	t->poly[0] = v0cr[0];
 	t->poly[1] = v0cr[1];
@@ -759,6 +759,6 @@ void stl_relative_position(struct triangle* t)
 	t->poly[5] = v2cr[1];
 
 	// signed volume of tetrahedron triangle + origin
-	vec3lf_cp(tmp, t->v0, t->v1);
-	t->svol = ABS(vec3lf_sdot(tmp, t->v2) / 6) * SGN(vec3lf_sdot(t->v0, t->n));
+	vec3d_cp(tmp, t->v0, t->v1);
+	t->svol = copysign(vec3d_sdot(tmp, t->v2) / 6, vec3d_sdot(t->v0, t->n));
 }

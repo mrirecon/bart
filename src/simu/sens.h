@@ -26,7 +26,7 @@ extern struct coil_opts coil_opts_defaults;
 extern struct coil_opts coil_opts_pha_defaults;
 
 extern void get_position(long D, float p[4], const long pos[D], const long gdims[D], const float* grid);
-extern void sample_coils(long D, const long odims[D], _Complex double* optr, const long gdims[D], const float* grid, const struct coil_opts* copts);
+extern _Complex double* sample_coils(long D, long sdims[D], const long gdims[D], const float* grid, const struct coil_opts* copts);
 extern void cnstr_coils(long D, struct coil_opts* copts, bool legacy_fov);
 extern float* create_senstraj(long D, long gdims[D], struct grid_opts* gopts, struct coil_opts* copts);
 

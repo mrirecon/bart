@@ -88,17 +88,8 @@ int main_coils(int argc, char* argv[argc])
 	}
 
 	long odims[DIMS];
-	md_singleton_dims(DIMS, odims);
-
-	for (int i = 0; i < 3; i++)
-		odims[i] = gdims[i+1];
-
-	odims[COIL_DIM] = copts.N;
-
+	complex double* sens = sample_coils(DIMS, odims, gdims, grid, &copts);
 	complex float* optr = create_cfl(out_file, DIMS, odims);
-	complex double* sens = md_alloc(DIMS, odims, CDL_SIZE);
-
-	sample_coils(DIMS, odims, sens, gdims, grid, &copts);
 
 	long ostrs[DIMS], sstrs[DIMS], pos[DIMS];
 

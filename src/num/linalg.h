@@ -44,14 +44,14 @@ extern void vecf_copy(int N, float x[N], const float y[N]);
 extern float vecf_sdot(int N, const float a[N], const float b[N]);
 extern float vecf_norm(int N, const float x[N]);
 
-extern double vec3lf_sdot(const double* x, const double* y);
-extern double vec3lf_norm(const double* x);
-extern void vec3lf_saxpy(double* o, const double* x, const double a, const double* y);
-extern void vec3lf_set(double* x, const double v);
-extern void vec3lf_cp(double* o, const double* v0, const double* v1);
-extern void vec3lf_rotax(double* o, const double theta, const double* ax, const double* x);
-extern void vec3lf_copy(double* o, const double* x);
-extern double vec3lf_angle(const double* x, const double* y);
+extern double vec3d_sdot(const double* x, const double* y);
+extern double vec3d_norm(const double* x);
+extern void vec3d_saxpy(double* o, const double* x, const double a, const double* y);
+extern void vec3d_set(double* x, const double v);
+extern void vec3d_cp(double* o, const double* v0, const double* v1);
+extern void vec3d_rotax(double* o, const double theta, const double* ax, const double* x);
+extern void vec3d_copy(double* o, const double* x);
+extern double vec3d_angle(const double* x, const double* y);
 
 // extern complex double vec_dot(int N, const complex float x[N], const complex float y[N]);
 extern complex float vec_dot(int N, const complex float x[N], const complex float y[N]);
