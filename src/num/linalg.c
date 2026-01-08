@@ -102,6 +102,73 @@ float vecf_norm(int N, const float x[N])
 	return sqrtf(vecf_sdot(N, x, x));
 }
 
+double vec3lf_sdot(const double* x, const double* y)
+{
+	double r = 0;
+
+	for (int i = 0; i < 3; i++)
+		r += x[i] * y[i];
+
+	return r;
+}
+
+double vec3lf_norm(const double* x)
+{
+	return sqrt(vec3lf_sdot(x, x));
+}
+
+void vec3lf_saxpy(double* o, const double* x, const double a, const double* y)
+{
+	for (int i = 0; i < 3; i++)
+		o[i] = a * x[i] + ((NULL != y) ? y[i] : 0 );
+}
+
+void vec3lf_set(double* x, const double v)
+{
+	for (int i = 0; i < 3; i++)
+		x[i] = v;
+}
+
+double vec3lf_angle(const double* x, const double* y)
+{
+	assert(0 != vec3lf_norm(x));
+	assert(0 != vec3lf_norm(y));
+
+	double a = vec3lf_sdot(x, y) / (vec3lf_norm(x) * vec3lf_norm(y));
+	return acos(a);
+}
+
+void vec3lf_cp(double* o, const double* v0, const double* v1)
+{
+        o[0] = v0[1] * v1[2] - v0[2] * v1[1];
+        o[1] = v0[2] * v1[0] - v0[0] * v1[2];
+        o[2] = v0[0] * v1[1] - v0[1] * v1[0];
+}
+
+void vec3lf_rotax(double* o, const double theta, const double* ax, const double* x)
+{
+	if (1E-10 > fabs(theta)) {
+
+		vec3lf_copy(o, x);
+
+	} else {
+
+		double cp[3], cpp[3], cppp[3], tmp[3];
+
+		vec3lf_cp(cp, ax, x);
+		vec3lf_saxpy(cpp, cp, cos(theta), NULL);
+		vec3lf_cp(cppp, cpp, ax);
+		vec3lf_saxpy(tmp, cp, sin(theta), cppp);
+		vec3lf_saxpy(o, ax, vec3lf_sdot(ax, x), tmp);
+        }
+}
+
+void vec3lf_copy(double* o, const double* x)
+{
+	for (int i = 0; i < 3; i++)
+		o[i] = x[i];
+}
+
 #ifndef NO_LAPACK
 void matf_solve(int N, float x[N], const float m[N][N], const float y[N])
 {

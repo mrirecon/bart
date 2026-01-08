@@ -3,7 +3,7 @@
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2024 Martin Heide 
+ * 2024 Martin Heide
  */
 
 #include <stdbool.h>
@@ -16,6 +16,7 @@
 #include <unistd.h>
 
 #include "num/multind.h"
+#include "num/linalg.h"
 #include "num/flpmath.h"
 
 #include "misc/io.h"
@@ -25,58 +26,33 @@
 
 #include "stl/misc.h"
 
+struct triangle triangle_defaults = {
+
+	.v0 = {INFINITY, INFINITY, INFINITY},
+	.v1 = {INFINITY, INFINITY, INFINITY},
+	.v2 = {INFINITY, INFINITY, INFINITY},
+	.n = {INFINITY, INFINITY, INFINITY},
+	.e0 = {INFINITY, INFINITY, INFINITY},
+	.e1 = {INFINITY, INFINITY, INFINITY},
+	.ctr = {INFINITY, INFINITY, INFINITY},
+	.rot = {INFINITY, INFINITY, INFINITY},
+	.angle = INFINITY,
+	.svol = INFINITY,
+	.poly = {INFINITY, INFINITY, INFINITY, INFINITY, INFINITY, INFINITY},
+};
+
+struct triangle_stack triangle_stack_defaults = {
+
+	.N = -1,
+	.tri = NULL,
+};
+
 void print_vec(int N, const double* d)
 {
         for (int i = 0; i < N; i++)
                 debug_printf(DP_INFO, "%lf ", d[i]);
 
         debug_printf(DP_INFO, "\n");
-}
-
-// o = v2 - v1
-void stl_sub_vec3(double* o, const double* v1, const double* v2) 
-{
-        for (int i = 0; i < 3; i++)
-                o[i] = v2[i] - v1[i];
-}
-
-static double stl_ip_vec(int N, const double* d0, const double* d1)
-{
-        double l = 0;
-
-        for (int i = 0; i < N; i++)
-                l += d0[i] * d1[i];
-        
-        return l;
-}
-
-double stl_norm_vec(int N, const double* d)
-{
-        return sqrt(stl_ip_vec(N, d, d));
-}
-
-// crossproduct
-static void stl_cp(double* o, const double* v0, const double* v1)
-{
-        o[0] = v0[1] * v1[2] - v0[2] * v1[1];
-        o[1] = v0[2] * v1[0] - v0[0] * v1[2];
-        o[2] = v0[0] * v1[1] - v0[1] * v1[0];
-}
-
-// unit normal vector right hand rule
-void stl_unormal_vec3(double* n, const double* v0, const double* v1)
-{
-        double nt[3];
-
-        stl_cp(nt, v0, v1);
-        double l = stl_norm_vec(3, nt);
-
-        if (TOL > l)
-                error("Vector length is zero and can not be normalized.\n");
-
-        n[0] = nt[0] / l;
-        n[1] = nt[1] / l;
-        n[2] = nt[2] / l;
 }
 
 // compute minimal and maximal vertex coordinates
@@ -116,7 +92,7 @@ static void stl_coordinate_limits(int D, long dims[D], double* model, double* mi
                         double v0 = MD_ACCESS(D, strs, pos0, model);
                         double v1 = MD_ACCESS(D, strs, pos1, model);
                         double v2 = MD_ACCESS(D, strs, pos2, model);
-                       
+
                         if (min_v[j] > v0)
                                 min_v[j] = v0;
 
@@ -217,7 +193,7 @@ void stl_print(int D, long dims[D], double* model)
         md_set_dims(D, pos, 0);
 
         for (pos[2] = 0; pos[2] < dims[2]; pos[2]++) {
-                
+
                 debug_printf(DP_INFO, "Triangle: %ld\n", pos[2]);
 
                 double v0[3], v1[3], v2[3], n[3];
@@ -275,9 +251,12 @@ void stl_compute_normals(int D, long dims[D], double* model)
 
                 double d1[3], d2[3];
 
-                stl_sub_vec3(d1, &MD_ACCESS(D, strs, pos0, model), &MD_ACCESS(D, strs, pos1, model));
-                stl_sub_vec3(d2, &MD_ACCESS(D, strs, pos0, model), &MD_ACCESS(D, strs, pos2, model));
-                stl_unormal_vec3(&MD_ACCESS(D, strs, posn, model), d1, d2);
+                vec3lf_saxpy(d1, &MD_ACCESS(D, strs, pos0, model), -1, &MD_ACCESS(D, strs, pos1, model));
+                vec3lf_saxpy(d2, &MD_ACCESS(D, strs, pos0, model), -1, &MD_ACCESS(D, strs, pos2, model));
+
+		double nt[3];
+		vec3lf_cp(nt, d1, d2);
+		vec3lf_saxpy(&MD_ACCESS(D, strs, posn, model), nt, 1 / vec3lf_norm(nt), NULL);
         }
 }
 
@@ -294,7 +273,7 @@ static int stl_str_cfi(const char* s0, const char* s1)
         for (int i = 0; i < l1 - l0; i++)
                 if (0 == strncmp(s0, &s1[i], (size_t) l0))
                         return i;
-        
+
         return -1;
 }
 
@@ -336,7 +315,7 @@ void stl_write_binary(int D, long dims[D], double* model, const char* name)
         long strs[D];
         md_calc_strides(D, strs, dims, DL_SIZE);
 
-#pragma omp parallel for        
+#pragma omp parallel for
         for (int i = 0; i < dims[2]; i++) {
 
                 long pos[D];
@@ -359,7 +338,7 @@ void stl_write_binary(int D, long dims[D], double* model, const char* name)
                         }
                 }
         }
-        
+
         int fd = open(name, O_WRONLY | O_CREAT, 0666);
 
         if (-1 == fd)
@@ -379,7 +358,7 @@ static bool stl_is_ascii(const char* name)
 
         if (-1 == fd)
                 error("is ascii read stl error %s\n", name);
-        
+
         char tmp[80];
 
         if (80 != xread(fd, 80, tmp))
@@ -418,7 +397,7 @@ static double* stl_read_ascii(int D, long dims[D], const char* name)
 
         if (NULL == ptr)
                 error("read stl error %s\n", name);
-        
+
         const char fn[] = "facet normal";
         const char ve[] = "vertex";
 
@@ -442,7 +421,7 @@ static double* stl_read_ascii(int D, long dims[D], const char* name)
         dims[1] = 4;
         dims[2] = N;
         double* model = md_alloc(D, dims, DL_SIZE);
-        
+
         char* l0 = NULL;
         char* l1 = NULL;
         char* l2 = NULL;
@@ -467,7 +446,7 @@ static double* stl_read_ascii(int D, long dims[D], const char* name)
         long strs[D], pos[D];
         md_calc_strides(D, strs, dims, DL_SIZE);
         md_set_dims(D, pos, 0);
-        
+
         // ASCII encoded stl files have the following repeating pattern:
         // facet normal FLOAT FLOAT FLOAT
         // outer loop
@@ -507,7 +486,7 @@ static double* stl_read_ascii(int D, long dims[D], const char* name)
                 stl_str_cfie("outer loop", l1);
                 xfree(l1);
                 l1 = NULL;
-                
+
                 stl_read_line(&l2, ptr);
                 p = stl_str_cfie(ve, l2);
 
@@ -524,7 +503,7 @@ static double* stl_read_ascii(int D, long dims[D], const char* name)
 
                 xfree(l2);
                 l2 = NULL;
-                
+
                 stl_read_line(&l3, ptr);
                 p = stl_str_cfie(ve, l3);
 
@@ -538,7 +517,7 @@ static double* stl_read_ascii(int D, long dims[D], const char* name)
 
                 xfree(l3);
                 l3 = NULL;
-                
+
                 stl_read_line(&l4, ptr);
                 p = stl_str_cfie(ve, l4);
 
@@ -552,12 +531,12 @@ static double* stl_read_ascii(int D, long dims[D], const char* name)
 
                 xfree(l4);
                 l4 = NULL;
-                
+
                 stl_read_line(&l5, ptr);
                 stl_str_cfie("endloop", l5);
                 xfree(l5);
                 l5 = NULL;
-                
+
                 stl_read_line(&l6, ptr);
                 stl_str_cfie("endfacet", l6);
                 xfree(l6);
@@ -567,7 +546,7 @@ static double* stl_read_ascii(int D, long dims[D], const char* name)
         stl_read_line(&l0, ptr);
         stl_str_cfie("endsolid", l0);
         xfree(l0);
-        
+
         fclose(ptr);
 
         return model;
@@ -581,7 +560,7 @@ static double* stl_read_ascii(int D, long dims[D], const char* name)
  * header
  * 80 Bytes (not relevant)
  * 4 Byte (N = number of blocks)
- * 
+ *
  * N * block composed of
  * 3 x 4 Byte (Normal vector coordinates)
  * 3 x 4 Byte (vertex 1 coordinates)
@@ -593,13 +572,13 @@ static double* stl_read_ascii(int D, long dims[D], const char* name)
  * block size: 50 Byte
  **/
 // read binary encoded stl files.
-static double* stl_read_binary(int D, long dims[D], const char* name) 
+static double* stl_read_binary(int D, long dims[D], const char* name)
 {
         int fd = open(name, O_RDONLY);
 
         if (-1 == fd)
                 error("read stl error open %s\n", name);
-        
+
         char tmp[80];
 
         if (80 != xread(fd, 80, tmp))
@@ -611,7 +590,7 @@ static double* stl_read_binary(int D, long dims[D], const char* name)
                 error("stl file could not be opened\n");
 
         int N = (int) Nu;
-        
+
         md_set_dims(D, dims, 1);
         dims[0] = 3;
         dims[1] = 4;
@@ -632,13 +611,13 @@ static double* stl_read_binary(int D, long dims[D], const char* name)
         const size_t bs = 12 * FL_SIZE + sizeof(uint16_t);
         const size_t L = (size_t) N * bs;
         char* buf = xmalloc(L);
-        
+
         if ((int) L != xread(fd, L, buf))
                 error("stl file could not be opened\n");
 
         close(fd);
 
-#pragma omp parallel for        
+#pragma omp parallel for
         for (int i = 0; i < N; i++) {
 
                 long pos[D];
@@ -652,7 +631,7 @@ static double* stl_read_binary(int D, long dims[D], const char* name)
                         memcpy(&f, &buf[(size_t) i * bs + (size_t) pos[0] * FL_SIZE], FL_SIZE);
                         MD_ACCESS(D, strs, pos, model) = f;
                 }
-                
+
                 for (pos[1] = 0; pos[1] < 3; pos[1]++) {
 
                         for (pos[0] = 0; pos[0] < 3; pos[0]++) {
@@ -667,7 +646,7 @@ static double* stl_read_binary(int D, long dims[D], const char* name)
         return model;
 }
 
-double* stl_read(int D, long dims[D], const char* name) 
+double* stl_read(int D, long dims[D], const char* name)
 {
         return stl_is_ascii(name) ? stl_read_ascii(D, dims, name) : stl_read_binary(D, dims, name);
 }
@@ -715,4 +694,71 @@ void stl_d2cfl(int D, long dims[D], double* model, complex float* cmodel)
                 MD_ACCESS(D, cstrs, pos, cmodel) = (float) MD_ACCESS(D, dstrs, pos, model) + 0.j;
 
         } while (md_next(D, dims, ~0UL, pos));
+}
+
+// compute relative position (shift, rotation, ...) of the triangle wrt to the origin and z-axis
+void stl_relative_position(struct triangle* t)
+{
+	vec3lf_saxpy(t->e0, t->v0, -1, t->v1);
+	vec3lf_saxpy(t->e1, t->v0, -1, t->v2);
+
+	assert(0 < vec3lf_norm(t->e0));
+	assert(0 < vec3lf_norm(t->e1));
+
+	// compute b0, b1 as orthogonal basis vectors of the plane which contains the triangle
+	double b0[3], tmp[3], b1[3];
+	vec3lf_saxpy(b0, t->e0, 1 / vec3lf_norm(t->e0), NULL);
+	vec3lf_saxpy(tmp, t->e1, 1 / vec3lf_norm(t->e1), NULL);
+
+	// b1 is orthogonal component of tmp wrt b0
+	double f = -1 * vec3lf_sdot(b0, tmp) / vec3lf_norm(b0);
+	vec3lf_saxpy(b1, b0, f, tmp);
+	vec3lf_saxpy(b1, b1, 1 / vec3lf_norm(b1), NULL);
+
+	// compute angle between normal vector and z axis
+	double ez[3] = {0, 0, 1};
+	t->angle = vec3lf_angle(ez, t->n);
+
+	// if normal vector is -ez
+	if (1E-10 > fabs(M_PI - t->angle) || 1E-10 > fabs(t->angle)) {
+
+		t->rot[0] = 1;
+		t->rot[1] = 0;
+		t->rot[2] = 0;
+
+	} else {
+
+		vec3lf_cp(t->rot, t->n, ez);
+	}
+
+	vec3lf_saxpy(t->rot, t->rot, 1 / vec3lf_norm(t->rot), NULL);
+
+	// compute center of triangle
+	vec3lf_set(t->ctr, 0);
+	vec3lf_saxpy(t->ctr, t->v0, (double) 1/3, t->ctr);
+	vec3lf_saxpy(t->ctr, t->v1, (double) 1/3, t->ctr);
+	vec3lf_saxpy(t->ctr, t->v2, (double) 1/3, t->ctr);
+
+	// compute centered triangle
+	double v0c[3], v1c[3], v2c[3];
+	vec3lf_saxpy(v0c, t->ctr, -1, t->v0);
+	vec3lf_saxpy(v1c, t->ctr, -1, t->v1);
+	vec3lf_saxpy(v2c, t->ctr, -1, t->v2);
+
+	// compute centered rotated triangle
+	double v0cr[3], v1cr[3], v2cr[3];
+	vec3lf_rotax(v0cr, t->angle, t->rot, v0c);
+	vec3lf_rotax(v1cr, t->angle, t->rot, v1c);
+	vec3lf_rotax(v2cr, t->angle, t->rot, v2c);
+
+	t->poly[0] = v0cr[0];
+	t->poly[1] = v0cr[1];
+	t->poly[2] = v1cr[0];
+	t->poly[3] = v1cr[1];
+	t->poly[4] = v2cr[0];
+	t->poly[5] = v2cr[1];
+
+	// signed volume of tetrahedron triangle + origin
+	vec3lf_cp(tmp, t->v0, t->v1);
+	t->svol = ABS(vec3lf_sdot(tmp, t->v2) / 6) * SGN(vec3lf_sdot(t->v0, t->n));
 }

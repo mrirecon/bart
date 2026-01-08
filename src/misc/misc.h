@@ -25,6 +25,14 @@
 #define MAX(x, y) ({ __typeof(x) __x = (x); __typeof(y) __y = (y); (__x > __y) ? __x : __y; })
 #define CLAMP(x, min, max) MAX(min, MIN(x, max))
 
+#ifndef SGN
+#define SGN(x) ( (typeof(x)) ( 0 == x ? 0 : (0 > x) ? -1 : 1) )
+#endif
+
+#ifndef ABS
+#define ABS(x) (((x) < 0) ? -(x) : (x))
+#endif
+
 #define MAKE_ARRAY(x, ...) ((__typeof__(x)[]){ x, __VA_ARGS__ })
 #define ARRAY_SIZE(x)	(sizeof(x) / sizeof(x[0]))
 
