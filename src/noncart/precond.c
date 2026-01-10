@@ -1,15 +1,15 @@
 /* Copyright 2014-2015. The Regents of the University of California.
- * Copyright 2016-2017. Martin Uecker.
+ * Copyright 2016-2021. Uecker Lab. University Medical Center Göttingen.
+ * Copyright 2022-2025. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2014-2017 Frank Ong <frankong@berkeley.edu>
- * 2014-2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ * 2014-2017 Frank Ong
+ * 2014-2017 Martin Uecker
  *
  * Strang G. A proposal for Toeplitz matrix calculations.
  * Journal Studies in Applied Math. 1986; 74:171-17. (FIXME)
- *
  */
 
 #include <math.h>

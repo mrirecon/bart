@@ -1,9 +1,7 @@
-/* Copyright 2016. Martin Uecker.
+/* Copyright 2016,2019. Martin Uecker.
+ * Copyright 2022,2024. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
- *
- * Authors:
- * 2016 Martin Uecker
  */
 
 #include <stdlib.h>

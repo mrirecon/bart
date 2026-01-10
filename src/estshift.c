@@ -1,4 +1,5 @@
-/* Copyright 2017. Martin Uecker
+/* Copyright 2017-2021. Uecker Lab. University Medical Center Göttingen.
+ * Copyright 2024-2025. TU Graz. Institute of Biomedical Imaging.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */

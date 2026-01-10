@@ -1,3 +1,9 @@
+/* Copyright 2022. Uecker Lab. University Center Göttingen.
+ * Copyright 2024-2025. Institute of Biomedical Imaging. TU Graz.
+ * All rights reserved. Use of this source code is governed by
+ * a BSD-style license which can be found in the LICENSE file.
+ */
+
 #include <stdbool.h>
 #include <stdexcept>
 
@@ -38,6 +44,7 @@ static struct limit_s get_limit(ISMRMRD::Optional<ISMRMRD::Limit>& src)
 	return ret;
 }
 
+
 extern "C" void ismrm_read_encoding_limits(const char* filename, struct isrmrm_config_s* config)
 {
 	ISMRMRD::ISMRMRD_Dataset d;
@@ -53,14 +60,17 @@ extern "C" void ismrm_read_encoding_limits(const char* filename, struct isrmrm_c
 	ismrmrd_close_dataset(&d);
 }
 
+
 static void ismrm_read_encoding_limits_from_hdr(ISMRMRD::IsmrmrdHeader& h, struct isrmrm_config_s* config);
+
 
 extern "C" void ismrm_read_encoding_limits_from_xml(const char* xml, struct isrmrm_config_s* config)
 {
 	ISMRMRD::IsmrmrdHeader h;
 	deserialize(xml, h);
-    ismrm_read_encoding_limits_from_hdr(h, config);
+	ismrm_read_encoding_limits_from_hdr(h, config);
 }
+
 
 static void ismrm_read_encoding_limits_from_hdr(ISMRMRD::IsmrmrdHeader& h, struct isrmrm_config_s* config)
 {
@@ -72,12 +82,14 @@ static void ismrm_read_encoding_limits_from_hdr(ISMRMRD::IsmrmrdHeader& h, struc
 	config->limits[ISMRMRD_READ_DIM].size		= encoding.encodedSpace.matrixSize.x;
 	config->limits[ISMRMRD_COIL_DIM].size		= 1;
 
-	if (h.acquisitionSystemInformation.is_present())
+	if (h.acquisitionSystemInformation.is_present()) {
+
 		if (h.acquisitionSystemInformation.get().receiverChannels.is_present()) {
 
 			config->limits[ISMRMRD_COIL_DIM].size = h.acquisitionSystemInformation.get().receiverChannels.get();
 			config->limits[ISMRMRD_COIL_DIM].size_hdr = h.acquisitionSystemInformation.get().receiverChannels.get();
 		}
+	}
 
 	config->limits[ISMRMRD_PHS1_DIM] 		= get_limit(encoding.encodingLimits.kspace_encoding_step_1);
 	config->limits[ISMRMRD_PHS1_DIM].size		= encoding.encodedSpace.matrixSize.y;
@@ -94,10 +106,11 @@ static void ismrm_read_encoding_limits_from_hdr(ISMRMRD::IsmrmrdHeader& h, struc
 	config->limits[ISMRMRD_REPETITION_DIM]		= get_limit(encoding.encodingLimits.repetition);
 	config->limits[ISMRMRD_SET_DIM] 		= get_limit(encoding.encodingLimits.set);
 	config->limits[ISMRMRD_SEGMENT_DIM] 		= get_limit(encoding.encodingLimits.segment);
-
 }
 
+
 struct ismrm_cpp_state {
+
 	std::istream* is;
 	ISMRMRD::IStreamView* rs;
 	ISMRMRD::ProtocolDeserializer* deserializer;
@@ -111,10 +124,12 @@ extern "C" struct ismrm_cpp_state* ismrm_stream_open(const char* file)
 	ret->is = NULL;
 
 	std::istream* is;
+
 	if (0 != strcmp("-", file)) {
 
 		ret->is = new std::ifstream(file, std::ifstream::binary | std::ios::binary);
 		is = ret->is;
+
 	} else {
 
 		is = &std::cin;
@@ -126,6 +141,7 @@ extern "C" struct ismrm_cpp_state* ismrm_stream_open(const char* file)
 	return ret;
 }
 
+
 extern "C" void ismrm_stream_close(struct ismrm_cpp_state* s)
 {
 	if (NULL != s->deserializer)
@@ -135,8 +151,8 @@ extern "C" void ismrm_stream_close(struct ismrm_cpp_state* s)
 		delete s->rs;
 	if (NULL != s->is)
 		delete s->is;
-
 }
+
 
 extern "C" void ismrm_stream_read_meta(struct isrmrm_config_s* config)
 {
@@ -152,15 +168,18 @@ extern "C" void ismrm_stream_read_meta(struct isrmrm_config_s* config)
 
 				ISMRMRD::ConfigFile conf;
 				s->deserializer->deserialize(conf);
+
 			} else if (ISMRMRD::ISMRMRD_MESSAGE_CONFIG_TEXT == type) {
 
 				ISMRMRD::ConfigText conf;
 				s->deserializer->deserialize(conf);
+
 			} else if (ISMRMRD::ISMRMRD_MESSAGE_TEXT == type) {
 
 				ISMRMRD::TextMessage tm;
 				s->deserializer->deserialize(tm);
 				debug_printf(DP_WARN, "Message from ISMRM stream: %s", tm.message.c_str());
+
 			} else {
 
 				error("Unexpected message type: %d.\n", type);
@@ -173,11 +192,13 @@ extern "C" void ismrm_stream_read_meta(struct isrmrm_config_s* config)
 		s->deserializer->deserialize(hdr);
 
 		ismrm_read_encoding_limits_from_hdr(hdr, config);
-	}
-	catch(std::runtime_error& e) {
+
+	} catch(std::runtime_error& e) {
+
 		error("BART ISMRMRD Wrapper: Exception thrown: %s\n", e.what());
 	}
 }
+
 
 extern "C" long ismrm_stream_read_acquisition(struct isrmrm_config_s* config, ISMRMRD::ISMRMRD_Acquisition* c_acq)
 {
@@ -217,8 +238,10 @@ extern "C" long ismrm_stream_read_acquisition(struct isrmrm_config_s* config, IS
 			error("BART ISMRMRD Wrapper: Too large acquisition.\n");
 
 		return (long)data_size;
-	}
-	catch(std::runtime_error& e) {
+
+	} catch(std::runtime_error& e) {
+
 		error("BART ISMRMRD Wrapper: Exception thrown: %s\n", e.what());
 	}
 }
+

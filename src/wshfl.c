@@ -1,11 +1,14 @@
 /* Copyright 2018-2019. Massachusetts Institute of Technology.
+ * Copyright 2018. The Regents of the University of California.
+ * Copyright 2018-2021. Uecker Lab. Unversity Medical Center Göttingen.
+ * Copyright 2022-2025. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2018-2019 Siddharth Iyer <ssi@mit.edu>
  *
- * References:
+ *
  * Tamir J, Uecker M, Chen W, Lai P, Alley MT, Vasanawala SS, Lustig M.
  * T2 shuffling: Sharp, multicontrast, volumetric fast spin‐echo imaging.
  * Magnetic resonance in medicine. 2017 Jan 1;77(1):180-95.

@@ -1,4 +1,9 @@
-
+/* Copyright 2020,2022. Uecker Lab. University Medical Center Göttingen.
+ * Copyright 2023-2024. Institute of Biomedical Imaging. TU Graz.
+ * All rights reserved. Use of this source code is governed by
+ * a BSD-style license which can be found in the LICENSE file.
+ */
+ 
 #include <stdlib.h>
 #include <complex.h>
 

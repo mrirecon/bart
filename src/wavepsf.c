@@ -1,11 +1,12 @@
 /* Copyright 2017-2018. Massachusetts Institute of Technology.
+ * Copyright 2020-2021. Uecker Lab. Unversity Medical Center Göttingen.
+ * Copyright 2022-2025. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2017-2018 Siddharth Iyer <ssi@mit.edu>
  *
- * Reference:
  *
  * Bilgic B, Gagoski BA, Cauley SF, Fan AP, Polimeni JR, Grant PE, Wald LL, Setsompop K. 
  * Wave‐CAIPI for highly accelerated 3D imaging. Magnetic resonance in medicine. 

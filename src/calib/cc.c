@@ -1,9 +1,11 @@
-/* Copyright 2014. The Regents of the University of California.
+/* Copyright 2014-2015. The Regents of the University of California.
+ * Copyright 2016-2018. Uecker. Lab. University Medical Center Göttingen.
+ * Copyright 2024. Intitute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2012-2014	Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2012-2014	Martin Uecker
  * 2013		Dara Bahri <dbahri123@gmail.com>
  *
  *
@@ -12,7 +14,7 @@
  * Magn Reson Imaging 2008; 26:133-141.
  *
  * Buehrer M, Pruessmann KP, Boesiger P, Kozerke S. Array compression for MRI
- * with large coil arrays. Magn Reson Med 2007, 57: 1131–1139.
+ * with large coil arrays. Magn Reson Med 2007; 57:1131–1139.
  *
  * Zhang T, Pauly JM, Vasanawala SS, Lustig M. Coil compression for
  * accelerated imaging with cartesian sampling. Magn Reson Med 2013;
@@ -20,7 +22,7 @@
  *
  * Bahri D, Uecker M, Lustig M. ESPIRiT-Based Coil Compression for
  * Cartesian Sampling,  Annual Meeting ISMRM, Salt Lake City 2013,
- * In: Proc Intl Soc Mag Reson Med 21:2657
+ * In: Proc Intl Soc Mag Reson Med 2013; 21:2657.
  */
  
 #include <complex.h>

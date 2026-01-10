@@ -1,11 +1,10 @@
-/* Copyright 2017. Martin Uecker.
+/* Copyright 2017-2019. Martin Uecker.
+ * Copyright 2021,2024. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * 2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  *
  * Biot-Savart law.
- *
  */
 
 #include <math.h>

@@ -4,7 +4,7 @@
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2013 Martin Uecker <uecker@eecs.berkeley.edu>
+ * 2013 Martin Uecker
  * 2025 Moritz BLumenthal
  *
  * Inati SJ, Hansen MS, Kellman P.

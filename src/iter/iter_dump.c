@@ -1,4 +1,5 @@
 /* Copyright 2020. Uecker Lab. University Medical Center Göttingen.
+ * Copyright 2021-2025. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -15,10 +16,10 @@
 #include "misc/misc.h"
 #include "misc/mmio.h"
 
-//#include "num/flpmath.h"
 #include "num/multind.h"
 
 #include "iter_dump.h"
+
 
 void iter_dump_free(const struct iter_dump_s* data)
 {

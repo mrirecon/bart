@@ -1,10 +1,11 @@
-/* Copyright 2017-2020. Uecker Lab. University Medical Center Göttingen.
+/* Copyright 2017-2021. Uecker Lab. University Medical Center Göttingen.
+ * Copyright 2022-2025. Insitute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * Martin Uecker <martin.uecker@med.uni-goettingen.de>
- * Sebastian Rosenzweig <sebastian.rosenzweig@med.uni-goettingen.de>
+ * Martin Uecker
+ * Sebastian Rosenzweig
  *
  *
  * Kai Tobias Block and Martin Uecker, Simple Method for Adaptive

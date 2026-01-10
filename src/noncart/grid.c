@@ -1,10 +1,11 @@
-/* Copyright 2014-2015 The Regents of the University of California.
- * Copyright 2015-2019 Martin Uecker.
+/* Copyright 2014-2015. The Regents of the University of California.
+ * Copyright 2015-2022. Uecker Lab. University Medical Center Göttingen.
+ * Copyright 2022-2024. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * 2011-2019 Martin Uecker <martin.uecker@med.uni-goettingen.de>
- * 2014 Frank Ong <frankong@berkeley.edu>
+ * 2011-2019 Martin Uecker
+ * 2014 Frank Ong
  */
 
 #include <math.h>

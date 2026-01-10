@@ -1,4 +1,5 @@
 /* Copyright 2020-2022. Uecker Lab. University Medical Center Göttingen.
+ * Copyright 2022-2025. Graz University of Technology.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *

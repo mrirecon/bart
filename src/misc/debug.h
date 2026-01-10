@@ -1,9 +1,3 @@
-/* Copyright 2013. The Regents of the University of California.
- * Copyright 2016. Martin Uecker.
- * Copyright 2018. Damien Nguyen.
- * All rights reserved. Use of this source code is governed by
- * a BSD-style license which can be found in the LICENSE file.
- */
 
 #ifndef _DEBUG_H
 #define _DEBUG_H 1

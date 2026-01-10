@@ -1,11 +1,12 @@
-/* Copyright 2014-2015 The Regents of the University of California.
- * Copyright 2015-2020 Uecker Lab. University Medical Center Göttingen.
+/* Copyright 2014-2015. The Regents of the University of California.
+ * Copyright 2015-2021. Uecker Lab. University Medical Center Göttingen.
+ * Copyright 2023-2025. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * 2014-2020 Martin Uecker <martin.uecker@med.uni-goettingen.de>
- * 2018-2020 Sebastian Rosenzweig <sebastian.rosenzweig@med.uni-goettingen.de>
- * 2019-2020 Zhengguo Tan <zhengguo.tan@med.uni-goettingen.de>
+ * 2014-2020 Martin Uecker
+ * 2018-2020 Sebastian Rosenzweig
+ * 2019-2020 Zhengguo Tan
  */
 
 #include <stdbool.h>

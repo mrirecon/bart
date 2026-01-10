@@ -1,10 +1,8 @@
 /* Copyright 2013. The Regents of the University of California.
- * Copyright 2016-2018. Martin Uecker.
+ * Copyright 2016-2021. Uecker Lab. University Medical Center Göttingen.
+ * Copyright 2022-2025. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
- *
- * Authors: 
- * 2011-2018 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  *
  *
  * Uecker M, Hohage T, Block KT, Frahm J. Image reconstruction by regularized

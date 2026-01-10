@@ -1,4 +1,5 @@
-/* Copyright 2019. Uecker Lab, University Medical Center Goettingen.
+/* Copyright 2019-2023. Uecker Lab, University Medical Center Goettingen.
+ * Copyright 2022-2025. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *

@@ -3,7 +3,7 @@
  * Copyright 2017. University of Oxford.
  * Copyright 2017-2018. Damien Nguyen
  * Copyright 2019-2022. Uecker Lab, University Medical Center Göttingen.
- * Copyright 2022-2025. Institute of Biomedical Imaging. Graz TU.
+ * Copyright 2022-2025. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *

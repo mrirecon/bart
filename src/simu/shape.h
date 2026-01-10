@@ -1,7 +1,3 @@
-/* Copyright 2020-2023. Martin Uecker.
- * All rights reserved. Use of this source code is governed by
- * a BSD-style license which can be found in the LICENSE file.
- */
 
 #ifndef _SHAPE
 #define _SHAPE

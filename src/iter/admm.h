@@ -1,8 +1,3 @@
-/* Copyright 2014-2018. The Regents of the University of California.
- * Copyright 2016-2017. Martin Uecker.
- * All rights reserved. Use of this source code is governed by
- * a BSD-style license which can be found in the LICENSE file.
- */ 
 
 #ifndef _ITER_ADMM_H
 #define _ITER_ADMM_H

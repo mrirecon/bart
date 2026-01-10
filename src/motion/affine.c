@@ -1,14 +1,13 @@
-/* Copyright 2024. TU Graz. Institute of Biomedical Imaging.
+/* Copyright 2024-2025. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: Moritz Blumenthal
  *
- * Publications:
  *
  * Mattes, D., Haynor, D. R., Vesselle, H., Lewellen, T. K., & Eubank, W.
  * PET-CT image registration in the chest using free-form deformations.
- * IEEE TMI, 22(1), 120-8, 2003.
+ * IEEE TMI 2003;22:120-8.
  */
 
 #include <assert.h>

@@ -1,13 +1,12 @@
 /* Copyright 2014-2018. The Regents of the University of California.
- * Copyright 2016-2018. Martin Uecker.
- * Copyright 2023. Institute of Biomedical Imaging. TU Graz.
+ * Copyright 2016-2020. Martin Uecker.
+ * Copyright 2023-2025. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2014-2023 Martin Uecker <uecker@tugraz.at>
  * 2014-2017 Jon Tamir <jtamir@eecs.berkeley.edu>
- *
  *
  *
  * Glowinski R and Marroco A. Sur l'approximation, par elements finish
@@ -31,7 +30,6 @@
  *
  * Wohlberg B. ADMM Penalty Parameter Selection by Residual Balancing,
  * arXiv:1704.06209 (2017)
- *
  */
 
 #include <math.h>

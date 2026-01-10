@@ -1,12 +1,12 @@
-/* Copyright 2020. Uecker Lab, University Medical Center Goettingen.
+/* Copyright 2020-2021. Uecker Lab, University Medical Center Goettingen.
+ * Copyright 2022-2025. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  * 
  * Authors:
- * 2020 Xiaoqing Wang <xiaoqing.wang@med.uni-goettingen.de>
- * 2020 Martin Uecker <martin.uecker@med.uni-goettingen.de>
- * 2020 Zhengguo Tan <zhengguo.tan@med.uni-goettingen.de>
- * 
+ * 2020 Xiaoqing Wang
+ * 2020 Martin Uecker
+ * 2020 Zhengguo Tan
  */
 
 #include <assert.h>

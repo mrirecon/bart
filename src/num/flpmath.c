@@ -4666,3 +4666,4 @@ void md_zsetnanzero2(int D, const long dims[D], const long ostr[D], complex floa
 {
 	MAKE_Z2OP(zsetnanzero, D, dims, ostr, optr, istr, iptr);
 }
+

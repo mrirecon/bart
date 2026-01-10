@@ -1,13 +1,14 @@
-/* Copyright 2024. TU Graz. Institute of Biomedical Imaging.
+/* Copyright 2024-2025. TU Graz. Institute of Biomedical Imaging.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: Moritz Blumenthal
  *
+ *
  * Kim D, Cauley SF, Nayak KS, Leahy RM, Haldar JP.
  * Region-optimized virtual (ROVir) coils: Localization and/or suppression
  * of spatial regions using sensor-domain beamforming
- * Magn Reson Med 2021; 86:197–212.
+ * Magn Reson Med 2021; 86:197-212.
  */
 
 

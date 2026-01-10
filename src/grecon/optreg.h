@@ -1,8 +1,3 @@
-/* Copyright 2014-2017. The Regents of the University of California.
- * Copyright 2018-2022. Martin Uecker.
- * All rights reserved. Use of this source code is governed by
- * a BSD-style license which can be found in the LICENSE file.
- */
 
 #ifndef _OPTREG_H
 #define _OPTREG_H

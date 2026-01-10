@@ -1,11 +1,11 @@
-/* Copyright 2015. The Regents of the University of California.
+/* Copyright 2015-2016. The Regents of the University of California.
  * Copyright 2016. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- *	2015 Frank Ong <frankong@berkeley.edu>
- *	2016 Martin Uecker <martin.uecker@med.uni-goettingen.de>
+ *	2015 Frank Ong
+ *	2016 Martin Uecker
  */
 
 #include <math.h>

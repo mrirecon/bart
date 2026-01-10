@@ -1,4 +1,5 @@
-/* Copyright 2015. The Regents of the University of California.
+/* Copyright 2015-2016. The Regents of the University of California.
+ * Copyright 2022-2024. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -11,8 +12,7 @@
  * 
  * Candès E, Long C, Trzasko J. 
  * Unbiased Risk Estimates for Singular Value Thresholding and Spectral Estimators.
- * IEEE Transactions on Signal Processing 61, no. 19 (2013): 4643­657.
- *
+ * IEEE Transactions on Signal Processing 2013; 61:4643-657.
  */
 
 #include <stdlib.h>

@@ -1,11 +1,9 @@
-/* Copyright 2017. Martin Uecker.
+/* Copyright 2017-2019. Martin Uecker.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * 2017 Martin Uecker <martin.uecker@med.uni-goettingen.de>
  *
  * Simple coil using Biot-Savart law.
- *
  */
 
 #include <assert.h>

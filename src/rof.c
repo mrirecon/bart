@@ -1,9 +1,9 @@
-/* Copyright 2014. The Regents of the University of California.
- * Copyright 2022. Institute of Biomedical Imaging. TU Graz.
+/* Copyright 2014-2016. The Regents of the University of California.
+ * Copyright 2016-2021. Uecker Lab. University Medical Center Göttingen.
+ * Copyright 2022-2025. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * Reference:
  *
  * Rudin LI, Osher S, Fatemi E. Nonlinear total variation based
  * noise removal algorithms, Physica D: Nonlinear Phenomena

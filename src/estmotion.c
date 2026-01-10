@@ -1,11 +1,10 @@
-/* Copyright 2024. TU Graz. Institute of Biomedical Imaging.
+/* Copyright 2024-2025. TU Graz. Institute of Biomedical Imaging.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
  * 2024 Moritz Blumenthal
  *
- * References:
  *
  * Zach C, Pock T, Bischof H. A Duality Based Approach for Realtime TV-L 1 Optical Flow.
  * In: Hamprecht FA, Schnörr C, Jähne B. (eds) Pattern Recognition. DAGM 2007.

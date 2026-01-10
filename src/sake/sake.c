@@ -1,10 +1,12 @@
 /* Copyright 2013. The Regents of the University of California.
+ * Copyright 2016-2017. Martin Uecker.
+ * Copyright 2024-2025. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2013 Martin Uecker <uecker@eecs.berkeley.edu>
- * 2014 Jonathan Tamir <jtamir@eecs.berkeley.edu>
+ * 2013 Martin Uecker
+ * 2014 Jonathan Tamir
  *
  *
  * Peter J. Shin, Peder E.Z. Larson, Michael A. Ohliger, Michael Elad,

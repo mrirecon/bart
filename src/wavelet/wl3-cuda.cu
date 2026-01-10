@@ -1,9 +1,7 @@
 /* Copyright 2014. The Regents of the University of California.
+ * Copyright 2022-2024. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
- *
- * Authors:
- * 2014 Martin Uecker <uecker@eecs.berkeley.edu>
  */
 
 #include <stdbool.h>

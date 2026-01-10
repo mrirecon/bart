@@ -4,16 +4,15 @@
  *
  * Authors: Moritz Blumenthal
  *
- * Publications:
  *
  * Avants BB, Epstein CL, Grossman M, Gee JC.
  * Symmetric diffeomorphic image registration with cross-correlation:
  * evaluating automated labeling of elderly and neurodegenerative brain.
- * Med Image Anal. 2008;12(1):26-41.
+ * Med Image Anal 2008;12:26-41.
  *
  * Avants BB, Tustison NJ, Song G, Cook PA, Klein A, Gee JC.
  * A reproducible evaluation of ANTs similarity metric performance in
- * brain image registration. Neuroimage. 2011;54(3):2033-2044.
+ * brain image registration. Neuroimage 2011;54:2033-2044.
  */
 
 #include <complex.h>
