@@ -267,9 +267,6 @@ FFTW_BASE ?= /opt/local/
 endif
 
 
-# Matlab
-
-MATLAB_BASE ?= /usr/local/matlab/
 
 # ISMRM
 
@@ -671,11 +668,6 @@ endif
 
 
 
-# Matlab
-
-MATLAB_H := -I$(MATLAB_BASE)/extern/include
-MATLAB_L := -Wl,-rpath $(MATLAB_BASE)/bin/glnxa64 -L$(MATLAB_BASE)/bin/glnxa64 -lmat -lmx -lm -lstdc++
-
 # ISMRM
 
 ifeq ($(ISMRMRD),1)
@@ -956,9 +948,6 @@ $(CTARGETS): CPPFLAGS += -include src/main.h
 
 bart: CPPFLAGS += -include src/main.h
 
-
-mat2cfl: $(srcdir)/mat2cfl.c -lnum -lmisc
-	$(CC) $(CFLAGS) $(MATLAB_H) -omat2cfl  $+ $(MATLAB_L) $(CUDA_L)
 
 
 LIBSEQ_NAME = bart_seq_$(shell git diff --quiet && git rev-parse --short HEAD)
