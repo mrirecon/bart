@@ -96,6 +96,7 @@ UT_REGISTER_TEST(test_shape_compression3);
 static bool test_rf_shape1(void)
 {
 	const struct seq_config seq = seq_config_defaults;
+
 	struct rf_shape pulse[1];
 	seq_sample_rf_shapes(1, pulse, &seq);
 
@@ -110,22 +111,21 @@ static bool test_rf_shape1(void)
 	if (1E6 * seq.phys.rf_duration != ps.shapes->data[0].values->len)
 		return false;
 
-	for (int i = 0; i < ps.shapes->data[0].values->len; i++) {
-
+	for (int i = 0; i < ps.shapes->data[0].values->len; i++)
 		if (1. < fabs(ps.shapes->data[0].values->data[i])) // assume uncompressed magnitude
 			return false;
-	}
 
-	const double good[12] = {0.5, 0.0, 0.0, 144., -0.5, 0.0, 0.0, 324., 0.5, 0.0, 0.0, 143.};
+	const double good[12] = {
+		0.5, 0.0, 0.0, 144., -0.5, 0.0,
+		0.0, 324., 0.5, 0.0, 0.0, 143.
+	};
 
 	if ((int)ARRAY_SIZE(good) != ps.shapes->data[1].values->len)
 		return false;
 
-	for (int i = 0; i < ps.shapes->data[1].values->len; i++) {
-
+	for (int i = 0; i < ps.shapes->data[1].values->len; i++)
 		if (UT_TOL < fabs(good[i] - ps.shapes->data[1].values->data[i]))
 			return false;
-	}
 
 	pulseq_free(&ps);
 
@@ -138,6 +138,7 @@ UT_REGISTER_TEST(test_rf_shape1);
 static bool test_rf_shape2(void)
 {
 	struct seq_config seq = seq_config_defaults;
+
 	seq.magn.mag_prep = PREP_IR_NON;
 
 	struct rf_shape pulse[2];
@@ -161,6 +162,7 @@ static bool test_rf_shape2(void)
 
 		if (1. < fabs(ps.shapes->data[3].values->data[i])) // assume uncompressed magnitude/pha for hypsec
 			return false;
+
 		if (1. < fabs(ps.shapes->data[4].values->data[i])) // assume uncompressed magnitude/pha for hypsec
 			return false;
 	}

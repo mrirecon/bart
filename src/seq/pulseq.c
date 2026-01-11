@@ -30,27 +30,19 @@
 
 #define VEC(T) struct { int len; typeof(T) data[]; }
 
-static void* vec_init(void)
-{
-	struct {int len;} * vec;
-	vec = xmalloc(sizeof *vec);
-	vec->len = 0;
-	return vec;
-}
+#define VEC_LEN(x) ({ auto _x = (x); (_x ? _x->len : 0); })
 
-
-#define	VEC_ADD(v, o) 							\
-do {									\
-	auto _p = &(v);							\
-	typedef typeof((*_p)->data[0]) eltype_t;			\
-	int n2 = (*_p) ? (++(*_p)->len) : 1;				\
-	/* fix fanalyzer leak detection if realloc fails */		\
-	auto _q = *_p;							\
-	*_p = realloc(*_p, sizeof(**_p) + (unsigned long)n2 * sizeof(eltype_t));\
-	if (!*_p) error("memory out");					\
-	(void)_q;							\
-	(*_p)->len = n2;						\
-	(*_p)->data[n2 - 1] = (o);					\
+#define	VEC_ADD(v, o) 									\
+do {											\
+	auto _p = &(v);									\
+	typedef typeof((*_p)->data[0]) eltype_t;					\
+	int n2 = VEC_LEN(*_p) + 1;							\
+	/* fix fanalyzer leak detection if realloc fails */				\
+	auto _q = *_p;									\
+	*_p = realloc(*_p, (size_t)((long)sizeof(**_p) + n2 * (long)sizeof(eltype_t)));	\
+	if (!*_p) { xfree(_q); error("memory out"); }					\
+	(*_p)->len = n2;								\
+	(*_p)->data[n2 - 1] = (o);							\
 } while (0)
 
 
@@ -71,7 +63,7 @@ do {									\
 
 static struct shape make_shape(int id, int num, int len, const double val[len])
 {
-	struct shape shape = { id, num, vec_init() };
+	struct shape shape = { id, num, NULL };
 
 	bool compression = (num != len);
 	double value = 0.;
@@ -89,13 +81,13 @@ static struct shape make_shape(int id, int num, int len, const double val[len])
 			VEC_ADD(shape.values, (compression) ? value += update : update);
 	}
 
-	assert(shape.values->len == num);
+	assert(VEC_LEN(shape.values) == num);
 	return shape;
 }
 
 static struct shape make_compressed_shape(int id, int len, const double val[len])
 {
-	struct shape shape = { id, len, vec_init() };
+	struct shape shape = { id, len, NULL };
 
 	double der = 0.;
 	int count = 0;
@@ -127,10 +119,13 @@ static struct shape make_compressed_shape(int id, int len, const double val[len]
 	if (count >= 2)
 		VEC_ADD(shape.values, count - 2);
 
-	if ((int)(0.75 * len) < shape.values->len) {
+	if ((int)(0.75 * len) < VEC_LEN(shape.values)) {
 
-		debug_printf(DP_DEBUG3, "insufficient forced compression (%d/%d), return uncompressed shape\n", shape.values->len, len);
+		debug_printf(DP_DEBUG3, "insufficient forced compression (%d/%d), return uncompressed shape\n", 
+					VEC_LEN(shape.values), len);
+
 		xfree(shape.values);
+
 		return make_shape(id, len, len, val); // uncompressed shape because num == len
 	}
 
@@ -139,28 +134,22 @@ static struct shape make_compressed_shape(int id, int len, const double val[len]
 
 void pulseq_init(struct pulseq *ps, const struct seq_config* seq)
 {
-	ps->version[0] = 1;
-	ps->version[1] = 4;
-	ps->version[2] = 2;
-	ps->adc_raster_time = 1.e-7;
-	ps->gradient_raster_time = 1.e-5;
-	ps->block_raster_time = 1.e-5;
-	ps->rf_raster_time = 1.e-6;
-	ps->fov[0] = seq->geom.fov;
-	ps->fov[1] = seq->geom.fov;
-	ps->fov[2] = seq->geom.slice_thickness * seq->loop_dims[SLICE_DIM];
-	ps->total_duration = 0.;
+	*ps = (struct pulseq) {
 
-	ps->label_flags = md_nontriv_dims(DIMS, seq->loop_dims) & SEQ_FLAGS & ~(COEFF_FLAG | COEFF2_FLAG| ITER_FLAG); // MDH dimension to write
-
-	ps->ps_blocks = vec_init();
-	ps->gradients = vec_init();
-	ps->trapezoids = vec_init();
-	ps->adcs = vec_init();
-	ps->rfpulses = vec_init();
-	ps->shapes = vec_init();
-	ps->extensions = vec_init();
-	ps->extension_spec = vec_init();
+		.version = { 1, 4, 2, },
+		.adc_raster_time = 1.e-7,
+		.gradient_raster_time = 1.e-5,
+		.block_raster_time = 1.e-5,
+		.rf_raster_time = 1.e-6,
+		.fov = {
+			seq->geom.fov,
+			seq->geom.fov,
+			seq->geom.slice_thickness * seq->loop_dims[SLICE_DIM],
+		},
+		.total_duration = 0.,
+		.label_flags = md_nontriv_dims(DIMS, seq->loop_dims)
+			& SEQ_FLAGS & ~(COEFF_FLAG | COEFF2_FLAG| ITER_FLAG), // MDH dimension to write
+	};
 }
 
 
@@ -172,14 +161,14 @@ void pulseq_free(struct pulseq *ps)
 	xfree(ps->adcs);
 	xfree(ps->rfpulses);
 
-	for (int i = 0; i < ps->shapes->len; i++)
+	for (int i = 0; i < VEC_LEN(ps->shapes); i++)
 		xfree(ps->shapes->data[i].values);
 
 	xfree(ps->shapes);
 
 	xfree(ps->extensions);
 
-	for (int i = 0; i < ps->extension_spec->len; i++)
+	for (int i = 0; i < VEC_LEN(ps->extension_spec); i++)
 		xfree(ps->extension_spec->data[i].values);
 
 	xfree(ps->extension_spec);
@@ -188,7 +177,7 @@ void pulseq_free(struct pulseq *ps)
 
 void pulse_shapes_to_pulseq(struct pulseq *ps, int N, const struct rf_shape rf_shapes[N])
 {
-	assert(0 == ps->shapes->len);
+	assert(NULL == ps->shapes);
 	double tmp[2];
 
 	for (int i = 0; i < N; i++) {
@@ -234,7 +223,7 @@ static bool check_empty_shape(const int len, const double shape[len])
 
 static int find_grad_id(const struct pulseq* ps, int shape_id)
 {
-	for (int i = 0; i < ps->gradients->len; i++)
+	for (int i = 0; i < VEC_LEN(ps->gradients); i++)
 		if (ps->gradients->data[i].shape_id == shape_id)
 			return ps->gradients->data[i].id;
 
@@ -243,16 +232,16 @@ static int find_grad_id(const struct pulseq* ps, int shape_id)
 
 static int check_existing_gradient_shape(const struct pulseq* ps, const struct shape* shape2)
 {
-	for (int i = 0; i < ps->shapes->len; i++) {
+	for (int i = 0; i < VEC_LEN(ps->shapes); i++) {
 
 		struct shape sh = ps->shapes->data[i];
 
-		if (sh.values->len != shape2->values->len)
+		if (VEC_LEN(sh.values) != VEC_LEN(shape2->values))
 			continue;
 
 		bool equal = true;
 
-		for (int j = 0; j < sh.values->len; j++) {
+		for (int j = 0; j < VEC_LEN(sh.values); j++) {
 
 			if (1.e-12 < fabs(sh.values->data[j] - shape2->values->data[j])) {
 
@@ -280,7 +269,7 @@ static void grad_to_pulseq(int grad_id[3], struct pulseq *ps, struct seq_sys sys
 		if (check_empty_shape(grad_len, g_axis))
 			continue;
 
-		int sid = ps->shapes->len + 1;
+		int sid = VEC_LEN(ps->shapes) + 1;
 		struct shape tmp_shape = make_compressed_shape(sid, grad_len, g_axis);
 
 		int gid2 = check_existing_gradient_shape(ps, &tmp_shape);
@@ -297,7 +286,7 @@ static void grad_to_pulseq(int grad_id[3], struct pulseq *ps, struct seq_sys sys
 
 			VEC_ADD(ps->shapes, tmp_shape);
 
-			grad_id[a] = ps->gradients->len + 1;
+			grad_id[a] = VEC_LEN(ps->gradients) + 1;
 
 			struct gradient g = {
 
@@ -316,6 +305,7 @@ static double phase_pulseq(const struct seq_event* ev)
 	double phase_mid = (SEQ_EVENT_PULSE == ev->type) ? ev->pulse.phase : ev->adc.phase;
 	double freq = (SEQ_EVENT_PULSE == ev->type) ? ev->pulse.freq : ev->adc.freq;
 	double ret = fmod(DEG2RAD(- freq * 360. * (ev->mid - ev->start) + phase_mid), 2. * M_PI);
+
 	return (ret < 0.) ? (ret + 2. * M_PI) : ret;
 }
 
@@ -328,7 +318,7 @@ static int adc_to_pulseq(struct pulseq *ps, int i_adc, long block_start, int N, 
 
 	assert(SEQ_EVENT_ADC == ev[adc_idx].type);
 
-	int adc_id = ps->adcs->len + 1;
+	int adc_id = VEC_LEN(ps->adcs) + 1;
 
 	struct adc a = {
 
@@ -347,7 +337,7 @@ static int adc_to_pulseq(struct pulseq *ps, int i_adc, long block_start, int N, 
 
 static int label_check_spec(struct pulseq* ps, struct extension_spec es)
 {
-	for (int i = 0; i < ps->extension_spec->len; i++)
+	for (int i = 0; i < VEC_LEN(ps->extension_spec); i++)
 		if (0 == strcmp(ps->extension_spec->data[i].string_id, es.string_id))
 			return i;
 
@@ -387,9 +377,10 @@ static int label_set(struct pulseq* ps, const char* set, struct seq_event adc_ev
 
 			if (0 > idx) {
 
-				idx = ps->extension_spec->len;
+				idx = VEC_LEN(ps->extension_spec);
 				es.type = idx + 1;
-				es.values = vec_init();
+				es.values = NULL;
+
 				VEC_ADD(es.values, e);
 				VEC_ADD(ps->extension_spec, es);
 				continue;
@@ -413,7 +404,7 @@ static int ext_to_pulseq(struct pulseq *ps, int i_adc, int N, const struct seq_e
 	int labels = bitcount(ps->label_flags);
 	int es_type = label_set(ps, "LABELSET", ev[adc_idx]);
 
-	int ext_id = ps->extensions->len + 1;
+	int ext_id = VEC_LEN(ps->extensions) + 1;
 
 	for (int i = 0; i < labels; i++) {
 
@@ -433,7 +424,7 @@ static int ext_to_pulseq(struct pulseq *ps, int i_adc, int N, const struct seq_e
 
 static int check_existing_rf(const struct pulseq* ps, const struct rfpulse* rf)
 {
-	for (int i = 0; i < ps->rfpulses->len; i++) {
+	for (int i = 0; i < VEC_LEN(ps->rfpulses); i++) {
 
 		if (   (ps->rfpulses->data[i].mag_id == rf->mag_id)
 		    && (ps->rfpulses->data[i].ph_id == rf->ph_id)
@@ -456,7 +447,7 @@ static int rf_to_pulseq(struct pulseq *ps, int M, const struct rf_shape rf_shape
 		return 0;
 
 	assert(SEQ_EVENT_PULSE == ev[rf_idx].type);
-	int rf_id = ps->rfpulses->len + 1;
+	int rf_id = VEC_LEN(ps->rfpulses) + 1;
 
 	int pulse_id = ev[rf_idx].pulse.shape_id;
 	int mag_id = 3 * pulse_id + 1;
@@ -539,7 +530,7 @@ void events_to_pulseq(struct pulseq *ps, enum block mode, double tr, struct seq_
 
 		struct ps_block b = {
 
-			.num = ps->ps_blocks->len + 1,
+			.num = VEC_LEN(ps->ps_blocks) + 1,
 			.dur = (unsigned long)dur_split,
 			.rf = rf_id,
 			.g = { g_id[0], g_id[1], g_id[2] },
@@ -576,21 +567,21 @@ void pulseq_writef(FILE *fp, struct pulseq *ps)
 	fprintf(fp, "# NUM DUR RF  GX  GY  GZ  ADC  EXT");
 	fprintf(fp, "\n[BLOCKS]\n");
 #define ACCESS(X) , ps->ps_blocks->data[i].X
-	for (int i = 0; i < ps->ps_blocks->len; i++)
+	for (int i = 0; i < VEC_LEN(ps->ps_blocks); i++)
 		fprintf(fp, BLOCKS_FORMAT "\n" BLOCKS_ACCESS(ACCESS));
 #undef	ACCESS
 
 	fprintf(fp, "\n[ADC]\n");
 #define ACCESS(X) , ps->adcs->data[i].X
-	for (int i = 0; i < ps->adcs->len; i++)
+	for (int i = 0; i < VEC_LEN(ps->adcs); i++)
 		fprintf(fp, ADC_FORMAT "\n" ADC_ACCESS(ACCESS));
 #undef	ACCESS
 
-	if (0 < ps->extensions->len) {
+	if (NULL != ps->extensions) {
 
 		fprintf(fp, "\n[EXTENSIONS]\n");
 #define ACCESS(X) , ps->extensions->data[i].X
-		for (int i = 0; i < ps->extensions->len; i++)
+		for (int i = 0; i < VEC_LEN(ps->extensions); i++)
 			fprintf(fp, EXTENSIONS_FORMAT "\n" EXTENSIONS_ACCESS(ACCESS));
 #undef	ACCESS
 
@@ -599,32 +590,32 @@ void pulseq_writef(FILE *fp, struct pulseq *ps)
 		struct extension_spec es = ps->extension_spec->data[0];
 		fprintf(fp, "\nextension %s %d\n", es.string_id, es.type);
 
-		for (int j = 0; j < es.values->len; j++)
+		for (int j = 0; j < VEC_LEN(es.values); j++)
 			fprintf(fp, "%d %d %s\n", j + 1, es.values->data[j].val, dim_to_string(es.values->data[j].dim));
 	}
 
 
 	fprintf(fp, "\n[GRADIENTS]\n");
 #define ACCESS(X) , ps->gradients->data[i].X
-	for (int i = 0; i < ps->gradients->len; i++)
+	for (int i = 0; i < VEC_LEN(ps->gradients); i++)
 		fprintf(fp, GRADIENTS_FORMAT "\n" GRADIENTS_ACCESS(ACCESS));
 #undef	ACCESS
 
 	fprintf(fp, "\n[TRAP]\n");
 #define ACCESS(X) , ps->trapezoids->data[i].X
-	for (int i = 0; i < ps->trapezoids->len; i++)
+	for (int i = 0; i < VEC_LEN(ps->trapezoids); i++)
 		fprintf(fp, TRAP_FORMAT "\n" TRAP_ACCESS(ACCESS));
 #undef	ACCESS
 
 	fprintf(fp, "\n[RF]\n");
 #define ACCESS(X) , ps->rfpulses->data[i].X
-	for (int i = 0; i < ps->rfpulses->len; i++)
+	for (int i = 0; i < VEC_LEN(ps->rfpulses); i++)
 		fprintf(fp, RF_FORMAT "\n" RF_ACCESS(ACCESS));
 #undef	ACCESS
 
 	fprintf(fp, "\n[SHAPES]\n");
 
-	for (int i = 0; i < ps->shapes->len; i++) {
+	for (int i = 0; i < VEC_LEN(ps->shapes); i++) {
 
 		fprintf(fp, "\nshape_id %d\n", i + 1);
 
@@ -632,7 +623,7 @@ void pulseq_writef(FILE *fp, struct pulseq *ps)
 
 		fprintf(fp, "num_samples %d\n", sh.num);
 
-		for (int j = 0; j < sh.values->len; j++) {
+		for (int j = 0; j < VEC_LEN(sh.values); j++) {
 
 			if (1 < sh.values->data[j])
 				fprintf(fp, "%d\n", (int)sh.values->data[j]);

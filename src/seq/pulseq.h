@@ -20,6 +20,7 @@ struct ps_block {
 };
 
 struct gradient {
+
 	int id;
 	double amp;
 	int shape_id;
@@ -112,6 +113,7 @@ struct pulseq {
 };
 
 #undef VEC
+
 
 extern void pulseq_init(struct pulseq *ps, const struct seq_config* seq);
 extern void pulseq_free(struct pulseq *ps);

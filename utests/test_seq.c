@@ -40,7 +40,6 @@ static bool test_block_minv_init_delay(void)
 	int pre_blocks = 0;
 
 	do {
-
 		int E = seq_block(max_E, ev, &seq_state, &seq);
 
 		if (0 > E)
@@ -104,7 +103,6 @@ static bool test_block_minv_multislice(void)
 	set_loop_dims_and_sms(&seq, 1, 2, 3, 3, 1, 1, 1);
 
 	do {
-
 		int E = seq_block(max_E, ev, &seq_state, &seq);
 
 		if (0 > E)
@@ -148,6 +146,7 @@ static bool test_fov_shift(void)
 
 
 	float gui_shift[slices][4];
+
 	for (int i = 0; i < slices; i++) {
 
 		gui_shift[i][0] = 0;
@@ -160,6 +159,7 @@ static bool test_fov_shift(void)
 	seq.geom.mb_factor = 3;
 	set_loop_dims_and_sms(&seq, 1, slices, 1, 1, 1, 1, 1);
 	set_fov_pos(slices, 4, &gui_shift[0][0], &seq);
+
 	if (1.E-2 *  UT_TOL < fabs(seq.geom.sms_distance - 27.E-3))
 		return false;
 
@@ -179,6 +179,7 @@ static bool test_fov_shift3x3(void)
 	float good[9] = {-9, 0, 9, -9, 0, 9, -9, 0, 9};
 
 	float gui_shift[slices][4];
+
 	for (int i = 0; i < slices; i++) {
 
 		gui_shift[i][0] = 0;
@@ -194,6 +195,7 @@ static bool test_fov_shift3x3(void)
 	
 	if (1.E-2 *  UT_TOL < fabs(seq.geom.sms_distance - 27.E-3))
 		return false;
+
 	for (int i = 0; i < slices; i++)
 		if (1.E-2 *  UT_TOL < fabs(seq.geom.shift[i][2] - 1.E-3 * good[i]))
 			return false;
