@@ -953,7 +953,7 @@ void md_copy2(int D, const long dim[D], const long ostr[D], void* optr, const lo
 				continue;
 			}
 
-		assert(0);
+			assert(0);
 
 		} while (md_next(D, ldims, ~0UL, pos));
 
