@@ -1,4 +1,5 @@
 /* Copyright 2014. The Regents of the University of California.
+ * Copyright 2026. Insititute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by 
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -62,7 +63,7 @@ static bool distance_check(int D, int T, int N, float vard, const float delta[T]
 }
 
 
-int (poissondisc_mc)(int D, int T, int N, int I, float vardens, const float delta[T][T], float points[N][D], int kind[N])
+int poissondisc_mc(int D, int T, int N, int I, float vardens, const float delta[T][T], float points[N][D], int kind[N])
 {
 	PTR_ALLOC(char[N], active);
 
@@ -162,7 +163,6 @@ int (poissondisc_mc)(int D, int T, int N, int I, float vardens, const float delt
 			// create a random point between one and two times the allowed distance
 
 			do {
-	
 				kind[p] = rr++ % T;
 				dd = delta[kind[s2]][kind[p]];
 
@@ -276,7 +276,7 @@ extern int poissondisc(int D, int N, int I, float vardens, float delta, float po
 
 
 
-static void compute_rmatrix(int D, int T, float rmatrix[T][T], const float delta[T], int C, const int nc[T], const int mc[T][T])
+static void compute_rmatrix(int D, int T, float rmatrix[T][T], const float delta[T], int C, const int nc[T], const int mc[C][T])
 {
 	unsigned long processed = 0;
 	float density = 0.;
@@ -291,9 +291,7 @@ static void compute_rmatrix(int D, int T, float rmatrix[T][T], const float delta
 			int ind = mc[k][i];
 			processed = MD_SET(processed, ind);
 			density += 1. / powf(delta[ind], (float)D);
-		//	printf("%d (%f)\t", ind, density);
 		}
-		//printf("\n");
 
 		for (int i = 0; i < nc[k]; i++)
 			for (int j = 0; j < T; j++)
@@ -312,7 +310,7 @@ static int sort_cmp(const void* _a, const void* _b)
 {
 	const struct sort_label* a = _a;
 	const struct sort_label* b = _b;
-	return ((a->x < b->x) - (a->x > b->x)); // FIXME
+	return ((a->x < b->x) - (a->x > b->x));
 }
 
 extern void mc_poisson_rmatrix(int D, int T, float rmatrix[T][T], const float delta[T])
@@ -345,8 +343,7 @@ extern void mc_poisson_rmatrix(int D, int T, float rmatrix[T][T], const float de
 		nc[i] = j;
 	}
 
-	compute_rmatrix(D, T, rmatrix, delta, i, nc, (const int (*)[T])mc);
+	compute_rmatrix(D, T, rmatrix, delta, i, nc, mc);
 }
-
 
 
