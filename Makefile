@@ -331,7 +331,7 @@ MODULES_tgv = -liter -llinops
 MODULES_ictv = -liter -llinops
 MODULES_denoise = -lgrecon -liter -llinops -lwavelet -llowrank -lnoncart -lnn -lnlops
 MODULES_bench = -lwavelet -llinops
-MODULES_phantom = -lstl -lsimu -lgeom
+MODULES_phantom = -lstl -lgeom -lsimu -lgeom
 MODULES_bart = -lbox -lgrecon -lsense -lnoir -liter -llinops -lwavelet -llowrank -lnoncart -lcalib -llinops -lseq -lstl -lsimu -lsake -lnlops -lnetworks -lnoir -lnn -liter -lmoba -lgeom -lnn  -lmotion -lnlops
 MODULES_sake = -lsake
 MODULES_traj = -lnoncart
@@ -851,7 +851,7 @@ endif
 UTARGETS_GPU += test_cudafft test_cuda_flpmath test_cuda_flpmath2 test_cuda_gpukrnls test_cuda_convcorr test_cuda_multind test_cuda_shuffle test_cuda_memcache_clear test_cuda_rand
 
 # lib simu
-UTARGETS += test_ode_bloch test_ode_simu test_biot_savart test_signals test_epg test_pulse test_tsegf
+UTARGETS += test_ode_bloch test_ode_simu test_biot_savart test_signals test_epg test_pulse test_tsegf test_phantom
 MODULES_test_ode_bloch += -lsimu
 MODULES_test_ode_simu += -lseq -lsimu
 MODULES_test_biot_savart += -lsimu
@@ -859,6 +859,7 @@ MODULES_test_signals += -lsimu
 MODULES_test_epg += -lsimu
 MODULES_test_pulse += -lseq -lsimu
 MODULES_test_tsegf += -lsimu
+MODULES_test_phantom += -lstl -lgeom -lsimu -lgeom
 
 # lib geom
 UTARGETS += test_geom test_stl

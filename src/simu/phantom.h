@@ -51,6 +51,7 @@ extern void calc_brain(const long dims[DIMS], complex float* out, bool kspace, c
 
 extern void calc_cfl_geom(const long dims[DIMS], complex float* out, bool kspace, const long tstrs[DIMS], const complex float* traj, int D_max, long hdims[2][D_max], complex float* x[2], struct coil_opts* copts);
 extern _Complex double* sample_signal(int D, long odims[D], const long gdims[D], const float* grid, const long sgdims[D], const float* sgrid, const struct phantom_opts* popts, const struct grid_opts* gopts, const struct coil_opts* copts);
+extern _Complex double stl_fun_k(const void* v, const long C, const float k1[]);
 
 #endif
 

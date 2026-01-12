@@ -39,6 +39,7 @@ struct triangle triangle_defaults = {
 	.angle = INFINITY,
 	.svol = INFINITY,
 	.poly = { INFINITY, INFINITY, INFINITY, INFINITY, INFINITY, INFINITY },
+	.sur = INFINITY,
 };
 
 struct triangle_stack triangle_stack_defaults = {
@@ -709,6 +710,10 @@ void stl_relative_position(struct triangle* t)
 	assert(0 < vec3d_norm(t->e0));
 	assert(0 < vec3d_norm(t->e1));
 
+	double sn[3];
+	vec3d_cp(sn, t->e0, t->e1);
+	t->sur = 0.5 * vec3d_norm(sn);
+
 	// compute b0, b1 as orthogonal basis vectors of the plane which contains the triangle
 	double b0[3], tmp[3], b1[3];
 	vec3d_saxpy(b0, t->e0, 1 / vec3d_norm(t->e0), NULL);
@@ -765,4 +770,29 @@ void stl_relative_position(struct triangle* t)
 	// signed volume of tetrahedron triangle + origin
 	vec3d_cp(tmp, t->v0, t->v1);
 	t->svol = copysign(vec3d_sdot(tmp, t->v2) / 6, vec3d_sdot(t->v0, t->n));
+}
+
+struct triangle_stack* stl_preprocess_model(int D, long dims[D], double* model)
+{
+	struct triangle_stack* ts = xmalloc(sizeof(struct triangle_stack));
+
+	ts->N = dims[2];
+	ts->tri = xmalloc((size_t) ts->N * sizeof(struct triangle));
+
+	struct triangle* t = ts->tri;
+
+	long tstrs[D], tdims[D];
+	md_copy_dims(D, tdims, dims);
+	md_calc_strides(D, tstrs, tdims, DL_SIZE);
+
+#pragma omp parallel for
+	for (int i = 0; i < ts->N; i++) {
+
+		long pos[D];
+		md_set_dims(D, pos, 0);
+		pos[2] = i;
+		memcpy(&t[i], &MD_ACCESS(D, tstrs, pos, model), 12 * DL_SIZE);
+		stl_relative_position(&t[i]);
+	}
+	return ts;
 }

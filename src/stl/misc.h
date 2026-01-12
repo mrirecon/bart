@@ -27,6 +27,8 @@ struct triangle {
 
 	// signed volume of tetrahendron triangle + origin
 	double svol;
+	// surface measure of triangle
+	double sur;
 
 	// intersection coordinates of triangle with 2d plane
 	double poly[6];
@@ -59,5 +61,6 @@ extern void stl_write_binary(int D, long dims[D], double* model, const char* nam
 extern double* stl_cfl2d(int D, long dims[D], _Complex float* cmodel);
 extern void stl_d2cfl(int D, long dims[D], double* model, _Complex float* cmodel);
 extern void stl_relative_position(struct triangle* t);
+extern struct triangle_stack* stl_preprocess_model(int D, long dims[D], double* model);
 
 #endif

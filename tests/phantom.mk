@@ -390,8 +390,30 @@ tests/test-phantom-noncart-BRAIN: traj phantom nufft fft nrmse
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-phantom-stl: traj phantom nufft fft nrmse stl
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/traj -x 64 -y 64 -z 64 -3 traj.ra					;\
+	$(TOOLDIR)/traj -x 33 -y 33 -z 33 -3 traj3.ra					;\
+	$(TOOLDIR)/stl --model TET tet.stl 						;\
+	$(TOOLDIR)/phantom -s 1 --coil HEAD_3D_64CH -t traj.ra --stl tet.stl kt.ra 	;\
+	$(TOOLDIR)/phantom -s 1 --coil HEAD_2D_8CH -t traj3.ra --stl tet.stl kt3.ra 	;\
+	$(TOOLDIR)/nufft -i traj.ra kt.ra xt.ra						;\
+	$(TOOLDIR)/nufft -i -x 33:33:33 traj3.ra kt3.ra xt3.ra				;\
+	$(TOOLDIR)/phantom -s 1 --coil HEAD_3D_64CH -k -3 -x 64 --stl tet.stl k.ra 	;\
+	$(TOOLDIR)/phantom -s 1 --coil HEAD_2D_8CH -k -3 -x 33 --stl tet.stl k3.ra 	;\
+	$(TOOLDIR)/fft -i 7 k.ra x.ra							;\
+	$(TOOLDIR)/fft -i 7 k3.ra x3.ra							;\
+	$(TOOLDIR)/phantom -s 2 --stl tet.stl -3 -k k.ra				;\
+	$(TOOLDIR)/nrmse -t 1 x.ra xt.ra						;\
+	$(TOOLDIR)/nrmse -t 1 x3.ra xt3.ra						;\
+	rm *.ra ; rm *.stl ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 
 TESTS += tests/test-phantom-ksp tests/test-phantom-noncart tests/test-phantom-coil tests/test-phantom-ksp-coil
+ifneq ($(BUILDTYPE), WASM) # stl fails under wasm
+TESTS += tests/test-phantom-stl
+endif
 TESTS += tests/test-phantom-bart tests/test-phantom-bart-basis
 TESTS += tests/test-phantom-basis tests/test-phantom-random-tubes
 TESTS += tests/test-phantom-NIST tests/test-phantom-NIST-basis

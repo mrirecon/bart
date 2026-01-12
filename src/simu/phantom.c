@@ -63,7 +63,7 @@ static void dstr_stl(void* v)
 	}
 }
 
-static complex double stl_fun_k(const void* v, const long C, const float k1[])
+complex double stl_fun_k(const void* v, const long C, const float k1[])
 {
 	double k[3] = { k1[0], k1[1], k1[2] };
 	(void) C;
@@ -107,29 +107,7 @@ void phantom_stl_init(struct phantom_opts* popts, int D, long dims[D], double* m
 	popts->Nc = 1;
 	popts->fun = stl_fun_k;
 	popts->dstr = dstr_stl;
-
-	popts->data = xmalloc(sizeof(struct triangle_stack));
-
-	struct triangle_stack* ts = popts->data;
-
-	ts->N = dims[2];
-	ts->tri = xmalloc((size_t) ts->N * sizeof(struct triangle));
-
-	struct triangle* t = ts->tri;
-
-	long tstrs[D], tdims[D];
-	md_copy_dims(D, tdims, dims);
-	md_calc_strides(D, tstrs, tdims, DL_SIZE);
-
-#pragma omp parallel for
-	for (int i = 0; i < ts->N; i++) {
-
-		long pos[D];
-		md_set_dims(D, pos, 0);
-		pos[2] = i;
-		memcpy(&t[i], &MD_ACCESS(D, tstrs, pos, model), 12 * DL_SIZE);
-		stl_relative_position(&t[i]);
-	}
+	popts->data = stl_preprocess_model(D, dims, model);
 }
 
 struct krn2d_data {

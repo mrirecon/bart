@@ -198,8 +198,6 @@ static bool test_stl_triangles_on_axes(void)
 {
         bool b = true;
 
-	debug_printf(DP_INFO, "specific\n");
-
 	struct triangle t = triangle_defaults;
 
 	t.v0[0] = 1;
