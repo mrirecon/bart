@@ -1,5 +1,5 @@
 /* Copyright 2021-2022. Uecker Lab. University Medical Center Göttingen.
- * Copyright 2022-2025. Graz University of Technology.
+ * Copyright 2022-2026. Graz University of Technology.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  **/
@@ -147,7 +147,7 @@ extern const struct nlop_s* nn_batchgen_create(struct bat_gen_conf_s* config, nn
 	long tot_dims[D][N];
 	const complex float* data[D];
 
-	D = 0;
+	int d = 0;
 
 	for (int i = 0; i < II; i++) {
 
@@ -157,19 +157,19 @@ extern const struct nlop_s* nn_batchgen_create(struct bat_gen_conf_s* config, nn
 		const struct named_tensor_s* tensor = get_tensor_by_name(train_data, names[i]);
 		auto iov = nn_generic_domain(network, 0, names[i]);
 
+		assert(d < D);
 		assert(tensor->N == iov->N);
 
-		md_singleton_dims(N, bat_dims[D]);
-		md_singleton_dims(N, tot_dims[D]);
+		md_singleton_dims(N, bat_dims[d]);
+		md_singleton_dims(N, tot_dims[d]);
 
-		md_copy_dims(iov->N, bat_dims[D], iov->dims);
-		md_copy_dims(tensor->N, tot_dims[D], tensor->dims);
-		data[D] = tensor->data;
+		md_copy_dims(iov->N, bat_dims[d], iov->dims);
+		md_copy_dims(tensor->N, tot_dims[d], tensor->dims);
 
-		D++;
+		data[d++] = tensor->data;
 	}
 
-	return batch_generator_create(config, D, N, bat_dims, tot_dims, data);
+	return batch_generator_create(config, d, N, bat_dims, tot_dims, data);
 }
 
 
