@@ -1,6 +1,6 @@
 /* Copyright 2014-2015. The Regents of the University of California.
  * Copyright 2016-2019. Martin Uecker.
- * Copyright 2024-2025. Institute of Biomedical Imaging. TU Graz.
+ * Copyright 2024-2026. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
@@ -70,15 +70,6 @@ static void md_zfdiff_z_core2(int D, const long dims[D], int d, bool adj, const 
 	md_zsmul2(D, dims, ostr, out, ostr, out, adj ? -0.5 : 0.5);
 }
 
-static void grad_dims(int D, long dims2[D], int d, unsigned long flags, const long dims[D])
-{
-	md_copy_dims(D, dims2, dims);
-
-	assert(1 == dims[d]);
-	assert(!MD_IS_SET(flags, d));
-
-	dims2[d] = bitcount(flags);
-}
 
 
 static void grad_op(md_zfdiff_core_t grad, int D, const long dims[D], int d, unsigned long flags, complex float* out, const complex float* in)
@@ -211,9 +202,10 @@ static struct linop_s* linop_grad_internal_create(md_zfdiff_core_t grad, long N,
 
 	long dims2[NO];
 	md_copy_dims(N, dims2, dims);
-	dims2[d] = 1;
 
-	grad_dims(NO, dims2, d, flags, dims2);
+	assert(!MD_IS_SET(flags, d));
+
+	dims2[d] = bitcount(flags);
 
 	data->N = NO;
 	data->d = d;
