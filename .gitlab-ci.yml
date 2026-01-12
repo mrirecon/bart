@@ -221,7 +221,7 @@ Build_Analyzer:
   image: registry.gitlab.tugraz.at/ibi/reproducibility/gitlab-ci-containers/ibi_gcc-git_bart
   script:
     - gcc-git --version
-    - CC=gcc-git CFLAGS="-fanalyzer" DEBUG=0 DEBUG_DWARF=0 make all
+    - CC=gcc-git CFLAGS="-O2 -fanalyzer -Werror -fsanitize=vla-bound -fsanitize-trap=undefined -Wno-maybe-uninitialized -Wno-analyzer-use-of-uninitialized-value -Wno-analyzer-imprecise-fp-arithmetic" DEBUG=0 DEBUG_DWARF=0 make all
   artifacts:
     paths:
       - bart
