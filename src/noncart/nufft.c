@@ -1,6 +1,6 @@
 /* Copyright 2014-2015. The Regents of the University of California.
  * Copyright 2016-2022. Uecker Lab. University Medical Center Göttingen.
- * Copyright 2022-2025. Institute of Biomedical Imaging. TU Graz.
+ * Copyright 2022-2026. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -1026,6 +1026,7 @@ static void nufft_set_traj(struct nufft_data* data, int N,
 		md_calc_strides(ND, data->out_strs, data->out_dims, CFL_SIZE);
 		md_calc_strides(ND, data->ksp_strs, data->ksp_dims, CFL_SIZE);
 
+		assert((0 <= N) && ((size_t)N < (PTRDIFF_MAX / sizeof(long))));	// stringop overflow
 		md_copy_dims(N, data->bas_dims, bas_dims);
 		data->bas_dims[N] = 1;
 
