@@ -32,17 +32,15 @@
 
 #define VEC_LEN(x) ({ auto _x = (x); (_x ? _x->len : 0); })
 
-#define	VEC_ADD(v, o) 									\
-do {											\
-	auto _p = &(v);									\
-	typedef typeof((*_p)->data[0]) eltype_t;					\
-	int n2 = VEC_LEN(*_p) + 1;							\
-	/* fix fanalyzer leak detection if realloc fails */				\
-	auto _q = *_p;									\
-	*_p = realloc(*_p, (size_t)((long)sizeof(**_p) + n2 * (long)sizeof(eltype_t)));	\
-	if (!*_p) { xfree(_q); error("memory out"); }					\
-	(*_p)->len = n2;								\
-	(*_p)->data[n2 - 1] = (o);							\
+#define	VEC_ADD(v, o) 										\
+do {												\
+	auto _p = &(v);										\
+	auto _o = (o);										\
+	typedef typeof((*_p)->data[0]) eltype_t;						\
+	int n2 = VEC_LEN(*_p) + 1;								\
+	*_p = xrealloc(*_p, (size_t)((long)sizeof(**_p) + n2 * (long)sizeof(eltype_t)));	\
+	(*_p)->len = n2;									\
+	(*_p)->data[n2 - 1] = _o;								\
 } while (0)
 
 
@@ -542,8 +540,6 @@ void events_to_pulseq(struct pulseq *ps, enum block mode, double tr, struct seq_
 	}
 }
 
-
-
 void pulseq_writef(FILE *fp, struct pulseq *ps)
 {
 	fprintf(fp, "# Pulseq sequence file\n"
@@ -631,7 +627,6 @@ void pulseq_writef(FILE *fp, struct pulseq *ps)
 				fprintf(fp, "%.10f\n", sh.values->data[j]);
 		}
 	}
-
 
 	fprintf(fp, "\n[SIGNATURE]\n");
 	fprintf(fp, "# TODO\n");

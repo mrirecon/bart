@@ -71,6 +71,16 @@ void* xmalloc(size_t s)
 }
 
 
+void* xrealloc(void *p, size_t s)
+{
+	p = realloc(p, s);
+
+	if (NULL == p)
+		error("Could not allocate memory.\n");
+
+	return p;
+}
+
 
 void xfree(const void* x)
 {
