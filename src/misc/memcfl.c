@@ -1,9 +1,10 @@
 /* Copyright 2021-2023. Martin Uecker and BART Developers.
- * Copyright 2023-2024. Institute of Biomedical Imaging. TU Graz.
+ * Copyright 2023-2026. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
 
+#include <assert.h>
 #include <stdbool.h>
 #include <complex.h>
 #include <stdlib.h>
@@ -13,6 +14,7 @@
 #include "misc/misc.h"
 
 #include "memcfl.h"
+
 
 struct memcfl {
 
@@ -155,6 +157,7 @@ bool memcfl_unmap(const complex float* p)
 	return true;
 }
 
+
 void memcfl_unlink(const char* name)
 {
 	struct memcfl** mem = &memcfl_list;
@@ -168,6 +171,8 @@ void memcfl_unlink(const char* name)
 	}
 
 	struct memcfl* o = *mem;
+
+	assert(*mem);
 
 	*mem = (*mem)->next;
 
