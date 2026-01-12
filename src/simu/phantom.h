@@ -2,6 +2,7 @@
 #ifndef _PHANTOM_H
 #define _PHANTOM_H
 
+#include "stl/misc.h"
 #include "simu/sens.h"
 
 enum phantom_type { SHEPPLOGAN, CIRC, TIME, SENS, GEOM, STAR, BART, BRAIN, TUBES, RAND_TUBES, NIST, SONAR, GEOMFILE, ELLIPSOID0, STL };

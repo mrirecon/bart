@@ -312,8 +312,8 @@ MODULES_nlinv = -lnoir -lgrecon -lwavelet -llowrank -lnn -liter -lnlops -llinops
 MODULES_ncalib = -lnoir -lgrecon -lwavelet -llowrank -lnn -liter -lnlops -llinops -lnoncart
 MODULES_phasepole = -lnoir -lgrecon -lwavelet -llowrank -lnn -liter -lnlops -llinops -lnoncart
 MODULES_rtnlinv = -lnoir -liter -lnlops -llinops -lnoncart
-MODULES_moba = -lmoba -lnoir -lnn -lnlops -llinops -lwavelet -lnoncart -lseq -lsimu -lgrecon -llowrank -llinops -liter -lnn
-MODULES_mobafit = -lmoba -lnlops -llinops -lseq -lsimu -liter -lnoir
+MODULES_moba = -lmoba -lnoir -lnn -lnlops -llinops -lwavelet -lnoncart -lseq -lstl -lsimu -lgrecon -llowrank -llinops -liter -lnn
+MODULES_mobafit = -lmoba -lnlops -llinops -lseq -lstl -lsimu -liter -lnoir
 MODULES_bpsense = -lsense -lnoncart -liter -llinops -lwavelet
 MODULES_itsense = -liter -llinops
 MODULES_ecalib = -lcalib -llinops
@@ -331,12 +331,12 @@ MODULES_tgv = -liter -llinops
 MODULES_ictv = -liter -llinops
 MODULES_denoise = -lgrecon -liter -llinops -lwavelet -llowrank -lnoncart -lnn -lnlops
 MODULES_bench = -lwavelet -llinops
-MODULES_phantom = -lsimu -lgeom -lstl
-MODULES_bart = -lbox -lgrecon -lsense -lnoir -liter -llinops -lwavelet -llowrank -lnoncart -lcalib -llinops -lseq -lsimu -lsake -lnlops -lnetworks -lnoir -lnn -liter -lmoba -lgeom -lnn  -lmotion -lnlops -lstl
+MODULES_phantom = -lstl -lsimu -lgeom
+MODULES_bart = -lbox -lgrecon -lsense -lnoir -liter -llinops -lwavelet -llowrank -lnoncart -lcalib -llinops -lseq -lstl -lsimu -lsake -lnlops -lnetworks -lnoir -lnn -liter -lmoba -lgeom -lnn  -lmotion -lnlops
 MODULES_sake = -lsake
 MODULES_traj = -lnoncart
-MODULES_grid = -lsimu
-MODULES_coils = -lsimu -lgeom
+MODULES_grid = -lstl -lsimu
+MODULES_coils = -lstl -lsimu -lgeom
 MODULES_raga = -lnoncart -lseq
 MODULES_wave = -liter -lwavelet -llinops -llowrank
 MODULES_threshold = -llowrank -liter -llinops -lwavelet
@@ -348,9 +348,9 @@ MODULES_wavelet = -llinops -lwavelet
 MODULES_wshfl = -lgrecon -lsense -liter -llinops -lwavelet -llowrank -lnoncart -lnlops -lnn -lnlops
 MODULES_ssa = -lcalib -llinops
 MODULES_bin = -lcalib -llinops
-MODULES_signal = -lsimu
+MODULES_signal = -lstl -lsimu
 MODULES_pol2mask = -lgeom
-MODULES_epg = -lsimu
+MODULES_epg = -lstl -lsimu
 MODULES_reconet = -lgrecon -lnetworks -lnoncart -lnn -lnlops -llinops -liter
 MODULES_mnist = -lnetworks -lnn -lnlops -llinops -liter
 MODULES_nnet = -lgrecon -lnetworks -lnoncart -lnn -lnlops -llinops -liter
@@ -359,7 +359,7 @@ MODULES_sample = -lgrecon -lsense -lmotion -lnetworks -lnn -lnlops -lnoncart -ll
 MODULES_cunet = -lnetworks -lgrecon -lnn -lnlops -llinops -liter
 MODULES_measure = -lgrecon -lnetworks -lnoncart -lnn -lnlops -llinops -liter
 MODULES_onehotenc = -lnn
-MODULES_sim = -lseq -lsimu
+MODULES_sim = -lseq -lstl -lsimu
 MODULES_morphop = -lnlops -llinops -lgeom
 MODULES_psf = -lnoncart -llinops
 MODULES_nlinvnet = -lnetworks -lnoir -liter -lnn -lnlops -llinops -lnoncart -lgrecon -lnetworks -lsense -liter -llinops -lwavelet -llowrank -lnoncart -lnlops -lnn
@@ -370,9 +370,9 @@ MODULES_interpolate = -lmotion -liter -lnlops -llinops
 MODULES_stl = -lstl
 MODULES_estscaling = -lsense -llinops
 MODULES_pulse = -lseq
-MODULES_bloch = -lseq -lsimu
+MODULES_bloch = -lseq -lstl -lsimu
 MODULES_trajcor = -lcalib -lnoncart -llinops
-MODULES_seq = -lseq -lnoncart -lsimu
+MODULES_seq = -lseq -lnoncart -lstl -lsimu
 
 
 GCCVERSION12 := $(shell expr `$(CC) -dumpversion | cut -f1 -d.` \>= 12)
@@ -777,7 +777,7 @@ lib/libbox.a: CPPFLAGS += -include src/main.h
 
 # lib calib
 UTARGETS += test_grog test_casorati
-MODULES_test_grog += -lcalib -lnoncart -lsimu -lgeom
+MODULES_test_grog += -lcalib -lnoncart -lsimu -lgeom -lstl
 MODULES_test_casorati+= -lcalib -llinops -liter
 
 
@@ -1020,12 +1020,12 @@ bart.dll: CC = $(MINGWCC)
 bart.dll: CFLAGS = -D NO_PNG -D NOLAPACKE -D NO_FFTW -D NO_LAPACK -D NO_BLAS -D NO_FIFO -D BARTDLL
 bart.dll: CPPFLAGS = -D BARTLIB_EXPORTS -I$(srcdir)/
 bart.dll: LDFLAGS = -shared -Wl,--subsystem,windows -Wl,--out-implib,bart.lib -Wl,--output-def,bart.def -static-libgcc
-bart.dll: $(seqwinobjs) $(miscwinobjs) $(filter-out $(WIN_NOT_SUPPORTED),$(numwinobjs)) $(winwinobjs) $(noncartwinobjs) $(linopswinobjs) $(waveletwinobjs) $(geomwinobjs) $(simuwinobjs)
+bart.dll: $(seqwinobjs) $(miscwinobjs) $(filter-out $(WIN_NOT_SUPPORTED),$(numwinobjs)) $(winwinobjs) $(noncartwinobjs) $(linopswinobjs) $(waveletwinobjs) $(geomwinobjs) $(stlwinobjs) $(simuwinobjs)
 	$(CC) $^ $(LDFLAGS) -o $@
 
 lib/libbart.a: CFLAGS = -D NO_PNG -D NOLAPACKE -D NO_FFTW -D NO_LAPACK -D NO_BLAS -D NO_FIFO -D BARTDLL -fPIC
 lib/libbart.a: CPPFLAGS = -I$(srcdir)/
-lib/libbart.a: $(seqobjs) $(miscobjs) $(filter-out $(WIN_NOT_SUPPORTED:.win.o=.o),$(numobjs)) $(winobjs) $(noncartobjs) $(linopsobjs) $(waveletobjs) $(geomobjs) $(simuobjs)
+lib/libbart.a: $(seqobjs) $(miscobjs) $(filter-out $(WIN_NOT_SUPPORTED:.win.o=.o),$(numobjs)) $(winobjs) $(noncartobjs) $(linopsobjs) $(waveletobjs) $(geomobjs) $(stlwinobjs) $(simuobjs)
 	$(AR) rcs $@ $^
 
 $(UTARGETS_WINE): CC = $(MINGWCC)

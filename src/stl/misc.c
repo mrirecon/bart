@@ -382,11 +382,15 @@ static bool stl_is_ascii(const char* name)
 
 static bool stl_read_line(char** line, FILE* s)
 {
-        size_t l;
-        ssize_t r;
+	const int max_line_length = 128;
+	*line = malloc(max_line_length);
 
-        if (-1 == (r = getline(line, &l, s)))
+	if (!fgets(*line, max_line_length, s)) {
+
+		xfree(*line);
+		*line = NULL;
                 return false;
+	}
 
         return true;
 }
