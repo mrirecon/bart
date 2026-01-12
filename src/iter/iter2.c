@@ -1,7 +1,7 @@
 /* Copyright 2013-2018. The Regents of the University of California.
  * Copyright 2016-2022. Uecker Lab. University Medical Center Göttingen.
  * Copyright 2017. University of Oxford.
- * Copyright 2022-2025. Institute of Biomedical Imaging. TU Graz.
+ * Copyright 2022-2026. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -624,7 +624,9 @@ void iter2_admm(const iter_conf* _conf,
 		t_ops[i] = vptr_get_linop(ops[i], image);
 		t_prox_ops[i] = vptr_get_prox(prox_ops[i], ops[i], image);
 
-		a_ops[i].forward = OPERATOR2ITOP(t_ops[i]->forward),
+		assert(t_ops[i]);
+
+		a_ops[i].forward = OPERATOR2ITOP(t_ops[i]->forward);
 		a_ops[i].normal = OPERATOR2ITOP(t_ops[i]->normal);
 		a_ops[i].adjoint = OPERATOR2ITOP(t_ops[i]->adjoint);
 
