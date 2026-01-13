@@ -310,10 +310,40 @@ tests/test-mobafit-irll-lm: phantom signal reshape fmac index mobafit slice thre
 	touch $@
 
 
+tests/test-mobafit-irll-irgn-reg: phantom signal reshape fmac index mobafit slice threshold nrmse index extract invert scale saxpy ones
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)							;\
+	$(TOOLDIR)/phantom -x32 -T -b tubes.ra								;\
+	$(TOOLDIR)/signal -F -I -1 2:2:1 -3.8:.8:11 -r0.41 -n30 sig.ra				        ;\
+	$(TOOLDIR)/reshape 192 11 1 sig.ra sig2.ra							;\
+	$(TOOLDIR)/fmac -s 64 tubes.ra sig2.ra x.ra							;\
+	$(TOOLDIR)/index 5 30 ti1.ra									;\
+	$(TOOLDIR)/ones 6 1 1 1 1 1 30 ones.ra								;\
+	$(TOOLDIR)/saxpy 0.5 ones.ra ti1.ra ti2.ra          						;\
+	$(TOOLDIR)/scale 0.41 ti2.ra ti.ra								;\
+	$(TOOLDIR)/mobafit --init=.8:1.:.8 -i10 --liniter=8 --reg-against-init -L ti.ra x.ra fit.ra		        ;\
+	$(TOOLDIR)/slice 6 0 fit.ra x0.ra								;\
+	$(TOOLDIR)/slice 6 1 fit.ra x1.ra								;\
+	$(TOOLDIR)/slice 6 2 fit.ra x2.ra								;\
+	$(TOOLDIR)/threshold -B 0.1 x0.ra mask.ra							;\
+	$(TOOLDIR)/fmac  mask.ra x0.ra x0.ra								;\
+	$(TOOLDIR)/fmac  mask.ra x1.ra x1.ra								;\
+	$(TOOLDIR)/fmac  mask.ra x2.ra x2.ra								;\
+	$(TOOLDIR)/phantom -x32 -T r1.ra								;\
+	$(TOOLDIR)/nrmse -t 0.00001 r1.ra x1.ra								;\
+	$(TOOLDIR)/scale .8 r1.ra r0.ra									;\
+	$(TOOLDIR)/nrmse -t 0.00001 r0.ra x0.ra								;\
+	$(TOOLDIR)/scale .5 r1.ra r2.ra									;\
+	$(TOOLDIR)/nrmse -t 0.00001 r2.ra x2.ra								;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+
 TESTS += tests/test-mobafit-r2s tests/test-mobafit-wfr2s
 TESTS += tests/test-mobafit-r2
 TESTS += tests/test-mobafit-irll
 TESTS += tests/test-mobafit-irll-lm
+TESTS += tests/test-mobafit-irll-irgn-reg
 TESTS += tests/test-mobafit-ir_t1
 TESTS += tests/test-mobafit-sim-om
 TESTS += tests/test-mobafit-sim-pool2 tests/test-mobafit-sim-pool3

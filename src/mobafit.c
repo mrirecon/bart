@@ -1,5 +1,5 @@
 /* Copyright 2020-2023. Uecker Lab, University Medical Center Goettingen.
- * Copyright 2022-2025. Institute of Biomedical Imaging. TU Graz.
+ * Copyright 2022-2026. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -240,6 +240,7 @@ int main_mobafit(int argc, char* argv[argc])
 	};
 
 	bool use_lm = false;
+	bool reg_agains_init = false;
 	int liniter = 50;
 
 	const struct opt_s opts[] = {
@@ -265,6 +266,7 @@ int main_mobafit(int argc, char* argv[argc])
 		OPTL_FLVECN(0, "scale", scale0, "Scaling"),
 
 		OPTL_SET(0, "levenberg-marquardt", &(use_lm), "Use Levenberg-Marquardt instead of Gauss-Newton"),
+		OPTL_SET(0, "reg-against-init", &(reg_agains_init), "Use initial guess as regularization target with IRGN"),
 		OPTL_INT(0, "liniter", &liniter, "iter", "(iterations for solving linearized problem)"),
 		OPTL_ULONG(0, "min-flag", &(bounds.min_flags), "flags", "Apply minimum constraint on selected maps"),
 		OPTL_ULONG(0, "max-flag", &(bounds.max_flags), "flags", "Apply maximum constraint on selected maps"),
@@ -285,7 +287,10 @@ int main_mobafit(int argc, char* argv[argc])
 
 	if (num_lorentzian_pools > 0)
 		seq = MPL;
-	
+
+	if (reg_agains_init && use_lm)
+		error("Regularization against initial guess is only implemented for IRGNM.\n");
+
 	num_init_gpu_support();
 
 	long bas_dims[DIMS];
@@ -583,6 +588,7 @@ int main_mobafit(int argc, char* argv[argc])
 
 	struct iter_conjgrad_conf conjgrad_conf = iter_conjgrad_defaults;
 	conjgrad_conf.Bi = md_calc_size(3, x_patch_dims);
+	conjgrad_conf.maxiter = liniter;
 
 	struct lsqr_conf lsqr_conf = lsqr_defaults;
 	lsqr_conf.it_gpu = false;
@@ -593,6 +599,7 @@ int main_mobafit(int argc, char* argv[argc])
 
 	struct iter3_irgnm_conf irgnm_conf = iter3_irgnm_defaults;
 	irgnm_conf.iter = iter;
+	irgnm_conf.cgiter = liniter;
 
 	struct iter3_levenberg_marquardt_conf lm_conf = iter3_levenberg_marquardt_defaults;
 	lm_conf.Bi = md_calc_size(3, x_patch_dims);
@@ -631,10 +638,18 @@ int main_mobafit(int argc, char* argv[argc])
 			continue;
 		}
 
+		assert(!(reg_agains_init && use_lm));
+
 		if (use_lm) {
 
 			iter4_levenberg_marquardt(CAST_UP(&lm_conf), nlop,
 					2 * md_calc_size(DIMS, x_patch_dims), (float*)x_patch, NULL,
+					2 * md_calc_size(DIMS, y_patch_dims), (const float*)y_patch, NULL,
+					(struct iter_op_s){ mobafit_bound, CAST_UP(&bounds) });
+		} else if (reg_agains_init){
+
+			iter4_irgnm(CAST_UP(&irgnm_conf), nlop,
+					2 * md_calc_size(DIMS, x_patch_dims), (float*)x_patch,  (const float*)x_patch,
 					2 * md_calc_size(DIMS, y_patch_dims), (const float*)y_patch, NULL,
 					(struct iter_op_s){ mobafit_bound, CAST_UP(&bounds) });
 		} else {
