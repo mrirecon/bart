@@ -1,6 +1,6 @@
 /* Copyright 2013-2015. The Regents of the University of California.
  * Copyright 2016-2021. Uecker Lab. University Center Göttingen.
- * Copyright 2021-2025. Institute of Biomedical Imaging. TU Graz.
+ * Copyright 2021-2026. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
@@ -1268,29 +1268,29 @@ complex float* private_cfl(int D, const long dims[D], const char* name)
 	long T;
 
 	if (-1 == (T = io_calc_size(D, dims, sizeof(complex float))))
-		error("private cfl %s\n", name);
+		error("private cfl %s: header yields invalid size\n", name);
 
 	int fd;
 	void* addr;
 	struct stat st;
 
 	if (-1 == (fd = open(name, O_RDONLY)))
-		io_error("private cfl %s\n", name);
+		io_error("private cfl %s: cannot open file\n", name);
 
 	if (-1 == (fstat(fd, &st)))
-		io_error("private cfl %s\n", name);
+		io_error("private cfl %s: cannot stat file\n", name);
 
 	if (T != st.st_size)
-		error("private cfl %s\n", name);
+		error("private cfl %s: file size (%ld) does not match header (%ld)\n", name, st.st_size, T);
 
 	if (MAP_FAILED == (addr = mmap(NULL, (size_t)T, PROT_READ|PROT_WRITE, MAP_PRIVATE | MAP_NORESERVE, fd, 0)))
-		io_error("private cfl %s\n", name);
+		io_error("private cfl %s: cannot mmap file\n", name);
 
 #ifdef __EMSCRIPTEN__
 	wasm_close_later(fd);
 #else
 	if (-1 == close(fd))
-		io_error("private cfl %s\n", name);
+		io_error("private cfl %s: cannot close file\n", name);
 #endif
 
 	return addr;
