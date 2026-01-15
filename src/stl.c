@@ -1,10 +1,10 @@
 /* Copyright 2024-2025. Uecker Lab. University Medical Center Göttingen
- * Copyright 2025. Institute of Biomedical Imaging. TU Graz.
+ * Copyright 2025-2026. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2024 Martin Heide
+ * 2024 - 2026 Martin Heide
  */
 
 #include <stdbool.h>
@@ -32,13 +32,15 @@ int main_stl(int argc, char* argv[argc])
         bool stat = false;
         bool print = false;
         bool no_nc = false;
+	bool vm = false; // volume measure
+	bool sm = false; // surface measure
         float scale = 0;
-        float shift[3] = {0, 0, 0};
+        float shift[3] = { 0, 0, 0 };
         enum stl_itype stl_choice = STL_NONE;
 
         struct arg_s args[] = {
 
-    		ARG_OUTFILE(true, &out_file, "output"),
+    		ARG_OUTFILE(false, &out_file, "output"),
 	};
         struct opt_s model_opts[] = {
 
@@ -50,9 +52,11 @@ int main_stl(int argc, char* argv[argc])
 		OPTL_INFILE(0, "input", &in_file, "", "Path to input file (.stl or cfl file format)."),
                 OPTL_SUBOPT2(0, "model", "<tag> ", "Generic geometric structures are available.", "Internal stl model (help: bart stl --model h).\n", ARRAY_SIZE(model_opts), model_opts),
 		OPT_FLOAT('s', &scale, "scale", "Mulitplicate all coordinates of model with factor."),
-                OPT_FLVEC3('S', &shift, "shift", "Shift all coordinates of model by vector."),
+                OPT_FLVEC3('S', &shift, "shift", "Shift all coordinates of model by vector.\n"),
 		OPTL_SET(0, "stat", &stat, "Show statistics of model."),
 		OPTL_SET(0, "print", &print, "Print out model."),
+		OPTL_SET(0, "vm", &vm, "Print out volume measure of model."),
+		OPTL_SET(0, "sm", &sm, "Print out surface measure of model."),
 		OPTL_SET(0, "no-nc", &no_nc, "(Don't recompute normal vectors with double precision.)"),
 	};
 
@@ -111,18 +115,44 @@ int main_stl(int argc, char* argv[argc])
         if (print)
                 stl_print(DIMS, dims, model);
 
-        if (stl_fileextension(out_file)) {
+	if (sm || vm) {
 
-                stl_write_binary(DIMS, dims, model, out_file);
+		struct triangle_stack* ts = stl_preprocess_model(DIMS, dims, model);
+		struct triangle* t = ts->tri;
 
-        } else {
+		double smv = 0;
+		double vmv = 0;
 
-                complex float* cmodel = create_cfl(out_file, DIMS, dims);
+		for (int i = 0; i < ts->N; i++) {
 
-                stl_d2cfl(DIMS, dims, model, cmodel);
+			smv += t[i].sur;
+			vmv += t[i].svol;
+		}
 
-                unmap_cfl(DIMS, dims, cmodel);
-        }
+		if (sm)
+			debug_printf(DP_INFO, "%f\n", smv);
+
+		if (vm)
+			debug_printf(DP_INFO, "%f\n", vmv);
+
+		md_free(ts);
+	}
+
+	if (NULL != out_file) {
+
+		if (stl_fileextension(out_file)) {
+
+			stl_write_binary(DIMS, dims, model, out_file);
+
+		} else {
+
+			complex float* cmodel = create_cfl(out_file, DIMS, dims);
+
+			stl_d2cfl(DIMS, dims, model, cmodel);
+
+			unmap_cfl(DIMS, dims, cmodel);
+		}
+	}
 
         md_free(model);
 
