@@ -89,8 +89,7 @@ int main_stl(int argc, char* argv[argc])
                         unmap_cfl(DIMS, dims, cmodel);
                 }
 
-                if (!no_nc)
-                        stl_compute_normals(DIMS, dims, model);
+
         }
 
         if (STL_TETRAHEDRON == stl_choice)
@@ -98,6 +97,9 @@ int main_stl(int argc, char* argv[argc])
 
         if (STL_HEXAHEDRON == stl_choice)
                 model = stl_internal_hexahedron(DIMS, dims);
+
+	if (!no_nc)
+		stl_compute_normals(DIMS, dims, model);
 
         double dshift[3] = {shift[0], shift[1], shift[2]};
 
