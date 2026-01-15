@@ -279,3 +279,59 @@ static bool test_stl_triangles_on_axes(void)
 }
 
 UT_REGISTER_TEST(test_stl_triangles_on_axes);
+
+static bool test_stl_measures(void)
+{
+        bool b = true;
+
+	long dimshex[DIMS];
+	long dimstet[DIMS];
+
+	double* mhex = stl_internal_hexahedron(DIMS, dimshex);
+	double* mtet = stl_internal_tetrahedron(DIMS, dimstet);
+
+	struct triangle_stack* tshex = stl_preprocess_model(DIMS, dimshex, mhex);
+	struct triangle_stack* tstet = stl_preprocess_model(DIMS, dimstet, mtet);
+
+	struct triangle* thex = tshex->tri;
+	struct triangle* ttet = tstet->tri;
+
+	double smvh = 0;
+	double vmvh = 0;
+	double smvt = 0;
+	double vmvt = 0;
+
+	for (int i = 0; i < tshex->N; i++) {
+
+		smvh += thex[i].sur;
+		vmvh += thex[i].svol;
+	}
+	for (int i = 0; i < tstet->N; i++) {
+
+		smvt += ttet[i].sur;
+		vmvt += ttet[i].svol;
+	}
+
+	if (TOL < fabs(4.86 - smvh))
+		b = false;
+
+	if (TOL < fabs(0.729 - vmvh))
+		b = false;
+
+	if (TOL < fabs(2.80592230826158139934 - smvt))
+		b = false;
+
+	if (TOL < fabs(0.243 - vmvt))
+		b = false;
+
+	md_free(tshex->tri);
+	md_free(tshex);
+	md_free(tstet->tri);
+	md_free(tstet);
+	md_free(mhex);
+	md_free(mtet);
+
+        return b;
+}
+
+UT_REGISTER_TEST(test_stl_measures);
