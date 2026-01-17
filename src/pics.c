@@ -59,6 +59,109 @@
 static const char help_str[] = "Parallel-imaging compressed-sensing reconstruction.\n";
 
 
+struct pics_config {
+
+	struct nufft_conf_s nuconf;
+
+	bool gpu;
+	bool gpu_gridding;
+	bool real_value_constraint;
+	bool time_encoded_asl;
+
+	unsigned long shared_img_flags;
+	unsigned long motion_flags;
+	unsigned long map_flags;
+	unsigned long lowmem_flags;
+};
+
+static const struct linop_s* pics_model(const struct pics_config* conf,
+				const long max_dims[DIMS], const long img_dims[DIMS], const long ksp_dims[DIMS],
+				const long traj_dims[DIMS], const complex float* traj,
+				const long bmx_dims[DIMS],
+				const long basis_dims[DIMS], const complex float* basis,
+				const long map_dims[DIMS], const complex float* maps,
+				const long pat_dims[DIMS], const complex float* pattern,
+				const long motion_dims[DIMS], complex float* motion,
+				const struct linop_s** nufft_op)
+{
+	const struct linop_s* forward_op = NULL;
+
+	if (NULL == traj) {
+
+		forward_op = sense_init(conf->shared_img_flags & ~conf->motion_flags,
+					max_dims, conf->map_flags, maps);
+
+		// apply temporal basis
+
+		if (NULL != basis) {
+
+			const struct linop_s* basis_op = linop_fmac_create(DIMS, bmx_dims, COEFF_FLAG, TE_FLAG, ~(COEFF_FLAG | TE_FLAG), basis);
+			forward_op = linop_chain_FF(forward_op, basis_op);
+		}
+
+		auto cod = linop_codomain(forward_op);
+		const struct linop_s* sample_op = linop_sampling_create(cod->dims, pat_dims, pattern);
+		forward_op = linop_chain_FF(forward_op, sample_op);
+
+	} else {
+
+		const complex float* traj_tmp = traj;
+
+		//for computation of psf on GPU
+#ifdef USE_CUDA
+		if (conf->gpu_gridding) {
+
+			assert(conf->gpu);
+
+			traj_tmp = md_gpu_move(DIMS, traj_dims, traj, CFL_SIZE);
+		}
+#endif
+
+		forward_op = sense_nc_init(max_dims, map_dims, maps, ksp_dims,
+				traj_dims, traj_tmp, &conf->nuconf,
+				pat_dims, pattern, basis_dims, basis, nufft_op,
+				conf->shared_img_flags & ~conf->motion_flags,
+				conf->lowmem_flags);
+
+#ifdef USE_CUDA
+		if (conf->gpu_gridding)
+			md_free(traj_tmp);
+#endif
+	}
+
+	if (NULL != motion) {
+
+		long img_motion_dims[DIMS];
+		md_copy_dims(DIMS, img_motion_dims, img_dims);
+		md_max_dims(DIMS, ~MOTION_FLAG, img_motion_dims, img_motion_dims, motion_dims);
+
+		const struct linop_s* motion_op = linop_interpolate_displacement_create(MOTION_DIM, (1 == img_dims[2]) ? 3 : 7, 1, DIMS, img_motion_dims, motion_dims, motion, img_dims);
+
+		forward_op = linop_chain_FF(motion_op, forward_op);
+	}
+
+	if (conf->real_value_constraint)
+		forward_op = linop_chain_FF(linop_realval_create(DIMS, img_dims), forward_op);
+
+#ifdef USE_CUDA
+	if (conf->gpu && (conf->gpu_gridding || NULL == traj)) {
+
+		auto tmp = linop_gpu_wrapper(forward_op);
+		linop_free(forward_op);
+		forward_op = tmp;
+	}
+#endif
+	if (conf->time_encoded_asl) {
+
+		const struct linop_s* hadamard_op = linop_hadamard_create(DIMS, img_dims, ITER_DIM);
+		forward_op = linop_chain_FF(hadamard_op, forward_op);
+	}
+
+	return forward_op;
+}
+
+
+
 
 int main_pics(int argc, char* argv[argc])
 {
@@ -123,16 +226,19 @@ int main_pics(int argc, char* argv[argc])
 
 	bool hogwild = false;
 
-	bool gpu_gridding = false;
 
 	struct opt_reg_s ropts;
 	opt_reg_init(&ropts);
 
 	unsigned long loop_flags = 0UL;
-	unsigned long shared_img_flags = 0UL;
-	unsigned long lowmem_flags = 0UL;
 
 	unsigned long mpi_flags = 0UL;
+
+	struct pics_config pics_conf;
+	pics_conf.shared_img_flags = 0UL;
+	pics_conf.lowmem_flags = 0UL;
+	pics_conf.motion_flags = 0UL;
+	pics_conf.gpu_gridding = false;
 
 
 	const struct opt_s opts[] = {
@@ -147,7 +253,7 @@ int main_pics(int argc, char* argv[argc])
 		OPT_CLEAR('n', &randshift, "disable random wavelet cycle spinning"),
 		OPT_SET('N', &overlapping_blocks, "do fully overlapping LLR blocks"),
 		OPT_SET('g', &bart_use_gpu, "use GPU"),
-		OPTL_SET(0, "gpu-gridding", &gpu_gridding, "use GPU for gridding"),
+		OPTL_SET(0, "gpu-gridding", &pics_conf.gpu_gridding, "use GPU for gridding"),
 		OPT_INFILE('p', &pat_file, "file", "pattern or weights"),
 		OPTL_SET(0, "precond", &(conf.precond), "interpret weights as preconditioner"),
 		OPT_PINT('b', &llr_blk, "blk", "Lowrank block size"),
@@ -181,13 +287,13 @@ int main_pics(int argc, char* argv[argc])
 		OPT_FLOAT('w', &scaling, "", "inverse scaling of the data"),
 		OPT_SET('S', &scale_im, "re-scale the image after reconstruction"),
 		OPT_ULONG('L', &loop_flags, "flags", "(batch-mode)"),
-		OPTL_ULONG(0, "shared-img-dims", &shared_img_flags, "flags", "deselect image dims with flags"),
+		OPTL_ULONG(0, "shared-img-dims", &pics_conf.shared_img_flags, "flags", "deselect image dims with flags"),
 		OPT_SET('K', &nufft_conf_options.pcycle, "randshift for NUFFT"),
 		OPT_INFILE('B', &basis_file, "file", "temporal (or other) basis"),
 		OPT_FLOAT('P', &bpsense_eps, "eps", "Basis Pursuit formulation, || y- Ax ||_2 <= eps"),
 		OPT_SET('M', &sms, "Simultaneous Multi-Slice reconstruction"),
 		OPTL_SET('U', "lowmem", &nufft_conf_options.lowmem, "Use low-mem mode of the nuFFT"),
-		OPTL_ULONG(0, "lowmem-stack", &lowmem_flags, "flags", "(Stack SENSE model along selected dimscurrently only supports COIL_DIM and noncart)"),
+		OPTL_ULONG(0, "lowmem-stack", &pics_conf.lowmem_flags, "flags", "(Stack SENSE model along selected dims - currently only supports COIL_DIM and noncart)"),
 		OPTL_CLEAR(0, "no-toeplitz", &nufft_conf_options.toeplitz, "(Turn off Toeplitz mode of nuFFT)"),
 		OPTL_OUTFILE(0, "psf_export", &psf_ofile, "file", "Export PSF to file"),
 		OPTL_INFILE(0, "psf_import", &psf_ifile, "file", "Import PSF from file"),
@@ -214,17 +320,17 @@ int main_pics(int argc, char* argv[argc])
 
 	admm.dynamic_tau = admm.relative_norm;
 
-	struct nufft_conf_s nuconf = nufft_conf_options;
+	pics_conf.nuconf = nufft_conf_options;
 
 	if (conf.bpsense)
-		nuconf.toeplitz = false;
+		pics_conf.nuconf.toeplitz = false;
 
-	if (0 != lowmem_flags) {
+	if (0 != pics_conf.lowmem_flags) {
 
-		nuconf.lowmem = true;
-		nuconf.precomp_fftmod = false;
-		nuconf.precomp_roll = !nuconf.toeplitz;
-		nuconf.precomp_linphase = false;
+		pics_conf.nuconf.lowmem = true;
+		pics_conf.nuconf.precomp_fftmod = false;
+		pics_conf.nuconf.precomp_roll = !pics_conf.nuconf.toeplitz;
+		pics_conf.nuconf.precomp_linphase = false;
 	}
 
 
@@ -258,7 +364,7 @@ int main_pics(int argc, char* argv[argc])
 		if (NULL == traj_file)
 			error("SMS is only supported for non-Cartesian trajectories.\n");
 
-		nuconf.cfft |= SLICE_FLAG;
+		pics_conf.nuconf.cfft |= SLICE_FLAG;
 
 		debug_printf(DP_INFO, "SMS reconstruction: MB = %ld\n", ksp_dims[SLICE_DIM]);
 	}
@@ -269,13 +375,16 @@ int main_pics(int argc, char* argv[argc])
 	if (ropts.asl && 2 != ksp_dims[ITER_DIM])
 		error("ASL reconstruction requires two slices (label and control) along ITER_DIM.\n");
 
+
+	// load coil sensitivities
+
 	complex float* maps = load_cfl_sameplace(sens_file, DIMS, map_dims, kspace);
 
-	unsigned long map_flags = md_nontriv_dims(DIMS, map_dims);
+	pics_conf.map_flags = md_nontriv_dims(DIMS, map_dims);
+	pics_conf.map_flags |= FFT_FLAGS | SENS_FLAGS;
 
-	map_flags |= FFT_FLAGS | SENS_FLAGS;
 
-
+	// load basis file
 
 	long basis_dims[DIMS] = { }; // analyzer false positive
 	complex float* basis = NULL;
@@ -288,9 +397,11 @@ int main_pics(int argc, char* argv[argc])
 		assert(!md_check_dimensions(DIMS, basis_dims, COEFF_FLAG | TE_FLAG));
 	}
 
+
+	// load motion field
+
 	long motion_dims[DIMS] = { };
 	complex float* motion = NULL;
-	unsigned long motion_flags = 0;
 
 	if (NULL != motion_file) {
 
@@ -299,14 +410,19 @@ int main_pics(int argc, char* argv[argc])
 		assert(!MD_IS_SET(bart_mpi_split_flags, MOTION_DIM));
 		assert(1 < motion_dims[MOTION_DIM]);
 
-		motion_flags = md_nontriv_dims(DIMS, motion_dims) & ~MOTION_FLAG;
+		pics_conf.motion_flags = md_nontriv_dims(DIMS, motion_dims) & ~MOTION_FLAG;
 	}
 
+
+	// load k-space trajectory
 
 	complex float* traj = NULL;
 
 	if (NULL != traj_file)
 		traj = load_cfl_sameplace(traj_file, DIMS, traj_dims, kspace);
+
+
+	// finalize dimensions
 
 	md_copy_dims(DIMS, max_dims, ksp_dims);
 	md_copy_dims(5, max_dims, map_dims);
@@ -332,7 +448,7 @@ int main_pics(int argc, char* argv[argc])
 		debug_print_dims(DP_INFO, DIMS, max_dims);
 	}
 
-	md_select_dims(DIMS, ~COIL_FLAG & ~shared_img_flags, img_dims, max_dims);
+	md_select_dims(DIMS, ~COIL_FLAG & ~pics_conf.shared_img_flags, img_dims, max_dims);
 	md_select_dims(DIMS, ~MAPS_FLAG, coilim_dims, max_dims);
 
 	if (!md_check_compat(DIMS, ~(MD_BIT(MAPS_DIM)|FFT_FLAGS), img_dims, map_dims))
@@ -346,6 +462,9 @@ int main_pics(int argc, char* argv[argc])
 
 
 	assert(1 == ksp_dims[MAPS_DIM]);
+
+
+	// setup
 
 	num_rand_init(0ULL);
 
@@ -390,7 +509,7 @@ int main_pics(int argc, char* argv[argc])
 
 
 
-	assert(!((conf.rwiter > 1) && (nuconf.toeplitz || conf.bpsense)));
+	assert(!((conf.rwiter > 1) && (pics_conf.nuconf.toeplitz || conf.bpsense)));
 
 
 	// initialize sampling pattern
@@ -445,112 +564,51 @@ int main_pics(int argc, char* argv[argc])
 		apply_mask(DIMS, map_dims, maps, restrict_dims);
 	}
 
+	if (traj && (NULL != psf_ifile) && (NULL == psf_ofile))
+		pics_conf.nuconf.nopsf = true;
 
 	// initialize forward_op
 
-	const struct linop_s* forward_op = NULL;
+	pics_conf.real_value_constraint = conf.rvc;
+	pics_conf.gpu = conf.gpu;
+	pics_conf.time_encoded_asl = ropts.teasl;
 
-	if (NULL == traj_file) {
+	const struct linop_s *nufft_op = NULL;
 
-		forward_op = sense_init(shared_img_flags & ~motion_flags, max_dims, map_flags, maps);
+	const struct linop_s* forward_op = pics_model(&pics_conf, max_dims, img_dims, ksp_dims,
+						traj_dims, traj, bmx_dims,  basis_dims, basis,
+						map_dims, maps, pat_dims, pattern,
+						motion_dims, motion, &nufft_op);
 
-		// apply temporal basis
+	// load / write PSF
 
-		if (NULL != basis_file) {
+	if (NULL != psf_ofile) {
 
-			const struct linop_s* basis_op = linop_fmac_create(DIMS, bmx_dims, COEFF_FLAG, TE_FLAG, ~(COEFF_FLAG | TE_FLAG), basis);
-			forward_op = linop_chain_FF(forward_op, basis_op);
-		}
+		int D = nufft_get_psf_dims(nufft_op, 0, NULL);
 
-		auto cod = linop_codomain(forward_op);
-		const struct linop_s* sample_op = linop_sampling_create(cod->dims, pat_dims, pattern);
-		forward_op = linop_chain_FF(forward_op, sample_op);
+		long psf_dims[D];
 
-	} else {
+		nufft_get_psf_dims(nufft_op, D, psf_dims);
 
-		const struct linop_s* nufft_op = NULL;
+		complex float* psf_out = create_cfl_sameplace(psf_ofile, D, psf_dims, kspace);
 
-		if ((NULL != psf_ifile) && (NULL == psf_ofile))
-			nuconf.nopsf = true;
+		nufft_get_psf(nufft_op, D, psf_dims, psf_out);
 
-		const complex float* traj_tmp = traj;
-
-		//for computation of psf on GPU
-#ifdef USE_CUDA
-		if (gpu_gridding) {
-
-			assert(conf.gpu);
-
-			traj_tmp = md_gpu_move(DIMS, traj_dims, traj, CFL_SIZE);
-		}
-#endif
-
-		forward_op = sense_nc_init(max_dims, map_dims, maps, ksp_dims,
-				traj_dims, traj_tmp, &nuconf,
-				pat_dims, pattern, basis_dims, basis, &nufft_op,
-				shared_img_flags & ~motion_flags, lowmem_flags);
-
-#ifdef USE_CUDA
-		if (gpu_gridding)
-			md_free(traj_tmp);
-#endif
-
-		if (NULL != psf_ofile) {
-
-			int D = nufft_get_psf_dims(nufft_op, 0, NULL);
-
-			long psf_dims[D];
-
-			nufft_get_psf_dims(nufft_op, D, psf_dims);
-
-			complex float* psf_out = create_cfl_sameplace(psf_ofile, D, psf_dims, kspace);
-
-			nufft_get_psf(nufft_op, D, psf_dims, psf_out);
-
-			unmap_cfl(D, psf_dims, psf_out);
-		}
-
-		if (NULL != psf_ifile) {
-
-			long psf_dims[DIMS + 1];
-
-			complex float* psf_in = load_cfl_sameplace(psf_ifile, DIMS + 1, psf_dims, kspace);
-
-			nufft_update_psf(nufft_op, DIMS + 1, psf_dims, psf_in);
-
-			unmap_cfl(DIMS + 1, psf_dims, psf_in);
-		}
-
-		linop_free(nufft_op);
+		unmap_cfl(D, psf_dims, psf_out);
 	}
 
-	if (NULL != motion) {
+	if (NULL != psf_ifile) {
 
-		long img_motion_dims[DIMS];
-		md_copy_dims(DIMS, img_motion_dims, img_dims);
-		md_max_dims(DIMS, ~MOTION_FLAG, img_motion_dims, img_motion_dims, motion_dims);
+		long psf_dims[DIMS + 1];
 
-		const struct linop_s* motion_op = linop_interpolate_displacement_create(MOTION_DIM, (1 == img_dims[2]) ? 3 : 7, 1, DIMS, img_motion_dims, motion_dims, motion, img_dims);
+		complex float* psf_in = load_cfl_sameplace(psf_ifile, DIMS + 1, psf_dims, kspace);
 
-		forward_op = linop_chain_FF(motion_op, forward_op);
+		nufft_update_psf(nufft_op, DIMS + 1, psf_dims, psf_in);
+
+		unmap_cfl(DIMS + 1, psf_dims, psf_in);
 	}
 
-	if (conf.rvc)
-		forward_op = linop_chain_FF(linop_realval_create(DIMS, img_dims), forward_op);
-
-#ifdef USE_CUDA
-	if (conf.gpu && (gpu_gridding || NULL == traj)) {
-
-		auto tmp = linop_gpu_wrapper(forward_op);
-		linop_free(forward_op);
-		forward_op = tmp;
-	}
-#endif
-	if (ropts.teasl) {
-
-		const struct linop_s* hadamard_op = linop_hadamard_create(DIMS, img_dims, ITER_DIM);
-		forward_op = linop_chain_FF(hadamard_op, forward_op);
-	}
+	linop_free(nufft_op);
 
 	// apply scaling
 
@@ -597,6 +655,8 @@ int main_pics(int argc, char* argv[argc])
 	md_clear(DIMS, img_dims, image, CFL_SIZE);
 
 
+	// load truth image
+
 	long img_truth_dims[DIMS];
 	complex float* image_truth = NULL;
 
@@ -619,6 +679,16 @@ int main_pics(int argc, char* argv[argc])
 #endif
 		xfree(image_truth_file);
 	}
+
+	// setup monitor to compute the error
+
+	struct iter_monitor_s* monitor = NULL;
+
+	if (NULL != image_truth)
+		monitor = iter_monitor_create(2 * md_calc_size(DIMS, img_dims), (const float*)image_truth, NULL, NULL);
+
+
+	// load warmstart image
 
 	long img_start_dims[DIMS];
 	complex float* image_start = NULL;
@@ -697,10 +767,7 @@ int main_pics(int argc, char* argv[argc])
 			    || (   (ALGO_NIHT == algo)
 				&& (ropts.regs[0].xform == NIHTWAV)));
 
-	struct iter_monitor_s* monitor = NULL;
-
-	if (NULL != image_truth)
-		monitor = iter_monitor_create(2 * md_calc_size(DIMS, img_dims), (const float*)image_truth, NULL, NULL);
+	// setup the reconstruction problem
 
 	if (0 < ropts.svars) {
 
@@ -733,6 +800,7 @@ int main_pics(int argc, char* argv[argc])
 		linop_free(extract);
 	}
 
+	// perform the reconstruction
 
 	auto iov = operator_domain(op);
 
@@ -741,16 +809,18 @@ int main_pics(int argc, char* argv[argc])
 			(conf.bpsense || conf.precond) ? iov->dims : ksp_dims,
 			(conf.bpsense || conf.precond) ? NULL : kspace);
 
-	operator_free(op);
-
-	opt_reg_free(&ropts, thresh_ops, trafos);
-
-	italgo_config_free(it);
+	// apply final scaling
 
 	if (scale_im)
 		md_zsmul(DIMS, img_dims, image, image, scaling);
 
 	// clean up
+
+	operator_free(op);
+
+	opt_reg_free(&ropts, thresh_ops, trafos);
+
+	italgo_config_free(it);
 
 	if (NULL != pat_file)
 		unmap_cfl(DIMS, pat_dims, pattern);
