@@ -546,6 +546,11 @@ int main_pics(int argc, char* argv[argc])
 		forward_op = tmp;
 	}
 #endif
+	if (ropts.teasl) {
+
+		const struct linop_s* hadamard_op = linop_hadamard_create(DIMS, img_dims, ITER_DIM);
+		forward_op = linop_chain_FF(hadamard_op, forward_op);
+	}
 
 	// apply scaling
 
@@ -587,11 +592,6 @@ int main_pics(int argc, char* argv[argc])
 		pridu.sigma_tau_ratio = scaling;
 	}
 
-	if (ropts.teasl) {
-
-		const struct linop_s* hadamard_op = linop_hadamard_create(DIMS, img_dims, ITER_DIM);
-		forward_op = linop_chain_FF(hadamard_op, forward_op);
-	}
 
 	complex float* image = create_cfl_sameplace(out_file, DIMS, img_dims, kspace);
 	md_clear(DIMS, img_dims, image, CFL_SIZE);
