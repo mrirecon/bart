@@ -1,4 +1,4 @@
-/* Copyright 2023-2024. TU Graz. Institute of Biomedical Imaging.
+/* Copyright 2023-2026. TU Graz. Institute of Biomedical Imaging.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -57,7 +57,9 @@ static int hint_get_rank(int N, const long pos[N], struct vptr_hint_s* hint)
 
 	for (int i = 0; i < MIN(N, hint->N); i++) {
 
-		offset += stride * ((1 == hint->dims[i]) ?  0 : pos[i]);
+		if (1 != hint->dims[i])
+			offset += stride * pos[i];
+
 		stride *= hint->dims[i];
 	}
 
@@ -94,6 +96,7 @@ struct vptr_hint_s* hint_mpi_create(unsigned long mpi_flags, int N, const long d
 	for (int i = N - 1; i >= 0; i--) {
 
 		procs = MAX(1, procs);
+
 		max_proc *= MIN(procs, (int)mdims[i]);
 
 		if (procs <= 1)
@@ -161,7 +164,7 @@ struct vptr_mem_s {
 
 struct vptr_mem_s vptr_mem_default = { NULL, 1, NULL, 0, 0UL };
 
-enum VPTR_LOC { VPTR_CPU, VPTR_GPU, VPTR_CFL, VPTR_ANY, VPTR_LOC_COUNT };
+enum VPTR_LOC { VPTR_CPU, VPTR_GPU, VPTR_CFL, VPTR_ANY, VPTR_LOC_COUNT, VPTR_LOC_MAX };
 long vptr_size[VPTR_LOC_COUNT] = { 0 };
 long vptr_peak[VPTR_LOC_COUNT] = { 0 };
 
@@ -169,10 +172,10 @@ long vptr_peak[VPTR_LOC_COUNT] = { 0 };
 static enum VPTR_LOC vptr_loc_sameplace(enum VPTR_LOC loc)
 {
 	switch (loc) {
-		case VPTR_CPU: return VPTR_CPU;
-		case VPTR_GPU: return VPTR_GPU;
-		case VPTR_CFL: return VPTR_CPU;
-		default: assert(0);
+	case VPTR_CPU: return VPTR_CPU;
+	case VPTR_GPU: return VPTR_GPU;
+	case VPTR_CFL: return VPTR_CPU;
+	default: assert(0);
 	}
 }
 
@@ -198,8 +201,11 @@ static void vptr_mem_block_init(struct vptr_mem_s* mem)
 	if (NULL == mem->mem) {
 
 		long tdims[mem->shape->N];
+
 		md_select_dims(mem->shape->N, mem->flags, tdims, mem->shape->dims);
+
 		mem->num_blocks = md_calc_size(mem->shape->N, tdims);
+
 		mem->mem = *TYPE_ALLOC(void*[mem->num_blocks]);
 
 		for (int i = 0; i < mem->num_blocks; i++)
@@ -222,14 +228,18 @@ static void vptr_mem_block_alloc(struct vptr_mem_s* mem, int idx, enum VPTR_LOC 
 
 	case VPTR_CPU:
 		mem->mem[idx] = xmalloc((size_t)mem->block_size);
+
 		if (clear)
 			memset(mem->mem[idx], 0, (size_t)mem->block_size);
+
 		break;
 #ifdef USE_CUDA
 	case VPTR_GPU:
 		mem->mem[idx] = cuda_malloc(mem->block_size);
+
 		if (clear)
 			cuda_clear(mem->block_size, mem->mem[idx]);
+
 		break;
 #endif
 	default:
@@ -248,10 +258,12 @@ static void vptr_mem_block_free(struct vptr_mem_s* mem, int idx, enum VPTR_LOC l
 		return;
 
 	switch (loc) {
+
 	case VPTR_CFL:
 		assert(0 == idx);
 		unmap_cfl(mem->shape->N, mem->shape->dims, mem->mem[idx]);
 		break;
+
 	case VPTR_CPU:
 		xfree(mem->mem[idx]);
 		break;
@@ -328,7 +340,9 @@ struct mem_s {
 					// => we can use a simple all_reduce to sum up the results
 };
 
-const char* str_byte[] = { "B", "KB", "MB", "GB", "TB" };
+
+
+static const char* str_byte[] = { "B", "KB", "MB", "GB", "TB" };
 
 static const char* get_byte_unit(size_t size)
 {
@@ -358,12 +372,21 @@ static double get_byte_size(size_t size)
 	return fsize;
 }
 
+
+
 static void vptr_debug_mem(int dl, const struct mem_s* mem)
 {
-	assert(0 != mem);
+	assert(NULL != mem);
+
+	const char *location[VPTR_LOC_MAX] = {
+		[VPTR_CFL] = "wrapping CFL",
+		[VPTR_GPU] = "on GPU",
+		[VPTR_CPU] = "on CPU",
+	};
+
 	debug_printf(dl, "Virtual pointer %p %s (%.1f%s)\n", mem->ptr,
-		(VPTR_CFL == mem->loc) ? "wrapping CFL" : (VPTR_GPU == vptr_loc_sameplace(mem->loc) ? "on GPU" : "on CPU"),
-		get_byte_size(mem->len), get_byte_unit(mem->len));
+			location[mem->loc], get_byte_size(mem->len), get_byte_unit(mem->len));
+
 
 	if (0 < mem->shape.N) {
 
@@ -588,8 +611,10 @@ static void vptr_set_dims_int(struct mem_s* mem, int N, const long dims[N], size
 		if (NULL != hint) {
 
 			assert(md_check_compat(MIN(N, hint->N), ~0UL, dims, hint->dims));
+
 			mem->blocks.flags = hint->mpi_flags;
 		}
+
 	} else {
 
 		assert(mem->shape.N == N);
@@ -613,6 +638,7 @@ void vptr_set_dims_sameplace(const void* x, const void* ref)
 {
 	struct mem_s* mem = search(x, false);
 	struct mem_s* rmem = search(ref, false);
+
 	assert(NULL != mem);
 	assert(NULL != rmem);
 
@@ -631,13 +657,15 @@ void vptr_set_dims_sameplace(const void* x, const void* ref)
 			sub_mem[i]->clear = mem->clear;
 			sub_mem[i]->reduction_buffer = mem->reduction_buffer;
 
-			vptr_set_dims_int(sub_mem[i], rmem->range.sub_ptr[i]->shape.N, rmem->range.sub_ptr[i]->shape.dims, rmem->range.sub_ptr[i]->shape.size, rmem->range.sub_ptr[i]->hint);
+			vptr_set_dims_int(sub_mem[i], rmem->range.sub_ptr[i]->shape.N, rmem->range.sub_ptr[i]->shape.dims,
+					rmem->range.sub_ptr[i]->shape.size, rmem->range.sub_ptr[i]->hint);
 		}
 
 		mem->range.D = D;
 		mem->range.sub_ptr = ARR_CLONE(struct mem_s*[D], sub_mem);
 		mem->free = true;
 		mem->hint = vptr_hint_ref(rmem->hint);
+
 	} else {
 
 		vptr_set_dims_int(mem, rmem->shape.N, rmem->shape.dims, rmem->shape.size, rmem->hint);
@@ -649,6 +677,7 @@ static struct mem_s* vptr_create(int N, const long dims[N], size_t size, struct 
 	long len = md_calc_size(N, dims) * (long)size;
 
 	struct mem_s* mem = vptr_reserve_int((size_t)len);
+
 	vptr_set_dims_int(mem, N, dims, size, hint);
 
 	return mem;
@@ -745,13 +774,21 @@ bool is_vptr(const void* ptr)
 bool is_vptr_gpu(const void* ptr)
 {
 	struct mem_s* mem = search(ptr, false);
-	return mem && (VPTR_GPU == vptr_loc_sameplace(mem->loc));
+
+	if (!mem)
+		return false;
+
+	return (VPTR_GPU == vptr_loc_sameplace(mem->loc));
 }
 
 bool is_vptr_cpu(const void* ptr)
 {
 	struct mem_s* mem = search(ptr, false);
-	return mem && (VPTR_CPU == vptr_loc_sameplace(mem->loc));
+
+	if (!mem)
+		return false;
+
+	return (VPTR_CPU == vptr_loc_sameplace(mem->loc));
 }
 
 static void vptr_update_loc(struct mem_s* mem, enum VPTR_LOC loc)
@@ -771,23 +808,25 @@ static void vptr_update_loc(struct mem_s* mem, enum VPTR_LOC loc)
 		for (int i = 0; i < mem->range.D; i++)
 			vptr_update_loc(mem->range.sub_ptr[i], loc);
 
-	} else {
-
-		for (int i = 0; (NULL != mem->blocks.mem) && (i < mem->blocks.num_blocks); i++)
-			if(NULL != mem->blocks.mem[i])
-				error("Cannot change location of already allocated virtual pointer!\n");
+		return;
 	}
+
+	for (int i = 0; (NULL != mem->blocks.mem) && (i < mem->blocks.num_blocks); i++)
+		if (NULL != mem->blocks.mem[i])
+			error("Cannot change location of already allocated virtual pointer!\n");
 }
 
 void vptr_set_gpu(const void* ptr)
 {
 	struct mem_s* mem = search(ptr, false);
+
 	vptr_update_loc(mem, VPTR_GPU);
 }
 
 void vptr_set_cpu(const void* ptr)
 {
 	struct mem_s* mem = search(ptr, false);
+
 	vptr_update_loc(mem, VPTR_CPU);
 }
 
@@ -1082,7 +1121,8 @@ static void loop_access_dims(int N, unsigned long flags[N], const long adims[N],
 	}
 }
 
-static bool check_valid_loop_access(const struct mem_s* mem , int N, const long dims[N], const long strs[N], size_t size, const void* ptr, bool throw_error)
+static bool check_valid_loop_access(const struct mem_s* mem, int N,
+		const long dims[N], const long strs[N], size_t size, const void* ptr, bool throw_error)
 {
 	const void* minp = ptr;
 	const void* maxp = ptr + size - 1;
@@ -1100,6 +1140,7 @@ static bool check_valid_loop_access(const struct mem_s* mem , int N, const long 
 		debug_print_dims(DP_INFO, N, dims);
 		debug_print_dims(DP_INFO, N, strs);
 		vptr_debug_mem(DP_ERROR, mem);
+
 		error("Invalid vptr access at %p!\n", ptr);
 	}
 
@@ -1136,6 +1177,7 @@ unsigned long vptr_block_loop_flags(int N, const long dims[N], const long strs[N
 	check_valid_loop_access(mem, N, dims, strs, size, ptr, true);
 
 	unsigned long lflags = mem->blocks.flags;
+
 	if (NULL != mem->hint)
 		lflags |= mem->hint->mpi_flags;
 
@@ -1202,7 +1244,9 @@ void vptr_contiguous_strs(int N, const void* ptr, unsigned long lflags, long nst
 			continue;
 		}
 
-		nstrs[i] = md_reravel_index(Nm, ~(2 * mem->blocks.flags) & md_nontriv_dims(Nm, mdims), md_nontriv_dims(Nm, mdims), mdims, labs(ostrs[i])) * (ostrs[i] < 0 ? -1 : 1);
+		unsigned long flags = ~(mem->blocks.flags << 1) & md_nontriv_dims(Nm, mdims);
+		nstrs[i] = md_reravel_index(Nm, flags, md_nontriv_dims(Nm, mdims), mdims, 
+					labs(ostrs[i])) * ((ostrs[i] < 0) ? -1 : 1);
 	}
 }
 
@@ -1239,7 +1283,7 @@ int mpi_ptr_get_rank(const void* ptr)
 	md_set_dims(N, pos, 0);
 
 	// position in allocation
-	md_unravel_index(mem->shape.N, pos, ~(0UL), mem->shape.dims, (ptr - mem->ptr) / (long)mem->shape.size);
+	md_unravel_index(mem->shape.N, pos, ~0UL, mem->shape.dims, (ptr - mem->ptr) / (long)mem->shape.size);
 
 	return hint_get_rank(h->N, pos, mem->hint);
 }
@@ -1306,12 +1350,15 @@ static bool mpi_accessible_from_mult(int N, const struct mem_s* mem[N], const vo
 bool mpi_accessible_mult(int N, const void* tptr[N])
 {
 	const void* ptr[N];
+
 	for (int i = 0; i < N; i++)
 		ptr[i] = vptr_resolve_range(tptr[i]);
 
 	const struct mem_s* mem[N];
+
 	for (int i = 0; i < N; i++)
 		mem[i] = search(ptr[i], false);
+
 
 	if (!mpi_accessible_from_mult(N, mem, ptr, mpi_get_rank()))
 		return false;
@@ -1322,9 +1369,12 @@ bool mpi_accessible_mult(int N, const void* tptr[N])
 		if (mem[i] && mem[i]->reduction_buffer)
 			reduce = true;
 
-	for (int i = 0; i < mpi_get_rank(); i++)
-		if (reduce && mpi_accessible_from_mult(N, mem, ptr, i))
-			return false;
+	if (reduce) {
+
+		for (int i = 0; i < mpi_get_rank(); i++)
+			if (mpi_accessible_from_mult(N, mem, ptr, i))
+				return false;
+	}
 
 	return true;
 }
@@ -1394,7 +1444,10 @@ void mpi_unset_reduction_buffer(const void* ptr)
 
 bool mpi_is_reduction(int N, const long dims[N], const long ostrs[N], const void* optr, size_t osize, const long istrs[N], const void* iptr, size_t isize)
 {
-	struct vptr_mapped_dims_s* mdims = vptr_map_dims(N, dims, 2, (const long*[2]) { ostrs, istrs }, (const size_t[2]){ osize, isize }, (void*[2]){ (void*)optr, (void*)iptr });
+	struct vptr_mapped_dims_s* mdims = vptr_map_dims(N, dims, 2,
+					(const long*[2]) { ostrs, istrs },
+					(const size_t[2]){ osize, isize },
+					(void*[2]){ (void*)optr, (void*)iptr });
 
 	if (NULL != mdims) {
 
@@ -1403,7 +1456,12 @@ bool mpi_is_reduction(int N, const long dims[N], const long ostrs[N], const void
 		while (NULL != mdims) {
 
 			const long (*mstrs)[mdims->D][mdims->N] = (void*) mdims->strs;
-			ret = ret || mpi_is_reduction(mdims->N, mdims->dims, (*mstrs)[0], mdims->ptr[0], osize, (*mstrs)[1], mdims->ptr[1], isize);
+
+			if (mpi_is_reduction(mdims->N, mdims->dims,
+						(*mstrs)[0], mdims->ptr[0], osize,
+						(*mstrs)[1], mdims->ptr[1], isize))
+				ret = true;
+
 			mdims = vptr_mapped_dims_free_and_next(mdims);
 		}
 
@@ -1470,9 +1528,12 @@ struct vptr_hint_s* vptr_get_hint(const void* ptr)
 
 
 
-static struct vptr_mapped_dims_s* vptr_mem_map_dims(int N, const long odims[N], int D, const long* ostrs[D], const size_t size[D], void* ptr[D], const struct mem_s* mem[D], bool check_changed)
+static struct vptr_mapped_dims_s* vptr_mem_map_dims(int N, const long odims[N],
+		int D, const long* ostrs[D], const size_t size[D], void* ptr[D],
+		const struct mem_s* mem[D], bool check_changed)
 {
 	int Nmem = 0;
+
 	for (int i = 0; i < D; i++)
 		if (NULL != mem[i])
 			Nmem = MAX(Nmem, mem[i]->shape.N);
@@ -1525,8 +1586,7 @@ static struct vptr_mapped_dims_s* vptr_mem_map_dims(int N, const long odims[N], 
 		for (int j = 0; j < D; j++)
 			strs[j][ip] = ostrs[j][i];
 
-		dims[ip] = odims[i];
-		ip++;
+		dims[ip++] = odims[i];
 	}
 
 	do {
@@ -1540,12 +1600,20 @@ static struct vptr_mapped_dims_s* vptr_mem_map_dims(int N, const long odims[N], 
 			for (int k = 0; k < Nmem + Nsize; k++) {
 
 				bool match = true;
+
 				for (int l = 0; l < D; l++) {
 
-					if (((NULL == mem[l]) || (1 == mem[l]->shape.N)) && !MD_IS_SET(set_flag, l))
-						continue;
+					if (!MD_IS_SET(set_flag, l)) {
 
-					match = match && (strs[l][k] * dims[k] == strs[l][j]);
+						if (NULL == mem[l])
+							continue;
+
+						if (1 == mem[l]->shape.N)
+							continue;
+					}
+
+					if (strs[l][k] * dims[k] != strs[l][j])
+						match = false;
 				}
 
 				if (!match)
@@ -1577,6 +1645,7 @@ static struct vptr_mapped_dims_s* vptr_mem_map_dims(int N, const long odims[N], 
 				}
 			}
 		}
+
 	} while (split);
 
 	if (1 == md_calc_size(Nmem, dims) && check_changed)
@@ -1587,16 +1656,20 @@ static struct vptr_mapped_dims_s* vptr_mem_map_dims(int N, const long odims[N], 
 	int Nnew = Nred + Nmem + Nsize;
 
 	long nstrs[D][Nnew];
+
 	for (int i = 0; i < D; i++)
 		md_select_strides(Nnew, flag, nstrs[i], strs[i]);
 
 	if (check_changed) {
 
 		bool same = (N >= Nmem);
-		same = same && md_check_equal_dims(Nmem, dims, odims, ~0UL);
+
+		if (!md_check_equal_dims(Nmem, dims, odims, ~0UL))
+			same = false;
 
 		for (int i = 0; i < D; i++)
-			same = same && md_check_equal_dims(Nmem, nstrs[i], ostrs[i], flag);
+			if (!md_check_equal_dims(Nmem, nstrs[i], ostrs[i], flag))
+				same = false;
 
 		if (same)
 			return NULL;
@@ -1631,9 +1704,17 @@ struct vptr_mapped_dims_s* vptr_map_dims(int N, const long dims[N], int D, const
 		tptr[i] = vptr_resolve_range(ptr[i]);
 		mem[i] = search(tptr[i], false);
 
-		valid = valid && ((NULL == mem[i]) || check_valid_loop_access(mem[i], N, dims, strs[i], size[i], tptr[i], false));
-		vptr = vptr || (NULL != mem[i]);
-		vptr_range = vptr_range || (tptr[i] != ptr[i]);
+		if (NULL != mem[i]) {
+
+			if (!check_valid_loop_access(mem[i], N, dims, strs[i], size[i], tptr[i], false))
+				valid = false;
+		}
+
+		if (NULL != mem[i])
+			vptr = true;
+
+		if (tptr[i] != ptr[i])
+			vptr_range = true;
 	}
 
 	if (!vptr)
@@ -1642,18 +1723,16 @@ struct vptr_mapped_dims_s* vptr_map_dims(int N, const long dims[N], int D, const
 	if (valid)
 		return vptr_mem_map_dims(N, dims, D, strs, size, tptr, mem, !vptr_range);
 
-	if (1 != N)
-		error("Cannot split vptr range with non flat dimensions!\n");
+	assert(1 == N); // Cannot split vptr range with non flat dimensions
 
 	long dim = dims[0];
 
 	for (int i = 0; i < D; i++) {
 
-		if ((0 == strs[i][0]) || NULL == mem[i])
+		if ((0 == strs[i][0]) || (NULL == mem[i]))
 			continue;
 
-		if (0 > strs[i][0])
-			error("Cannot split vptr range with negative strides!\n"); //FIXME: should be possible
+		assert(0 <= strs[i][0]); // Cannot split vptr range with negative strides
 
 		dim = MIN(dim, ((long)mem[i]->len - (tptr[i] - mem[i]->ptr)) / strs[i][0]);
 	}
@@ -1663,10 +1742,14 @@ struct vptr_mapped_dims_s* vptr_map_dims(int N, const long dims[N], int D, const
 	struct vptr_mapped_dims_s* ret = vptr_mem_map_dims(1, &dim, D, strs, size, tptr, mem, false);
 
 	long rdim = dims[0] - dim;
+
 	for (int i = 0; i < D; i++)
 		tptr[i] = ptr[i] + dim * strs[i][0];
 
-	ret->next = 0 < rdim ? vptr_map_dims(1, &rdim, D, strs, size, tptr) : NULL;
+	ret->next = NULL;
+
+	if (0 < rdim)
+		ret->next = vptr_map_dims(1, &rdim, D, strs, size, tptr);
 
 	return ret;
 }
