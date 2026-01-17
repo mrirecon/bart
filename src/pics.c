@@ -1,6 +1,6 @@
 /* Copyright 2013-2019. The Regents of the University of California.
  * Copyright 2015-2023. Uecker Lab. University Medical Center Göttingen.
- * Copyright 2021-2024. TU Graz. Institute of Biomedical Imaging.
+ * Copyright 2021-2026. TU Graz. Institute of Biomedical Imaging.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -31,13 +31,9 @@
 #include "iter/monitor.h"
 
 #include "linops/linop.h"
-#include "linops/fmac.h"
 #include "linops/someops.h"
-#include "linops/realval.h"
 
 #include "sense/recon.h"
-#include "sense/model.h"
-#include "sense/modelnc.h"
 #include "sense/optcom.h"
 
 #include "noncart/nufft.h"
@@ -50,115 +46,12 @@
 #include "misc/misc.h"
 #include "misc/opts.h"
 
-#include "motion/displacement.h"
-
 #include "grecon/optreg.h"
+#include "grecon/model.h"
 #include "grecon/italgo.h"
 
 
 static const char help_str[] = "Parallel-imaging compressed-sensing reconstruction.\n";
-
-
-struct pics_config {
-
-	struct nufft_conf_s nuconf;
-
-	bool gpu;
-	bool gpu_gridding;
-	bool real_value_constraint;
-	bool time_encoded_asl;
-
-	unsigned long shared_img_flags;
-	unsigned long motion_flags;
-	unsigned long map_flags;
-	unsigned long lowmem_flags;
-};
-
-static const struct linop_s* pics_model(const struct pics_config* conf,
-				const long max_dims[DIMS], const long img_dims[DIMS], const long ksp_dims[DIMS],
-				const long traj_dims[DIMS], const complex float* traj,
-				const long bmx_dims[DIMS],
-				const long basis_dims[DIMS], const complex float* basis,
-				const long map_dims[DIMS], const complex float* maps,
-				const long pat_dims[DIMS], const complex float* pattern,
-				const long motion_dims[DIMS], complex float* motion,
-				const struct linop_s** nufft_op)
-{
-	const struct linop_s* forward_op = NULL;
-
-	if (NULL == traj) {
-
-		forward_op = sense_init(conf->shared_img_flags & ~conf->motion_flags,
-					max_dims, conf->map_flags, maps);
-
-		// apply temporal basis
-
-		if (NULL != basis) {
-
-			const struct linop_s* basis_op = linop_fmac_create(DIMS, bmx_dims, COEFF_FLAG, TE_FLAG, ~(COEFF_FLAG | TE_FLAG), basis);
-			forward_op = linop_chain_FF(forward_op, basis_op);
-		}
-
-		auto cod = linop_codomain(forward_op);
-		const struct linop_s* sample_op = linop_sampling_create(cod->dims, pat_dims, pattern);
-		forward_op = linop_chain_FF(forward_op, sample_op);
-
-	} else {
-
-		const complex float* traj_tmp = traj;
-
-		//for computation of psf on GPU
-#ifdef USE_CUDA
-		if (conf->gpu_gridding) {
-
-			assert(conf->gpu);
-
-			traj_tmp = md_gpu_move(DIMS, traj_dims, traj, CFL_SIZE);
-		}
-#endif
-
-		forward_op = sense_nc_init(max_dims, map_dims, maps, ksp_dims,
-				traj_dims, traj_tmp, &conf->nuconf,
-				pat_dims, pattern, basis_dims, basis, nufft_op,
-				conf->shared_img_flags & ~conf->motion_flags,
-				conf->lowmem_flags);
-
-#ifdef USE_CUDA
-		if (conf->gpu_gridding)
-			md_free(traj_tmp);
-#endif
-	}
-
-	if (NULL != motion) {
-
-		long img_motion_dims[DIMS];
-		md_copy_dims(DIMS, img_motion_dims, img_dims);
-		md_max_dims(DIMS, ~MOTION_FLAG, img_motion_dims, img_motion_dims, motion_dims);
-
-		const struct linop_s* motion_op = linop_interpolate_displacement_create(MOTION_DIM, (1 == img_dims[2]) ? 3 : 7, 1, DIMS, img_motion_dims, motion_dims, motion, img_dims);
-
-		forward_op = linop_chain_FF(motion_op, forward_op);
-	}
-
-	if (conf->real_value_constraint)
-		forward_op = linop_chain_FF(linop_realval_create(DIMS, img_dims), forward_op);
-
-#ifdef USE_CUDA
-	if (conf->gpu && (conf->gpu_gridding || NULL == traj)) {
-
-		auto tmp = linop_gpu_wrapper(forward_op);
-		linop_free(forward_op);
-		forward_op = tmp;
-	}
-#endif
-	if (conf->time_encoded_asl) {
-
-		const struct linop_s* hadamard_op = linop_hadamard_create(DIMS, img_dims, ITER_DIM);
-		forward_op = linop_chain_FF(hadamard_op, forward_op);
-	}
-
-	return forward_op;
-}
 
 
 
@@ -320,17 +213,18 @@ int main_pics(int argc, char* argv[argc])
 
 	admm.dynamic_tau = admm.relative_norm;
 
-	pics_conf.nuconf = nufft_conf_options;
+	struct nufft_conf_s nuconf = nufft_conf_options;
+	pics_conf.nuconf = &nuconf;
 
 	if (conf.bpsense)
-		pics_conf.nuconf.toeplitz = false;
+		pics_conf.nuconf->toeplitz = false;
 
 	if (0 != pics_conf.lowmem_flags) {
 
-		pics_conf.nuconf.lowmem = true;
-		pics_conf.nuconf.precomp_fftmod = false;
-		pics_conf.nuconf.precomp_roll = !pics_conf.nuconf.toeplitz;
-		pics_conf.nuconf.precomp_linphase = false;
+		pics_conf.nuconf->lowmem = true;
+		pics_conf.nuconf->precomp_fftmod = false;
+		pics_conf.nuconf->precomp_roll = !pics_conf.nuconf->toeplitz;
+		pics_conf.nuconf->precomp_linphase = false;
 	}
 
 
@@ -364,7 +258,7 @@ int main_pics(int argc, char* argv[argc])
 		if (NULL == traj_file)
 			error("SMS is only supported for non-Cartesian trajectories.\n");
 
-		pics_conf.nuconf.cfft |= SLICE_FLAG;
+		pics_conf.nuconf->cfft |= SLICE_FLAG;
 
 		debug_printf(DP_INFO, "SMS reconstruction: MB = %ld\n", ksp_dims[SLICE_DIM]);
 	}
@@ -509,7 +403,7 @@ int main_pics(int argc, char* argv[argc])
 
 
 
-	assert(!((conf.rwiter > 1) && (pics_conf.nuconf.toeplitz || conf.bpsense)));
+	assert(!((conf.rwiter > 1) && (pics_conf.nuconf->toeplitz || conf.bpsense)));
 
 
 	// initialize sampling pattern
@@ -565,7 +459,7 @@ int main_pics(int argc, char* argv[argc])
 	}
 
 	if (traj && (NULL != psf_ifile) && (NULL == psf_ofile))
-		pics_conf.nuconf.nopsf = true;
+		pics_conf.nuconf->nopsf = true;
 
 	// initialize forward_op
 
