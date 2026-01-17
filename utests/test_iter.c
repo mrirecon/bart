@@ -1,5 +1,5 @@
 /* Copyright 2019-2020. Martin Uecker.
- * Copyright 2024. Graz University of Technology.
+ * Copyright 2024-2026. Graz University of Technology.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
@@ -29,7 +29,6 @@
 #include "nlops/cast.h"
 
 #include "utest.h"
-
 
 
 
@@ -406,5 +405,60 @@ static bool test_iter_eulermaruyama(void)
 }
 
 UT_REGISTER_TEST(test_iter_eulermaruyama);
+
+
+
+static bool test_iter_eulermaruyama_precond(void)
+{
+	enum { N = 2 };
+	long dims[N] = { 300, 10 };
+
+	complex float* src = md_calloc(N, dims, CFL_SIZE);
+	complex float* dst = md_calloc(N, dims, CFL_SIZE);
+
+	complex float diag[] = { 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9 };
+	const struct linop_s* id = linop_cdiag_create(N, dims, 2UL, diag);
+
+	struct lsqr_conf conf = lsqr_defaults;
+	struct iter_eulermaruyama_conf em_conf = iter_eulermaruyama_defaults;
+	em_conf.step = 0.1;
+	em_conf.maxiter = 10;
+	em_conf.lop_prec = id;
+	em_conf.max_prec_iter = 7;
+	em_conf.diag_prec = 0.0001;
+	em_conf.batchsize = 1;
+
+	auto p = prox_zero_create(N, dims);
+
+	const struct linop_s* trafos[1] = { id };
+	const struct operator_p_s* prox_ops[1] = { p };
+
+	const struct operator_p_s* lsqr = lsqr2_create(&conf,
+						iter2_eulermaruyama, CAST_UP(&em_conf),
+						NULL, id, NULL,
+						1, prox_ops, trafos, NULL);
+
+	operator_p_apply(lsqr, 1., N, dims, dst, N, dims, src);
+
+	complex float std[10];
+	md_zstd(N, dims, 1UL, std, dst);
+
+	for (int i = 0; i < 10; i++)
+		if (cabsf(diag[i] * std[i] - 1.f) > 0.1)
+			return false;
+
+	linop_free(id);
+
+	operator_p_free(p);
+
+	md_free(src);
+	md_free(dst);
+
+	operator_p_free(lsqr);
+
+	return true;
+}
+
+UT_REGISTER_TEST(test_iter_eulermaruyama_precond);
 
 
