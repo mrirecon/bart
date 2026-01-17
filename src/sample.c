@@ -87,8 +87,10 @@ static void print_stats(int dl, float t, long img_dims[DIMS], const complex floa
 	md_copy(1, MD_DIMS(1), &std_corner, std_device, FL_SIZE);
 
 	complex float* tmp = md_alloc_sameplace(DIMS, img_dims, CFL_SIZE, samples);
+
 	fftuc(DIMS, img_dims, 7, tmp, samples);
 	md_zstd2(DIMS, corn_dims, ~0ul, MD_SINGLETON_STRS(DIMS), std_device, MD_STRIDES(DIMS, img_dims, CFL_SIZE), tmp);
+
 	md_free(tmp);
 
 	float kstd_corner;
@@ -323,11 +325,19 @@ int main_sample(int argc, char* argv[argc])
 		md_select_dims(DIMS, ~COIL_FLAG, img_dims, col_dims);
 
 		long trj_dims[DIMS];
-		complex float* traj = (NULL == traj_file) ? NULL : load_cfl(traj_file, DIMS, trj_dims);
+		complex float* traj = NULL;
+
+		if (traj_file)
+			traj = load_cfl(traj_file, DIMS, trj_dims);
 
 		long pat_dims[DIMS];
 		md_select_dims(DIMS, ~COIL_FLAG, pat_dims, ksp_dims);
-		complex float* pat = ((NULL == pattern_file) ? anon_cfl(NULL, DIMS, pat_dims) : load_cfl(pattern_file, DIMS, pat_dims));
+		complex float* pat;
+
+		if (NULL == pattern_file)
+			pat = anon_cfl(NULL, DIMS, pat_dims);
+		else
+			pat = load_cfl(pattern_file, DIMS, pat_dims);
 
 		if (NULL == pattern_file)
 			estimate_pattern(DIMS, ksp_dims, COIL_FLAG, pat, ksp);
@@ -355,9 +365,11 @@ int main_sample(int argc, char* argv[argc])
 			const long dims[5] = { 1, img_dims[0], img_dims[1], img_dims[2], batchsize };
 
 			nn_t cunet = cunet_create(&cunet_conf, 5, dims);
+
 			cunet = nn_denoise_precond_edm(cunet, -1., -1., 0.5, false);
 
 			nn_weights_t weights = load_nn_weights(cunet_weights);
+
 			nlop = nn_get_nlop_wo_weights_F(cunet, weights, true);
 
 			nn_weights_free(weights);
@@ -392,6 +404,7 @@ int main_sample(int argc, char* argv[argc])
 			assert(md_check_equal_dims(DIMS, msk_dims, img_dims, md_nontriv_dims(DIMS, msk_dims)));
 
 			const struct linop_s* lop_msk = linop_cdiag_create(DIMS, img_dims, md_nontriv_dims(DIMS, msk_dims), msk);
+
 			nlop = nlop_append_FF(nlop, 0, nlop_from_linop_F(lop_msk));
 
 			unmap_cfl(DIMS, msk_dims, msk);
@@ -433,7 +446,6 @@ int main_sample(int argc, char* argv[argc])
 
 			float wsum = md_zasum(DIMS, ws_dims, ws);
 			md_zsmul(DIMS, ws_dims, ws, ws, 1. / wsum);
-
 		}
 
 		complex float* vars = NULL;
@@ -456,7 +468,9 @@ int main_sample(int argc, char* argv[argc])
 
 		// Find minimum element in vars
 		long num_elements = md_calc_size(DIMS, vars_dims);
+
 		min_var = crealf(vars[0]);
+
 		for (long i = 1; i < num_elements; i++) {
 
 			float v = crealf(vars[i]);
@@ -573,9 +587,10 @@ int main_sample(int argc, char* argv[argc])
 				complex float* tmp1 = md_alloc_sameplace(DIMS, img_dims, CFL_SIZE, samples);
 
 				linop_normal(linop_iter, DIMS, img_dims, tmp1, samples);
-				md_zsub(DIMS, img_dims, tmp1, AHy_iter, tmp1);
 
+				md_zsub(DIMS, img_dims, tmp1, AHy_iter, tmp1);
 				md_zadd(DIMS, img_dims, tmp, tmp, tmp1);
+
 				md_free(tmp1);
 			}
 

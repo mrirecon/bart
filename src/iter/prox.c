@@ -483,6 +483,7 @@ static void prox_ineq_fun(const operator_data_t* _data, float /*mu*/, float* dst
 		} else {
 
 			(pdata->positive ? md_smax : md_smin)(1, MD_DIMS(pdata->size), dst, src, pdata->a);
+
 			md_zreal(1, MD_DIMS(pdata->size/2), (complex float*)dst, (complex float*)dst);
 		}
 

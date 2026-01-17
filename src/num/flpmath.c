@@ -278,7 +278,7 @@ static bool make_op_map_dims(int C, int D, const long dim[D], const long* str[C]
 
 static void make_z3op(size_t offset, int D, const long dim[D], const long ostr[D], complex float* optr, const long istr1[D], const complex float* iptr1, const long istr2[D], const complex float* iptr2)
 {
-	const long* strs[] = {  ostr, istr1, istr2 };
+	const long* strs[] = { ostr, istr1, istr2 };
 	const size_t size[] = { sizeof(optr[0]), sizeof(iptr1[0]), sizeof(iptr2[0]) };
 	void* ptr[] = { optr, (void*)iptr1, (void*)iptr2 };
 
