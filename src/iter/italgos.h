@@ -125,7 +125,7 @@ void eulermaruyama(int maxiter, float alpha, float step,
 	float* x, const float *b,
 	struct iter_monitor_s* monitor);
 
-void preconditioned_eulermaruyama(int maxiter, float alpha,
+void eulermaruyama_precond(int maxiter, float alpha,
 	float step, long N,
 	const struct vec_iter_s* vops,
 	struct iter_op_s op,

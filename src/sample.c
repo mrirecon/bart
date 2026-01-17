@@ -1,4 +1,4 @@
-/* Copyright 2025. TU Graz. Institute of Biomedical Imaging.
+/* Copyright 2025-2026. TU Graz. Institute of Biomedical Imaging.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -62,7 +62,9 @@
 #endif
 
 static const char help_str[] =
-	"Prior sampling with given diffusion network (either PyTorch or TensorFlow) which is trained as denoiser (i.e. outputs the expectation) or Gaussian Mixture Model using unadjusted Langevin algorithm.\n";
+	"Prior sampling with given diffusion network (either PyTorch or TensorFlow) which is "
+	"trained as denoiser (i.e. outputs the expectation) or Gaussian Mixture Model using "
+	"unadjusted Langevin algorithm.\n";
 
 
 static void print_stats(int dl, float t, long img_dims[DIMS], const complex float* samples, float sigma)
@@ -137,6 +139,7 @@ static const struct linop_s* get_sense_linop(long img_dims[DIMS], long ksp_dims[
 
 	return linop_chain_FF(linop_fmac_dims_create(DIMS, cim_dims, img_dims, col_dims, sens), lop_sense);
 }
+
 
 static void get_init(int N, long img_dims[N], complex float* samples, float sigma, const struct linop_s* A, const complex float* AHy, int iter)
 {
@@ -215,7 +218,7 @@ int main_sample(int argc, char* argv[argc])
 	const char* mask_file = NULL;
 
 	bool annealed = false;
-	int precond = -1;
+	int precond_iter = -1;
 
 	long img_dims[DIMS];
 	md_singleton_dims(DIMS, img_dims);
@@ -246,12 +249,13 @@ int main_sample(int argc, char* argv[argc])
 	};
 
 	struct opt_s posterior_opts[] = {
-		OPTL_INFILE('k', "kspace", &kspace_file, "kspace", "kspace file"),
-		OPTL_INFILE('s', "sens", &sens_file, "sens", "sensitivities"),
-		OPTL_INFILE('t', "traj", &traj_file, "traj", "k-space trajectory"),
-		OPTL_INFILE('p', "pattern", &pattern_file, "pattern", "Pattern file"),
+		OPTL_INFILE('k', "kspace", &kspace_file, "file", "kspace file"),
+		OPTL_INFILE('s', "sens", &sens_file, "file", "sensitivities"),
+		OPTL_INFILE('t', "traj", &traj_file, "file", "k-space trajectory"),
+		OPTL_INFILE('p', "pattern", &pattern_file, "file", "Pattern file"),
 		OPTL_SET(0, "annealed", &annealed, "use annealed likelihood"),
-		OPTL_INT(0, "precond", &precond, "precond", "number of preconditioning cg iterations, 0 disables preconditioning"),
+		OPTL_INT(0, "precond", &precond_iter, "iter", "(number of preconditioning cg iterations)"),
+		OPTL_INT(0, "precond_iter", &precond_iter, "iter", "number of preconditioning cg iterations"),
 	};
 
 	const struct opt_s opts[] = {
@@ -265,7 +269,7 @@ int main_sample(int argc, char* argv[argc])
 		OPTL_SUBOPT(0, "gmm", "", "generate a Gaussian mixture model for sampling", ARRAY_SIZE(gmm_opts), gmm_opts),
 		OPTL_SUBOPT(0, "cunet", "", "sampling with conditional unet", ARRAY_SIZE(cunet_opts), cunet_opts),
 		OPTL_STRING(0, "external-graph", &graph, "weights", ".pt or .tf file with weights"),
-		OPTL_INFILE(0, "mask", &mask_file, "mask", "FoV mask for output of network"),
+		OPTL_INFILE(0, "mask", &mask_file, "file", "FoV mask for output of network"),
 		OPTL_FLOAT(0, "gamma", &gamma_base, "gamma", "scaling of stepsize for Langevin iteration"),
 		OPT_INT('N', &N, "N", "number of noise levels"),
 		OPT_INT('K', &K, "K", "number of Langevin steps per level"),
@@ -299,8 +303,8 @@ int main_sample(int argc, char* argv[argc])
 
 	num_rand_init(seed);
 
-	if (annealed && (-1 == precond))
-		precond = 0;
+	if (annealed && (-1 == precond_iter))
+		error("Preconditioning not supported for annealing.\n");
 
 	const struct nlop_s* nlop = NULL;
 	const struct linop_s* linop = NULL;
@@ -336,8 +340,8 @@ int main_sample(int argc, char* argv[argc])
 		if (NULL != traj_file)
 			unmap_cfl(DIMS, trj_dims, traj);
 
-		if (-1 == precond)
-			precond = 10;
+		if (-1 == precond_iter)
+			precond_iter = 10;
 	}
 
 	img_dims[BATCH_DIM] = batchsize;
@@ -355,6 +359,7 @@ int main_sample(int argc, char* argv[argc])
 
 			nn_weights_t weights = load_nn_weights(cunet_weights);
 			nlop = nn_get_nlop_wo_weights_F(cunet, weights, true);
+
 			nn_weights_free(weights);
 
 		} else {
@@ -499,14 +504,16 @@ int main_sample(int argc, char* argv[argc])
 
 	if (posterior) {
 
-		if (0 == precond)
+		if (0 == precond_iter)
 			maxeigen = estimate_maxeigenval_sameplace(linop->normal, 30, samples);
 
 		long img_single_dims[DIMS];
 		md_select_dims(DIMS, ~BATCH_FLAG, img_single_dims, img_dims);
 
 		complex float* tmp_AHy = md_alloc_sameplace(DIMS, img_single_dims, CFL_SIZE, ksp);
+
 		linop_adjoint(linop, DIMS, img_single_dims, tmp_AHy, DIMS, ksp_dims, ksp);
+
 		md_copy2(DIMS, img_dims, MD_STRIDES(DIMS, img_dims, CFL_SIZE), AHy, MD_STRIDES(DIMS, img_single_dims, CFL_SIZE), tmp_AHy, CFL_SIZE);
 		md_free(tmp_AHy);
 
@@ -520,7 +527,8 @@ int main_sample(int argc, char* argv[argc])
 		linop = linop_null_create(DIMS, img_dims, DIMS, img_dims);
 	}
 
-	get_init(DIMS, img_dims, samples, get_sigma(1., sigma_min, sigma_max), (0 < precond) ? linop : NULL, AHy, precond);
+	get_init(DIMS, img_dims, samples, get_sigma(1., sigma_min, sigma_max),
+		 (0 < precond_iter) ? linop : NULL, AHy, precond_iter);
 
 	for (int i = N - 1; i >= 0; i--) {
 
@@ -540,7 +548,9 @@ int main_sample(int argc, char* argv[argc])
 			float scale = get_sigma(((float)i) / N, 1., 1./ sigma_max / sqrtf(maxeigen));
 
 			AHy_iter = md_alloc_sameplace(DIMS, img_dims, CFL_SIZE, samples);
+
 			md_zsmul(DIMS, img_dims, AHy_iter, AHy, powf(scale, 2));
+
 			maxeigen_iter *= powf(scale, 2);
 
 			linop_iter = linop_chain_FF(linop_scale_create(DIMS, img_dims, scale), linop_iter);
@@ -553,7 +563,9 @@ int main_sample(int argc, char* argv[argc])
 
 			complex float fixed_noise_scale = sqrtf(var_ip);
 			const struct nlop_s* nlop_fixed = nlop_set_input_const(nlop, 1, 1, MD_DIMS(1), true, &fixed_noise_scale);
+
 			nlop_apply(nlop_fixed, DIMS, img_dims, tmp, DIMS, img_dims, samples);
+
 			nlop_free(nlop_fixed);
 
 			if (posterior) {
@@ -592,18 +604,21 @@ int main_sample(int argc, char* argv[argc])
 		em_conf.step = gamma;
 		em_conf.maxiter = K;
 
-		if (0 < precond) {
+		if (0 < precond_iter) {
 
 			em_conf.step = gamma_base;
 			em_conf.maxiter = K;
-			em_conf.lop_prec = linop_iter;
-			em_conf.max_prec_iter = precond;
-			em_conf.diag_prec = 1. / var_i;
+			em_conf.precond_linop = linop_iter;
+			em_conf.precond_max_iter = precond_iter;
+			em_conf.precond_diag = 1. / var_i;
 			em_conf.batchsize = batchsize;
 		}
 
 		debug_printf(DP_DEBUG2, "gamma: %.2e\n", em_conf.step);
-		iter2_eulermaruyama(CAST_UP(&em_conf), linop_iter->normal, 1, &score_op_p, NULL, NULL, NULL, 2 * md_calc_size(DIMS,img_dims), (float*)samples, (float*)AHy_iter, NULL);
+
+		iter2_eulermaruyama(CAST_UP(&em_conf), linop_iter->normal, 1, &score_op_p,
+				NULL, NULL, NULL, 2 * md_calc_size(DIMS,img_dims),
+				(float*)samples, (float*)AHy_iter, NULL);
 
 		if (0 == i % save_mod) {
 
@@ -613,6 +628,7 @@ int main_sample(int argc, char* argv[argc])
 
 			// compute expectation value at current noise level
 			nlop_apply(nlop_fixed, DIMS, img_dims, tmp_exp, DIMS, img_dims, samples);
+
 			md_zsmul(DIMS, img_dims, tmp_exp, tmp_exp, var_i);
 			md_zaxpy(DIMS, img_dims, tmp_exp, 1, samples);
 
@@ -636,8 +652,8 @@ int main_sample(int argc, char* argv[argc])
 	linop_free(linop);
 
 	md_free(AHy);
-
 	md_free(samples);
+
 	unmap_cfl(DIMS, out_dims, out);
 	unmap_cfl(DIMS, out_dims, expectation);
 

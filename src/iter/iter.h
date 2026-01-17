@@ -69,10 +69,10 @@ struct iter_eulermaruyama_conf {
 	int maxiter;
 	float step;
 
-	const struct linop_s* lop_prec;
-	float diag_prec;
-	float prec_tol;
-	int max_prec_iter;
+	const struct linop_s* precond_linop;
+	float precond_diag;
+	float precond_tol;
+	int precond_max_iter;
 	long batchsize;
 
 	int maxeigen_iter;

@@ -423,9 +423,9 @@ static bool test_iter_eulermaruyama_precond(void)
 	struct iter_eulermaruyama_conf em_conf = iter_eulermaruyama_defaults;
 	em_conf.step = 0.1;
 	em_conf.maxiter = 10;
-	em_conf.lop_prec = id;
-	em_conf.max_prec_iter = 7;
-	em_conf.diag_prec = 0.0001;
+	em_conf.precond_linop = id;
+	em_conf.precond_max_iter = 7;
+	em_conf.precond_diag = 0.0001;
 	em_conf.batchsize = 1;
 
 	auto p = prox_zero_create(N, dims);

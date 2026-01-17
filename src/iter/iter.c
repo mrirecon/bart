@@ -93,10 +93,10 @@ const struct iter_eulermaruyama_conf iter_eulermaruyama_defaults = {
 	.maxiter = 50,
 	.step = 0.95,
 
-	.lop_prec = NULL,
-	.diag_prec = 0.,
-	.prec_tol = 0,
-	.max_prec_iter = 10,
+	.precond_linop = NULL,
+	.precond_diag = 0.,
+	.precond_tol = 0.,
+	.precond_max_iter = 10,
 	.batchsize = 1,
 
 	.maxeigen_iter = 0,

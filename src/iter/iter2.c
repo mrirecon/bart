@@ -342,26 +342,29 @@ void iter2_eulermaruyama(const iter_conf* _conf,
 	const struct operator_p_s* t_prox = vptr_get_prox(prox_ops[0], NULL, image);
 
 
-
 	auto conf = CAST_DOWN(iter_eulermaruyama_conf, _conf);
 
 	double maxeigen = 1.;
+
 	if (0 != conf->maxeigen_iter)
 		maxeigen = estimate_maxeigenval_sameplace(t_normaleq_op, conf->maxeigen_iter, image_adj);
 
 
-	if (NULL == conf->lop_prec && 0. == conf->diag_prec) {
+	if ((NULL == conf->precond_linop) && (0. == conf->precond_diag)) {
 
 		eulermaruyama(conf->maxiter, conf->super.alpha, conf->step / maxeigen, size, select_vecops(image_adj),
 			OPERATOR2ITOP(t_normaleq_op), &OPERATOR_P2ITOP(t_prox), image, image_adj, monitor);
+
 	} else {
 
-		const struct iovec_s* cod_prec = linop_codomain(conf->lop_prec);
+		const struct iovec_s* precond_cod = linop_codomain(conf->precond_linop);
 
-		preconditioned_eulermaruyama(conf->maxiter, conf->super.alpha, conf->step / maxeigen, size, select_vecops(image_adj),
+		eulermaruyama_precond(conf->maxiter, conf->super.alpha,
+			conf->step / maxeigen, size, select_vecops(image_adj),
 			OPERATOR2ITOP(t_normaleq_op), &OPERATOR_P2ITOP(t_prox), image, image_adj,
-			2 * md_calc_size(cod_prec->N, cod_prec->dims), OPERATOR2ITOP(conf->lop_prec->adjoint), OPERATOR2ITOP(conf->lop_prec->normal), conf->diag_prec,
-			conf->max_prec_iter, conf->prec_tol, conf->batchsize, monitor);
+			2 * md_calc_size(precond_cod->N, precond_cod->dims),
+			OPERATOR2ITOP(conf->precond_linop->adjoint), OPERATOR2ITOP(conf->precond_linop->normal),
+			conf->precond_diag, conf->precond_max_iter, conf->precond_tol, conf->batchsize, monitor);
 	}
 
 	operator_free(t_normaleq_op);

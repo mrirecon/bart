@@ -1,6 +1,6 @@
 /* Copyright 2013-2017. The Regents of the University of California.
  * Copyright 2016-2022. Uecker Lab. University Center Göttingen.
- * Copyright 2021-2025. Institute of Biomedical Imaging. TU Graz.
+ * Copyright 2021-2026. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -11,10 +11,10 @@
  *
  *
  * Landweber L. An iteration formula for Fredholm integral equations of the
- * first kind. Amer. J. Math. 1951; 73, 615-624.
+ * first kind. Amer. J. Math. 1951; 73:615-624.
  *
  * Nesterov Y. A method of solving a convex programming problem with
- * convergence rate O (1/k2). Soviet Mathematics Doklady 1983; 27(2):372-376
+ * convergence rate O (1/k2). Soviet Mathematics Doklady 1983; 27:372-376
  *
  * Bakushinsky AB. Iterative methods for nonlinear operator equations without
  * regularity. New approach. In Dokl. Russian Acad. Sci 1993; 330:282-284.
@@ -27,10 +27,13 @@
  * linear inverse problems. SIAM Journal on Imaging Sciences 2.1 2009; 183-202.
  *
  * Chambolle A, Pock, T. A First-Order Primal-Dual Algorithm for Convex Problems
- * with Applications to Imaging. J. Math. Imaging Vis. 2011; 40, 120-145.
+ * with Applications to Imaging. J. Math. Imaging Vis. 2011; 40:120-145.
  *
  * Bredies K, Holler M. A TGV-Based Framework for Variational Image Decompression,
- * Zooming, and Reconstruction. Part II: Numerics. SIAM J. Imaging Sci. 2015; 8, 2851-2886.
+ * Zooming, and Reconstruction. Part II: Numerics. SIAM J. Imaging Sci. 2015; 8:2851-2886.
+ *
+ * Roberts GO, Stramer O. Langevin Diffusions and Metropolis-Hastings
+ * Algorithms. Methodology And Computing In Applied Probability 2002; 4:337–357.
  */
 
 #include <math.h>
@@ -403,10 +406,11 @@ void eulermaruyama(int maxiter, float alpha,
 	vops->del(r);
 }
 
+
 /**
  *
  */
-void preconditioned_eulermaruyama(int maxiter, float alpha,
+void eulermaruyama_precond(int maxiter, float alpha,
 	float step, long N,
 	const struct vec_iter_s* vops,
 	struct iter_op_s op,
@@ -415,9 +419,9 @@ void preconditioned_eulermaruyama(int maxiter, float alpha,
 	long M,
 	struct iter_op_s prec_adj,
 	struct iter_op_s prec_normal,
-	float diag_prec,
-	int max_prec_iter,
-	float prec_tol,
+	float precond_diag,
+	int precond_max_iter,
+	float precond_tol,
 	long batchsize,
 	struct iter_monitor_s* monitor)
 {
@@ -446,37 +450,39 @@ void preconditioned_eulermaruyama(int maxiter, float alpha,
 			vops->axpy(N, t, -1., t);
 			vops->axpy(N, t, +1., o);
 			vops->sub(N, t, t, x);
+
 		} else {
 
 			vops->clear(N, t);
 		}
 
 		iter_op_call(prec_normal, o, x);
-		vops->axpy(N, o, diag_prec, x);
+		vops->axpy(N, o, precond_diag, x);
 
 		vops->axpy(N, o, step, r);
 		vops->add(N, o, o, t);
 
 		// warmstarted CG with gradient of prox
-		vops->axpy(N, x, 1. / diag_prec, t);
+		vops->axpy(N, x, 1. / precond_diag, t);
 
 		vops->rand(M, n);
 		iter_op_call(prec_adj, r, n);
 		vops->axpy(N, o, sqrtf(step), r);
 
-		if (0. < diag_prec) {
+		if (0. < precond_diag) {
 
 			vops->rand(N, r);
-			vops->axpy(N, o, sqrtf(step * diag_prec), r);
+			vops->axpy(N, o, sqrtf(step * precond_diag), r);
 
 			// warmstarted CG with gradient of prox
-			vops->axpy(N, x, sqrtf(step / diag_prec), r);
+			vops->axpy(N, x, sqrtf(step / precond_diag), r);
 		}
 
 		if (1 < batchsize)
-			conjgrad_batch(max_prec_iter, diag_prec, NULL, prec_tol, N / batchsize / 2, 1, batchsize, vops, prec_normal, x, o, NULL);
+			conjgrad_batch(precond_max_iter, precond_diag, NULL, precond_tol,
+					N / batchsize / 2, 1, batchsize, vops, prec_normal, x, o, NULL);
 		else
-			conjgrad(max_prec_iter, diag_prec, prec_tol, N, vops, prec_normal, x, o, NULL);
+			conjgrad(precond_max_iter, precond_diag, precond_tol, N, vops, prec_normal, x, o, NULL);
 	}
 
 	vops->del(o);
