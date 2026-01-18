@@ -272,9 +272,6 @@ int main_pics(int argc, char* argv[argc])
 
 	complex float* maps = load_cfl_sameplace(sens_file, DIMS, map_dims, kspace);
 
-	pics_conf.map_flags = md_nontriv_dims(DIMS, map_dims);
-	pics_conf.map_flags |= FFT_FLAGS | SENS_FLAGS;
-
 
 	// load basis file
 

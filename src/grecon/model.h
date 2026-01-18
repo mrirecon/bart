@@ -17,7 +17,6 @@ struct pics_config {
 
 	unsigned long shared_img_flags;
 	unsigned long motion_flags;
-	unsigned long map_flags;
 	unsigned long lowmem_flags;
 };
 

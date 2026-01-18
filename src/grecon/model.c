@@ -75,8 +75,10 @@ const struct linop_s* pics_model(const struct pics_config* conf,
 
 	if (NULL == traj) {
 
+		unsigned long map_flags = FFT_FLAGS | SENS_FLAGS | md_nontriv_dims(DIMS, map_dims);
+
 		forward_op = sense_init(conf->shared_img_flags & ~conf->motion_flags,
-					max_dims, conf->map_flags, maps);
+					max_dims, map_flags, maps);
 
 		// apply temporal basis
 
