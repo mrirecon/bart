@@ -232,7 +232,6 @@ int main_pics(int argc, char* argv[argc])
 	long map_dims[DIMS];
 	long pat_dims[DIMS];
 	long img_dims[DIMS];
-	long coilim_dims[DIMS];
 	long ksp_dims[DIMS];
 	long traj_dims[DIMS];
 
@@ -343,7 +342,6 @@ int main_pics(int argc, char* argv[argc])
 	}
 
 	md_select_dims(DIMS, ~COIL_FLAG & ~pics_conf.shared_img_flags, img_dims, max_dims);
-	md_select_dims(DIMS, ~MAPS_FLAG, coilim_dims, max_dims);
 
 	if (!md_check_compat(DIMS, ~(MD_BIT(MAPS_DIM)|FFT_FLAGS), img_dims, map_dims))
 		error("Dimensions of image and sensitivities do not match!\n");
