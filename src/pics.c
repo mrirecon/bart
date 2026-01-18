@@ -419,7 +419,9 @@ int main_pics(int argc, char* argv[argc])
 	} else {
 
 		md_select_dims(DIMS, ~COIL_FLAG, pat_dims, ksp_dims);
+
 		pattern = md_alloc_sameplace(DIMS, pat_dims, CFL_SIZE, kspace);
+
 		estimate_pattern(DIMS, ksp_dims, COIL_FLAG, pattern, kspace);
 	}
 
@@ -443,7 +445,6 @@ int main_pics(int argc, char* argv[argc])
 		debug_printf(DP_INFO, "Size: %ld Samples: %ld Acc: %.2f\n", T, samples, (float)T / (float)samples);
 
 		ifftmod(DIMS, ksp_dims, FFT_FLAGS, kspace, kspace);
-		fftmod(DIMS, map_dims, FFT_FLAGS, maps, maps);
 	}
 
 	// apply fov mask to sensitivities

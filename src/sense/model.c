@@ -1,6 +1,6 @@
 /* Copyright 2013-2014. The Regents of the University of California.
  * Copyright 2016-2022. Uecker Lab. University Medical Center Göttingen.
- * Copyright 2023-2025. Institute of Biomedical Imaging. TU Graz.
+ * Copyright 2023-2026. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -67,10 +67,13 @@ struct linop_s* linop_sampling_create(const long dims[DIMS], const long pat_dims
 struct linop_s* maps_create(unsigned long shared_img_flags, const long max_dims[DIMS], 
 			unsigned long sens_flags, const complex float* sens)
 {
-	long mps_dims[DIMS];
-	md_select_dims(DIMS, sens_flags, mps_dims, max_dims);
-	complex float* nsens = md_alloc_sameplace(DIMS, mps_dims, CFL_SIZE, sens);
-	fftscale(DIMS, mps_dims, FFT_FLAGS, nsens, sens);
+	long maps_dims[DIMS];
+	md_select_dims(DIMS, sens_flags, maps_dims, max_dims);
+
+	complex float* nsens = md_alloc_sameplace(DIMS, maps_dims, CFL_SIZE, sens);
+
+	fftscale(DIMS, maps_dims, FFT_FLAGS, nsens, sens);
+	fftmod(DIMS, maps_dims, FFT_FLAGS, nsens, nsens);
 
 	long cim_dims[DIMS];
 	long img_dims[DIMS];
@@ -78,8 +81,9 @@ struct linop_s* maps_create(unsigned long shared_img_flags, const long max_dims[
 	md_select_dims(DIMS, ~MAPS_FLAG, cim_dims, max_dims);
 	md_select_dims(DIMS, ~COIL_FLAG & ~shared_img_flags, img_dims, max_dims);
 
-	auto ret = (struct linop_s*)linop_fmac_dims_create(DIMS, cim_dims, img_dims, mps_dims, NULL);
-	linop_fmac_set_tensor_F(ret, DIMS, mps_dims, nsens);
+	auto ret = (struct linop_s*)linop_fmac_dims_create(DIMS, cim_dims, img_dims, maps_dims, NULL);
+
+	linop_fmac_set_tensor_F(ret, DIMS, maps_dims, nsens);
 
 	return ret;
 }
@@ -100,6 +104,7 @@ struct linop_s* maps2_create(const long coilim_dims[DIMS], const long maps_dims[
 	assert(maps_dims[MAPS_DIM] == img_dims[MAPS_DIM]);
 
 	auto ret = (struct linop_s*)linop_fmac_dims_create(DIMS, coilim_dims, img_dims, maps_dims, NULL);
+
 	linop_fmac_set_tensor_ref(ret, DIMS, maps_dims, maps);
 
 	return ret;
@@ -126,13 +131,6 @@ struct linop_s* sense_init(unsigned long shared_img_flags, const long max_dims[D
 	struct linop_s* fft = linop_fft_create(DIMS, ksp_dims, FFT_FLAGS);
 	struct linop_s* maps = maps_create(shared_img_flags, max_dims, sens_flags, sens);
 
-	struct linop_s* sense_op = linop_chain(maps, fft);
-
-	linop_free(fft);
-	linop_free(maps);
-
-	return sense_op;
+	return linop_chain_FF(maps, fft);
 }
-
-
 

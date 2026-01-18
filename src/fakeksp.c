@@ -96,7 +96,6 @@ int main_fakeksp(int argc, char* argv[argc])
 	complex float* out = create_cfl(out_file, N, ksp_dims);
 	
 	fftmod(N, ksp_dims, FFT_FLAGS, kspace_data, kspace_data);
-	fftmod(N, dims, FFT_FLAGS, sens_maps, sens_maps);
 
 	if (rplksp) {
 
