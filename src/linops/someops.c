@@ -2166,7 +2166,7 @@ struct linop_s* linop_hadamard_create(int N, const long in_dims[N], int hadamard
 	out_dims[N] = size;
 
 	auto lop_reshape = linop_reshape_create(N + 1, in2_dims, N, in_dims);
-	auto lop_hadamard = (struct linop_s *)linop_fmac_dims_create(N + 1, out_dims, in2_dims, matr_dims, matrix);
+	auto lop_hadamard = linop_fmac_dims_create(N + 1, out_dims, in2_dims, matr_dims, matrix);
 	lop_hadamard = linop_chain_FF(lop_reshape, lop_hadamard);
 
 	// transpose so output dimensions are input dimensions

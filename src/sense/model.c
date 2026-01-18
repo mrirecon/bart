@@ -81,7 +81,7 @@ struct linop_s* maps_create(unsigned long shared_img_flags, const long max_dims[
 	md_select_dims(DIMS, ~MAPS_FLAG, cim_dims, max_dims);
 	md_select_dims(DIMS, ~COIL_FLAG & ~shared_img_flags, img_dims, max_dims);
 
-	auto ret = (struct linop_s*)linop_fmac_dims_create(DIMS, cim_dims, img_dims, maps_dims, NULL);
+	auto ret = linop_fmac_dims_create(DIMS, cim_dims, img_dims, maps_dims, NULL);
 
 	linop_fmac_set_tensor_F(ret, DIMS, maps_dims, nsens);
 
@@ -97,7 +97,7 @@ struct linop_s* maps2_create(const long coilim_dims[DIMS], const long maps_dims[
 	assert(maps_dims[COIL_DIM] == coilim_dims[COIL_DIM]);
 	assert(maps_dims[MAPS_DIM] == img_dims[MAPS_DIM]);
 
-	auto ret = (struct linop_s*)linop_fmac_dims_create(DIMS, coilim_dims, img_dims, maps_dims, NULL);
+	auto ret = linop_fmac_dims_create(DIMS, coilim_dims, img_dims, maps_dims, NULL);
 
 	linop_fmac_set_tensor_ref(ret, DIMS, maps_dims, maps);
 
@@ -123,7 +123,7 @@ struct linop_s* sense_init(unsigned long shared_img_flags, const long max_dims[D
 	md_select_dims(DIMS, ~MAPS_FLAG, ksp_dims, max_dims);
 
 	struct linop_s* fft = linop_fft_create(DIMS, ksp_dims, FFT_FLAGS);
-	struct linop_s* maps = maps_create(shared_img_flags, max_dims, sens_flags, sens);
+	const struct linop_s* maps = maps_create(shared_img_flags, max_dims, sens_flags, sens);
 
 	return linop_chain_FF(maps, fft);
 }
