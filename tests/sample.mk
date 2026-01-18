@@ -242,7 +242,7 @@ tests/test-sample-gmm-2D-weighting-prior: vec scale join ones sample nrmse trans
 	rm *.ra; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-# tests 2D posterior sampling, likelhood on 2 different weigthed peaks (5/3 -> 0.625, 0.375)
+# tests 2D posterior sampling, likelihood on 2 differently weighted peaks (5/3 -> 0.625, 0.375)
 tests/test-sample-gmm-2D-weighting-posterior1: vec scale join ones sample nrmse transpose repmat threshold fmac bart zeros
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/ones 1 2 mu1.ra							;\
@@ -271,7 +271,7 @@ tests/test-sample-gmm-2D-weighting-posterior1: vec scale join ones sample nrmse 
 	rm *.ra; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-# tests 2D posterior sampling, likelhood on 2 same weigthed peaks (1/1 -> 0.5, 0.5)
+# tests 2D posterior sampling, likelihood on 2 identically weighted peaks (1/1 -> 0.5, 0.5)
 tests/test-sample-gmm-2D-weighting-posterior2: vec scale join ones sample nrmse transpose repmat threshold fmac bart zeros
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/ones 1 2 mu1.ra							;\
