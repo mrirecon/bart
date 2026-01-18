@@ -245,18 +245,16 @@ tests/test-sample-gmm-2D-weighting-prior: vec scale join ones sample nrmse trans
 # tests 2D posterior sampling, likelihood on 2 differently weighted peaks (5/3 -> 0.625, 0.375)
 tests/test-sample-gmm-2D-weighting-posterior1: vec scale join ones sample nrmse transpose repmat threshold fmac bart zeros
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
-	$(TOOLDIR)/ones 1 2 mu1.ra							;\
-	$(TOOLDIR)/scale -- -1 mu1.ra mu2.ra						;\
-	$(TOOLDIR)/vec -- -1 1 mu3.ra							;\
-	$(TOOLDIR)/vec -- 1 -1 mu4.ra							;\
+	$(TOOLDIR)/vec -- +1 +1 mu1.ra							;\
+	$(TOOLDIR)/vec -- -1 -1 mu2.ra							;\
+	$(TOOLDIR)/vec -- -1 +1 mu3.ra							;\
+	$(TOOLDIR)/vec -- +1 -1 mu4.ra							;\
 	$(TOOLDIR)/join 3 mu1.ra mu2.ra mu3.ra mu4.ra mu.ra				;\
-	$(TOOLDIR)/vec 0 0 0 0 var.ra 							;\
-	$(TOOLDIR)/transpose 0 3 var.ra var.ra 						;\
+	$(TOOLDIR)/zeros 4 1 1 1 4 var.ra 						;\
 	$(TOOLDIR)/vec 5 3 1 1 ws.ra							;\
 	$(TOOLDIR)/transpose 0 3 ws.ra ws.ra						;\
 	$(TOOLDIR)/zeros 1 2 ksp.ra 							;\
 	$(TOOLDIR)/ones 1 2 coil.ra 							;\
-	$(TOOLDIR)/scale 100 ksp.ra ksp.ra 						;\
 	$(TOOLDIR)/scale 100 coil.ra coil.ra 						;\
 	$(TOOLDIR)/vec 1 0 pat.ra 							;\
 	$(TOOLDIR)/sample --dims 2:1 --sigma max=10,min=0.01 -S100 --gamma=0.1 --gmm mean=mu.ra,var=var.ra,w=ws.ra --posterior k=ksp.ra,s=coil.ra,p=pat.ra,precond=4 -N10 -K30 samples.ra expect.ra							 ;\
@@ -264,8 +262,7 @@ tests/test-sample-gmm-2D-weighting-posterior1: vec scale join ones sample nrmse 
 	$(ROOTDIR)/bart -l8 -r mu.ra measure --mse mus.ra samples.ra l2.ra		;\
 	$(TOOLDIR)/threshold -M 0.1 l2.ra w.ra 						;\
 	$(TOOLDIR)/fmac -s32768 w.ra w.ra						;\
-	$(TOOLDIR)/scale 0.1 w.ra w.ra							;\
-	$(TOOLDIR)/vec 6.25 3.75 0 0 wnew.ra						;\
+	$(TOOLDIR)/vec 62.5 37.5 0 0 wnew.ra						;\
 	$(TOOLDIR)/transpose 3 0 wnew.ra wnew.ra					;\
 	$(TOOLDIR)/nrmse -t 0.05 w.ra wnew.ra						;\
 	rm *.ra; cd .. ; rmdir $(TESTS_TMP)
@@ -274,18 +271,16 @@ tests/test-sample-gmm-2D-weighting-posterior1: vec scale join ones sample nrmse 
 # tests 2D posterior sampling, likelihood on 2 identically weighted peaks (1/1 -> 0.5, 0.5)
 tests/test-sample-gmm-2D-weighting-posterior2: vec scale join ones sample nrmse transpose repmat threshold fmac bart zeros
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
-	$(TOOLDIR)/ones 1 2 mu1.ra							;\
-	$(TOOLDIR)/scale -- -1 mu1.ra mu2.ra						;\
-	$(TOOLDIR)/vec -- -1 1 mu3.ra							;\
-	$(TOOLDIR)/vec -- 1 -1 mu4.ra							;\
+	$(TOOLDIR)/vec -- +1 +1 mu1.ra							;\
+	$(TOOLDIR)/vec -- -1 -1 mu2.ra							;\
+	$(TOOLDIR)/vec -- -1 +1 mu3.ra							;\
+	$(TOOLDIR)/vec -- +1 -1 mu4.ra							;\
 	$(TOOLDIR)/join 3 mu1.ra mu2.ra mu3.ra mu4.ra mu.ra				;\
-	$(TOOLDIR)/vec 0 0 0 0 var.ra 							;\
-	$(TOOLDIR)/transpose 0 3 var.ra var.ra 						;\
+	$(TOOLDIR)/zeros 4 1 1 1 4 var.ra 						;\
 	$(TOOLDIR)/vec 5 3 1 1 ws.ra							;\
 	$(TOOLDIR)/transpose 0 3 ws.ra ws.ra						;\
 	$(TOOLDIR)/zeros 1 2 ksp.ra 							;\
 	$(TOOLDIR)/ones 1 2 coil.ra 							;\
-	$(TOOLDIR)/scale 100 ksp.ra ksp.ra 						;\
 	$(TOOLDIR)/scale 100 coil.ra coil.ra 						;\
 	$(TOOLDIR)/vec 0 1 pat.ra 							;\
 	$(TOOLDIR)/sample --dims 2:1 --sigma max=10,min=0.01 -S100 --gamma=0.5 --gmm mean=mu.ra,var=var.ra,w=ws.ra --posterior k=ksp.ra,s=coil.ra,p=pat.ra,precond=10 -N10 -K10 samples.ra expect.ra	;\
@@ -293,10 +288,9 @@ tests/test-sample-gmm-2D-weighting-posterior2: vec scale join ones sample nrmse 
 	$(ROOTDIR)/bart -l8 -r mu.ra measure --mse mus.ra samples.ra l2.ra		;\
 	$(TOOLDIR)/threshold -M 0.1 l2.ra w.ra 						;\
 	$(TOOLDIR)/fmac -s32768 w.ra w.ra						;\
-	$(TOOLDIR)/scale 0.1 w.ra w.ra							;\
-	$(TOOLDIR)/vec 0 0 5 5 wnew.ra							;\
+	$(TOOLDIR)/vec 0 0 50 50 wnew.ra						;\
 	$(TOOLDIR)/transpose 3 0 wnew.ra wnew.ra					;\
-	$(TOOLDIR)/nrmse -t 0.06 w.ra wnew.ra						;\
+	$(TOOLDIR)/nrmse -t 0.02 w.ra wnew.ra						;\
 	rm *.ra; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
