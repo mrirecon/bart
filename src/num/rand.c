@@ -1,6 +1,6 @@
 /* Copyright 2013. The Regents of the University of California.
  * Copyright 2021. Uecker Lab. University Center Göttingen.
- * Copyright 2024. Institute of Biomedical Imaging. Graz University of Technology.
+ * Copyright 2024-2026. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -24,6 +24,7 @@
 #include "misc/mmio.h"
 
 #include "num/multind.h"
+#include "num/flpmath.h"
 #include "num/vptr.h"
 
 #ifdef USE_CUDA
@@ -323,8 +324,10 @@ static complex double gaussian_rand_state(struct bart_rand_state* state)
 	double u1, u2, s;
 	uint64_t out[2];
 
-	// We initialize a new PRNG here, so that we never repeat random numbers
-	// Without this, it might happen that two calls of md_gaussian_rand() might repeat random numbers (as the counter states are the same)
+	/* We initialize a new PRNG here, so that we never repeat random numbers
+	 * Without this, it might happen that two calls of md_gaussian_rand() might
+	 * repeat random numbers (as the counter states are the same)
+	 * */
 	philox_4x32(state->state, state->ctr1, state->ctr2, out);
 	state->ctr1++;
 
@@ -391,7 +394,8 @@ static void md_gaussian_obsolete_rand(int D, const long dims[D], complex float* 
 {
 	bool buf = is_vptr(dst);
 #ifdef USE_CUDA
-	buf = buf || cuda_ondevice(dst);
+	if (cuda_ondevice(dst))
+		buf = true;
 #endif
 
 	if (buf) {
@@ -560,11 +564,19 @@ void md_gaussian_rand(int D, const long dims[D], complex float* dst)
 }
 
 
+void md_zgaussian_rand(int D, const long dims[D], complex float* dst)
+{
+	md_gaussian_philox_rand(D, dims, dst);
+	md_zsmul(D, dims, dst, dst, 1. / sqrt(2.));
+}
+
+
 static void md_uniform_obsolete_rand(int D, const long dims[D], complex float* dst)
 {
 	bool buf = is_vptr(dst);
 #ifdef USE_CUDA
-	buf = buf || cuda_ondevice(dst);
+	if (cuda_ondevice(dst))
+		buf = true;
 #endif
 
 	if (buf) {
@@ -624,7 +636,8 @@ static void md_obsolete_rand_one(int D, const long dims[D], complex float* dst, 
 {
 	bool buf = is_vptr(dst);
 #ifdef USE_CUDA
-	buf = buf || cuda_ondevice(dst);
+	if (cuda_ondevice(dst))
+		buf = true;
 #endif
 
 	if (buf) {
