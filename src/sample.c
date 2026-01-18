@@ -211,8 +211,7 @@ static const struct nlop_s* compute_score(const struct nlop_s *nlop, bool real_v
 	return nlop;
 }
 
-static const struct nlop_s* get_model(const char* graph,
-				const char* cunet_weights, struct nn_cunet_conf_s* cunet_conf,
+static const struct nlop_s* cunet_model(const char* cunet_weights, struct nn_cunet_conf_s* cunet_conf,
 				bool real_valued, const long msk_dims[DIMS], complex float* mask,
 				long img_dims[DIMS])
 {
@@ -220,93 +219,106 @@ static const struct nlop_s* get_model(const char* graph,
 
 	long batchsize = img_dims[BATCH_DIM];
 
-	if (NULL != cunet_weights) {
+	const long dims[5] = { 1, img_dims[0], img_dims[1], img_dims[2], batchsize };
 
-		const long dims[5] = { 1, img_dims[0], img_dims[1], img_dims[2], batchsize };
+	nn_t cunet = cunet_create(cunet_conf, 5, dims);
 
-		nn_t cunet = cunet_create(cunet_conf, 5, dims);
+	cunet = nn_denoise_precond_edm(cunet, -1., -1., 0.5, false);
 
-		cunet = nn_denoise_precond_edm(cunet, -1., -1., 0.5, false);
+	nn_weights_t weights = load_nn_weights(cunet_weights);
 
-		nn_weights_t weights = load_nn_weights(cunet_weights);
+	nlop = nn_get_nlop_wo_weights_F(cunet, weights, true);
 
-		nlop = nn_get_nlop_wo_weights_F(cunet, weights, true);
-
-		nn_weights_free(weights);
-
-	} else {
-
-		// generates nlop from tf or pt graph
-		int DO[1] = { 3 };
-		int DI[2] = { 3, 1 };
-		long idims1[3] = { img_dims[0], img_dims[1], batchsize };
-		long idims2[1] = { batchsize };
-
-		const char* key = NULL;
-
-		nlop = nlop_external_graph_create(graph, 1, DO, (const long*[1]) { idims1 },
-				2, DI, (const long*[2]) {idims1, idims2}, bart_use_gpu, key);
-	}
+	nn_weights_free(weights);
 
 	return compute_score(nlop, real_valued, img_dims, msk_dims, mask);
 }
 
-static const struct nlop_s* gmm_model(const char* means_file, const char* vars_file, const char* ws_file,
-				long img_dims[DIMS], float *min_var)
+
+static const struct nlop_s* graph_model(const char* graph,
+				bool real_valued, const long msk_dims[DIMS], complex float* mask,
+				long img_dims[DIMS])
 {
 	const struct nlop_s* nlop = NULL;
 
-	long means_dims[DIMS];
-	long ws_dims[DIMS];
-	long vars_dims[DIMS];
+	long batchsize = img_dims[BATCH_DIM];
 
-	complex float* means = load_cfl(means_file, DIMS, means_dims);
+	// generates nlop from tf or pt graph
+	int DO[1] = { 3 };
+	int DI[2] = { 3, 1 };
+	long idims1[3] = { img_dims[0], img_dims[1], batchsize };
+	long idims2[1] = { batchsize };
+
+	const char* key = NULL;
+
+	nlop = nlop_external_graph_create(graph, 1, DO, (const long*[1]) { idims1 },
+			2, DI, (const long*[2]) {idims1, idims2}, bart_use_gpu, key);
+
+	return compute_score(nlop, real_valued, img_dims, msk_dims, mask);
+}
+
+static const struct nlop_s* gmm_model(const long means_dims[DIMS], const complex float* means,
+				const long weights_dims0[DIMS], const complex float *weights0,
+				const long vars_dims0[DIMS], const complex float *vars0,
+				long img_dims[DIMS], float *min_var)
+{
+	const struct nlop_s* nlop = NULL;
 
 	img_dims[0] = means_dims[0];
 	img_dims[1] = means_dims[1];
 	img_dims[2] = means_dims[2];
 
+	long weights_dims[DIMS];
+	long vars_dims[DIMS];
+
+	complex float* weights = NULL;
+
 	// check if ws are given, otherwise use uniform weights over all mean peaks
-	complex float* ws = NULL;
 
-	if (NULL == ws_file) {
+	if (NULL == weights0) {
 
-		md_select_dims(DIMS, ~md_nontriv_dims(DIMS, img_dims), ws_dims, means_dims);
+		md_select_dims(DIMS, ~md_nontriv_dims(DIMS, img_dims), weights_dims, means_dims);
+		weights = md_alloc_sameplace(DIMS, weights_dims, CFL_SIZE, means);
 
-		ws = md_alloc_sameplace(DIMS, ws_dims, CFL_SIZE, means);
+		long num_gaussians = md_calc_size(DIMS, weights_dims);
 
-		long num_gaussians = md_calc_size(DIMS, ws_dims);
-		md_zfill(DIMS, ws_dims, ws, 1. / num_gaussians);
+		md_zfill(DIMS, weights_dims, weights, 1. / num_gaussians);
 
 		debug_printf(DP_WARN, "No weighting specified. Uniform weigths are set.\n");
 
 	} else {
 
-		ws = load_cfl(ws_file, DIMS, ws_dims);
+		md_copy_dims(DIMS, weights_dims, weights_dims0);
+		weights = md_alloc_sameplace(DIMS, weights_dims, CFL_SIZE, means);
 
-		float wsum = md_zasum(DIMS, ws_dims, ws);
-		md_zsmul(DIMS, ws_dims, ws, ws, 1. / wsum);
+		md_copy(DIMS, weights_dims, weights, weights0, CFL_SIZE);
+
+		float wsum = md_zasum(DIMS, weights_dims, weights);
+
+		md_zsmul(DIMS, weights_dims, weights, weights, 1. / wsum);
 	}
+
 
 	complex float* vars = NULL;
 
-	if (NULL == vars_file) {
+	if (NULL == vars0) {
 
-		md_copy_dims(DIMS, vars_dims, ws_dims);
-
+		md_copy_dims(DIMS, vars_dims, weights_dims);
 		vars = md_alloc_sameplace(DIMS, vars_dims, CFL_SIZE, means);
 
-		md_zfill(DIMS, vars_dims, vars, 0);
-
+		md_zfill(DIMS, vars_dims, vars, 0.);
 		debug_printf(DP_WARN, "No variance specified. Set to 0.\n");
 
 	} else {
 
-		vars = load_cfl(vars_file, DIMS, vars_dims);
+		md_copy_dims(DIMS, vars_dims, vars_dims0);
+		vars = md_alloc_sameplace(DIMS, vars_dims, CFL_SIZE, means);
+
+		md_copy(DIMS, vars_dims, vars, vars0, CFL_SIZE);
 	}
 
 	assert(md_check_equal_dims(DIMS, means_dims, vars_dims, ~md_nontriv_dims(DIMS, img_dims)));
-	assert(md_check_equal_dims(DIMS, means_dims, ws_dims, ~md_nontriv_dims(DIMS, img_dims)));
+	assert(md_check_equal_dims(DIMS, means_dims, weights_dims, ~md_nontriv_dims(DIMS, img_dims)));
 
 	// Find minimum element in vars
 	long num_elements = md_calc_size(DIMS, vars_dims);
@@ -323,11 +335,10 @@ static const struct nlop_s* gmm_model(const char* means_file, const char* vars_f
 
 	debug_printf(DP_DEBUG2, "Minimum variance in vars: %f\n", *min_var);
 
-	nlop = nlop_gmm_score_create(DIMS, img_dims, means_dims, means, vars_dims, vars, ws_dims, ws);
+	nlop = nlop_gmm_score_create(DIMS, img_dims, means_dims, means, vars_dims, vars, weights_dims, weights);
 
-	ws_file ? unmap_cfl(DIMS, ws_dims, ws) : md_free(ws);
-	vars_file ? unmap_cfl(DIMS, vars_dims, vars) : md_free(vars);
-	means_file ? unmap_cfl(DIMS, means_dims, means) : md_free(means);
+	md_free(weights);
+	md_free(vars);
 
 	return nlop;
 }
@@ -518,14 +529,41 @@ int main_sample(int argc, char* argv[argc])
 
 	const struct nlop_s* nlop = NULL;
 
-	if (NULL != graph || NULL != cunet_weights) {
+	if (NULL != graph) {
 
-		nlop = get_model(graph, cunet_weights, &cunet_conf, real_valued,
+		nlop = graph_model(graph, real_valued, msk_dims, msk, img_dims);
+
+	} else if (NULL != cunet_weights) {
+
+		nlop = cunet_model(cunet_weights, &cunet_conf, real_valued,
 					msk_dims, msk, img_dims);
 
 	} else if (NULL != means_file) {
 
-		nlop = gmm_model(means_file, vars_file, ws_file, img_dims, &min_var);
+		long means_dims[DIMS];
+		complex float* means = load_cfl(means_file, DIMS, means_dims);
+
+		long weights_dims[DIMS];
+		const complex float* weights = NULL;
+
+		if (NULL != ws_file)
+			weights = load_cfl(ws_file, DIMS, weights_dims);
+
+		long vars_dims[DIMS];
+		const complex float* vars = NULL;
+
+		if (NULL != vars_file)
+			vars = load_cfl(vars_file, DIMS, vars_dims);
+
+		nlop = gmm_model(means_dims, means, weights_dims, weights, vars_dims, vars, img_dims, &min_var);
+
+		if (NULL != ws_file)
+			unmap_cfl(DIMS, weights_dims, weights);
+
+		if (NULL != vars_file)
+			unmap_cfl(DIMS, vars_dims, vars);
+
+		unmap_cfl(DIMS, means_dims, means);
 
 	} else {
 
