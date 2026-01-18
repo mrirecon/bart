@@ -228,16 +228,9 @@ int main_pics(int argc, char* argv[argc])
 	}
 
 
-	long map_dims[DIMS];
-	long pat_dims[DIMS];
-	long img_dims[DIMS];
-	long ksp_dims[DIMS];
-	long traj_dims[DIMS];
-
-	memset(traj_dims, 0, sizeof traj_dims);	// GCC ANALYZER
-
-
 	// load kspace and maps and get dimensions
+
+	long ksp_dims[DIMS];
 
 	complex float* kspace = load_cfl(ksp_file, DIMS, ksp_dims);
 
@@ -269,6 +262,8 @@ int main_pics(int argc, char* argv[argc])
 
 
 	// load coil sensitivities
+
+	long map_dims[DIMS];
 
 	complex float* maps = load_cfl_sameplace(sens_file, DIMS, map_dims, kspace);
 
@@ -305,6 +300,8 @@ int main_pics(int argc, char* argv[argc])
 
 	// load k-space trajectory
 
+	long traj_dims[DIMS] = { }; // gcc analyzer
+
 	complex float* traj = NULL;
 
 	if (NULL != traj_file)
@@ -326,6 +323,7 @@ int main_pics(int argc, char* argv[argc])
 		max_dims[TE_DIM] = 1;
 	}
 
+	long img_dims[DIMS];
 	md_select_dims(DIMS, ~(COIL_FLAG | pics_conf.shared_img_flags), img_dims, max_dims);
 
 	if (!md_check_compat(DIMS, ~(MD_BIT(MAPS_DIM) | FFT_FLAGS), img_dims, map_dims))
@@ -389,6 +387,8 @@ int main_pics(int argc, char* argv[argc])
 
 
 	// initialize sampling pattern
+
+	long pat_dims[DIMS];
 
 	complex float* pattern = NULL;
 
@@ -516,6 +516,7 @@ int main_pics(int argc, char* argv[argc])
 	} else {
 
 		debug_printf(DP_DEBUG1, "Inverse scaling of the data: %f\n", scaling);
+
 		md_zsmul(DIMS, ksp_dims, kspace, kspace, 1. / scaling);
 
 		if (conf.bpsense) {
@@ -651,7 +652,10 @@ int main_pics(int argc, char* argv[argc])
 		assert(NULL == image_truth);
 		assert(!conf.rvc);
 
-		const struct linop_s* extract = linop_extract_create(1, MD_DIMS(0), MD_DIMS(md_calc_size(DIMS, img_dims)), MD_DIMS(md_calc_size(DIMS, img_dims) + ropts.svars));
+		long total = md_calc_size(DIMS, img_dims);
+
+		const struct linop_s* extract = linop_extract_create(1, MD_DIMS(0), MD_DIMS(total), MD_DIMS(total + ropts.svars));
+
 		extract = linop_reshape_out_F(extract, DIMS, img_dims);
 		forward_op = linop_chain_FF(extract, forward_op);
 	}
@@ -661,12 +665,13 @@ int main_pics(int argc, char* argv[argc])
 				it.italgo, it.iconf, image_start, nr_penalties, thresh_ops,
 				trafos_cond ? trafos : NULL, NULL, monitor);
 
-	const struct operator_s* op = operator_p_bind(po, 1.);
-	operator_p_free(po);
+	const struct operator_s* op = operator_p_bind_F(po, 1.);
 
 	if (0 < ropts.svars) {
 
-		const struct linop_s* extract = linop_extract_create(1, MD_DIMS(0), MD_DIMS(md_calc_size(DIMS, img_dims)), MD_DIMS(md_calc_size(DIMS, img_dims) + ropts.svars));
+		long total = md_calc_size(DIMS, img_dims);
+
+		const struct linop_s* extract = linop_extract_create(1, MD_DIMS(0), MD_DIMS(total), MD_DIMS(total + ropts.svars));
 		extract = linop_reshape_out_F(extract, DIMS, img_dims);
 
 		auto op2 = operator_chain(op, extract->forward);
