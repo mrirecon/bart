@@ -92,12 +92,6 @@ struct linop_s* maps_create(unsigned long shared_img_flags, const long max_dims[
 
 struct linop_s* maps2_create(const long coilim_dims[DIMS], const long maps_dims[DIMS], const long img_dims[DIMS], const complex float* maps)
 {
-	unsigned long sens_flags = 0;
-
-	for (int i = 0; i < DIMS; i++)
-		if (1 != maps_dims[i])
-			sens_flags = MD_SET(sens_flags, i);
-
 	assert(1 == coilim_dims[MAPS_DIM]);
 	assert(1 == img_dims[COIL_DIM]);
 	assert(maps_dims[COIL_DIM] == coilim_dims[COIL_DIM]);
