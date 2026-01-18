@@ -74,6 +74,8 @@
 
 	Indentation using a single tab. A tab is considered 8 characters.
 
+	For alignment spaces should be used.
+
 	White space errors (white space after the last visible
         character of a line) should be avoided.
 
@@ -94,9 +96,7 @@
 	should be enclosed in brackets and not rely on operator precedence
 	for correct evaluation order.
 
-
 	int i = (3 + x++) * 2;
-
 
 
 
@@ -116,7 +116,12 @@
 		foo_ptr = init_foo_ptr();
 
 
-2.3. Statement groups.
+
+	The conditional operator ?: should be used only where it does not
+	obscure the logic.  In particular, multiple ?: should not be nested.
+
+
+2.3. Statement Groups.
 
 	Opening curly brace is on the next line for functions and on the
 	same line for if, for, while, and switch statements. In the latter
@@ -134,6 +139,34 @@
 	if (0. == x)
 		y = 3;
 
+
+	There should be empty lines before and after "} else {".
+
+	if (0. == x) {
+
+		foo();
+
+	} else {
+
+		bar();
+	}
+
+
+	When nesting loops and curly braces are used for the innermost
+	loop, curly braces should also be used for all enclosing loops.
+
+
+	for (int i = 0; i < 10; i++)
+		for (int j = 0; j < 10; j++)
+			a[i][j]++;
+
+	for (int i = 0; i < 10; i++) {
+
+		for (int j = 0; j < 10; j++) {
+
+			a[i][j]++;
+		}
+	}
 
 
 	Statements should be grouped in logical blocks by a single empty
