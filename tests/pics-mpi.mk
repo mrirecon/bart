@@ -117,8 +117,8 @@ tests/test-pics-noncart-mpi: bart traj phantom ones pics nrmse
 	$(TOOLDIR)/traj -r -x128 -o2. -y64 traj.ra								;\
 	$(TOOLDIR)/phantom -s4 -t traj.ra ksp									;\
 	$(TOOLDIR)/phantom -S4 col										;\
-	mpirun -n 2 $(ROOTDIR)/bart -S --md-split-mpi-dims=8 pics -S --fista -e -r0.001 -t traj.ra ksp col reco1 ;\
-		    $(ROOTDIR)/bart                          pics -S --fista -e -r0.001 -t traj.ra ksp col reco2 ;\
+	mpirun -n 2 $(ROOTDIR)/bart -S --md-split-mpi-dims=8 pics --lowmem -S --fista -e -r0.001 -t traj.ra ksp col reco1 ;\
+		    $(ROOTDIR)/bart                          pics --lowmem -S --fista -e -r0.001 -t traj.ra ksp col reco2 ;\
 	$(TOOLDIR)/nrmse -t 0.00001 reco1 reco2									;\
 	rm *.cfl *.ra *.hdr ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@

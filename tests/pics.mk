@@ -428,76 +428,73 @@ tests/test-pics-noncart-lowmem: traj slice phantom conj join fft flip pics nrmse
 	touch $@
 
 
-tests/test-pics-noncart-lowmem-stack0: traj slice phantom conj join fft flip pics nrmse
+tests/test-pics-noncart-lowmem-stack0: bart
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
-	$(TOOLDIR)/traj -y55 -r t0.ra							;\
-	$(TOOLDIR)/phantom -t t0.ra -s8 -k k0.ra					;\
-	$(TOOLDIR)/phantom -S8 s0.ra							;\
-	$(TOOLDIR)/pics -r0.01			  -i2 -t t0.ra k0.ra s0.ra r1.ra	;\
-	$(TOOLDIR)/pics -r0.01 --lowmem-stack=256 -i2 -t t0.ra k0.ra s0.ra r2.ra	;\
-	$(TOOLDIR)/nrmse -t 0.00001 r1.ra r2.ra					;\
-	$(TOOLDIR)/pics -r0.01			  -t t0.ra --fista -e k0.ra s0.ra r1.ra		;\
-	$(TOOLDIR)/pics -r0.01 --lowmem-stack=256 -t t0.ra --fista -e k0.ra s0.ra r2.ra		;\
-	$(TOOLDIR)/nrmse -t 0.0001 r1.ra r2.ra						;\
+	$(ROOTDIR)/bart traj -y55 -r t0.ra						;\
+	$(ROOTDIR)/bart phantom -t t0.ra -s8 -k k0.ra					;\
+	$(ROOTDIR)/bart phantom -S8 s0.ra						;\
+	$(ROOTDIR)/bart                  pics -r0.01 -i2 -t t0.ra k0.ra s0.ra r1.ra	;\
+	$(ROOTDIR)/bart --md-loop-dims=3 pics -r0.01 -i2 -t t0.ra k0.ra s0.ra r2.ra	;\
+	$(ROOTDIR)/bart nrmse -t 0.00001 r1.ra r2.ra					;\
+	$(ROOTDIR)/bart                  pics --lowmem -r0.01 -t t0.ra k0.ra s0.ra r1.ra	;\
+	$(ROOTDIR)/bart --md-loop-dims=3 pics --lowmem -r0.01 -t t0.ra k0.ra s0.ra r2.ra	;\
+	$(ROOTDIR)/bart nrmse -t 0.005 r1.ra r2.ra					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
 
-tests/test-pics-noncart-lowmem-no-toeplitz: traj slice phantom conj join fft flip pics nrmse
-	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
-	$(TOOLDIR)/traj -y55 -r t0.ra								;\
-	$(TOOLDIR)/phantom -t t0.ra -s8 -k k0.ra						;\
-	$(TOOLDIR)/phantom -S8 s0.ra								;\
-	$(TOOLDIR)/pics -r0.01 					-i2 -t t0.ra k0.ra s0.ra r1.ra	;\
-	$(TOOLDIR)/pics -r0.01 --lowmem-stack=256 --no-toeplitz -i2 -t t0.ra k0.ra s0.ra r2.ra	;\
-	$(TOOLDIR)/nrmse -t 0.00005 r1.ra r2.ra							;\
-	$(TOOLDIR)/pics -r0.01 					-t t0.ra k0.ra s0.ra r1.ra	;\
-	$(TOOLDIR)/pics -r0.01 --lowmem-stack=256 --no-toeplitz -t t0.ra k0.ra s0.ra r2.ra	;\
-	$(TOOLDIR)/nrmse -t 0.005 r1.ra r2.ra							;\
+tests/test-pics-noncart-lowmem-no-toeplitz: bart
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)							;\
+	$(ROOTDIR)/bart traj -y55 -r t0.ra								;\
+	$(ROOTDIR)/bart phantom -t t0.ra -s8 -k k0.ra							;\
+	$(ROOTDIR)/bart phantom -S8 s0.ra								;\
+	$(ROOTDIR)/bart                    pics -r0.01               -i2 -t t0.ra k0.ra s0.ra r1.ra	;\
+	$(ROOTDIR)/bart --md-loop-dims=3   pics -r0.01 --no-toeplitz -i2 -t t0.ra k0.ra s0.ra r2.ra	;\
+	$(ROOTDIR)/bart nrmse -t 0.00005 r1.ra r2.ra							;\
+	$(ROOTDIR)/bart                    pics -r0.01               -t t0.ra k0.ra s0.ra r1.ra		;\
+	$(ROOTDIR)/bart --md-loop-dims=3   pics -r0.01 --no-toeplitz -t t0.ra k0.ra s0.ra r2.ra		;\
+	$(ROOTDIR)/bart nrmse -t 0.005 r1.ra r2.ra							;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
 
-tests/test-pics-noncart-lowmem-stack1: traj slice phantom conj join fft flip pics nrmse
+tests/test-pics-noncart-lowmem-stack1: bart
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
-	$(TOOLDIR)/traj -y55 -r t0.ra							;\
-	$(TOOLDIR)/traj -y55 -G -r t1.ra						;\
-	$(TOOLDIR)/phantom    -t t0.ra -s8 -k k0.ra					;\
-	$(TOOLDIR)/phantom -T -t t1.ra -s8 -k k1C.ra					;\
-	$(TOOLDIR)/conj k1C.ra k1.ra							;\
-	$(TOOLDIR)/phantom -S8 s0.ra							;\
-	$(TOOLDIR)/conj s0.ra s1.ra							;\
-	$(TOOLDIR)/join 8 k0.ra k1.ra k.ra						;\
-	$(TOOLDIR)/join 8 s0.ra s1.ra s.ra						;\
-	$(TOOLDIR)/join 8 t0.ra t1.ra t.ra						;\
-	$(TOOLDIR)/pics 		   -i2 -t t.ra k.ra s.ra r1.ra			;\
-	$(TOOLDIR)/pics --lowmem-stack=256 -i2 -t t.ra k.ra s.ra r2.ra			;\
-	$(TOOLDIR)/nrmse -t 0.00001 r1.ra r2.ra						;\
-	$(TOOLDIR)/pics 		   -i2 -t t.ra k.ra s.ra r1.ra			;\
-	$(TOOLDIR)/pics --lowmem-stack=256 -i2 -t t.ra k.ra s.ra r2.ra			;\
-	$(TOOLDIR)/nrmse -t 0.005 r1.ra r2.ra						;\
+	$(ROOTDIR)/bart traj -y55 -r t0.ra						;\
+	$(ROOTDIR)/bart traj -y55 -G -r t1.ra						;\
+	$(ROOTDIR)/bart phantom    -t t0.ra -s8 -k k0.ra				;\
+	$(ROOTDIR)/bart phantom -T -t t1.ra -s8 -k k1C.ra				;\
+	$(ROOTDIR)/bart conj k1C.ra k1.ra						;\
+	$(ROOTDIR)/bart phantom -S8 s0.ra						;\
+	$(ROOTDIR)/bart conj s0.ra s1.ra						;\
+	$(ROOTDIR)/bart join 8 k0.ra k1.ra k.ra						;\
+	$(ROOTDIR)/bart join 8 s0.ra s1.ra s.ra						;\
+	$(ROOTDIR)/bart join 8 t0.ra t1.ra t.ra						;\
+	$(ROOTDIR)/bart                  pics -i2 -t t.ra k.ra s.ra r1.ra		;\
+	$(ROOTDIR)/bart --md-loop-dims=3 pics -i2 -t t.ra k.ra s.ra r2.ra		;\
+	$(ROOTDIR)/bart nrmse -t 0.00001 r1.ra r2.ra					;\
+	$(ROOTDIR)/bart                  pics -i10 -t t.ra k.ra s.ra r1.ra		;\
+	$(ROOTDIR)/bart --md-loop-dims=3 pics -i10 -t t.ra k.ra s.ra r2.ra		;\
+	$(ROOTDIR)/bart nrmse -t 0.005 r1.ra r2.ra					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
 
-tests/test-pics-noncart-lowmem-stack2: traj slice phantom conj join fft flip pics nrmse
+tests/test-pics-noncart-lowmem-stack2: bart
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
-	$(TOOLDIR)/traj -y55 -r t0.ra							;\
-	$(TOOLDIR)/traj -y55 -G -r t1.ra						;\
-	$(TOOLDIR)/phantom    -t t0.ra -s8 -k k0.ra					;\
-	$(TOOLDIR)/phantom -T -t t1.ra -s8 -k k1C.ra					;\
-	$(TOOLDIR)/conj k1C.ra k1.ra							;\
-	$(TOOLDIR)/phantom -S8 s0.ra							;\
-	$(TOOLDIR)/conj s0.ra s1.ra							;\
-	$(TOOLDIR)/join 8 k0.ra k1.ra k.ra						;\
-	$(TOOLDIR)/join 8 s0.ra s1.ra s.ra						;\
-	$(TOOLDIR)/join 8 t0.ra t1.ra t.ra						;\
-	$(TOOLDIR)/pics 		   -i2 -t t.ra k.ra s.ra r1.ra			;\
-	$(TOOLDIR)/pics --lowmem-stack=264 -i2 -t t.ra k.ra s.ra r2.ra			;\
-	$(TOOLDIR)/nrmse -t 0.00005 r1.ra r2.ra						;\
-	$(TOOLDIR)/pics 		    --fista -e -l1 -r0.001 -t t.ra k.ra s.ra r1.ra			;\
-	$(TOOLDIR)/pics --lowmem-stack=264  --fista -e -l1 -r0.001 -t t.ra k.ra s.ra r2.ra			;\
-	$(TOOLDIR)/nrmse -t 0.0001 r1.ra r2.ra						;\
+	$(ROOTDIR)/bart traj -y55 -r t0.ra						;\
+	$(ROOTDIR)/bart traj -y55 -G -r t1.ra						;\
+	$(ROOTDIR)/bart phantom    -t t0.ra -s8 -k k0.ra				;\
+	$(ROOTDIR)/bart phantom -T -t t1.ra -s8 -k k1C.ra				;\
+	$(ROOTDIR)/bart conj k1C.ra k1.ra						;\
+	$(ROOTDIR)/bart phantom -S8 s0.ra						;\
+	$(ROOTDIR)/bart conj s0.ra s1.ra						;\
+	$(ROOTDIR)/bart join 8 k0.ra k1.ra k.ra						;\
+	$(ROOTDIR)/bart join 8 s0.ra s1.ra s.ra						;\
+	$(ROOTDIR)/bart join 8 t0.ra t1.ra t.ra						;\
+	DEBUG_LEVEL=4 $(ROOTDIR)/bart                   pics -w1 -i1 -t t.ra k.ra s.ra r1.ra		;\
+	DEBUG_LEVEL=4 $(ROOTDIR)/bart  --md-loop-dims=3 pics -w1 -i1 -t t.ra k.ra s.ra r2.ra		;\
+	$(ROOTDIR)/bart nrmse -t 0.00005 r1.ra r2.ra					;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
@@ -683,6 +680,39 @@ tests/test-pics-pridu-admm: phantom ones pics nrmse
 	touch $@
 
 
+
+tests/test-pics-cart-delayed: bart $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra $(TESTS_OUT)/sens_1.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)											;\
+	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra ksp_usamp_p		;\
+	$(ROOTDIR)/bart slice 4 0 $(TESTS_OUT)/sens_1.ra sens_p										;\
+	$(ROOTDIR)/bart --md-loop-dims=3:13 pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p					;\
+	$(ROOTDIR)/bart                     pics -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_ref					;\
+	$(ROOTDIR)/bart nrmse -t 2e-5 img_l2_ref img_l2_p										;\
+	rm *.cfl ; rm *.hdr ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-pics-noncart-delayed: bart $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra $(TESTS_OUT)/sens_1.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(ROOTDIR)/bart traj -r -x256 -y64 traj.ra						;\
+	$(ROOTDIR)/bart scale 0.5 traj.ra traj2							;\
+	$(ROOTDIR)/bart phantom -s4 -t traj2 ksp						;\
+	$(ROOTDIR)/bart phantom -S4 col								;\
+	$(ROOTDIR)/bart --md-loop-dims=3:16 pics --fista -s1.e-14 -i10 -r0.001 -t traj2 ksp col reco2	;\
+	$(ROOTDIR)/bart 		    pics --fista -s1.e-14 -i10 -r0.001 -t traj2 ksp col reco1	;\
+	$(ROOTDIR)/bart nrmse -t 0.00001 reco1 reco2						;\
+	rm *.cfl *ra *.hdr ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-pics-cart-delayed-tgv: bart $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra $(TESTS_OUT)/sens_1.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)										;\
+	$(ROOTDIR)/bart join 13 $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/ksp_usamp_2.ra $(TESTS_OUT)/ksp_usamp_3.ra ksp_usamp_p	;\
+	$(ROOTDIR)/bart slice 4 0 $(TESTS_OUT)/sens_1.ra sens_p									;\
+	$(ROOTDIR)/bart --md-loop-dims=3:13 pics -RG:8195:0:0.25 -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_p		;\
+	$(ROOTDIR)/bart                     pics -RG:8195:0:0.25 -S -l2 -r 0.005 -i 3 ksp_usamp_p sens_p img_l2_ref		;\
+	$(ROOTDIR)/bart nrmse -t 2e-5 img_l2_ref img_l2_p									;\
+	rm *.cfl ; rm *.hdr ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 TESTS += tests/test-pics-pi tests/test-pics-noncart tests/test-pics-cs tests/test-pics-pics
 TESTS += tests/test-pics-poisson-wavl1 tests/test-pics-joint-wavl1 tests/test-pics-bpwavl1
 TESTS += tests/test-pics-weights tests/test-pics-noncart-weights
@@ -697,6 +727,7 @@ TESTS += tests/test-pics-phase
 TESTS += tests/test-pics-eulermaruyama tests/test-pics-eulermaruyama2 tests/test-pics-eulermaruyama3
 TESTS += tests/test-pics-fista tests/test-pics-ist
 TESTS += tests/test-pics-pridu-norm tests/test-pics-pridu-admm tests/test-pics-pridu-adaptive-stepsize
+TESTS += tests/test-pics-cart-delayed tests/test-pics-noncart-delayed tests/test-pics-cart-delayed-tgv
 
 TESTS_SLOW += tests/test-pics-basis
 

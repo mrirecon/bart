@@ -26,6 +26,7 @@
 #include "num/mpi_ops.h"
 #include "num/iovec.h"
 #include "num/vptr.h"
+#include "num/delayed.h"
 
 #include "iter/misc.h"
 #include "iter/monitor.h"
@@ -129,7 +130,6 @@ int main_pics(int argc, char* argv[argc])
 
 	struct pics_config pics_conf;
 	pics_conf.shared_img_flags = 0UL;
-	pics_conf.lowmem_flags = 0UL;
 	pics_conf.motion_flags = 0UL;
 	pics_conf.gpu_gridding = false;
 
@@ -186,7 +186,6 @@ int main_pics(int argc, char* argv[argc])
 		OPT_FLOAT('P', &bpsense_eps, "eps", "Basis Pursuit formulation, || y- Ax ||_2 <= eps"),
 		OPT_SET('M', &sms, "Simultaneous Multi-Slice reconstruction"),
 		OPTL_SET('U', "lowmem", &nufft_conf_options.lowmem, "Use low-mem mode of the nuFFT"),
-		OPTL_ULONG(0, "lowmem-stack", &pics_conf.lowmem_flags, "flags", "(Stack SENSE model along selected dims - currently only supports COIL_DIM and noncart)"),
 		OPTL_CLEAR(0, "no-toeplitz", &nufft_conf_options.toeplitz, "(Turn off Toeplitz mode of nuFFT)"),
 		OPTL_OUTFILE(0, "psf_export", &psf_ofile, "file", "Export PSF to file"),
 		OPTL_INFILE(0, "psf_import", &psf_ifile, "file", "Import PSF from file"),
@@ -219,12 +218,19 @@ int main_pics(int argc, char* argv[argc])
 	if (conf.bpsense)
 		pics_conf.nuconf->toeplitz = false;
 
-	if (0 != pics_conf.lowmem_flags) {
+	num_init_delayed();
 
-		pics_conf.nuconf->lowmem = true;
-		pics_conf.nuconf->precomp_fftmod = false;
-		pics_conf.nuconf->precomp_roll = !pics_conf.nuconf->toeplitz;
-		pics_conf.nuconf->precomp_linphase = false;
+	if (nuconf.lowmem && (NULL != traj_file)) {
+
+		if (bart_delayed_computations) {
+
+			nuconf.lowmem = false;
+			num_delayed_add_loop_dims(16);	// loop over decomposed phases in nuFFT
+			num_delayed_add_loop_dims(17);	// loop over decomposed phases in nuFFT when computing PSF
+		} else {
+
+			nuconf.lowmem = true;
+		}
 	}
 
 
@@ -236,8 +242,8 @@ int main_pics(int argc, char* argv[argc])
 
 	struct vptr_hint_s* hint = NULL;
 
-	if (0 != bart_mpi_split_flags)
-		hint = hint_mpi_create(bart_mpi_split_flags, DIMS, ksp_dims);
+	if ((0 != bart_mpi_split_flags) || bart_delayed_computations)
+		hint = vptr_hint_create(bart_mpi_split_flags, DIMS, ksp_dims, bart_delayed_loop_flags);
 
 	if (NULL != hint)
 		kspace = vptr_wrap_cfl(DIMS, ksp_dims, CFL_SIZE, kspace, hint, true, false);
@@ -593,9 +599,10 @@ int main_pics(int argc, char* argv[argc])
 
 	const struct operator_p_s* thresh_ops[NUM_REGS] = { NULL };
 	const struct linop_s* trafos[NUM_REGS] = { NULL };
+	const long (*sdims[NUM_REGS])[DIMS + 1] = { NULL };
 
 
-	opt_reg_configure(DIMS, img_dims, &ropts, thresh_ops, trafos, NULL, llr_blk, shift_mode, wtype_str, conf.gpu, ITER_DIM);
+	opt_reg_configure(DIMS, img_dims, &ropts, thresh_ops, trafos, sdims, llr_blk, shift_mode, wtype_str, conf.gpu, ITER_DIM);
 
 	if (conf.bpsense)
 		opt_bpursuit_configure(&ropts, thresh_ops, trafos, forward_op, kspace, bpsense_eps);
@@ -669,6 +676,8 @@ int main_pics(int argc, char* argv[argc])
 
 	// setup the reconstruction problem
 
+	const void* vptr_ref = NULL;
+
 	if (0 < ropts.svars) {
 
 		assert(NULL == image_truth);
@@ -680,6 +689,22 @@ int main_pics(int argc, char* argv[argc])
 
 		extract = linop_reshape_out_F(extract, DIMS, img_dims);
 		forward_op = linop_chain_FF(extract, forward_op);
+
+		if (is_vptr(image)) {
+
+			void* vptr_ref_array[NUM_REGS] = { NULL };
+			vptr_ref_array[0] = vptr_alloc_same(image);
+			int svars = 1;
+			for (int i = 0; i < NUM_REGS; i++)
+				if (NULL != sdims[i])
+					vptr_ref_array[svars++] = vptr_alloc_sameplace(DIMS + 1, (*sdims[i]), CFL_SIZE, image);
+
+			vptr_ref = vptr_wrap_range(svars, vptr_ref_array, true);
+
+			const struct linop_s* tmp = linop_vptr_set_dims_wrapper((struct linop_s*)forward_op, NULL, vptr_ref, vptr_get_hint(image));
+			linop_free(forward_op);
+			forward_op = tmp;
+		}
 	}
 
 	const struct operator_p_s* po = sense_recon_create(&conf, forward_op,
@@ -696,6 +721,17 @@ int main_pics(int argc, char* argv[argc])
 		const struct linop_s* extract = linop_extract_create(1, MD_DIMS(0), MD_DIMS(total), MD_DIMS(total + ropts.svars));
 		extract = linop_reshape_out_F(extract, DIMS, img_dims);
 
+		if (is_vptr(image)) {
+
+			const struct linop_s* tmp = linop_vptr_set_dims_wrapper((struct linop_s*)extract, NULL, vptr_ref, vptr_get_hint(image));
+			linop_free(extract);
+			extract = tmp;
+
+			auto op2 = operator_vptr_set_dims_wrapper(op, 2, (const void*[2]){ vptr_ref, NULL }, vptr_get_hint(image));
+			operator_free(op);
+			op = op2;
+		}
+
 		auto op2 = operator_chain(op, extract->forward);
 
 		operator_free(op);
@@ -703,6 +739,10 @@ int main_pics(int argc, char* argv[argc])
 
 		linop_free(extract);
 	}
+
+	for (int i = 0; i < NUM_REGS; i++)
+		if (NULL != sdims[i])
+			xfree(sdims[i]);
 
 	// perform the reconstruction
 
@@ -719,6 +759,8 @@ int main_pics(int argc, char* argv[argc])
 		md_zsmul(DIMS, img_dims, image, image, scaling);
 
 	// clean up
+
+	md_free(vptr_ref);
 
 	operator_free(op);
 

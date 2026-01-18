@@ -109,8 +109,7 @@ const struct linop_s* pics_model(const struct pics_config* conf,
 		forward_op = sense_nc_init(max_dims, map_dims, maps, ksp_dims,
 				traj_dims, traj_tmp, conf->nuconf,
 				pat_dims, pattern, basis_dims, basis, nufft_op,
-				conf->shared_img_flags & ~conf->motion_flags,
-				conf->lowmem_flags);
+				conf->shared_img_flags & ~conf->motion_flags);
 
 #ifdef USE_CUDA
 		if (conf->gpu_gridding)
