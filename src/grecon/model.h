@@ -24,9 +24,8 @@ struct pics_config {
 struct linop_s;
 
 extern const struct linop_s* pics_model(const struct pics_config* conf,
-				const long max_dims[DIMS], const long img_dims[DIMS], const long ksp_dims[DIMS],
+				const long img_dims[DIMS], const long ksp_dims[DIMS],
 				const long traj_dims[DIMS], const complex float* traj,
-				const long bmx_dims[DIMS],
 				const long basis_dims[DIMS], const complex float* basis,
 				const long map_dims[DIMS], const complex float* maps,
 				const long pat_dims[DIMS], const complex float* pattern,

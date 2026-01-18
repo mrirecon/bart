@@ -228,7 +228,6 @@ int main_pics(int argc, char* argv[argc])
 	}
 
 
-	long max_dims[DIMS];
 	long map_dims[DIMS];
 	long pat_dims[DIMS];
 	long img_dims[DIMS];
@@ -317,41 +316,29 @@ int main_pics(int argc, char* argv[argc])
 
 	// finalize dimensions
 
+	long max_dims[DIMS];
 	md_copy_dims(DIMS, max_dims, ksp_dims);
 	md_copy_dims(5, max_dims, map_dims);
 
-	long bmx_dims[DIMS];
-
-	if (NULL != basis_file) {
+	if (NULL != basis) {
 
 		assert(1 == ksp_dims[COEFF_DIM]);
-
 		assert(basis_dims[TE_DIM] == ksp_dims[TE_DIM]);
 
 		max_dims[COEFF_DIM] = basis_dims[COEFF_DIM];
-
-		md_select_dims(DIMS, ~MAPS_FLAG, bmx_dims, max_dims);
-
-		debug_printf(DP_INFO, "Basis: ");
-		debug_print_dims(DP_INFO, DIMS, bmx_dims);
-
 		max_dims[TE_DIM] = 1;
-
-		debug_printf(DP_INFO, "Max:   ");
-		debug_print_dims(DP_INFO, DIMS, max_dims);
 	}
 
-	md_select_dims(DIMS, ~COIL_FLAG & ~pics_conf.shared_img_flags, img_dims, max_dims);
+	md_select_dims(DIMS, ~(COIL_FLAG | pics_conf.shared_img_flags), img_dims, max_dims);
 
-	if (!md_check_compat(DIMS, ~(MD_BIT(MAPS_DIM)|FFT_FLAGS), img_dims, map_dims))
+	if (!md_check_compat(DIMS, ~(MD_BIT(MAPS_DIM) | FFT_FLAGS), img_dims, map_dims))
 		error("Dimensions of image and sensitivities do not match!\n");
 
-	if ((NULL != traj_file) && (!md_check_compat(DIMS, ~0UL, ksp_dims, traj_dims)))
+	if ((NULL != traj_file) && !md_check_compat(DIMS, ~0UL, ksp_dims, traj_dims))
 		error("Dimensions of data and trajectory do not match!\n");
 
 	if ((NULL == traj_file) && (NULL != psf_ofile))
 		error("Export of PSF for Cartesian scan requested!\n");
-
 
 	assert(1 == ksp_dims[MAPS_DIM]);
 
@@ -449,7 +436,7 @@ int main_pics(int argc, char* argv[argc])
 
 	if (-1. != restrict_fov) {
 
-		float restrict_dims[DIMS] = { [0 ... DIMS - 1] = 1. };
+		float restrict_dims[DIMS] = { [0 ... DIMS - 1] = 1 };
 		restrict_dims[0] = restrict_fov;
 		restrict_dims[1] = restrict_fov;
 		restrict_dims[2] = restrict_fov;
@@ -468,8 +455,8 @@ int main_pics(int argc, char* argv[argc])
 
 	const struct linop_s *nufft_op = NULL;
 
-	const struct linop_s* forward_op = pics_model(&pics_conf, max_dims, img_dims, ksp_dims,
-						traj_dims, traj, bmx_dims,  basis_dims, basis,
+	const struct linop_s* forward_op = pics_model(&pics_conf, img_dims, ksp_dims,
+						traj_dims, traj, basis_dims, basis,
 						map_dims, maps, pat_dims, pattern,
 						motion_dims, motion, &nufft_op);
 

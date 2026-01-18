@@ -8,6 +8,7 @@
 #include <stdlib.h>
 
 #include "misc/mri.h"
+#include "misc/debug.h"
 
 #include "num/iovec.h"
 #include "num/multind.h"
@@ -26,9 +27,8 @@
 
 
 const struct linop_s* pics_model(const struct pics_config* conf,
-				const long max_dims[DIMS], const long img_dims[DIMS], const long ksp_dims[DIMS],
+				const long img_dims[DIMS], const long ksp_dims[DIMS],
 				const long traj_dims[DIMS], const complex float* traj,
-				const long bmx_dims[DIMS],
 				const long basis_dims[DIMS], const complex float* basis,
 				const long map_dims[DIMS], const complex float* maps,
 				const long pat_dims[DIMS], const complex float* pattern,
@@ -36,6 +36,42 @@ const struct linop_s* pics_model(const struct pics_config* conf,
 				const struct linop_s** nufft_op)
 {
 	const struct linop_s* forward_op = NULL;
+
+	// finalize dimensions
+
+	long max_dims[DIMS];
+	md_copy_dims(DIMS, max_dims, ksp_dims);
+	md_copy_dims(5, max_dims, map_dims);
+
+	long bmx_dims[DIMS];
+
+	if (NULL != basis) {
+
+		assert(1 == ksp_dims[COEFF_DIM]);
+
+		assert(basis_dims[TE_DIM] == ksp_dims[TE_DIM]);
+
+		max_dims[COEFF_DIM] = basis_dims[COEFF_DIM];
+
+		md_select_dims(DIMS, ~MAPS_FLAG, bmx_dims, max_dims);
+
+		debug_printf(DP_INFO, "Basis: ");
+		debug_print_dims(DP_INFO, DIMS, bmx_dims);
+
+		max_dims[TE_DIM] = 1;
+
+		debug_printf(DP_INFO, "Max:   ");
+		debug_print_dims(DP_INFO, DIMS, max_dims);
+	}
+
+	// make sure the image dimension we get correspond to what we expect
+
+	long img2_dims[DIMS];
+	md_select_dims(DIMS, ~(COIL_FLAG | conf->shared_img_flags), img2_dims, max_dims);
+
+	assert(md_check_compat(DIMS, 0UL, img2_dims, img_dims));
+
+	// build model
 
 	if (NULL == traj) {
 
