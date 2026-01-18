@@ -1,6 +1,6 @@
 /* Copyright 2013-2015. The Regents of the University of California.
  * Copyright 2016-2020. Uecker Lab. University Medical Center Göttingen.
- * Copyright 2022-2025. Institute of Biomedical Imaging. TU Graz.
+ * Copyright 2022-2026. Institute of Biomedical Imaging. TU Graz.
  * Copyright 2017. Intel Corporation.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
@@ -10,7 +10,7 @@
  * 2019-2020 Sebastian Rosenzweig
  * 2013      Frank Ong <frankong@berkeley.edu>
  * 2017      Michael J. Anderson <michael.j.anderson@intel.com>
- * 2023      Moritz Blumenthal
+ * 2023-2026 Moritz Blumenthal
  * 2023      Bernhard Rapp
  *
  * Generic operations on multi-dimensional arrays. Most functions
@@ -2212,7 +2212,8 @@ void md_circ_shift2(int D, const long dimensions[D], const long center[D], const
 
 	if (dst == src) {
 
-		assert(str1 == str2);
+		assert(md_check_equal_dims(D, str1, str2, ~0UL));
+		assert(0 < D);
 
 		md_circ_shift_inpl2(D, dimensions, pos, str1, dst, size);
 		return;
