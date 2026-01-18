@@ -10,10 +10,8 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <complex.h>
-#include <string.h>
 #include <math.h>
 
-#include "misc/misc.h"
 #include "num/flpmath.h"
 #include "num/multind.h"
 #include "num/init.h"
@@ -22,6 +20,7 @@
 #include "num/ops_p.h"
 #include "num/fft.h"
 
+#include "misc/misc.h"
 #include "misc/mmio.h"
 #include "misc/debug.h"
 #include "misc/opts.h"
@@ -81,15 +80,15 @@ static void print_stats(int dl, float t, long img_dims[DIMS], const complex floa
 	corn_dims[0] = MIN(16, img_dims[0]);
 	corn_dims[1] = MIN(16, img_dims[1]);
 
-	md_zstd2(DIMS, corn_dims, ~0ul, MD_SINGLETON_STRS(DIMS), std_device, MD_STRIDES(DIMS, img_dims, CFL_SIZE), samples);
+	md_zstd2(DIMS, corn_dims, ~0UL, MD_SINGLETON_STRS(DIMS), std_device, MD_STRIDES(DIMS, img_dims, CFL_SIZE), samples);
 
 	float std_corner;
 	md_copy(1, MD_DIMS(1), &std_corner, std_device, FL_SIZE);
 
 	complex float* tmp = md_alloc_sameplace(DIMS, img_dims, CFL_SIZE, samples);
 
-	fftuc(DIMS, img_dims, 7, tmp, samples);
-	md_zstd2(DIMS, corn_dims, ~0ul, MD_SINGLETON_STRS(DIMS), std_device, MD_STRIDES(DIMS, img_dims, CFL_SIZE), tmp);
+	fftuc(DIMS, img_dims, FFT_FLAGS, tmp, samples);
+	md_zstd2(DIMS, corn_dims, ~0UL, MD_SINGLETON_STRS(DIMS), std_device, MD_STRIDES(DIMS, img_dims, CFL_SIZE), tmp);
 
 	md_free(tmp);
 
@@ -145,9 +144,7 @@ static const struct linop_s* get_sense_linop(long img_dims[DIMS], long ksp_dims[
 
 static void get_init(int N, long img_dims[N], complex float* samples, float sigma, const struct linop_s* A, const complex float* AHy, int iter)
 {
-	md_gaussian_rand(N, img_dims, samples);
-	md_zsmul(N, img_dims, samples, samples, 1 / sqrtf(2.)); // cplx var 1
-
+	md_zgaussian_rand(N, img_dims, samples);
 	md_zsmul(DIMS, img_dims, samples, samples, sigma);
 
 	if ((NULL == A) || linop_is_null(A))
@@ -159,11 +156,13 @@ static void get_init(int N, long img_dims[N], complex float* samples, float sigm
 	md_copy_dims(N, ksp_dims, cod->dims);
 
 	complex float* tmp_ksp = md_alloc_sameplace(N, ksp_dims, CFL_SIZE, samples);
-	md_gaussian_rand(DIMS, ksp_dims, tmp_ksp);
-	md_zsmul(DIMS, ksp_dims, tmp_ksp, tmp_ksp, 1. / sqrt(2));
+
+	md_zgaussian_rand(DIMS, ksp_dims, tmp_ksp);
 
 	complex float* tmp_AHy = md_alloc_sameplace(DIMS, img_dims, CFL_SIZE, samples);
+
 	linop_adjoint(A, N, img_dims, tmp_AHy, N, ksp_dims, tmp_ksp);
+
 	md_zadd(N, img_dims, tmp_AHy, tmp_AHy, AHy);
 
 	md_zsmul(DIMS, img_dims, samples, samples, 1. / (sigma * sigma));
@@ -320,9 +319,9 @@ int main_sample(int argc, char* argv[argc])
 
 		ksp = load_cfl(kspace_file, DIMS, ksp_dims);
 
-		long col_dims[DIMS];
-		complex float* sens = load_cfl(sens_file, DIMS, col_dims);
-		md_select_dims(DIMS, ~COIL_FLAG, img_dims, col_dims);
+		long map_dims[DIMS];
+		complex float* sens = load_cfl(sens_file, DIMS, map_dims);
+		md_select_dims(DIMS, ~COIL_FLAG, img_dims, map_dims);
 
 		long trj_dims[DIMS];
 		complex float* traj = NULL;
@@ -334,17 +333,20 @@ int main_sample(int argc, char* argv[argc])
 		md_select_dims(DIMS, ~COIL_FLAG, pat_dims, ksp_dims);
 		complex float* pat;
 
-		if (NULL == pattern_file)
-			pat = anon_cfl(NULL, DIMS, pat_dims);
-		else
-			pat = load_cfl(pattern_file, DIMS, pat_dims);
+		if (NULL == pattern_file) {
 
-		if (NULL == pattern_file)
+			pat = anon_cfl(NULL, DIMS, pat_dims);
+
 			estimate_pattern(DIMS, ksp_dims, COIL_FLAG, pat, ksp);
 
-		linop = get_sense_linop(img_dims, ksp_dims, col_dims, sens, trj_dims, traj, pat_dims, pat);
+		} else {
 
-		unmap_cfl(DIMS, col_dims, sens);
+			pat = load_cfl(pattern_file, DIMS, pat_dims);
+		}
+
+		linop = get_sense_linop(img_dims, ksp_dims, map_dims, sens, trj_dims, traj, pat_dims, pat);
+
+		unmap_cfl(DIMS, map_dims, sens);
 		unmap_cfl(DIMS, pat_dims, pat);
 
 		if (NULL != traj_file)
@@ -356,7 +358,7 @@ int main_sample(int argc, char* argv[argc])
 
 	img_dims[BATCH_DIM] = batchsize;
 
-	float min_var = 0.0f;
+	float min_var = 0.;
 
 	if (NULL != graph || NULL != cunet_weights) {
 
@@ -382,7 +384,8 @@ int main_sample(int argc, char* argv[argc])
 			long idims1[3] = { img_dims[0], img_dims[1], batchsize };
 			long idims2[1] = { batchsize };
 
-			nlop = nlop_external_graph_create(graph, 1, DO, (const long*[1]) { idims1 },  2, DI, (const long*[2]) {idims1, idims2}, bart_use_gpu, key);
+			nlop = nlop_external_graph_create(graph, 1, DO, (const long*[1]) { idims1 }, 
+					2, DI, (const long*[2]) {idims1, idims2}, bart_use_gpu, key);
 		}
 
 		nlop = nlop_reshape_in_F(nlop, 0, DIMS, img_dims);
@@ -391,7 +394,7 @@ int main_sample(int argc, char* argv[argc])
 		auto par = nlop_generic_domain(nlop, 1);
 
 		if (1 < md_calc_size(par->N, par->dims))
-			nlop = nlop_chain2_FF(nlop_from_linop_F(linop_repmat_create(par->N, par->dims, ~0ul)), 0, nlop, 1);
+			nlop = nlop_chain2_FF(nlop_from_linop_F(linop_repmat_create(par->N, par->dims, ~0UL)), 0, nlop, 1);
 
 		if (real_valued)
 			nlop = nlop_prepend_FF(nlop_from_linop_F(linop_scale_create(1, MD_DIMS(1), sqrtf(0.5))), nlop, 1);
@@ -455,7 +458,9 @@ int main_sample(int argc, char* argv[argc])
 			md_copy_dims(DIMS, vars_dims, ws_dims);
 
 			vars = md_alloc_sameplace(DIMS, vars_dims, CFL_SIZE, means);
+
 			md_zfill(DIMS, vars_dims, vars, 0);
+
 			debug_printf(DP_WARN, "No variance specified. Set to 0.\n");
 
 		} else {
@@ -507,7 +512,7 @@ int main_sample(int argc, char* argv[argc])
 	complex float* expectation = (mmse_file ? create_cfl : anon_cfl)(mmse_file, DIMS, out_dims);
 
 	complex float* out = create_cfl(samples_file, DIMS, out_dims);
-	long pos[DIMS] = { [0 ... DIMS - 1] = 0 };
+	long pos[DIMS] = { };
 
 	complex float* samples = my_alloc(DIMS, img_dims, CFL_SIZE);
 
@@ -546,8 +551,8 @@ int main_sample(int argc, char* argv[argc])
 
 	for (int i = N - 1; i >= 0; i--) {
 
-		float var_i = powf(get_sigma(((float)i) / N, sigma_min, sigma_max), 2);
-		float var_ip = powf(get_sigma(((float)(i + 1)) / N, sigma_min, sigma_max), 2);
+		float var_i = powf(get_sigma(((float)i) / N, sigma_min, sigma_max), 2.);
+		float var_ip = powf(get_sigma(((float)(i + 1)) / N, sigma_min, sigma_max), 2.);
 		float dvar = (var_ip - var_i);
 		float tau_ip = var_i / var_ip * dvar;
 
@@ -563,9 +568,9 @@ int main_sample(int argc, char* argv[argc])
 
 			AHy_iter = md_alloc_sameplace(DIMS, img_dims, CFL_SIZE, samples);
 
-			md_zsmul(DIMS, img_dims, AHy_iter, AHy, powf(scale, 2));
+			md_zsmul(DIMS, img_dims, AHy_iter, AHy, powf(scale, 2.));
 
-			maxeigen_iter *= powf(scale, 2);
+			maxeigen_iter *= powf(scale, 2.);
 
 			linop_iter = linop_chain_FF(linop_scale_create(DIMS, img_dims, scale), linop_iter);
 		}
@@ -645,7 +650,7 @@ int main_sample(int argc, char* argv[argc])
 			nlop_apply(nlop_fixed, DIMS, img_dims, tmp_exp, DIMS, img_dims, samples);
 
 			md_zsmul(DIMS, img_dims, tmp_exp, tmp_exp, var_i);
-			md_zaxpy(DIMS, img_dims, tmp_exp, 1, samples);
+			md_zaxpy(DIMS, img_dims, tmp_exp, 1., samples);
 
 			md_copy_block(DIMS, pos, out_dims, expectation, img_dims, tmp_exp, CFL_SIZE);
 			md_copy_block(DIMS, pos, out_dims, out, img_dims, samples, CFL_SIZE);
