@@ -427,7 +427,7 @@ static void make_3opd(size_t offset, int D, const long dim[D], const long ostr[D
 
 static void make_z2op(size_t offset, int D, const long dim[D], const long ostr[D], complex float* optr, const long istr1[D], const complex float* iptr1)
 {
-	const long* strs[] = {  ostr, istr1 };
+	const long* strs[] = { ostr, istr1 };
 	const size_t size[] = { sizeof(optr[0]), sizeof(iptr1[0]) };
 	void* ptr[] = { optr, (void*)iptr1 };
 
@@ -484,7 +484,7 @@ static void make_2op(size_t offset, int D, const long dim[D], const long ostr[D]
 __attribute__((unused))
 static void make_z2opd(size_t offset, int D, const long dim[D], const long ostr[D], complex double* optr, const long istr1[D], const complex float* iptr1)
 {
-	const long* strs[] = {  ostr, istr1 };
+	const long* strs[] = { ostr, istr1 };
 	const size_t size[] = { sizeof(optr[0]), sizeof(iptr1[0]) };
 	void* ptr[] = { optr, (void*)iptr1 };
 
@@ -515,7 +515,7 @@ static void make_z2opd(size_t offset, int D, const long dim[D], const long ostr[
 
 static void make_2opd(size_t offset, int D, const long dim[D], const long ostr[D], double* optr, const long istr1[D], const float* iptr1)
 {
-	const long* strs[] = {  ostr, istr1 };
+	const long* strs[] = { ostr, istr1 };
 	const size_t size[] = { sizeof(optr[0]), sizeof(iptr1[0]) };
 	void* ptr[] = { optr, (void*)iptr1 };
 
@@ -543,7 +543,7 @@ static void make_2opd(size_t offset, int D, const long dim[D], const long ostr[D
 
 static void make_z2opf(size_t offset, int D, const long dim[D], const long ostr[D], complex float* optr, const long istr1[D], const complex double* iptr1)
 {
-	const long* strs[] = {  ostr, istr1 };
+	const long* strs[] = { ostr, istr1 };
 	const size_t size[] = { sizeof(optr[0]), sizeof(iptr1[0]) };
 	void* ptr[] = { optr, (void*)iptr1 };
 
@@ -575,7 +575,7 @@ void* unused2 = make_z2opf;
 
 static void make_2opf(size_t offset, int D, const long dim[D], const long ostr[D], float* optr, const long istr1[D], const double* iptr1)
 {
-	const long* strs[] = {  ostr, istr1 };
+	const long* strs[] = { ostr, istr1 };
 	const size_t size[] = { sizeof(optr[0]), sizeof(iptr1[0]) };
 	void* ptr[] = { optr, (void*)iptr1 };
 
