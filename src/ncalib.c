@@ -1,4 +1,4 @@
-/* Copyright 2023-2024. TU Graz. Institute of Biomedical Imaging.
+/* Copyright 2023-2026. TU Graz. Institute of Biomedical Imaging.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -290,7 +290,7 @@ int main_ncalib(int argc, char* argv[argc])
 	md_copy_dims(3, sens_dims, my_sens_dims);
 
 	if (0 == scaling)
-		conf.scaling = (1 == sens_dims[2]) ? -100 : -1000;
+		conf.scaling = (2 == bitcount(md_nontriv_dims(3, sens_dims))) ? -100 : -1000;
 	else
 		conf.scaling = scaling;
 
