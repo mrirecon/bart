@@ -1540,7 +1540,16 @@ static struct vptr_mapped_dims_s* vptr_mem_map_dims(int N, const long odims[N],
 
 	int Nsize = MD_BIT(D);
 
+#if 0
 	int Nred = bitcount(md_nontriv_dims(N, odims));
+#else
+	//independent of size of unsigned long (wasm)
+	int Nred = 0;
+
+	for (int i = 0; i < N; i++)
+		if (1 < odims[i])
+			Nred++;
+#endif
 
 	long maxdims[Nmem + Nsize];
 	md_singleton_dims(Nmem + Nsize, maxdims);
@@ -1569,7 +1578,13 @@ static struct vptr_mapped_dims_s* vptr_mem_map_dims(int N, const long odims[N],
 			tdims[j + Nmem] = (long)mem[i]->shape.size / strs[i][j + Nmem];
 		}
 
+#if 0
 		md_max_dims(Nmem + Nsize, ~0UL, maxdims, maxdims, tdims);
+#else
+		// avoid dependency of unsigned long size (wasm)
+		for (int j = 0; j < Nmem + Nsize; j++)
+			maxdims[j] = MAX(maxdims[j], tdims[j]);
+#endif
 	}
 
 	unsigned long set_flag = 0UL;
@@ -1651,14 +1666,31 @@ static struct vptr_mapped_dims_s* vptr_mem_map_dims(int N, const long odims[N],
 	if (1 == md_calc_size(Nmem, dims) && check_changed)
 		return NULL;
 
-	unsigned long flag = md_nontriv_dims(Nred + Nmem + Nsize, dims);
+	int Nred_final = 0;
+	for (int i = Nmem; i < Nred + Nmem + Nsize; i++)
+		if (1 < dims[i])
+			Nred_final++;
 
-	int Nnew = Nred + Nmem + Nsize;
+	int Nnew = Nred_final + Nmem;
+
+	unsigned long flag = md_nontriv_dims(Nmem, dims);
 
 	long nstrs[D][Nnew];
 
 	for (int i = 0; i < D; i++)
-		md_select_strides(Nnew, flag, nstrs[i], strs[i]);
+		md_select_strides(Nmem, flag, nstrs[i], strs[i]);
+
+	for (int i = Nmem, ip = Nmem; i < Nred + Nmem + Nsize; i++) {
+
+		if (1 == dims[i])
+			continue;
+
+		for (int j = 0; j < D; j++)
+			nstrs[j][ip] = strs[j][i];
+
+		dims[ip] = dims[i];
+		ip++;
+	}
 
 	if (check_changed) {
 
