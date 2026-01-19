@@ -1,12 +1,11 @@
 /* Copyright 2014-2015. The Regents of the University of California.
  * Copyright 2015-2022. Uecker Lab. University Medical Center Göttingen
- * Copyright 2021-2025. Institute of Biomedical Imaging. TU Graz.
+ * Copyright 2021-2026. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors: Martin Uecker, Jonathan Tamir, Moritz Blumenthal
  *
- * Publications:
  *
  * Sylvester JJ.
  * Thoughts on inverse orthogonal matrices, simultaneous sign successions,
@@ -14,7 +13,6 @@
  * rule, ornamental tile-work, and the theory of numbers.
  * Philosophical Magazine 1867; 34:461-475.
  */
-
 
 #include <complex.h>
 #include <assert.h>
@@ -36,9 +34,9 @@
 #endif
 
 #include "linops/linop.h"
+#include "linops/fmac.h"
 
 #include "someops.h"
-#include "linops/fmac.h"
 
 
 struct cdiag_s {
@@ -134,8 +132,11 @@ static struct linop_s* linop_gdiag_create(int N, const long dims[N], unsigned lo
 	data->ddims = *PTR_PASS(ddims);
 	data->dstrs = *PTR_PASS(dstrs);
 
-	data->diag = (NULL == diag) ? NULL : multiplace_move(N, data->ddims, CFL_SIZE, diag);
+	data->diag = NULL;
 	data->normal = NULL;
+
+	if (NULL != diag)
+		data->diag = multiplace_move(N, data->ddims, CFL_SIZE, diag);
 
 	return linop_create(N, dims, N, dims, CAST_UP(PTR_PASS(data)), cdiag_apply, cdiag_adjoint, cdiag_normal, NULL, cdiag_free);
 }
@@ -416,12 +417,14 @@ static void copy_block_forward(const linop_data_t* _data, complex float* dst, co
 {
 	const auto data = CAST_DOWN(copy_block_s, _data);
 
-	for (int i = 0; i < data->N; i++)
+	for (int i = 0; i < data->N; i++) {
+
 		if (data->odims[i] > data->idims[i]) {
 
 			md_clear(data->N, data->odims, dst, CFL_SIZE);
 			break;
 		}
+	}
 
 	md_copy_block(data->N, data->pos, data->odims, dst, data->idims, src, CFL_SIZE);
 }
@@ -1782,7 +1785,6 @@ static void fft_linop_normal(const linop_data_t* _data, complex float* out, cons
  */
 struct linop_s* linop_fft_create(int N, const long dims[N], unsigned long flags)
 {
-
 	PTR_ALLOC(struct fft_linop_s, data);
 	SET_TYPEID(fft_linop_s, data);
 

@@ -114,6 +114,7 @@ const void* multiplace_read(struct multiplace_array_s* ptr, const void* ref)
 				if (!is_vptr(ptr->ptr_ref) && !is_gpu(ptr->ptr_ref)) {
 
 					ptr->mpi_cpu = vptr_wrap_sameplace(ptr->N, ptr->dims, ptr->size, ptr->ptr_ref, ref, false, true);
+
 				} else {
 
 					ptr->mpi_cpu = vptr_alloc_sameplace(ptr->N, ptr->dims, ptr->size, ref);
@@ -131,6 +132,7 @@ const void* multiplace_read(struct multiplace_array_s* ptr, const void* ref)
 				if (!is_vptr(ptr->ptr_ref) && is_gpu(ptr->ptr_ref)) {
 
 					ptr->mpi_gpu = vptr_wrap_sameplace(ptr->N, ptr->dims, ptr->size, ptr->ptr_ref, ref, false, true);
+
 				} else {
 
 					ptr->mpi_gpu = vptr_alloc_sameplace(ptr->N, ptr->dims, ptr->size, ref);
@@ -186,6 +188,7 @@ struct multiplace_array_s* multiplace_move2(int D, const long dimensions[D], con
 
 		if (is_vptr_gpu(tmp))
 			result->mpi_gpu = tmp;
+
 	} else {
 
 #ifdef USE_CUDA
@@ -227,6 +230,7 @@ struct multiplace_array_s* multiplace_move_F(int D, const long dimensions[D], si
 #endif
 			result->ptr_cpu = (void*)ptr;
 	}
+
 	return result;
 }
 
