@@ -1245,7 +1245,7 @@ void vptr_contiguous_strs(int N, const void* ptr, unsigned long lflags, long nst
 		}
 
 		unsigned long flags = ~(mem->blocks.flags << 1) & md_nontriv_dims(Nm, mdims);
-		nstrs[i] = md_reravel_index(Nm, flags, md_nontriv_dims(Nm, mdims), mdims, 
+		nstrs[i] = md_reravel_index(Nm, flags, md_nontriv_dims(Nm, mdims), mdims,
 					labs(ostrs[i])) * ((ostrs[i] < 0) ? -1 : 1);
 	}
 }
@@ -1664,11 +1664,11 @@ static struct vptr_mapped_dims_s* vptr_mem_map_dims(int N, const long odims[N],
 
 		bool same = (N >= Nmem);
 
-		if (!md_check_equal_dims(Nmem, dims, odims, ~0UL))
+		if (!md_check_equal_dims(MIN(Nmem, N), dims, odims, ~0UL))
 			same = false;
 
 		for (int i = 0; i < D; i++)
-			if (!md_check_equal_dims(Nmem, nstrs[i], ostrs[i], flag))
+			if (!md_check_equal_dims(MIN(Nmem, N), nstrs[i], ostrs[i], flag))
 				same = false;
 
 		if (same)
