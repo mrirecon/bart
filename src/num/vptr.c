@@ -269,7 +269,7 @@ static void vptr_mem_block_free(struct vptr_mem_s* mem, int idx, enum VPTR_LOC l
 		break;
 #ifdef USE_CUDA
 	case VPTR_GPU:
-		cuda_free((void*)mem->mem[idx]);
+		cuda_free(mem->mem[idx]);
 		break;
 #endif
 	default:
