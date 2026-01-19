@@ -1,5 +1,5 @@
 /* Copyright 2022. Uecker Lab. University Medical Center Göttingen.
- * Copyright 2022-2025. Institute of Biomedical Imaging. TU Graz.
+ * Copyright 2022-2026. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -97,11 +97,11 @@ extern "C" void cuda_apply_linphases_3D(int N, const long img_dims[], const floa
 	c.fmac = fmac;
 
 	float shifts[3];
-	
+
 	for (int i = 0; i < 3; i++) {
 
 		shifts[i] = _shifts[i];
-	
+
 		if (1 < img_dims[i])
 			shifts[i] += (img_dims[i] / 2. - img_dims[i] / 2);
 	}
@@ -359,7 +359,7 @@ __device__ static int get_bin_index(struct grid_sort_plan_s gd, float trj[3])
 	for (int j = 2; j >= 0; j--) {
 
 		trj[j] = (trj[j] + gd.conf.shift[j]) * gd.conf.os;
-		trj[j] += (gd.grd_dims[j] > 1) ? ((float) gd.grd_dims[j] / 2.) : 0.;
+		trj[j] += (gd.grd_dims[j] > 1) ? (float)(gd.grd_dims[j] / 2) : 0.;
 
 		if (gd.conf.periodic) {
 
@@ -824,6 +824,15 @@ __device__ static void grid_point_r(const struct grid_plan_s* plan, cuFloatCompl
 
 		float pos = plan->conf.os * (traj[j] + plan->conf.shift[j]);
 		pos += (plan->grd_dims[j] > 1) ? (float)(plan->grd_dims[j] / 2) : 0.;
+
+		if (smem && plan->conf.periodic) {
+
+			while (0. > pos)
+				pos += plan->grd_dims[j];
+
+			while (pos >= plan->access.bin.local_size[j])
+				pos -= plan->grd_dims[j];
+		}
 
 		int sti = (int)ceil(pos - 0.5 * plan->conf.width);
 		int eni = (int)floor(pos + 0.5 * plan->conf.width);
