@@ -1,8 +1,9 @@
-/* Copyright 2025. TU Graz. Institute of Biomedical Imaging.
+/* Copyright 2026. TU Graz. Institute of Biomedical Imaging.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
- * Author: Moritz Blumenthal
+ * Authors: Moritz Blumenthal
+ *          Tina Holliber
  */
 
 
@@ -12,6 +13,7 @@
 #include <stdio.h>
 
 #include "misc/misc.h"
+#include "misc/mri.h"
 
 #include "num/multind.h"
 #include "num/iovec.h"
@@ -282,3 +284,41 @@ nn_t cunet_create(struct nn_cunet_conf_s* conf, int N, const long dims[N])
 	return network;
 }
 
+nn_t cunet_bart_create(struct nn_cunet_conf_s* conf, int N, const long bdims[N])
+{
+	assert(16 == N);
+
+	long idims[N];
+	md_copy_dims(N, idims, bdims);
+
+	long channel = 1;
+	unsigned long channel_flag = (~(FFT_FLAGS | BATCH_FLAG)) & (md_nontriv_dims(N, idims));
+	assert(1 >= bitcount(channel_flag)); // only one channel allowed
+	int ch_dim = md_min_idx(channel_flag);
+
+	// compute size of channel dimension
+	long chn_dims[N];
+	md_select_dims(N, channel_flag, chn_dims, idims);
+	channel = md_calc_size(N, chn_dims);
+
+	long dims[5];
+	dims[0] = channel;
+	md_copy_dims(3, dims + 1, idims);
+	dims[4] = idims[BATCH_DIM];
+	
+	const int iperm[16] = { ch_dim, 0, 1, 2, 15, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 3 };
+	long idim_tmp[16];
+	md_permute_dims(16, iperm, idim_tmp, idims);
+	
+	const int operm[16] = { 1      , 2, 3, 5, 0, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 4 };
+	long odim_tmp[16];
+	md_permute_dims(16, operm, odim_tmp, idim_tmp);
+
+	auto network = cunet_create(conf, 5, dims);
+	
+	network = nn_chain2_swap_FF(nn_reshape_out_F(nn_from_nlop_F(nlop_from_linop_F(linop_permute_create(N, iperm, idims))), 0, NULL, 5, dims), 0, NULL, network, 0, NULL);
+	network = nn_reshape_out_F(network, 0, NULL, N, idim_tmp);
+	network = nn_chain2_FF(network, 0, NULL, nn_from_nlop_F(nlop_from_linop_F(linop_permute_create(N, operm, idim_tmp))), 0, NULL);
+
+	return network;
+}

@@ -66,12 +66,8 @@ const struct nlop_s* prior_cunet(const char* cunet_weights, struct nn_cunet_conf
 {
 	const struct nlop_s* nlop = NULL;
 
-	long batchsize = img_dims[BATCH_DIM];
-
-	const long dims[5] = { 1, img_dims[0], img_dims[1], img_dims[2], batchsize };
-
-	nn_t cunet = cunet_create(cunet_conf, 5, dims);
-
+	nn_t cunet = cunet_bart_create(cunet_conf, DIMS, img_dims);
+	
 	cunet = nn_denoise_precond_edm(cunet, -1., -1., 0.5, false);
 
 	nn_weights_t weights = load_nn_weights(cunet_weights);

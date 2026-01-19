@@ -21,3 +21,4 @@ struct nn_cunet_conf_s {
 extern struct nn_cunet_conf_s cunet_defaults;
 
 extern const struct nn_s* cunet_create(struct nn_cunet_conf_s* conf, int N, const long dims[N]);
+extern const struct nn_s* cunet_bart_create(struct nn_cunet_conf_s* conf, int N, const long bdims[N]);

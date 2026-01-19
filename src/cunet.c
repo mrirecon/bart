@@ -99,7 +99,7 @@ int main_cunet(int argc, char* argv[argc])
 	long bdims[5] = { 1, dims[0], dims[1], dims[2], Nb };
 	long tdims[5] = { 1, dims[0], dims[1], dims[2], Nt };
 
-	nn_t net = cunet_create(&cunet_conf, 5, bdims);
+	nn_t net = cunet_bart_create(&cunet_conf, 5, bdims);
 
 	net = nn_denoise_precond_edm(net, sigma_min, sigma_max, sigma_data, false);
 
