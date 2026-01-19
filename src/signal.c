@@ -117,7 +117,7 @@ int main_signal(int argc, char* argv[argc])
 		OPT_FLOAT('r', &TR, "TR", "repetition time"),
 		OPT_FLOAT('e', &TE, "TE", "echo time"),
 		OPT_FLOAT('i', &TI, "TI", "inversion time"),
-		OPT_FLOAT('f', &FA, "FA", "flip ange"),
+		OPT_FLOAT('f', &FA, "FA", "flip angle"),
 		OPT_FLOAT('d', &fat_frac, "FF", "fat fraction"),
 		OPT_FLOAT('t', &time_T1relax, "T1 relax", "T1 relax period (second) for MOLLI"),
 		OPT_LONG('n', &dims[TE_DIM], "n", "number of measurements"),
