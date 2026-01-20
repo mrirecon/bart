@@ -632,7 +632,7 @@ RockyLinux_10:
   rules:
     - if: $CI_DISTRO_TESTS == "1"
   stage: distro_build
-  image: docker.io/rockylinux:10
+  image: docker.io/rockylinux/rockylinux:10
   script:
     - dnf --enablerepo=crb install -y fftw-devel openblas-devel libpng-devel lapack-devel gcc
     - echo -e -n "OPENBLAS=1\nCPPFLAGS=-Wall -Wextra -I/usr/include/openblas\n" > Makefiles/Makefile.local
