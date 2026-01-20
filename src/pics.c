@@ -291,7 +291,7 @@ int main_pics(int argc, char* argv[argc])
 	if (NULL != basis_file) {
 
 		basis = load_cfl_sameplace(basis_file, DIMS, basis_dims, kspace);
-		
+
 		assert(!MD_IS_SET(bart_mpi_split_flags, TE_DIM));
 		assert(0 == ((FFT_FLAGS | MAPS_FLAG | COIL_FLAG) & md_nontriv_dims(DIMS, basis_dims)));
 
@@ -399,7 +399,7 @@ int main_pics(int argc, char* argv[argc])
 
 		pattern = load_cfl_sameplace(pat_file, DIMS, pat_dims, kspace);
 
-		assert(md_check_compat(DIMS, COIL_FLAG, ksp_dims, pat_dims));
+		assert(md_check_compat(DIMS, md_nontriv_dims(DIMS, ksp_dims), ksp_dims, pat_dims));
 
 	} else {
 
