@@ -1,4 +1,4 @@
-/* Copyright 2025. TU Graz. Institute of Biomedical Imaging.
+/* Copyright 2026. TU Graz. Institute of Biomedical Imaging.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -93,13 +93,14 @@ int main_cunet(int argc, char* argv[argc])
 	long dims[DIMS];
 	complex float* in = load_cfl(filename_images, DIMS, dims);
 
+	long bdims[DIMS];
+	md_select_dims(DIMS, ~BATCH_FLAG, bdims, dims);
+	
 	int Nt = dims[BATCH_DIM];
 	int Nb = MIN(batch_size, Nt);
 
-	long bdims[5] = { 1, dims[0], dims[1], dims[2], Nb };
-	long tdims[5] = { 1, dims[0], dims[1], dims[2], Nt };
-
-	nn_t net = cunet_bart_create(&cunet_conf, 5, bdims);
+	bdims[BATCH_DIM] = Nb;
+	nn_t net = cunet_bart_create(&cunet_conf, DIMS, bdims);
 
 	net = nn_denoise_precond_edm(net, sigma_min, sigma_max, sigma_data, false);
 
@@ -114,9 +115,9 @@ int main_cunet(int argc, char* argv[argc])
 	if (bart_use_gpu)
 		move_gpu_nn_weights(weights);
 
-	const struct nlop_s* batch_generator = batch_gen_create(1, (int [1]){ 5 },
+	const struct nlop_s* batch_generator = batch_gen_create(1, (int [1]){ 16 },
 								(const long*[1]){ bdims },
-								(const long*[1]){ tdims },
+								(const long*[1]){ dims },
 								(const complex float*[1]){ in },
 								0, BATCH_GEN_SHUFFLE_DATA, 123);
 
