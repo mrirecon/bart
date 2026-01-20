@@ -319,10 +319,18 @@ static void* cuda_malloc_wrapper(size_t size)
 		CUDA_ERROR(cudaDeviceGetAttribute(&access, cudaDevAttrConcurrentManagedAccess, cuda_device_id));
 
 		if (0 != access) {
-
+#if 13000 <= CUDART_VERSION
+			struct cudaMemLocation mloc;
+			mloc.type = cudaMemLocationTypeDevice;
+			mloc.id = cuda_device_id;
+			CUDA_ERROR(cudaMemAdvise(ptr, size, cudaMemAdviseSetAccessedBy, mloc));
+			CUDA_ERROR(cudaMemAdvise(ptr, size, cudaMemAdviseSetPreferredLocation, mloc));
+			CUDA_ERROR(cudaMemPrefetchAsync(ptr, size, mloc, 0U, cuda_get_stream()));
+#else
 			CUDA_ERROR(cudaMemAdvise(ptr, size, cudaMemAdviseSetAccessedBy, cuda_device_id));
 			CUDA_ERROR(cudaMemAdvise(ptr, size, cudaMemAdviseSetPreferredLocation, cuda_device_id));
 			CUDA_ERROR(cudaMemPrefetchAsync(ptr, size, cuda_device_id, cuda_get_stream()));
+#endif
 		}
 
 	} else {
