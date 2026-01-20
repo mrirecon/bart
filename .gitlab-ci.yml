@@ -571,6 +571,24 @@ Debian_Trixie:
     - make all -j8
     - make utest -j8
 
+
+Debian_Trixie_CUDA13:
+  variables:
+    DEBUG: "0"
+    DEBUG_DWARF: "0"
+  rules:
+    - if: $CI_DISTRO_TESTS == "1"
+  stage: distro_build
+  image: registry.gitlab.tugraz.at/ibi/reproducibility/gitlab-ci-containers/ibi_cuda13
+  script:
+    - apt-get update
+    - apt-get install -y gcc make libfftw3-dev liblapacke-dev libpng-dev libopenblas-dev gfortran
+    - CUDA=1 CUDA_BASE=/usr/local/cuda-13/ CUDA_LIB=lib64 make all -j8
+    - CUDA=1 CUDA_BASE=/usr/local/cuda-13/ CUDA_LIB=lib64 make utest -j8
+    - if ! nvidia-smi ; then printf "No usable GPU found, skipping GPU tests!\n"; exit 0; fi
+    - CUDA=1 CUDA_BASE=/usr/local/cuda-13/ CUDA_LIB=lib64 make utest_gpu -j8
+
+
 Fedora_39:
   variables:
     DEBUG: "0"
