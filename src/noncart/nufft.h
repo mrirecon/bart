@@ -18,6 +18,7 @@ struct nufft_conf_s {
 	_Bool upper_triag;
 	_Bool real;
 	_Bool compress_psf;
+	_Bool decomposed_psf;
 
 	_Bool precomp;
 	_Bool precomp_linphase;

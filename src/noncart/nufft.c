@@ -64,6 +64,7 @@ struct nufft_conf_s nufft_conf_defaults = {
 	.upper_triag = false,
 	.real = false,
 	.compress_psf = false,
+	.decomposed_psf = false,
 	.precomp = true,
 	.precomp_linphase = true,
 	.precomp_fftmod = true,
@@ -88,6 +89,7 @@ struct nufft_conf_s nufft_conf_options = {
 	.upper_triag = false,
 	.real = false,
 	.compress_psf = false,
+	.decomposed_psf = false,
 	.precomp = true,
 	.precomp_linphase = true,
 	.precomp_fftmod = true,
@@ -110,6 +112,7 @@ struct opt_s nufft_conf_opts[] = {
 	OPTL_FLOAT('w', "width", &(nufft_conf_options.width), "w", "(width of Kaiser-Bessel window on oversampled grid (default: w=6))"),
 	OPTL_SET(0, "real-psf", &(nufft_conf_options.real), "only store real part of PSF (lower memory usage and faster in some cases)"),
 	OPTL_SET(0, "compress-psf", &(nufft_conf_options.compress_psf), "only store non-zero entries of PSF (lower memory usage and faster in some cases)"),
+	OPTL_SET(0, "decomposed-psf", &(nufft_conf_options.decomposed_psf), "compute even and odd frequencies of PSF independently (lower memory usage but slower)"),
 	OPTL_SET(0, "upper-triag-psf", &(nufft_conf_options.upper_triag), "store only upper triangular part of PSF for subspace (lower memory usage and faster in some cases)"),
 };
 
@@ -531,10 +534,10 @@ static struct nufft_conf_s compute_psf_nufft_conf(bool periodic, bool lowmem, bo
 }
 
 
-complex float* compute_psf(int N, const long img_dims[N], const long trj_dims[N], const complex float* traj,
+static complex float* compute_psf_int(int N, const long img_dims[N], const long trj_dims[N], const complex float* traj,
 				const long bas_dims[N], const complex float* basis,
 				const long wgh_dims[N], const complex float* weights,
-				bool periodic, bool lowmem)
+				bool periodic, bool lowmem, bool upper_triag)
 {
 	long ksp_dims[N];
 	md_select_dims(N, ~MD_BIT(0), ksp_dims, trj_dims);
@@ -544,16 +547,22 @@ complex float* compute_psf(int N, const long img_dims[N], const long trj_dims[N]
 
 	long sqr_bas_dims[N];
 
-	complex float* sqr_basis = compute_square_basis(false, N, sqr_bas_dims, bas_dims, basis, ksp_dims);
+	complex float* sqr_basis = compute_square_basis(upper_triag, N, sqr_bas_dims, bas_dims, basis, ksp_dims);
 	complex float* sqr_weights = compute_square_weights(N, wgh_dims, weights);
 
 	long img_dims2[N];
 	md_copy_dims(N, img_dims2, img_dims);
 
-	if (NULL != sqr_basis) {
+	if (upper_triag) {
 
-		img_dims2[6] *= img_dims2[6];
-		img_dims2[5] = 1;
+		assert(1 == img_dims2[5]);
+	} else {
+
+		if (NULL != sqr_basis) {
+
+			img_dims2[6] *= img_dims2[6];
+			img_dims2[5] = 1;
+		}
 	}
 
 	complex float* psf = md_alloc_sameplace(N, img_dims, CFL_SIZE, traj);
@@ -576,6 +585,15 @@ complex float* compute_psf(int N, const long img_dims[N], const long trj_dims[N]
 
 
 	return psf;
+}
+
+
+complex float* compute_psf(int N, const long img_dims[N], const long trj_dims[N], const complex float* traj,
+				const long bas_dims[N], const complex float* basis,
+				const long wgh_dims[N], const complex float* weights,
+				bool periodic, bool lowmem)
+{
+	return compute_psf_int(N, img_dims, trj_dims, traj, bas_dims, basis, wgh_dims, weights, periodic, lowmem, false);
 }
 
 
@@ -712,18 +730,6 @@ complex float* compute_psf2(int N, const long psf_dims[N + 1], unsigned long fla
 				const long bas_dims[N + 1], const complex float* basis, const long wgh_dims[N + 1], const complex float* weights,
 				bool periodic, bool lowmem, bool upper_triag)
 {
-
-#ifdef USE_CUDA
-	bool gpu = cuda_ondevice(traj);
-#else
-	bool gpu = false;
-#endif
-
-	if (upper_triag || lowmem || gpu)
-		return compute_psf2_decomposed(N, psf_dims, flags,
-					       trj_dims, traj, bas_dims, basis, wgh_dims, weights,
-					       periodic, lowmem, upper_triag);
-
 	int ND = N + 1;
 
 	long img_dims[ND];
@@ -749,7 +755,7 @@ complex float* compute_psf2(int N, const long psf_dims[N + 1], unsigned long fla
 
 	md_zsmul(ND, trj_dims, traj2, traj, 2.);
 
-	complex float* psft = compute_psf(ND, img2_dims, trj_dims, traj2, bas_dims, basis, wgh_dims, weights, periodic, lowmem);
+	complex float* psft = compute_psf_int(ND, img2_dims, trj_dims, traj2, bas_dims, basis, wgh_dims, weights, periodic, lowmem, upper_triag);
 
 	md_free(traj2);
 
@@ -1116,9 +1122,11 @@ static void nufft_set_traj(struct nufft_data* data, int N,
 				debug_printf(DP_DEBUG1, "Compressing PSF to %.0f%%\n", 100. * max_idx / md_calc_size(ND, data->com_dims));
 			}
 
-			const complex float* psf = compute_psf2(N, data->psf_dims, data->flags, data->trj_dims, traj,
-						data->bas_dims, multiplace_read(data->basis, traj), data->wgh_dims, multiplace_read(data->weights, traj),
-						true /*conf.periodic*/, data->conf.lowmem, data->conf.upper_triag);
+			const complex float* psf = (data->conf.decomposed_psf ? compute_psf2_decomposed : compute_psf2)(N,
+								data->psf_dims, data->flags, data->trj_dims, traj,
+								data->bas_dims, multiplace_read(data->basis, traj),
+								data->wgh_dims, multiplace_read(data->weights, traj),
+								true /*conf.periodic*/, data->conf.lowmem, data->conf.upper_triag);
 
 			if (data->conf.real) {
 
