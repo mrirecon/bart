@@ -58,7 +58,7 @@ def _writera(name, array):
     shape_arr = np.array(array.shape, dtype=np.uint64)
     fullsize = int(header[4] + header.nbytes + shape_arr.nbytes)
 
-    with open(name, "a+b") as d:
+    with open(name, "w+b") as d:
         os.ftruncate(d.fileno(), fullsize)
         mm = mmap.mmap(d.fileno(), fullsize, flags=mmap.MAP_SHARED, prot=mmap.PROT_WRITE)
         if array.dtype != np.complex64:
@@ -133,7 +133,7 @@ def writecfl(name, array):
 
     size = np.prod(array.shape) * np.dtype(np.complex64).itemsize
 
-    with open(name + ".cfl", "a+b") as d:
+    with open(name + ".cfl", "w+b") as d:
         os.ftruncate(d.fileno(), size)
         mm = mmap.mmap(d.fileno(), size, flags=mmap.MAP_SHARED, prot=mmap.PROT_WRITE)
         if array.dtype != np.complex64:
@@ -165,10 +165,10 @@ def writemulticfl(name, arrays):
             for i in dim:
                 h.write("%d " % i)
             h.write('\n')
-            
+
     size = size * np.dtype(np.complex64).itemsize
 
-    with open(name + ".cfl", "a+b") as d:
+    with open(name + ".cfl", "w+b") as d:
         os.ftruncate(d.fileno(), size)
         mm = mmap.mmap(d.fileno(), size, flags=mmap.MAP_SHARED, prot=mmap.PROT_WRITE)
         for array in arrays:
