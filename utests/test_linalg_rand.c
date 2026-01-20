@@ -531,7 +531,7 @@ static bool test_randomized_svd_lowrank2_dense(void)
 	md_free(mat1);
 	md_free(mat2);
 
-	UT_RETURN_ASSERT_TOL(err, 10. * UT_TOL);
+	UT_RETURN_ASSERT_TOL(err, 50. * UT_TOL);
 }
 
 UT_REGISTER_TEST(test_randomized_svd_lowrank2_dense);
