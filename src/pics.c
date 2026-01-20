@@ -268,20 +268,6 @@ int main_pics(int argc, char* argv[argc])
 	complex float* maps = load_cfl_sameplace(sens_file, DIMS, map_dims, kspace);
 
 
-	// load basis file
-
-	long basis_dims[DIMS] = { }; // analyzer false positive
-	complex float* basis = NULL;
-
-	if (NULL != basis_file) {
-
-		basis = load_cfl_sameplace(basis_file, DIMS, basis_dims, kspace);
-
-		assert(!MD_IS_SET(bart_mpi_split_flags, TE_DIM));
-		assert(!md_check_dimensions(DIMS, basis_dims, COEFF_FLAG | TE_FLAG));
-	}
-
-
 	// load motion field
 
 	long motion_dims[DIMS] = { };
@@ -295,6 +281,23 @@ int main_pics(int argc, char* argv[argc])
 		assert(1 < motion_dims[MOTION_DIM]);
 
 		pics_conf.motion_flags = md_nontriv_dims(DIMS, motion_dims) & ~MOTION_FLAG;
+	}
+
+	// load basis file
+
+	long basis_dims[DIMS] = { }; // analyzer false positive
+	complex float* basis = NULL;
+
+	if (NULL != basis_file) {
+
+		basis = load_cfl_sameplace(basis_file, DIMS, basis_dims, kspace);
+		
+		assert(!MD_IS_SET(bart_mpi_split_flags, TE_DIM));
+		assert(0 == ((FFT_FLAGS | MAPS_FLAG | COIL_FLAG) & md_nontriv_dims(DIMS, basis_dims)));
+
+		// allow for different basis in "batch dimensions"
+		unsigned long allowed_flags = pics_conf.motion_flags | ~pics_conf.shared_img_flags;
+		assert(0 == (~allowed_flags & md_nontriv_dims(DIMS, basis_dims)));
 	}
 
 
