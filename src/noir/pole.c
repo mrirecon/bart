@@ -106,6 +106,9 @@ static void compute_curl_map_normal(struct pole_config_s conf, int N, const long
 	complex float* angle = md_alloc_sameplace(N, odims, CFL_SIZE, sens);
 	md_clear(N, odims, angle, CFL_SIZE);
 
+	complex float* prod = md_alloc_sameplace(N, odims, CFL_SIZE, sens);
+	md_zfill(N, odims, prod, 1.);
+
 	complex float* sens1 = md_alloc_sameplace(N, odims, CFL_SIZE, sens);
 	complex float* sens2 = md_alloc_sameplace(N, odims, CFL_SIZE, sens);
 
@@ -119,6 +122,10 @@ static void compute_curl_map_normal(struct pole_config_s conf, int N, const long
 
 		if (md_check_equal_dims(N, pos1, pos2, MD_BIT(3) - 1))
 			continue;
+
+		//prod stays 1, where sens is not zero as x / 0. is set to 0 in md_zdiv
+		md_zmul(N, odims, prod, prod, sens1);
+		md_zdiv(N, odims, prod, prod, sens1);
 
 		md_copy_block(N, pos2, odims, sens2, dims, sens, CFL_SIZE);
 
@@ -135,6 +142,9 @@ static void compute_curl_map_normal(struct pole_config_s conf, int N, const long
 
 	md_free(tmp_angle);
 	md_zsmul(N, odims, angle, angle, -1. / (2. * M_PI));
+
+	md_zmul(N, odims, angle, angle, prod);
+	md_free(prod);
 
 	md_resize_center(N, dims, curl_map, odims, angle, CFL_SIZE);
 	md_free(angle);
