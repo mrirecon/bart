@@ -45,6 +45,8 @@
 #include "moba/moba.h"
 #include "moba/lorentzian.h"
 
+#include "moba/model_create.h"
+
 #include "simu/signals.h"
 
 #ifndef CFL_SIZE
@@ -145,7 +147,7 @@ int main_mobafit(int argc, char* argv[argc])
 	bounds.min = bound_min;
 	bounds.max = bound_max;
 
-	enum seq_type { /* BSSFP, FLASH, MOLLI, */ TSE, MGRE, DIFF, IR_LL, IR, SIM, MPL } seq = MGRE;
+	enum seq_type seq = MGRE;
 
 	int mgre_model = MECO_WFR2S;
 	int num_lorentzian_pools = 0;
@@ -407,19 +409,24 @@ int main_mobafit(int argc, char* argv[argc])
 	md_select_dims(DIMS, FFT_FLAGS | TE_FLAG | COEFF_FLAG, y_patch_sig_dims, y_sig_dims);
 	md_select_dims(DIMS, FFT_FLAGS | TE_FLAG | COEFF_FLAG, x_patch_dims, x_dims);
 
+	long map_dims[DIMS];
+	md_select_dims(DIMS, ~(COEFF_FLAG | TE_FLAG), map_dims, x_patch_dims);
+
+	assert(md_check_equal_dims(DIMS, y_patch_dims, y_patch_sig_dims, ~0UL));
 
 	// create signal model
 	const struct nlop_s* nlop = NULL;
 	struct moba_conf_s *moba_conf;
 	moba_conf = xmalloc(sizeof(struct moba_conf_s));
 
+	struct nlop_data data;
+	data.seq = seq;
+
 	switch (seq) {
 
 		long dims[DIMS];
 
 	case IR:
-
-		assert(md_check_equal_dims(DIMS, y_patch_dims, y_patch_sig_dims, ~0UL));
 
 		md_copy_dims(DIMS, dims, y_patch_dims);
 		dims[COEFF_DIM] = enc_dims[COEFF_DIM];
@@ -429,10 +436,7 @@ int main_mobafit(int argc, char* argv[argc])
 
 	case IR_LL:
 
-		long map_dims[DIMS];
-		md_select_dims(DIMS, ~(COEFF_FLAG | TE_FLAG), map_dims, x_patch_dims);
-
-		nlop = nlop_T1_create(DIMS, map_dims, y_patch_sig_dims, x_patch_dims, enc_dims, enc, 1, 1);
+		nlop = moba_get_nlop(&data, map_dims, y_patch_sig_dims, x_patch_dims, enc_dims, enc);
 
 		if (NULL != basis) {
 
@@ -462,15 +466,12 @@ int main_mobafit(int argc, char* argv[argc])
 	case MGRE:
 
 		static float scale_fB0[2] = { 0., 1. };
-		assert(md_check_equal_dims(DIMS, y_patch_dims, y_patch_sig_dims, ~0UL));
 
 		nlop = nlop_meco_create(DIMS, y_patch_dims, x_patch_dims, enc, mgre_model, false, FAT_SPEC_1, scale_fB0);
 		break;
 
 	case TSE:
 	case DIFF:
-
-		assert(md_check_equal_dims(DIMS, y_patch_dims, y_patch_sig_dims, ~0UL));
 
 		md_copy_dims(DIMS, dims, y_patch_dims);
 		dims[COEFF_DIM] = enc_dims[COEFF_DIM];
@@ -483,17 +484,12 @@ int main_mobafit(int argc, char* argv[argc])
 		break;
 
 	case MPL:
+	
+		nlop = moba_get_nlop(&data, map_dims, y_patch_sig_dims, x_patch_dims, enc_dims, enc);
 
-		assert(md_check_equal_dims(DIMS, y_patch_dims, y_patch_sig_dims, ~0UL));
-		md_copy_dims(DIMS, dims, y_patch_dims);
-		dims[COEFF_DIM] = enc_dims[COEFF_DIM];
-
-		nlop = nlop_lorentzian_multi_pool_create(DIMS, y_patch_dims, x_patch_dims, enc_dims, enc);
 		break;
 
 	case SIM:
-
-		md_select_dims(DIMS, ~(COEFF_FLAG | TE_FLAG), map_dims, x_patch_dims);
 
 		const complex float *b1 = NULL;
 		long b1_dims[DIMS];

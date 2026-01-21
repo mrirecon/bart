@@ -6,6 +6,8 @@
 #include <complex.h>
 #include <math.h>
 
+#include "misc/debug.h"
+
 #include "misc/misc.h"
 #include "misc/mri.h"
 
@@ -15,12 +17,14 @@
 #include "model_create.h"
 
 
+
 const struct nlop_s* moba_get_nlop( struct nlop_data* data, const long map_dims[DIMS], const long out_dims[DIMS], const long param_dims[DIMS], const long enc_dims[DIMS], const complex float* enc)
 	{
 	const struct nlop_s* nlop = NULL;
 	int n_params = param_dims[COEFF_DIM];
-	switch (data->seq) {
 
+	switch (data->seq) {
+	
 	case IR_LL:
 
 		if (n_params  != 3)
@@ -37,7 +41,11 @@ const struct nlop_s* moba_get_nlop( struct nlop_data* data, const long map_dims[
 
 		nlop = nlop_lorentzian_multi_pool_create(DIMS, out_dims, param_dims, enc_dims, enc);
 		break;
-	}
 
+	default:
+	debug_printf(DP_DEBUG2, "Sequence Type %c \n", data->seq);
+
+	error("sequence type not supported\n");
+	}
 	return nlop;	
 	}

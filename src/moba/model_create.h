@@ -7,7 +7,12 @@ struct nlop_s;
 
 enum seq_type {
 	IR_LL,  
-	MPL 
+	MPL,
+	TSE, 
+	MGRE, 
+	DIFF, 
+	IR, 
+	SIM
 };
 
 struct nlop_data {
