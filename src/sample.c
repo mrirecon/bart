@@ -29,7 +29,6 @@
 
 #include "linops/linop.h"
 #include "linops/sum.h"
-#include "linops/fmac.h"
 #include "linops/someops.h"
 
 #include "nlops/nlop.h"
@@ -45,8 +44,7 @@
 
 #include "networks/cunet.h"
 
-#include "noncart/nufft.h"
-
+#include "grecon/model.h"
 #include "grecon/priors.h"
 
 #ifndef DIMS
@@ -112,31 +110,6 @@ static float sigma_schedule_quad(float t, float sigma_min, float sigma_max)
 	return sigma_min + sigma_max * t * t;
 }
 
-
-static const struct linop_s* get_sense_linop(long img_dims[DIMS], long ksp_dims[DIMS], long col_dims[DIMS], complex float* sens, long traj_dims[DIMS], const complex float* traj, long pat_dims[DIMS], const complex float* pat)
-{
-	struct linop_s* lop_sense = NULL;
-
-	long cim_dims[DIMS];
-	md_max_dims(DIMS, ~0UL, cim_dims, img_dims, col_dims);
-	md_select_dims(DIMS, ~MAPS_FLAG, cim_dims, cim_dims);
-
-	if (NULL != traj) {
-
-		lop_sense = nufft_create2(DIMS, ksp_dims, cim_dims, traj_dims, traj, pat_dims, pat, MD_SINGLETON_DIMS(DIMS), NULL, nufft_conf_defaults);
-
-	} else {
-
-		lop_sense = linop_fftc_create(DIMS, col_dims, FFT_FLAGS);
-
-		assert(md_check_equal_dims(DIMS, cim_dims, ksp_dims, ~0UL));
-		assert(md_check_compat(DIMS, md_nontriv_dims(DIMS, ksp_dims), ksp_dims, pat_dims));
-
-		lop_sense = linop_chain_FF(lop_sense, linop_cdiag_create(DIMS, ksp_dims, md_nontriv_dims(DIMS, pat_dims), pat));
-	}
-
-	return linop_chain_FF(linop_fmac_dims_create(DIMS, cim_dims, img_dims, col_dims, sens), lop_sense);
-}
 
 
 static void get_init(int N, long img_dims[N], complex float* samples, float sigma, const struct linop_s* A, const complex float* AHy, int iter)
@@ -310,6 +283,9 @@ int main_sample(int argc, char* argv[argc])
 	long ksp_dims[DIMS];
 	complex float* ksp = NULL;
 
+	long pat_dims[DIMS];
+	complex float* pat = NULL;
+
 	if (posterior) {
 
 		ksp = load_cfl(kspace_file, DIMS, ksp_dims);
@@ -324,9 +300,7 @@ int main_sample(int argc, char* argv[argc])
 		if (traj_file)
 			traj = load_cfl(traj_file, DIMS, trj_dims);
 
-		long pat_dims[DIMS];
 		md_select_dims(DIMS, ~COIL_FLAG, pat_dims, ksp_dims);
-		complex float* pat;
 
 		if (NULL == pattern_file) {
 
@@ -339,10 +313,13 @@ int main_sample(int argc, char* argv[argc])
 			pat = load_cfl(pattern_file, DIMS, pat_dims);
 		}
 
-		linop = get_sense_linop(img_dims, ksp_dims, map_dims, sens, trj_dims, traj, pat_dims, pat);
+		ifftmod(DIMS, ksp_dims, FFT_FLAGS, ksp, ksp);
+
+		struct pics_config conf = { };
+		linop = pics_model(&conf, img_dims, ksp_dims, trj_dims, traj, NULL, NULL,
+				   map_dims, sens, pat_dims, pat, NULL, NULL, NULL);
 
 		unmap_cfl(DIMS, map_dims, sens);
-		unmap_cfl(DIMS, pat_dims, pat);
 
 		if (NULL != traj_file)
 			unmap_cfl(DIMS, trj_dims, traj);
@@ -546,7 +523,7 @@ int main_sample(int argc, char* argv[argc])
 		debug_printf(DP_DEBUG2, "gamma: %.2e\n", em_conf.step);
 
 		iter2_eulermaruyama(CAST_UP(&em_conf), linop_iter->normal, 1, &score_op_p,
-				NULL, NULL, NULL, 2 * md_calc_size(DIMS,img_dims),
+				NULL, NULL, NULL, 2 * md_calc_size(DIMS, img_dims),
 				(float*)samples, (float*)AHy_iter, NULL);
 
 		if (0 == i % save_mod) {
@@ -582,6 +559,11 @@ int main_sample(int argc, char* argv[argc])
 
 	md_free(AHy);
 	md_free(samples);
+
+	if (pat)
+		unmap_cfl(DIMS, pat_dims, pat);
+	if (ksp)
+		unmap_cfl(DIMS, ksp_dims, ksp);
 
 	unmap_cfl(DIMS, out_dims, out);
 	unmap_cfl(DIMS, out_dims, expectation);
