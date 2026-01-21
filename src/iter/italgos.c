@@ -375,7 +375,6 @@ void eulermaruyama(int maxiter, float alpha,
 	struct iter_monitor_s* monitor)
 {
 	float* r = vops->allocate(N);
-	float* o = vops->allocate(N);
 
 	for (int i = 0; i < maxiter; i++) {
 
@@ -388,13 +387,8 @@ void eulermaruyama(int maxiter, float alpha,
 		iter_op_call(op, r, x);		// r = A x
 		vops->xpay(N, -1., r, b);	// r = b - r = b - A x
 
-		if (thresh) {	// plug&play
-
-			iter_op_p_call(*thresh, step * alpha, o, x);
-
-			vops->axpy(N, x, -1., x);
-			vops->axpy(N, x, +1., o);
-		}
+		if (thresh)	// plug&play
+			iter_op_p_call(*thresh, step * alpha, x, x);
 
 		vops->axpy(N, x, step, r);
 
@@ -402,7 +396,6 @@ void eulermaruyama(int maxiter, float alpha,
 		vops->axpy(N, x, sqrtf(step), r);
 	}
 
-	vops->del(o);
 	vops->del(r);
 }
 
@@ -446,10 +439,7 @@ void eulermaruyama_precond(int maxiter, float alpha,
 		if (thresh) {	// plug&play
 
 			iter_op_p_call(*thresh, step * alpha, o, t);
-
-			vops->axpy(N, t, -1., t);
-			vops->axpy(N, t, +1., o);
-			vops->sub(N, t, t, x);
+			vops->sub(N, t, o, x);
 
 		} else {
 
