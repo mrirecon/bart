@@ -7,7 +7,8 @@
 #include <math.h>
 
 #include "num/multind.h"
-
+#include "num/multind.h"
+#include "num/flpmath.h"
 #include "misc/debug.h"
 
 #include "misc/misc.h"
@@ -15,15 +16,23 @@
 
 #include "moba/T1fun.h"
 #include "moba/lorentzian.h"
+#include "moba/exp.h"
 
 #include "model_create.h"
 
 
 
-const struct nlop_s* moba_get_nlop( struct nlop_data* data, const long map_dims[DIMS], const long out_dims[DIMS], const long param_dims[DIMS], const long enc_dims[DIMS], const complex float* enc)
+const struct nlop_s* moba_get_nlop( struct nlop_data* data, const long map_dims[DIMS], const long out_dims[DIMS], const long param_dims[DIMS], const long enc_dims[DIMS], complex float* enc)
 	{
 	const struct nlop_s* nlop = NULL;
 	int n_params = param_dims[COEFF_DIM];
+
+	long dims[DIMS];
+	md_copy_dims(DIMS, dims, out_dims);
+	dims[COEFF_DIM] = enc_dims[COEFF_DIM];
+
+	if (data->seq == TSE)
+		md_zsmul(DIMS, enc_dims, enc, enc, -1.);
 
 	switch (data->seq) {
 
@@ -32,11 +41,7 @@ const struct nlop_s* moba_get_nlop( struct nlop_data* data, const long map_dims[
 		if (n_params  != 3)
 			error("Number of parameters does not match IR model (M0, R1, c)\n");
 
-		long dims[DIMS];
-		md_copy_dims(DIMS, dims, out_dims);
-		dims[COEFF_DIM] = enc_dims[COEFF_DIM];
-
-		nlop = nlop_ir_create(DIMS, dims, enc);
+		nlop = nlop_ir_create(DIMS, out_dims, enc);
 		break;
 		
 	case IR_LL:
@@ -47,8 +52,13 @@ const struct nlop_s* moba_get_nlop( struct nlop_data* data, const long map_dims[
 		nlop = nlop_T1_create(DIMS, map_dims, out_dims, param_dims, enc_dims, enc, 1, 1);
 		break;
 
-	case MPL:
+	case TSE:
+	case DIFF:
 
+		nlop = nlop_exp_create(DIMS, dims, enc);
+		break;
+
+	case MPL:
 		// M0 exists once, every pool has 3 parameters, we need at least one pool >3 parameters
 		if ((n_params < 4) || ((n_params - 1) % 3 != 0))
 			error("Number of parameters does not match MPL model\n");
@@ -61,5 +71,6 @@ const struct nlop_s* moba_get_nlop( struct nlop_data* data, const long map_dims[
 
 	error("sequence type not supported\n");
 	}
+
 	return nlop;	
 	}

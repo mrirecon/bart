@@ -64,8 +64,21 @@ tests/test-mobasig-mpl-fit: sim slice index vec transpose repmat saxpy scale fli
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-mobasig-r2: phantom signal reshape fmac index mobafit mobasig slice nrmse index extract invert
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
+	$(TOOLDIR)/phantom -x32 -T -b tubes.ra				;\
+	$(TOOLDIR)/signal -250:160:11 -S -e10 -n16 sig.ra		;\
+	$(TOOLDIR)/reshape 192 11 1 sig.ra sig2.ra			;\
+	$(TOOLDIR)/fmac -s 64 tubes.ra sig2.ra x.ra			;\
+	$(TOOLDIR)/index 5 16 te.ra					;\
+	$(TOOLDIR)/mobafit -T -i20 te.ra x.ra fit.ra				;\
+	$(TOOLDIR)/mobasig -T fit.ra te.ra forward.ra 			;\
+	$(TOOLDIR)/nrmse -t 0.01 forward.ra x.ra			;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 TESTS += tests/test-mobasig-ir
 TESTS += tests/test-mobasig-irll
 TESTS += tests/test-mobasig-irll-fit
 TESTS += tests/test-mobasig-mpl-fit
-
+TESTS += tests/test-mobasig-r2

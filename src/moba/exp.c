@@ -37,6 +37,9 @@ struct nlop_s* nlop_exp_create(int N, const long dims[N], const complex float* e
 	auto nl4 = nlop_tenmul_create(N, out_dims, dims1, out_dims);
 	auto nl5 = nlop_chain2_FF(nl3, 0, nl4, 1);
 
-	return nl5;
+	struct nlop_s* nlop = nlop_stack_inputs_F(nl5, 0, 1, COEFF_DIM);
+
+
+	return nlop;
 }
 

@@ -20,4 +20,4 @@ struct nlop_data {
 };
 
 
-const struct nlop_s* moba_get_nlop(struct nlop_data* data, const long map_dims[DIMS], const long out_dims[DIMS], const long param_dims[DIMS], const long enc_dims[DIMS], const complex float* enc);
+const struct nlop_s* moba_get_nlop(struct nlop_data* data, const long map_dims[DIMS], const long out_dims[DIMS], const long param_dims[DIMS], const long enc_dims[DIMS], complex float* enc);

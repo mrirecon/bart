@@ -371,8 +371,6 @@ int main_mobafit(int argc, char* argv[argc])
 
 		assert(1 == enc_dims[COEFF_DIM]);
 
-		md_zsmul(DIMS, enc_dims, enc, enc, -1.);
-
 		x_dims[COEFF_DIM] = 2;
 		break;
 
@@ -424,8 +422,6 @@ int main_mobafit(int argc, char* argv[argc])
 
 	switch (seq) {
 
-		long dims[DIMS];
-
 	case IR:
 
 		nlop = moba_get_nlop(&data, map_dims, y_patch_sig_dims, x_patch_dims, enc_dims, enc);
@@ -470,20 +466,12 @@ int main_mobafit(int argc, char* argv[argc])
 	case TSE:
 	case DIFF:
 
-		md_copy_dims(DIMS, dims, y_patch_dims);
-		dims[COEFF_DIM] = enc_dims[COEFF_DIM];
-
-		{
-			auto nl = nlop_exp_create(DIMS, dims, enc);
-			nlop = nlop_flatten(nl);
-			nlop_free(nl);
-		}
+		nlop = moba_get_nlop(&data, map_dims, y_patch_sig_dims, x_patch_dims, enc_dims, enc);
 		break;
 
 	case MPL:
 	
 		nlop = moba_get_nlop(&data, map_dims, y_patch_sig_dims, x_patch_dims, enc_dims, enc);
-
 		break;
 
 	case SIM:
