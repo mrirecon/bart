@@ -273,7 +273,7 @@ int main_sample(int argc, char* argv[argc])
 
 	num_rand_init(seed);
 
-	if (annealed && (-1 == precond_iter))
+	if (annealed && !(-1 == precond_iter))
 		error("Preconditioning not supported for annealing.\n");
 
 	const struct linop_s* linop = NULL;
