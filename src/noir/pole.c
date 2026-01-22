@@ -261,10 +261,6 @@ static struct lseg_s extract_phase_poles_2d_sign(struct pole_config_s conf, int 
 		return ret;
 	}
 
-	complex float* wgh = md_alloc_sameplace(3, dims, CFL_SIZE, curl_map);
-
-	md_zmul(3, dims, wgh, binary, curl_map);
-
 	if (conf.closing != 0. && !conf.espirit) {
 
 		int dmin = lroundf(ceilf(((-1 == conf.closing) ? conf.diameter / 2. : conf.closing) * MAX(dims[(normal + 1) % 3], dims[(normal + 2) % 3])));
@@ -286,9 +282,8 @@ static struct lseg_s extract_phase_poles_2d_sign(struct pole_config_s conf, int 
 	md_free(strc);
 
 	float com[nlabel][3];
-	md_center_of_mass(nlabel, 3, com, dims, labels, wgh);
+	md_center_of_mass(nlabel, 3, com, dims, labels, NULL);
 	md_free(labels);
-	md_free(wgh);
 
 	ret.N = 0;
 	ret.pos = xmalloc(sizeof(vec3_t[nlabel][2]));
