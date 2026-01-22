@@ -1,3 +1,16 @@
+tests/test-mobasig-ir: mobafit mobasig nrmse transpose scale index signal
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)				;\
+	$(TOOLDIR)/signal -F -I -1 1:1:1 -r0.1 -n100 signal.ra			;\
+	$(TOOLDIR)/index --end 1 100 indexTE.ra					;\
+	$(TOOLDIR)/scale 0.1 indexTE.ra TEs.ra					;\
+	$(TOOLDIR)/transpose 1 5 TEs.ra TEs.ra					;\
+	$(TOOLDIR)/mobafit -I  --init 1:1:1  TEs.ra signal.ra testfit_R1.ra	;\
+	$(TOOLDIR)/mobasig -I testfit_R1.ra TEs.ra forward_data.ra		;\
+	$(TOOLDIR)/nrmse -t 0.00001 signal.ra forward_data.ra			;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
 tests/test-mobasig-irll: phantom signal reshape fmac index ones zeros cabs saxpy scale mobafit mobasig zexp nrmse 
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
 	$(TOOLDIR)/ones 7 1 1 1 1 1 1 3 ones_param.ra			;\
@@ -51,6 +64,7 @@ tests/test-mobasig-mpl-fit: sim slice index vec transpose repmat saxpy scale fli
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+TESTS += tests/test-mobasig-ir
 TESTS += tests/test-mobasig-irll
 TESTS += tests/test-mobasig-irll-fit
 TESTS += tests/test-mobasig-mpl-fit

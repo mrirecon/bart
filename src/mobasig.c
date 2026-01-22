@@ -36,8 +36,11 @@ int main_mobasig(int argc, char* argv[argc])
 	data.seq = IR_LL;
 
 	const struct opt_s opts[] = {
+
+		OPT_SELECT('I', enum seq_type, &(data.seq), IR, "Inversion Recovery: f(M0, R1, c) =  M0 * (1 - exp(-t * R1 + c))"),
 		OPT_SELECT('L', enum seq_type, &(data.seq), IR_LL, "Inversion Recovery Look-Locker (M0', MSS, R1S)"),
 		OPT_SELECT('M', enum seq_type, &(data.seq), MPL, "Multi-Pool-Lorentzian model"),
+
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);

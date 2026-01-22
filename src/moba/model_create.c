@@ -6,6 +6,8 @@
 #include <complex.h>
 #include <math.h>
 
+#include "num/multind.h"
+
 #include "misc/debug.h"
 
 #include "misc/misc.h"
@@ -24,7 +26,19 @@ const struct nlop_s* moba_get_nlop( struct nlop_data* data, const long map_dims[
 	int n_params = param_dims[COEFF_DIM];
 
 	switch (data->seq) {
-	
+
+	case IR:
+
+		if (n_params  != 3)
+			error("Number of parameters does not match IR model (M0, R1, c)\n");
+
+		long dims[DIMS];
+		md_copy_dims(DIMS, dims, out_dims);
+		dims[COEFF_DIM] = enc_dims[COEFF_DIM];
+
+		nlop = nlop_ir_create(DIMS, dims, enc);
+		break;
+		
 	case IR_LL:
 
 		if (n_params  != 3)

@@ -428,10 +428,7 @@ int main_mobafit(int argc, char* argv[argc])
 
 	case IR:
 
-		md_copy_dims(DIMS, dims, y_patch_dims);
-		dims[COEFF_DIM] = enc_dims[COEFF_DIM];
-
-		nlop = nlop_ir_create(DIMS, dims, enc);
+		nlop = moba_get_nlop(&data, map_dims, y_patch_sig_dims, x_patch_dims, enc_dims, enc);
 		break;
 
 	case IR_LL:
