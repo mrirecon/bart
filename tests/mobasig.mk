@@ -71,14 +71,30 @@ tests/test-mobasig-r2: phantom signal reshape fmac index mobafit mobasig slice n
 	$(TOOLDIR)/reshape 192 11 1 sig.ra sig2.ra			;\
 	$(TOOLDIR)/fmac -s 64 tubes.ra sig2.ra x.ra			;\
 	$(TOOLDIR)/index 5 16 te.ra					;\
-	$(TOOLDIR)/mobafit -T -i20 te.ra x.ra fit.ra				;\
+	$(TOOLDIR)/mobafit -T -i20 te.ra x.ra fit.ra			;\
 	$(TOOLDIR)/mobasig -T fit.ra te.ra forward.ra 			;\
-	$(TOOLDIR)/nrmse -t 0.01 forward.ra x.ra			;\
+	$(TOOLDIR)/nrmse -t 0.0001 forward.ra x.ra			;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-mobasig-wfr2s: phantom signal fmac index scale extract mobafit saxpy cabs spow ones slice nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/phantom -x16 -c circ.ra						;\
+	$(TOOLDIR)/signal -G --fat -n8 -1 3:3:1 -2 0.02:0.02:1 signal_p1.ra		;\
+	$(TOOLDIR)/extract 5 1 8 signal_p1.ra signal.ra					;\
+	$(TOOLDIR)/fmac circ.ra signal.ra echoes.ra 					;\
+	$(TOOLDIR)/index 5 8 tmp1.ra							;\
+	$(TOOLDIR)/scale 1.6 tmp1.ra tmp2.ra						;\
+	$(TOOLDIR)/extract 5 1 8 tmp2.ra TE.ra						;\
+	$(TOOLDIR)/mobafit -G -m1 TE.ra echoes.ra reco.ra				;\
+	$(TOOLDIR)/mobasig -G -m1 reco.ra TE.ra forward.ra				;\
+	$(TOOLDIR)/nrmse -t 0.0001 forward.ra echoes.ra			;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+	
 TESTS += tests/test-mobasig-ir
 TESTS += tests/test-mobasig-irll
 TESTS += tests/test-mobasig-irll-fit
 TESTS += tests/test-mobasig-mpl-fit
 TESTS += tests/test-mobasig-r2
+TESTS += tests/test-mobasig-wfr2s

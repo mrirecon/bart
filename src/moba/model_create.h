@@ -1,6 +1,7 @@
 #include <complex.h>
 
 #include "misc/mri.h"
+#include "moba/meco.h"
 
 struct linop_s;
 struct nlop_s;
@@ -17,6 +18,7 @@ enum seq_type {
 
 struct nlop_data {
 	enum seq_type seq;
+	enum meco_model mgre_model;
 };
 
 

@@ -419,6 +419,7 @@ int main_mobafit(int argc, char* argv[argc])
 
 	struct nlop_data data;
 	data.seq = seq;
+	data.mgre_model = mgre_model;
 
 	switch (seq) {
 
@@ -458,9 +459,7 @@ int main_mobafit(int argc, char* argv[argc])
 
 	case MGRE:
 
-		static float scale_fB0[2] = { 0., 1. };
-
-		nlop = nlop_meco_create(DIMS, y_patch_dims, x_patch_dims, enc, mgre_model, false, FAT_SPEC_1, scale_fB0);
+		nlop = moba_get_nlop(&data, map_dims, y_patch_sig_dims, x_patch_dims, enc_dims, enc);
 		break;
 
 	case TSE:

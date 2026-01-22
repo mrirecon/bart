@@ -9,10 +9,12 @@
 #include "num/multind.h"
 #include "num/multind.h"
 #include "num/flpmath.h"
-#include "misc/debug.h"
 
 #include "misc/misc.h"
 #include "misc/mri.h"
+#include "misc/debug.h"
+
+#include "simu/signals.h"
 
 #include "moba/T1fun.h"
 #include "moba/lorentzian.h"
@@ -50,6 +52,13 @@ const struct nlop_s* moba_get_nlop( struct nlop_data* data, const long map_dims[
 			error("Number of parameters does not match IR-LL model (Mss, M0, R1s)\n");
 
 		nlop = nlop_T1_create(DIMS, map_dims, out_dims, param_dims, enc_dims, enc, 1, 1);
+		break;
+
+	case MGRE:
+
+		static float scale_fB0[2] = { 0., 1. };
+
+		nlop = nlop_meco_create(DIMS, out_dims, param_dims, enc, data->mgre_model, false, FAT_SPEC_1, scale_fB0);
 		break;
 
 	case TSE:
