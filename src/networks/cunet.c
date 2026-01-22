@@ -315,10 +315,13 @@ nn_t cunet_bart_create(struct nn_cunet_conf_s* conf, int N, const long bdims[N])
 	md_permute_dims(16, operm, odim_tmp, idim_tmp);
 
 	auto network = cunet_create(conf, 5, dims);
+
+	if (1 != channel) {
 	
-	network = nn_chain2_swap_FF(nn_reshape_out_F(nn_from_nlop_F(nlop_from_linop_F(linop_permute_create(N, iperm, idims))), 0, NULL, 5, dims), 0, NULL, network, 0, NULL);
-	network = nn_reshape_out_F(network, 0, NULL, N, idim_tmp);
-	network = nn_chain2_FF(network, 0, NULL, nn_from_nlop_F(nlop_from_linop_F(linop_permute_create(N, operm, idim_tmp))), 0, NULL);
+		network = nn_chain2_swap_FF(nn_reshape_out_F(nn_from_nlop_F(nlop_from_linop_F(linop_permute_create(N, iperm, idims))), 0, NULL, 5, dims), 0, NULL, network, 0, NULL);
+		network = nn_reshape_out_F(network, 0, NULL, N, idim_tmp);
+		network = nn_chain2_FF(network, 0, NULL, nn_from_nlop_F(nlop_from_linop_F(linop_permute_create(N, operm, idim_tmp))), 0, NULL);
+	}
 
 	return network;
 }
