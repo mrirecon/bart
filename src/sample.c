@@ -276,6 +276,9 @@ int main_sample(int argc, char* argv[argc])
 	if (annealed && !(-1 == precond_iter))
 		error("Preconditioning not supported for annealing.\n");
 
+	if (annealed && (-1 == precond_iter))
+		precond_iter = 0;
+
 	const struct linop_s* linop = NULL;
 
 	bool posterior = (NULL != kspace_file);
