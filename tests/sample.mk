@@ -294,7 +294,28 @@ tests/test-sample-gmm-2D-weighting-posterior2: vec scale join ones sample nrmse 
 	rm *.ra; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-TESTS += tests/test-sample-gmm1d_mean tests/test-sample-gmm1d_weigthing tests/test-sample-gauss1d_mean_ancestral tests/test-sample-gauss1d_mean_pc tests/test-sample-gmm2d tests/test-sample-gmm-2D-weighting-prior tests/test-sample-gmm-2D-weighting-posterior1 tests/test-sample-gmm-2D-weighting-posterior2
 
-TESTS_GPU += tests/test-sample-gauss1d_mean_gpu tests/test-sample-gauss1d_var_gpu tests/test-sample-gmm_img_gpu tests/test-sample-gauss1d_mean_real1_gpu tests/test-sample-gauss1d_mean_real_gpu
+tests/test-sample-pi: zeros ones sample scale fft nrmse $(TESTS_OUT)/shepplogan_ksp.ra $(TESTS_OUT)/shepplogan_coil_ksp.ra $(TESTS_OUT)/coils.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/zeros 2 128 128 z.ra							;\
+	$(TOOLDIR)/ones 1 1 o.ra							;\
+	$(TOOLDIR)/scale 0.000001 o.ra v.ra						;\
+	$(TOOLDIR)/sample -N50 --gmm mean=z.ra,var=v.ra,w=o.ra \
+		--posterior k=$(TESTS_OUT)/shepplogan_coil_ksp.ra,s=$(TESTS_OUT)/coils.ra reco.ra	;\
+	$(TOOLDIR)/fft -u -i 7 $(TESTS_OUT)/shepplogan_ksp.ra sl.ra			;\
+	$(TOOLDIR)/nrmse -t 0.012 sl.ra reco.ra						;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+TESTS += tests/test-sample-gmm1d_mean tests/test-sample-gmm1d_weigthing
+TESTS += tests/test-sample-gauss1d_mean_ancestral tests/test-sample-gauss1d_mean_pc
+TESTS += tests/test-sample-gmm2d tests/test-sample-gmm-2D-weighting-prior
+TESTS += tests/test-sample-gmm-2D-weighting-posterior1
+TESTS += tests/test-sample-gmm-2D-weighting-posterior2
+
+TESTS_GPU += tests/test-sample-gauss1d_mean_gpu
+TESTS_GPU += tests/test-sample-gauss1d_var_gpu tests/test-sample-gmm_img_gpu
+TESTS_GPU += tests/test-sample-gauss1d_mean_real1_gpu
+TESTS_GPU += tests/test-sample-gauss1d_mean_real_gpu
 
