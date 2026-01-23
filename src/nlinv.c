@@ -155,6 +155,7 @@ int main_nlinv(int argc, char* argv[argc])
 
 	num_init_gpu_support();
 	num_rand_init(0ULL);
+	num_init_delayed();
 	conf.gpu = bart_use_gpu;
 
 
@@ -167,9 +168,14 @@ int main_nlinv(int argc, char* argv[argc])
 	bool pprocess = (!real_time_stream && (0 == my_sens_dims[0]));
 	conf.realtime |= real_time_stream;
 
-	struct vptr_hint_s* hint = !real_time_stream && (0 != bart_mpi_split_flags) ? hint_mpi_create(bart_mpi_split_flags, DIMS, ksp_dims) : NULL;
+	struct vptr_hint_s* hint = NULL;
+
+	if (!real_time_stream && ((0 != bart_mpi_split_flags) || bart_delayed_computations))
+		hint = vptr_hint_create(bart_mpi_split_flags, DIMS, ksp_dims, bart_delayed_loop_flags);
+
 	if (NULL != hint)
 		kspace = vptr_wrap_cfl(DIMS, ksp_dims, CFL_SIZE, kspace, hint, true, false);
+
 	vptr_hint_free(hint);
 
 	const complex float* basis = NULL;

@@ -397,6 +397,27 @@ tests/test-nlinv-noncart-fast-gpu: traj scale phantom nufft resize nlinv fmac nr
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-nlinv-cart-delayed: bart pics copy nrmse resize $(TESTS_OUT)/ksp_usamp_1.ra $(TESTS_OUT)/sens_1.ra
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)								;\
+	$(TOOLDIR)/resize 3 8 $(TESTS_OUT)/ksp_usamp_1.ra shepplogan_coil_ksp					;\
+	$(ROOTDIR)/bart --md-loop-dims=3 nlinv shepplogan_coil_ksp reco coils					;\
+	$(ROOTDIR)/bart --delayed-md                 nlinv shepplogan_coil_ksp reco_ref coils_ref		;\
+	$(TOOLDIR)/nrmse -t 1e-5 reco_ref reco									;\
+	$(TOOLDIR)/nrmse -t 1e-5 coils_ref coils								;\
+	rm *.cfl *.hdr ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-nlinv-noncart-delayed: bart traj phantom ones pics nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP); export OMP_NUM_THREADS=1					;\
+	$(TOOLDIR)/traj -r -x128 -o2. -y64 traj.ra 								;\
+	$(TOOLDIR)/phantom -s4 -t traj.ra ksp									;\
+	$(ROOTDIR)/bart --md-loop-dims=3:16 nlinv -RT:7:0:0.01 --liniter=10 -t traj.ra ksp reco1 col1		;\
+	$(ROOTDIR)/bart --delayed-md        nlinv -RT:7:0:0.01 --liniter=10 -t traj.ra ksp reco2 col2		;\
+	$(TOOLDIR)/nrmse -t 0.001 reco1 reco2									;\
+	$(TOOLDIR)/nrmse -t 0.001 col1 col2									;\
+	rm *.cfl *.ra *.hdr ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
 
 TESTS += tests/test-nlinv
 TESTS += tests/test-nlinv-batch tests/test-nlinv-batch2
@@ -409,10 +430,12 @@ TESTS += tests/test-nlinv-ksens
 TESTS += tests/test-nlinv-psf-noncart tests/test-nlinv-sms-noncart-psf
 TESTS += tests/test-ncalib tests/test-ncalib-noncart
 TESTS += tests/test-nlinv-reg
+TESTS += tests/test-nlinv-cart-delayed
 TESTS_GPU += tests/test-nlinv-gpu tests/test-nlinv-sms-gpu
 
 TESTS_SLOW += tests/test-nlinv-sms
 TESTS_SLOW += tests/test-nlinv-reg2 tests/test-nlinv-reg3 tests/test-nlinv-reg4
 TESTS_SLOW += tests/test-nlinv-sms-noncart
+TESTS_SLOW += tests/test-nlinv-noncart-delayed
 
 
