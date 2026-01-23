@@ -8,6 +8,8 @@
 
 #include "num/multind.h"
 #include "num/flpmath.h"
+#include "num/vptr.h"
+#include "num/vptr_fun.h"
 #ifdef USE_CUDA
 #include "num/gpuops.h"
 #include "num/gpukrnls_triagmat.h"
@@ -330,8 +332,20 @@ void md_ztenmul_upper_triag(int dim1, int dim2, int N, const long odims[N], comp
 }
 
 
-static void vptr_md_fmac_upper_triag2(int dim1, int dim2, int N, int D, const long* dims[N], const long* strs[N], void* args[N])
+struct vptr_md_fmac_upper_triag_s {
+
+	INTERFACE(vptr_fun_data_t);
+
+	int dim1;
+	int dim2;
+};
+
+DEF_TYPEID(vptr_md_fmac_upper_triag_s);
+
+static void vptr_md_fmac_upper_triag2(vptr_fun_data_t* _data, int N, int D, const long* dims[N], const long* strs[N], void* args[N])
 {
+	int dim1 = CAST_DOWN(vptr_md_fmac_upper_triag_s, _data)->dim1;
+	int dim2 = CAST_DOWN(vptr_md_fmac_upper_triag_s, _data)->dim2;
 
 #ifdef USE_CUDA
 	if (   (D > 5) && (5 == dim1) && (6 == dim2)
@@ -343,7 +357,7 @@ static void vptr_md_fmac_upper_triag2(int dim1, int dim2, int N, int D, const lo
 	    && (0 == (md_nontriv_strides(2, strs[0] + 5) & md_nontriv_strides(2, strs[1] + 5)))
 	    && (3 == (md_nontriv_strides(2, strs[0] + 5) | md_nontriv_strides(2, strs[1] + 5)))
 	    && (md_nontriv_strides(2, strs[0] + 5) != md_nontriv_strides(2, strs[1] + 5))
-	    && cuda_ondevice(args[0])) {
+	    && cuda_ondevice(args[0]) && !is_vptr(args[0])) {
 
 		long pos[D];
 		md_set_dims(D, pos, 0);
@@ -383,7 +397,31 @@ void md_tenmul_upper_triag2(int dim1, int dim2, int N, const long dims[N], const
 {
 	md_clear2(N, dims, ostrs, dst, FL_SIZE);
 
-	vptr_md_fmac_upper_triag2(dim1, dim2, 3, N, (const long*[3]) { dims, dims, mdims }, (const long*[3]) { ostrs, istrs, mstrs }, (void*[3]) { dst, (void*) src, (void*)mat });
+	long ndims[N];
+	long nmdims[N];
+	long nostrs[N];
+	long nistrs[N];
+	long nmstrs[N];
+
+	for (int i = 0; i < N; i++) {
+
+		ndims[i] = dims[(i + 1) % N];
+		nmdims[i] = mdims[(i + 1) % N];
+		nostrs[i] = ostrs[(i + 1) % N];
+		nistrs[i] = istrs[(i + 1) % N];
+		nmstrs[i] = mstrs[(i + 1) % N];
+	}
+
+	dim1--;
+	dim2--;
+
+	PTR_ALLOC(struct vptr_md_fmac_upper_triag_s, _d);
+	SET_TYPEID(vptr_md_fmac_upper_triag_s, _d);
+	_d->super.del = NULL;
+	_d->dim1 = dim1;
+	_d->dim2 = dim2;
+
+	exec_vptr_fun(vptr_md_fmac_upper_triag2, CAST_UP(PTR_PASS(_d)), 3, N, ~(MD_BIT(dim1) | MD_BIT(dim2)), MD_BIT(0), MD_BIT(0) | MD_BIT(1) | MD_BIT(2), (const long*[3]) { ndims, ndims, nmdims }, (const long*[3]) { nostrs, nistrs, nmstrs }, (float*[3]) { dst, (void*) src, (void*)mat });
 }
 
 void md_tenmul_upper_triag(int dim1, int dim2, int N, const long odims[N], float* dst, const long idims[N], const float* src, const long mdims[N], const float* mat)
