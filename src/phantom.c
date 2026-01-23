@@ -86,7 +86,7 @@ int main_phantom(int argc, char* argv[argc])
 		OPT_SELECT('T', enum phantom_type, &ptype, TUBES, "tubes phantom"),
 		OPTL_INFILE(0, "stl", &stl_file, "file", "path to stl file"),
 		OPTL_SELECT(0, "NIST", enum phantom_type, &ptype, NIST, "NIST phantom (T2 sphere)"),
-                OPTL_SELECT(0, "SONAR", enum phantom_type, &ptype, SONAR, "Diagnostic Sonar phantom"),
+		OPTL_SELECT(0, "SONAR", enum phantom_type, &ptype, SONAR, "Diagnostic Sonar phantom"),
 		OPTL_SELECT(0, "BRAIN", enum phantom_type, &ptype, BRAIN, "BRAIN geometry phantom"),
 		OPTL_SELECT(0, "ELLIPSOID", enum phantom_type, &ptype, ELLIPSOID0, "Ellipsoid."),
 		OPTL_VEC3(0, "ellipsoid_center", &ellipsoid_center, "", "x,y,z center coordinates of ellipsoid."),

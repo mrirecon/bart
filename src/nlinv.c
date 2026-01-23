@@ -190,6 +190,7 @@ int main_nlinv(int argc, char* argv[argc])
 	if (NULL != psf_file) {
 
 		pattern = load_cfl_sameplace(psf_file, DIMS, pat_dims, kspace);
+
 	} else {
 
 		md_select_dims(DIMS, ~COIL_FLAG, pat_dims, ksp_dims);
@@ -197,8 +198,10 @@ int main_nlinv(int argc, char* argv[argc])
 		if (!real_time_stream) {
 
 			pattern = anon_cfl("", DIMS, pat_dims);
+
 			if (is_vptr(kspace))
 				pattern = vptr_wrap_cfl(DIMS, pat_dims, CFL_SIZE, pattern, vptr_get_hint(kspace), true, false);
+
 			estimate_pattern(DIMS, ksp_dims, COIL_FLAG, pattern, kspace);
 		}
 	}
@@ -417,10 +420,14 @@ int main_nlinv(int argc, char* argv[argc])
 
 	complex float* img = NULL;
 
-	if (real_time_stream)
+	if (real_time_stream) {
+
 		img = create_async_cfl(img_file, TIME_FLAG, DIMS, img_dims);
-	else {
+
+	} else {
+
 		img = ((!pprocess) ? create_cfl : anon_cfl)(img_file, DIMS, img_dims);
+
 		if (is_vptr(kspace))
 			img = vptr_wrap_cfl(DIMS, img_dims, CFL_SIZE, ((!pprocess) ? create_cfl : anon_cfl)(img_file, DIMS, img_dims), vptr_get_hint(kspace), true, true);
 	}
@@ -528,6 +535,7 @@ int main_nlinv(int argc, char* argv[argc])
 			img_output_dims[MAPS_DIM] = 1;
 
 		complex float* img_output = create_cfl_sameplace(img_file, DIMS, img_output_dims, img);
+
 		if (0 == my_sens_dims[0]) {
 
 			md_clear(DIMS, img_output_dims, img_output, CFL_SIZE);
