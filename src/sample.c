@@ -331,9 +331,7 @@ int main_sample(int argc, char* argv[argc])
 				   map_dims, sens, pat_dims, pat, NULL, NULL, NULL);
 
 		unmap_cfl(DIMS, map_dims, sens);
-
-		if (NULL != traj_file)
-			unmap_cfl(DIMS, trj_dims, traj);
+		unmap_cfl(DIMS, trj_dims, traj);
 
 		if (-1 == em_conf.precond_max_iter)
 			em_conf.precond_max_iter = 10;
@@ -379,12 +377,8 @@ int main_sample(int argc, char* argv[argc])
 
 		nlop = prior_gmm(means_dims, means, weights_dims, weights, vars_dims, vars, img_dims, &min_var);
 
-		if (NULL != ws_file)
-			unmap_cfl(DIMS, weights_dims, weights);
-
-		if (NULL != vars_file)
-			unmap_cfl(DIMS, vars_dims, vars);
-
+		unmap_cfl(DIMS, weights_dims, weights);
+		unmap_cfl(DIMS, vars_dims, vars);
 		unmap_cfl(DIMS, means_dims, means);
 
 	} else {
@@ -392,8 +386,7 @@ int main_sample(int argc, char* argv[argc])
 		error("No network or gmm specified!\n");
 	}
 
-	if (NULL != mask_file)
-		unmap_cfl(DIMS, msk_dims, msk);
+	unmap_cfl(DIMS, msk_dims, msk);
 
 	nlop = nlop_reshape_in_F(nlop, 1, 1, (long[1]) { 1 }); // reshape noise scale from [1,1,1....1] to [1]
 
@@ -564,10 +557,8 @@ int main_sample(int argc, char* argv[argc])
 	md_free(AHy);
 	md_free(samples);
 
-	if (pat)
-		unmap_cfl(DIMS, pat_dims, pat);
-	if (ksp)
-		unmap_cfl(DIMS, ksp_dims, ksp);
+	unmap_cfl(DIMS, pat_dims, pat);
+	unmap_cfl(DIMS, ksp_dims, ksp);
 
 	unmap_cfl(DIMS, out_dims, out);
 	unmap_cfl(DIMS, out_dims, expectation);
