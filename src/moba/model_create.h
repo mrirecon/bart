@@ -7,19 +7,20 @@ struct linop_s;
 struct nlop_s;
 
 enum seq_type {
-	IR_LL,  
+	IR_LL,
 	MPL,
-	TSE, 
-	MGRE, 
-	DIFF, 
-	IR, 
+	TSE,
+	MGRE,
+	DIFF,
+	IR,
 	SIM
 };
 
-struct nlop_data {
+struct mobafit_model_config {
+
 	enum seq_type seq;
 	enum meco_model mgre_model;
 };
 
 
-const struct nlop_s* moba_get_nlop(struct nlop_data* data, const long map_dims[DIMS], const long out_dims[DIMS], const long param_dims[DIMS], const long enc_dims[DIMS], complex float* enc);
+const struct nlop_s* moba_get_nlop(struct mobafit_model_config* data, const long out_dims[DIMS], const long param_dims[DIMS], const long enc_dims[DIMS], complex float* enc);

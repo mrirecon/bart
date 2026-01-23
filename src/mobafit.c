@@ -417,61 +417,11 @@ int main_mobafit(int argc, char* argv[argc])
 	struct moba_conf_s *moba_conf;
 	moba_conf = xmalloc(sizeof(struct moba_conf_s));
 
-	struct nlop_data data;
-	data.seq = seq;
-	data.mgre_model = mgre_model;
+	struct mobafit_model_config config;
+	config.seq = seq;
+	config.mgre_model = mgre_model;
 
-	switch (seq) {
-
-	case IR:
-
-		nlop = moba_get_nlop(&data, map_dims, y_patch_sig_dims, x_patch_dims, enc_dims, enc);
-		break;
-
-	case IR_LL:
-
-		nlop = moba_get_nlop(&data, map_dims, y_patch_sig_dims, x_patch_dims, enc_dims, enc);
-
-		if (NULL != basis) {
-
-			long max_dims[DIMS];
-			md_max_dims(DIMS, ~0UL, max_dims, bas_dims, y_patch_sig_dims);
-
-			unsigned long oflags = ~md_nontriv_dims(DIMS, y_patch_dims);
-			unsigned long iflags = ~md_nontriv_dims(DIMS, y_patch_sig_dims);
-			unsigned long bflags = ~md_nontriv_dims(DIMS, bas_dims);
-
-			const struct nlop_s* nlop_bas = nlop_from_linop_F(linop_fmac_create(DIMS, max_dims, oflags, iflags, bflags, basis));
-			nlop = nlop_chain_FF(nlop, nlop_bas);
-
-			long tdims[DIMS];
-			md_transpose_dims(DIMS, 5, 6, tdims, y_patch_dims);
-			nlop = nlop_reshape_out_F(nlop, 0, DIMS, tdims);
-			nlop = nlop_zrprecomp_jacobian_F(nlop);
-			nlop = nlop_reshape_out_F(nlop, 0, DIMS, y_patch_dims);
-
-			auto tmp = linop_stack_FF(6, 6, linop_identity_create(DIMS, map_dims), linop_identity_create(DIMS, map_dims));
-			tmp = linop_stack_FF(6, 6, tmp, linop_zreal_create(DIMS, map_dims));
-			nlop = nlop_chain_FF(nlop_from_linop_F(tmp), nlop);
-		}
-
-		break;
-
-	case MGRE:
-
-		nlop = moba_get_nlop(&data, map_dims, y_patch_sig_dims, x_patch_dims, enc_dims, enc);
-		break;
-
-	case TSE:
-	case DIFF:
-
-		nlop = moba_get_nlop(&data, map_dims, y_patch_sig_dims, x_patch_dims, enc_dims, enc);
-		break;
-
-	case MPL:
-	
-		nlop = moba_get_nlop(&data, map_dims, y_patch_sig_dims, x_patch_dims, enc_dims, enc);
-		break;
+	switch (config.seq) {
 
 	case SIM:
 
@@ -516,7 +466,37 @@ int main_mobafit(int argc, char* argv[argc])
 
 		nlop = nlop_bloch_create(DIMS, der_dims, map_dims, out_dims, in_dims, b1, b0, moba_conf);
 		break;
+
+	default:
+
+		nlop = moba_get_nlop(&config, y_patch_sig_dims, x_patch_dims, enc_dims, enc);
 	}
+
+
+	if (NULL != basis) {
+
+		long max_dims[DIMS];
+		md_max_dims(DIMS, ~0UL, max_dims, bas_dims, y_patch_sig_dims);
+
+		unsigned long oflags = ~md_nontriv_dims(DIMS, y_patch_dims);
+		unsigned long iflags = ~md_nontriv_dims(DIMS, y_patch_sig_dims);
+		unsigned long bflags = ~md_nontriv_dims(DIMS, bas_dims);
+
+		const struct nlop_s* nlop_bas = nlop_from_linop_F(linop_fmac_create(DIMS, max_dims, oflags, iflags, bflags, basis));
+		nlop = nlop_chain_FF(nlop, nlop_bas);
+
+		long tdims[DIMS];
+		md_transpose_dims(DIMS, 5, 6, tdims, y_patch_dims);
+		nlop = nlop_reshape_out_F(nlop, 0, DIMS, tdims);
+		nlop = nlop_zrprecomp_jacobian_F(nlop);
+		nlop = nlop_reshape_out_F(nlop, 0, DIMS, y_patch_dims);
+
+		auto tmp = linop_stack_FF(6, 6, linop_identity_create(DIMS, map_dims), linop_identity_create(DIMS, map_dims));
+		tmp = linop_stack_FF(6, 6, tmp, linop_zreal_create(DIMS, map_dims));
+		nlop = nlop_chain_FF(nlop_from_linop_F(tmp), nlop);
+	}
+
+
 
 	if (use_magn) {
 

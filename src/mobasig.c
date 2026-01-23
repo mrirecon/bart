@@ -32,10 +32,10 @@ int main_mobasig(int argc, char* argv[argc])
 		ARG_OUTFILE(true, &signal_file, "signal"),
 	};
 
-	struct nlop_data data;
+	struct mobafit_model_config data;
 	data.seq = IR_LL;
 	data.mgre_model = MECO_WFR2S;
-	
+
 	const struct opt_s opts[] = {
 
 		OPT_SELECT('I', enum seq_type, &(data.seq), IR, "Inversion Recovery: f(M0, R1, c) =  M0 * (1 - exp(-t * R1 + c))"),
@@ -50,16 +50,11 @@ int main_mobasig(int argc, char* argv[argc])
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
 
-
-
 	long param_dims[DIMS];
 	complex float* coeff_data = load_cfl(param_file, DIMS, param_dims);
 
 	long enc_dims[DIMS];
 	complex float* enc = load_cfl(enc_file, DIMS, enc_dims);
-
-	long map_dims[DIMS];
-	md_select_dims(DIMS, ~(TE_FLAG | COEFF_FLAG), map_dims, param_dims);
 
 	long out_dims[DIMS];
 	md_select_dims(DIMS, ~(TE_FLAG | COEFF_FLAG), out_dims, param_dims);
@@ -67,7 +62,7 @@ int main_mobasig(int argc, char* argv[argc])
 	complex float* sig_data = create_cfl(signal_file, DIMS, out_dims);
 
 
-	const struct nlop_s* nlop = moba_get_nlop(&data, map_dims, out_dims, param_dims, enc_dims, enc);
+	const struct nlop_s* nlop = moba_get_nlop(&data, out_dims, param_dims, enc_dims, enc);
 
 	nlop_apply(nlop, DIMS, out_dims, sig_data, DIMS, param_dims, coeff_data);
 	nlop_free(nlop);
