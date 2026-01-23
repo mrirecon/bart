@@ -96,19 +96,6 @@ static void print_stats(int dl, float t, long img_dims[DIMS], const complex floa
 }
 
 
-enum SIGMA_SCHEDULE { SIGMA_SCHEDULE_EXP, SIGMA_SCHEDULE_QUAD };
-
-typedef float (*sigma_schedule_fun_t)(float t, float sigma_min, float sigma_max);
-
-static float sigma_schedule_exp(float t, float sigma_min, float sigma_max)
-{
-	return sigma_min * expf(logf(sigma_max / sigma_min) * t);
-}
-
-static float sigma_schedule_quad(float t, float sigma_min, float sigma_max)
-{
-	return sigma_min + sigma_max * t * t;
-}
 
 
 
@@ -168,6 +155,9 @@ int main_sample(int argc, char* argv[argc])
 
 	float sigma_min = 0.01;
 	float sigma_max = 10.;
+
+
+	enum SIGMA_SCHEDULE { SIGMA_SCHEDULE_EXP, SIGMA_SCHEDULE_QUAD };
 	enum SIGMA_SCHEDULE schedule = SIGMA_SCHEDULE_EXP;
 
 	struct iter_eulermaruyama_conf em_conf = iter_eulermaruyama_defaults;
@@ -260,18 +250,22 @@ int main_sample(int argc, char* argv[argc])
 	assert(!bart_use_gpu);
 	md_alloc_fun_t my_alloc = md_alloc;
 #endif
-	sigma_schedule_fun_t get_sigma = NULL;	// false positive
+	NESTED(float, get_sigma, (float t, float sigma_min, float sigma_max))
+	{
+		switch (schedule) {
 
-	switch (schedule) {
+		case SIGMA_SCHEDULE_EXP:
+			return sigma_min * expf(logf(sigma_max / sigma_min) * t);
+			break;
 
-	case SIGMA_SCHEDULE_EXP:
-		get_sigma = sigma_schedule_exp;
-		break;
+		case SIGMA_SCHEDULE_QUAD:
+			return sigma_min + sigma_max * t * t;
+			break;
 
-	case SIGMA_SCHEDULE_QUAD:
-		get_sigma = sigma_schedule_quad;
-		break;
-	}
+		default:
+			unreachable();
+		}
+	};
 
 	num_rand_init(seed);
 
