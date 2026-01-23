@@ -250,8 +250,11 @@ int main_sample(int argc, char* argv[argc])
 	assert(!bart_use_gpu);
 	md_alloc_fun_t my_alloc = md_alloc;
 #endif
-	NESTED(float, get_sigma, (float t, float sigma_min, float sigma_max))
+
+	NESTED(float, get_sigma0, (int i, float sigma_min, float sigma_max))
 	{
+		float t = (float)i / N;
+
 		switch (schedule) {
 
 		case SIGMA_SCHEDULE_EXP:
@@ -265,6 +268,11 @@ int main_sample(int argc, char* argv[argc])
 		default:
 			unreachable();
 		}
+	};
+
+	NESTED(float, get_sigma, (int i))
+	{
+		return get_sigma0(i, sigma_min, sigma_max);
 	};
 
 	num_rand_init(seed);
@@ -437,15 +445,15 @@ int main_sample(int argc, char* argv[argc])
 		linop = linop_null_create(DIMS, img_dims, DIMS, img_dims);
 	}
 
-	get_init(DIMS, img_dims, samples, get_sigma(1., sigma_min, sigma_max),
+	get_init(DIMS, img_dims, samples, get_sigma(1),
 		 (0 < em_conf.precond_max_iter) ? linop : NULL, AHy, em_conf.precond_max_iter);
 
 	for (int i = N - 1; i >= 0; i--) {
 
-		float var_i = powf(get_sigma(((float)i) / N, sigma_min, sigma_max), 2.);
-		float var_ip = powf(get_sigma(((float)(i + 1)) / N, sigma_min, sigma_max), 2.);
+		float var_i = powf(get_sigma(i), 2.);
+		float var_ip = powf(get_sigma(i + 1), 2.);
 		float dvar = (var_ip - var_i);
-		float tau_ip = var_i / var_ip * dvar;
+		float tau_ip = (var_i / var_ip) * dvar;
 
 		print_stats(DP_DEBUG2, (float)i / N, img_dims, samples, sqrtf(var_ip));
 
@@ -455,7 +463,7 @@ int main_sample(int argc, char* argv[argc])
 
 		if (annealed) {
 
-			float scale = get_sigma(((float)i) / N, 1., 1./ sigma_max / sqrtf(maxeigen));
+			float scale = get_sigma0(i, 1., 1. / sigma_max / sqrtf(maxeigen));
 
 			AHy_iter = md_alloc_sameplace(DIMS, img_dims, CFL_SIZE, samples);
 
@@ -548,7 +556,7 @@ int main_sample(int argc, char* argv[argc])
 			md_free(AHy_iter);
 	}
 
-	print_stats(DP_DEBUG2, 0., img_dims, samples, get_sigma(0., sigma_min, sigma_max));
+	print_stats(DP_DEBUG2, 0., img_dims, samples, get_sigma(0));
 
 	nlop_free(nlop);
 	linop_free(linop);
