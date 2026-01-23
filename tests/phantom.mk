@@ -411,9 +411,6 @@ tests/test-phantom-stl: traj phantom nufft fft nrmse stl
 
 
 TESTS += tests/test-phantom-ksp tests/test-phantom-noncart tests/test-phantom-coil tests/test-phantom-ksp-coil
-ifneq ($(BUILDTYPE), WASM) # stl fails under wasm
-TESTS += tests/test-phantom-stl
-endif
 TESTS += tests/test-phantom-bart tests/test-phantom-bart-basis
 TESTS += tests/test-phantom-basis tests/test-phantom-random-tubes
 TESTS += tests/test-phantom-NIST tests/test-phantom-NIST-basis
@@ -426,6 +423,9 @@ TESTS += tests/test-phantom-brain tests/test-phantom-BRAIN-basis
 TESTS += tests/test-phantom-FILE tests/test-phantom-FILE-basis
 TESTS += tests/test-phantom-ellipsoid tests/test-phantom-noncart-ellipsoid tests/test-phantom-noncart-ellipsoid-params
 
+ifneq ($(BUILDTYPE), WASM) # stl fails under wasm
+TESTS_SLOW += tests/test-phantom-stl
+endif
 TESTS_SLOW += tests/test-phantom-coil-large tests/test-phantom-ksp-coil-large
 TESTS_SLOW += tests/test-phantom-noncart-BRAIN tests/test-phantom-FILE-coil-large
 
