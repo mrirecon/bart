@@ -681,6 +681,9 @@ void optimized_nop(int N, unsigned long io, int D, const long dim[D], const long
 	unsigned long cnst_flags = 0;
 	bool cnst_ok = NB < ND;
 
+	for (int i = 0; i < N; i++)
+		cnst_ok = cnst_ok && (sizes[i] <= 2 * sizeof(double)); // only for scalars
+
 	for (int i = 0; i < N; i++) {
 
 		if (cnst_ok && 0 == tstrs[i][NB]) {
