@@ -26,6 +26,7 @@
 #include "misc/opts.h"
 #include "misc/mri.h"
 #include "misc/mri2.h"
+#include "misc/stream.h"
 
 #include "linops/linop.h"
 #include "linops/sum.h"
@@ -401,8 +402,10 @@ int main_sample(int argc, char* argv[argc])
 
 	complex float* expectation = (mmse_file ? create_cfl : anon_cfl)(mmse_file, DIMS, out_dims);
 
-	complex float* out = create_cfl(samples_file, DIMS, out_dims);
+	complex float* out = create_async_cfl(samples_file, MD_BIT(ITER_DIM), DIMS, out_dims);
 	long pos[DIMS] = { };
+
+	stream_t strm_o = stream_lookup(out);
 
 	complex float* samples = my_alloc(DIMS, img_dims, CFL_SIZE);
 
@@ -539,6 +542,9 @@ int main_sample(int argc, char* argv[argc])
 			md_copy_block(DIMS, pos, out_dims, out, img_dims, samples, CFL_SIZE);
 
 			md_free(tmp_exp);
+
+			if (strm_o)
+				stream_sync(strm_o, DIMS, pos);
 		}
 
 		operator_p_free(score_op_p[0]);
