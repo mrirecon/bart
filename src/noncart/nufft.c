@@ -1704,28 +1704,49 @@ static void toeplitz_mult_lowmem(const struct nufft_data* data, int i, complex f
 
 	linop_forward(data->cfft_op, data->N, data->cim_dims, grid, data->N, data->cim_dims, grid);
 
+	long cim_dims[data->N];
+	long ciT_dims[data->N];
+
+	md_copy_dims(data->N, cim_dims, data->cim_dims);
+	md_copy_dims(data->N, ciT_dims, data->ciT_dims);
+
+	if (NULL != data->compress) {
+
+		md_copy_dims(3, cim_dims, data->psf_dims);
+		md_copy_dims(3, ciT_dims, data->psf_dims);
+
+		const long* idx = multiplace_read(data->compress, grid);
+		complex float* com_grid = md_alloc_sameplace(data->N, cim_dims, CFL_SIZE, grid);
+		md_compress(data->N, cim_dims, com_grid, data->cim_dims, grid, data->com_dims, idx, CFL_SIZE);
+		md_free(grid);
+		grid = com_grid;
+	}
+
 	long mdims[data->N];
-	md_max_dims(data->N, ~0UL, mdims, data->ciT_dims, data->cim_dims);
+	md_max_dims(data->N, ~0UL, mdims, ciT_dims, cim_dims);
 
-	if (!md_check_equal_dims(data->N, data->cim_dims, data->ciT_dims, ~0UL)) {
+	long cim_strs[data->N];
+	md_calc_strides(data->N, cim_strs, cim_dims, CFL_SIZE);
 
-		complex float* gridT = md_alloc_sameplace(data->N, data->ciT_dims, CFL_SIZE, dst);
+	if (!md_check_equal_dims(data->N, cim_dims, ciT_dims, ~0UL)) {
+
+		complex float* gridT = md_alloc_sameplace(data->N, ciT_dims, CFL_SIZE, dst);
 
 		if (data->conf.real) {
 
 			long ciT_strs[data->N];
-			md_calc_strides(data->N, ciT_strs, data->ciT_dims, CFL_SIZE);
+			md_calc_strides(data->N, ciT_strs, ciT_dims, CFL_SIZE);
 
 			if (data->conf.upper_triag) // shifted indexing (6, 7) as real dim is first
-				md_tenmul_upper_triag2(6, 7, data->N + 1, MD_REAL_DIMS(data->N, mdims), MD_REAL_STRS(data->N, ciT_strs, FL_SIZE), (float*)gridT, MD_REAL_STRS(data->N, data->cim_strs, FL_SIZE), (float*)grid, MD_REAL_DIMS(data->N, data->psf_dims), MD_REAL_STRS(data->N, data->psf_strs, 0), (float*)cpsf);
+				md_tenmul_upper_triag2(6, 7, data->N + 1, MD_REAL_DIMS(data->N, mdims), MD_REAL_STRS(data->N, ciT_strs, FL_SIZE), (float*)gridT, MD_REAL_STRS(data->N, cim_strs, FL_SIZE), (float*)grid, MD_REAL_DIMS(data->N, data->psf_dims), MD_REAL_STRS(data->N, data->psf_strs, 0), (float*)cpsf);
 			else
-				md_tenmul2(data->N + 1, MD_REAL_DIMS(data->N, mdims), MD_REAL_STRS(data->N, ciT_strs, FL_SIZE), (float*)gridT, MD_REAL_STRS(data->N, data->cim_strs, FL_SIZE), (float*)grid, MD_REAL_STRS(data->N, data->psf_strs, 0), (float*)cpsf);
+				md_tenmul2(data->N + 1, MD_REAL_DIMS(data->N, mdims), MD_REAL_STRS(data->N, ciT_strs, FL_SIZE), (float*)gridT, MD_REAL_STRS(data->N, cim_strs, FL_SIZE), (float*)grid, MD_REAL_STRS(data->N, data->psf_strs, 0), (float*)cpsf);
 		} else {
 
 			if (data->conf.upper_triag)
-				md_ztenmul_upper_triag(5, 6, data->N, data->ciT_dims, gridT, data->cim_dims, grid, data->psf_dims, cpsf);
+				md_ztenmul_upper_triag(5, 6, data->N, ciT_dims, gridT, cim_dims, grid, data->psf_dims, cpsf);
 			else
-				md_ztenmul(data->N, data->ciT_dims, gridT, data->cim_dims, grid, data->psf_dims, cpsf);
+				md_ztenmul(data->N, ciT_dims, gridT, cim_dims, grid, data->psf_dims, cpsf);
 		}
 
 
@@ -1736,9 +1757,19 @@ static void toeplitz_mult_lowmem(const struct nufft_data* data, int i, complex f
 	} else {
 
 		if (data->conf.real)
-			md_mul2(data->N, MD_REAL_DIMS(data->N, data->cim_dims), MD_REAL_STRS(data->N, data->cim_strs, FL_SIZE), (float*)grid, MD_REAL_STRS(data->N, data->cml_strs, FL_SIZE), (float*)grid, MD_REAL_STRS(data->N, data->psf_strs, 0), (float*)cpsf);
+			md_mul2(data->N, MD_REAL_DIMS(data->N, cim_dims), MD_REAL_STRS(data->N, cim_strs, FL_SIZE), (float*)grid, MD_REAL_STRS(data->N, cim_strs, FL_SIZE), (float*)grid, MD_REAL_STRS(data->N, data->psf_strs, 0), (float*)cpsf);
 		else
-			md_zmul2(data->N, data->cim_dims, data->cim_strs, grid, data->cim_strs, grid, data->psf_strs, cpsf);
+			md_zmul2(data->N, cim_dims, cim_strs, grid, cim_strs, grid, data->psf_strs, cpsf);
+	}
+
+	if (NULL != data->compress) {
+
+		const long* idx = multiplace_read(data->compress, grid);
+		complex float* dec_grid = md_alloc_sameplace(data->N, data->cim_dims, CFL_SIZE, grid);
+		md_clear(data->N, data->cim_dims, dec_grid, CFL_SIZE);
+		md_decompress(data->N, data->cim_dims, dec_grid, cim_dims, grid, data->com_dims, idx, NULL, CFL_SIZE);
+		md_free(grid);
+		grid = dec_grid;
 	}
 
 	linop_adjoint(data->cfft_op, data->N, data->cim_dims, grid, data->N, data->cim_dims, grid);
