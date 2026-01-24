@@ -181,7 +181,7 @@ int main_ecalib(int argc, char* argv[argc])
 	num_init_gpu_support();
 	num_rand_init(0);
 
-        if ((conf.var < 0.) && (conf.weighting || (conf.crop < 0.))) {
+	if ((conf.var < 0.) && (conf.weighting || (conf.crop < 0.))) {
 
 		const char* toolbox = getenv("BART_TOOLBOX_PATH");
 		// support old environment variable:
