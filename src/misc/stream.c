@@ -1192,7 +1192,7 @@ unsigned long stream_get_flags(stream_t s)
 	return s->pcfl->stream_flags;
 }
 
-extern bool stream_is_binary(stream_t s)
+bool stream_is_binary(stream_t s)
 {
 	return s->binary;
 }
@@ -1218,9 +1218,11 @@ int stream_get_fd(stream_t s)
 	return s->pipefd;
 }
 
-bool* stream_get_synced(stream_t s)
+bool stream_is_synced(stream_t s, long index)
 {
-	return s->pcfl->synced;
+	assert(index < s->pcfl->total);
+
+	return s->pcfl->synced[index];
 }
 
 

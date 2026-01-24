@@ -1,4 +1,4 @@
-/* Copyright 2024. Institute of Biomedical Imaging. TU Graz.
+/* Copyright 2024-2026. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
@@ -234,20 +234,17 @@ static bool test_stream_sync(void)
 	if (!(strm_in = stream_create(1, (long[1]){ 1 }, pipefds[0], true, false, 1, NULL, false)))
 		UTEST_ERR;
 
-	bool *in_synced = stream_get_synced(strm_in);
-	bool *out_synced = stream_get_synced(strm_out);
-
-	if (in_synced[0] || out_synced[0])
+	if (stream_is_synced(strm_in, 0) || stream_is_synced(strm_out, 0))
 		UTEST_ERR;
 
 	stream_sync(strm_out, 1, (long[1]){ 0 });
 
-	if (!out_synced[0])
+	if (!stream_is_synced(strm_out, 0))
 		UTEST_ERR;
 
 	stream_sync(strm_in, 1, (long[1]){ 0 });
 
-	if (!in_synced[0] || !out_synced[0])
+	if (!stream_is_synced(strm_in, 0) || !stream_is_synced(strm_out, 0))
 		UTEST_ERR;
 
 	stream_free(strm_in);
@@ -281,10 +278,7 @@ static bool test_binary_stream(void)
 	stream_attach(strm_in, in, false, false);
 	stream_attach(strm_out, out, false, false);
 
-	bool *s0_synced = stream_get_synced(strm_in);
-	bool *s1_synced = stream_get_synced(strm_out);
-
-	if (s1_synced[0] || s0_synced[0])
+	if (stream_is_synced(strm_in, 0) || stream_is_synced(strm_out, 0))
 		UTEST_ERR;
 
 	stream_sync_slice(strm_out, 2, dims, 2, (long[2]){ 0, 0 });
@@ -307,6 +301,7 @@ static bool test_binary_stream(void)
 
 	close(pipefds[1]);
 	close(pipefds[0]);
+
 	return true;
 }
 

@@ -26,7 +26,7 @@ typedef struct stream* stream_t;
 extern stream_t stream_lookup(const _Complex float* ptr);
 extern stream_t stream_lookup_name(const char* name, _Bool in);
 
-extern _Bool* stream_get_synced(stream_t s);
+extern _Bool stream_is_synced(stream_t s, long index);
 
 
 extern stream_t stream_create(int N, const long dims[__VLA(N)], int pipefd, _Bool input, _Bool binary, unsigned long flags, const char* name, _Bool call_msync);
