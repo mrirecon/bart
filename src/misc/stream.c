@@ -1,4 +1,4 @@
-/* Copyright 2024-2025. Institute of Biomedical Imaging. TU Graz.
+/* Copyright 2024-2026. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -44,12 +44,13 @@ struct pcfl {
 	long* dims;
 
 	unsigned long stream_flags;
-	long index; //data continuously available including index.
-	long tot;
-	bool* synced;
 
-	long* idx;
-	long sync_count;
+	long index;		// data continuously available including index
+	long total; 		// total number of slices
+	bool* synced;		// bitmask of synced slices
+
+	long* idx_map;		// for each event record synced slices
+	long sync_count;	// number of completed slices
 
 	bart_lock_t* sync_lock;
 };
@@ -64,8 +65,9 @@ struct stream {
 	const char* fifo_name;
 
 	complex float* ptr;
-	struct pcfl* data;
-	bool call_msync;
+	struct pcfl* pcfl;
+
+	bool msync;
 
 	int pipefd;
 
@@ -78,8 +80,8 @@ struct stream {
 
 	list_t events;
 
-	FILE* stream_logfile;
-	double* stream_ts;
+	FILE* logfile;
+	double* timestamps;
 
 	long last_index;
 };
@@ -94,7 +96,7 @@ struct stream_settings {
 
 
 
-/** Creates a struct for a partially written complex float array.
+/* Creates a struct for a partially written complex float array.
  *
  * @param D: number of dimensions
  * @param dims: dimensions
@@ -107,7 +109,7 @@ struct stream_settings {
  * Validity of the memory for every slice can be individually
  * checked/written using various pcfl_* functions.
  * Necessary state is kept in the struct returned from this function
- */
+ **/
 static struct pcfl* pcfl_create(int D, const long dims[D], unsigned long flags)
 {
 	assert(bitcount(flags) <= D);
@@ -124,12 +126,11 @@ static struct pcfl* pcfl_create(int D, const long dims[D], unsigned long flags)
 
 	ret->synced = md_calloc(D, stream_dims, sizeof(bool));
 
-	ret->tot = md_calc_size(D, stream_dims);
+	ret->total = md_calc_size(D, stream_dims);
 
-	ret->idx = md_calloc(D, stream_dims, sizeof(long));
+	ret->idx_map = md_calloc(D, stream_dims, sizeof(long));
 
 	ret->sync_count = 0;
-
 	ret->sync_lock = bart_lock_create();
 
 	return PTR_PASS(ret);
@@ -137,11 +138,10 @@ static struct pcfl* pcfl_create(int D, const long dims[D], unsigned long flags)
 
 static void pcfl_free(struct pcfl* p)
 {
-	if (NULL != p->dims)
-		xfree(p->dims);
+	xfree(p->dims);
 
 	md_free(p->synced);
-	md_free(p->idx);
+	md_free(p->idx_map);
 
 	bart_lock_destroy(p->sync_lock);
 
@@ -149,14 +149,14 @@ static void pcfl_free(struct pcfl* p)
 }
 
 
-/** Converts an N-dimensional position to the "slice index" for a partial CFL
+/* Converts an N-dimensional position to the "slice index" for a partial CFL
  *
  * @param data: pcfl ptr
  * @param N: number of indices. Must at least include all selected dims for the pcfl!
  * @param pos: position
  *
  * Returns: slice index
- */
+ **/
 static long pcfl_pos2offset(struct pcfl* data, int N, const long pos[N])
 {
 	assert(N <= data->D);
@@ -172,14 +172,13 @@ static long pcfl_pos2offset(struct pcfl* data, int N, const long pos[N])
 }
 
 
-/** Gets the position up to which data is continuously available for a pcfl.
+/* Gets the position up to which data is continuously available for a pcfl.
  *
  * @param p: pcfl ptr
  * @param N: number of indices
  * @param pos: output position
- */
-static
-void pcfl_get_latest_pos(struct pcfl* p, int N, long pos[N])
+ **/
+static void pcfl_get_latest_pos(struct pcfl* p, int N, long pos[N])
 {
 	md_set_dims(N, pos, 0);
 
@@ -197,7 +196,6 @@ static void pcfl_get_dimensions(struct pcfl* p, int N, long dims[N])
 }
 
 
-static struct pcfl* stream_get_pcfl(stream_t s);
 
 
 // Stream registry: Mapping between struct stream_s * <-> complex float *
@@ -218,9 +216,9 @@ void stream_unmap_all(void)
 
 		assert(stream->ptr && stream->unmap);
 
-		int D = stream->data->D;
+		int D = stream->pcfl->D;
 		long dims[D];
-		pcfl_get_dimensions(stream->data, D, dims);
+		pcfl_get_dimensions(stream->pcfl, D, dims);
 
 		unmap_cfl(D, dims, stream->ptr);
 
@@ -256,17 +254,17 @@ static void stream_deregister(const struct stream* s)
 	{
 		for (int i = 0; i < stream_ptr_count; i++) {
 
-			if (stream_ptr_streams[i] == s) {
+			if (stream_ptr_streams[i] != s)
+				continue;
 
-				for (int j = i; j < stream_ptr_count - 1; j++) {
+			for (int j = i; j < stream_ptr_count - 1; j++) {
 
-					stream_ptr[j] = stream_ptr[j + 1];
-					stream_name[j] = stream_name[j + 1];
-					stream_ptr_streams[j] = stream_ptr_streams[j + 1];
-				}
-
-				stream_ptr_count--;
+				stream_ptr[j] = stream_ptr[j + 1];
+				stream_name[j] = stream_name[j + 1];
+				stream_ptr_streams[j] = stream_ptr_streams[j + 1];
 			}
+
+			stream_ptr_count--;
 		}
 	}
 }
@@ -318,10 +316,11 @@ stream_t stream_lookup_name(const char* filename, bool in)
 
 static char* stream_mangle_name(const char* name, bool in)
 {
-	assert (0 != strcmp(name, "in_-"));
-	assert (0 != strcmp(name, "out_-"));
+	assert(0 != strcmp(name, "in_-"));
+	assert(0 != strcmp(name, "out_-"));
 
 	const char* prefix = "";
+
 	if (0 == strcmp("-", name))
 		prefix = in ? "in_" : "out_";
 
@@ -336,8 +335,7 @@ static void stream_stop_log(const struct stream* s);
 static void stream_init_log(stream_t s);
 static void stream_log_index(stream_t s, long index, double t);
 
-/**
- * Creates a stream.
+/* Creates a stream.
  *
  * @param N: Number of dimensions
  * @param dims: Dimensions of the memory area
@@ -352,11 +350,11 @@ static void stream_log_index(stream_t s, long index, double t);
  *
  * Complex float memory shared between processes,
  * associated with a file descriptor used for synchronization and metainformation.
- */
-stream_t stream_create(int N, const long dims[N], int pipefd, bool input, bool binary, unsigned long flags, const char* name, bool call_msync)
+ **/
+stream_t stream_create(int N, const long dims[N], int pipefd, bool input, bool binary, unsigned long flags, const char* name, bool msync)
 {
 	// msync only makes sense for output streams that are not binary.
-	assert(!call_msync || !(input || binary));
+	assert(!msync || !(input || binary));
 
 	char* fifo_name = name ? (strcmp("-", name) ? strdup(name) : NULL) : NULL;
 
@@ -368,7 +366,7 @@ stream_t stream_create(int N, const long dims[N], int pipefd, bool input, bool b
 		.pipefd = pipefd,
 		.input = input,
 		.binary = binary,
-		.call_msync = call_msync,
+		.msync = msync,
 		.last_index = -1,
 		.filename = (NULL == name) ? NULL : stream_mangle_name(name, input),
 		.fifo_name = fifo_name,
@@ -402,7 +400,7 @@ stream_t stream_create(int N, const long dims[N], int pipefd, bool input, bool b
 		flags = settings.flags;
 	}
 
-	ret->data = pcfl_create(N, dims, flags);
+	ret->pcfl = pcfl_create(N, dims, flags);
 
 	stream_init_log(ret);
 
@@ -435,20 +433,19 @@ static void stream_del(const struct shared_obj_s* sptr)
 	bart_lock_destroy(s->lock);
 	bart_cond_destroy(s->cond);
 
-	if (NULL != s->data) {
+	if (NULL != s->pcfl) {
 
-		int D = s->data->D;
+		int D = s->pcfl->D;
 		long dims[D];
-		pcfl_get_dimensions(s->data, D, dims);
+		pcfl_get_dimensions(s->pcfl, D, dims);
 
 		if (s->unmap)
 			unmap_shared_cfl(D, dims, s->ptr);
 
-		pcfl_free(s->data);
+		pcfl_free(s->pcfl);
 	}
 
-	if (NULL != s->filename)
-		xfree(s->filename);
+	xfree(s->filename);
 
 	if (s->fifo_name && s->input)
 		unlink(s->fifo_name);
@@ -561,7 +558,7 @@ stream_t stream_load_fd(int fd, const char* name, int D, long dims[D], char **da
 }
 
 
-stream_t stream_create_file(const char* name, int D, long dims[D], unsigned long stream_flags, char* dataname, bool call_msync)
+stream_t stream_create_file(const char* name, int D, long dims[D], unsigned long stream_flags, char* dataname, bool msync)
 {
 	int fd = 1;
 	bool is_stdout = (0 == strcmp(name, "-"));
@@ -590,11 +587,8 @@ stream_t stream_create_file(const char* name, int D, long dims[D], unsigned long
 	if (-1 == write_stream_header(fd, dataname, D, dims))
 		error("Writing header of %s\n", name);
 
-	stream_t strm = stream_create(D, dims, fd, false, binary, stream_flags, name, call_msync);
-
-	return strm;
+	return stream_create(D, dims, fd, false, binary, stream_flags, name, msync);
 }
-
 
 
 
@@ -679,7 +673,8 @@ bool stream_send_msg(int pfd, const struct stream_msg* msg)
 
 
 // Calculate the memory layout on the 'wire-level' for binary streams
-static long get_transport_layout(int D, const long dims[D], long size, int index, unsigned long flags, complex float* ptr, int *ND, long ndims[D], long nstr[D], long* nsize, complex float** nptr)
+static long get_transport_layout(int D, const long dims[D], long size, int index, unsigned long flags,
+		complex float* ptr, int *ND, long ndims[D], long nstr[D], long* nsize, complex float** nptr)
 {
 	long pos[D];
 	md_set_dims(D, pos, 0);
@@ -717,7 +712,6 @@ static struct list_s* stream_get_events_at_index(struct stream* s, long index);
 static bool stream_receive_idx_locked2(stream_t s)
 {
 	bool raw_received = false;
-	long offset = -1;
 	struct stream_msg msg = { .type = STREAM_MSG_INVALID };
 
 	if (!stream_get_msg(s->pipefd, &msg))
@@ -726,7 +720,10 @@ static bool stream_receive_idx_locked2(stream_t s)
 	if (STREAM_MSG_INDEX != msg.type)
 		return false;
 
-	offset = msg.data.offset;
+	long offset = msg.data.offset;
+
+	if (offset < 0 || s->pcfl->total <= offset)
+		error("msg: invalid offset");
 
 	bool group_complete = false;
 
@@ -751,12 +748,14 @@ static bool stream_receive_idx_locked2(stream_t s)
 			assert(s->ptr);
 
 			complex float* ptr = s->ptr;
-			int ND = s->data->D;
-			long xdims[s->data->D];
-			long xstr[s->data->D];
+			int ND = s->pcfl->D;
+			long xdims[ND];
+			long xstr[ND];
 			long size = sizeof(complex float);
 
-			long rx_size = get_transport_layout(ND, s->data->dims, size, offset, s->data->stream_flags, ptr, &ND, xdims, xstr, &size, &ptr);
+			long rx_size = get_transport_layout(ND, s->pcfl->dims, size,
+							offset, s->pcfl->stream_flags,
+							ptr, &ND, xdims, xstr, &size, &ptr);
 
 			if (rx_size != msg.data.extsize)
 				return false;
@@ -771,21 +770,25 @@ static bool stream_receive_idx_locked2(stream_t s)
 		default:
 
 			assert(msg.ext);
-			if (msg.data.extsize == 0)
+			long extsize = msg.data.extsize;
+
+			if (0 == extsize)
 				break;
 
-			void* mem = xmalloc((size_t)msg.data.extsize);
+			if (extsize < 0 || 4096 <= extsize)
+				error("message with extended size too large\n");
 
-			xread(s->pipefd, msg.data.extsize, mem);
+			void* mem = xmalloc((size_t)extsize);
 
-			struct stream_event* event = stream_event_create(offset, msg.type, msg.data.extsize, mem);
+			xread(s->pipefd, extsize, mem);
+
+			struct stream_event* event = stream_event_create(offset, msg.type, extsize, mem);
 
 			xfree(mem);
 
 			if (!stream_add_event_intern(s, event)) {
 
-				// analyzer doesn't understand xfree here! 2024-08 ~ps
-				free(event);
+				xfree(event);
 				return false;
 			}
 		}
@@ -794,17 +797,25 @@ static bool stream_receive_idx_locked2(stream_t s)
 	if (s->binary && (!raw_received))
 		return false;
 
-
 	bart_lock(s->lock);
 
-	s->data->synced[offset] = true;
-	s->data->idx[s->data->sync_count] = offset;
-	s->data->sync_count++;
+	struct pcfl* pcfl = s->pcfl;
+
+	assert(pcfl->sync_count < pcfl->total);
+	assert(0 <= offset && offset < pcfl->total);
+
+	pcfl->synced[offset] = true;
+	pcfl->idx_map[pcfl->sync_count++] = offset;
 
 	s->last_index = offset;
 
-	while ((s->data->index < s->data->tot - 1) && (s->data->synced[s->data->index + 1]))
-		s->data->index++;
+	while (pcfl->index < pcfl->total - 1) {
+
+		if (!pcfl->synced[pcfl->index + 1])
+			break;
+
+		pcfl->index++;
+	}
 
 	// if receiving, save timestamp after finished receiving!
 	stream_log_index(s, offset, timestamp());
@@ -836,7 +847,13 @@ static bool stream_send_index_locked(stream_t s, long index)
 	// if sending, save timestamp before starting sending of index.
 	stream_log_index(s, index, timestamp());
 
-	if (!stream_send_msg(s->pipefd, &(struct stream_msg){ .type = STREAM_MSG_INDEX, .data.offset = index }))
+	struct stream_msg msg = {
+
+		.type = STREAM_MSG_INDEX,
+		.data.offset = index,
+	};
+
+	if (!stream_send_msg(s->pipefd, &msg))
 		return false;
 
 	list_t index_events = stream_get_events_at_index(s, index);
@@ -847,8 +864,15 @@ static bool stream_send_index_locked(stream_t s, long index)
 
 		while (NULL != (event = list_pop(index_events))) {
 
-			struct stream_msg block_msg = { .type = STREAM_MSG_BLOCK, .ext = true, .data.extsize = event->size };
-			if (!stream_send_msg2(s->pipefd, &block_msg, 1, (long[1]){1}, (long[1]){1}, event->size, event->data)) {
+			struct stream_msg block_msg = {
+
+				.type = STREAM_MSG_BLOCK,
+				.ext = true,
+				.data.extsize = event->size,
+			};
+
+			if (!stream_send_msg2(s->pipefd, &block_msg, 1, (long[1]){ 1 }, (long[1]){ 1 },
+						event->size, event->data)) {
 
 				xfree(event);
 				stream_event_list_free(index_events);
@@ -865,13 +889,16 @@ static bool stream_send_index_locked(stream_t s, long index)
 	if (s->binary) {
 
 		assert(s->ptr);
+
 		complex float* ptr = s->ptr;
-		int ND = s->data->D;
+		struct pcfl* pcfl = s->pcfl;
+
+		int ND = pcfl->D;
 		long xdims[ND];
 		long xstr[ND];
 		long size = sizeof(complex float);
 
-		long tx_size = get_transport_layout(ND, s->data->dims, size, index, s->data->stream_flags,
+		long tx_size = get_transport_layout(ND, pcfl->dims, size, index, pcfl->stream_flags,
 						    ptr, &ND, xdims, xstr, &size, &ptr);
 
 		struct stream_msg msg = {
@@ -884,22 +911,31 @@ static bool stream_send_index_locked(stream_t s, long index)
 		if (!stream_send_msg2(s->pipefd, &msg, ND, xdims, xstr, size, ptr))
 			return false;
 
-	} else if (s->call_msync) {
+	} else if (s->msync) {
 
-		if (0 != msync(s->ptr,
-			       (size_t)(md_calc_size(s->data->D, s->data->dims) * (long)sizeof(complex float)), MS_SYNC))
+		size_t size = (size_t)(md_calc_size(s->pcfl->D, s->pcfl->dims) * (long)sizeof(complex float));
+
+		if (0 != msync(s->ptr, size, MS_SYNC))
 			return false;
 	}
 
 	if (!stream_send_msg(s->pipefd, &(struct stream_msg){ .type = STREAM_MSG_BREAK }))
 		return false;
 
-	s->data->synced[index] = true;
+	struct pcfl* pcfl = s->pcfl;
 
-	while ((s->data->index < s->data->tot - 1) && (s->data->synced[s->data->index + 1]))
-		s->data->index++;
+	pcfl->synced[index] = true;
 
-	debug_printf(DP_DEBUG3, "data offset sent: %ld\n", s->data->index);
+	while (pcfl->index < pcfl->total - 1) {
+
+		if (!pcfl->synced[pcfl->index + 1])
+			break;
+
+		pcfl->index++;
+	}
+
+	debug_printf(DP_DEBUG3, "data offset sent: %ld\n", pcfl->index);
+
 	return true;
 }
 
@@ -907,26 +943,28 @@ static bool stream_sync_index(stream_t s, long index, bool all)
 {
 	if (all) {
 
-		for (long i = s->data->index + 1; i < index; i++)
+		for (long i = s->pcfl->index + 1; i < index; i++)
 			if (!stream_sync_index(s, i, false))
 				return false;
 	}
 
 	bart_lock(s->lock);
 
+	struct pcfl* pcfl = s->pcfl;
+
 	if (s->input) {
 
-		while (!s->data->synced[index]) {
+		while (!pcfl->synced[index]) {
 
 			// While other thread receiving and requested index missing, wait:
-			while (s->busy && !s->data->synced[index])
+			while (s->busy && !pcfl->synced[index])
 				bart_cond_wait(s->cond, s->lock);
 
 			// Requested index received by other thread?
-			if (s->data->synced[index])
+			if (pcfl->synced[index])
 				break;
 
-			assert(!s->busy && !s->data->synced[index]);
+			assert(!s->busy && !pcfl->synced[index]);
 
 			// (not busy) and (not synced) -> receive.
 			if (!stream_receive_idx_locked(s))
@@ -934,13 +972,14 @@ static bool stream_sync_index(stream_t s, long index, bool all)
 
 			bart_cond_notify_all(s->cond);
 		}
+
 	} else {
 
-		if (!s->data->synced[index])
+		if (!pcfl->synced[index])
 			stream_send_index_locked(s, index);
 	}
 
-	bool synced = s->data->synced[index];
+	bool synced = pcfl->synced[index];
 
 	bart_unlock(s->lock);
 
@@ -950,19 +989,21 @@ static bool stream_sync_index(stream_t s, long index, bool all)
 bool stream_receive_pos(stream_t s, long count, long N, long pos[N])
 {
 	assert(s->input);
-	assert(N == s->data->D);
+	assert(N == s->pcfl->D);
 
-	if (count >= s->data->tot)
+	if (count >= s->pcfl->total)
 		return false;
 
 	bart_lock(s->lock);
 
-	while (count >= s->data->sync_count) {
+	struct pcfl* pcfl = s->pcfl;
 
-		while (count >= s->data->sync_count && s->busy)
+	while (count >= pcfl->sync_count) {
+
+		while (count >= pcfl->sync_count && s->busy)
 			bart_cond_wait(s->cond, s->lock);
 
-		if (count >= s->data->sync_count) {
+		if (count >= pcfl->sync_count) {
 
 			assert(!s->busy);
 
@@ -976,9 +1017,9 @@ bool stream_receive_pos(stream_t s, long count, long N, long pos[N])
 		}
 	}
 
-	assert(count < s->data->sync_count);
+	assert(count < pcfl->sync_count);
 
-	md_unravel_index(N, pos, s->data->stream_flags, s->data->dims, s->data->idx[count]);
+	md_unravel_index(N, pos, pcfl->stream_flags, pcfl->dims, pcfl->idx_map[count]);
 
 	bart_unlock(s->lock);
 
@@ -989,7 +1030,7 @@ bool stream_receive_pos(stream_t s, long count, long N, long pos[N])
 /* Sync an arbitrary slice in a multidimensional array:
  * - flags & pos together define a set of fixed indices for an n-dimensional array.
  * - this syncs all stream slices (defined by the flags set in stream) that intersect the given slice.
- */
+ **/
 bool stream_sync_slice_try(stream_t s, int N, const long dims[N], unsigned long flags, const long _pos[N])
 {
 	if (NULL == s)
@@ -998,25 +1039,28 @@ bool stream_sync_slice_try(stream_t s, int N, const long dims[N], unsigned long 
 	long pos[N];
 	md_copy_dims(N, pos, _pos);
 
-	for (int i = 0; i < MIN(N, s->data->D); i++) {
+	struct pcfl* pcfl = s->pcfl;
+
+	for (int i = 0; i < MIN(N, s->pcfl->D); i++) {
 
 		assert(MD_IS_SET(flags, i) || (0 == pos[i]));
-		assert(!MD_IS_SET(flags, i) || (dims[i] == s->data->dims[i]));
+		assert(!MD_IS_SET(flags, i) || (dims[i] == pcfl->dims[i]));
 	}
 
 	// loop over all stream dimensions which are not set in the given flags.
-	unsigned long loop_flags = s->data->stream_flags & ~flags;
+	unsigned long loop_flags = pcfl->stream_flags & ~flags;
 
 	// for output streams, we'd rather need 'covered' slices instead of intersected slices.
 	// Thus just fail if this is attempted.
-	unsigned long lost_flags = flags & ~s->data->stream_flags;
+	unsigned long lost_flags = flags & ~pcfl->stream_flags;
+
 	assert(s->input || 0 == lost_flags);
 
 	do {
-		if (!stream_sync_index(s, pcfl_pos2offset(s->data, N, pos), false))
+		if (!stream_sync_index(s, pcfl_pos2offset(pcfl, N, pos), false))
 			return false;
 
-	} while (md_next(s->data->D, s->data->dims, loop_flags, pos));
+	} while (md_next(pcfl->D, pcfl->dims, loop_flags, pos));
 
 	return true;
 }
@@ -1032,7 +1076,7 @@ void stream_sync_slice(stream_t s, int N, const long dims[N], unsigned long flag
  */
 bool stream_sync_try(stream_t s, int N, long pos[N])
 {
-	return stream_sync_index(s, pcfl_pos2offset(stream_get_pcfl(s), N, pos), true);
+	return stream_sync_index(s, pcfl_pos2offset(s->pcfl, N, pos), true);
 }
 
 void stream_sync(stream_t s, int N, long pos[N])
@@ -1043,9 +1087,13 @@ void stream_sync(stream_t s, int N, long pos[N])
 
 void stream_sync_all(stream_t strm)
 {
-	long pos[strm->data->D];
-	md_set_dims(strm->data->D, pos, 0);
-	stream_sync_slice(strm, strm->data->D, strm->data->dims, 0, pos);
+	struct pcfl* pcfl = strm->pcfl;
+	int D = pcfl->D;
+
+	long pos[D];
+	md_set_dims(D, pos, 0);
+
+	stream_sync_slice(strm, D, pcfl->dims, 0, pos);
 }
 
 void stream_fetch(stream_t s)
@@ -1053,11 +1101,12 @@ void stream_fetch(stream_t s)
 	assert(s->input);
 
 	bart_lock(s->lock);
-	long count = s->data->sync_count;
+	long count = s->pcfl->sync_count;
 	bart_unlock(s->lock);
 
-	long pos[s->data->D];
-	stream_receive_pos(s, count, s->data->D, pos);
+	int D = s->pcfl->D;
+	long pos[D];
+	stream_receive_pos(s, count, D, pos);
 }
 
 
@@ -1140,7 +1189,7 @@ bool stream_write_settings(int pfd, struct stream_settings settings)
 
 unsigned long stream_get_flags(stream_t s)
 {
-	return s->data->stream_flags;
+	return s->pcfl->stream_flags;
 }
 
 extern bool stream_is_binary(stream_t s)
@@ -1155,13 +1204,13 @@ complex float* stream_get_data(stream_t s)
 
 void stream_get_dimensions(stream_t s, int N, long dims[N])
 {
-	pcfl_get_dimensions(s->data, N, dims);
+	pcfl_get_dimensions(s->pcfl, N, dims);
 }
 
 
 void stream_get_latest_pos(stream_t s, int N, long pos[N])
 {
-	pcfl_get_latest_pos(stream_get_pcfl(s), N, pos);
+	pcfl_get_latest_pos(s->pcfl, N, pos);
 }
 
 int stream_get_fd(stream_t s)
@@ -1169,15 +1218,9 @@ int stream_get_fd(stream_t s)
 	return s->pipefd;
 }
 
-static
-struct pcfl* stream_get_pcfl(stream_t s)
-{
-	return s->data;
-}
-
 bool* stream_get_synced(stream_t s)
 {
-	return s->data->synced;
+	return s->pcfl->synced;
 }
 
 
@@ -1202,9 +1245,9 @@ bool stream_add_event(stream_t s, int N, long pos[N], int type, long size, const
 	if (s->input)
 		return ret;
 
-	int index = pcfl_pos2offset(stream_get_pcfl(s), N, pos);
+	int index = pcfl_pos2offset(s->pcfl, N, pos);
 
-	bart_lock(s->data->sync_lock);
+	bart_lock(s->pcfl->sync_lock);
 
 	struct stream_event* item = stream_event_create(index, type, size, data);
 
@@ -1219,14 +1262,14 @@ bool stream_add_event(stream_t s, int N, long pos[N], int type, long size, const
 
 	ret = true;
 fail:
-	bart_unlock(s->data->sync_lock);
+	bart_unlock(s->pcfl->sync_lock);
 
 	return ret;
 }
 
 struct list_s* stream_get_events(struct stream* s, int N, long pos[N])
 {
-	return stream_get_events_at_index(s, pcfl_pos2offset(stream_get_pcfl(s), N, pos));
+	return stream_get_events_at_index(s, pcfl_pos2offset(s->pcfl, N, pos));
 }
 
 static bool stream_event_id_eq(const void *item, const void* ref)
@@ -1258,11 +1301,11 @@ static void stream_event_list_free(list_t events)
 static bool stream_add_event_intern(stream_t s, struct stream_event* event)
 {
 	// check if index is in range
-	if ((event->index >= s->data->tot) || (0 > event->index))
+	if ((event->index >= s->pcfl->total) || (0 > event->index))
 		return false;
 
 	// check if this has already been synced
-	if (s->data->synced[event->index])
+	if (s->pcfl->synced[event->index])
 		return false;
 
 	list_append(s->events, event);
@@ -1289,45 +1332,48 @@ static struct stream_event* stream_event_create(int index, int type, long size, 
 
 static void stream_init_log(stream_t s)
 {
-	char* streamlog_prefix = getenv("BART_STREAM_LOG");
-	if (!streamlog_prefix)
+	char* log_prefix = getenv("BART_STREAM_LOG");
+
+	if (!log_prefix)
 		return;
 
 	const char* suffix2 = ".txt";
-	unsigned int logfile_len = strlen(streamlog_prefix) + strlen(s->filename) + strlen(suffix2) + 1;
+	unsigned int logfile_len = strlen(log_prefix) + strlen(s->filename) + strlen(suffix2) + 1;
 
 	char* logfile_path = xmalloc(logfile_len);
 
 	assert(logfile_path);
-	snprintf(logfile_path, logfile_len, "%s%s%s", streamlog_prefix, s->filename, suffix2);
+	snprintf(logfile_path, logfile_len, "%s%s%s", log_prefix, s->filename, suffix2);
 
-	s->stream_logfile = fopen(logfile_path, "a");
-	if (!s->stream_logfile)
+	s->logfile = fopen(logfile_path, "a");
+
+	if (!s->logfile)
 		error("Failed to open stream logfile with 'a' flag: %s.\n", logfile_path);
 
 	xfree(logfile_path);
 
-	s->stream_ts = xmalloc(sizeof(double) * (unsigned long)s->data->tot);
+	s->timestamps = xmalloc(sizeof(double) * (unsigned long)s->pcfl->total);
 
-	fprintf(s->stream_logfile, "# index, timestamp\n");
+	fprintf(s->logfile, "# index, timestamp\n");
 }
 
 static void stream_stop_log(const struct stream* s)
 {
-	if (NULL == s->stream_logfile || NULL == s->stream_ts)
+	if (NULL == s->logfile || NULL == s->timestamps)
 		return;
 
-	for (long i = 0; i <= s->data->index; i++)
-		fprintf(s->stream_logfile, "%ld, %f\n", i, s->stream_ts[i]);
+	for (long i = 0; i <= s->pcfl->index; i++)
+		fprintf(s->logfile, "%ld, %f\n", i, s->timestamps[i]);
 
-	if (s->stream_logfile)
-		fclose(s->stream_logfile);
+	if (NULL != s->logfile)
+		fclose(s->logfile);
 
-	xfree(s->stream_ts);
+	xfree(s->timestamps);
 }
 
 static void stream_log_index(stream_t s, long index, double t)
 {
-	if (s->stream_ts)
-		s->stream_ts[index] = t;
+	if (s->timestamps)
+		s->timestamps[index] = t;
 }
+

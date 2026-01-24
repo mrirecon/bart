@@ -1,4 +1,4 @@
-/* Copyright 2024-2025. Institute of Biomedical Imaging. TU Graz.
+/* Copyright 2024-2026. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -11,11 +11,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "misc/misc.h"
+
 #include "stream_protocol.h"
 
 enum stream_param { NO_PARAMS = 0, LONG_PARAM };
 
 struct typeinfo {
+
 	const char* keyword;
 	unsigned int keylen;
 	bool ext;
@@ -29,6 +32,7 @@ const int token_len = strlen(TOKEN);
 
 // Max keyword len: MSG_HDR_SIZE - 1 - token_len
 static const struct typeinfo types[] = {
+
 	[STREAM_MSG_INVALID] = { .keyword = NULL, .keylen = 0 },
 	[STREAM_MSG_BREAK] = { KW("---") },
 	[STREAM_MSG_FLAGS] = { KW("flags"), .param = LONG_PARAM },
@@ -74,7 +78,7 @@ bool stream_decode(struct stream_msg* msg, int l, const char buf[l])
 	char str[MSG_HDR_SIZE] = { '\0' };
 	memcpy(str, buf + token_len, MSG_HDR_SIZE - token_len - 1);
 
-	for (msg->type = sizeof(types) / sizeof(types[0]) - 1; msg->type > STREAM_MSG_INVALID; msg->type--)
+	for (msg->type = ARRAY_SIZE(types) - 1; msg->type > STREAM_MSG_INVALID; msg->type--)
 		if (0 == strncmp(types[msg->type].keyword, str, types[msg->type].keylen))
 			break;
 

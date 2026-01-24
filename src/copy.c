@@ -112,6 +112,7 @@ int main_copy(int argc, char* argv[argc])
 			error("stream_reorder makes no sense without --stream flag.\n");
 
 		stream_order = load_cfl(stream_order_file, N, stream_order_dims);
+
 		if (!md_check_compat(N, ~stream_flags, out_dims, stream_order_dims))
 			error("Dims of stream_order indices must be compatible with output!\n");
 	}
@@ -163,7 +164,8 @@ int main_copy(int argc, char* argv[argc])
 		if (is_stream && stream_order) {
 
 			md_copy_strides(N, stream_pos0, stream_pos);
-			md_unravel_index(N, stream_pos, stream_flags, stream_order_dims, (long){ MD_ACCESS(N, MD_STRIDES(N, stream_order_dims, CFL_SIZE), stream_pos, stream_order) });
+			md_unravel_index(N, stream_pos, stream_flags, stream_order_dims,
+				(long){ MD_ACCESS(N, MD_STRIDES(N, stream_order_dims, CFL_SIZE), stream_pos, stream_order) });
 
 		}
 

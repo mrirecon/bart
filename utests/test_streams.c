@@ -227,8 +227,10 @@ static bool test_stream_sync(void)
 		UTEST_ERR;
 
 	stream_t strm_in, strm_out;
+
 	if (!(strm_out = stream_create(1, (long[1]){ 1 }, pipefds[1], false, false, 1, NULL, false)))
 		UTEST_ERR;
+
 	if (!(strm_in = stream_create(1, (long[1]){ 1 }, pipefds[0], true, false, 1, NULL, false)))
 		UTEST_ERR;
 
@@ -285,13 +287,11 @@ static bool test_binary_stream(void)
 	if (s1_synced[0] || s0_synced[0])
 		UTEST_ERR;
 
-	stream_sync_slice(strm_out, 2, dims, 2, (long[2]){0, 0});
+	stream_sync_slice(strm_out, 2, dims, 2, (long[2]){ 0, 0 });
+	stream_sync_slice(strm_out, 2, dims, 2, (long[2]){ 0, 2 });
 
-	stream_sync_slice(strm_out, 2, dims, 2, (long[2]){0, 2});
-
-	stream_sync_slice(strm_in, 2, dims, 2, (long[2]){0, 0});
-
-	stream_sync_slice(strm_in, 2, dims, 2, (long[2]){0, 2});
+	stream_sync_slice(strm_in, 2, dims, 2, (long[2]){ 0, 0 });
+	stream_sync_slice(strm_in, 2, dims, 2, (long[2]){ 0, 2 });
 
 	if (out[0] != in[0])
 		UTEST_ERR;
