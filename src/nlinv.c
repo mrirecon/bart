@@ -94,7 +94,6 @@ int main_nlinv(int argc, char* argv[argc])
 	conf.regs = &reg_opts;
 	opt_reg_init(conf.regs);
 
-	bool nufft_lowmem = false;
 	bool psf_based_reco = false;
 
 	bool real_time_stream = false;
@@ -136,7 +135,7 @@ int main_nlinv(int argc, char* argv[argc])
 		OPT_SET('n', &conf.noncart, "(non-Cartesian)"),
 		OPTL_SET(0, "psf-based", &psf_based_reco, "(use psf based reconstruction)"),
 		OPT_FLOAT('w', &conf.scaling, "", "(inverse scaling of the data)"),
-		OPTL_SET(0, "lowmem", &nufft_lowmem, "Use low-mem mode of the nuFFT"),
+		OPTL_SET(0, "lowmem", &nufft_conf_options.lowmem, "(Use low-mem mode of the nuFFT)"),
 		OPTL_VEC3('x', "dims", &my_img_dims, "x:y:z", "Explicitly specify image dimensions"),
 		OPTL_VEC3(0, "sens-dims", &my_sens_dims, "x:y:z", "Explicitly specify sens dimensions"),
 		OPTL_VEC3(0, "ksens-dims", &my_ksens_dims, "x:y:z", "(Explicitly specify kspace-sens dimensions)"),
@@ -149,6 +148,7 @@ int main_nlinv(int argc, char* argv[argc])
 		OPTL_INT(0, "phase-pole", &(conf.phasepoles), "d", "Use phase pole detection after d iterations (0 for every iteration)"),
 		OPTL_SET(0, "fast", &(conf.optimized), "Use tuned but less generic model"),
 		OPTL_SET(0, "legacy-early-stopping", &(conf.legacy_early_stoppping), "(legacy mode for irgnm early stopping)"),
+		OPTL_SUBOPT(0, "nufft-conf", "...", "configure nufft", N_nufft_conf_opts, nufft_conf_opts),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -265,7 +265,7 @@ int main_nlinv(int argc, char* argv[argc])
 
 		md_select_dims(DIMS, ~(COIL_FLAG|MAPS_FLAG), psf_dims, dims);
 
-		complex float* psf = compute_psf(DIMS, psf_dims, trj_dims, traj, trj_dims, NULL, pat_dims, pattern, false, nufft_lowmem);
+		complex float* psf = compute_psf(DIMS, psf_dims, trj_dims, traj, trj_dims, NULL, pat_dims, pattern, false, nufft_conf_options.lowmem);
 
 		fftuc(DIMS, psf_dims, FFT_FLAGS, psf, psf);
 
@@ -294,9 +294,9 @@ int main_nlinv(int argc, char* argv[argc])
 
 		debug_printf(DP_DEBUG3, "Start creating nufft-objects...");
 
-		struct nufft_conf_s nufft_conf = nufft_conf_defaults;
+		struct nufft_conf_s nufft_conf = nufft_conf_options;
 		nufft_conf.toeplitz = false;
-		nufft_conf.lowmem = nufft_lowmem;
+		nufft_conf.lowmem = nufft_conf_options.lowmem;
 
 		const struct linop_s* nufft_op = nufft_create(DIMS, ksp_dims, dims, trj_dims, traj, NULL, nufft_conf);
 
@@ -486,11 +486,7 @@ int main_nlinv(int argc, char* argv[argc])
 
 	if (NULL != traj) {
 
-		struct nufft_conf_s nufft_conf = nufft_conf_defaults;
-		nufft_conf.toeplitz = true;
-		nufft_conf.lowmem = nufft_lowmem;
-		nufft_conf.pcycle = false;
-		nufft_conf.periodic = false;
+		struct nufft_conf_s nufft_conf = nufft_conf_options;
 		conf.nufft_conf = &nufft_conf;
 
 		noir2_recon_noncart(&conf, DIMS,
