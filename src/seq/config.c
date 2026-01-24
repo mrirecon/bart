@@ -104,6 +104,13 @@ const struct seq_config seq_config_defaults = {
 		.inv_delay_time = 0.,
 	},
 
+	.trigger = {
+		.type = TRIGGER_OFF,
+		.delay_time = 0.,
+		.pulses = 0,
+		.trigger_out = 1,
+	},
+
 	.sys = {
 		.gamma = 42.575575E6,
 		.b0 = 2.893620,

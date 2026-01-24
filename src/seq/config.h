@@ -118,6 +118,18 @@ struct seq_sys {
 };
 
 
+struct seq_trigger {
+
+	// Physiological triggering: scanner waits on event
+	enum trigger_type type; 
+	double delay_time;
+	int pulses;
+
+	// Trigger output: scanner notifies other hardware
+	int trigger_out;
+};
+
+
 
 struct seq_config {
 
@@ -125,6 +137,7 @@ struct seq_config {
 	struct seq_geom geom;
 	struct seq_enc enc;
 	struct seq_magn magn;
+	struct seq_trigger trigger;
 	struct seq_sys sys; 
 
 	int order[DIMS];
