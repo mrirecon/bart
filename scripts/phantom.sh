@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2022. TU Graz. Institute of Biomedical Imaging.
+# Copyright 2022-2026. TU Graz. Institute of Biomedical Imaging.
 # All rights reserved. Use of this source code is governed by
 # a BSD-style license which can be found in the LICENSE file.
 #
@@ -87,12 +87,8 @@ fi
 
 
 if [ ! -e "$BART_TOOLBOX_PATH"/bart ] ; then
-	if [ -e "$TOOLBOX_PATH"/bart ] ; then
-		BART_TOOLBOX_PATH="$TOOLBOX_PATH"
-	else
-		echo "\$BART_TOOLBOX_PATH is not set correctly!" >&2
-		exit 1
-	fi
+	echo "\$BART_TOOLBOX_PATH is not set correctly!" >&2
+	exit 1
 fi
 export PATH="$BART_TOOLBOX_PATH:$PATH"
 

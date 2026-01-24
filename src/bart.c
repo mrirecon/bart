@@ -655,7 +655,6 @@ int main_bart(int argc, char* argv[argc])
 			exe_dir,
 #endif
 			getenv("BART_TOOLBOX_PATH"),
-			getenv("TOOLBOX_PATH"), // support old environment variable
 			"/usr/local/lib/bart/",
 			"/usr/lib/bart/",
 		};

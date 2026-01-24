@@ -1,6 +1,6 @@
 /* Copyright 2015-2016. The Regents of the University of California.
  * Copyright 2015-2021. Uecker Lab. University Medical Center Göttingen.
- * Copyright 2023-2025. TU Graz. Institute of Biomedical Imaging.
+ * Copyright 2023-2026. TU Graz. Institute of Biomedical Imaging.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -65,9 +65,6 @@ int main_estvar(int argc, char* argv[argc])
 	}
 
 	const char* toolbox = getenv("BART_TOOLBOX_PATH");
-	// support old environment variable:
-	if (NULL == toolbox)
-		toolbox = getenv("TOOLBOX_PATH");
 
 	float variance = estvar_kspace(toolbox, N, kernel_dims, calsize_dims, kspace_dims, kspace);
 

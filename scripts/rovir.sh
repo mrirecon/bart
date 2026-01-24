@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2023. TU Graz. Institute of Biomedical Imaging.
+# Copyright 2023-2026. TU Graz. Institute of Biomedical Imaging.
 # Author: Moritz Blumenthal
 #
 # Kim, D, Cauley, SF, Nayak, KS, Leahy, RM, Haldar, JP.
@@ -75,12 +75,8 @@ if [ $# -ne 4 ] ; then
 fi
 
 if [ ! -e "$BART_TOOLBOX_PATH"/bart ] ; then
-	if [ -e "$TOOLBOX_PATH"/bart ] ; then
-		BART_TOOLBOX_PATH="$TOOLBOX_PATH"
-	else
-		echo "\$BART_TOOLBOX_PATH is not set correctly!" >&2
-		exit 1
-	fi
+	echo "\$BART_TOOLBOX_PATH is not set correctly!" >&2
+	exit 1
 fi
 export PATH="$BART_TOOLBOX_PATH:$PATH"
 

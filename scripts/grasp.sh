@@ -3,9 +3,6 @@
 # All rights reserved. Use of this source code is governed by
 # a BSD-style license which can be found in the LICENSE file.
 #
-# Authors:
-# 2015 Martin Uecker <uecker@eecs.berkeley.edu>
-#
 # Compressed sensing parallel imaging reconstruction with temporal
 # total-variation regularization for Siemens radial VIBE sequence
 # with golden-angle sampling (GRASP).
@@ -91,12 +88,8 @@ fi
 
 
 if [ ! -e "$BART_TOOLBOX_PATH"/bart ] ; then
-	if [ -e "$TOOLBOX_PATH"/bart ] ; then
-		BART_TOOLBOX_PATH="$TOOLBOX_PATH"
-	else
-		echo "\$BART_TOOLBOX_PATH is not set correctly!" >&2
-		exit 1
-	fi
+	echo "\$BART_TOOLBOX_PATH is not set correctly!" >&2
+	exit 1
 fi
 export PATH="$BART_TOOLBOX_PATH:$PATH"
 
@@ -109,10 +102,6 @@ if [ ! -e $input ] ; then
 	exit 1
 fi
 
-if [ ! -e $TOOLBOX_PATH/bart ] ; then
-        echo "\$TOOLBOX_PATH is not set correctly!" >&2
-	exit 1
-fi
 
 
 #WORKDIR=$(mktemp -d)
