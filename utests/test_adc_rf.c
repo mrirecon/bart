@@ -36,7 +36,6 @@ static bool rf_spoiling_spoiled(void)
 
 	struct seq_state seq_state = { };
 
-	seq.enc.order = SEQ_ORDER_AVG_OUTER;
 	set_loop_dims_and_sms(&seq, 1, 2, 2, 10, 1, 1, 1);
 
 	seq.loop_dims[COEFF_DIM] = 1;

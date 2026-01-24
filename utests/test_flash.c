@@ -216,7 +216,6 @@ static bool test_flash_phase(void)
 	seq.geom.shift[0][0] = 10.E-3;
 	seq.geom.shift[0][1] = 20.E-3;
 	seq.geom.shift[0][2] = 30.E-3;
-	seq.enc.pe_mode = PEMODE_RAGA;
 
 	int E = 200;
 	struct seq_event ev[E];
@@ -245,8 +244,7 @@ static bool test_raga_spokes(void)
 	struct seq_config seq = seq_config_defaults;
 
 	const int expected_spokes = 8;
-	seq.enc.pe_mode = PEMODE_RAGA;
-	seq.enc.order = SEQ_ORDER_AVG_OUTER;
+
 	set_loop_dims_and_sms(&seq, 1, 1, 5, expected_spokes, 1, 1, 1);
 
 	const int max_E = 200;
@@ -279,10 +277,8 @@ static bool test_raga_spokes_full(void)
 {
 	struct seq_state seq_state = { 0 };;
 	struct seq_config seq = seq_config_defaults;
-	seq.enc.order = SEQ_ORDER_AVG_OUTER;
 
 	const int spk = 377;
-	seq.enc.pe_mode = PEMODE_RAGA;
 	set_loop_dims_and_sms(&seq, 1, 1, spk, spk, 1, 1, 1);
 
 	const int max_E = 200;

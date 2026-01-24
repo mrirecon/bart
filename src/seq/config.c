@@ -95,6 +95,7 @@ const struct seq_config seq_config_defaults = {
 		.pe_mode = PEMODE_RAGA,
 		.tiny = 1,
 		.aligned_flags = 0,
+		.order = SEQ_ORDER_AVG_OUTER,
 	},
 
 	.magn = {

@@ -30,7 +30,7 @@ static bool test_block_minv_init_delay(void)
 
 	struct seq_state seq_state = { 0 };
 	struct seq_config seq = seq_config_defaults;
-	seq.enc.order = SEQ_ORDER_AVG_OUTER;
+
 	seq.magn.init_delay = 1.;
 	seq.magn.ti = 100.E-3;
 	seq.magn.mag_prep = PREP_IR_NON;
