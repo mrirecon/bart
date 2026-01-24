@@ -118,10 +118,6 @@ void debug_vprintf(int level, const char* fmt, va_list ap)
 
 		char* str = getenv("BART_DEBUG_LEVEL");
 
-		// support old environment variable:
-		if (NULL == str)
-			str = getenv("DEBUG_LEVEL");
-
 		if (NULL != str) {
 
 			errno = 0;
