@@ -13,6 +13,18 @@ enum seq_event_type { SEQ_EVENT_PULSE, SEQ_EVENT_GRADIENT, SEQ_EVENT_ADC, SEQ_EV
 
 enum rf_type_t { UNDEFINED, EXCITATION, REFOCUSSING, STORE };
 
+enum adc_flags {
+
+	ADC_FLAG_ADJ		= (1u << 0),
+	ADC_FLAG_PHASEFT	= (1u << 1),
+	ADC_FLAG_PARTFT		= (1u << 2),
+	ADC_FLAG_FIRSTSLI	= (1u << 3),
+	ADC_FLAG_LASTSLI	= (1u << 4),
+	ADC_FLAG_LASTCON	= (1u << 5),
+	ADC_FLAG_LASTMEAS	= (1u << 6),
+	ADC_FLAG_MEASTIME	= (1u << 7),
+};
+
 
 struct seq_pulse {
 
@@ -34,6 +46,7 @@ struct seq_adc {
 	long dwell_ns;
 	long columns;
 	long pos[DIMS];
+	unsigned long flags;
 
 	double os;
 
