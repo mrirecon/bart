@@ -18,7 +18,6 @@
 
 
 #define BUFLEN 100
-#define CFL_SIZE	sizeof(complex float)
 
 // FIXME: for some reason we want to abort
 #define UTEST_ERR	abort()
@@ -129,11 +128,11 @@ static bool test_comm_msg2(void)
 
 	long dims[1] = { 3 };
 	long str[1] = { sizeof(complex float) };
-	long size = 3 * sizeof (complex float);
+	long size = 3 * sizeof(complex float);
 
 	struct stream_msg msg = { .type = STREAM_MSG_RAW, .ext = true, .data.extsize = size };
 
-	if (!stream_send_msg2(pipefds[1], &msg, 1, dims, str, sizeof(complex float), a))
+	if (!stream_send_msg2(pipefds[1], &msg, 1, dims, str, a, sizeof(complex float)))
 		UTEST_ERR;
 
 	struct stream_msg recv;
@@ -144,7 +143,7 @@ static bool test_comm_msg2(void)
 	if (STREAM_MSG_RAW != recv.type)
 		UTEST_ERR;
 
-	stream_get_raw(pipefds[0], 1 , dims, str, CFL_SIZE, b);
+	stream_get_raw(pipefds[0], 1 , dims, str, b, sizeof(complex float));
 
 	for (unsigned int i = 0 ; i < ARRAY_SIZE(a); i++)
 		if (a[i] != b[i])

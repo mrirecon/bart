@@ -481,6 +481,7 @@ void stream_attach(stream_t s, complex float* x, bool unmap, bool regist)
 void stream_ensure_fifo(const char* name)
 {
 	struct stat statbuf = { };
+
 	if (0 != stat(name, &statbuf))
 #ifndef NO_FIFO
 		mkfifo(name, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
@@ -596,15 +597,15 @@ stream_t stream_create_file(const char* name, int D, long dims[D], unsigned long
 
 // Synchronization via file descriptors / message passing
 
-void stream_get_raw(int pipefd, int N, long dims[N], long str[N], long el, void* ext)
+void stream_get_raw(int pipefd, int N, long dims[N], long str[N], void* extptr, long elsize)
 {
 	long pos[N?:1];
 	md_set_dims(N, pos, 0);
 
 	do {
-		char *ptr = ext + md_calc_offset(N, str, pos);
+		char *ptr = extptr + md_calc_offset(N, str, pos);
 
-		xread(pipefd, el, ptr);
+		xread(pipefd, elsize, ptr);
 
 	} while (md_next(N, dims, ~0UL, pos));
 }
@@ -626,10 +627,11 @@ bool stream_get_msg(int pipefd, struct stream_msg* msg)
  * @param n: number of dimensions of additional data
  * @param dims: dimensions of data
  * @param str: strides of data
- * @param el: element size of data
- * @param ext: ptr to store additional data.
+ * @param extptr: ptr to store additional data.
+ * @param elsize: element size of data
  */
-bool stream_send_msg2(int pipefd, const struct stream_msg* msg, int N, const long dims[N], const long str[N], long el, const void* ext)
+bool stream_send_msg2(int pipefd, const struct stream_msg* msg,
+		int N, const long dims[N], const long str[N], const void* extptr, long elsize)
 {
 	char buffer[MSG_HDR_SIZE] = { '\0' };
 
@@ -641,15 +643,15 @@ bool stream_send_msg2(int pipefd, const struct stream_msg* msg, int N, const lon
 	if (0 >= w)
 		return false;
 
-	if (NULL != ext) {
+	if (NULL != extptr) {
 
 		long pos[N?:1];
 		md_set_dims(N, pos, 0);
 
 		do {
-			const void *ptr = ext + md_calc_offset(N, str, pos);
+			const void *ptr = extptr + md_calc_offset(N, str, pos);
 
-			int w = xwrite(pipefd, el, ptr);
+			int w = xwrite(pipefd, elsize, ptr);
 
 			if (0 >= w)
 				return false;
@@ -664,7 +666,7 @@ bool stream_send_msg2(int pipefd, const struct stream_msg* msg, int N, const lon
 
 bool stream_send_msg(int pfd, const struct stream_msg* msg)
 {
-	return stream_send_msg2(pfd, msg, 1, (long[1]){ }, (long[1]){ }, 0UL, NULL);
+	return stream_send_msg2(pfd, msg, 1, (long[1]){ }, (long[1]){ }, NULL, 0UL);
 }
 
 
@@ -674,7 +676,7 @@ bool stream_send_msg(int pfd, const struct stream_msg* msg)
 
 // Calculate the memory layout on the 'wire-level' for binary streams
 static long get_transport_layout(int D, const long dims[D], long size, int index, unsigned long flags,
-		complex float* ptr, int *ND, long ndims[D], long nstr[D], long* nsize, complex float** nptr)
+		complex float* ptr, int *ND, long ndims[D], long nstr[D], complex float** nptr, long* nsize)
 {
 	long pos[D];
 	md_set_dims(D, pos, 0);
@@ -755,12 +757,12 @@ static bool stream_receive_idx_locked2(stream_t s)
 
 			long rx_size = get_transport_layout(ND, s->pcfl->dims, size,
 							offset, s->pcfl->stream_flags,
-							ptr, &ND, xdims, xstr, &size, &ptr);
+							ptr, &ND, xdims, xstr, &ptr, &size);
 
 			if (rx_size != msg.data.extsize)
 				return false;
 
-			stream_get_raw(s->pipefd, ND, xdims, xstr, size, ptr);
+			stream_get_raw(s->pipefd, ND, xdims, xstr, ptr, size);
 		}
 
 			raw_received = true;
@@ -871,8 +873,8 @@ static bool stream_send_index_locked(stream_t s, long index)
 				.data.extsize = event->size,
 			};
 
-			if (!stream_send_msg2(s->pipefd, &block_msg, 1, (long[1]){ 1 }, (long[1]){ 1 },
-						event->size, event->data)) {
+			if (!stream_send_msg2(s->pipefd, &block_msg,
+				1, (long[1]){ 1 }, (long[1]){ 1 }, event->data, event->size)) {
 
 				xfree(event);
 
@@ -900,7 +902,7 @@ static bool stream_send_index_locked(stream_t s, long index)
 		long size = sizeof(complex float);
 
 		long tx_size = get_transport_layout(ND, pcfl->dims, size, index, pcfl->stream_flags,
-						    ptr, &ND, xdims, xstr, &size, &ptr);
+						    ptr, &ND, xdims, xstr, &ptr, &size);
 
 		struct stream_msg msg = {
 
@@ -909,7 +911,7 @@ static bool stream_send_index_locked(stream_t s, long index)
 			.data.extsize = tx_size
 		};
 
-		if (!stream_send_msg2(s->pipefd, &msg, ND, xdims, xstr, size, ptr))
+		if (!stream_send_msg2(s->pipefd, &msg, ND, xdims, xstr, ptr, size))
 			return false;
 
 	} else if (s->msync) {
@@ -940,9 +942,9 @@ static bool stream_send_index_locked(stream_t s, long index)
 	return true;
 }
 
-static bool stream_sync_index(stream_t s, long index, bool all)
+static bool stream_sync_index(stream_t s, long index, bool allupto)
 {
-	if (all) {
+	if (allupto) {
 
 		for (long i = s->pcfl->index + 1; i < index; i++)
 			if (!stream_sync_index(s, i, false))
@@ -1080,8 +1082,6 @@ bool stream_sync_try(stream_t s, int N, long pos[N])
 {
 	long offset = pcfl_pos2offset(s->pcfl, N, pos);
 
-	debug_printf(DP_INFO, "offset: %ld\n", offset);
-	debug_print_dims(DP_INFO, N, pos);
 	return stream_sync_index(s, offset, true);
 }
 
