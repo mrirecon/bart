@@ -145,7 +145,7 @@ int main_tee(int argc, char* argv[argc])
 
 		do {
 
-			if (stream_in && !stream_receive_pos(stream_in, counter, DIMS, pos))
+			if (stream_in && !stream_receive_serial(stream_in, DIMS, pos, counter))
 				break;
 
 			md_move_block(DIMS, slice_dims, pos, dims, out_data, pos, dims, in_data, CFL_SIZE);

@@ -113,7 +113,7 @@ int main_trx(int argc, char* argv[argc])
 	long count = 0;
 
 	do {
-		if (strm_in && !stream_receive_pos(strm_in, count++, N, stream_pos))
+		if (strm_in && !stream_receive_serial(strm_in, N, stream_pos, count++))
 			break;
 
 		stream_sync(strm_out, N, stream_pos);

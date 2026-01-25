@@ -126,7 +126,7 @@ int main_reshape(int argc, char* argv[argc])
 		long idx_count = 0;
 
 		do {
-			if (stream_loop && !stream_receive_pos(strm_in, idx_count++, DIMS, ipos))
+			if (stream_loop && !stream_receive_serial(strm_in, DIMS, ipos, idx_count++))
 				break;
 
 			do {

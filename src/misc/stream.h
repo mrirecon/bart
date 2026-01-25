@@ -2,6 +2,8 @@
 #ifndef _STREAM_H
 #define _STREAM_H 1
 
+#include <stddef.h>
+
 #include "misc/cppwrap.h"
 
 #define MAXSTREAMS 10
@@ -52,7 +54,8 @@ extern void stream_sync_all(stream_t strm);
 
 extern void stream_fetch(stream_t s);
 
-extern _Bool stream_receive_pos(stream_t s, long count, int N, long pos[__VLA(N)]);
+extern _Bool stream_receive_next(stream_t s, int N, long pos[__VLA(N)]);
+extern _Bool stream_receive_serial(stream_t s, int N, long pos[__VLA(N)], long serial);
 
 extern _Complex float* stream_get_data(stream_t s);
 extern void stream_get_dimensions(stream_t s, int D, long dims[__VLA(D)]);
@@ -65,13 +68,13 @@ extern int stream_get_fd(stream_t s);
 
 extern _Bool stream_get_msg(int pipefd, struct stream_msg* msg);
 extern _Bool stream_send_msg(int pipefd, const struct stream_msg* msg);
-extern void stream_get_raw(int pipefd, int N, long dims[__VLA(N)], long str[__VLA(N)], void* ext, long elsize);
-extern _Bool stream_send_msg2(int pipefd, const struct stream_msg* msg, int N, const long dims[__VLA(N)], const long str[__VLA(N)], const void* extptr, long elsize);
+extern void stream_get_raw(int pipefd, int N, long dims[__VLA(N)], long str[__VLA(N)], void* ext, size_t elsize);
+extern _Bool stream_send_msg2(int pipefd, const struct stream_msg* msg, int N, const long dims[__VLA(N)], const long str[__VLA(N)], const void* extptr, size_t elsize);
 
 extern _Bool stream_read_settings(int pipefd, struct stream_settings* settings);
 extern _Bool stream_write_settings(int pipefd, struct stream_settings settings);
 
-extern _Bool stream_add_event(stream_t s, int N, long pos[__VLA(N)], int type, long size, const char* data);
+extern _Bool stream_add_event(stream_t s, int N, long pos[__VLA(N)], int type, const char* data, size_t size);
 extern struct list_s* stream_get_events(struct stream* s, int N, long pos[__VLA(N)]);
 
 #include "misc/cppwrap.h"

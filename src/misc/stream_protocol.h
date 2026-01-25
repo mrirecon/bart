@@ -31,7 +31,7 @@ struct stream_msg {
 
 	union {
 
-		long offset;
+		long index;
 		long extsize;
 		long flags;
 		long data_long;

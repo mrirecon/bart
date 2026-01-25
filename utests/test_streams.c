@@ -42,12 +42,12 @@ static bool test_stream_transcode(void)
 	struct stream_msg msg_default = { .type = STREAM_MSG_INVALID };
 
 	msg_recv = msg_default;
-	msg_ref = (struct stream_msg){ .type = STREAM_MSG_INDEX, .data.offset = 10 };
+	msg_ref = (struct stream_msg){ .type = STREAM_MSG_INDEX, .data.index = 10 };
 
 	if (!generic_test_stream_transcode(&msg_recv, msg_ref))
 		UTEST_ERR;
 
-	if ((msg_recv.data.offset != msg_ref.data.offset) || (msg_recv.type != msg_ref.type))
+	if ((msg_recv.data.index != msg_ref.data.index) || (msg_recv.type != msg_ref.type))
 		UTEST_ERR;
 
 	msg_recv = msg_default;
@@ -92,13 +92,13 @@ static bool test_stream_transceive(void)
 	if (0 != pipe(pipefds))
 		UTEST_ERR;
 
-	msg_ref = (struct stream_msg){ .type = STREAM_MSG_INDEX, .data.offset = 2 };
+	msg_ref = (struct stream_msg){ .type = STREAM_MSG_INDEX, .data.index = 2 };
 	msg_recv = msg_default;
 
 	if (!generic_test_stream_transceive(pipefds, &msg_recv,  msg_ref))
 		UTEST_ERR;
 
-	if (msg_recv.data.offset != msg_ref.data.offset || msg_recv.type != msg_ref.type)
+	if (msg_recv.data.index != msg_ref.data.index || msg_recv.type != msg_ref.type)
 		UTEST_ERR;
 
 	msg_ref = (struct stream_msg){ .type = STREAM_MSG_BINARY };
@@ -162,7 +162,7 @@ static bool test_comm_followup(void)
 	if (0 != pipe(pipefds))
 		UTEST_ERR;
 
-	struct stream_msg msg_ref = { .type = STREAM_MSG_INDEX, .data.offset = 2 };
+	struct stream_msg msg_ref = { .type = STREAM_MSG_INDEX, .data.index = 2 };
 	struct stream_msg msg_recv;
 
 	for (int i = 0; i < 2; i++)
@@ -175,7 +175,7 @@ static bool test_comm_followup(void)
 	if (!stream_get_msg(pipefds[0], &msg_recv))
 		UTEST_ERR;
 
-	if (msg_recv.data.offset != msg_ref.data.offset || msg_recv.type != msg_ref.type)
+	if (msg_recv.data.index != msg_ref.data.index || msg_recv.type != msg_ref.type)
 		UTEST_ERR;
 
 	close(pipefds[1]);
@@ -312,28 +312,30 @@ static bool test_stream_events(void)
 		UTEST_ERR;
 
 	stream_t strm_in, strm_out;
+
 	if (!(strm_out = stream_create(1, (long[1]){ 2 }, pipefds[1], false, false, 1, NULL, false)))
 		UTEST_ERR;
 
 	if (!(strm_in = stream_create(1, (long[1]){ 2 }, pipefds[0], true, false, 1, NULL, false)))
 		UTEST_ERR;
 
-	char teststr[][4] = { { "HFS" }, { "HFP" } };
+	enum { LEN = 4 };
+	char teststr[][LEN] = { "HFS", "HFP" };
 
 	// add 2 events
 	for (int i = 0; i < 2; i++)
-		if(!stream_add_event(strm_out, 1, (long[1]){ i }, 0, (long)(strlen(teststr[i])) + 1, teststr[i]))
+		if(!stream_add_event(strm_out, 1, (long[1]){ i }, 0, teststr[i], LEN))
 			UTEST_ERR;
 
 	// verify that we can't add to an input stream
-	if(stream_add_event(strm_in, 1, (long[1]){ 0 }, 0, 1, teststr[0]))
+	if (stream_add_event(strm_in, 1, (long[1]){ 0 }, 0, teststr[0], LEN))
 		UTEST_ERR;
 
 	stream_sync(strm_out, 1, (long[1]){ 0 });
 
 
 	// check that we can't add to already synced position
-	if(stream_add_event(strm_out, 1, (long[1]){ 0 }, 0, 1, teststr[0]))
+	if (stream_add_event(strm_out, 1, (long[1]){ 0 }, 0, teststr[0], LEN))
 		UTEST_ERR;
 
 

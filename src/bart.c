@@ -461,7 +461,7 @@ static bool loop_step(long start, long total, long workers, long* idx, long *idx
 		stream_get_dimensions(ref_stream, DIMS, stream_dims);
 		assert(md_check_equal_dims(DIMS, dims, stream_dims, flags));
 
-		if (!stream_receive_pos(ref_stream, *idx, DIMS, pos)) {
+		if (!stream_receive_serial(ref_stream, DIMS, pos, *idx)) {
 
 			debug_printf(DP_DEBUG3, "BART loop_step finish: stream.\n");
 			return false;
