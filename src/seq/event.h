@@ -9,7 +9,7 @@
 #define MAX_EVENTS 2048
 #define MAX_RF_SAMPLES 8192
 
-enum seq_event_type { SEQ_EVENT_PULSE, SEQ_EVENT_GRADIENT, SEQ_EVENT_ADC, SEQ_EVENT_WAIT };
+enum seq_event_type { SEQ_EVENT_PULSE, SEQ_EVENT_GRADIENT, SEQ_EVENT_ADC, SEQ_EVENT_WAIT , SEQ_EVENT_TRIGGER, SEQ_EVENT_OUTPUT };
 
 enum rf_type_t { UNDEFINED, EXCITATION, REFOCUSSING, STORE };
 
@@ -41,11 +41,6 @@ struct seq_adc {
 	double phase;
 };
 
-struct seq_wait {
-
-};
-
-
 struct seq_event {
 
 	double start;
@@ -61,7 +56,6 @@ struct seq_event {
 		struct seq_pulse pulse;
 		struct seq_gradient grad;
 		struct seq_adc adc;
-		struct seq_wait wait;
 	};
 };
 
