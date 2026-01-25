@@ -52,7 +52,7 @@ extern void stream_sync_all(stream_t strm);
 
 extern void stream_fetch(stream_t s);
 
-extern _Bool stream_receive_pos(stream_t s, long count, long N, long pos[__VLA(N)]);
+extern _Bool stream_receive_pos(stream_t s, long count, int N, long pos[__VLA(N)]);
 
 extern _Complex float* stream_get_data(stream_t s);
 extern void stream_get_dimensions(stream_t s, int D, long dims[__VLA(D)]);
@@ -65,8 +65,8 @@ extern int stream_get_fd(stream_t s);
 
 extern _Bool stream_get_msg(int pipefd, struct stream_msg* msg);
 extern _Bool stream_send_msg(int pipefd, const struct stream_msg* msg);
-extern void stream_get_raw(int pipefd, long n, long dims[__VLA(n)], long str[__VLA(n)], long el, void* ext);
-extern _Bool stream_send_msg2(int pipefd, const struct stream_msg* msg, long n, const long dims[__VLA(n)], const long str[__VLA(n)], long el, const void* ext);
+extern void stream_get_raw(int pipefd, int N, long dims[__VLA(N)], long str[__VLA(N)], long el, void* ext);
+extern _Bool stream_send_msg2(int pipefd, const struct stream_msg* msg, int N, const long dims[__VLA(N)], const long str[__VLA(N)], long el, const void* ext);
 
 extern _Bool stream_read_settings(int pipefd, struct stream_settings* settings);
 extern _Bool stream_write_settings(int pipefd, struct stream_settings settings);

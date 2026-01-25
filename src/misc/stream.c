@@ -596,17 +596,17 @@ stream_t stream_create_file(const char* name, int D, long dims[D], unsigned long
 
 // Synchronization via file descriptors / message passing
 
-void stream_get_raw(int pipefd, long n, long dims[n], long str[n], long el, void* ext)
+void stream_get_raw(int pipefd, int N, long dims[N], long str[N], long el, void* ext)
 {
-	long pos[n?:1];
-	md_set_dims(n, pos, 0);
+	long pos[N?:1];
+	md_set_dims(N, pos, 0);
 
 	do {
-		char *ptr = ext + md_calc_offset(n, str, pos);
+		char *ptr = ext + md_calc_offset(N, str, pos);
 
 		xread(pipefd, el, ptr);
 
-	} while (md_next(n, dims, ~0UL, pos));
+	} while (md_next(N, dims, ~0UL, pos));
 }
 
 bool stream_get_msg(int pipefd, struct stream_msg* msg)
@@ -629,7 +629,7 @@ bool stream_get_msg(int pipefd, struct stream_msg* msg)
  * @param el: element size of data
  * @param ext: ptr to store additional data.
  */
-bool stream_send_msg2(int pipefd, const struct stream_msg* msg, long n, const long dims[n], const long str[n], long el, const void* ext)
+bool stream_send_msg2(int pipefd, const struct stream_msg* msg, int N, const long dims[N], const long str[N], long el, const void* ext)
 {
 	char buffer[MSG_HDR_SIZE] = { '\0' };
 
@@ -643,18 +643,18 @@ bool stream_send_msg2(int pipefd, const struct stream_msg* msg, long n, const lo
 
 	if (NULL != ext) {
 
-		long pos[n?:1];
-		md_set_dims(n, pos, 0);
+		long pos[N?:1];
+		md_set_dims(N, pos, 0);
 
 		do {
-			const void *ptr = ext + md_calc_offset(n, str, pos);
+			const void *ptr = ext + md_calc_offset(N, str, pos);
 
 			int w = xwrite(pipefd, el, ptr);
 
 			if (0 >= w)
 				return false;
 
-		} while (md_next(n, dims, ~0UL, pos));
+		} while (md_next(N, dims, ~0UL, pos));
 	}
 
 	return true;
@@ -664,7 +664,7 @@ bool stream_send_msg2(int pipefd, const struct stream_msg* msg, long n, const lo
 
 bool stream_send_msg(int pfd, const struct stream_msg* msg)
 {
-	return stream_send_msg2(pfd, msg, 1, (long[1]){ }, (long[1]){ }, 0, NULL);
+	return stream_send_msg2(pfd, msg, 1, (long[1]){ }, (long[1]){ }, 0UL, NULL);
 }
 
 
@@ -875,6 +875,7 @@ static bool stream_send_index_locked(stream_t s, long index)
 						event->size, event->data)) {
 
 				xfree(event);
+
 				stream_event_list_free(index_events);
 				return false;
 			}
@@ -986,12 +987,13 @@ static bool stream_sync_index(stream_t s, long index, bool all)
 	return synced;
 }
 
-bool stream_receive_pos(stream_t s, long count, long N, long pos[N])
+bool stream_receive_pos(stream_t s, long count, int N, long pos[N])
 {
 	assert(s->input);
 	assert(N == s->pcfl->D);
+	assert(count <= s->pcfl->total);
 
-	if (count >= s->pcfl->total)
+	if (count == s->pcfl->total)
 		return false;
 
 	bart_lock(s->lock);
@@ -1076,7 +1078,11 @@ void stream_sync_slice(stream_t s, int N, const long dims[N], unsigned long flag
  */
 bool stream_sync_try(stream_t s, int N, long pos[N])
 {
-	return stream_sync_index(s, pcfl_pos2offset(s->pcfl, N, pos), true);
+	long offset = pcfl_pos2offset(s->pcfl, N, pos);
+
+	debug_printf(DP_INFO, "offset: %ld\n", offset);
+	debug_print_dims(DP_INFO, N, pos);
+	return stream_sync_index(s, offset, true);
 }
 
 void stream_sync(stream_t s, int N, long pos[N])
@@ -1302,11 +1308,9 @@ static void stream_event_list_free(list_t events)
 
 static bool stream_add_event_intern(stream_t s, struct stream_event* event)
 {
-	// check if index is in range
-	if ((event->index >= s->pcfl->total) || (0 > event->index))
+	if ((event->index < 0) || (s->pcfl->total <= event->index))
 		return false;
 
-	// check if this has already been synced
 	if (s->pcfl->synced[event->index])
 		return false;
 
