@@ -937,15 +937,9 @@ static bool stream_send_index_locked(stream_t s, long index)
 	return true;
 }
 
-static bool stream_sync_index(stream_t s, long index, bool allupto)
+
+static bool stream_sync_index(stream_t s, long index)
 {
-	if (allupto) {
-
-		for (long i = s->pcfl->index + 1; i < index; i++)
-			if (!stream_sync_index(s, i, false))
-				return false;
-	}
-
 	bart_lock(s->lock);
 
 	struct pcfl* pcfl = s->pcfl;
@@ -1056,7 +1050,7 @@ bool stream_sync_slice_try(stream_t s, int N, const long dims[N], unsigned long 
 	assert(s->input || 0 == lost_flags);
 
 	do {
-		if (!stream_sync_index(s, pcfl_pos2index(pcfl, N, pos), false))
+		if (!stream_sync_try(s, N, pos))
 			return false;
 
 	} while (md_next(pcfl->D, pcfl->dims, loop_flags, pos));
@@ -1077,7 +1071,7 @@ bool stream_sync_try(stream_t s, int N, long pos[N])
 {
 	long index = pcfl_pos2index(s->pcfl, N, pos);
 
-	return stream_sync_index(s, index, true);
+	return stream_sync_index(s, index);
 }
 
 void stream_sync(stream_t s, int N, long pos[N])
