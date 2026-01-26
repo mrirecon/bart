@@ -28,6 +28,8 @@
 #include "misc/mri2.h"
 #include "misc/stream.h"
 
+#include "noncart/nufft.h"
+
 #include "linops/linop.h"
 #include "linops/sum.h"
 #include "linops/someops.h"
@@ -239,6 +241,7 @@ int main_sample(int argc, char* argv[argc])
 		OPT_LONG('S', &em_conf.batchsize, "S", "number of samples drawn"),
 		OPTL_LONG(0, "save-mod", &save_mod, "S", "save samples every S steps"),
 		OPTL_SUBOPT(0, "posterior", "", "sample posterior", ARRAY_SIZE(posterior_opts), posterior_opts),
+		OPTL_SUBOPT(0, "nufft-conf", "...", "configure nufft", N_nufft_conf_opts, nufft_conf_opts),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -298,12 +301,14 @@ int main_sample(int argc, char* argv[argc])
 	long pat_dims[DIMS];
 	complex float* pat = NULL;
 
+	long map_dims[DIMS];
+	complex float* sens = NULL;
+
 	if (posterior) {
 
 		ksp = load_cfl(kspace_file, DIMS, ksp_dims);
 
-		long map_dims[DIMS];
-		complex float* sens = load_cfl(sens_file, DIMS, map_dims);
+		sens = load_cfl(sens_file, DIMS, map_dims);
 		md_select_dims(DIMS, ~COIL_FLAG, img_dims, map_dims);
 
 		long trj_dims[DIMS];
@@ -325,13 +330,16 @@ int main_sample(int argc, char* argv[argc])
 			pat = load_cfl(pattern_file, DIMS, pat_dims);
 		}
 
-		ifftmod(DIMS, ksp_dims, FFT_FLAGS, ksp, ksp);
+		if (NULL == traj)
+			ifftmod(DIMS, ksp_dims, FFT_FLAGS, ksp, ksp);
 
 		struct pics_config conf = { };
+		conf.gpu = bart_use_gpu;
+		conf.nuconf = &nufft_conf_options;
+
 		linop = pics_model(&conf, img_dims, ksp_dims, trj_dims, traj, NULL, NULL,
 				   map_dims, sens, pat_dims, pat, NULL, NULL, NULL);
 
-		unmap_cfl(DIMS, map_dims, sens);
 		unmap_cfl(DIMS, trj_dims, traj);
 
 		if (-1 == em_conf.precond_max_iter)
@@ -565,6 +573,7 @@ int main_sample(int argc, char* argv[argc])
 
 	unmap_cfl(DIMS, pat_dims, pat);
 	unmap_cfl(DIMS, ksp_dims, ksp);
+	unmap_cfl(DIMS, map_dims, sens);
 
 	unmap_cfl(DIMS, out_dims, out);
 	unmap_cfl(DIMS, out_dims, expectation);

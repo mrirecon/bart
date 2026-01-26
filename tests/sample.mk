@@ -307,12 +307,70 @@ tests/test-sample-pi: zeros ones sample scale fft nrmse $(TESTS_OUT)/shepplogan_
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
+tests/test-sample-noncart: traj phantom ones nufft nrmse scale sample zeros
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/traj -x64 -o2. -y64 traj.ra						;\
+	$(TOOLDIR)/phantom -k -t traj.ra ksp.ra						;\
+	$(TOOLDIR)/scale 100000 ksp.ra ksp.ra						;\
+	$(TOOLDIR)/ones 3 64 64 1 o.ra							;\
+	$(TOOLDIR)/zeros 3 64 64 1 mean.ra						;\
+	$(TOOLDIR)/scale 10000 o.ra var.ra						;\
+	$(TOOLDIR)/sample -N10 -K3 -S1 --gmm mean=mean.ra,var=var.ra --posterior t=traj.ra,k=ksp.ra,s=o.ra,precond=0 reco.ra	;\
+	$(TOOLDIR)/nufft traj.ra reco.ra k2.ra						;\
+	$(TOOLDIR)/nrmse -t 0.05 ksp.ra k2.ra						;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-sample-cart: noise phantom ones fft nrmse scale sample zeros
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/phantom -k -x64 ksp.ra						;\
+	$(TOOLDIR)/scale 100000 ksp.ra ksp.ra						;\
+	$(TOOLDIR)/noise ksp.ra ksp.ra							;\
+	$(TOOLDIR)/ones 3 64 64 1 o.ra							;\
+	$(TOOLDIR)/zeros 3 64 64 1 mean.ra						;\
+	$(TOOLDIR)/scale 10000 o.ra var.ra						;\
+	$(TOOLDIR)/sample -N10 -K3 -S1 --gmm mean=mean.ra,var=var.ra --posterior k=ksp.ra,s=o.ra,precond=0 reco.ra	;\
+	$(TOOLDIR)/fft -u 7 reco.ra k2.ra						;\
+	$(TOOLDIR)/nrmse -t 0.01 ksp.ra k2.ra						;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-sample-noncart-prec: traj phantom ones nufft nrmse scale sample zeros
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/traj -x64 -o2. -y64 traj.ra						;\
+	$(TOOLDIR)/phantom -k -t traj.ra ksp.ra						;\
+	$(TOOLDIR)/scale 100000 ksp.ra ksp.ra						;\
+	$(TOOLDIR)/ones 3 64 64 1 o.ra							;\
+	$(TOOLDIR)/zeros 3 64 64 1 mean.ra						;\
+	$(TOOLDIR)/scale 10000 o.ra var.ra						;\
+	$(TOOLDIR)/sample -N10 -K3 -S1 --gmm mean=mean.ra,var=var.ra --posterior t=traj.ra,k=ksp.ra,s=o.ra,precond=5 reco.ra	;\
+	$(TOOLDIR)/nufft traj.ra reco.ra k2.ra						;\
+	$(TOOLDIR)/nrmse -t 0.05 ksp.ra k2.ra						;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+tests/test-sample-cart-prec: noise phantom ones fft nrmse scale sample zeros
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
+	$(TOOLDIR)/phantom -k -x64 ksp.ra						;\
+	$(TOOLDIR)/scale 100000 ksp.ra ksp.ra						;\
+	$(TOOLDIR)/noise ksp.ra ksp.ra							;\
+	$(TOOLDIR)/ones 3 64 64 1 o.ra							;\
+	$(TOOLDIR)/zeros 3 64 64 1 mean.ra						;\
+	$(TOOLDIR)/scale 10000 o.ra var.ra						;\
+	$(TOOLDIR)/sample -N10 -K3 -S1 --gmm mean=mean.ra,var=var.ra --posterior k=ksp.ra,s=o.ra,precond=5 reco.ra	;\
+	$(TOOLDIR)/fft -u 7 reco.ra k2.ra						;\
+	$(TOOLDIR)/nrmse -t 0.01 ksp.ra k2.ra						;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
 
 TESTS += tests/test-sample-gmm1d_mean tests/test-sample-gmm1d_weigthing
 TESTS += tests/test-sample-gauss1d_mean_ancestral tests/test-sample-gauss1d_mean_pc
 TESTS += tests/test-sample-gmm2d tests/test-sample-gmm-2D-weighting-prior
 TESTS += tests/test-sample-gmm-2D-weighting-posterior1
 TESTS += tests/test-sample-gmm-2D-weighting-posterior2
+TESTS += tests/test-sample-noncart tests/test-sample-cart tests/test-sample-noncart-prec tests/test-sample-cart-prec
 
 TESTS_GPU += tests/test-sample-gauss1d_mean_gpu
 TESTS_GPU += tests/test-sample-gauss1d_var_gpu tests/test-sample-gmm_img_gpu
