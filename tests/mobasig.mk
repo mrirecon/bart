@@ -95,6 +95,7 @@ tests/test-mobasig-wfr2s: phantom signal fmac index scale extract mobafit saxpy 
 TESTS += tests/test-mobasig-ir
 TESTS += tests/test-mobasig-irll
 TESTS += tests/test-mobasig-irll-fit
-TESTS += tests/test-mobasig-mpl-fit
 TESTS += tests/test-mobasig-r2
 TESTS += tests/test-mobasig-wfr2s
+
+TESTS_SLOW += tests/test-mobasig-mpl-fit
