@@ -98,7 +98,7 @@ int main_mandelbrot(int argc, char* argv[argc])
 		}
 
 		if (strm_o)
-			stream_sync(strm_o, 3, (long[3]){ [2] = i });
+			stream_sync_slice(strm_o, 3, dims, MD_BIT(2), (long[3]){ [2] = i });
 	}
 
 	md_free(t);

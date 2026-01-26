@@ -84,8 +84,6 @@ int main_ccapply(int argc, char* argv[argc])
 	stream_t strm_in = NULL;
 	stream_t strm_cc = NULL;
 
-	const unsigned long rtflags = 1024;
-
 
 	if (-1 != aligned) {
 
@@ -137,10 +135,10 @@ int main_ccapply(int argc, char* argv[argc])
 
 	if (-1 != aligned) {
 
-		assert((NULL == strm_in) || (stream_get_flags(strm_in) == rtflags));
-		assert((NULL == strm_out) || (stream_get_flags(strm_out) == rtflags));
+		assert((NULL == strm_in) || (stream_get_flags(strm_in) == TIME_FLAG));
+		assert((NULL == strm_out) || (stream_get_flags(strm_out) == TIME_FLAG));
 
-		out_data_t = create_async_cfl(out_file, rtflags, DIMS, out_dims_t);
+		out_data_t = create_async_cfl(out_file, TIME_FLAG, DIMS, out_dims_t);
 		strm_out = stream_lookup(out_data_t);
 
 	} else {
@@ -196,7 +194,7 @@ int main_ccapply(int argc, char* argv[argc])
 		rt_tmp = md_alloc(DIMS, cc2_dims, CFL_SIZE);
 
 		if (strm_cc)
-			stream_sync(strm_cc, DIMS, pos);
+			stream_sync_slice(strm_cc, DIMS, cc_dims_t, TIME_FLAG, pos);
 
 		md_copy_block(DIMS, (long [DIMS]){ }, cc2_dims, rt_tmp, cc_dims, cc_data_t, CFL_SIZE);
 	}
@@ -227,9 +225,9 @@ rt_loop:
 	if (-1 != aligned) {
 
 		if (strm_cc)
-			stream_sync(strm_cc, DIMS, pos);
+			stream_sync_slice(strm_cc, DIMS, cc_dims_t, TIME_FLAG, pos);
 		if (strm_in)
-			stream_sync(strm_in, DIMS, pos);
+			stream_sync_slice(strm_in, DIMS, in_dims_t, TIME_FLAG, pos);
 
 		complex float* cc_data_unaligned = &MD_ACCESS(DIMS, cc_str_t, pos, cc_data_t);
 
@@ -252,7 +250,7 @@ rt_loop:
 	if (-1 != aligned) {
 
 		if (strm_out)
-			stream_sync(strm_out, DIMS, pos);
+			stream_sync_slice(strm_out, DIMS, out_dims_t, TIME_FLAG, pos);
 
 		if (md_next(DIMS, in_dims_t, TIME_FLAG, pos))
 			goto rt_loop;

@@ -44,9 +44,6 @@ extern stream_t stream_load_file(const char* name, int D, long dims[__VLA(D)], c
 extern stream_t stream_load_fd(int fd, const char* name, int D, long dims[D], char **datname, char** cmdline);
 extern stream_t stream_create_file(const char* name, int D, long dims[__VLA(D)], unsigned long stream_flags, char* dataname, _Bool call_msync);
 
-extern void stream_sync(stream_t s, int N, long pos[__VLA(N)]);
-extern _Bool stream_sync_try(stream_t s, int N, long pos[__VLA(N)]);
-
 extern void stream_sync_slice(stream_t s, int N, const long dims[__VLA(N)], unsigned long flags, const long pos[__VLA(N)]);
 extern _Bool stream_sync_slice_try(stream_t s, int N, const long dims[__VLA(N)], unsigned long flags, const long pos[__VLA(N)]);
 

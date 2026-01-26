@@ -227,21 +227,23 @@ static bool test_stream_sync(void)
 
 	stream_t strm_in, strm_out;
 
-	if (!(strm_out = stream_create(1, (long[1]){ 1 }, pipefds[1], false, false, 1, NULL, false)))
+	long dims[1] = { 1 };
+
+	if (!(strm_out = stream_create(1, dims, pipefds[1], false, false, 1, NULL, false)))
 		UTEST_ERR;
 
-	if (!(strm_in = stream_create(1, (long[1]){ 1 }, pipefds[0], true, false, 1, NULL, false)))
+	if (!(strm_in = stream_create(1, dims, pipefds[0], true, false, 1, NULL, false)))
 		UTEST_ERR;
 
 	if (stream_is_synced(strm_in, 0) || stream_is_synced(strm_out, 0))
 		UTEST_ERR;
 
-	stream_sync(strm_out, 1, (long[1]){ 0 });
+	stream_sync_slice(strm_out, 1, dims, 1, (long[1]){ 0 });
 
 	if (!stream_is_synced(strm_out, 0))
 		UTEST_ERR;
 
-	stream_sync(strm_in, 1, (long[1]){ 0 });
+	stream_sync_slice(strm_in, 1, dims, 1, (long[1]){ 0 });
 
 	if (!stream_is_synced(strm_in, 0) || !stream_is_synced(strm_out, 0))
 		UTEST_ERR;
@@ -313,10 +315,12 @@ static bool test_stream_events(void)
 
 	stream_t strm_in, strm_out;
 
-	if (!(strm_out = stream_create(1, (long[1]){ 2 }, pipefds[1], false, false, 1, NULL, false)))
+	long dims[1] = { 2 };
+
+	if (!(strm_out = stream_create(1, dims, pipefds[1], false, false, 1, NULL, false)))
 		UTEST_ERR;
 
-	if (!(strm_in = stream_create(1, (long[1]){ 2 }, pipefds[0], true, false, 1, NULL, false)))
+	if (!(strm_in = stream_create(1, dims, pipefds[0], true, false, 1, NULL, false)))
 		UTEST_ERR;
 
 	enum { LEN = 4 };
@@ -331,7 +335,7 @@ static bool test_stream_events(void)
 	if (stream_add_event(strm_in, 1, (long[1]){ 0 }, 0, teststr[0], LEN))
 		UTEST_ERR;
 
-	stream_sync(strm_out, 1, (long[1]){ 0 });
+	stream_sync_slice(strm_out, 1, dims, 1, (long[1]){ 0 });
 
 
 	// check that we can't add to already synced position
@@ -339,11 +343,11 @@ static bool test_stream_events(void)
 		UTEST_ERR;
 
 
-	stream_sync(strm_out, 1, (long[1]){ 1 });
+	stream_sync_slice(strm_out, 1, dims, 1, (long[1]){ 1 });
 
-	stream_sync(strm_in, 1, (long[1]){ 0 });
+	stream_sync_slice(strm_in, 1, dims, 1, (long[1]){ 0 });
 
-	stream_sync(strm_in, 1, (long[1]){ 1 });
+	stream_sync_slice(strm_in, 1, dims, 1, (long[1]){ 1 });
 
 
 	list_t rx_event_lists[] = {

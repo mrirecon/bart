@@ -215,11 +215,11 @@ int main_join(int argc, char* argv[argc])
 				md_select_dims(DIMS, ~MD_BIT(dim), slc_dims, out_dims);
 
 				if (NULL != istrm)
-					stream_sync(istrm, DIMS, ipos);
+					stream_sync_slice(istrm, DIMS, in_dims[i], MD_BIT(dim), ipos);
 
 				md_move_block(N, slc_dims, opos, out_dims, out_data, ipos, in_dims[i], in_data[i], CFL_SIZE);
 
-				stream_sync(ostrm, DIMS, opos);
+				stream_sync_slice(ostrm, DIMS, out_dims, MD_BIT(dim), opos);
 				opos[dim] ++;
 			}
 

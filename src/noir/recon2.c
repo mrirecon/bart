@@ -686,7 +686,7 @@ void noir2_recon_noncart(
 
 	do {
 		if (NULL != strm_ksp)
-			stream_sync(strm_ksp, N, pos);
+			stream_sync_slice(strm_ksp, N, ksp_dims, loop_flags, pos);
 
 		md_slice(N, loop_flags, pos, img_dims, l_img, img, CFL_SIZE);
 		md_slice(N, loop_flags, pos, kco_dims, l_ksens, ksens, CFL_SIZE);
@@ -731,7 +731,7 @@ void noir2_recon_noncart(
 		}
 
 		if (NULL != strm_trj)
-			stream_sync(strm_trj, N, pos_trj);
+			stream_sync_slice(strm_trj, N, trj_dims, loop_flags, pos_trj);
 
 		md_slice(N, loop_flags, pos_trj, trj_dims, l_trj, traj, CFL_SIZE);
 
@@ -749,7 +749,7 @@ void noir2_recon_noncart(
 		md_copy_block(N, pos, img_dims, img, limg_dims, l_img, CFL_SIZE);
 
 		if (NULL != strm_img)
-			stream_sync(strm_img, N, pos);
+			stream_sync_slice(strm_img, N, img_dims, loop_flags, pos);
 
 	} while (md_next(N, ksp_dims, loop_flags, pos));
 

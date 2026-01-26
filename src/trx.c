@@ -116,7 +116,7 @@ int main_trx(int argc, char* argv[argc])
 		if (strm_in && !stream_receive_serial(strm_in, N, stream_pos, count++))
 			break;
 
-		stream_sync(strm_out, N, stream_pos);
+		stream_sync_slice(strm_out, N, dims, stream_flags, stream_pos);
 
 	} while (strm_in || md_next(N, dims, stream_flags, stream_pos));
 

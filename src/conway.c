@@ -95,7 +95,7 @@ int main_conway(int argc, char* argv[argc])
 		md_copy_block(3, (long[3]){ [2] = i }, odims, out, wdims, world, CFL_SIZE);
 
 		if (sync)
-			stream_sync(out_stream, 3, (long[3]){ [2] = i });
+			stream_sync_slice(out_stream, 3, odims, MD_BIT(2), (long[3]){ [2] = i });
 	}
 
 	conv_free(plan);

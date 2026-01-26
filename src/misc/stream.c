@@ -1023,6 +1023,9 @@ bool stream_receive_serial(stream_t s, int N, long pos[N], long serial)
 /* Sync an arbitrary slice in a multidimensional array:
  * - flags & pos together define a set of fixed indices for an n-dimensional array.
  * - this syncs all stream slices (defined by the flags set in stream) that intersect the given slice.
+ *
+ * To allow disappearing in/outputs, use stream_sync_try AND catch SIGPIPE! see e.g. src/tee.c.
+ * By default, a disappearing in-/ or output will end the program.
  **/
 bool stream_sync_slice_try(stream_t s, int N, const long dims[N], unsigned long flags, const long _pos[N])
 {
@@ -1050,7 +1053,7 @@ bool stream_sync_slice_try(stream_t s, int N, const long dims[N], unsigned long 
 	assert(s->input || 0 == lost_flags);
 
 	do {
-		if (!stream_sync_try(s, N, pos))
+		if (!stream_sync_index(s, pcfl_pos2index(pcfl, N, pos)))
 			return false;
 
 	} while (md_next(pcfl->D, pcfl->dims, loop_flags, pos));
@@ -1062,22 +1065,6 @@ void stream_sync_slice(stream_t s, int N, const long dims[N], unsigned long flag
 {
 	if (!stream_sync_slice_try(s, N, dims, flags, pos))
 		error("Stream_sync_slice\n");
-}
-
-/* To allow disappearing in/outputs, use stream_sync_try AND catch SIGPIPE! see e.g. src/tee.c.
- * By default, a disappearing in-/ or output will end the program.
- */
-bool stream_sync_try(stream_t s, int N, long pos[N])
-{
-	long index = pcfl_pos2index(s->pcfl, N, pos);
-
-	return stream_sync_index(s, index);
-}
-
-void stream_sync(stream_t s, int N, long pos[N])
-{
-	if (!stream_sync_try(s, N, pos))
-		error("Stream_sync\n");
 }
 
 void stream_sync_all(stream_t strm)
