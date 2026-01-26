@@ -75,42 +75,42 @@ tests/test-stream-loop-ref: bart
 	rm *.ra	; cd .. ; rmdir --ignore-fail-on-non-empty $(TESTS_TMP)
 	touch $@
 
-tests/test-stream-binary: phantom copy nrmse trx
+tests/test-stream-binary: phantom copy nrmse tee
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)									;\
 	$(TOOLDIR)/phantom -s3 phantom.ra 										;\
 	$(TOOLDIR)/copy --stream 9 -- phantom.ra - | \
-	$(TOOLDIR)/trx | $(TOOLDIR)/trx | \
+	$(TOOLDIR)/tee -b | $(TOOLDIR)/tee | \
 	$(TOOLDIR)/nrmse -t 0 -- - phantom.ra 										;\
 	rm *.ra	; cd .. ; rmdir --ignore-fail-on-non-empty $(TESTS_TMP)
 	touch $@
 
-tests/test-stream-binary2: phantom copy nrmse trx
+tests/test-stream-binary2: phantom copy nrmse tee
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	;\
 	$(TOOLDIR)/phantom -s3 phantom.ra 		;\
-	$(TOOLDIR)/trx -i phantom.ra > phantom.bstrm;\
-	$(TOOLDIR)/trx < phantom.bstrm | \
+	$(TOOLDIR)/tee -b -i phantom.ra > phantom.bstrm;\
+	$(TOOLDIR)/tee < phantom.bstrm | \
 	$(TOOLDIR)/nrmse -t 0 -- - phantom.ra ;\
 	rm *.ra	; rm phantom.bstrm; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-tests/test-stream-binary3: phantom copy nrmse trx
+tests/test-stream-binary3: phantom copy nrmse tee
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)		;\
 	$(TOOLDIR)/phantom -s3 phantom.ra 			;\
-	$(TOOLDIR)/trx -i phantom.ra > phantom.bstrm		;\
+	$(TOOLDIR)/tee -b -i phantom.ra > phantom.bstrm		;\
 	$(TOOLDIR)/nrmse -t 0 -- - phantom.ra < phantom.bstrm 	;\
 	rm *.ra	; rm phantom.bstrm; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-tests/test-stream-binary4: phantom copy nrmse trx
+tests/test-stream-binary4: phantom copy nrmse tee
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)	;\
 	$(TOOLDIR)/phantom -s3 phantom.ra 		;\
 	$(TOOLDIR)/copy --stream 9 -- phantom.ra - | \
-	$(TOOLDIR)/trx | \
+	$(TOOLDIR)/tee -b | \
 	$(TOOLDIR)/nrmse -t 0 -- phantom.ra - 		;\
 	rm *.ra	; cd .. ; rmdir --ignore-fail-on-non-empty $(TESTS_TMP)
 	touch $@
 
-tests/test-stream-binary5: bart copy nrmse trx
+tests/test-stream-binary5: bart copy nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
 	$(ROOTDIR)/bart --stream-bin-out phantom - > phantom.bstrm	;\
 	$(TOOLDIR)/copy - phantom.ra < phantom.bstrm			;\

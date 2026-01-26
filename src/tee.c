@@ -61,6 +61,7 @@ int main_tee(int argc, char* argv[argc])
 		OPT_SET('t', &timer, "print time between inputs"),
 		OPT_SET('n', &no_stdout, "No stdout"),
 		OPT_CLEAR('a', &keep_going, "Abort program on disappearing inputs/outputs."),
+		OPT_SET('b', &stream_create_binary_outputs, "Create binary output stream"),
 	};
 
 	double time = timestamp();
