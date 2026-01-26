@@ -977,7 +977,7 @@ static void calc_off_res(struct sim_data* data, int N, float off_res[N])
 }
 
 
-static void reset_xp(int N, int P, float xp[N][P], float m0[P])
+static void reset_xp(int N, int P, float xp[P][N], float m0[P])
 {
 	for (int p = 0; p < P; p++)
 		for (int n = 0; n < N; n++)
