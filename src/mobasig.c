@@ -11,7 +11,7 @@
 
 #include "nlops/nlop.h"
 
-#include "moba/model_create.h"
+#include "moba/model_moba.h"
 #include "moba/T1fun.h"
 #include "moba/lorentzian.h"
 

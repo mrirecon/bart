@@ -373,7 +373,7 @@ MODULES_pulse = -lseq
 MODULES_bloch = -lseq -lstl -lsimu
 MODULES_trajcor = -lcalib -lnoncart -llinops
 MODULES_seq = -lseq -lnoncart -lstl -lsimu
-MODULES_mobasig = -lmoba -lnlops -llinops -lnoir -lsimu
+MODULES_mobasig = -lmoba -lnlops -llinops -lnoir -lsimu -lseq
 
 GCCVERSION12 := $(shell expr `$(CC) -dumpversion | cut -f1 -d.` \>= 12)
 GCCVERSION14 := $(shell expr `$(CC) -dumpversion | cut -f1 -d.` \>= 14)

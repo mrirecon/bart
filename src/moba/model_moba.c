@@ -28,6 +28,11 @@
 #include "moba/T1phyfun.h"
 #include "moba/ir_meco.h"
 #include "moba/moba.h"
+#include "moba/T1fun.h"
+#include "moba/lorentzian.h"
+#include "moba/exp.h"
+
+#include "simu/signals.h"
 
 #include "model_moba.h"
 
@@ -128,6 +133,80 @@ struct mobamod moba_create(const long dims[DIMS], const complex float* mask, con
 	nlop_free(nlinv.nlop);
 
 	return ret;
+}
+
+const struct nlop_s* moba_get_nlop(struct mobafit_model_config* config, const long out_dims[DIMS], const long param_dims[DIMS], const long enc_dims[DIMS], complex float* enc)
+{
+	const struct nlop_s* nlop = NULL;
+	int n_params = param_dims[COEFF_DIM];
+
+	assert(md_check_compat(DIMS, ~0UL, param_dims, out_dims));
+
+	long dims[DIMS];
+	md_copy_dims(DIMS, dims, out_dims);
+	dims[COEFF_DIM] = enc_dims[COEFF_DIM];
+
+	if (config->seq == TSE)
+		md_zsmul(DIMS, enc_dims, enc, enc, -1.);
+
+	switch (config->seq) {
+
+	case IR:
+
+		if (n_params  != 3)
+			error("Number of parameters (%d) does not match IR model (M0, R1, c)\n", n_params);
+
+		nlop = nlop_ir_create(DIMS, out_dims, enc);
+		break;
+
+	case IR_LL:
+
+		if (n_params  != 3)
+			error("Number of parameters (%d) does not match IR-LL model (Mss, M0, R1s)\n", n_params);
+
+		long map_dims[DIMS];
+		md_select_dims(DIMS, ~(TE_FLAG | COEFF_FLAG), map_dims, param_dims);
+
+		nlop = nlop_T1_create(DIMS, map_dims, out_dims, param_dims, enc_dims, enc, 1, 1);
+		break;
+
+	case MGRE:
+
+		static float scale_fB0[2] = { 0., 1. };
+
+		nlop = nlop_meco_create(DIMS, out_dims, param_dims, enc, config->mgre_model, false, FAT_SPEC_1, scale_fB0);
+		break;
+
+	case TSE:
+
+		if (n_params  != 2)
+			error("Number of parameters (%d) does not match TSE model\n", n_params);
+
+		nlop = nlop_exp_create(DIMS, dims, enc);
+		break;
+
+	case DIFF:
+
+
+		if (n_params  != enc_dims[COEFF_DIM] + 1)
+			error("Number of parameters (%d) does not match diffusion model \n", n_params);
+
+		nlop = nlop_exp_create(DIMS, dims, enc);
+		break;
+
+	case MPL:
+		// M0 exists once, every pool has 3 parameters, we need at least one pool >3 parameters
+		if ((n_params < 4) || ((n_params - 1) % 3 != 0))
+			error("Number of parameters (%d) does not match MPL model\n", n_params);
+
+		nlop = nlop_lorentzian_multi_pool_create(DIMS, out_dims, param_dims, enc_dims, enc);
+		break;
+
+	default:
+		assert(0);
+	}
+
+	return nlop;
 }
 
 

@@ -45,7 +45,7 @@
 #include "moba/moba.h"
 #include "moba/lorentzian.h"
 
-#include "moba/model_create.h"
+#include "moba/model_moba.h"
 
 #include "simu/signals.h"
 
