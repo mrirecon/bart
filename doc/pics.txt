@@ -1,18 +1,26 @@
+The PICS tool performs iterative parallel imaging reconstruction based on a
+least-squares data fidelity similar to Pruessmann et al. (2021) in a
+variational formulation which optionally includes quadratic or advanced
+non-quadratic regularization terms similar to Block et al. (2007).
 
-Returns the coil-combined images in image domain.  For Cartesian imaging, 3D
-k-space (kz along z dim) must be provided.  By default, pics assumes a 3D
-reconstruction.  For a slice-by-slice 2D reconstruction, pics can be called
-in a loop.  If no scaling factor is provided, pics will scale the data prior
-to reconstruction.  The scaling factor is calculated using the center k-space
-region.  This scaling will be undone before returning if the -S flag is provided
-which may be important for computing quantitative parameters.  Additional
-dimensions such as coils, maps, and time must follow the dimension order
-specified in mri.h, otherwise regularizers may be applied on the wrong
-dimensions and the forward sense operator may be inaccurate.  The sampling
-mask is determined automatically from the provided k-space. For the sampling
-mask to be calculated correctly, missing samples must be exactly zero.
-Small values in k-space, perhaps from numerical errors, will cause the
-sampling mask (reflected in logged acceleration factor), and the data
-consistency step to be incorrect.
+It returns the coil-combined images in image domain.  The forward model is
+scaled so that for fully sampled data and with coil sensitivities that are set
+to constant one and with no regularization, a pics reconstruction corresponds
+to an inverse unitary DFT.  An l1-/l2-regularization with a regularization
+parameter of one is equally scaled to the data fidelty term.
 
+For Cartesian imaging, 3D k-space (kz along z dim) must be provided.  By
+default, pics assumes a 3D reconstruction (or 2D if the dimension has size one).
+For a slice-by-slice 2D reconstruction, pics can be called in a loop.  If no
+scaling factor is provided, pics will scale the data prior to reconstruction.
+The scaling factor is calculated using the center k-space region.  This scaling
+will be undone before returning if the -S flag is provided which may be
+important for computing quantitative parameters.  Additional dimensions such as
+coils, maps, and time must follow the dimension order specified in mri.h,
+otherwise regularizers may be applied on the wrong dimensions and the forward
+sense operator may be inaccurate.  If not provided, the sampling mask is determined
+automatically from the provided k-space. For the sampling mask to be calculated
+correctly, missing samples must be exactly zero.  Small values in k-space,
+perhaps from numerical errors, will cause the sampling mask (reflected in
+logged acceleration factor), and the data consistency step to be incorrect.
 
