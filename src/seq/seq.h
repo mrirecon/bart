@@ -66,6 +66,7 @@ BARTLIB_API extern void BARTLIB_CALL bart_seq_defaults(struct bart_seq* seq);
 BARTLIB_API extern int BARTLIB_CALL bart_seq_prepare(struct bart_seq* seq);
 BARTLIB_API extern void BARTLIB_CALL bart_seq_free(struct bart_seq* seq);
 
+BARTLIB_API int BARTLIB_CALL bart_seq_version_check(const char* driver_version, const unsigned int min_bart_version[5]);
 
 BARTLIB_API extern int BARTLIB_CALL seq_sample_rf_shapes(int N, struct rf_shape pulse[__VLA(N)], const struct seq_config* seq);
 BARTLIB_API extern void BARTLIB_CALL seq_compute_gradients(int M, double gradients[__VLA(M)][3], double dt, int N, const struct seq_event ev[__VLA(N)]);

@@ -10,6 +10,7 @@
 
 #include "misc/mri.h"
 #include "misc/misc.h"
+#include "misc/version.h"
 
 #include "seq/config.h"
 #include "seq/event.h"
@@ -83,6 +84,29 @@ void bart_seq_free(struct bart_seq* seq)
 	xfree(seq->rf_shape);
 	xfree(seq);
 }
+
+int bart_seq_version_check(const char* driver_version, const unsigned int min_bart_version[5])
+{
+	// FIXME check for stable event.h, seq.h, helpers.h, custom_ui.h
+
+	unsigned int vd[5];
+	if (!version_parse(vd, driver_version))
+		return -1;
+
+	const unsigned int min_driver[5] = { };
+	if (version_compare(vd, min_driver) < 0)
+		return -1;
+
+	unsigned int vb[5];
+	if (!version_parse(vb, bart_version))
+		return -1;
+
+	if (version_compare(vb, min_bart_version) < 0)
+		return -1;
+
+	return 1;
+}
+
 
 int seq_sample_rf_shapes(int N, struct rf_shape pulse[N], const struct seq_config* seq)
 {
