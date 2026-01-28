@@ -40,13 +40,13 @@ int seq_check_equal_dims(int D, const long dims1[D], const long dims2[D], unsign
 }
 
 
-long seq_minimum_tr(const struct seq_config* seq)
+double seq_minimum_tr(const struct seq_config* seq)
 {
 	return min_tr_flash(seq);
 }
 
 
-void seq_minimum_te(const struct seq_config* seq, long* min_te, long* fil_te)
+void seq_minimum_te(const struct seq_config* seq, double* min_te, double* fil_te)
 {
 	min_te_flash(seq, min_te, fil_te);
 }
