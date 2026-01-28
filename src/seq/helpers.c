@@ -109,7 +109,7 @@ static void custom_params_to_config(struct seq_config* seq, int nl, const long c
 	seq->phys.os = 2.;
 
 	seq->enc.tiny = custom_long[cil_tiny];
-	seq->phys.rf_duration = custom_long[cil_rf_duration];
+	seq->phys.rf_duration = 1E-6 * custom_long[cil_rf_duration];
 	seq->magn.init_delay = custom_long[cil_init_delay];
 	seq->loop_dims[BATCH_DIM] = custom_long[cil_inversions];
 	seq->magn.inv_delay_time = custom_long[cil_inv_delay];
@@ -127,7 +127,7 @@ static void config_to_custom_params(int nl, long custom_long[__VLA(nl)], int nd,
 	custom_long[cil_mb_factor] = (CHECKBOX_ON == custom_long[cil_sms]) ? seq->geom.mb_factor : 1;
 
 	custom_long[cil_tiny] = seq->enc.tiny;
-	custom_long[cil_rf_duration] = seq->phys.rf_duration;
+	custom_long[cil_rf_duration] = lround(1E6 * seq->phys.rf_duration);
 	custom_long[cil_init_delay] = seq->magn.init_delay;
 	custom_long[cil_inversions] = seq->loop_dims[BATCH_DIM];
 	custom_long[cil_inv_delay] = seq->magn.inv_delay_time;
