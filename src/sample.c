@@ -124,10 +124,7 @@ static void get_init(int N, long img_dims[N], complex float* samples, float sigm
 	linop_adjoint(A, N, img_dims, tmp_AHy, N, ksp_dims, tmp_ksp);
 
 	md_zadd(N, img_dims, tmp_AHy, tmp_AHy, AHy);
-
-	md_zsmul(DIMS, img_dims, samples, samples, 1. / (sigma * sigma));
-	md_zadd(N, img_dims, tmp_AHy, tmp_AHy, samples);
-	md_zsmul(DIMS, img_dims, samples, samples, (sigma * sigma));
+	md_zaxpy(N, img_dims, tmp_AHy, 1. / (sigma * sigma), samples);
 
 	struct iter_conjgrad_conf conf = iter_conjgrad_defaults;
 	conf.maxiter = iter;
