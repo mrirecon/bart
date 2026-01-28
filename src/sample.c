@@ -549,7 +549,7 @@ int main_sample(int argc, char* argv[argc])
 			md_free(tmp_exp);
 
 			if (strm_o)
-				stream_sync_slice(strm_o, DIMS, img_dims, MD_BIT(ITER_DIM), pos);
+				stream_sync_slice(strm_o, DIMS, out_dims, MD_BIT(ITER_DIM), pos);
 		}
 
 		operator_p_free(score_op_p[0]);
