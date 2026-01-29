@@ -50,8 +50,8 @@ struct seq_config;
 
 struct bart_seq {
 
-	int version_bart;
-	int version_seq;
+	const char* bart_version;
+	const char* driver_version;
 
 	struct seq_config* conf;
 	struct seq_state* state;
@@ -61,7 +61,7 @@ struct bart_seq {
 	struct rf_shape* rf_shape;
 };
 
-BARTLIB_API extern struct bart_seq* BARTLIB_CALL bart_seq_alloc(void);
+BARTLIB_API extern struct bart_seq* BARTLIB_CALL bart_seq_alloc(const char* driver_version);
 BARTLIB_API extern void BARTLIB_CALL bart_seq_defaults(struct bart_seq* seq);
 BARTLIB_API extern int BARTLIB_CALL bart_seq_prepare(struct bart_seq* seq);
 BARTLIB_API extern void BARTLIB_CALL bart_seq_free(struct bart_seq* seq);

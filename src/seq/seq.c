@@ -27,10 +27,13 @@
 #define MAX_EVENTS 2048
 #define MAX_RF_PULSES 32
 
-struct bart_seq* bart_seq_alloc(void)
+struct bart_seq* bart_seq_alloc(const char* driver_version)
 {
 	struct bart_seq* seq = NULL;
 	seq = xmalloc(sizeof *seq);
+
+	seq->bart_version = bart_version;
+	seq->driver_version = driver_version;
 
 	seq->conf = xmalloc(sizeof *(seq->conf));
 	seq->state = xmalloc(sizeof *(seq->state));

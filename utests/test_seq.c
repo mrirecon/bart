@@ -30,7 +30,7 @@ static bool test_block_minv_init_delay(void)
 		BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE
 	};
 
-	struct bart_seq* seq = bart_seq_alloc();
+	struct bart_seq* seq = bart_seq_alloc("");
 	bart_seq_defaults(seq);
 
 	seq->conf->magn.init_delay = 1.;
@@ -95,7 +95,7 @@ static bool test_block_minv_multislice(void)
 		BLOCK_PRE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_POST,
 	};
 
-	struct bart_seq* seq = bart_seq_alloc();
+	struct bart_seq* seq = bart_seq_alloc("");
 	bart_seq_defaults(seq);
 
 	seq->conf->enc.order = SEQ_ORDER_SEQ_MS;
@@ -166,7 +166,7 @@ static bool test_fov_shift(void)
 		gui_shift[i][2] = 1.E-3 * in[i]; // slice shift
 	}
 
-	struct bart_seq* seq = bart_seq_alloc();
+	struct bart_seq* seq = bart_seq_alloc("");
 	bart_seq_defaults(seq);
 
 	seq->conf->geom.mb_factor = 3;
@@ -204,7 +204,7 @@ static bool test_fov_shift3x3(void)
 		gui_shift[i][2] = 1.E-3 * in[i]; // slice shift
 	}
 
-	struct bart_seq* seq = bart_seq_alloc();
+	struct bart_seq* seq = bart_seq_alloc("");
 	bart_seq_defaults(seq);
 
 	seq->conf->geom.mb_factor = 3;

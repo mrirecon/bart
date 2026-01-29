@@ -59,7 +59,7 @@ int main_seq(int argc, char* argv[argc])
 	long raga_full_frames = 0;
 	float dist = 1.;
 
-	struct bart_seq* seq = bart_seq_alloc();
+	struct bart_seq* seq = bart_seq_alloc("");
 	bart_seq_defaults(seq);
 
 	enum gradient_mode gradient_mode = GRAD_FAST;
