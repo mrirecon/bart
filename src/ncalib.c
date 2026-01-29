@@ -60,9 +60,10 @@ int main_ncalib(int argc, char* argv[argc])
 	};
 
 	struct noir2_conf_s conf = noir2_defaults;
-	conf.iter = 25;
+	conf.iter = 16;
 	conf.undo_scaling = true;
 	conf.normalize_lowres = true;
+	conf.alpha_min = 1.e-3;
 
 	long calsize[3] = { 48, 48, 48 };
 	long ksenssize[3] = { 16, 16, 16 };
