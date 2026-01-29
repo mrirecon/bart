@@ -1,0 +1,85 @@
+Phantom tool
+------------
+
+For more options see
+
+bart phantom -h
+
+
+x-space and k-space simulation
+------------
+
+The user can create x-space and k-space magnetization data
+of simple shapes with the bart phantom library.
+
+Shepp-Logan phantom in x-space:
+
+2d: 		bart phantom x
+3d: 		bart phantom -3 x
+2d, 256 px: 	bart phantom -x 256 x
+
+The magnetization functions are represented by indicator functions
+over the shape geometry
+
+m(x) = 1_S(x)
+
+For computation of the k-space magnetization data, a *continuous*
+Fourier transform of the magnetization function m is used as the
+forward model.
+
+Shepp-Logan phantom in k-space on Cartesian trajectory:
+
+2d: 		bart phantom -k ksp
+3d: 		bart phantom -3 -k ksp
+2d, 256 px: 	bart phantom -x 256 -k ksp
+
+Compare k-space and x-space simulation:
+
+		bart fft -i 7 ksp r
+		bart saxpy -- -1 r x diff
+
+
+Multi-coil x-space and k-space simulation
+------------
+
+The user can obtain multi-coil x-space and k-space magnetization data
+by using the internal sensitivity map model (trigonometric polynomial).
+
+8-coil x-space and k-space Shepp-Logan data:
+
+		bart phantom -s 8 x8
+		bart phantom -s 8 -k ksp8
+
+Compare multi-coil k-space and x-space simulation:
+
+		bart nlinv ksp8 r8
+		bart saxpy -- -1 r8 x8 diff8
+
+
+Multi-coil k-space simulation on arbitrary trajectory
+------------
+
+The user can provide any trajectory to the phantom tool to obtain
+multi-coil k-space data on the trajectory. Since the forward model
+uses the *continuous* Fourier transform, the k-space value on the
+trajectory is exact and *not* interpolated.
+
+8-coil k-space Shepp-Logan data on radial trajectory:
+
+		bart traj -r tr
+		bart phantom -s 8 -k -t tr ksp8_tr
+		bart nlinv -t tr ksp8_tr r8_tr
+
+
+Multi-coil k-space simulation of arbitrary 3d shapes
+------------
+
+Arbitrary 3d shapes/volumes can be described by a triangulation of the
+volume surface in the stl-fileformat which is commonly used in 3D-printing.
+
+Create tetrahedron in stl-fileformat and simulate 50-coil k-space data by
+using the first 50 channel from the internal 3d 64-channel head coil on a Cartesian grid:
+
+		bart stl --model TET tet.stl
+		bart phantom -k --stl tet.stl -s 50 --coil HEAD_3D_64CH ktet50
+		bart fft -i 7 ktet50 xtet50
