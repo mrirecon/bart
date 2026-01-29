@@ -626,7 +626,7 @@ int main_pics(int argc, char* argv[argc])
 		// we do not detect this case.
 
 		if ((NULL != traj_file) && (-1. == step) && !eigen)
-			debug_printf(DP_WARN, "No step size specified.\n");
+			debug_printf(DP_WARN, "No step size specified (see options: -s, -e).\n");
 
 		if (-1. == step)
 			step = 0.95;
