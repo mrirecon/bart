@@ -262,11 +262,25 @@ void min_te_flash(const struct seq_config* seq, double* min_te, double* fil_te)
 
 	double time = seq->phys.rf_duration / 2. + inter_duration_RF_RO - seq->sys.grad.max_amplitude * seq->sys.grad.inv_slew_rate;
 
+	double blip_time = 0.;
+	if ((1 < seq->loop_dims[TE_DIM]) && (PEMODE_MEMS_HYB == seq->enc.pe_mode)) {
+
+		struct grad_trapezoid grad;
+		long pos0[DIMS] = { };
+		pos0[TE_DIM] = 1;
+		grad_hard(&grad, ro_blip_moment(pos0, seq), seq->sys.grad);
+
+		blip_time = grad_total_time(&grad);
+	}
+
 	for (long echo = 0; echo < seq->loop_dims[TE_DIM]; echo++) {
+
+		if (0 < echo)
+			time += blip_time;
 
 		time += ro_amp * seq->sys.grad.inv_slew_rate; //FIXME
 		time += ro_time_to_echo(echo, seq);
-		time = round_up_raster(time, seq->sys.raster_grad);
+		time = round_up_raster(time, seq->sys.raster_grad) - seq->sys.raster_grad;
 
 		min_te[echo] = time;
 
