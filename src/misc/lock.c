@@ -6,7 +6,7 @@
  * 2024 Philip Schaten <philip.schaten@tugraz.at>
  */
 
-#ifdef _WIN32
+#ifdef BARTDLL
 
 #include <assert.h>
 #include "lock.h"
