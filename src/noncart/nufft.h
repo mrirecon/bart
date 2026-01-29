@@ -10,7 +10,6 @@ struct nufft_conf_s {
 	_Bool pcycle; 	/// < Phase cycling
 	_Bool periodic;
 	_Bool lowmem;
-	int loopdim;
 	unsigned long flags;
 	unsigned long cfft;
 	_Bool decomp;

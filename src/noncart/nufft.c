@@ -56,7 +56,6 @@ struct nufft_conf_s nufft_conf_defaults = {
 	.pcycle = false,
 	.periodic = false,
 	.lowmem = false,
-	.loopdim = -1,
 	.flags = FFT_FLAGS,
 	.cfft = 0u,
 	.decomp = true,
@@ -81,7 +80,6 @@ struct nufft_conf_s nufft_conf_options = {
 	.pcycle = false,
 	.periodic = false,
 	.lowmem = false,
-	.loopdim = -1,
 	.flags = FFT_FLAGS,
 	.cfft = 0u,
 	.decomp = true,
@@ -1173,7 +1171,7 @@ static void nufft_apply_adjoint_zero_overhead(const linop_data_t* _data, complex
 static void nufft_apply_forward_zero_overhead(const linop_data_t* _data, complex float* dst, const complex float* src);
 
 
-static struct linop_s* nufft_create3(int N,
+struct linop_s* nufft_create2(int N,
 			     const long ksp_dims[N],
 			     const long cim_dims[N],
 			     const long traj_dims[N],
@@ -1278,55 +1276,6 @@ static struct linop_s* nufft_create3(int N,
 }
 
 
-struct linop_s* nufft_create2(int N,
-			     const long ksp_dims[N],
-			     const long cim_dims[N],
-			     const long traj_dims[N],
-			     const complex float* traj,
-			     const long wgh_dims[N],
-			     const complex float* weights,
-			     const long bas_dims[N],
-			     const complex float* basis,
-			     struct nufft_conf_s conf)
-{
-	if (0 <= conf.loopdim) {
-
-		int d = conf.loopdim;
-		const long L = ksp_dims[d];
-
-		assert(d < N);
-		assert((NULL == weights) || (1 == wgh_dims[d]));
-		assert((NULL == basis) || (1 == bas_dims[d]));
-		assert(1 == traj_dims[d]);
-		assert(L == cim_dims[d]);
-
-		if (1 < L) {
-
-			debug_printf(DP_WARN, "NEW NUFFT LOOP CODE\n");
-
-			long ksp1_dims[N];
-			md_select_dims(N, ~MD_BIT(d), ksp1_dims, ksp_dims);
-
-			long cim1_dims[N];
-			md_select_dims(N, ~MD_BIT(d), cim1_dims, cim_dims);
-
-			auto nu = nufft_create2(N, ksp1_dims, cim1_dims, traj_dims, traj, wgh_dims, weights, bas_dims, basis, conf);
-
-			long loop_dims[N];
-			md_select_dims(N, MD_BIT(d), loop_dims, cim_dims);
-
-			auto nu2 = linop_loop(N, loop_dims, nu);
-
-			linop_free(nu);
-
-			return nu2;
-		}
-	}
-
-	return nufft_create3(N, ksp_dims, cim_dims,
-			traj_dims, traj, wgh_dims, weights,
-			bas_dims, basis, conf);
-}
 
 static void nufft_normal_only(const linop_data_t* /*_data*/, complex float* /*dst*/, const complex float* /*src*/)
 {
