@@ -63,16 +63,7 @@ def bart_prepare(nargout, cmd, *args, **kwargs):
         print("Usage: bart(<nargout>, <command>, <arguments...>)")
         return
 
-    try:
-        bart_path = os.environ['BART_TOOLBOX_PATH']
-    except:
-        bart_path = None
-    # support old environment variable:
-    if bart_path is None:
-        try:
-            bart_path = os.environ['TOOLBOX_PATH']
-        except:
-            bart_path = None
+    bart_path = os.environ.get('BART_TOOLBOX_PATH')
 
     isWSL = False
 

@@ -347,21 +347,20 @@ with Matlab. Go to the examples directory and run:
 
 ### 2.3.4. Python
 
-You can set the BART_TOOLBOX_PATH to the base directory and start a
-Python interactively as follows:
 
-    $ python3 -i startup.py
+The BART Python wrapper can be installed with pip by calling
 
-To avoid doing the above every time, it is recommended to update your
-PYTHONPATH environment. For example, in Linux, assuming your 
-BART_TOOLBOX_PATH is set, add the below line to your bashrc file.
+    $ pip install .
 
-    $ export PYTHONPATH="${BART_TOOLBOX_PATH}/python:$PYTHONPATH"
+from the folder pkg/python within this repository.
 
-After doing so, we can simply import as needed.
+Two modules from the BART package can then be used in Python by typing:
 
-    >>> from bart import bart
-    >>> import cfl
+   >>> from bart import bart, cfl
+
+Instead of using pip, you can manually import the Python files.
+See startup.py on how to do this. Note the slightly different
+imports!
 
 You can use Python to read and visualize/process files. To write
 a data file 'xyz' from Python you can run:
@@ -375,7 +374,13 @@ To read the data file 'xyz' back into Python use:
 
     >>> A = cfl.readcfl('xyz');
 
-To call a BART tool (e.g. ecalib) from Python, you can use the
+BART can be called directly from Python, however this requires that either
+- BART is available on your PATH,
+  ie typing `bart version` in your shell gives the expected result, OR
+- the environment variable BART_TOOLBOX_PATH has been set to the folder
+  where the desired bart binary can be found.
+
+To call a BART tool (e.g. ecalib) from Python, you can then use the
 'bart' command:
 
     >>> sensitivities = bart(1, 'ecalib', kspace);
@@ -384,8 +389,10 @@ The bart function expects the following signature:
 
     >>> <outputs> = bart(<nargout>, <command>, <arguments>, ...)
 
-To use BART in a script, please follow the steps in the
-startup.py file.
+To verify that the Python wrapper uses the expected BART version:
+
+    >>> bart(0, "version")
+
 
 
 3. Data Format
