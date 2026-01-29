@@ -75,8 +75,8 @@ int main_seq(int argc, char* argv[argc])
 		OPT_FLOAT('d', &dt, "dt", "time-increment per sample (default: seq->conf->phys.tr / 1000)"),
 		OPT_LONG('N', &samples, "samples", "Number of samples (default: 1000)"),
 
-		OPT_DOVEC3('s', &seq->conf->geom.shift[0], "RO:PE:SL", "FOV shift of first slice"),
-		OPT_DOVEC3('S', &rel_shift, "RO:PE:SL", "relative FOV shift of first slice"),
+		OPT_DOVEC3('s', &seq->conf->geom.shift[0], "RO:PE:SL", "FOV shift"),
+		OPT_DOVEC3('S', &rel_shift, "RO:PE:SL", "relative FOV shift"),
 		OPTL_FLOAT(0, "dist", &dist, "dist", "slice distance factor [1 / slice_thickness] (default: 1.)"),
 
 		// contrast mode
