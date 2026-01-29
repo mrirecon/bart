@@ -35,7 +35,7 @@ int main_phasepole(int argc, char* argv[argc])
 
 	struct arg_s args[] = {
 
-		ARG_INFILE(false, &src_file, "input (coils/singularity postions)"),
+		ARG_INFILE(false, &src_file, "input (coils/singularity positions)"),
 		ARG_OUTFILE(true, &dst_file, "output (sampled phase/singularity positions)"),
 	};
 

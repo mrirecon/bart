@@ -20,7 +20,8 @@ tests/test-sample-gmm1d_mean: sample ones zeros join cabs calc scale ones nrmse
 	rm *.ra; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-# tests for correct weighting of the sampled gaussians in the gmm (0.75 (for mean 0) to 0.25 (for mean 1) -> -0.3 on average) fo real and imag part; abs value due to scaling issue
+# tests for correct weighting of the sampled gaussians in the gmm (0.75 (for mean 0) to 0.25
+# (for mean 1 -> -0.3 on average) for real and imag part; abs value due to scaling issue
 tests/test-sample-gmm1d_weigthing: sample cabs calc avg zeros join ones scale nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
 	$(TOOLDIR)/ones 2 1 1 t.ra								;\

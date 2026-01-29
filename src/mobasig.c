@@ -16,7 +16,7 @@
 #include "moba/lorentzian.h"
 
 
-static const char help_str[] = "Forward calculation of pysical signal models.";
+static const char help_str[] = "Forward calculation of physical signal models.";
 
 
 int main_mobasig(int argc, char* argv[argc])
