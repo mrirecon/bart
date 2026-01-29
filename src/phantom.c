@@ -1,6 +1,6 @@
 /* Copyright 2014-2020. The Regents of the University of California.
  * Copyright 2015-2025. Uecker Lab. University Medical Center Göttingen.
- * Copyright 2025. Institute of Biomedical Imaging. TU Graz.
+ * Copyright 2025-2026. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
@@ -37,6 +37,7 @@ int main_phantom(int argc, char* argv[argc])
 
 	bool kspace = false;
 	bool d3 = false;
+	bool d2 = false;
 	int sens = 0;
 	int osens = -1;
 	int xdim = -1;
@@ -75,33 +76,35 @@ int main_phantom(int argc, char* argv[argc])
 
 	const struct opt_s opts[] = {
 
-		OPT_PINT('s', &sens, "nc", "nc sensitivities"),
-		OPT_PINT('S', &osens, "nc", "Output nc sensitivities"),
 		OPT_SET('k', &kspace, "k-space"),
+		OPT_PINT('x', &xdim, "n", "dimensions in y and z"),
+		OPT_PINT('s', &sens, "nc", "nc sensitivities"),
 		OPT_INFILE('t', &traj_file, "file", "trajectory"),
+		OPTL_SUBOPT(0, "coil", "...", "configure type of coil", ARRAY_SIZE(coil_opts), coil_opts),
+		OPT_SET('3', &d3, "3D simulation"),
+		OPT_SET('2', &d2, "enforce 2D simulation"),
+		OPT_SET('b', &basis, "basis functions for geometry"),
+		OPT_ULLONG('r', &randseed, "", "random seed initialization. '0' uses the default seed."),
+		OPTL_FLOAT(0, "rotation-angle", &rotation_angle, "[deg]", "Angle of rotation"),
+		OPTL_PINT(0, "rotation-steps", &rotation_steps, "n", "Number of rotation steps\n"),
+		OPT_PINT('S', &osens, "nc", "Output nc sensitivities"),
 		OPT_SELECT('c', enum phantom_type, &ptype, CIRC, "()"),
 		OPT_SELECT('a', enum phantom_type, &ptype, STAR, "()"),
 		OPT_SELECT('m', enum phantom_type, &ptype, TIME, "()"),
 		OPT_SELECT('G', enum phantom_type, &ptype, GEOM, "geometric object phantom"),
 		OPT_SELECT('T', enum phantom_type, &ptype, TUBES, "tubes phantom"),
-		OPTL_INFILE(0, "stl", &stl_file, "file", "path to stl file"),
+
 		OPTL_SELECT(0, "NIST", enum phantom_type, &ptype, NIST, "NIST phantom (T2 sphere)"),
 		OPTL_SELECT(0, "SONAR", enum phantom_type, &ptype, SONAR, "Diagnostic Sonar phantom"),
 		OPTL_SELECT(0, "BRAIN", enum phantom_type, &ptype, BRAIN, "BRAIN geometry phantom"),
+		OPT_PINT('N', &N, "num", "Random tubes phantom with num tubes"),
+		OPT_PINT('g', &geo, "n=1,2,3", "select geometry for object phantom"),
+		OPT_SELECT('B', enum phantom_type, &ptype, BART, "(BART logo)"),
 		OPTL_SELECT(0, "ELLIPSOID", enum phantom_type, &ptype, ELLIPSOID0, "Ellipsoid."),
 		OPTL_VEC3(0, "ellipsoid_center", &ellipsoid_center, "", "x,y,z center coordinates of ellipsoid."),
 		OPTL_FLVEC3(0, "ellipsoid_axes", &ellipsoid_axes, "", "Axes lengths of ellipsoid."),
-		OPT_PINT('N', &N, "num", "Random tubes phantom with num tubes"),
-		OPT_SELECT('B', enum phantom_type, &ptype, BART, "BART logo"),
 		OPTL_INFILE(0, "FILE", &file_load, "name", "Arbitrary geometry based on multicfl file."),
-		OPT_PINT('x', &xdim, "n", "dimensions in y and z"),
-		OPT_PINT('g', &geo, "n=1,2,3", "select geometry for object phantom"),
-		OPT_SET('3', &d3, "3D"),
-		OPT_SET('b', &basis, "basis functions for geometry"),
-		OPT_ULLONG('r', &randseed, "", "random seed initialization. '0' uses the default seed."),
-		OPTL_FLOAT(0, "rotation-angle", &rotation_angle, "[deg]", "Angle of rotation"),
-		OPTL_PINT(0, "rotation-steps", &rotation_steps, "n", "Number of rotation steps"),
-		OPTL_SUBOPT(0, "coil", "...", "configure type of coil", ARRAY_SIZE(coil_opts), coil_opts),
+		OPTL_INFILE(0, "stl", &stl_file, "file", "path to stl file"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -111,6 +114,17 @@ int main_phantom(int argc, char* argv[argc])
 
 	if (NULL != stl_file)
 		ptype = STL;
+
+	if (d2 && d3)
+		error("Choose either 2d or 3d.");
+
+	if (STL == ptype) {
+
+		if (d2 && !d3)
+			debug_printf(DP_WARN, "2d simulation was chosen for 3d stl geometry.\n");
+
+		d3 = !d2;
+	}
 
 	// avoid model force for stl sampling
 	enum coil_type ctype_ = copts.ctype;
