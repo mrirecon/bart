@@ -940,6 +940,9 @@ complex float* create_cfl_sameplace(const char* name, int D, const long dimensio
 
 complex float* create_async_cfl(const char* name, const unsigned long flags, int D, const long dimensions[D])
 {
+	if (FILE_TYPE_PIPE != file_type(name))
+		return create_cfl(name, D, dimensions);
+
 	if (!cfl_loop_desc_active())
 		return create_cfl_internal(name, D, dimensions, flags);
 
