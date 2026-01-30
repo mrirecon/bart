@@ -621,12 +621,31 @@ int main_pics(int argc, char* argv[argc])
 	if ((ALGO_IST == algo) || (ALGO_FISTA == algo) || (ALGO_PRIDU == algo)) {
 
 		// For non-Cartesian trajectories, the default
-		// will usually not work. TODO: The same is true
-		// for sensitivities which are not normalized, but
-		// we do not detect this case.
+		// will usually not work.
 
 		if ((NULL != traj_file) && (-1. == step) && !eigen)
-			debug_printf(DP_WARN, "No step size specified (see options: -s, -e).\n");
+			debug_printf(DP_WARN, "No step size specified for non-Cartesian trajectory (see options: -s, -e).\n");
+
+		// FIXME: max reduction currently not supported for MPI
+		if (-1 == step && !eigen && !is_vptr(maps)) {
+
+			long tdims[DIMS];
+			md_select_dims(DIMS, ~COIL_FLAG, tdims, map_dims);
+			complex float* tmp = md_alloc_sameplace(DIMS, tdims, CFL_SIZE, maps);
+			md_zrss(DIMS, map_dims, COIL_FLAG, tmp, maps);
+
+			complex float* scalar = md_alloc_sameplace(DIMS, MD_SINGLETON_DIMS(DIMS), CFL_SIZE, maps);
+			md_reduce_zmax(DIMS, tdims, ~0UL, scalar, tmp);
+
+			float maxval;
+			md_copy(1, MD_DIMS(1), &maxval, scalar, FL_SIZE);
+
+			md_free(scalar);
+			md_free(tmp);
+
+			if ((0.95 > maxval) || (1.05 < maxval))
+				debug_printf(DP_WARN, "No step size specified and coils are likely not normalized (see options: -s, -e).\n");
+		}
 
 		if (-1. == step)
 			step = 0.95;
