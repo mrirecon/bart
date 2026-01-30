@@ -153,6 +153,47 @@ void seq_ui_interface_custom_params(int reverse, struct seq_config* seq, int nl,
 		custom_params_to_config(seq, nl, params_long, nd, params_double);
 }
 
+static void seq_bart_to_standard_conf(struct seq_standard_conf* std, struct seq_config* seq)
+{
+	std->tr = seq->phys.tr;
+	for (int i = 0; i < MAX_NO_ECHOES; i++)
+		std->te[i] = seq->phys.te[i];
+
+	std->dwell = seq->phys.dwell;
+	std->flip_angle = seq->phys.flip_angle;
+
+	std->fov = seq->geom.fov;
+	std->baseres = seq->geom.baseres;
+	std->slice_thickness = seq->geom.slice_thickness;
+	// std->slice_os = 1. + seq->geom.slice_os;
+
+	// std->is3D = seq->dim.is3D;
+
+	std->gamma = seq->sys.gamma;
+	std->b0 = seq->sys.b0;
+	std->grad_min_rise_time = seq->sys.grad.inv_slew_rate;
+	std->grad_max_ampl = seq->sys.grad.max_amplitude;
+	std->coil_control_lead = seq->sys.coil_control_lead;
+	std->min_duration_ro_rf = seq->sys.min_duration_ro_rf;
+
+	std->mag_prep = seq->magn.mag_prep;
+	std->ti = (PREP_OFF != seq->magn.mag_prep) ? seq->magn.ti : 0;
+
+	std->trigger_type = seq->trigger.type;
+	std->trigger_delay_time = seq->trigger.delay_time;
+	std->trigger_pulses = seq->trigger.pulses;
+	std->trigger_out = 1;
+
+	std->enc_order = seq->enc.order;
+
+
+	for (int i = 0; i < ACOUSTIC_RES_ENTRIES; i++) {
+
+		std->acoustic_res_freq[i] = std->acoustic_res_freq[i];
+		std->acoustic_res_bw[i] = std->acoustic_res_bw[i];
+	}
+}
+
 static void seq_standard_conf_to_bart(struct seq_config* seq, struct seq_standard_conf* std)
 {
 	seq->phys.tr = std->tr;
@@ -196,9 +237,10 @@ static void seq_standard_conf_to_bart(struct seq_config* seq, struct seq_standar
 
 void seq_ui_interface_standard_conf(int reverse, struct seq_config* conf, struct seq_standard_conf* std_conf)
 {
-	(void)reverse;
-
-	seq_standard_conf_to_bart(conf, std_conf);
+	if (reverse)
+		seq_bart_to_standard_conf(std_conf, conf);
+	else
+		seq_standard_conf_to_bart(conf, std_conf);
 }
 
 
