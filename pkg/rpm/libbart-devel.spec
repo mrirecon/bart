@@ -1,7 +1,7 @@
 Name:           libbart-devel
 Version:        {{{ bart_version }}}
 Release:        {{{ bart_release }}}%{?dist}
-Epoch:          1
+Epoch:          2
 Summary:        Development files for BART 
 
 License:        BSD

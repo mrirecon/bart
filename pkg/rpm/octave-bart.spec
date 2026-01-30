@@ -2,7 +2,7 @@
 Name:           octave-%{octpkg}
 Version:        {{{ bart_version }}}
 Release:        {{{ bart_release }}}%{?dist}
-Epoch:          1
+Epoch:          2
 Summary:        Octave bindings for BART
 
 License:        BSD

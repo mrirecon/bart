@@ -1,7 +1,7 @@
 Name:           bart
 Version:        {{{ bart_version }}} 
 Release:        {{{ bart_release }}}%{?dist}
-Epoch:          1
+Epoch:          2
 Summary:        tools for computational magnetic resonance imaging 
 
 License:        BSD

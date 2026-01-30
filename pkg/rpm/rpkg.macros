@@ -5,10 +5,9 @@ function bart_version() {
 function bart_release() {
     git describe --match "v*" --exact > /dev/null 2>&1
     if [[ $? -ne 0 ]]; then
-        release=$(($(./git-version.sh | cut -d'-' -f2) + 1))
         date=$(date '+%Y%m%d')
         commit=$(git rev-parse --short=7 HEAD)
-        release=$release"."$date"git"$commit
+        release=$date"git"$commit
     else
         release=1
     fi
