@@ -9,11 +9,7 @@ URL:            https://mrirecon.codeberg.page/
 VCS:            {{{ git_repo_vcs }}}
 Source0:        {{{ git_archive path=. source_name=bart dir_name=bart }}}
 
-%if 0%{?rhel} == 07
-BuildRequires:  fftw-devel, lapack-devel, openblas-devel, atlas-devel, libpng-devel, devtoolset-7-toolchain, devtoolset-7-libatomic-devel, chrpath
-%else
 BuildRequires:  gcc, make, fftw-devel, lapack-devel, openblas-devel, atlas-devel, libpng-devel, chrpath
-%endif
 
 Requires:       fftw, lapack, openblas, atlas, libpng
 
@@ -30,11 +26,7 @@ The Berkeley Advanced Reconstruction Toolbox (BART) is a free and open-source im
 echo {{{ bart_git_version }}} > version.txt
 
 %build
-%if 0%{?rhel} == 07
-
-. /opt/rh/devtoolset-7/enable
-
-%endif
+echo -e -n "OPENBLAS=1\nCPPFLAGS=-Wall -Wextra -I/usr/include/openblas\n" > Makefiles/Makefile.local
 
 export LDFLAGS="$LDFLAGS -Wl,--no-as-needed"
 make PARALLEL=1
