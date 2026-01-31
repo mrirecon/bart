@@ -232,8 +232,8 @@ int main_bin(int argc, char* argv[argc])
 		error("No bin type specified!\n");
 	}
 
-	if (is_stream && (BIN_REORDER != bin_type))
-		error("Streaming currently only supported with BIN_REORDER.\n");
+	if (is_stream && (BIN_QUADRATURE == bin_type))
+		error("Streaming not supported with BIN_QUADRATURE.\n");
 
 	long bins_dims[DIMS];
 	float* bins = NULL;
@@ -344,6 +344,7 @@ int main_bin(int argc, char* argv[argc])
 		} else {
 
 			dst_dims[dim] = labels_dims[dim];
+
 			assert(-1 == conf.cluster_dim);
 			assert(n_clusters <= src_dims[dim]);
 		}
@@ -397,32 +398,42 @@ int main_bin(int argc, char* argv[argc])
 		long label_strs[DIMS];
 		md_calc_strides(DIMS, label_strs, labels_dims, CFL_SIZE);
 
-		for (int i = 0; i < N; i++) { // TODO: Speed but by direct copying
+		do  {
+			md_copy_dims(DIMS, pos_src, pos_loop);
+			md_copy_dims(DIMS, pos_dst, pos_loop);
 
-			do  {
-				int label = (int)crealf(labels[i]);
+			for (int i = 0; i < N; i++) {
 
-				if (BIN_ZEROFILL == bin_type) {
+				pos_loop[dim] = i;
 
-					pos_src[dim] = label;
-					pos_dst[dim] = label;
+				int label = (int)crealf(MD_ACCESS(DIMS, pos_loop, label_strs, labels));
+
+				pos_src[dim] = label;
+				pos_dst[dim] = label;
+
+				switch (bin_type) {
+
+				case BIN_ZEROFILL:
 
 					pos_dst[zero_filled_dim] = i / spokes_per_frame;
+					break;
 
-				} else if (BIN_REORDER != bin_type) {
+				case BIN_REORDER:
+
+					pos_dst[dim] = i;
+					break;
+
+				case BIN_LABEL:
 
 					pos_src[dim] = i;
-					pos_dst[dim] = label;
 
-					pos_dst[conf.cluster_dim] = idx[label]; // Next empty singleton index for i-th cluster
-					idx[label]++;
+					// Next empty singleton index for i-th cluster
+					pos_dst[conf.cluster_dim] = idx[label]++;
+					break;
 
-				} else {
+				case BIN_QUADRATURE:
 
-					md_copy_dims(DIMS, pos_src, pos_loop);
-					md_copy_dims(DIMS, pos_dst, pos_loop);
-					pos_src[dim] = (int)crealf(MD_ACCESS(DIMS, (pos_loop[dim] = i, pos_loop), label_strs, labels));
-					pos_dst[dim] = i;
+					assert(0);
 				}
 
 				if (is_stream && strm_src)
@@ -433,12 +444,15 @@ int main_bin(int argc, char* argv[argc])
 
 				if (is_stream && strm_dst)
 					stream_sync_slice(strm_dst, DIMS, dst_dims, MD_BIT(dim), pos_dst);
+			}
 
-			} while (md_next(DIMS, loop_dims, md_nontriv_dims(DIMS, loop_dims) , pos_loop));
+			long size = md_calc_size(DIMS, loop_dims);
+			long index = md_ravel_index(DIMS, loop_dims, ~0U, pos_loop);
 
-			if (0 == i % ((10 >= N) ? 1 : N / 10))
-				debug_printf(DP_DEBUG3, "Binning: %f\n", 100. * i / (double)N);
-		}
+			if (0 == index % ((10 >= size) ? 1 : size / 10))
+				debug_printf(DP_DEBUG3, "Binning: %f\n", 100. * index / (double)size);
+
+		} while (md_next(DIMS, loop_dims, md_nontriv_dims(DIMS, loop_dims), pos_loop));
 
 		md_free(singleton);
 
