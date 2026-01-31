@@ -12,22 +12,25 @@
 
 #include "misc/mri.h"
 
-#define MAX_RF_SAMPLES 8192
+#define SEQ_MAX_RF_SAMPLES 8192
 
-enum seq_event_type { SEQ_EVENT_PULSE, SEQ_EVENT_GRADIENT, SEQ_EVENT_ADC, SEQ_EVENT_WAIT , SEQ_EVENT_TRIGGER, SEQ_EVENT_OUTPUT };
+enum seq_event_type {
+	SEQ_EVENT_PULSE, SEQ_EVENT_GRADIENT, SEQ_EVENT_ADC,
+	SEQ_EVENT_WAIT, SEQ_EVENT_TRIGGER, SEQ_EVENT_OUTPUT
+};
 
-enum rf_type_t { UNDEFINED, EXCITATION, REFOCUSSING, STORE };
+enum rf_type_t { SEQ_RF_UNDEFINED, SEQ_RF_EXCITATION, SEQ_RF_REFOCUSSING, SEQ_RF_STORE };
 
 enum adc_flags {
 
-	ADC_FLAG_ADJ		= (1u << 0),
-	ADC_FLAG_PHASEFT	= (1u << 1),
-	ADC_FLAG_PARTFT		= (1u << 2),
-	ADC_FLAG_FIRSTSLI	= (1u << 3),
-	ADC_FLAG_LASTSLI	= (1u << 4),
-	ADC_FLAG_LASTCON	= (1u << 5),
-	ADC_FLAG_LASTMEAS	= (1u << 6),
-	ADC_FLAG_MEASTIME	= (1u << 7),
+	SEQ_ADC_FLAG_ADJ	= (1u << 0),
+	SEQ_ADC_FLAG_PHASEFT	= (1u << 1),
+	SEQ_ADC_FLAG_PARTFT	= (1u << 2),
+	SEQ_ADC_FLAG_FIRSTSLI	= (1u << 3),
+	SEQ_ADC_FLAG_LASTSLI	= (1u << 4),
+	SEQ_ADC_FLAG_LASTCON	= (1u << 5),
+	SEQ_ADC_FLAG_LASTMEAS	= (1u << 6),
+	SEQ_ADC_FLAG_MEASTIME	= (1u << 7),
 };
 
 
@@ -89,9 +92,9 @@ struct rf_shape {
 
 	long samples;	// shape defined in rad / s
 #ifdef __cplusplus
-	float  shape[MAX_RF_SAMPLES][2];
+	float  shape[SEQ_MAX_RF_SAMPLES][2];
 #else
-	_Complex float shape[MAX_RF_SAMPLES];
+	_Complex float shape[SEQ_MAX_RF_SAMPLES];
 #endif
 
 };
@@ -102,7 +105,6 @@ int events_idx(int n, enum seq_event_type type, int N, const struct seq_event ev
 
 struct grad_trapezoid;
 int seq_grad_to_event(struct seq_event ev[2], double start, const struct grad_trapezoid* grad, double proj[3]);
-
 int wait_time_to_event(struct seq_event* ev, double start, double dur);
 
 void events_get_te(int E, double te[__VLA(E)], int N, const struct seq_event ev[__VLA(N)]);

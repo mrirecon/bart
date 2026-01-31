@@ -52,7 +52,7 @@ int events_idx(int n, enum seq_event_type type, int N, const struct seq_event ev
  *    /\/\
  *   / /\ \
  */
-int seq_grad_to_event(struct seq_event ev[2], double start, const struct grad_trapezoid* grad, double proj[3])
+int seq_grad_to_event(struct seq_event ev[2], double start, const struct grad_trapezoid* grad, double dir[3])
 {
 	if ((!grad) || (fabs(grad->ampl) <= 0.))
 		return 0;
@@ -63,7 +63,7 @@ int seq_grad_to_event(struct seq_event ev[2], double start, const struct grad_tr
 	ev[0].end = start + grad_duration(grad);
 
 	for (int a = 0; a < 3; a++)
-		ev[0].grad.ampl[a] = proj[a] * grad->ampl;
+		ev[0].grad.ampl[a] = dir[a] * grad->ampl;
 
 	ev[1].type = SEQ_EVENT_GRADIENT;
 	ev[1].start = start + grad->rampup;
@@ -71,7 +71,7 @@ int seq_grad_to_event(struct seq_event ev[2], double start, const struct grad_tr
 	ev[1].end = start + grad_total_time(grad);
 
 	for (int a = 0; a < 3; a++)
-		ev[1].grad.ampl[a] = proj[a] * grad->ampl;
+		ev[1].grad.ampl[a] = dir[a] * grad->ampl;
 
 	return 2;
 }
@@ -135,7 +135,12 @@ double events_end_time(int N, const struct seq_event ev[N], int gradients_only, 
 		if (gradients_only && (SEQ_EVENT_GRADIENT != ev[i].type))
 			continue;
 
-		end = ((SEQ_EVENT_GRADIENT == ev[i].type) && flat_end) ? MAX(end, ev[i].mid) : MAX(end, ev[i].end);
+		float ev_end = ev[i].end;
+
+		if (flat_end && (SEQ_EVENT_GRADIENT == ev[i].type))
+			ev_end = ev[i].mid;
+
+		end = MAX(end, ev_end);
 	}
 
 	return end;

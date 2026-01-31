@@ -125,7 +125,7 @@ int seq_sample_rf_shapes(int N, struct rf_shape pulse[N], const struct seq_confi
 
 		pulse[idx].samples = lround(1.E6 * seq->phys.rf_duration);
 
-		if (MAX_RF_SAMPLES < pulse[idx].samples)
+		if (SEQ_MAX_RF_SAMPLES < pulse[idx].samples)
 			return -1;
 
 		double dwell = seq->phys.rf_duration / pulse[idx].samples;
@@ -161,7 +161,7 @@ int seq_sample_rf_shapes(int N, struct rf_shape pulse[N], const struct seq_confi
 
 		pulse[idx].samples = lround(0.5 * 1E6 * pulse[idx].sar_dur);
 
-		if (MAX_RF_SAMPLES < pulse[idx].samples)
+		if (SEQ_MAX_RF_SAMPLES < pulse[idx].samples)
 			return -1;
 
 		double dwell = pp->duration / pulse[idx].samples;

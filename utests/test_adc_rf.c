@@ -69,8 +69,8 @@ static bool test_sinc(void)
 	struct rf_shape rf_shape[10];
 	int rfs = seq_sample_rf_shapes(10, rf_shape, &seq);
 
-	float shape_mag[MAX_RF_SAMPLES];
-	float shape_pha[MAX_RF_SAMPLES];
+	float shape_mag[SEQ_MAX_RF_SAMPLES];
+	float shape_pha[SEQ_MAX_RF_SAMPLES];
 
 	for (int i =0; i < rf_shape[0].samples; i++)
 		seq_cfl_to_sample(&rf_shape[0], i, &shape_mag[i], &shape_pha[i]);
@@ -169,8 +169,8 @@ static bool test_sms(void)
 
 	for (int m = 0; m < seq.geom.mb_factor; m++) {
 
-		float shape_mag[MAX_RF_SAMPLES];
-		float shape_pha[MAX_RF_SAMPLES];
+		float shape_mag[SEQ_MAX_RF_SAMPLES];
+		float shape_pha[SEQ_MAX_RF_SAMPLES];
 
 		for (int i =0; i < rf_shape[0].samples; i++)
 			seq_cfl_to_sample(&rf_shape[m], i, &shape_mag[i], &shape_pha[i]);

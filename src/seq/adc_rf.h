@@ -8,15 +8,13 @@
 #include "seq/event.h"
 
 extern double phase_clamp(double phase);
-extern double flash_ex_calls(const struct seq_config* seq);
+extern long flash_ex_calls(const struct seq_config* seq);
 
 double rf_spoiling(int D, const long pos[__VLA(D)], const struct seq_config* seq);
 
-int prep_rf_inv(struct seq_event* rf_ev, double start, const struct seq_config* seq);
-
-int prep_rf_ex(struct seq_event* rf_ev, double start, double rf_spoil_phase,
+int prep_rf_inversion(struct seq_event* rf_ev, double start, const struct seq_config* seq);
+int prep_rf_excitation(struct seq_event* rf_ev, double start, double rf_spoil_phase,
 		const struct seq_state* seq_state, const struct seq_config* seq);
-
 
 double adc_time_to_echo(const struct seq_config* seq);
 double adc_duration(const struct seq_config* seq);

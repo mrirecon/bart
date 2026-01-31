@@ -63,7 +63,7 @@ double rf_spoiling(int D, const long pos[D], const struct seq_config* seq)
 }
 
 
-int prep_rf_ex(struct seq_event* rf_ev, double start, double rf_spoil_phase,
+int prep_rf_excitation(struct seq_event* rf_ev, double start, double rf_spoil_phase,
 		const struct seq_state* seq_state, const struct seq_config* seq)
 {
 	if (BLOCK_KERNEL_NOISE == seq_state->mode)
@@ -78,12 +78,15 @@ int prep_rf_ex(struct seq_event* rf_ev, double start, double rf_spoil_phase,
 
 	rf_ev->mid = rf_ev->start + (rf_ev->end - rf_ev->start) * asym_pulse;
 
-	rf_ev->pulse.shape_id = (1 < seq->geom.mb_factor) ? seq_state->pos[SLICE_DIM] : 0;
+	rf_ev->pulse.shape_id = 0;
 
-	if (seq->geom.mb_factor <= rf_ev->pulse.shape_id) //SLICE_DIM only used for SMS
+	if (1 < seq->geom.mb_factor)
+		rf_ev->pulse.shape_id = seq_state->pos[SLICE_DIM];
+
+	if (seq->geom.mb_factor <= rf_ev->pulse.shape_id) // SLICE_DIM is only used for SMS
 		return 0;	
 
-	rf_ev->pulse.type = EXCITATION;
+	rf_ev->pulse.type = SEQ_RF_EXCITATION;
 	rf_ev->pulse.fa = seq->phys.flip_angle;
 	rf_ev->pulse.freq = seq->sys.gamma * seq->geom.shift[seq_state->chrono_slice][2] * slice_amplitude(seq);
 	rf_ev->pulse.phase = phase_clamp(rf_spoil_phase);
@@ -92,7 +95,7 @@ int prep_rf_ex(struct seq_event* rf_ev, double start, double rf_spoil_phase,
 }
 
 
-int prep_rf_inv(struct seq_event* rf_ev, double start, const struct seq_config* seq)
+int prep_rf_inversion(struct seq_event* rf_ev, double start, const struct seq_config* seq)
 {
 	if (seq->magn.mag_prep != PREP_IR_NON)
 		return 0;
@@ -107,11 +110,12 @@ int prep_rf_inv(struct seq_event* rf_ev, double start, const struct seq_config* 
 	rf_ev->end = rf_ev->start + pp->duration;
 
 	const double asym_pulse = 0.5;
+
 	rf_ev->mid = rf_ev->start + (rf_ev->end - rf_ev->start) * asym_pulse;
 
 	rf_ev->pulse.shape_id = seq->geom.mb_factor;
 
-	rf_ev->pulse.type = REFOCUSSING;
+	rf_ev->pulse.type = SEQ_RF_REFOCUSSING;
 	rf_ev->pulse.fa = 180.;
 	rf_ev->pulse.freq = 0.;
 	rf_ev->pulse.phase = 0.;
@@ -120,7 +124,7 @@ int prep_rf_inv(struct seq_event* rf_ev, double start, const struct seq_config* 
 }
 
 
-double flash_ex_calls(const struct seq_config* seq)
+long flash_ex_calls(const struct seq_config* seq)
 {
 	long dims[DIMS];
 	md_select_dims(DIMS, PHS1_FLAG|TIME_FLAG|TIME2_FLAG|AVG_FLAG|BATCH_FLAG, dims, seq->loop_dims);
@@ -133,9 +137,9 @@ double flash_ex_calls(const struct seq_config* seq)
 	else
 		dims[SLICE_DIM] = seq->loop_dims[SLICE_DIM];
 
-	//FIXME: energy of first prep pulse (may be alpha/2)
-	return 1. * md_calc_size(DIMS, dims);
+	return md_calc_size(DIMS, dims);
 }
+
 
 double adc_time_to_echo(const struct seq_config* seq)
 {
@@ -187,7 +191,6 @@ int prep_adc(struct seq_event* adc_ev, double start, double rf_spoil_phase,
 	double proj_angle = get_rot_angle(seq_state->pos, seq);
 
 	adc_ev->adc.freq = adc_nco_freq(proj_angle, seq_state->chrono_slice, seq);
-
 	adc_ev->adc.phase = phase_clamp(rf_spoil_phase);
 
 	return 1;

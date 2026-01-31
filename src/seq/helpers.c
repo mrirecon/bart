@@ -30,8 +30,8 @@ int seq_raga_spokes(const struct seq_config* seq)
 {
 	if ((PEMODE_RAGA == seq->enc.pe_mode) || (PEMODE_RAGA_ALIGNED == seq->enc.pe_mode))
 		return raga_spokes(seq->geom.baseres, seq->enc.tiny);
-	else
-		return seq->loop_dims[PHS1_DIM];
+
+	return seq->loop_dims[PHS1_DIM];
 }
 
 int seq_check_equal_dims(int D, const long dims1[D], const long dims2[D], unsigned long flags)
@@ -56,14 +56,19 @@ void seq_minimum_te(const struct seq_config* seq, double* min_te, double* fil_te
 
 long seq_get_slices(const struct seq_config* seq)
 {
-	return (1 < seq->geom.mb_factor) ? seq->loop_dims[SLICE_DIM] * seq->loop_dims[PHS2_DIM] : seq->loop_dims[SLICE_DIM];
+	long nr = seq->loop_dims[SLICE_DIM];
+
+	if (1 < seq->geom.mb_factor)
+		nr *= seq->loop_dims[PHS2_DIM];
+
+	return nr;
 }
 
 
 static long kernels_per_measurement(const long loop_dims[DIMS])
 {
 	long dims[DIMS];
-	md_select_dims(DIMS, (PHS1_FLAG|TIME2_FLAG|AVG_FLAG|SLICE_FLAG|PHS2_FLAG), dims, loop_dims);
+	md_select_dims(DIMS, PHS1_FLAG|TIME2_FLAG|AVG_FLAG|SLICE_FLAG|PHS2_FLAG, dims, loop_dims);
 
 	return md_calc_size(DIMS, dims);
 }
@@ -86,6 +91,7 @@ double seq_total_measure_time(const struct seq_config* seq)
 
 	long dims[DIMS] = { };
 	md_select_dims(DIMS, SEQ_FLAGS & ~(COEFF_FLAG|COEFF2_FLAG), dims, seq->loop_dims);
+
 	long img_calls = md_calc_size(DIMS, dims);
 	double imaging_duration = seq->phys.tr * img_calls;
 
@@ -124,10 +130,13 @@ static void config_to_custom_params(int nl, long custom_long[__VLA(nl)], int nd,
 	custom_long[cil_pe_mode] = seq->enc.pe_mode;;
 	custom_long[cil_contrast] = seq->phys.contrast;
 
-	custom_long[cil_mb_factor] = (CHECKBOX_ON == custom_long[cil_sms]) ? seq->geom.mb_factor : 1;
+	custom_long[cil_mb_factor] = 1;
+
+	if (CHECKBOX_ON == custom_long[cil_sms])
+		custom_long[cil_mb_factor] = seq->geom.mb_factor;
 
 	custom_long[cil_tiny] = seq->enc.tiny;
-	custom_long[cil_rf_duration] = lround(1E6 * seq->phys.rf_duration);
+	custom_long[cil_rf_duration] = lround(.1E6 * seq->phys.rf_duration);
 	custom_long[cil_init_delay] = seq->magn.init_delay;
 	custom_long[cil_inversions] = seq->loop_dims[BATCH_DIM];
 	custom_long[cil_inv_delay] = seq->magn.inv_delay_time;
@@ -148,8 +157,8 @@ void seq_ui_interface_custom_params(int reverse, struct seq_config* seq, int nl,
 
 static void seq_standard_conf_to_bart(struct seq_config* seq, struct seq_standard_conf* std)
 {
-
 	seq->phys.tr = std->tr;
+
 	for (int i = 0; i < MAX_NO_ECHOES; i++)
 		seq->phys.te[i] = std->te[i];
 
@@ -233,10 +242,10 @@ static void loop_dims_to_conf(struct seq_config* seq, const int D, const long in
 			seq->loop_dims[ITER_DIM] = radial_views;
 	}
 
+	seq->loop_dims[TIME2_DIM] = 1;
+
 	if (TRIGGER_OFF != seq->trigger.type)
 		seq->loop_dims[TIME2_DIM] = in_dims[TIME2_DIM];
-	else
-		seq->loop_dims[TIME2_DIM] = 1;
 
 	seq->loop_dims[AVG_DIM] = in_dims[AVG_DIM];
 	seq->loop_dims[PHS1_DIM] = radial_views;
@@ -269,7 +278,6 @@ void seq_ui_interface_loop_dims(int reverse, struct seq_config* seq, const int D
 		conf_to_loop_dims(D, dims, seq);
 	else
 		loop_dims_to_conf(seq, D, dims);
-
 }
 
 
@@ -300,10 +308,10 @@ void seq_set_fov_pos(int N, int M, const float* shifts, struct seq_config* seq)
 	long total_slices = seq_get_slices(seq);
 	assert(total_slices <= N);
 
+	seq->geom.sms_distance = 0;
+
 	if (1 < seq->geom.mb_factor)
 		seq->geom.sms_distance = fabsf(shifts[2] - shifts[seq->loop_dims[PHS2_DIM] * M + 2]);
-	else
-		seq->geom.sms_distance = 0;
 
 	for (int i = 0; i < total_slices; i++) {
 
@@ -315,8 +323,8 @@ void seq_set_fov_pos(int N, int M, const float* shifts, struct seq_config* seq)
 			seq->geom.shift[i][2] = shifts[(total_slices / 2) * M + 2]
 						+ (seq->geom.sms_distance / seq->loop_dims[PHS2_DIM]) 
 						* (i % seq->loop_dims[PHS2_DIM] - floor(seq->loop_dims[PHS2_DIM] / 2.));
-		}
-		else {
+
+		} else {
 
 			seq->geom.shift[i][2] = shifts[i * M + 2];
 		}		
