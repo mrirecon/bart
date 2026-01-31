@@ -35,6 +35,7 @@ static bool test_command(void)
 
 UT_REGISTER_TEST(test_command);
 
+
 static bool test_print(void)
 {
 	struct seq_config seq = seq_config_defaults;
@@ -50,6 +51,7 @@ static bool test_print(void)
 
 UT_REGISTER_TEST(test_print);
 
+
 static bool test_flash_events(void)
 {
 	struct seq_state seq_state = { 0 };
@@ -58,18 +60,18 @@ static bool test_flash_events(void)
 	int E = 200;
 	struct seq_event ev[E];
 
-	seq_state.mode = BLOCK_KERNEL_NOISE;
+	seq_state.mode = SEQ_BLOCK_KERNEL_NOISE;
 	E = flash(E, ev, &seq_state, &seq);
 
 	if ((FLASH_EVENTS - 1) != E) // no rf
 		return false;
 
-	seq_state.mode = BLOCK_KERNEL_DUMMY;
+	seq_state.mode = SEQ_BLOCK_KERNEL_DUMMY;
 	E = flash(E, ev, &seq_state, &seq);
 	if ((FLASH_EVENTS - 1) != E) //no adc
 		return false;
 
-	seq_state.mode = BLOCK_KERNEL_IMAGE;
+	seq_state.mode = SEQ_BLOCK_KERNEL_IMAGE;
 	E = flash(E, ev, &seq_state, &seq);
 
 	if (FLASH_EVENTS != E)
@@ -89,7 +91,7 @@ static bool test_flash_te(void)
 	int E = 200;
 	struct seq_event ev[E];
 
-	seq_state.mode = BLOCK_KERNEL_IMAGE;
+	seq_state.mode = SEQ_BLOCK_KERNEL_IMAGE;
 	E = flash(E, ev, &seq_state, &seq);
 
 	if (FLASH_EVENTS != E)
@@ -110,7 +112,7 @@ static bool test_flash_te_meco(void)
 {
 	struct seq_state seq_state = { 0 };
 	struct seq_config seq = seq_config_defaults;
-	seq.enc.pe_mode = PEMODE_MEMS_HYB;
+	seq.enc.pe_mode = SEQ_PEMODE_MEMS_HYB;
 	seq.loop_dims[TE_DIM] = 5;
 	seq.loop_dims[PHS1_DIM] = 7;
 
@@ -134,7 +136,7 @@ static bool test_flash_te_meco(void)
 	int E = 200;
 	struct seq_event ev[E];
 
-	seq_state.mode = BLOCK_KERNEL_IMAGE;
+	seq_state.mode = SEQ_BLOCK_KERNEL_IMAGE;
 	E = flash(E, ev, &seq_state, &seq);
 
 	if (FLASH_EVENTS_MECO != E)
@@ -161,7 +163,7 @@ static bool test_flash_mom1(void)
 	int E = 200;
 	struct seq_event ev[E];
 
-	seq_state.mode = BLOCK_KERNEL_IMAGE;
+	seq_state.mode = SEQ_BLOCK_KERNEL_IMAGE;
 	E = flash(E, ev, &seq_state, &seq);
 
 	if (FLASH_EVENTS != E)
@@ -198,7 +200,7 @@ static bool test_flash_mom1b(void)
 	int E = 200;
 	struct seq_event ev[E];
 
-	seq_state.mode = BLOCK_KERNEL_IMAGE;
+	seq_state.mode = SEQ_BLOCK_KERNEL_IMAGE;
 	E = flash(E, ev, &seq_state, &seq);
 
 	if (FLASH_EVENTS != E)
@@ -235,7 +237,7 @@ static bool test_flash_mom1c(void)
 	int E = 200;
 	struct seq_event ev[E];
 
-	seq_state.mode = BLOCK_KERNEL_IMAGE;
+	seq_state.mode = SEQ_BLOCK_KERNEL_IMAGE;
 	E = flash(E, ev, &seq_state, &seq);
 
 	if (FLASH_EVENTS != E)
@@ -266,7 +268,7 @@ static bool test_flash_mom_meco(void)
 {
 	struct seq_state seq_state = { 0 };
 	struct seq_config seq = seq_config_defaults;
-	seq.enc.pe_mode = PEMODE_MEMS_HYB;
+	seq.enc.pe_mode = SEQ_PEMODE_MEMS_HYB;
 	seq.loop_dims[TE_DIM] = 5;
 	seq.loop_dims[PHS1_DIM] = 7;
 
@@ -291,7 +293,7 @@ static bool test_flash_mom_meco(void)
 	int E = 200;
 	struct seq_event ev[E];
 
-	seq_state.mode = BLOCK_KERNEL_IMAGE;
+	seq_state.mode = SEQ_BLOCK_KERNEL_IMAGE;
 	E = flash(E, ev, &seq_state, &seq);
 
 	if (FLASH_EVENTS_MECO != E)
@@ -326,7 +328,7 @@ UT_REGISTER_TEST(test_flash_mom_meco);
 static bool test_flash_mom2(void)
 {
 	struct seq_state seq_state = { 0 };
-	seq_state.mode = BLOCK_KERNEL_IMAGE;
+	seq_state.mode = SEQ_BLOCK_KERNEL_IMAGE;
 	struct seq_config seq = seq_config_defaults;
 
 	int E = 200;
@@ -339,10 +341,12 @@ static bool test_flash_mom2(void)
 
 	const int samples = lround(1.E6 * seq.phys.tr);
 	float m0[samples][3];
-	compute_moment0(samples, m0, 1.E-6, E, ev);
-	long adc_mid = 1E6 * ev[events_idx(0, SEQ_EVENT_ADC, E, ev)].mid;
 
-	if (UT_TOL < fabs( m0[adc_mid][0] + m0[adc_mid - 1][0]))
+	seq_compute_moment0(samples, m0, 1.E-6, E, ev);
+
+	long adc_mid = 1.E6 * ev[events_idx(0, SEQ_EVENT_ADC, E, ev)].mid;
+
+	if (UT_TOL < fabs(m0[adc_mid][0] + m0[adc_mid - 1][0]))
 		return false;
 
 	return true;
@@ -354,8 +358,10 @@ UT_REGISTER_TEST(test_flash_mom2);
 static bool test_flash_phase(void)
 {
 	struct seq_state seq_state = { 0 };
-	seq_state.mode = BLOCK_KERNEL_IMAGE;
+	seq_state.mode = SEQ_BLOCK_KERNEL_IMAGE;
+
 	struct seq_config seq = seq_config_defaults;
+
 	seq.geom.shift[0][0] = 10.E-3;
 	seq.geom.shift[0][1] = 20.E-3;
 	seq.geom.shift[0][2] = 30.E-3;
@@ -407,7 +413,7 @@ static bool test_raga_spokes(void)
 		if (0 == E)
 			continue;
 
-		if (BLOCK_KERNEL_IMAGE == seq_state.mode)
+		if (SEQ_BLOCK_KERNEL_IMAGE == seq_state.mode)
 			ctr++;
 
 	} while (seq_continue(&seq_state, &seq));
@@ -444,7 +450,7 @@ static bool test_raga_spokes_full(void)
 		if (0 == E)
 			continue;
 
-		if (BLOCK_KERNEL_IMAGE == seq_state.mode)
+		if (SEQ_BLOCK_KERNEL_IMAGE == seq_state.mode)
 			ctr++;
 
 	} while (seq_continue(&seq_state, &seq));

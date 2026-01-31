@@ -13,34 +13,30 @@
 
 #include "seq/event.h"
 
-enum block {
+enum seq_block {
 
-	BLOCK_UNDEFINED,
-	BLOCK_PRE,
-	BLOCK_KERNEL_CHECK,
-	BLOCK_KERNEL_PREPARE,
-	BLOCK_KERNEL_NOISE,
-	BLOCK_KERNEL_DUMMY ,
-	BLOCK_KERNEL_IMAGE,
-	BLOCK_POST
+	SEQ_BLOCK_UNDEFINED,
+	SEQ_BLOCK_PRE,
+	SEQ_BLOCK_KERNEL_CHECK,
+	SEQ_BLOCK_KERNEL_PREPARE,
+	SEQ_BLOCK_KERNEL_NOISE,
+	SEQ_BLOCK_KERNEL_DUMMY,
+	SEQ_BLOCK_KERNEL_IMAGE,
+	SEQ_BLOCK_POST,
 };
 
+enum seq_context {
 
-enum context {
-
-	CONTEXT_NORMAL,
-	CONTEXT_BINARY,
-	CONTEXT_UPDATE
+	SEQ_CONTEXT_NORMAL,
+	SEQ_CONTEXT_BINARY,
+	SEQ_CONTEXT_UPDATE,
 };
-
-
-
 
 struct seq_state {
 
-	enum block mode;
+	enum seq_block mode;
 	long chrono_slice;
-	enum context context;
+	enum seq_context context;
 	int seq_ut; //perform ut
 	long pos[DIMS];
 	double start_block;
@@ -77,7 +73,7 @@ BARTLIB_API extern double BARTLIB_CALL seq_pulse_scaling(const struct rf_shape* 
 BARTLIB_API extern double BARTLIB_CALL seq_pulse_norm_sum(const struct rf_shape* pulse);
 BARTLIB_API extern void BARTLIB_CALL seq_cfl_to_sample(const struct rf_shape* pulse, int idx, float* mag, float* pha);
 
-BARTLIB_API extern double BARTLIB_CALL seq_block_end(int N, const struct seq_event ev[__VLA(N)], enum block mode, double tr, double raster);
+BARTLIB_API extern double BARTLIB_CALL seq_block_end(int N, const struct seq_event ev[__VLA(N)], enum seq_block mode, double tr, double raster);
 BARTLIB_API extern double BARTLIB_CALL seq_block_end_flat(int N, const struct seq_event ev[__VLA(N)], double raster);
 BARTLIB_API extern double BARTLIB_CALL seq_block_rdt(int N, const struct seq_event ev[__VLA(N)], double raster);
 

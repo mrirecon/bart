@@ -76,7 +76,7 @@ const struct seq_config seq_config_defaults = {
 		.te[0] = 1.90E-3,
 		.dwell = 4.E-6,
 		.os = 2.,
-		.contrast = CONTRAST_RF_RANDOM,
+		.contrast = SEQ_CONTRAST_RF_RANDOM,
 		.rf_duration = 620.E-6,
 		.flip_angle = 6.,
 		.bwtp = 3.8,
@@ -85,28 +85,28 @@ const struct seq_config seq_config_defaults = {
 	.geom = {
 		.fov = .256,
 		.slice_thickness = .006,
-		.shift = { [0 ... MAX_SLICES - 1] = { 0., 0., 0. } },
+		.shift = { [0 ... SEQ_MAX_SLICES - 1] = { 0., 0., 0. } },
 		.baseres = 256,
 		.mb_factor = 1,
 		.sms_distance = .020,
 	},
 
 	.enc = {
-		.pe_mode = PEMODE_RAGA,
+		.pe_mode = SEQ_PEMODE_RAGA,
 		.tiny = 1,
 		.aligned_flags = 0,
 		.order = SEQ_ORDER_AVG_OUTER,
 	},
 
 	.magn = {
-		.mag_prep = PREP_OFF,
+		.mag_prep = SEQ_PREP_OFF,
 		.ti = 0.,
 		.init_delay = 0.,
 		.inv_delay_time = 0.,
 	},
 
 	.trigger = {
-		.type = TRIGGER_OFF,
+		.type = SEQ_TRIGGER_OFF,
 		.delay_time = 0.,
 		.pulses = 0,
 		.trigger_out = 1,

@@ -26,7 +26,8 @@
 
 int seq_raga_spokes(const struct seq_config* seq)
 {
-	if ((PEMODE_RAGA == seq->enc.pe_mode) || (PEMODE_RAGA_ALIGNED == seq->enc.pe_mode))
+	if (   (SEQ_PEMODE_RAGA == seq->enc.pe_mode)
+	    || (SEQ_PEMODE_RAGA_ALIGNED == seq->enc.pe_mode))
 		return raga_spokes(seq->geom.baseres, seq->enc.tiny);
 
 	return seq->loop_dims[PHS1_DIM];
@@ -83,7 +84,7 @@ double seq_total_measure_time(const struct seq_config* seq)
 	struct seq_event ev[6];
 	int e = mag_prep(ev, seq);
 
-	double prep_pulse_duration = seq_block_end(e, ev, BLOCK_PRE, seq->phys.tr, seq->sys.raster_grad);
+	double prep_pulse_duration = seq_block_end(e, ev, SEQ_BLOCK_PRE, seq->phys.tr, seq->sys.raster_grad);
 	prep_pulse_duration += seq->magn.inv_delay_time;
 	// prep_pulse_duration *= inv_calls(seq);
 
@@ -93,7 +94,7 @@ double seq_total_measure_time(const struct seq_config* seq)
 	long img_calls = md_calc_size(DIMS, dims);
 	double imaging_duration = seq->phys.tr * img_calls;
 
-	if ((TRIGGER_OFF != seq->trigger.type) && (1 < seq->trigger.pulses)) {
+	if ((SEQ_TRIGGER_OFF != seq->trigger.type) && (1 < seq->trigger.pulses)) {
 
 		imaging_duration = 1. * (seq->trigger.delay_time + seq->phys.tr) * img_calls * (seq->trigger.pulses - 1);
 	}
@@ -108,7 +109,10 @@ static void custom_params_to_config(struct seq_config* seq, int nl, const long c
 	seq->enc.pe_mode = (enum pe_mode)custom_long[cil_pe_mode];
 	seq->phys.contrast = (enum flash_contrast)custom_long[cil_contrast];
 
-	seq->geom.mb_factor = (CHECKBOX_ON == custom_long[cil_sms]) ? custom_long[cil_mb_factor] : 1;
+	seq->geom.mb_factor = 1;
+
+	if (CHECKBOX_ON == custom_long[cil_sms])
+		seq->geom.mb_factor = custom_long[cil_mb_factor];
 
 	seq->phys.os = 2.;
 
@@ -156,7 +160,8 @@ void seq_ui_interface_custom_params(int reverse, struct seq_config* seq, int nl,
 static void seq_bart_to_standard_conf(struct seq_standard_conf* std, struct seq_config* seq)
 {
 	std->tr = seq->phys.tr;
-	for (int i = 0; i < MAX_NO_ECHOES; i++)
+
+	for (int i = 0; i < SEQ_MAX_NO_ECHOES; i++)
 		std->te[i] = seq->phys.te[i];
 
 	std->dwell = seq->phys.dwell;
@@ -177,7 +182,10 @@ static void seq_bart_to_standard_conf(struct seq_standard_conf* std, struct seq_
 	std->min_duration_ro_rf = seq->sys.min_duration_ro_rf;
 
 	std->mag_prep = seq->magn.mag_prep;
-	std->ti = (PREP_OFF != seq->magn.mag_prep) ? seq->magn.ti : 0;
+	std->ti = 0.;
+
+	if (SEQ_PREP_OFF != seq->magn.mag_prep)
+	       std->ti = seq->magn.ti;
 
 	std->trigger_type = seq->trigger.type;
 	std->trigger_delay_time = seq->trigger.delay_time;
@@ -186,8 +194,7 @@ static void seq_bart_to_standard_conf(struct seq_standard_conf* std, struct seq_
 
 	std->enc_order = seq->enc.order;
 
-
-	for (int i = 0; i < ACOUSTIC_RES_ENTRIES; i++) {
+	for (int i = 0; i < SEQ_ACOUSTIC_RESONANCE_ENTRIES; i++) {
 
 		std->acoustic_res_freq[i] = std->acoustic_res_freq[i];
 		std->acoustic_res_bw[i] = std->acoustic_res_bw[i];
@@ -198,7 +205,7 @@ static void seq_standard_conf_to_bart(struct seq_config* seq, struct seq_standar
 {
 	seq->phys.tr = std->tr;
 
-	for (int i = 0; i < MAX_NO_ECHOES; i++)
+	for (int i = 0; i < SEQ_MAX_NO_ECHOES; i++)
 		seq->phys.te[i] = std->te[i];
 
 	seq->phys.dwell = std->dwell;
@@ -224,7 +231,10 @@ static void seq_standard_conf_to_bart(struct seq_config* seq, struct seq_standar
 
 	seq->magn.mag_prep = std->mag_prep;
 
-	seq->magn.ti = (PREP_OFF != seq->magn.mag_prep) ? std->ti : 0;
+	seq->magn.ti = 0;
+
+	if (SEQ_PREP_OFF != seq->magn.mag_prep)
+		seq->magn.ti = std->ti;
 
 	seq->trigger.type = std->trigger_type;
 	seq->trigger.delay_time = std->trigger_delay_time;
@@ -262,8 +272,18 @@ static void loop_dims_to_conf(struct seq_config* seq, const int D, const long in
 	}
 
 	long total_slices = in_dims[SLICE_DIM];
-	seq->loop_dims[SLICE_DIM] = (seq->geom.mb_factor > 1) ? seq->geom.mb_factor : total_slices;
-	seq->loop_dims[PHS2_DIM] = (seq->geom.mb_factor > 1) ? total_slices / seq->geom.mb_factor : 1;
+
+	if (1 < seq->geom.mb_factor) {
+
+		seq->loop_dims[SLICE_DIM] = seq->geom.mb_factor;
+		seq->loop_dims[PHS2_DIM] = total_slices / seq->geom.mb_factor;
+
+	} else {
+
+		seq->loop_dims[SLICE_DIM] = total_slices;
+		seq->loop_dims[PHS2_DIM] = 1;
+	}
+
 	if ((seq->loop_dims[PHS2_DIM] * seq->loop_dims[SLICE_DIM]) != total_slices)
 		seq->loop_dims[PHS2_DIM] = -1; //mb groups
 
@@ -272,10 +292,10 @@ static void loop_dims_to_conf(struct seq_config* seq, const int D, const long in
 
 	long radial_views = in_dims[PHS1_DIM];
 
-	if ((PEMODE_RAGA == seq->enc.pe_mode)
-	    || (PEMODE_RAGA_ALIGNED == seq->enc.pe_mode)) {
+	if (   (SEQ_PEMODE_RAGA == seq->enc.pe_mode)
+	    || (SEQ_PEMODE_RAGA_ALIGNED == seq->enc.pe_mode)) {
 
-		seq->loop_dims[TIME_DIM] = ceil(1. * frames / radial_views);
+		seq->loop_dims[TIME_DIM] = (long)ceil(1. * frames / radial_views);
 		seq->loop_dims[ITER_DIM] = frames % radial_views;
 
 		if (0 == seq->loop_dims[ITER_DIM])
@@ -284,7 +304,7 @@ static void loop_dims_to_conf(struct seq_config* seq, const int D, const long in
 
 	seq->loop_dims[TIME2_DIM] = 1;
 
-	if (TRIGGER_OFF != seq->trigger.type)
+	if (SEQ_TRIGGER_OFF != seq->trigger.type)
 		seq->loop_dims[TIME2_DIM] = in_dims[TIME2_DIM];
 
 	seq->loop_dims[AVG_DIM] = in_dims[AVG_DIM];
@@ -433,7 +453,8 @@ void seq_print_info_radial_views(int N, char* info, const struct seq_config* seq
 {
 	(void) N;
 
-	if ((PEMODE_RAGA != seq->enc.pe_mode) && (PEMODE_RAGA_ALIGNED != seq->enc.pe_mode))
+	if (   (SEQ_PEMODE_RAGA != seq->enc.pe_mode)
+	    && (SEQ_PEMODE_RAGA_ALIGNED != seq->enc.pe_mode))
 		return;
 
 	int ctr = 0;

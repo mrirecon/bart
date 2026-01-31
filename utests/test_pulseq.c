@@ -139,7 +139,7 @@ static bool test_rf_shape2(void)
 {
 	struct seq_config seq = seq_config_defaults;
 
-	seq.magn.mag_prep = PREP_IR_NON;
+	seq.magn.mag_prep = SEQ_PREP_IR_NONSELECTIVE;
 
 	struct rf_shape pulse[2];
 	seq_sample_rf_shapes(2, pulse, &seq);
@@ -191,7 +191,7 @@ static bool test_events_to_pulseq(void)
 	struct seq_event ev[20];
 	struct seq_config seq = seq_config_defaults;
 	struct seq_state seq_state = { };
-	seq_state.mode = BLOCK_KERNEL_IMAGE;
+	seq_state.mode = SEQ_BLOCK_KERNEL_IMAGE;
 
 	int e = flash(20, &ev[0], &seq_state, &seq);
 

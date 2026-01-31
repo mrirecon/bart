@@ -34,7 +34,7 @@ static bool rf_spoiling_spoiled(void)
 	};
 
 	struct seq_config seq = seq_config_defaults;
-	seq.phys.contrast = CONTRAST_RF_SPOILED;
+	seq.phys.contrast = SEQ_CONTRAST_RF_SPOILED;
 
 	struct seq_state seq_state = { };
 

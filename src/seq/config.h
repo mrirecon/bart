@@ -20,19 +20,19 @@ extern const int seq_loop_order_multislice[DIMS];
 
 enum flash_contrast {
 
-	CONTRAST_NO_SPOILING = 0,
-	CONTRAST_RF_RANDOM,
-	CONTRAST_RF_SPOILED
+	SEQ_CONTRAST_NO_SPOILING = 0,
+	SEQ_CONTRAST_RF_RANDOM,
+	SEQ_CONTRAST_RF_SPOILED
 };
 
 
 enum pe_mode {
 
-	PEMODE_TURN = 2,
-	PEMODE_MEMS_HYB,
-	PEMODE_RAGA,
-	PEMODE_RAGA_ALIGNED,
-	PEMODE_RAGA_MEMS
+	SEQ_PEMODE_TURN = 2,
+	SEQ_PEMODE_MEMS_HYB,
+	SEQ_PEMODE_RAGA,
+	SEQ_PEMODE_RAGA_ALIGNED,
+	SEQ_PEMODE_RAGA_MEMS
 };
 
 
@@ -40,7 +40,7 @@ enum pe_mode {
 struct seq_phys {
 
 	double tr;
-	double te[MAX_NO_ECHOES];
+	double te[SEQ_MAX_NO_ECHOES];
 
 	double dwell;
 	double os;
@@ -55,7 +55,7 @@ struct seq_geom {
 
 	double fov;
 	double slice_thickness;
-	double shift[MAX_SLICES][3]; // [ro, pe, slice]
+	double shift[SEQ_MAX_SLICES][3]; // [ro, pe, slice]
 
 	int baseres;
 

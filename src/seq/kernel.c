@@ -20,7 +20,7 @@
 #endif
 
 
-void linearize_events(int N, struct seq_event ev[__VLA(N)], double* start_block, enum block mode, double tr, double raster)
+void seq_linearize_events(int N, struct seq_event ev[__VLA(N)], double* start_block, enum seq_block mode, double tr, double raster)
 {
 	if ((0 >= N) || (0. > *start_block))
 		return;
@@ -40,7 +40,7 @@ void linearize_events(int N, struct seq_event ev[__VLA(N)], double* start_block,
  * Compute 0th moment on a raster after RF pulse.
  * 0th moment before excitation pulse is zero.
  */
-void compute_moment0_offset(int M, float moments[M][3], double start, double dt, int N, const struct seq_event ev[N])
+void seq_compute_moment0_offset(int M, float moments[M][3], double start, double dt, int N, const struct seq_event ev[N])
 {
 	for (int i = 0; i < M; i++) 
 		for (int a = 0; a < 3; a++)
@@ -54,7 +54,8 @@ void compute_moment0_offset(int M, float moments[M][3], double start, double dt,
 	if (0 < events_counter(SEQ_EVENT_PULSE, N, ev))
 		rf_idx = events_idx(events_counter(SEQ_EVENT_PULSE, N, ev) - 1, SEQ_EVENT_PULSE, N, ev);
 
-	double t_reset = -1;
+	double t_reset = -1.;
+
 	if ((0 < rf_idx) && (SEQ_RF_EXCITATION == ev[rf_idx].pulse.type)) {
 
 		t_reset = ev[rf_idx].mid;
@@ -67,11 +68,14 @@ void compute_moment0_offset(int M, float moments[M][3], double start, double dt,
 		assert((0 <= p) && (p <= M));
 
 		double m[3] = { };
+
 		if (start + (p + 0.5) * dt > t_reset) {
 
 			moment_sum(m, start + (p + 0.5) * dt, N, ev);
+
 			for (int a = 0; a < 3; a++) 
 				moments[p][a] = m[a] - m_rf[a];
+
 		} else {
 
 			for (int a = 0; a < 3; a++) 
@@ -81,15 +85,15 @@ void compute_moment0_offset(int M, float moments[M][3], double start, double dt,
 }
 
 
-void compute_moment0(int M, float moments[M][3], double dt, int N, const struct seq_event ev[N])
+void seq_compute_moment0(int M, float moments[M][3], double dt, int N, const struct seq_event ev[N])
 {
-	compute_moment0_offset(M, moments, 0., dt, N, ev);
+	seq_compute_moment0_offset(M, moments, 0., dt, N, ev);
 }
 
 /*
  * Compute times and phase of adc samples. 
  */
-void compute_adc_samples(int D, const long adc_dims[D], complex float* adc, int N, const struct seq_event ev[N])
+void seq_compute_adc_samples(int D, const long adc_dims[D], complex float* adc, int N, const struct seq_event ev[N])
 {
 	md_clear(D, adc_dims, adc, CFL_SIZE);
 
@@ -123,7 +127,7 @@ void compute_adc_samples(int D, const long adc_dims[D], complex float* adc, int 
 }
 
 
-void gradients_support(int M, double gradients[M][6], int N, const struct seq_event ev[N])
+void seq_gradients_support(int M, double gradients[M][6], int N, const struct seq_event ev[N])
 {
 	for (int i = 0; i < M; i++) 
 		for (int a = 0; a < 6; a++)

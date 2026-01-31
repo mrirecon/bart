@@ -21,24 +21,23 @@
 
 static const struct selection_opt pemode_opts[] = {
 
-	{ PEMODE_TURN, "1. TURN", },
-	{ PEMODE_RAGA, "4. RAGA", },
-	{ PEMODE_RAGA_ALIGNED, "5. RAGA:AL", },
-	// { PEMODE_CARTESIAN, "7. CART", },
+	{ SEQ_PEMODE_TURN, "1. TURN", },
+	{ SEQ_PEMODE_RAGA, "4. RAGA", },
+	{ SEQ_PEMODE_RAGA_ALIGNED, "5. RAGA:AL", },
 };
 
 
 static const struct selection_opt contrast_opts[] = {
 
-	{ CONTRAST_RF_RANDOM, "1. RF Random" },
-	{ CONTRAST_RF_SPOILED, "2. RF Spoiled" },
+	{ SEQ_CONTRAST_RF_RANDOM, "1. RF Random" },
+	{ SEQ_CONTRAST_RF_SPOILED, "2. RF Spoiled" },
 };
 
 
 static const struct seq_ui_selection custom_selection_defaults[] = {
 
-	{ "seq_wip5", cil_pe_mode, "PE Mode", ARRAY_SIZE(pemode_opts), &pemode_opts[0], PEMODE_TURN, "" },
-	{ "seq_wip2", cil_contrast, "Contrast", ARRAY_SIZE(contrast_opts), &contrast_opts[0], CONTRAST_RF_RANDOM, "" },
+	{ "seq_wip5", cil_pe_mode, "PE Mode", ARRAY_SIZE(pemode_opts), &pemode_opts[0], SEQ_PEMODE_TURN, "" },
+	{ "seq_wip2", cil_contrast, "Contrast", ARRAY_SIZE(contrast_opts), &contrast_opts[0], SEQ_CONTRAST_RF_RANDOM, "" },
 };
 
 static const struct seq_ui_long custom_bool_defaults[] = {

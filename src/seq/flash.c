@@ -95,8 +95,8 @@ static double ro_momentum_after_echo(long echo, const struct seq_config* seq)
 
 static double ro_blip_angle(const long pos[DIMS], const struct seq_config* seq)
 {
-	if (((PEMODE_MEMS_HYB == seq->enc.pe_mode)
-	     || (PEMODE_RAGA_MEMS == seq->enc.pe_mode))
+	if ((   (SEQ_PEMODE_MEMS_HYB == seq->enc.pe_mode)
+	     || (SEQ_PEMODE_RAGA_MEMS == seq->enc.pe_mode))
 	    && (0 < pos[TE_DIM])) {
 
 		double angle_curr = get_rot_angle(pos, seq);
@@ -120,7 +120,9 @@ static double ro_blip_angle(const long pos[DIMS], const struct seq_config* seq)
 
 static double ro_blip_moment(const long pos[DIMS], const struct seq_config* seq)
 {
-	if (((PEMODE_MEMS_HYB == seq->enc.pe_mode) || (PEMODE_RAGA_MEMS == seq->enc.pe_mode)) && (pos[TE_DIM] > 0)) {
+	if ((   (SEQ_PEMODE_MEMS_HYB == seq->enc.pe_mode)
+	     || (SEQ_PEMODE_RAGA_MEMS == seq->enc.pe_mode))
+	    && (0 < pos[TE_DIM])) {
 
 		double angle_curr = get_rot_angle(pos, seq);
 		double moment_curr = ro_momentum_to_echo(pos[TE_DIM], seq);
@@ -159,8 +161,8 @@ static int prep_grad_ro_blip(struct grad_trapezoid* grad, long echo, const struc
 {
 	*grad = (struct grad_trapezoid){ 0 };
 
-	if (((PEMODE_MEMS_HYB == seq->enc.pe_mode)
-	     || (PEMODE_RAGA_MEMS == seq->enc.pe_mode))
+	if ((   (SEQ_PEMODE_MEMS_HYB == seq->enc.pe_mode)
+	     || (SEQ_PEMODE_RAGA_MEMS == seq->enc.pe_mode))
 	    && (0 < echo)) {
 
 		long pos0[DIMS] = { [TE_DIM] = echo };
@@ -270,7 +272,7 @@ void min_te_flash(const struct seq_config* seq, double* min_te, double* fill_te)
 
 	double blip_time = 0.;
 
-	if ((1 < seq->loop_dims[TE_DIM]) && (PEMODE_MEMS_HYB == seq->enc.pe_mode)) {
+	if ((1 < seq->loop_dims[TE_DIM]) && (SEQ_PEMODE_MEMS_HYB == seq->enc.pe_mode)) {
 
 		struct grad_trapezoid grad;
 		long pos0[DIMS] = { };
@@ -313,8 +315,8 @@ struct flash_timing {
 	double slice_rephaser;
 	double readout_dephaser;
 	double readout_blip; // actually MAX_NO_ECHOES
-	double readout[MAX_NO_ECHOES];
-	double adc[MAX_NO_ECHOES];
+	double readout[SEQ_MAX_NO_ECHOES];
+	double adc[SEQ_MAX_NO_ECHOES];
 };
 
 
@@ -429,7 +431,8 @@ int flash(int N, struct seq_event ev[N], struct seq_state* seq_state, const stru
 	if (seq_block_end_flat(i, ev, seq->sys.raster_grad) > seq->phys.tr)
 		return ERROR_END_FLAT_KERNEL;
 
-	if (((PEMODE_RAGA == seq->enc.pe_mode) || (PEMODE_RAGA_ALIGNED == seq->enc.pe_mode))
+	if ((   (SEQ_PEMODE_RAGA == seq->enc.pe_mode)
+	     || (SEQ_PEMODE_RAGA_ALIGNED == seq->enc.pe_mode))
 		&& ((seq->loop_dims[TIME_DIM] - 1) == seq_state->pos[TIME_DIM])
 		&& ((seq->loop_dims[ITER_DIM] - 1) == seq_state->pos[PHS1_DIM]))
 			seq_state->pos[PHS1_DIM] = seq->loop_dims[PHS1_DIM] - 1;

@@ -33,7 +33,8 @@ static bool test_get_rot_angle(void)
 	if (TOL < angle_diff(get_rot_angle(pos, &seq), 216. * (M_PI / 180.)))
 		return false;
 
-	seq.enc.pe_mode = PEMODE_TURN;
+	seq.enc.pe_mode = SEQ_PEMODE_TURN;
+
 	if (TOL < angle_diff(get_rot_angle(pos, &seq), (2./5.) * M_PI))
 		return false;
 

@@ -22,12 +22,13 @@
 
 static bool test_block_minv_init_delay(void)
 {
-	const enum block blocks[16] = { BLOCK_PRE, BLOCK_KERNEL_NOISE, BLOCK_PRE,
-		BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE,
-		BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE,
-		BLOCK_PRE,
-		BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE,
-		BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE
+	const enum seq_block blocks[16] = {
+		SEQ_BLOCK_PRE, SEQ_BLOCK_KERNEL_NOISE, SEQ_BLOCK_PRE,
+		SEQ_BLOCK_KERNEL_IMAGE, SEQ_BLOCK_KERNEL_IMAGE, SEQ_BLOCK_KERNEL_IMAGE,
+		SEQ_BLOCK_KERNEL_IMAGE, SEQ_BLOCK_KERNEL_IMAGE, SEQ_BLOCK_KERNEL_IMAGE,
+		SEQ_BLOCK_PRE,
+		SEQ_BLOCK_KERNEL_IMAGE, SEQ_BLOCK_KERNEL_IMAGE, SEQ_BLOCK_KERNEL_IMAGE,
+		SEQ_BLOCK_KERNEL_IMAGE, SEQ_BLOCK_KERNEL_IMAGE, SEQ_BLOCK_KERNEL_IMAGE
 	};
 
 	struct bart_seq* seq = bart_seq_alloc("");
@@ -35,7 +36,7 @@ static bool test_block_minv_init_delay(void)
 
 	seq->conf->magn.init_delay = 1.;
 	seq->conf->magn.ti = 100.E-3;
-	seq->conf->magn.mag_prep = PREP_IR_NON;
+	seq->conf->magn.mag_prep = SEQ_PREP_IR_NONSELECTIVE;
 
 	seq->conf->loop_dims[BATCH_DIM] = 2;
 	seq->conf->loop_dims[SLICE_DIM] = 2;
@@ -58,16 +59,21 @@ static bool test_block_minv_init_delay(void)
 		if (blocks[i] != seq->state->mode)
 			return false;
 
-		if ((BLOCK_KERNEL_IMAGE == seq->state->mode) && (FLASH_EVENTS != E))
+		if ((SEQ_BLOCK_KERNEL_IMAGE == seq->state->mode) && (FLASH_EVENTS != E))
 			return false;
 
-		if (BLOCK_PRE == seq->state->mode)
+		if (SEQ_BLOCK_PRE == seq->state->mode)
 			pre_blocks++;
 
 		// correct delay_meas_time
-		if ((BLOCK_PRE == seq->state->mode) && (1 == E) && (seq->conf->magn.init_delay != seq_block_end(E, seq->event, seq->state->mode, seq->conf->phys.tr, seq->conf->sys.raster_grad)))
+		if (   (SEQ_BLOCK_PRE == seq->state->mode)
+		    && (1 == E)
+		    && (seq->conf->magn.init_delay != seq_block_end(E, seq->event, seq->state->mode, seq->conf->phys.tr, seq->conf->sys.raster_grad)))
 			return false;
-		else if ((BLOCK_PRE == seq->state->mode) && (1 < E) && (1.E-4 * UT_TOL < fabs(seq->conf->magn.ti - (seq->event[E - 1].end - seq->event[E - 1].start))))
+
+		if (   (SEQ_BLOCK_PRE == seq->state->mode)
+		    && (1 < E)
+		    && (1.E-4 * UT_TOL < fabs(seq->conf->magn.ti - (seq->event[E - 1].end - seq->event[E - 1].start))))
 			return false;
 
 		i++;
@@ -87,12 +93,12 @@ UT_REGISTER_TEST(test_block_minv_init_delay);
 
 static bool test_block_minv_multislice(void)
 {
-	const enum block blocks[21] = {
-		BLOCK_KERNEL_NOISE,
-		BLOCK_PRE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_POST,
-		BLOCK_PRE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_POST,
-		BLOCK_PRE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_POST,
-		BLOCK_PRE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_KERNEL_IMAGE, BLOCK_POST,
+	const enum seq_block blocks[21] = {
+		SEQ_BLOCK_KERNEL_NOISE,
+		SEQ_BLOCK_PRE, SEQ_BLOCK_KERNEL_IMAGE, SEQ_BLOCK_KERNEL_IMAGE, SEQ_BLOCK_KERNEL_IMAGE, SEQ_BLOCK_POST,
+		SEQ_BLOCK_PRE, SEQ_BLOCK_KERNEL_IMAGE, SEQ_BLOCK_KERNEL_IMAGE, SEQ_BLOCK_KERNEL_IMAGE, SEQ_BLOCK_POST,
+		SEQ_BLOCK_PRE, SEQ_BLOCK_KERNEL_IMAGE, SEQ_BLOCK_KERNEL_IMAGE, SEQ_BLOCK_KERNEL_IMAGE, SEQ_BLOCK_POST,
+		SEQ_BLOCK_PRE, SEQ_BLOCK_KERNEL_IMAGE, SEQ_BLOCK_KERNEL_IMAGE, SEQ_BLOCK_KERNEL_IMAGE, SEQ_BLOCK_POST,
 	};
 
 	struct bart_seq* seq = bart_seq_alloc("");
@@ -100,7 +106,7 @@ static bool test_block_minv_multislice(void)
 
 	seq->conf->enc.order = SEQ_ORDER_SEQ_MS;
 	seq->conf->magn.ti = 100.E-3;
-	seq->conf->magn.mag_prep = PREP_IR_NON;
+	seq->conf->magn.mag_prep = SEQ_PREP_IR_NONSELECTIVE;
 	seq->conf->magn.inv_delay_time = 100.;
 
 	seq->conf->loop_dims[BATCH_DIM] = 2;
@@ -124,14 +130,16 @@ static bool test_block_minv_multislice(void)
 		if (blocks[i] != seq->state->mode)
 			return false;
 
-		if ((BLOCK_KERNEL_IMAGE == seq->state->mode) && (FLASH_EVENTS != E))
+		if ((SEQ_BLOCK_KERNEL_IMAGE == seq->state->mode) && (FLASH_EVENTS != E))
 			return false;
 
-		if (BLOCK_PRE == seq->state->mode)
+		if (SEQ_BLOCK_PRE == seq->state->mode)
 			inversions++;
 
 		// correct ti in mag_prep block
-		if ((BLOCK_PRE == seq->state->mode) && (2 == E) && (seq->conf->magn.ti != seq_block_end(E, seq->event, seq->state->mode, seq->conf->phys.tr, seq->conf->sys.raster_grad)))
+		if (   (SEQ_BLOCK_PRE == seq->state->mode)
+		    && (2 == E)
+		    && (seq->conf->magn.ti != seq_block_end(E, seq->event, seq->state->mode, seq->conf->phys.tr, seq->conf->sys.raster_grad)))
 			return false;
 
 		i++;

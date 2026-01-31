@@ -24,32 +24,32 @@ void traj_conf_from_seq(struct traj_conf *conf, const struct seq_config* seq)
 
 	switch (seq->enc.pe_mode) {
 
-	case PEMODE_TURN:
+	case SEQ_PEMODE_TURN:
 
 		conf->golden = false;
 		conf->aligned = true;
 		conf->turns = seq->enc.tiny;
 		break;
 
-	case PEMODE_MEMS_HYB:
+	case SEQ_PEMODE_MEMS_HYB:
 
 		conf->mems_traj = true;
 		conf->tiny_gold = seq->enc.tiny;
 		break;
 
-	case PEMODE_RAGA:
+	case SEQ_PEMODE_RAGA:
 
 		conf->rational = true;
 		conf->aligned_flags = 0;
 		break;
 
-	case PEMODE_RAGA_ALIGNED:
+	case SEQ_PEMODE_RAGA_ALIGNED:
 
 		conf->rational = true;
 		conf->aligned_flags = PHS2_FLAG | SLICE_FLAG;
 		break;
 
-	case PEMODE_RAGA_MEMS:
+	case SEQ_PEMODE_RAGA_MEMS:
 
 		assert(0);
 	}

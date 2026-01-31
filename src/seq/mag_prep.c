@@ -12,7 +12,7 @@
 
 int mag_prep(struct seq_event ev[6], const struct seq_config* seq)
 {
-	if (PREP_IR_NON != seq->magn.mag_prep)
+	if (SEQ_PREP_IR_NONSELECTIVE != seq->magn.mag_prep)
 		return 0;
 
 	int i = 0;

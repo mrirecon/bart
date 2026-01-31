@@ -25,9 +25,7 @@
 #include "adc_rf.h"
 
 
-#ifndef RFSPOIL_INCREMENTdeg
-#define RFSPOIL_INCREMENTdeg	50.0
-#endif
+#define RFSPOIL_INCREMENT_DEG	50.0
 
 
 double phase_clamp(double phase)
@@ -43,17 +41,17 @@ double rf_spoiling(int D, const long pos[D], const struct seq_config* seq)
 
 	switch (seq->phys.contrast) {
 
-	case CONTRAST_NO_SPOILING:
+	case SEQ_CONTRAST_NO_SPOILING:
 
 		return 0.;
 
-	case CONTRAST_RF_SPOILED:
+	case SEQ_CONTRAST_RF_SPOILED:
 
 		idx = 1. + md_ravel_index_permuted(DIMS, pos, SEQ_FLAGS & ~(COEFF_FLAG|COEFF2_FLAG), seq->loop_dims, seq->order);
 
-		return fmod(0.5 * RFSPOIL_INCREMENTdeg * (idx + pow(idx, 2.)), 360.);
+		return fmod(0.5 * RFSPOIL_INCREMENT_DEG * (idx + pow(idx, 2.)), 360.);
 
-	case CONTRAST_RF_RANDOM:
+	case SEQ_CONTRAST_RF_RANDOM:
 
 		return uniform_rand() * 360. - 180.;
 
@@ -66,7 +64,7 @@ double rf_spoiling(int D, const long pos[D], const struct seq_config* seq)
 int prep_rf_excitation(struct seq_event* rf_ev, double start, double rf_spoil_phase,
 		const struct seq_state* seq_state, const struct seq_config* seq)
 {
-	if (BLOCK_KERNEL_NOISE == seq_state->mode)
+	if (SEQ_BLOCK_KERNEL_NOISE == seq_state->mode)
 		return 0;
 
 	rf_ev->type = SEQ_EVENT_PULSE;	
@@ -97,7 +95,7 @@ int prep_rf_excitation(struct seq_event* rf_ev, double start, double rf_spoil_ph
 
 int prep_rf_inversion(struct seq_event* rf_ev, double start, const struct seq_config* seq)
 {
-	if (seq->magn.mag_prep != PREP_IR_NON)
+	if (seq->magn.mag_prep != SEQ_PREP_IR_NONSELECTIVE)
 		return 0;
 
 	rf_ev->type = SEQ_EVENT_PULSE;	
@@ -129,7 +127,8 @@ long flash_ex_calls(const struct seq_config* seq)
 	long dims[DIMS];
 	md_select_dims(DIMS, PHS1_FLAG|TIME_FLAG|TIME2_FLAG|AVG_FLAG|BATCH_FLAG, dims, seq->loop_dims);
 
-	if ((PEMODE_RAGA == seq->enc.pe_mode) || (PEMODE_RAGA_ALIGNED == seq->enc.pe_mode))
+	if (   (SEQ_PEMODE_RAGA == seq->enc.pe_mode)
+	    || (SEQ_PEMODE_RAGA_ALIGNED == seq->enc.pe_mode))
 		dims[PHS1_DIM] = 1;
 
 	if (1 < seq->geom.mb_factor)
@@ -162,7 +161,7 @@ static double adc_nco_freq(double proj_angle, long chrono_slice, const struct se
 int prep_adc(struct seq_event* adc_ev, double start, double rf_spoil_phase,
 		const struct seq_state* seq_state, const struct seq_config* seq)
 {
-	if (BLOCK_KERNEL_DUMMY == seq_state->mode)
+	if (SEQ_BLOCK_KERNEL_DUMMY == seq_state->mode)
 		return 0;
 
 	adc_ev->type = SEQ_EVENT_ADC;
@@ -177,13 +176,15 @@ int prep_adc(struct seq_event* adc_ev, double start, double rf_spoil_phase,
 
 	md_copy_dims(DIMS, adc_ev->adc.pos, seq_state->pos);
 
-	if ((PEMODE_RAGA == seq->enc.pe_mode) || (PEMODE_RAGA_ALIGNED == seq->enc.pe_mode)) {
+	if (   (SEQ_PEMODE_RAGA == seq->enc.pe_mode)
+	    || (SEQ_PEMODE_RAGA_ALIGNED == seq->enc.pe_mode)) {
 
 		struct traj_conf conf;
 		traj_conf_from_seq(&conf, seq);
 
 		adc_ev->adc.pos[PHS1_DIM] = raga_increment_from_pos(seq->order, seq_state->pos,
-						SEQ_FLAGS & ~(COEFF_FLAG | COEFF2_FLAG), seq->loop_dims, &conf);
+							SEQ_FLAGS & ~(COEFF_FLAG | COEFF2_FLAG),
+							seq->loop_dims, &conf);
 	}
 
 	adc_ev->adc.os = seq->phys.os;

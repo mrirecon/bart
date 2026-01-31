@@ -28,6 +28,7 @@
 #define MAX_EVENTS 2048
 #define MAX_RF_PULSES 32
 
+
 struct bart_seq* bart_seq_alloc(const char* driver_version)
 {
 	struct bart_seq* seq = NULL;
@@ -36,31 +37,32 @@ struct bart_seq* bart_seq_alloc(const char* driver_version)
 	seq->bart_version = bart_version;
 	seq->driver_version = driver_version;
 
-	seq->conf = xmalloc(sizeof *(seq->conf));
-	seq->state = xmalloc(sizeof *(seq->state));
+	seq->conf = xmalloc(sizeof *seq->conf);
+	seq->state = xmalloc(sizeof *seq->state);
 
 	seq->N = MAX_EVENTS;
-	seq->event = xmalloc((size_t)seq->N * (sizeof *(seq->event)));
+	seq->event = xmalloc((size_t)seq->N * sizeof *seq->event);
 
 	seq->P = MAX_RF_PULSES;
-	seq->rf_shape = xmalloc((size_t)seq->P * (sizeof *(seq->rf_shape)));
+	seq->rf_shape = xmalloc((size_t)seq->P * sizeof *seq->rf_shape);
 
 	return seq;
 }
 
 void bart_seq_defaults(struct bart_seq* seq)
 {
-	memcpy(seq->conf, &seq_config_defaults, sizeof *(seq->conf));
-	memset(seq->state, 0, sizeof *(seq->state));
-	memset(seq->event, 0, (size_t)seq->N * (sizeof *(seq->event)));
-	memset(seq->rf_shape, 0, (size_t)seq->P * (sizeof *(seq->rf_shape)));
+	memcpy(seq->conf, &seq_config_defaults, sizeof *seq->conf);
+
+	memset(seq->state, 0, sizeof *seq->state);
+	memset(seq->event, 0, (size_t)seq->N * sizeof *seq->event);
+	memset(seq->rf_shape, 0, (size_t)seq->P * sizeof *seq->rf_shape);
 }
 
 int bart_seq_prepare(struct bart_seq* seq)
 {
 	num_rand_init(0ULL); // initialize here since once called before actual sequence start
 
-	seq->state->mode = BLOCK_KERNEL_PREPARE;
+	seq->state->mode = SEQ_BLOCK_KERNEL_PREPARE;
 	
 	int N = seq_block(seq->N, seq->event, seq->state, seq->conf);
 
@@ -70,7 +72,7 @@ int bart_seq_prepare(struct bart_seq* seq)
 	for (int i = 0; i < DIMS; i++)
 		seq->state->pos[i] = 0;
 
-	seq->state->mode = BLOCK_UNDEFINED;
+	seq->state->mode = SEQ_BLOCK_UNDEFINED;
 
 	return N;
 }
@@ -144,7 +146,7 @@ int seq_sample_rf_shapes(int N, struct rf_shape pulse[N], const struct seq_confi
 			pulse[idx].shape[j] = pulse_eval(pp, j * dwell);
 	}
 
-	if (PREP_IR_NON == seq->magn.mag_prep) {
+	if (SEQ_PREP_IR_NONSELECTIVE == seq->magn.mag_prep) {
 
 		struct pulse_hypsec hs = pulse_hypsec_defaults;
 
@@ -277,12 +279,12 @@ void seq_cfl_to_sample(const struct rf_shape* pulse, int idx, float* mag, float*
 
 
 
-double seq_block_end(int N, const struct seq_event ev[N], enum block mode, double tr, double raster)
+double seq_block_end(int N, const struct seq_event ev[N], enum seq_block mode, double tr, double raster)
 {
-	if ((BLOCK_PRE == mode) || (BLOCK_POST == mode))
+	if ((SEQ_BLOCK_PRE == mode) || (SEQ_BLOCK_POST == mode))
 		return round_up_raster(events_end_time(N, ev, 0, 0), raster);
-	else
-		return tr;
+
+	return tr;
 }
 
 double seq_block_end_flat(int N, const struct seq_event ev[N], double raster)
@@ -298,7 +300,10 @@ double seq_block_rdt(int N, const struct seq_event ev[N], double raster)
 
 static long get_chrono_slice(const struct seq_state* seq_state, const struct seq_config* seq)
 {
-	return (1 < seq->geom.mb_factor) ? seq_state->pos[PHS2_DIM] + seq_state->pos[SLICE_DIM] * seq->loop_dims[PHS2_DIM] : seq_state->pos[SLICE_DIM];
+	if (1 < seq->geom.mb_factor)
+		return seq_state->pos[PHS2_DIM] + seq_state->pos[SLICE_DIM] * seq->loop_dims[PHS2_DIM];
+
+	return seq_state->pos[SLICE_DIM];
 }
 
 static int check_settings(const struct seq_state* seq_state, const struct seq_config* seq)
@@ -306,21 +311,21 @@ static int check_settings(const struct seq_state* seq_state, const struct seq_co
 	if (0 > seq->loop_dims[PHS2_DIM])
 		return ERROR_SETTING_DIM;
 
-	if (MAX_SLICES < seq_get_slices(seq))
+	if (SEQ_MAX_SLICES < seq_get_slices(seq))
 		return ERROR_SETTING_DIM;
 
-	if (PEMODE_RAGA_MEMS == seq->enc.pe_mode)
+	if (SEQ_PEMODE_RAGA_MEMS == seq->enc.pe_mode)
 		return ERROR_ROT_ANGLE;
 
 
-	if (CONTEXT_BINARY != seq_state->context) {
+	if (SEQ_CONTEXT_BINARY != seq_state->context) {
 
-		if ((PEMODE_RAGA == seq->enc.pe_mode) || (PEMODE_RAGA_ALIGNED == seq->enc.pe_mode)) {
+		if (   (SEQ_PEMODE_RAGA == seq->enc.pe_mode)
+		    || (SEQ_PEMODE_RAGA_ALIGNED == seq->enc.pe_mode)) {
 
 			if (!check_gen_fib(seq->loop_dims[PHS1_DIM], seq->enc.tiny))
 				return ERROR_SETTING_SPOKES_RAGA;
 		}
-
 
 		if (0 == (seq->loop_dims[PHS1_DIM] % 2))
 			return ERROR_SETTING_SPOKES_EVEN;
@@ -337,16 +342,15 @@ int seq_block(int N, struct seq_event ev[N], struct seq_state* seq_state, const 
 
 	seq_state->chrono_slice = get_chrono_slice(seq_state, seq);
 
-	if (BLOCK_KERNEL_PREPARE == seq_state->mode) {
+	if (SEQ_BLOCK_KERNEL_PREPARE == seq_state->mode) {
 
 		seq_state->pos[SLICE_DIM] = (long)ceil(0.5 * seq->geom.mb_factor); // for SMS bSSFP
 
 		return flash(N, ev, seq_state, seq);
-
-	} else if (BLOCK_KERNEL_CHECK == seq_state->mode) {
-
-		return flash(N, ev, seq_state, seq);
 	}
+
+	if (SEQ_BLOCK_KERNEL_CHECK == seq_state->mode)
+		return flash(N, ev, seq_state, seq);
 
 	long zeros[DIMS] = { 0 };
 	long last_idx[DIMS];
@@ -364,49 +368,56 @@ int seq_block(int N, struct seq_event ev[N], struct seq_state* seq_state, const 
 
 		if (md_check_equal_dims(DIMS, zeros, seq_state->pos, ~0UL)) {
 
-			seq_state->mode = BLOCK_PRE;
+			seq_state->mode = SEQ_BLOCK_PRE;
 			return wait_time_to_event(ev, 0., seq->magn.init_delay);
 		}
-		else if (md_check_equal_dims(DIMS, (zeros[COEFF2_DIM] = 1, zeros), seq_state->pos, ~0UL)) {
 
-			seq_state->mode = BLOCK_KERNEL_NOISE;
+		zeros[COEFF2_DIM] = 1;
+
+		if (md_check_equal_dims(DIMS, zeros, seq_state->pos, ~0UL)) {
+
+			seq_state->mode = SEQ_BLOCK_KERNEL_NOISE;
 
 			return flash(N, ev, seq_state, seq);
 		}
 
-		if (seq_state->pos[COEFF2_DIM] > 1) {
+		if (1 < seq_state->pos[COEFF2_DIM]) {
 
-			int i = 0;
 			if (md_check_equal_dims(DIMS, zeros, seq_state->pos, ~(BATCH_FLAG | msm_flag | COEFF2_FLAG))) {
 
-				seq_state->mode = BLOCK_PRE;
-				i += mag_prep(ev + i, seq);
+				seq_state->mode = SEQ_BLOCK_PRE;
 
-				return i;
+				return mag_prep(ev, seq);
 			}
 
-		} else if (seq_state->pos[PHS1_DIM] > 0) {
+		} else if (0 < seq_state->pos[PHS1_DIM]) {
 
 			md_max_dims(DIMS, (COEFF2_FLAG | PHS2_FLAG) &  ~msm_flag, seq_state->pos, seq_state->pos, last_idx);
 		}
 
-	} else if (1 == seq_state->pos[COEFF_DIM]) {
+		return 0;
+	}
 
-		seq_state->mode = BLOCK_KERNEL_IMAGE;
+	if (1 == seq_state->pos[COEFF_DIM]) {
+
+		seq_state->mode = SEQ_BLOCK_KERNEL_IMAGE;
 		md_max_dims(DIMS, (COEFF2_FLAG), seq_state->pos, seq_state->pos, last_idx);
 
 		return flash(N, ev, seq_state, seq);
+	}
 
-	} else if (2 == seq_state->pos[COEFF_DIM]) {
+	if (2 == seq_state->pos[COEFF_DIM]) {
 
 		md_max_dims(DIMS, (COEFF2_FLAG | PHS2_FLAG) & ~msm_flag, seq_state->pos, seq_state->pos, last_idx);
 
 		if (md_check_equal_dims(DIMS, last_idx, seq_state->pos, (SEQ_FLAGS & ~(BATCH_FLAG | msm_flag)))
-			&& (0. < seq->magn.inv_delay_time)) {
+		    && (0. < seq->magn.inv_delay_time)) {
 
-				seq_state->mode = BLOCK_POST;
+				seq_state->mode = SEQ_BLOCK_POST;
+
 				ev[0].type = SEQ_EVENT_WAIT;
 				ev[0].end = seq->magn.inv_delay_time;
+
 				return 1;
 		}
 

@@ -422,3 +422,4 @@ void pulse_gauss_init(struct pulse_gauss* pg, float duration, float angle /*[deg
 
 	pg->A = DEG2RAD(angle) / pulse_gauss_integral(pg);
 }
+

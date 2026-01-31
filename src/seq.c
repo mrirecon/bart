@@ -69,8 +69,8 @@ int main_seq(int argc, char* argv[argc])
 	bool chrono = false;
 	bool support = false;
 
-	long custom_params_long[MAX_PARAMS_LONG] = { 0 };
-	double custom_params_double[MAX_PARAMS_DOUBLE] = { 0. };
+	long custom_params_long[SEQ_MAX_PARAMS_LONG] = { 0 };
+	double custom_params_double[SEQ_MAX_PARAMS_DOUBLE] = { 0. };
 
 	const struct opt_s opts[] = {
 
@@ -82,8 +82,10 @@ int main_seq(int argc, char* argv[argc])
 		OPTL_FLOAT(0, "dist", &dist, "dist", "slice distance factor [1 / slice_thickness] (default: 1.)"),
 
 		// contrast mode
-		OPTL_SELECT(0, "no-spoiling", enum flash_contrast, &seq->conf->phys.contrast, CONTRAST_NO_SPOILING, "spoiling off (default: rf random)"),
-		OPTL_SELECT(0, "spoiled", enum flash_contrast, &seq->conf->phys.contrast, CONTRAST_RF_SPOILED, "RF_SPOILED (inc: 50 deg, gradient on) (default: rf random)"),
+		OPTL_SELECT(0, "no-spoiling", enum flash_contrast, &seq->conf->phys.contrast,
+				SEQ_CONTRAST_NO_SPOILING, "spoiling off (default: rf random)"),
+		OPTL_SELECT(0, "spoiled", enum flash_contrast, &seq->conf->phys.contrast,
+				SEQ_CONTRAST_RF_SPOILED, "RF_SPOILED (inc: 50 deg, gradient on) (default: rf random)"),
 
 		// FOV and resolution
 		OPTL_DOUBLE(0, "FOV", &seq->conf->geom.fov, "FOV", "Field Of View"),
@@ -103,9 +105,9 @@ int main_seq(int argc, char* argv[argc])
 
 		// encoding
 		OPTL_UINT(0, "pe_mode", &seq->conf->enc.pe_mode, "pe_mode", "Phase-encoding mode"),
-		OPTL_SELECT(0, "turn", enum pe_mode, &seq->conf->enc.pe_mode, PEMODE_TURN, "turn-based PE (default: RAGA)"),
-		OPTL_SELECT(0, "mems", enum pe_mode, &seq->conf->enc.pe_mode, PEMODE_MEMS_HYB, "multi-echo/multi-spoke PE (default: RAGA)"),
-		OPTL_SELECT(0, "raga", enum pe_mode, &seq->conf->enc.pe_mode, PEMODE_RAGA, "RAGA PE"),
+		OPTL_SELECT(0, "turn", enum pe_mode, &seq->conf->enc.pe_mode, SEQ_PEMODE_TURN, "turn-based PE (default: RAGA)"),
+		OPTL_SELECT(0, "mems", enum pe_mode, &seq->conf->enc.pe_mode, SEQ_PEMODE_MEMS_HYB, "multi-echo/multi-spoke PE (default: RAGA)"),
+		OPTL_SELECT(0, "raga", enum pe_mode, &seq->conf->enc.pe_mode, SEQ_PEMODE_RAGA, "RAGA PE"),
 		OPTL_ULONG(0, "raga_flags", &seq->conf->enc.aligned_flags, "raga_aligned_flags", "RAGA aligned flags (by bitmask)"),
 
 		OPTL_SET(0, "chrono", &chrono, "save gradients/moments/sampling in chronological order (RAGA)"),
@@ -130,7 +132,7 @@ int main_seq(int argc, char* argv[argc])
 		OPTL_DOUBLE(0, "sms_distance", &seq->conf->geom.sms_distance, "sms_distance", "SMS slice distance"),
 
 		// magnetization preparation
-		OPTL_SELECT(0, "IR_NON", enum mag_prep, &seq->conf->magn.mag_prep, PREP_IR_NON, "Magn. preparation: Nonselective Inversion (default: off)"),
+		OPTL_SELECT(0, "IR_NON", enum mag_prep, &seq->conf->magn.mag_prep, SEQ_PREP_IR_NONSELECTIVE, "Magn. preparation: Nonselective Inversion (default: off)"),
 		OPTL_DOUBLE(0, "TI", &seq->conf->magn.ti, "TI", "Inversion time"),
 		OPTL_DOUBLE(0, "init_delay", &seq->conf->magn.init_delay, "init_delay", "Initial delay of measurement"),
 		OPTL_DOUBLE(0, "inv_delay", &seq->conf->magn.inv_delay_time, "inv_delay_time", "Inversion delay time"),
@@ -152,11 +154,13 @@ int main_seq(int argc, char* argv[argc])
 	num_rand_init(0ULL);
 
 	if (custom_params_long[0] > 0)
-		seq_ui_interface_custom_params(0, seq->conf, MAX_PARAMS_LONG, custom_params_long, MAX_PARAMS_DOUBLE, custom_params_double);
+		seq_ui_interface_custom_params(0, seq->conf, SEQ_MAX_PARAMS_LONG, custom_params_long,
+					SEQ_MAX_PARAMS_DOUBLE, custom_params_double);
 
 	if ((1 == seq->conf->loop_dims[TIME_DIM]) &&
 		(seq->conf->loop_dims[TIME_DIM] < seq->conf->loop_dims[PHS1_DIM]) &&
-		((PEMODE_RAGA == seq->conf->enc.pe_mode) || (PEMODE_RAGA_ALIGNED == seq->conf->enc.pe_mode))) {
+		(   (SEQ_PEMODE_RAGA == seq->conf->enc.pe_mode)
+		 || (SEQ_PEMODE_RAGA_ALIGNED == seq->conf->enc.pe_mode))) {
 
 		if (0 < raga_full_frames)
 			seq->conf->loop_dims[TIME_DIM] = raga_full_frames * seq->conf->loop_dims[PHS1_DIM];
@@ -211,10 +215,11 @@ int main_seq(int argc, char* argv[argc])
 
 	double ddt = (0 > dt) ? seq->conf->phys.tr / samples : ceil(dt * 1.e6) / 1.e6; //FIXME breaks with float
 
-	if ((PEMODE_RAGA != seq->conf->enc.pe_mode) && (PEMODE_RAGA_ALIGNED != seq->conf->enc.pe_mode))
+	if (   (SEQ_PEMODE_RAGA != seq->conf->enc.pe_mode)
+	    && (SEQ_PEMODE_RAGA_ALIGNED != seq->conf->enc.pe_mode))
 		chrono = true;
 
-	if ((NULL != raga_file) && (((PEMODE_RAGA != seq->conf->enc.pe_mode) && (PEMODE_RAGA_ALIGNED != seq->conf->enc.pe_mode)) || chrono))
+	if ((NULL != raga_file) && chrono)
 		error("RAGA indices only for raga pe mode and non chronologic mode\n");
 
 	// FIXME, this should be moved in system configurations
@@ -251,11 +256,11 @@ int main_seq(int argc, char* argv[argc])
 
 	if (support) {
 
-		seq->state->mode = BLOCK_KERNEL_PREPARE;
+		seq->state->mode = SEQ_BLOCK_KERNEL_PREPARE;
 
 		E = seq_block(seq->N, seq->event, seq->state, seq->conf);
 
-		seq->state->mode = BLOCK_UNDEFINED;
+		seq->state->mode = SEQ_BLOCK_UNDEFINED;
 
 		for (int i = 0; i < DIMS; i++)
 			seq->state->pos[i] = 0;
@@ -347,24 +352,24 @@ int main_seq(int argc, char* argv[argc])
 		if (0 > E)
 			error("Sequence not possible! - check seq_config, %d] \n", E);
 
-		if ((BLOCK_KERNEL_NOISE == seq->state->mode) || (0 == E)) // no noise_scan with pulseq
+		if ((SEQ_BLOCK_KERNEL_NOISE == seq->state->mode) || (0 == E)) // no noise_scan with pulseq
 			goto debug_print_events;
 
 		if (NULL != seq_file)
 			events_to_pulseq(&ps, seq->state->mode, seq->conf->phys.tr, seq->conf->sys, prepped_rfs, seq->rf_shape, E, seq->event);
 
-		if (BLOCK_KERNEL_IMAGE != seq->state->mode)
+		if (SEQ_BLOCK_KERNEL_IMAGE != seq->state->mode)
 			goto debug_print_events;
 
 		debug_printf(DP_DEBUG1, "end of last event: %.8f \t end of calc: %.8f\n",
 				events_end_time(E, seq->event, 1, 0), samples * ddt);
 
 		if (support)
-			gradients_support(samples, g2, E, seq->event);
+			seq_gradients_support(samples, g2, E, seq->event);
 		else
 			seq_compute_gradients(samples, g2, ddt, E, seq->event);
 
-		compute_moment0(samples, m0, ddt, E, seq->event);
+		seq_compute_moment0(samples, m0, ddt, E, seq->event);
 
 
 		long pos_save[DIMS];
@@ -403,14 +408,14 @@ int main_seq(int argc, char* argv[argc])
 
 			complex float* adc = md_alloc(DIMS, adc_dims, CFL_SIZE);
 
-			compute_adc_samples(DIMS, adc_dims, adc, E, seq->event);
+			seq_compute_adc_samples(DIMS, adc_dims, adc, E, seq->event);
 
 			float m0_adc[adc_dims[PHS1_DIM]][3];
 
 			do {
 
 				double adc_start = seq->event[events_idx(pos_save[TE_DIM], SEQ_EVENT_ADC, E, seq->event)].start;
-				compute_moment0_offset(adc_dims[PHS1_DIM], m0_adc, adc_start, seq->conf->phys.dwell / seq->conf->phys.os, E, seq->event);
+				seq_compute_moment0_offset(adc_dims[PHS1_DIM], m0_adc, adc_start, seq->conf->phys.dwell / seq->conf->phys.os, E, seq->event);
 
 				double scale = 1. / (seq->conf->geom.fov * seq->conf->sys.gamma);
 
@@ -434,7 +439,7 @@ int main_seq(int argc, char* argv[argc])
 		}
 
 debug_print_events:
-		linearize_events(E, seq->event, &seq->state->start_block, seq->state->mode, seq->conf->phys.tr, seq->conf->sys.raster_grad);
+		seq_linearize_events(E, seq->event, &seq->state->start_block, seq->state->mode, seq->conf->phys.tr, seq->conf->sys.raster_grad);
 
 		for (int i = 0; i < E; i++) {
 

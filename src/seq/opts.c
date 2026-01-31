@@ -46,8 +46,8 @@ int read_config_from_str(struct seq_config* seq, int N, const char* buffer_in)
 	};
 
 
-	long custom_params_long[MAX_PARAMS_LONG] = { 0 };
-	double custom_params_double[MAX_PARAMS_DOUBLE] = { 0. };
+	long custom_params_long[SEQ_MAX_PARAMS_LONG] = { 0 };
+	double custom_params_double[SEQ_MAX_PARAMS_DOUBLE] = { 0. };
 
 
 	const struct opt_s opts[] = {
@@ -119,7 +119,8 @@ int read_config_from_str(struct seq_config* seq, int N, const char* buffer_in)
 	free(buffer);	
 
 	if (custom_params_long[0] > 0)
-		seq_ui_interface_custom_params(0, seq, MAX_PARAMS_LONG, custom_params_long, MAX_PARAMS_DOUBLE, custom_params_double);
+		seq_ui_interface_custom_params(0, seq, SEQ_MAX_PARAMS_LONG, custom_params_long,
+					       SEQ_MAX_PARAMS_DOUBLE, custom_params_double);
 
 	seq_ui_interface_loop_dims(0, seq, DIMS, seq->loop_dims);
 

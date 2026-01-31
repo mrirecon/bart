@@ -13,46 +13,46 @@
 
 #include "misc/mri.h"
 
-#define MAX_PARAMS_LONG 64
-#define MAX_PARAMS_DOUBLE 16
+#define SEQ_MAX_PARAMS_LONG 64
+#define SEQ_MAX_PARAMS_DOUBLE 16
 
-#define MAX_NO_ECHOES 64
-#define MAX_SLICES 64
-#define MAX_GRAD_POINTS 8192
-#define ACOUSTIC_RES_ENTRIES 5
+#define SEQ_MAX_NO_ECHOES 64
+#define SEQ_MAX_SLICES 64
+#define SEQ_MAX_GRAD_POINTS 8192
+#define SEQ_ACOUSTIC_RESONANCE_ENTRIES 5
 
 
 enum seq_order {
 
 	SEQ_ORDER_AVG_OUTER,
-	SEQ_ORDER_SEQ_MS,
 	SEQ_ORDER_AVG_INNER,
+	SEQ_ORDER_SEQ_MS,
 };
 
 enum mag_prep {
 
-	PREP_OFF,
-	PREP_IR_SEL,
-	PREP_IR_NON,
-	PREP_SR_SEL,
-	PREP_SR_NON,
-	PREP_SR_ADIAB
+	SEQ_PREP_OFF,
+	SEQ_PREP_IR_SELECTIVE,
+	SEQ_PREP_IR_NONSELECTIVE,
+	SEQ_PREP_SR_SELECTIVE,
+	SEQ_PREP_SR_NONSECTIVE,
+	SEQ_PREP_SR_ADIABATIC
 };
 
 
 enum trigger_type {
 
-	TRIGGER_OFF,
-	TRIGGER_ECG,
-	TRIGGER_PULSE,
-	TRIGGER_RESP,
-	TRIGGER_EXT,
+	SEQ_TRIGGER_OFF,
+	SEQ_TRIGGER_ECG,
+	SEQ_TRIGGER_PULSE,
+	SEQ_TRIGGER_RESP,
+	SEQ_TRIGGER_EXT,
 };
 
 struct seq_standard_conf {
 
 	double tr;
-	double te[MAX_NO_ECHOES];
+	double te[SEQ_MAX_NO_ECHOES];
 
 	double dwell;
 	double flip_angle;
@@ -73,8 +73,8 @@ struct seq_standard_conf {
 	double raster_grad;
 	double raster_rf;
 	double raster_dwell;
-	double acoustic_res_freq[ACOUSTIC_RES_ENTRIES];
-	double acoustic_res_bw[ACOUSTIC_RES_ENTRIES];
+	double acoustic_res_freq[SEQ_ACOUSTIC_RESONANCE_ENTRIES];
+	double acoustic_res_bw[SEQ_ACOUSTIC_RESONANCE_ENTRIES];
 
 	enum mag_prep mag_prep;
 	double ti;
@@ -92,13 +92,17 @@ struct seq_interface_conf {
 	double tr;
 	long radial_views;
 	long echoes;
+
 	enum trigger_type trigger_type;
 	double trigger_delay_time;
 	int trigger_pulses;
+
 	double slice_thickness;
 	double sms_distance;
+
 	int is3D;
 	int isBSSFP;
+
 	double raster_grad;
 	double raster_rf;
 	double grad_max_ampl;
@@ -149,3 +153,4 @@ BARTLIB_API int BARTLIB_CALL seq_config_from_string(struct seq_config* seq, int 
 #include "misc/cppwrap.h"
 
 #endif // _SEQ_HELPERS_H
+ 

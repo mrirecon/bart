@@ -273,7 +273,8 @@ static int check_existing_gradient_shape(const struct pulseq* ps, const struct s
 	return -1;
 }
 
-static void grad_to_pulseq(int grad_id[3], struct pulseq *ps, struct seq_sys sys, long grad_start, long grad_len, double g[MAX_GRAD_POINTS][3])
+static void grad_to_pulseq(int grad_id[3], struct pulseq *ps, struct seq_sys sys, long grad_start,
+			  long grad_len, double g[SEQ_MAX_GRAD_POINTS][3])
 {
 	double g_axis[grad_len];
 
@@ -500,7 +501,7 @@ static int rf_to_pulseq(struct pulseq *ps, int M, const struct rf_shape rf_shape
 }
 
 
-void events_to_pulseq(struct pulseq *ps, enum block mode, double tr, struct seq_sys sys, int M, const struct rf_shape rf_shapes[M], int N, const struct seq_event ev[N])
+void events_to_pulseq(struct pulseq *ps, enum seq_block mode, double tr, struct seq_sys sys, int M, const struct rf_shape rf_shapes[M], int N, const struct seq_event ev[N])
 {
 	int n_blocks = MAX(1, events_counter(SEQ_EVENT_ADC, N, ev));
 
@@ -510,8 +511,8 @@ void events_to_pulseq(struct pulseq *ps, enum block mode, double tr, struct seq_
 	long dur = lround(seq_block_end(N, ev, mode, tr, ps->block_raster_time) / ps->block_raster_time);
 	ps->total_duration += dur * ps->block_raster_time;
 
-	double grad_shapes[MAX_GRAD_POINTS][3];
-	seq_compute_gradients(MAX_GRAD_POINTS, grad_shapes, ps->gradient_raster_time, N, ev);
+	double grad_shapes[SEQ_MAX_GRAD_POINTS][3];
+	seq_compute_gradients(SEQ_MAX_GRAD_POINTS, grad_shapes, ps->gradient_raster_time, N, ev);
 
 	long grad_len = lround((seq_block_end_flat(N, ev, ps->block_raster_time) + seq_block_rdt(N, ev, ps->block_raster_time)) / ps->block_raster_time);
 
