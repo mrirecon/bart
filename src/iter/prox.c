@@ -257,7 +257,6 @@ struct prox_l2ball_data {
 	int N;
 	unsigned long flags;
 	const long* dims;
-
 };
 
 static DEF_TYPEID(prox_l2ball_data);
@@ -587,6 +586,4 @@ const struct operator_p_s* prox_rvc_create(int N, const long dims[N])
 	pdata->size = md_calc_size(N, dims);
 	return operator_p_create(N, dims, N, dims, CAST_UP(PTR_PASS(pdata)), prox_rvc_apply, prox_rvc_del);
 }
-
-
 

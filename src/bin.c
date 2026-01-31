@@ -292,9 +292,10 @@ int main_bin(int argc, char* argv[argc])
 			assert(md_check_equal_dims(DIMS, labels_dims, src_dims, md_nontriv_dims(DIMS, labels_dims)));
 
 			md_select_dims(DIMS, md_nontriv_dims(DIMS, labels_dims) & ~PHS2_FLAG, loop_dims, labels_dims);
+
 			debug_printf(DP_INFO, "Non 1D label - reordering source: PHS2_DIM!\n");
-		}
-		else {
+
+		} else {
 
 			dim = find_dim(DIMS, labels_dims); // Dimension to be binned
 		}
@@ -367,6 +368,7 @@ int main_bin(int argc, char* argv[argc])
 		}
 
 		complex float* dst;
+
 		if (is_stream)
 			dst = create_async_cfl(dst_file, MD_BIT(dim), DIMS, dst_dims);
 		else

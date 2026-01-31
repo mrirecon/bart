@@ -623,6 +623,7 @@ int main_bart(int argc, char* argv[argc])
 		tot_time += timestamp();
 		double time_mean = time / count;
 		double time_std = sqrt(time_sq / count - time_mean * time_mean);
+
 		debug_printf(DP_DEBUG1, "bart %s run in %.2es, time per slice: %.3e +- %.3es\n",
 					bn, tot_time, time_mean, time_std);
 
