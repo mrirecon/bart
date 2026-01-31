@@ -156,8 +156,8 @@ int main_stl(int argc, char* argv[argc])
 		}
 	}
 
-        md_free(model);
+	md_free(model);
 
-        return 0;
+	return 0;
 }
 

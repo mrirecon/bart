@@ -141,6 +141,7 @@ static bool cuda_try_init(int device)
 		cuda_device_id = device;
 
 		cuda_streams[CUDA_MAX_STREAMS] = cudaStreamLegacy;
+
 		for (int i = 0; i < CUDA_MAX_STREAMS; i++)
 			CUDA_ERROR(cudaStreamCreate(&(cuda_streams[i])));
 
@@ -151,19 +152,18 @@ static bool cuda_try_init(int device)
 #endif
 		return true;
 
-	} else {
-
-		if (cudaErrorDevicesUnavailable != errval) {
-
-			const char *err_str = cudaGetErrorString(errval);
-			debug_printf(DP_WARN, "Device %d could not be initialized: \"%s\"\n", device, err_str);
-		}
-
-		// clear last error
-		cudaGetLastError();
-
-		return false;
 	}
+
+	if (cudaErrorDevicesUnavailable != errval) {
+
+		const char *err_str = cudaGetErrorString(errval);
+		debug_printf(DP_WARN, "Device %d could not be initialized: \"%s\"\n", device, err_str);
+	}
+
+	// clear last error
+	cudaGetLastError();
+
+	return false;
 }
 
 void cuda_init(void)

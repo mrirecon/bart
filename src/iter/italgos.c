@@ -1119,6 +1119,7 @@ void chambolle_pock(float alpha, int maxiter, float epsilon, float tau, float si
 		for (int j = 0; j < O; j++) {
 
 			iter_op_call(op_adj[j], x_new, u[j]);
+
 			vops->axpy(N, x, -1. * tau, x_new);
 		}
 
@@ -1227,8 +1228,7 @@ void chambolle_pock(float alpha, int maxiter, float epsilon, float tau, float si
 	for (int j = 0; j < O; j++)
 		vops->del(u[j]);
 
-	if (NULL != Ahu)
-		vops->del(Ahu);
+	vops->del(Ahu);
 }
 
 
@@ -1246,16 +1246,18 @@ void chambolle_pock(float alpha, int maxiter, float epsilon, float tau, float si
  **/
 static float compute_objective(int NO, int NI, struct iter_nlop_s nlop, float* args[NO + NI], bool out_optimize[NO], bool in_optimize[NI], const struct vec_iter_s* vops)
 {
-	float result = 0;
 	iter_nlop_call_select_der(nlop, NO, NI, args, out_optimize, in_optimize); 	// r = F x
 
-	for (int o = 0; o < NO; o++) {
-		if (out_optimize[o]) {
+	float result = 0;
 
-			float tmp;
-			vops->copy(1, &tmp, args[o]);
-			result += tmp;
-		}
+	for (int o = 0; o < NO; o++) {
+
+		if (!out_optimize[o])
+			continue;
+
+		float tmp;
+		vops->copy(1, &tmp, args[o]);
+		result += tmp;
 	}
 
 	return result;
@@ -1292,11 +1294,11 @@ static void getgrad(int NI, bool in_optimize_flag[NI], long isize[NI], float* gr
 			continue;
 
 		for (int i = 0; i < NI; i++) {
+			 
+			tmp_grad[i] = NULL;
 
 			if (in_optimize_flag[i])
 				tmp_grad[i] = (0 == count) ? grad[i] : vops->allocate(isize[i]);
-			else
-			 	tmp_grad[i] = NULL;
 		}
 
 		tmp_ones[o] = one;
@@ -1305,11 +1307,11 @@ static void getgrad(int NI, bool in_optimize_flag[NI], long isize[NI], float* gr
 
 		for (int i = 0; i < NI; i++) {
 
-			if ((0 < count) && in_optimize_flag[i]) {
+			if ((0 >= count) || !in_optimize_flag[i]) 
+				continue;
 
-				vops->add(isize[i], grad[i], grad[i], tmp_grad[i]);
-				vops->del(tmp_grad[i]);
-			}
+			vops->add(isize[i], grad[i], grad[i], tmp_grad[i]);
+			vops->del(tmp_grad[i]);
 		}
 
 		count += 1;
@@ -1480,23 +1482,24 @@ void sgd(	int epochs, int batches,
 				if (in_type[i] == IN_BATCH)
 					args[NO + i] += isize[i];
 
-				if (in_type[i] == IN_BATCHNORM) {
+				if (in_type[i] != IN_BATCHNORM)
+					continue;
 
-					int o = 0;
-					int j = batchnorm_counter;
+				int o = 0;
+				int j = batchnorm_counter;
 
-					while ((OUT_BATCHNORM != out_type[o]) || (j > 0)) {
+				while ((OUT_BATCHNORM != out_type[o]) || (j > 0)) {
 
-						if (OUT_BATCHNORM == out_type[o])
-							j--;
-						o++;
-					}
+					if (OUT_BATCHNORM == out_type[o])
+						j--;
 
-					vops->smul(isize[i], batchnorm_momentum, x[i], x[i]);
-					vops->axpy(isize[i], x[i],  1. - batchnorm_momentum, args[o]);
-
-					batchnorm_counter++;
+					o++;
 				}
+
+				vops->smul(isize[i], batchnorm_momentum, x[i], x[i]);
+				vops->axpy(isize[i], x[i], 1. - batchnorm_momentum, args[o]);
+
+				batchnorm_counter++;
 			}
 
 			monitor_iter6(monitor, epoch, i_batch, N_total / N_batch, r0, NI, x2, NULL);
@@ -1525,8 +1528,7 @@ void sgd(	int epochs, int batches,
 	}
 
 	for (int o = 0; o < NO; o++)
-		if (NULL != args[o])
-			vops->del(args[o]);
+		vops->del(args[o]);
 }
 
 /**
@@ -1696,9 +1698,15 @@ void iPALM(	long NI, long isize[NI], enum IN_TYPE in_type[NI], float* x[const NI
 				y[i] = vops->allocate(isize[i]);
 				x_new[i] = vops->allocate(isize[i]);
 
-				//determine current parameters
-				float betai = (-1. == beta[i]) ? (float)(epoch * N_batch + batch) / (float)((epoch * N_batch + batch) + 3.) : beta[i];
-				float alphai = (-1. == alpha[i]) ? (float)(epoch * N_batch + batch) / (float)((epoch * N_batch + batch) + 3.) : alpha[i];
+				// determine current parameters
+				float betai = beta[i];
+				float alphai = alpha[i];
+
+				if (-1. == beta[i])
+					betai = (float)(epoch * N_batch + batch) / (float)((epoch * N_batch + batch) + 3.);
+
+				if (-1. == alpha[i])
+					alphai = (float)(epoch * N_batch + batch) / (float)((epoch * N_batch + batch) + 3.);
 
 				float r_z = 0;
 
@@ -1807,23 +1815,24 @@ void iPALM(	long NI, long isize[NI], enum IN_TYPE in_type[NI], float* x[const NI
 
 				for (int i = 0; i < NI; i++) {
 
-					if (in_type[i] == IN_BATCHNORM) {
+					if (in_type[i] != IN_BATCHNORM)
+						continue;
 
-						int o = 0;
-						int j = batchnorm_counter;
+					int o = 0;
+					int j = batchnorm_counter;
 
-						while ((OUT_BATCHNORM != out_type[o]) || (j > 0)) {
+					while ((OUT_BATCHNORM != out_type[o]) || (j > 0)) {
 
-							if (OUT_BATCHNORM == out_type[o])
-								j--;
-							o++;
-						}
+						if (OUT_BATCHNORM == out_type[o])
+							j--;
 
-						vops->smul(isize[i], batchnorm_momentum, x[i], x[i]);
-						vops->axpy(isize[i], x[i],  1. - batchnorm_momentum, args[o]);
-
-						batchnorm_counter++;
+						o++;
 					}
+
+					vops->smul(isize[i], batchnorm_momentum, x[i], x[i]);
+					vops->axpy(isize[i], x[i],  1. - batchnorm_momentum, args[o]);
+
+					batchnorm_counter++;
 				}
 			}
 
@@ -1842,16 +1851,15 @@ void iPALM(	long NI, long isize[NI], enum IN_TYPE in_type[NI], float* x[const NI
 
 	for (int i = 0; i < NI; i++) {
 
-		if (IN_BATCH_GENERATOR == in_type[i]) {
+		if (IN_BATCH_GENERATOR != in_type[i])
+			continue;
 
-			vops->del(x[i]);
-			x[i] = NULL;
-		}
+		vops->del(x[i]);
+		x[i] = NULL;
 	}
 
 	for (int o = 0; o < NO; o++)
-		if (NULL != args[o])
-			vops->del(args[o]);
+		vops->del(args[o]);
 }
 
 
@@ -1913,6 +1921,7 @@ static bool line_search_backtracking(struct iter_op_s op, struct iter_op_s adj, 
 				return false;
 
 			width = dec;
+
 		} else {
 
 			if (armijo)
@@ -1921,10 +1930,10 @@ static bool line_search_backtracking(struct iter_op_s op, struct iter_op_s adj, 
 			/* Check the Wolfe condition. */
 			float dg = vops->dot(N, g, p);
 
-			if (dg < c2 * dginit)
-				width = inc;
-			else
+			if (dg >= c2 * dginit)
 				return true;
+
+			width = inc;
 		}
 
 		if (*stp < stp_min)
@@ -2146,3 +2155,4 @@ void lbfgs(int maxiter, int M, float step, float ftol, float gtol, float c1, flo
 		vops->del(s[i]);
 	}
 }
+
