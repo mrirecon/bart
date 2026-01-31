@@ -50,8 +50,6 @@ int main_copy(int argc, char* argv[argc])
 	const char* in_file = NULL;
 	const char* out_file = NULL;
 
-	const char* stream_order_file = NULL;
-
 	float delay = 0.;
 
 	struct arg_s args[] = {
@@ -66,7 +64,6 @@ int main_copy(int argc, char* argv[argc])
 
 		OPTL_ULONG(0, "stream", &stream_flags, "flags", "Loop over <flags> while streaming."),
 		OPTL_FLOAT(0, "delay", &delay, "f", "Wait for f seconds before each copy when streaming."),
-		OPTL_INFILE(0, "stream-reorder", &stream_order_file, "indices", "Reorder copy"),
 	};
 
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
@@ -101,20 +98,6 @@ int main_copy(int argc, char* argv[argc])
 	} else {
 
 		md_copy_dims(N, out_dims, in_dims);
-	}
-
-	complex float* stream_order = NULL;
-	long stream_order_dims[N];
-
-	if (stream_order_file) {
-
-		if (0 == stream_flags)
-			error("stream_reorder makes no sense without --stream flag.\n");
-
-		stream_order = load_cfl(stream_order_file, N, stream_order_dims);
-
-		if (!md_check_compat(N, ~stream_flags, out_dims, stream_order_dims))
-			error("Dims of stream_order indices must be compatible with output!\n");
 	}
 
 	complex float* out_data = NULL;
@@ -158,17 +141,7 @@ int main_copy(int argc, char* argv[argc])
 	long istr[N];
 	md_calc_strides(N, istr, in_dims, CFL_SIZE);
 
-	long stream_pos0[N];
-
 	do {
-		if (is_stream && stream_order) {
-
-			md_copy_strides(N, stream_pos0, stream_pos);
-			md_unravel_index(N, stream_pos, stream_flags, stream_order_dims,
-				(long){ MD_ACCESS(N, MD_STRIDES(N, stream_order_dims, CFL_SIZE), stream_pos, stream_order) });
-
-		}
-
 		if (is_stream && strm_in)
 			stream_sync_slice(strm_in, N, in_dims, stream_flags, stream_pos);
 
@@ -179,9 +152,6 @@ int main_copy(int argc, char* argv[argc])
 
 		if (is_stream && strm_out)
 			stream_sync_slice(strm_out, N, out_dims, stream_flags, stream_pos);
-
-		if (is_stream && stream_order)
-			md_copy_strides(N, stream_pos, stream_pos0);
 
 	} while (md_next(N, in_dims, stream_flags, stream_pos));
 
