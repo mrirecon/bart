@@ -1,4 +1,4 @@
-/* Copyright 2024-2025. TU Graz. Institute of Biomedical Imaging.
+/* Copyright 2024-2026. TU Graz. Institute of Biomedical Imaging.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
@@ -81,14 +81,7 @@ int main_nlinvnet(int argc, char* argv[argc])
 	conf.cgiter = 30;
 
 
-	struct nufft_conf_s nufft_conf = nufft_conf_defaults;
-
-	nufft_conf.lowmem = true;
-	nufft_conf.precomp_fftmod = false;
-	nufft_conf.precomp_roll = false;
-	nufft_conf.precomp_linphase = false;
-
-	conf.nufft_conf = &nufft_conf;
+	conf.nufft_conf = &nufft_conf_options;
 	struct nlinvnet_s nlinvnet = nlinvnet_config_opts;
 	nlinvnet.conf = &conf;
 
@@ -151,7 +144,7 @@ int main_nlinvnet(int argc, char* argv[argc])
 
 		OPTL_FLOAT(0, "lambda", &(nlinvnet.lambda), "val", "additional regularization for network part (negative means trainable)"),
 		OPTL_FLOAT(0, "lambda-sens", &(nlinvnet.lambda_sens), "val", "additional regularization for sensitivities (negative means trainable)"),
-		
+
 		OPTL_SUBOPT('N', "network", "...", "select neural network", ARRAY_SIZE(network_opts), network_opts),
 		OPTL_INFILE(0,"filter", &filename_filter, "<filter>", "filter output of network block"),
 		OPTL_PINT(0, "conv-time", &(nlinvnet.conv_time), "w", "convolve along dimension 10 with window size w"),
@@ -161,7 +154,7 @@ int main_nlinvnet(int argc, char* argv[argc])
 		OPTL_SET(0, "fix-sens", &(nlinvnet.fix_coils), "(Fix sensitivity maps after initialization)"),
 		//OPTL_INT(0, "cgiter", &(conf.cgiter), "", "(number of cg iterations)"),
 		OPTL_SET(0, "init-rtnlinv", &(nlinvnet.real_time_init), "initialize with rtnlinv recon"),
-		
+
 		OPTL_VEC3('x', "dims", &im_vec, "x:y:z", "image dimensions"),
 
 		OPTL_SET('t', "train", &train, "train nlinvnet"),
@@ -170,6 +163,7 @@ int main_nlinvnet(int argc, char* argv[argc])
 
 		OPTL_INFILE(0, "pattern", &pat_file, "<pattern>", "sampling pattern"),
 		OPTL_INFILE(0, "trajectory", &(traj_file), "<traj>", "trajectory"),
+		OPTL_SUBOPT(0, "nufft-conf", "...", "configure nufft", N_nufft_conf_opts, nufft_conf_opts),
 		OPTL_INFILE('B', "basis", &(basis_file), "<basis>", "basis"),
 		OPTL_FLOAT(0, "scaling", &(nlinvnet.scaling), "val", "scaling of data, negative means normalization to norm=val"),
 		OPTL_ULONG(0, "scaling-flags", &scl_flags, "flags", "scaling is increased with sqrt(selected dims)"),
@@ -225,7 +219,7 @@ int main_nlinvnet(int argc, char* argv[argc])
 	}
 
 	nlinvnet.network = get_default_network(unet ? NETWORK_UNET_RECO : NETWORK_RESBLOCK);
-	
+
 	if (norm_max)
 		nlinvnet.network->norm = NORM_MAX;
 
