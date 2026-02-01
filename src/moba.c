@@ -403,7 +403,9 @@ int main_moba(int argc, char* argv[argc])
 
 		assert(md_check_compat(DIMS, ~(FFT_FLAGS|COIL_FLAG), coil_dims, in_sens_dims));
 
-		md_copy(DIMS, coil_dims, sens, in_sens, CFL_SIZE);
+		md_copy(DIMS, coil_dims, sens, in_sens, CFL_SIZE);	// Why copy?
+
+		unmap_cfl(DIMS, in_sens_dims, in_sens);
 
 	} else {
 
@@ -524,7 +526,10 @@ int main_moba(int argc, char* argv[argc])
 	// read initialization file
 
 	long init_dims[DIMS] = { [0 ... DIMS-1] = 1 };
-	complex float* init = (NULL != init_file) ? load_cfl(init_file, DIMS, init_dims) : NULL;
+	complex float* init = NULL;
+
+	if (NULL != init_file)
+		init = load_cfl(init_file, DIMS, init_dims);
 
 	assert(md_check_bounds(DIMS, 0, img_dims, init_dims));
 
@@ -694,24 +699,11 @@ int main_moba(int argc, char* argv[argc])
 	unmap_cfl(DIMS, grid_dims, k_grid_data);
 	unmap_cfl(DIMS, img_dims, img);
 	unmap_cfl(DIMS, TI_dims, TI);
-
-	if (NULL != traj_file)
-		unmap_cfl(DIMS, traj_dims, traj);
-
-	if (NULL != init_file)
-		unmap_cfl(DIMS, init_dims, init);
-
-        if (NULL != input_b1)
-		unmap_cfl(DIMS, b1_dims, b1);
-
-	if (NULL != input_TE)
-		unmap_cfl(DIMS, TE_IR_MGRE_dims, TE_IR_MGRE);
-
-	if (NULL != input_b0)
-		unmap_cfl(DIMS, b0_dims, b0);
-
-	if (NULL != input_sens)
-		unmap_cfl(DIMS, in_sens_dims, in_sens);
+	unmap_cfl(DIMS, traj_dims, traj);
+	unmap_cfl(DIMS, init_dims, init);
+	unmap_cfl(DIMS, b1_dims, b1);
+	unmap_cfl(DIMS, TE_IR_MGRE_dims, TE_IR_MGRE);
+	unmap_cfl(DIMS, b0_dims, b0);
 
 	double recosecs = timestamp() - start_time;
 
