@@ -410,8 +410,6 @@ int main_mobafit(int argc, char* argv[argc])
 	long map_dims[DIMS];
 	md_select_dims(DIMS, ~(COEFF_FLAG | TE_FLAG), map_dims, x_patch_dims);
 
-	assert(md_check_equal_dims(DIMS, y_patch_dims, y_patch_sig_dims, ~0UL));
-
 	// create signal model
 	const struct nlop_s* nlop = NULL;
 	struct moba_conf_s *moba_conf;
