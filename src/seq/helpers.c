@@ -357,51 +357,50 @@ int seq_read_config_from_file(struct seq_config* seq, const char* filename)
 }
 
 
-void seq_print_info_config(int N, char* info, const struct seq_config* seq)
+int seq_print_info_config(int N, char* info, const struct seq_config* seq)
 {
-	(void) N;
+	int ctr = 0;
 
-	static char line[100];
+	ctr += snprintf(info + ctr, (size_t)(N - ctr), "\n\nseq_config\nTR\t\t\t\t\t%f", seq->phys.tr);
 
-	sprintf(line, "\n\nseq_config");
-	strcat(info, line);
-	sprintf(line, "\nTR\t\t\t\t\t%f", seq->phys.tr);
-	strcat(info, line);
-	for (int i = 0; i < seq->loop_dims[TE_DIM]; i++) {
-		sprintf(line, "\nTE[%d]\t\t\t\t\t%f", i, seq->phys.te[i]);
-		strcat(info, line);
-	}
+	for (int i = 0; i < seq->loop_dims[TE_DIM]; i++)
+		ctr += snprintf(info + ctr, (size_t)(N - ctr), "\nTE[%d]\t\t\t\t\t%f", i, seq->phys.te[i]);
 
-	sprintf(line, "\ndwell/os\t\t\t\t%.8f/%.2f", seq->phys.dwell, seq->phys.os);
-	strcat(info, line);
-	sprintf(line, "\ncontrast/RF_dur/FA/BWTP\t\t%d/%.6f/%.2f/%.2f", seq->phys.contrast, seq->phys.rf_duration, seq->phys.flip_angle, seq->phys.bwtp);
-	strcat(info, line);
+	ctr += snprintf(info + ctr, (size_t)(N - ctr), 
+			"\ndwell/os\t\t\t\t%.8f/%.2f\ncontrast/rf duration/FA/BWTP\t\t%d/%.6f/%.2f/%.2f",
+			seq->phys.dwell, seq->phys.os,
+			seq->phys.contrast, seq->phys.rf_duration, seq->phys.flip_angle, seq->phys.bwtp);
 
-	sprintf(line, "\nFOV/slice-th\t\t\t%.3f/%.3f", seq->geom.fov, seq->geom.slice_thickness);
-	strcat(info, line);
-	sprintf(line, "\nBR/mb_factor/SMS dist\t\t\t%d/%d/%.3f", seq->geom.baseres, seq->geom.mb_factor, seq->geom.sms_distance);
-	strcat(info, line);
+	ctr += snprintf(info + ctr, (size_t)(N - ctr), 
+			"\nFOV/slice-th\t\t\t%.3f/%.3f\nBR/mb_factor/SMS dist\t\t\t%d/%d/%.3f",
+			seq->geom.fov, seq->geom.slice_thickness,
+			seq->geom.baseres, seq->geom.mb_factor, seq->geom.sms_distance);
 	
-	sprintf(line, "\nPE_Mode/Turns-GA/aligned flags/order\t%d/%d/%ld/%d", seq->enc.pe_mode, seq->enc.tiny, seq->enc.aligned_flags, seq->enc.order);
-	strcat(info, line);
+	ctr += snprintf(info + ctr, (size_t)(N - ctr),
+			"\nPE_Mode/Turns-GA/aligned flags/order\t%d/%d/%ld/%d",
+			seq->enc.pe_mode, seq->enc.tiny, seq->enc.aligned_flags, seq->enc.order);
 
-	sprintf(line, "\ngamma/b0/max grad/inv slew\t\t%.0f/%.3f/%.3f/%.6f\n", seq->sys.gamma, seq->sys.b0, seq->sys.grad.max_amplitude, seq->sys.grad.inv_slew_rate);
-	strcat(info, line);
+	ctr += snprintf(info + ctr, (size_t)(N - ctr),
+			"\ngamma/b0/max grad/inv slew\t\t%.0f/%.3f/%.3f/%.6f\n",
+			seq->sys.gamma, seq->sys.b0, seq->sys.grad.max_amplitude, seq->sys.grad.inv_slew_rate);
 
-	sprintf(line, "\nmag prep/TI/init delay/inv delay\t\t%d/%.6f/%.2f/%.2f", seq->magn.mag_prep, seq->magn.ti, seq->magn.init_delay, seq->magn.inv_delay_time);
-	strcat(info, line);
+	ctr += snprintf(info + ctr, (size_t)(N - ctr),
+			"\nmag prep/TI/init delay/inv delay\t\t%d/%.6f/%.2f/%.2f",
+			seq->magn.mag_prep, seq->magn.ti, seq->magn.init_delay, seq->magn.inv_delay_time);
 
-	sprintf(line, "\nloop_dims\t: %ld|%ld|%ld|%ld\t\t", seq->loop_dims[READ_DIM], seq->loop_dims[PHS1_DIM], seq->loop_dims[PHS2_DIM], seq->loop_dims[COIL_DIM]);
-	strcat(info, line);
-	sprintf(line, "%ld|%ld|%ld|%ld\t\t", seq->loop_dims[MAPS_DIM], seq->loop_dims[TE_DIM], seq->loop_dims[COEFF_DIM], seq->loop_dims[COEFF2_DIM]);
-	strcat(info, line);
-	sprintf(line, "%ld|%ld|%ld|%ld\t\t", seq->loop_dims[ITER_DIM], seq->loop_dims[CSHIFT_DIM], seq->loop_dims[TIME_DIM], seq->loop_dims[TIME2_DIM]);
-	strcat(info, line);
-	sprintf(line, "%ld|%ld|%ld|%ld\t\t", seq->loop_dims[LEVEL_DIM], seq->loop_dims[SLICE_DIM], seq->loop_dims[AVG_DIM], seq->loop_dims[BATCH_DIM]);
-	strcat(info, line);
+	ctr += snprintf(info + ctr, (size_t)(N - ctr),
+			"\nloop_dims\t: %ld|%ld|%ld|%ld\t\t%ld|%ld|%ld|%ld\t\t%ld|%ld|%ld|%ld\t\t%ld|%ld|%ld|%ld\t\t",
+			seq->loop_dims[READ_DIM], seq->loop_dims[PHS1_DIM], seq->loop_dims[PHS2_DIM], seq->loop_dims[COIL_DIM],
+			seq->loop_dims[MAPS_DIM], seq->loop_dims[TE_DIM], seq->loop_dims[COEFF_DIM], seq->loop_dims[COEFF2_DIM],
+			seq->loop_dims[ITER_DIM], seq->loop_dims[CSHIFT_DIM], seq->loop_dims[TIME_DIM], seq->loop_dims[TIME2_DIM],
+			seq->loop_dims[LEVEL_DIM], seq->loop_dims[SLICE_DIM], seq->loop_dims[AVG_DIM], seq->loop_dims[BATCH_DIM]);
 
-	sprintf(line, "\n\nCrowthers no. of radial Spokes =\t%.2f", M_PI * seq->geom.baseres);
-	strcat(info, line);
+	ctr += snprintf(info + ctr, (size_t)(N - ctr), "\n\nCrowthers no. of radial Spokes =\t%.2f", M_PI * seq->geom.baseres);
+
+	if (ctr > N)
+		return -1;
+
+	return ctr;
 }
 
 
@@ -413,10 +412,9 @@ void seq_print_info_radial_views(int N, char* info, const struct seq_config* seq
 	if ((PEMODE_RAGA != seq->enc.pe_mode) && (PEMODE_RAGA_ALIGNED != seq->enc.pe_mode))
 		return;
 
-	static char line[100];
+	int ctr = 0;
 
-	sprintf(line, "Rational Approximation of Golden Angle Sampling. Tiny-GA: %d\nallowed spokes: ", seq->enc.tiny);
-	strcat(info, line);
+	ctr += snprintf(info + ctr, (size_t)(N - ctr), "Rational Approximation of Golden Angle Sampling. Tiny-GA: %d\nallowed spokes: ", seq->enc.tiny);
 
 	int i = 1;
 
@@ -425,8 +423,7 @@ void seq_print_info_radial_views(int N, char* info, const struct seq_config* seq
 
 		if (check_gen_fib(gen_fibonacci(seq->enc.tiny, i), seq->enc.tiny)) {
 
-			sprintf(line, "%d\t", gen_fibonacci(seq->enc.tiny, i));
-			strcat(info, line);
+			ctr += snprintf(info + ctr, (size_t)(N - ctr), "%d\t", gen_fibonacci(seq->enc.tiny, i));
 		}
 
 		i++;

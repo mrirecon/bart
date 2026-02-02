@@ -35,6 +35,20 @@ static bool test_command(void)
 
 UT_REGISTER_TEST(test_command);
 
+static bool test_print(void)
+{
+	struct seq_config seq = seq_config_defaults;
+
+	static char tooltip[7852]; // 8192 (defined in sequence) - 340 (already used)
+	int a = seq_print_info_config(7852, tooltip, &seq);
+
+	if (0 > a)
+		 return false;
+
+	return true;
+}
+
+UT_REGISTER_TEST(test_print);
 
 static bool test_command2(void)
 {
