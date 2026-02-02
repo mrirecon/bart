@@ -24,8 +24,6 @@
 
 #include "helpers.h"
 
-#define MAX_LENGTH_OPTS_STR 4096
-
 int seq_raga_spokes(const struct seq_config* seq)
 {
 	if ((PEMODE_RAGA == seq->enc.pe_mode) || (PEMODE_RAGA_ALIGNED == seq->enc.pe_mode))
@@ -335,25 +333,9 @@ void seq_set_fov_pos(int N, int M, const float* shifts, struct seq_config* seq)
 }
 
 
-int seq_read_config_from_file(struct seq_config* seq, const char* filename)
+int seq_config_from_string(struct seq_config* seq, int N, char* buffer)
 {
-	if (NULL == filename)
-		return 0;
-
-	FILE* fp = fopen(filename, "r");
-	if (NULL == fp)
-		return 0;
-
-	char buffer[MAX_LENGTH_OPTS_STR + 1];
-
-	if (NULL == fgets(buffer, sizeof(buffer), fp)) {
-
-		fclose(fp);
-		return 0;
-	}
-	fclose(fp);
-
-	return read_config_from_str(seq, buffer);
+	return read_config_from_str(seq, N, buffer);
 }
 
 

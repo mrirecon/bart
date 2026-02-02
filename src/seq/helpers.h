@@ -144,7 +144,7 @@ BARTLIB_API extern void BARTLIB_CALL seq_print_info_radial_views(int N, char* in
 
 
 
-BARTLIB_API int BARTLIB_CALL seq_read_config_from_file(struct seq_config* seq, const char* filename);
+BARTLIB_API int BARTLIB_CALL seq_config_from_string(struct seq_config* seq, int N, char* buffer);
 
 #include "misc/cppwrap.h"
 

@@ -15,10 +15,6 @@
 
 #include "opts.h"
 
-#ifndef MAX_LENGTH_OPTS_STR
-#define MAX_LENGTH_OPTS_STR 4096
-#endif
-
 static int error_catcher2(void fun(int* argcp, char* argv[*argcp], int m, const struct arg_s args[m], const char* help_str, int n, const struct opt_s opts[n]), 
 					int* argcp, char* argv[*argcp], int m, const struct arg_s args[m], const char* help_str, int n, const struct opt_s opts[n])
 {
@@ -38,7 +34,7 @@ static int error_catcher2(void fun(int* argcp, char* argv[*argcp], int m, const 
 }
 
 
-int read_config_from_str(struct seq_config* seq, const char* buffer_in)
+int read_config_from_str(struct seq_config* seq, int N, const char* buffer_in)
 {
 	static const char help[] = "commandline for IDEA\n";
 
@@ -108,7 +104,7 @@ int read_config_from_str(struct seq_config* seq, const char* buffer_in)
 
 	char *token = strtok(buffer, " \t");
 
-	char* argv[MAX_LENGTH_OPTS_STR + 1];
+	char* argv[N + 1];
 
 	int i = 0;
 

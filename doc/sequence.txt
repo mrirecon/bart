@@ -63,7 +63,7 @@ EXPORTED FUNCTIONS
 		seq_custom_ui_free
 		seq_custom_ui_init
 
-		seq_read_config_from_file: cmdline to UI
+		seq_config_from_string: cmdline to UI
 
 		seq_ui_interface_custom_params
 		seq_ui_interface_loop_dims
