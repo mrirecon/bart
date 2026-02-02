@@ -857,7 +857,10 @@ UTARGETS += test_graph
 
 
 # lib simu
-UTARGETS += test_ode_bloch test_ode_simu test_biot_savart test_signals test_epg test_pulse test_tsegf test_phantom
+UTARGETS += test_ode_bloch test_ode_simu test_biot_savart test_signals test_epg test_pulse test_tsegf
+ifneq ($(BUILDTYPE), WASM)
+UTARGETS += test_phantom
+endif
 MODULES_test_ode_bloch += -lsimu
 MODULES_test_ode_simu += -lseq -lsimu
 MODULES_test_biot_savart += -lsimu
@@ -865,7 +868,7 @@ MODULES_test_signals += -lsimu
 MODULES_test_epg += -lsimu
 MODULES_test_pulse += -lseq -lsimu
 MODULES_test_tsegf += -lsimu
-MODULES_test_phantom += -lstl -lgeom -lsimu -lgeom
+MODULES_test_phantom += -lstl -lgeom -lsimu -lgeom -lstl
 
 # lib geom
 UTARGETS += test_geom test_stl

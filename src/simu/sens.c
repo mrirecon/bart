@@ -1,6 +1,6 @@
 /* Copyright 2014. The Regents of the University of California.
  * Copyright 2023-2025. Uecker Lab. University Medical Center Göttingen.
- * Copyright 2025. Institute of Biomedical Imaging. TU Graz.
+ * Copyright 2025-2026. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
@@ -246,10 +246,11 @@ void cnstr_coils(long D, struct coil_opts* copts, bool legacy_fov)
 void get_position(long D, float p[4], const long pos[D], const long gdims[D], const float* grid)
 {
 	long poss[D];
-	md_singleton_dims(D, poss);
-
-	for (int i = 0; i < D-2; i++)
-		poss[i+1] = pos[i];
+	md_copy_dims(D, poss, pos);
+	poss[0] = 0;
+	// shift grid index by one (constant over coil dim)
+	for (int i = 1; i < 4; i++)
+		poss[i] = pos[i-1];
 
 	for (poss[0] = 0; poss[0] < 4; poss[0]++)
 		p[poss[0]] = MD_ACCESS(D, MD_STRIDES(D, gdims, FL_SIZE), poss, grid);

@@ -1,9 +1,10 @@
 /* Copyright 2025. Uecker Lab. University Medical Center Göttingen.
+ * Copyright 2026. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
  * Authors:
- * 2025 Martin Heide
+ * 2025-2026 Martin Heide
  */
 
 #include <stdbool.h>
@@ -91,16 +92,7 @@ int main_coils(int argc, char* argv[argc])
 	complex double* sens = sample_coils(DIMS, odims, gdims, grid, &copts);
 	complex float* optr = create_cfl(out_file, DIMS, odims);
 
-	long ostrs[DIMS], sstrs[DIMS], pos[DIMS];
-
-	md_set_dims(DIMS, pos, 0);
-	md_calc_strides(DIMS, ostrs, odims, CFL_SIZE);
-	md_calc_strides(DIMS, sstrs, odims, CDL_SIZE);
-
-	do {
-		MD_ACCESS(DIMS, ostrs, pos, optr) = MD_ACCESS(DIMS, sstrs, pos, sens);
-
-	} while(md_next(DIMS, odims, ~0UL, pos));
+	md_zdouble2float(DIMS, odims, optr, sens);
 
 	md_free(grid);
 	copts.dstr(&copts);

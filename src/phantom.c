@@ -407,8 +407,19 @@ int main_phantom(int argc, char* argv[argc])
 		stl_compute_normals(DIMS, stldims, model);
 		phantom_stl_init(&popts, DIMS, stldims, model);
 
+		long odims_[DIMS];
+		complex double* cdout = sample_signal(DIMS, odims_, gdims, grid, stdims, straj, &popts, &coptss);
+
 		long odims[DIMS];
-		complex double* cdout = sample_signal(DIMS, odims, gdims, grid, stdims, straj, &popts, &gopts, &coptss);
+		md_copy_dims(DIMS, odims, odims_);
+
+		// reshape dims from format [ 1 X Y*Z ... ] to [ X Y Z ... ]
+		if (NULL == samples && kspace) {
+
+			odims[0] = gdims[1];
+			odims[1] = gdims[2];
+			odims[2] = gdims[3];
+		}
 
 		assert(md_check_equal_dims(DIMS, odims, dims, ~0UL));
 
@@ -419,15 +430,7 @@ int main_phantom(int argc, char* argv[argc])
 		md_free(straj);
 		md_free(grid);
 
-		long pos[DIMS], ostrs[DIMS], cdostrs[DIMS];
-		md_set_dims(DIMS, pos, 0);
-		md_calc_strides(DIMS, ostrs, odims, CFL_SIZE);
-		md_calc_strides(DIMS, cdostrs, odims, CDL_SIZE);
-
-		do {
-			MD_ACCESS(DIMS, ostrs, pos, out) = MD_ACCESS(DIMS, cdostrs, pos, cdout);
-
-		} while(md_next(DIMS, odims, ~0UL, pos));
+		md_zdouble2float(DIMS, odims, out, cdout);
 
 		md_free(cdout);
 

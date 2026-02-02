@@ -8,6 +8,10 @@
 #define VEC_DIM_S READ_DIM
 #define VEC_FLAG_S (1u << VEC_DIM_S)
 
+#ifndef DIMS
+#define DIMS 16
+#endif
+
 struct grid_opts {
 
 	long dims[DIMS];

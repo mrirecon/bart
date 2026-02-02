@@ -1,6 +1,6 @@
 /* Copyright 2014. The Regents of the University of California.
  * Copyright 2015-2025. Uecker Lab. University Medical Center Göttingen.
- * Copyright 2021-2025. TU Graz. Institute of Biomedical Imaging.
+ * Copyright 2021-2026. TU Graz. Institute of Biomedical Imaging.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -1203,131 +1203,101 @@ void calc_phantom_tubes(const long dims[DIMS], complex float* out, bool kspace, 
 	md_free(tmp);
 }
 
-complex double* sample_signal(int D, long odims[D], const long gdims_[D], const float* grid, const long sgdims_[D], const float* sgrid, const struct phantom_opts* popts, const struct grid_opts* gopts, const struct coil_opts* copts)
+complex double* sample_signal(int D, long odims_s[D], const long gdims_s[D], const float* grid, const long sgdims_s[D], const float* sgrid, const struct phantom_opts* popts, const struct coil_opts* copts)
 {
-	const long* gdims = gdims_;
+	// We always reshape the grid to dims [ 4 X Y*Z ... ]
+	long gdims_[D], gstrs_[D];
+	md_singleton_dims(D, gdims_);
+	gdims_[0] = gdims_s[0];
+	gdims_[1] = gdims_s[1];
+	gdims_[2] = gdims_s[2] * gdims_s[3];
+	const long* gdims = gdims_; // clang
+	md_calc_strides(D, gstrs_, gdims_, FL_SIZE);
+	const long* gstrs = gstrs_;
+
+	// We always sample on the dims [ 1 X Y*Z ... ]
+	long odims[D];
+	md_singleton_dims(D, odims);
+	odims[1] = gdims[1];
+	odims[2] = gdims[2] * gdims[3];
+	odims[3] = copts->N;
+	odims[COEFF_DIM] = popts->Nc;
+	// TODO: expand other phantom dims (requries expansion in struct phantom_opts)
+
+	complex double* cdout = md_alloc(D, odims, CDL_SIZE);
+	md_clear(D, odims, cdout, CDL_SIZE);
+
+	// sensgrid and sens also need reshape to [ 4 X Y*Z ... ] and [ 1 X Y*Z ... ]
+	long sgdims_[D];
+	md_singleton_dims(D, sgdims_);
+	sgdims_[0] = sgdims_s[0];
+	sgdims_[1] = sgdims_s[1];
+	sgdims_[2] = sgdims_s[2] * sgdims_s[3];
 	const long* sgdims = sgdims_;
 
-	long sodims[D + 1];
-	md_singleton_dims(D + 1, sodims);
-	complex double* sens = sample_coils(D, sodims, sgdims, sgrid, copts);
-
-	md_copy_dims(D, odims, gopts->dims);
-	odims[COIL_DIM] = copts->N;
-	complex double* cdout = md_alloc(D, odims, CDL_SIZE);
+	long sodims_[D], sodims[D];
+	complex double* sens = sample_coils(D, sodims_, sgdims_s, sgrid, copts);
+	md_singleton_dims(D, sodims);
+	sodims[1] = sodims_[0];
+	sodims[2] = sodims_[1] * sodims_[2];
+	sodims[3] = sodims_[3];
 
 	if (copts->kspace) {
 
-		// pre-compute sensitivity coefficients for convolution on their support sgrid and shift convolution dim to D + 1
-		// pre-compute phantom k-space data on trajectory - support and shift convolution dim to D + 1
-		// compute the convolution with values in dim D + 1 for obtaining the final k-space phantom
 
-		long rsodims[D + 1], sgrdims[D + 1], sgdimsl[D + 1];
-		md_singleton_dims(D + 1, rsodims);
-		md_singleton_dims(D + 1, sgrdims);
-		rsodims[D] = sodims[READ_DIM] * sodims[PHS1_DIM] * sodims[PHS2_DIM];
-		rsodims[COIL_DIM] = copts->N;
-		sgrdims[D] = rsodims[D];
-		sgrdims[0] = 4;
-		md_copy_dims(D, sgdimsl, sgdims);
-		sgdimsl[D] = 1;
+		long sstrs_[D], sgstrs_[D];
+		md_calc_strides(D, sstrs_, sodims, CDL_SIZE);
+		md_calc_strides(D, sgstrs_, sgdims, FL_SIZE);
 
-		float* sgridr = md_alloc(D + 1, sgrdims, FL_SIZE);
-		md_reshape(D + 1, ~READ_FLAG, sgrdims, sgridr, sgdimsl, sgrid, FL_SIZE);
+		const long* sstrs = sstrs_;
+		const long* sgstrs = sgstrs_;
 
-		complex double* sensr = md_alloc(D + 1, rsodims, CDL_SIZE);
-		md_reshape(D + 1, ~COIL_FLAG, rsodims, sensr, sodims, sens, CDL_SIZE);
-
-		long gshdims[D + 1], gdimsl[D + 1];
-		md_singleton_dims(D + 1, gshdims);
-		md_copy_dims(D, gshdims, gdims);
-		md_copy_dims(D, gdimsl, gdims);
-		gshdims[D] = rsodims[D];
-		gdimsl[D] = 1;
-
-		float* gridsh = md_alloc(D + 1, gshdims, FL_SIZE);
-
-		long posgsh[D + 1];
-		md_set_dims(D + 1, posgsh, 0);
-
-		long strss[D + 1], strsg[D + 1], strsgsh[D + 1];
-		md_calc_strides(D + 1, strss, sgrdims, FL_SIZE);
-		md_calc_strides(D + 1, strsgsh, gshdims, FL_SIZE);
-		md_calc_strides(D + 1, strsg, gdimsl, FL_SIZE);
-
-		// compute shifted grid
-		do {
-			vec3_saxpy(&MD_ACCESS(D + 1, strsgsh, posgsh, gridsh), &MD_ACCESS(D + 1, strsg, posgsh, grid), -1, &MD_ACCESS(D + 1, strss, posgsh, sgridr));
-
-		} while(md_next(D + 1, gshdims, ~MD_BIT(0), posgsh));
-
-		long rodims[D + 1];
-		md_singleton_dims(D + 1, rodims);
-		rodims[0] = gshdims[1];
-		rodims[1] = gshdims[2];
-		rodims[2] = gshdims[3];
-		rodims[D] = rsodims[D];
-
-		complex double* routd = md_alloc(D + 1, rodims, CDL_SIZE);
-
-		const long* gshdimscl = gshdims;
-
-		// compute phantom on shifted grid
-		NESTED(complex double, funkr, (const long pos[]))
+		// TODO: reshape convolution to dim D+1 and make computation of phantom independent of number of coils (grid is always the same)
+		NESTED(complex double, funk, (const long pos[]))
 		{
-			float k[4];
-			get_position(D + 1, k, pos, gshdimscl, gridsh);
-			return popts->fun(popts, pos[COEFF_DIM], k);
+			const float* c = &MD_ACCESS(D, gstrs, pos, grid);
+			complex double p = 0;
+			long ipos[D], iposs[D];
+			md_set_dims(D, ipos, 0);
+
+			do {
+				const float* t = &MD_ACCESS(D, sgstrs, ipos, sgrid);
+				float d[4] = { c[0] - t[0], c[1] - t[1], c[2] - t[2], c[3] - t[3] };
+
+				// sens coeff
+				md_copy_dims(D, iposs, ipos);
+				iposs[3] = pos[3];
+
+				p += MD_ACCESS(D, sstrs, iposs, sens) * popts->fun(popts, pos[COEFF_DIM], d);
+
+			} while(md_next(D, sgdims, ~1UL, ipos));
+
+			return p;
 		};
-
-		md_parallel_zzsample(D + 1, rodims, routd, funkr);
-
-		long odimst[D + 1];
-		md_copy_dims(D + 1, odimst, rodims);
-		odimst[COIL_DIM] = rsodims[COIL_DIM];
-		odimst[D] = 1;
-
-		long rostrs[D + 1], rsostrs[D + 1], ostrst[D + 1];
-
-		md_calc_strides(D + 1, rostrs, rodims, CDL_SIZE);
-		md_calc_strides(D + 1, rsostrs, rsodims, CDL_SIZE);
-		md_calc_strides(D + 1, ostrst, odimst, CDL_SIZE);
-
-		long posgsh1[D + 1];
-		md_set_dims(D + 1, posgsh, 0);
-
-		// TODO replace by zfmac for complex double
-		do {
-			md_copy_dims(D + 1, posgsh1, posgsh);
-			complex double z = 0;
-			for (posgsh1[D] = 0; posgsh1[D] < rodims[D]; posgsh1[D]++)
-				z += MD_ACCESS(D + 1, rostrs, posgsh, routd) * MD_ACCESS(D + 1, rsostrs, posgsh, sensr);
-
-			MD_ACCESS(D + 1, ostrst, posgsh, cdout) = z;
-
-		} while(md_next(D + 1, odimst, ~0UL, posgsh));
-
-		md_free(sensr);
-		md_free(gridsh);
-		md_free(sgridr);
-		md_free(routd);
+		md_parallel_zzsample(D, odims, cdout, funk);
+		md_copy_dims(D, odims_s, odims);
 
 	} else {
 
-		error("not implemented\n");
-#if 0
+		assert(odims[0] == sodims[0]);
+		assert(odims[1] == sodims[1]);
+		assert(odims[2] == sodims[2]);
+
 		long sstrs[D];
 		md_calc_strides(D, sstrs, sodims, CDL_SIZE);
-		const long sstrscl = sstrs;
+		const long* sstrscl = sstrs;
 
 		NESTED(complex double, funx, (const long pos[]))
 		{
-			float x[4];
-			get_position(D, x, pos, gdims, grid);
-			return popts->fun(popts, pos[COEFF_DIM], x) * MD_ACCESS(D, sstrscl, pos, sens);
+			return popts->fun(popts, pos[COEFF_DIM], &MD_ACCESS(D, gstrs, pos, grid)) * MD_ACCESS(D, sstrscl, pos, sens);
 		};
 		md_parallel_zzsample(D, odims, cdout, funx);
-#endif
+
+		md_copy_dims(D, odims_s, odims);
+
+		odims_s[0] = gdims_s[1];
+		odims_s[1] = gdims_s[2];
+		odims_s[2] = gdims_s[3];
 	}
 
 	md_free(sens);

@@ -1,4 +1,4 @@
-/* Copyright 2025. TU Graz. Institute of Biomedical Imaging
+/* Copyright 2025-2026. TU Graz. Institute of Biomedical Imaging
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -10,16 +10,14 @@
 #include <complex.h>
 #include <math.h>
 
-#include "utest.h"
-
-#include "misc/mri.h"
-
 #include "num/multind.h"
 
 #include "stl/misc.h"
 #include "stl/models.h"
 
 #include "simu/phantom.h"
+
+#include "utest.h"
 
 static bool test_stl_kspace(void)
 {
