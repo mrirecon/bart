@@ -35,12 +35,17 @@ static double start_rf(const struct seq_config* seq)
 	return round_up_raster(min_delay, seq->sys.raster_rf);
 }
 
+static double start_adc(long echo, const struct seq_config* seq)
+{
+	return round_up_raster(start_rf(seq) + seq->phys.rf_duration / 2. + seq->phys.te[echo]
+				- adc_time_to_echo(seq), seq->sys.raster_rf);
+}
+
 static double ro_shift(long echo, const struct seq_config* seq)
 {
-	double start_flat = start_rf(seq) + seq->phys.rf_duration / 2.
-				+ seq->phys.te[echo] - round_up_raster(adc_time_to_echo(seq), seq->sys.raster_rf);
+	double adc_start = start_adc(echo, seq);
 
-	double shift = seq->sys.raster_grad - (round_up_raster(start_flat, seq->sys.raster_grad) - start_flat);
+	double shift = seq->sys.raster_grad - (round_up_raster(adc_start, seq->sys.raster_grad) - adc_start);
 
 	if (seq->sys.raster_grad <= shift)
 		return 0.;
@@ -329,8 +334,7 @@ static struct flash_timing flash_compute_timing(const struct seq_config *seq)
 		timing.readout[i] = timing.readout_dephaser + available_time_RF_SLI(1, seq) - seq->phys.te[0]
 				+ seq->phys.te[i]; // available_time_RF_SLI only adds first echo, but we need te[echo]
 
-		// FIXME; before SI conversion: timing.adc[i] = timing.RF + seq->phys.rf_duration / 2. + seq->phys.te[i] - floor(adc_time_to_echo(seq));
-		timing.adc[i] = round_up_raster(timing.RF + seq->phys.rf_duration / 2. + seq->phys.te[i] - adc_time_to_echo(seq), seq->sys.raster_rf);
+		timing.adc[i] = start_adc(i, seq);
 	}
 
 	return timing;
