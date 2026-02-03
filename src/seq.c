@@ -405,30 +405,30 @@ int main_seq(int argc, char* argv[argc])
 
 			compute_adc_samples(DIMS, adc_dims, adc, E, seq->event);
 
-			double m0_adc[3];
-
-			double scale = 1. / (seq->conf->geom.fov * seq->conf->sys.gamma);
-
-			double m0_rf[3] = { };
-			int rf_idx = events_idx(0, SEQ_EVENT_PULSE, E, seq->event); // FIXME: assumption of 1 RF pulse 
-			if (0 < rf_idx)
-				moment_sum(m0_rf, seq->event[rf_idx].mid, E, seq->event);
+			float m0_adc[adc_dims[PHS1_DIM]][3];
 
 			do {
-				assert(0 == pos_save[READ_DIM]);
 
-				moment_sum(m0_adc, MD_ACCESS(DIMS, adc_strs, pos_save, adc), E, seq->event);
+				double adc_start = seq->event[events_idx(pos_save[TE_DIM], SEQ_EVENT_ADC, E, seq->event)].start;
+				compute_moment0_offset(adc_dims[PHS1_DIM], m0_adc, adc_start, seq->conf->phys.dwell / seq->conf->phys.os, E, seq->event);
 
-				MD_ACCESS(DIMS, astrs, (pos_save[READ_DIM] = 0, pos_save), out_adc) = (m0_adc[0] - m0_rf[0]) / scale;
-				MD_ACCESS(DIMS, astrs, (pos_save[READ_DIM] = 1, pos_save), out_adc) = (m0_adc[1] - m0_rf[1]) / scale;
-				MD_ACCESS(DIMS, astrs, (pos_save[READ_DIM] = 2, pos_save), out_adc) = (m0_adc[2] - m0_rf[2]) / scale;
+				double scale = 1. / (seq->conf->geom.fov * seq->conf->sys.gamma);
 
-				MD_ACCESS(DIMS, astrs, (pos_save[READ_DIM] = 3, pos_save), out_adc) = MD_ACCESS(DIMS, adc_strs, (pos_save[READ_DIM] = 0, pos_save), adc);
-				MD_ACCESS(DIMS, astrs, (pos_save[READ_DIM] = 4, pos_save), out_adc) = MD_ACCESS(DIMS, adc_strs, (pos_save[READ_DIM] = 1, pos_save), adc);
+				do {
+					assert(0 == pos_save[READ_DIM]);
 
-				pos_save[READ_DIM] = 0;
+					MD_ACCESS(DIMS, astrs, (pos_save[READ_DIM] = 0, pos_save), out_adc) = m0_adc[pos_save[PHS1_DIM]][0] / scale;
+					MD_ACCESS(DIMS, astrs, (pos_save[READ_DIM] = 1, pos_save), out_adc) = m0_adc[pos_save[PHS1_DIM]][1] / scale;
+					MD_ACCESS(DIMS, astrs, (pos_save[READ_DIM] = 2, pos_save), out_adc) = m0_adc[pos_save[PHS1_DIM]][2] / scale;
 
-			} while (md_next(DIMS, adims, PHS1_FLAG | TE_FLAG, pos_save));
+					MD_ACCESS(DIMS, astrs, (pos_save[READ_DIM] = 3, pos_save), out_adc) = MD_ACCESS(DIMS, adc_strs, (pos_save[READ_DIM] = 0, pos_save), adc);
+					MD_ACCESS(DIMS, astrs, (pos_save[READ_DIM] = 4, pos_save), out_adc) = MD_ACCESS(DIMS, adc_strs, (pos_save[READ_DIM] = 1, pos_save), adc);
+
+					pos_save[READ_DIM] = 0;
+
+				} while (md_next(DIMS, adims, PHS1_FLAG, pos_save));
+
+			} while (md_next(DIMS, adims, TE_FLAG, pos_save));
 
 			md_free(adc);
 		}
