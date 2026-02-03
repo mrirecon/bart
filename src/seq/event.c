@@ -197,14 +197,7 @@ void moment_sum(double m0[3], double t, int N, const struct seq_event ev[N])
 	for (int a = 0; a < 3; a++)
 		m0[a] = 0.;
 
-	double m_rf[3] = { 0., 0., 0. };
-
 	for (int i = 0; i < N; i++) {
-
-		// FIXME: I do no tunderstand this
-
-		if ((SEQ_EVENT_PULSE == ev[i].type) && (t > ev[i].mid))
-			moment_sum(m_rf, ev[i].mid, N, ev);
 
 		if (SEQ_EVENT_GRADIENT != ev[i].type)
 			continue;
@@ -215,8 +208,5 @@ void moment_sum(double m0[3], double t, int N, const struct seq_event ev[N])
 		for (int a = 0; a < 3; a++)
 			m0[a] += m[a];
 	}
-
-	for (int a = 0; a < 3; a++)
-		m0[a] -= m_rf[a];
 }
 

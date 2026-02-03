@@ -37,7 +37,8 @@ void linearize_events(int N, struct seq_event ev[__VLA(N)], double* start_block,
 
 
 /*
- * Compute 0th moment on a raster. 
+ * Compute 0th moment on a raster after RF pulse.
+ * 0th moment before excitation pulse is zero.
  */
 void compute_moment0(int M, float moments[M][3], double dt, int N, const struct seq_event ev[N])
 {
@@ -45,15 +46,37 @@ void compute_moment0(int M, float moments[M][3], double dt, int N, const struct 
 		for (int a = 0; a < 3; a++)
 			moments[i][a] = 0.;
 
+	double m_rf[3] = { };
+
+	// last pulse
+	int rf_idx = -1;
+
+	if (0 < events_counter(SEQ_EVENT_PULSE, N, ev))
+		rf_idx = events_idx(events_counter(SEQ_EVENT_PULSE, N, ev) - 1, SEQ_EVENT_PULSE, N, ev);
+
+	double t_reset = -1;
+	if ((0 < rf_idx) && (SEQ_RF_EXCITATION == ev[rf_idx].pulse.type)) {
+
+		t_reset = ev[rf_idx].mid;
+		moment_sum(m_rf, t_reset, N, ev);
+	}
+
+
 	for (int p = 0; p < M; p++) {
 
 		assert((0 <= p) && (p <= M));
 
-		double m[3];
-		moment_sum(m, (p + 0.5) * dt, N, ev);
+		double m[3] = { };
+		if ((p + 0.5) * dt > t_reset) {
 
-		for (int a = 0; a < 3; a++) 
-			moments[p][a] = m[a];
+			moment_sum(m, (p + 0.5) * dt, N, ev);
+			for (int a = 0; a < 3; a++) 
+				moments[p][a] = m[a] - m_rf[a];
+		} else {
+
+			for (int a = 0; a < 3; a++) 
+				moments[p][a] = m[a];
+		}
 	}
 }
 

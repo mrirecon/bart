@@ -170,17 +170,16 @@ static bool test_flash_mom1(void)
 	int e_adc = events_idx(0, SEQ_EVENT_ADC, E, ev);
 	int e_rf = events_idx(0, SEQ_EVENT_PULSE, E, ev);
 
+	double mom_rf[3];
+	moment_sum(mom_rf, ev[e_rf].mid, E, ev);
+
 	double mom[3];
 	moment_sum(mom, ev[e_adc].mid, E, ev);
-	if (1E-5 * UT_TOL < (fabs(mom[0]) + fabs(mom[1]) + fabs(mom[2])))
-		return false;
-
-	moment_sum(mom, ev[e_rf].mid + 1e-12, E, ev);
-	if (1E-5 * UT_TOL < (fabs(mom[0]) + fabs(mom[1]) + fabs(mom[2])))
+	if (1E-5 * UT_TOL < (fabs(mom[0] - mom_rf[0]) + fabs(mom[1] - mom_rf[1]) + fabs(mom[2] - mom_rf[2])))
 		return false;
 
 	moment_sum(mom, ev[e_adc].start, E, ev);
-	if (1E-5 * UT_TOL < fabs(mom[2]))
+	if (1E-5 * UT_TOL < fabs(mom[2] - mom_rf[2]))
 		return false;
 
 	return true;
@@ -208,17 +207,16 @@ static bool test_flash_mom1b(void)
 	int e_adc = events_idx(0, SEQ_EVENT_ADC, E, ev);
 	int e_rf = events_idx(0, SEQ_EVENT_PULSE, E, ev);
 
+	double mom_rf[3];
+	moment_sum(mom_rf, ev[e_rf].mid, E, ev);
+
 	double mom[3];
 	moment_sum(mom, ev[e_adc].mid, E, ev);
-	if (1E-5 * UT_TOL < (fabs(mom[0]) + fabs(mom[1]) + fabs(mom[2])))
-		return false;
-
-	moment_sum(mom, ev[e_rf].mid + 1e-12, E, ev);
-	if (1E-5 * UT_TOL < (fabs(mom[0]) + fabs(mom[1]) + fabs(mom[2])))
+	if (1E-5 * UT_TOL < (fabs(mom[0] - mom_rf[0]) + fabs(mom[1] - mom_rf[1]) + fabs(mom[2] - mom_rf[2])))
 		return false;
 
 	moment_sum(mom, ev[e_adc].start, E, ev);
-	if (1E-5 * UT_TOL < fabs(mom[2]))
+	if (1E-5 * UT_TOL < fabs(mom[2] - mom_rf[2]))
 		return false;
 
 	return true;
@@ -246,17 +244,16 @@ static bool test_flash_mom1c(void)
 	int e_adc = events_idx(0, SEQ_EVENT_ADC, E, ev);
 	int e_rf = events_idx(0, SEQ_EVENT_PULSE, E, ev);
 
+	double mom_rf[3];
+	moment_sum(mom_rf, ev[e_rf].mid, E, ev);
+
 	double mom[3];
 	moment_sum(mom, ev[e_adc].mid, E, ev);
-	if (1E-5 * UT_TOL < (fabs(mom[0]) + fabs(mom[1]) + fabs(mom[2])))
-		return false;
-
-	moment_sum(mom, ev[e_rf].mid + 1e-12, E, ev);
-	if (1E-5 * UT_TOL < (fabs(mom[0]) + fabs(mom[1]) + fabs(mom[2])))
+	if (1E-5 * UT_TOL < (fabs(mom[0] - mom_rf[0]) + fabs(mom[1] - mom_rf[1]) + fabs(mom[2] - mom_rf[2])))
 		return false;
 
 	moment_sum(mom, ev[e_adc].start, E, ev);
-	if (1E-5 * UT_TOL < fabs(mom[2]))
+	if (1E-5 * UT_TOL < fabs(mom[2] - mom_rf[2]))
 		return false;
 
 	return true;
@@ -302,23 +299,21 @@ static bool test_flash_mom_meco(void)
 
 	int e_rf = events_idx(0, SEQ_EVENT_PULSE, E, ev);
 
+	double mom_rf[3];
+	moment_sum(mom_rf, ev[e_rf].mid, E, ev);
+
 	double mom[3];
-
-	moment_sum(mom, ev[e_rf].mid + 1e-12, E, ev);
-	if (1E-5 * UT_TOL < (fabs(mom[0]) + fabs(mom[1]) + fabs(mom[2])))
-		return false;
-
 
 	for (int i = 0; i < seq.loop_dims[TE_DIM]; i++) {
 
 		int e_adc = events_idx(i, SEQ_EVENT_ADC, E, ev);
 
 		moment_sum(mom, ev[e_adc].mid, E, ev);
-		if (1E-5 * UT_TOL < (fabs(mom[0]) + fabs(mom[1]) + fabs(mom[2])))
+		if (1E-5 * UT_TOL < (fabs(mom[0] - mom_rf[0]) + fabs(mom[1] - mom_rf[1]) + fabs(mom[2] - mom_rf[2])))
 			return false;
 
 		moment_sum(mom, ev[e_adc].start, E, ev);
-		if (1E-5 * UT_TOL < fabs(mom[2]))
+		if (1E-5 * UT_TOL < fabs(mom[2] - mom_rf[2]))
 			return false;
 	}
 

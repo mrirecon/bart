@@ -39,6 +39,8 @@ enum gradient_mode { GRAD_FAST, GRAD_NORMAL, GRAD_WHISPER };
 
 int main_seq(int argc, char* argv[argc])
 {
+	double start_time = timestamp();
+
 	const char* grad_file = NULL;
 	const char* mom_file = NULL;
 	const char* adc_file = NULL;
@@ -407,17 +409,19 @@ int main_seq(int argc, char* argv[argc])
 
 			double scale = 1. / (seq->conf->geom.fov * seq->conf->sys.gamma);
 
+			double m0_rf[3] = { };
+			int rf_idx = events_idx(0, SEQ_EVENT_PULSE, E, seq->event); // FIXME: assumption of 1 RF pulse 
+			if (0 < rf_idx)
+				moment_sum(m0_rf, seq->event[rf_idx].mid, E, seq->event);
+
 			do {
 				assert(0 == pos_save[READ_DIM]);
 
 				moment_sum(m0_adc, MD_ACCESS(DIMS, adc_strs, pos_save, adc), E, seq->event);
 
-				for (int i = 0; i < 3; i++)
-					m0_adc[i] = m0_adc[i] / scale;
-
-				MD_ACCESS(DIMS, astrs, (pos_save[READ_DIM] = 0, pos_save), out_adc) = m0_adc[0];
-				MD_ACCESS(DIMS, astrs, (pos_save[READ_DIM] = 1, pos_save), out_adc) = m0_adc[1];
-				MD_ACCESS(DIMS, astrs, (pos_save[READ_DIM] = 2, pos_save), out_adc) = m0_adc[2];
+				MD_ACCESS(DIMS, astrs, (pos_save[READ_DIM] = 0, pos_save), out_adc) = (m0_adc[0] - m0_rf[0]) / scale;
+				MD_ACCESS(DIMS, astrs, (pos_save[READ_DIM] = 1, pos_save), out_adc) = (m0_adc[1] - m0_rf[1]) / scale;
+				MD_ACCESS(DIMS, astrs, (pos_save[READ_DIM] = 2, pos_save), out_adc) = (m0_adc[2] - m0_rf[2]) / scale;
 
 				MD_ACCESS(DIMS, astrs, (pos_save[READ_DIM] = 3, pos_save), out_adc) = MD_ACCESS(DIMS, adc_strs, (pos_save[READ_DIM] = 0, pos_save), adc);
 				MD_ACCESS(DIMS, astrs, (pos_save[READ_DIM] = 4, pos_save), out_adc) = MD_ACCESS(DIMS, adc_strs, (pos_save[READ_DIM] = 1, pos_save), adc);
@@ -488,6 +492,10 @@ debug_print_events:
 	}
 
 	bart_seq_free(seq);
+
+	double recosecs = timestamp() - start_time;
+
+	debug_printf(DP_INFO, "Total Time: %.2f s\n", recosecs);
 
 	return 0;
 }
