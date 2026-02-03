@@ -40,7 +40,7 @@ void linearize_events(int N, struct seq_event ev[__VLA(N)], double* start_block,
  * Compute 0th moment on a raster after RF pulse.
  * 0th moment before excitation pulse is zero.
  */
-void compute_moment0(int M, float moments[M][3], double dt, int N, const struct seq_event ev[N])
+void compute_moment0_offset(int M, float moments[M][3], double start, double dt, int N, const struct seq_event ev[N])
 {
 	for (int i = 0; i < M; i++) 
 		for (int a = 0; a < 3; a++)
@@ -67,9 +67,9 @@ void compute_moment0(int M, float moments[M][3], double dt, int N, const struct 
 		assert((0 <= p) && (p <= M));
 
 		double m[3] = { };
-		if ((p + 0.5) * dt > t_reset) {
+		if (start + (p + 0.5) * dt > t_reset) {
 
-			moment_sum(m, (p + 0.5) * dt, N, ev);
+			moment_sum(m, start + (p + 0.5) * dt, N, ev);
 			for (int a = 0; a < 3; a++) 
 				moments[p][a] = m[a] - m_rf[a];
 		} else {
@@ -80,6 +80,11 @@ void compute_moment0(int M, float moments[M][3], double dt, int N, const struct 
 	}
 }
 
+
+void compute_moment0(int M, float moments[M][3], double dt, int N, const struct seq_event ev[N])
+{
+	compute_moment0_offset(M, moments, 0., dt, N, ev);
+}
 
 /*
  * Compute times and phase of adc samples. 
