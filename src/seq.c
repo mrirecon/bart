@@ -320,9 +320,18 @@ int main_seq(int argc, char* argv[argc])
 	struct pulseq ps;
 
 	int prepped_rfs = bart_seq_prepare(seq);
-	
-	if (0 > prepped_rfs)
+
+	if (0 > prepped_rfs) {
+
+		if (ERROR_SETTING_SPOKES_RAGA == prepped_rfs) {
+
+			char info[300];
+			seq_print_info_radial_views(300, info, seq->conf);
+			debug_printf(DP_WARN, "%s\n", info);
+		}
+
 		error("Sequence preparation failed! - check seq_config, %d] \n", prepped_rfs);
+	}
 
 	debug_printf(DP_INFO, "Nr. of RF shapes: %d\n", prepped_rfs);
 
