@@ -330,7 +330,7 @@ int main_seq(int argc, char* argv[argc])
 			debug_printf(DP_WARN, "%s\n", info);
 		}
 
-		error("Sequence preparation failed! - check seq_config, %d] \n", prepped_rfs);
+		error("Sequence preparation failed! - check seq_config, %s [ %d ] \n", error_string(prepped_rfs), prepped_rfs);
 	}
 
 	debug_printf(DP_INFO, "Nr. of RF shapes: %d\n", prepped_rfs);
@@ -359,7 +359,7 @@ int main_seq(int argc, char* argv[argc])
 
 
 		if (0 > E)
-			error("Sequence not possible! - check seq_config, %d] \n", E);
+			error("Sequence preparation failed! - check seq_config, %s [ %d ] \n", error_string(prepped_rfs), prepped_rfs);
 
 		if ((SEQ_BLOCK_KERNEL_NOISE == seq->state->mode) || (0 == E)) // no noise_scan with pulseq
 			goto debug_print_events;
