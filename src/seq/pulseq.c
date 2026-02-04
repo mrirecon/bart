@@ -337,10 +337,17 @@ static int adc_to_pulseq(struct pulseq *ps, int i_adc, long block_start, int N, 
 
 	int adc_id = VEC_LEN(ps->adcs) + 1;
 
+	uint64_t samples = (uint64_t)lround(ev[adc_idx].adc.columns * ev[adc_idx].adc.os);
+	if (samples % 2) {
+
+		samples++;
+		debug_printf(DP_WARN, "requested samples %ld increased to %ld\n", samples - 1, samples);
+	}
+
 	struct adc a = {
 
 		.id = adc_id,
-		.num = (uint64_t)lround(ev[adc_idx].adc.columns * ev[adc_idx].adc.os),
+		.num = samples,
 		.dwell = (uint64_t)lround(ev[adc_idx].adc.dwell_ns / ev[adc_idx].adc.os),
 		.delay = round(1.E6 * (ev[adc_idx].start - block_start)),
 		.freq = ev[adc_idx].adc.freq,
