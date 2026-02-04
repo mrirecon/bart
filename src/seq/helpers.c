@@ -53,17 +53,6 @@ void seq_minimum_te(const struct seq_config* seq, double* min_te, double* fil_te
 
 
 
-long seq_get_slices(const struct seq_config* seq)
-{
-	long nr = seq->loop_dims[SLICE_DIM];
-
-	if (1 < seq->geom.mb_factor)
-		nr *= seq->loop_dims[PHS2_DIM];
-
-	return nr;
-}
-
-
 static long kernels_per_measurement(const long loop_dims[DIMS])
 {
 	long dims[DIMS];
@@ -144,7 +133,6 @@ static void config_to_custom_params(int nl, long custom_long[__VLA(nl)], int nd,
 	custom_long[cil_inv_delay] = seq->magn.inv_delay_time;
 	custom_double[cid_BWTP] = seq->phys.bwtp;
 
-	// FIXME .. consider ICE? old commen: unused but relevant: FIXME check on plausibility?
 	custom_long[cil_sms] = CHECKBOX_OFF;
 }
 
@@ -311,10 +299,7 @@ static void loop_dims_to_conf(struct seq_config* seq, const int D, const long in
 	seq->loop_dims[PHS1_DIM] = radial_views;
 	seq->loop_dims[TE_DIM] = in_dims[TE_DIM];
 
-	// 2 additional calls for pre_sequence (delay_meas + noise_scan) 
-	// now we assume one block for magn_prep
-	// FIXME: max of prep_scans and loops demanded for (asl-) saturation etc.
-	seq->loop_dims[COEFF2_DIM] = 3;
+	seq->loop_dims[COEFF2_DIM] = 3; // 2 additional calls for delay_meas + noise_scan
 	seq->loop_dims[COEFF_DIM] = 3; // pre-/post- and actual kernel calls
 }
 
@@ -347,6 +332,7 @@ struct seq_interface_conf seq_get_interface_conf(struct seq_config* conf)
 
 	ret.tr = conf->phys.tr;
 	ret.radial_views = conf->loop_dims[PHS1_DIM];
+	ret.slices = get_slices(conf);
 	ret.echoes = conf->loop_dims[TE_DIM];
 	ret.trigger_type = conf->trigger.type;
 	ret.trigger_delay_time = conf->trigger.delay_time;
@@ -365,7 +351,7 @@ struct seq_interface_conf seq_get_interface_conf(struct seq_config* conf)
 
 void seq_set_fov_pos(int N, int M, const float* shifts, struct seq_config* seq)
 {
-	long total_slices = seq_get_slices(seq);
+	long total_slices = get_slices(seq);
 	assert(total_slices <= N);
 
 	seq->geom.sms_distance = 0;

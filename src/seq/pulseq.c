@@ -133,7 +133,7 @@ static struct shape make_compressed_shape(int id, int len, const double val[len]
 
 static double fovz(const struct seq_config* seq)
 {
-	long slices = seq_get_slices(seq);
+	long slices = get_slices(seq);
 
 	double min_pos = seq->geom.shift[0][2];
 	double max_pos = seq->geom.shift[0][2];

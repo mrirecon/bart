@@ -54,8 +54,6 @@ EXPORTED FUNCTIONS
 
 	BART INFO -> SEQUENCE
 		seq_get_interface_conf
-		seq_get_slices--> to be in interface_conf
-
 		seq_print_info_config
 		seq_print_info_radial_views
 

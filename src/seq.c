@@ -175,7 +175,7 @@ int main_seq(int argc, char* argv[argc])
 
 	seq_ui_interface_loop_dims(0, seq->conf, DIMS, seq->conf->loop_dims);
 
-	const long total_slices = seq_get_slices(seq->conf);
+	const long total_slices = get_slices(seq->conf);
 
 	if ((0. < fabs(rel_shift[0])) || (0. < fabs(rel_shift[1])) || (0. < fabs(rel_shift[2]))) {
 

@@ -44,3 +44,10 @@ int gradient_prepare_with_timing(struct grad_trapezoid* grad, double moment, con
 	return 1;
 }
 
+long get_slices(const struct seq_config* seq)
+{
+	if (1 < seq->geom.mb_factor)
+		return seq->loop_dims[SLICE_DIM] * seq->loop_dims[PHS2_DIM];
+
+	return seq->loop_dims[SLICE_DIM];
+}

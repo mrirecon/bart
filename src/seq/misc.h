@@ -13,5 +13,7 @@ struct grad_trapezoid;
 struct grad_limits;
 extern int gradient_prepare_with_timing(struct grad_trapezoid* grad, double moment, const struct seq_config* seq);
 
+extern long get_slices(const struct seq_config* seq);
+
 #endif // _SEQ_MISC_H
 

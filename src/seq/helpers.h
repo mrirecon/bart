@@ -91,6 +91,7 @@ struct seq_interface_conf {
 
 	double tr;
 	long radial_views;
+	long slices;
 	long echoes;
 
 	enum trigger_type trigger_type;
@@ -139,7 +140,6 @@ seq_ui_interface_standard_conf(int reverse, struct seq_config* seq, struct seq_s
 BARTLIB_API extern struct seq_interface_conf BARTLIB_CALL
 seq_get_interface_conf(struct seq_config* seq);
 
-BARTLIB_API extern long BARTLIB_CALL seq_get_slices(const struct seq_config* seq);
 BARTLIB_API extern void BARTLIB_CALL seq_set_fov_pos(int N, int M, const float* shifts, struct seq_config* seq);
 
 
