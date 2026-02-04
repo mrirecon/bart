@@ -952,7 +952,7 @@ bart: CPPFLAGS += -include src/main.h
 
 
 
-LIBSEQ_NAME = bart_seq_$(shell git diff --quiet && git rev-parse --short HEAD)
+LIBSEQ_NAME = bart_seq_$(shell git diff --quiet && git rev-parse --short=10 HEAD)
 
 
 ifeq (32,$(ARCH))
