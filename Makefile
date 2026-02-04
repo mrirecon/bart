@@ -745,6 +745,7 @@ $(1)objs += $$($(1)cudasrcs:.cu=.o)
 endif
 
 .INTERMEDIATE: $$($(1)objs)
+.INTERMEDIATE: $$($(1)winobjs)
 
 lib/lib$(1).a: lib$(1).a($$($(1)objs))
 
@@ -1026,7 +1027,7 @@ bart.dll: $(seqwinobjs) $(miscwinobjs) $(filter-out $(WIN_NOT_SUPPORTED),$(numwi
 
 lib/libbart.a: CFLAGS = -D NO_PNG -D NOLAPACKE -D NO_FFTW -D NO_LAPACK -D NO_BLAS -D NO_FIFO -D BARTDLL -fPIC
 lib/libbart.a: CPPFLAGS = -I$(srcdir)/
-lib/libbart.a: $(seqobjs) $(miscobjs) $(filter-out $(WIN_NOT_SUPPORTED:.win.o=.o),$(numobjs)) $(winobjs) $(noncartobjs) $(linopsobjs) $(waveletobjs) $(geomobjs) $(stlwinobjs) $(simuobjs)
+lib/libbart.a: $(seqobjs) $(miscobjs) $(filter-out $(WIN_NOT_SUPPORTED:.win.o=.o),$(numobjs)) $(winobjs) $(noncartobjs) $(linopsobjs) $(waveletobjs) $(geomobjs) $(stlobjs) $(simuobjs)
 	$(AR) rcs $@ $^
 
 $(UTARGETS_WINE): CC = $(MINGWCC)
