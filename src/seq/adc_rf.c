@@ -185,6 +185,41 @@ int prep_adc(struct seq_event* adc_ev, double start, double rf_spoil_phase,
 							seq->loop_dims, &conf);
 	}
 
+
+	adc_ev->adc.flags = 0;
+	if (SEQ_BLOCK_KERNEL_NOISE == seq_state->mode)
+		adc_ev->adc.flags |= SEQ_ADC_FLAG_ADJ;
+
+	long zeros[DIMS] = { 0 };
+	long last_idx[DIMS];
+	for (int i = 0; i < DIMS; i++)
+		last_idx[i] = seq->loop_dims[i] - 1;
+
+	if (md_check_equal_dims(DIMS, zeros, seq_state->pos, PHS1_FLAG | TE_FLAG | AVG_FLAG))
+		adc_ev->adc.flags |= SEQ_ADC_FLAG_FIRSTSLI;
+
+	if (md_check_equal_dims(DIMS, last_idx, seq_state->pos, PHS1_FLAG | TE_FLAG | AVG_FLAG | BATCH_FLAG))
+		adc_ev->adc.flags |= SEQ_ADC_FLAG_PHASEFT;
+
+	if (md_check_equal_dims(DIMS, last_idx, seq_state->pos, PHS2_FLAG | AVG_FLAG | BATCH_FLAG))
+		adc_ev->adc.flags |= SEQ_ADC_FLAG_PARTFT;
+
+	if (md_check_equal_dims(DIMS, last_idx, seq_state->pos, PHS1_FLAG | TE_FLAG | AVG_FLAG))
+		adc_ev->adc.flags |= SEQ_ADC_FLAG_LASTSLI;
+
+	if (   md_check_equal_dims(DIMS, last_idx, seq_state->pos, PHS1_FLAG | TE_FLAG | AVG_FLAG | TIME2_FLAG)
+	    && md_check_equal_dims(DIMS, last_idx, seq_state->pos, PHS2_FLAG)) {
+
+		adc_ev->adc.flags |= SEQ_ADC_FLAG_LASTCON;
+
+		if (md_check_equal_dims(DIMS, last_idx, seq_state->pos, PHS2_FLAG | SLICE_FLAG))
+			adc_ev->adc.flags |= SEQ_ADC_FLAG_LASTMEAS;
+	}
+
+	if ((SEQ_BLOCK_KERNEL_CHECK != seq_state->mode) && md_check_equal_dims(DIMS, zeros, seq_state->pos, PHS1_FLAG))
+		adc_ev->adc.flags |= SEQ_ADC_FLAG_MEASTIME;
+
+
 	adc_ev->adc.os = seq->phys.os;
 
 	double proj_angle = get_rot_angle(seq_state->pos, seq);
