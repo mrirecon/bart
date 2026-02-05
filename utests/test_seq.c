@@ -106,6 +106,8 @@ static bool test_block_minv_multislice(void)
 		SEQ_BLOCK_PRE, SEQ_BLOCK_KERNEL_IMAGE, SEQ_BLOCK_KERNEL_IMAGE, SEQ_BLOCK_KERNEL_IMAGE, SEQ_BLOCK_POST,
 	};
 
+	const double pulse_spoiler_duration = 20.4E-3;
+
 	struct bart_seq* seq = bart_seq_alloc("");
 	bart_seq_defaults(seq);
 
@@ -143,8 +145,8 @@ static bool test_block_minv_multislice(void)
 
 		// correct ti in mag_prep block
 		if (   (SEQ_BLOCK_PRE == seq->state->mode)
-		    && (2 == E)
-		    && (seq->conf->magn.ti != seq_block_end(E, seq->event, seq->state->mode, seq->conf->phys.tr, seq->conf->sys.raster_grad)))
+		    && (1 < E)
+		    && (1.E-4 * UT_TOL < fabs((seq->conf->magn.ti + pulse_spoiler_duration) - seq_block_end(E, seq->event, seq->state->mode, seq->conf->phys.tr, seq->conf->sys.raster_grad))))
 			return false;
 
 		i++;
