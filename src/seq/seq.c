@@ -339,17 +339,11 @@ int seq_block(int N, struct seq_event ev[N], struct seq_state* seq_state, const 
 
 	seq_state->chrono_slice = get_chrono_slice(seq_state, seq);
 
-	if (SEQ_BLOCK_KERNEL_PREPARE == seq_state->mode) {
-
-		seq_state->pos[SLICE_DIM] = (long)ceil(0.5 * seq->geom.mb_factor); // for SMS bSSFP
-
-		return flash(N, ev, seq_state, seq);
-	}
-
-	if (SEQ_BLOCK_KERNEL_CHECK == seq_state->mode)
+	if (   (SEQ_BLOCK_KERNEL_PREPARE == seq_state->mode)
+	    || (SEQ_BLOCK_KERNEL_CHECK == seq_state->mode))
 		return flash(N, ev, seq_state, seq);
 
-	long zeros[DIMS] = { 0 };
+	long zeros[DIMS] = { };
 	long last_idx[DIMS];
 
 	for (int i = 0; i < DIMS; i++)
