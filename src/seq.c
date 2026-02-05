@@ -375,8 +375,14 @@ int main_seq(int argc, char* argv[argc])
 		seq_compute_moment0(samples, m0, ddt, E, seq->event);
 
 
-		long pos_save[DIMS];
+		long pos_save[DIMS]; // FIXME use separate function
 		md_copy_dims(DIMS, pos_save, seq->state->pos);
+
+		// revert incomplete RAGA frame handling from flash()
+		if (   (SEQ_PEMODE_RAGA == seq->conf->enc.pe_mode)
+		    && (seq->conf->loop_dims[TIME_DIM] - 1 == pos_save[TIME_DIM])
+		    && (seq->conf->loop_dims[PHS1_DIM] - 1 == pos_save[PHS1_DIM]))
+				pos_save[PHS1_DIM] = seq->conf->loop_dims[ITER_DIM] - 1;
 
 		if (!chrono) {
 
