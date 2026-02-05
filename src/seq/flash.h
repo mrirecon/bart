@@ -41,7 +41,7 @@ static inline const char *error_string(enum seq_error e) {
 struct seq_config;
 
 extern double min_tr_flash(const struct seq_config* seq);
-extern void min_te_flash(const struct seq_config* seq, double* min_te, double* fil_te);
+extern void min_te_flash(const struct seq_config* seq, double* min_te, double* fill_te);
 
 extern int flash(int N, struct seq_event ev[__VLA(N)], struct seq_state* seq_state, const struct seq_config* seq);
 

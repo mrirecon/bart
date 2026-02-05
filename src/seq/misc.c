@@ -37,8 +37,8 @@ int gradient_prepare_with_timing(struct grad_trapezoid* grad, double moment, con
 	grad->ampl = moment / (0.5 * grad->rampup + grad->flat + 0.5 * grad->rampdown);
 
 	if (   (fabs(grad->ampl) > seq->sys.grad.max_amplitude)
-	    || (   (fabs(grad->ampl) * seq->sys.grad.inv_slew_rate > grad->rampup))
-		|| (fabs(grad->ampl) * seq->sys.grad.inv_slew_rate > grad->rampdown))
+	    || (fabs(grad->ampl) * seq->sys.grad.inv_slew_rate > grad->rampup)
+	    || (fabs(grad->ampl) * seq->sys.grad.inv_slew_rate > grad->rampdown))
 			return 0;
 
 	return 1;

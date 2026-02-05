@@ -67,7 +67,7 @@ int prep_rf_excitation(struct seq_event* rf_ev, double start, double rf_spoil_ph
 	if (SEQ_BLOCK_KERNEL_NOISE == seq_state->mode)
 		return 0;
 
-	rf_ev->type = SEQ_EVENT_PULSE;	
+	rf_ev->type = SEQ_EVENT_PULSE;
 
 	rf_ev->start = start;
 	rf_ev->end = rf_ev->start + seq->phys.rf_duration;

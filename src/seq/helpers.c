@@ -44,9 +44,9 @@ double seq_minimum_tr(const struct seq_config* seq)
 }
 
 
-void seq_minimum_te(const struct seq_config* seq, double* min_te, double* fil_te)
+void seq_minimum_te(const struct seq_config* seq, double* min_te, double* fill_te)
 {
-	min_te_flash(seq, min_te, fil_te);
+	min_te_flash(seq, min_te, fill_te);
 }
 
 
@@ -172,7 +172,7 @@ static void seq_bart_to_standard_conf(struct seq_standard_conf* std, struct seq_
 	std->ti = 0.;
 
 	if (SEQ_PREP_OFF != seq->magn.mag_prep)
-	       std->ti = seq->magn.ti;
+		std->ti = seq->magn.ti;
 
 	std->trigger_type = seq->trigger.type;
 	std->trigger_delay_time = seq->trigger.delay_time;

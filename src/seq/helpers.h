@@ -35,7 +35,7 @@ enum mag_prep {
 	SEQ_PREP_IR_SELECTIVE,
 	SEQ_PREP_IR_NONSELECTIVE,
 	SEQ_PREP_SR_SELECTIVE,
-	SEQ_PREP_SR_NONSECTIVE,
+	SEQ_PREP_SR_NONSELECTIVE,
 	SEQ_PREP_SR_ADIABATIC
 };
 
@@ -120,7 +120,7 @@ BARTLIB_API extern int BARTLIB_CALL seq_raga_spokes(const struct seq_config* seq
 
 // minimum TE and TR calculation at end of prepare
 BARTLIB_API extern double BARTLIB_CALL seq_minimum_tr(const struct seq_config* seq);
-BARTLIB_API extern void BARTLIB_CALL seq_minimum_te(const struct seq_config* seq, double* min_te, double* fil_te);
+BARTLIB_API extern void BARTLIB_CALL seq_minimum_te(const struct seq_config* seq, double* min_te, double* fill_te);
 
 
 BARTLIB_API extern long BARTLIB_CALL seq_relevant_readouts_meas_time(const struct seq_config* seq);
