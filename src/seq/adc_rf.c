@@ -127,8 +127,7 @@ long flash_ex_calls(const struct seq_config* seq)
 	long dims[DIMS];
 	md_select_dims(DIMS, PHS1_FLAG|TIME_FLAG|TIME2_FLAG|AVG_FLAG|BATCH_FLAG, dims, seq->loop_dims);
 
-	if (   (SEQ_PEMODE_RAGA == seq->enc.pe_mode)
-	    || (SEQ_PEMODE_RAGA_ALIGNED == seq->enc.pe_mode))
+	if (SEQ_PEMODE_RAGA == seq->enc.pe_mode)
 		dims[PHS1_DIM] = 1;
 
 	if (1 < seq->geom.mb_factor)
@@ -176,8 +175,7 @@ int prep_adc(struct seq_event* adc_ev, double start, double rf_spoil_phase,
 
 	md_copy_dims(DIMS, adc_ev->adc.pos, seq_state->pos);
 
-	if (   (SEQ_PEMODE_RAGA == seq->enc.pe_mode)
-	    || (SEQ_PEMODE_RAGA_ALIGNED == seq->enc.pe_mode)) {
+	if (SEQ_PEMODE_RAGA == seq->enc.pe_mode) {
 
 		struct traj_conf conf;
 		traj_conf_from_seq(&conf, seq);

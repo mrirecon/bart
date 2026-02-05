@@ -320,12 +320,9 @@ static int check_settings(const struct seq_state* seq_state, const struct seq_co
 
 	if (SEQ_CONTEXT_BINARY != seq_state->context) {
 
-		if (   (SEQ_PEMODE_RAGA == seq->enc.pe_mode)
-		    || (SEQ_PEMODE_RAGA_ALIGNED == seq->enc.pe_mode)) {
-
-			if (!check_gen_fib(seq->loop_dims[PHS1_DIM], seq->enc.tiny))
+		if ((SEQ_PEMODE_RAGA == seq->enc.pe_mode)
+		    && !check_gen_fib(seq->loop_dims[PHS1_DIM], seq->enc.tiny))
 				return ERROR_SETTING_SPOKES_RAGA;
-		}
 
 		if (0 == (seq->loop_dims[PHS1_DIM] % 2))
 			return ERROR_SETTING_SPOKES_EVEN;

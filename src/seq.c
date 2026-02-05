@@ -157,10 +157,9 @@ int main_seq(int argc, char* argv[argc])
 		seq_ui_interface_custom_params(0, seq->conf, SEQ_MAX_PARAMS_LONG, custom_params_long,
 					SEQ_MAX_PARAMS_DOUBLE, custom_params_double);
 
-	if ((1 == seq->conf->loop_dims[TIME_DIM]) &&
-		(seq->conf->loop_dims[TIME_DIM] < seq->conf->loop_dims[PHS1_DIM]) &&
-		(   (SEQ_PEMODE_RAGA == seq->conf->enc.pe_mode)
-		 || (SEQ_PEMODE_RAGA_ALIGNED == seq->conf->enc.pe_mode))) {
+	if (   (SEQ_PEMODE_RAGA == seq->conf->enc.pe_mode)
+	    && (1 == seq->conf->loop_dims[TIME_DIM])
+	    && (seq->conf->loop_dims[TIME_DIM] < seq->conf->loop_dims[PHS1_DIM])) {
 
 		if (0 < raga_full_frames)
 			seq->conf->loop_dims[TIME_DIM] = raga_full_frames * seq->conf->loop_dims[PHS1_DIM];
@@ -215,8 +214,7 @@ int main_seq(int argc, char* argv[argc])
 
 	double ddt = (0 > dt) ? seq->conf->phys.tr / samples : ceil(dt * 1.e6) / 1.e6; //FIXME breaks with float
 
-	if (   (SEQ_PEMODE_RAGA != seq->conf->enc.pe_mode)
-	    && (SEQ_PEMODE_RAGA_ALIGNED != seq->conf->enc.pe_mode))
+	if (SEQ_PEMODE_RAGA != seq->conf->enc.pe_mode)
 		chrono = true;
 
 	if ((NULL != raga_file) && chrono)

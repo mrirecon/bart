@@ -26,8 +26,7 @@
 
 int seq_raga_spokes(const struct seq_config* seq)
 {
-	if (   (SEQ_PEMODE_RAGA == seq->enc.pe_mode)
-	    || (SEQ_PEMODE_RAGA_ALIGNED == seq->enc.pe_mode))
+	if (SEQ_PEMODE_RAGA == seq->enc.pe_mode)
 		return raga_spokes(seq->geom.baseres, seq->enc.tiny);
 
 	return seq->loop_dims[PHS1_DIM];
@@ -280,8 +279,7 @@ static void loop_dims_to_conf(struct seq_config* seq, const int D, const long in
 
 	long radial_views = in_dims[PHS1_DIM];
 
-	if (   (SEQ_PEMODE_RAGA == seq->enc.pe_mode)
-	    || (SEQ_PEMODE_RAGA_ALIGNED == seq->enc.pe_mode)) {
+	if (SEQ_PEMODE_RAGA == seq->enc.pe_mode) {
 
 		seq->loop_dims[TIME_DIM] = (long)ceil(1. * frames / radial_views);
 		seq->loop_dims[ITER_DIM] = frames % radial_views;
@@ -439,8 +437,7 @@ void seq_print_info_radial_views(int N, char* info, const struct seq_config* seq
 {
 	(void) N;
 
-	if (   (SEQ_PEMODE_RAGA != seq->enc.pe_mode)
-	    && (SEQ_PEMODE_RAGA_ALIGNED != seq->enc.pe_mode))
+	if (SEQ_PEMODE_RAGA != seq->enc.pe_mode)
 		return;
 
 	int ctr = 0;
