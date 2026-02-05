@@ -66,8 +66,12 @@ int bart_seq_prepare(struct bart_seq* seq)
 	
 	int N = seq_block(seq->N, seq->event, seq->state, seq->conf);
 
-	if (0 < N)
-		N = seq_sample_rf_shapes(MAX_RF_PULSES, seq->rf_shape, seq->conf);
+	if (0 > N)
+		return N;
+
+	// FIXME: further checks ? 
+
+	N = seq_sample_rf_shapes(MAX_RF_PULSES, seq->rf_shape, seq->conf);
 	
 	for (int i = 0; i < DIMS; i++)
 		seq->state->pos[i] = 0;
