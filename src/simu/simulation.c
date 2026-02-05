@@ -328,6 +328,7 @@ void apply_sim_matrix(int N, float m[N], float matrix[N][N])
 static void adc_corr(int P, int pools, float out[P][pools][3], const float in[P][3 * pools], float angle)
 {
 	for (int i = 0; i < P; i++) {
+
 		for (int p = 0; p < pools; p++) {
 
 			float in2[3];
@@ -351,6 +352,7 @@ static void collect_signal(struct sim_data* data, int P, int pools, float (*m)[p
 	// Keep all entries for m
 	// Only keep x,y,z components with respect to water pool for SA params
 	for (int p = 0; p < pools; p++) {
+
 		for (int i = 0; i < 3; i++) {
 
 			if (NULL != m)
@@ -575,7 +577,6 @@ void rf_pulse(struct sim_data* data, float h, float tol, int N, int P, float xp[
 
 		// Choose P-1 because ODE interface treats signal separate and P only describes the number of parameters
 		ode_direct_sa(h, tol, N, P - 1, xp, data->pulse.rf_start, data->pulse.rf_end, call_fun, call_pdy2, call_pdp2);
-
 		break;
 
         case SIM_STM:
@@ -648,6 +649,7 @@ void relaxation2(struct sim_data* data, float h, float tol, int N, int P, float 
 					r2[i] = data->voxel.r2[i] + r2spoil;
 
 				bloch_mcconnell_ode(data->voxel.P, out, in, data->voxel.r1, r2, data->voxel.k, data->voxel.m0, data->voxel.Om, gb_eff);
+
 			} else {
 
 				bloch_ode(out, in, data->voxel.r1[0], data->voxel.r2[0] + r2spoil, gb_eff);
@@ -795,7 +797,7 @@ static void prepare_sim(struct sim_data* data, int N, int P, float (*mte)[P * N 
 
 			// Matrix: TE -> TR
                         if ((   (SEQ_BSSFP == data->seq.seq_type)
-                            || (SEQ_IRBSSFP == data->seq.seq_type))
+                             || (SEQ_IRBSSFP == data->seq.seq_type))
 			    && (data->seq.te != data->seq.tr)) {
 
 				// Time-independent gradient integral
@@ -824,16 +826,16 @@ static void run_sim(struct sim_data* data, int pools,
 {
 	float r2spoil = 0.;
 
-        switch (data->seq.type) {
+	switch (data->seq.type) {
 
-        case SIM_ROT:
-        case SIM_ODE:
+	case SIM_ROT:
+	case SIM_ODE:
 
-                rf_pulse(data, h, tol, N, P, xp, NULL);
+		rf_pulse(data, h, tol, N, P, xp, NULL);
 
-                // Slice-Rewinder
+		// Slice-Rewinder
 
-                if ((0 != data->grad.mom_sl) && (data->seq.te != data->pulse.rf_end)) {
+		if ((0 != data->grad.mom_sl) && (data->seq.te != data->pulse.rf_end)) {
 
 			// Time-independent gradient integral
 			data->grad.mom = -data->grad.mom_sl * (0.5 * data->pulse.rf_end) / (data->seq.te - data->pulse.rf_end);
@@ -849,27 +851,25 @@ static void run_sim(struct sim_data* data, int pools,
 
 		collect_signal(data, P, pools, mxy, sa_r1, sa_r2, sa_b1, sa_m0, sa_k, sa_Om, xp);
 
-                // Smooth spoiling for FLASH sequences
+		// Smooth spoiling for FLASH sequences
 
-                if (   (SEQ_FLASH == data->seq.seq_type)
-                    || (SEQ_IRFLASH == data->seq.seq_type)) {
-
-                        r2spoil = 10000.;
-		}
+		if (   (SEQ_FLASH == data->seq.seq_type)
+		    || (SEQ_IRFLASH == data->seq.seq_type))
+			r2spoil = 10000.;
 
 
                 // Balance z-gradient for bSSFP type sequences
 
-                if (   (   (SEQ_BSSFP == data->seq.seq_type)
+		if (   (   (SEQ_BSSFP == data->seq.seq_type)
  			|| (SEQ_IRBSSFP == data->seq.seq_type))
 		    && (data->seq.te != data->seq.tr)) {
 
 			// Time-independent gradient integral
-                        data->grad.mom = -data->grad.mom_sl * (0.5 * data->pulse.rf_end) / (data->seq.tr - data->seq.te);
+			data->grad.mom = -data->grad.mom_sl * (0.5 * data->pulse.rf_end) / (data->seq.tr - data->seq.te);
 
-                        relaxation2(data, h, tol, N, P, xp, data->seq.te, data->seq.tr, NULL, r2spoil);
+			relaxation2(data, h, tol, N, P, xp, data->seq.te, data->seq.tr, NULL, r2spoil);
 
-                        data->grad.mom = 0.;
+			data->grad.mom = 0.;
 
                 } else {
 
@@ -880,22 +880,22 @@ static void run_sim(struct sim_data* data, int pools,
 
         case SIM_STM:
 
-                // Evolution: 0 -> TE
+		// Evolution: 0 -> TE
 		//assert(xstm != mte);
 		assert(NULL != xstm);
-                apply_sim_matrix(N * P + 1, xstm, mte);
+		apply_sim_matrix(N * P + 1, xstm, mte);
 
-                // Save data
-                stm2ode(N, P, xp, xstm);
+		// Save data
+		stm2ode(N, P, xp, xstm);
 
-                collect_signal(data, P, pools, mxy, sa_r1, sa_r2, sa_b1, sa_m0, sa_k, sa_Om, xp);
+		collect_signal(data, P, pools, mxy, sa_r1, sa_r2, sa_b1, sa_m0, sa_k, sa_Om, xp);
 
-                // Evolution: TE -> TR
+		// Evolution: TE -> TR
 		//assert(xstm != mtr);
-                apply_sim_matrix(N * P + 1, xstm, mtr);
+		apply_sim_matrix(N * P + 1, xstm, mtr);
 
-                break;
-        }
+		break;
+	}
 }
 
 
@@ -1183,7 +1183,7 @@ void bloch_simulation2(const struct sim_data* _data, int R, int pools, float (*m
                                 data.pulse.phase = M_PI * r;
 
 				odd = (1 == r % 2);
-                        }
+			}
 
 			if (SEQ_CEST == data.seq.seq_type) {
 
@@ -1202,17 +1202,16 @@ void bloch_simulation2(const struct sim_data* _data, int R, int pools, float (*m
 
 				run_sim(&data, pools, mxy, sa_r1, sa_r2, sa_b1, sa_m0, sa_k, sa_Om, h, tol, N, P, xp, xstm, mte[odd], mtr);
 			}
-                }
+		}
 	}
-
 
 	// Sum up magnetization
 
-        // Scale signal with density
-        //      - Relative to default slice thickness to keep strength of simulation higher
-        float D = (float)S / (data.seq.slice_thickness / default_slice_thickness);
+	// Scale signal with density
+	//      - Relative to default slice thickness to keep strength of simulation higher
+	float D = (float)S / (data.seq.slice_thickness / default_slice_thickness);
 
-        sum_up_signal(data.voxel.m0[0], data.seq.rep_num / A, data.seq.spin_num, A, D, pools,
+	sum_up_signal(data.voxel.m0[0], data.seq.rep_num / A, data.seq.spin_num, A, D, pools,
 			Fmxy, Fsa_r1, Fsa_r2, Fsa_b1, Fsa_m0, Fsa_k, Fsa_Om,
 			m_state, sa_r1_state, sa_r2_state, sa_m0_state, sa_b1_state, sa_k_state, sa_om_state);
 
@@ -1221,8 +1220,8 @@ void bloch_simulation2(const struct sim_data* _data, int R, int pools, float (*m
 	xfree(Fsa_r2);
 	xfree(Fsa_b1);
 	xfree(Fsa_m0);
-        xfree(Fsa_k);
-        xfree(Fsa_Om);
+	xfree(Fsa_k);
+	xfree(Fsa_Om);
 }
 
 // Wrapper for single pool simulation
