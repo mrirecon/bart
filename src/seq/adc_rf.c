@@ -53,7 +53,7 @@ double rf_spoiling(int D, const long pos[D], const struct seq_config* seq)
 
 	case SEQ_CONTRAST_RF_RANDOM:
 
-		return uniform_rand() * 360. - 180.;
+		return uniform_rand() * 360. - 180.; // random seed initialized in bart_seq_prepare
 
 	default:
 		assert(0);

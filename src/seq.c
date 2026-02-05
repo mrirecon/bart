@@ -147,11 +147,7 @@ int main_seq(int argc, char* argv[argc])
 		OPTL_VECN(0, "LOOP", seq->conf->loop_dims, "sequence loop dimensions"),
 	};
 
-	num_rand_init(0ULL);
-
 	cmdline(&argc, argv, ARRAY_SIZE(args), args, help_str, ARRAY_SIZE(opts), opts);
-
-	num_rand_init(0ULL);
 
 	if (custom_params_long[0] > 0)
 		seq_ui_interface_custom_params(0, seq->conf, SEQ_MAX_PARAMS_LONG, custom_params_long,
