@@ -31,10 +31,10 @@ enum custom_idx_long {
 enum custom_idx_double {
 
 	// double
+	cid_cmd = _cid_cmd,
 
 	// double Array
 	cid_BWTP,
-	cid_dummy = _cid_dummy
 
 }; // max 16
 

@@ -87,7 +87,7 @@ BARTLIB_API void BARTLIB_CALL seq_custom_ui_free(struct custom_ui* ui);
 #define _cil_sms_distance 3 // write sms distance here
 #define _cil_tiny 4
 
-#define _cid_dummy 1 // workaround for commandline interface
+#define _cid_cmd 0 // workaround for commandline interface
 
 #include "misc/cppwrap.h"
 
