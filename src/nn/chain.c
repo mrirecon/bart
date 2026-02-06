@@ -1654,7 +1654,9 @@ nn_t nn_stack_multigpu_F(int N , nn_t x[N], int stack_dim)
 		else
 			out_stack_dim[i] = stack_dim;
 
-		out_stack_dim[i] = (OUT_OPTIMIZE == x[0]->out_types[i]) ? 0 : stack_dim;
+		//losses have shape { 1 }
+		if (OUT_OPTIMIZE == x[0]->out_types[i])
+			out_stack_dim[i] = 0;
 	}
 
 	auto nlop = nlop_stack_multiple_F(N, nlops, II, in_stack_dim, OO, out_stack_dim, true, true);
