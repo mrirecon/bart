@@ -407,7 +407,8 @@ int flash(int N, struct seq_event ev[N], struct seq_state* seq_state, const stru
 
 		timing.readout_blip = timing.readout[seq_state->pos[TE_DIM]] - grad_total_time(&readout_blip);
 
-		if ((1 < seq_state->pos[TE_DIM]) && (timing.readout_blip < (timing.adc[seq_state->pos[TE_DIM] - 1] + adc_duration(seq))))
+		if (   (1 < seq_state->pos[TE_DIM])
+		    && (timing.readout_blip < timing.adc[seq_state->pos[TE_DIM] - 1] + adc_duration(seq) + ro_amplitude(seq) * seq->sys.grad.inv_slew_rate))
 			return ERROR_BLIP_TIMING;
 
 		i += seq_grad_to_event(ev + i, timing.readout_blip, &readout_blip, blipX);
