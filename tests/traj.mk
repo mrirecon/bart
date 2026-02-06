@@ -284,3 +284,19 @@ tests/test-traj-rational-approx-multislice: traj transpose slice nrmse
 	touch $@
 
 TESTS += tests/test-traj-rational-approx-multislice
+
+
+tests/test-traj-raga-meco: traj raga bin vec transpose fmac nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
+	$(TOOLDIR)/traj -x 220 -y 411 -s 31 -e 7 -r -D -A --double-base trj_raga.ra	;\
+	$(TOOLDIR)/raga -e 7 -s 31 411 ind.ra						;\
+	$(TOOLDIR)/traj -x 220 -y 411 -e 7 -r -D trj_lin.ra				;\
+	$(TOOLDIR)/bin -o ind.ra trj_lin.ra trj_reo.ra					;\
+	$(TOOLDIR)/vec -- 1 -1 1 -1 1 -1 1 vec.ra					;\
+	$(TOOLDIR)/transpose  0 5 vec.ra readout_dir.ra					;\
+	$(TOOLDIR)/fmac readout_dir.ra trj_reo.ra trj_reo_dir.ra			;\
+	$(TOOLDIR)/nrmse -t 5E-7 trj_reo_dir.ra trj_raga.ra				;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+TESTS += tests/test-traj-raga-meco

@@ -157,3 +157,15 @@ tests/test-seq-traj-meco: seq traj extract nrmse
 
 
 TESTS +=  tests/test-seq-traj-meco
+
+tests/test-seq-meco: seq traj extract nrmse
+	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)						;\
+	$(TOOLDIR)/traj -x 220 -o 2. -y 411 -s 31 -e 7 -r -D -A --double-base trj_ref.ra 	;\
+	$(TOOLDIR)/seq --FOV 0.220  --BR 220  --dwell 5.4E-6 --rf_duration 400E-6 --BWTP 1.00 --slice_thickness 5E-3 --TR 13.8E-3 --TE 1.8E-3 --TE_delta 1.8E-3 --raga --chrono --tiny 31 -r 411 -e 7 samples.ra ;\
+	$(TOOLDIR)/extract 0 0 3 samples.ra trj_seq.ra						;\
+	$(TOOLDIR)/nrmse -t 5.E-7 trj_ref.ra trj_seq.ra						;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
+	touch $@
+
+
+TESTS +=  tests/test-seq-meco

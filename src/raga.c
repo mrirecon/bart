@@ -47,6 +47,7 @@ int main_raga(int argc, char* argv[argc])
 
 		OPTL_PINT('s', "tiny-angle", &tiny_gold, "# Tiny GA", "tiny (small) golden ratio angle"),
 		OPTL_PINT('r', "raga-inc", &raga_inc, "d", "Increment of RAGA Sampling"),
+		OPTL_LONG('e', "echoes", &dims[TE_DIM], "m", "Number of (non-aligned) echoes"),
 		OPTL_LONG('m', "slices", &dims[SLICE_DIM], "m", "Number of (non-aligned) slices"),
 		OPTL_LONG('z', "partitions", &dims[PHS2_DIM], "m", "Number of (non-aligned) partitions"),
 		OPTL_LONG('i', "inversions", &dims[BATCH_DIM], "i", "Number of (non-aligned) inversions"),

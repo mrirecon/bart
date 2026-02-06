@@ -333,12 +333,12 @@ int main_traj(int argc, char* argv[argc])
 					double atom = calc_angle_atom(&conf);
 					long inc = raga_increment_from_pos(traj_loop_order, pos, ~3UL, dims, &conf);
 
-					angle = atom * inc;
+					angle = atom * inc + M_PI * pos[TE_DIM];
 
 				} else {
 
 					float atom = calc_angle_atom(&conf) * conf.raga_inc;
-					angle = atom * pos[2];
+					angle = atom * pos[2] + M_PI * pos[TE_DIM];
 				}
 
 			} else {

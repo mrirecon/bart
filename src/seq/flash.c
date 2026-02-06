@@ -95,9 +95,7 @@ static double ro_momentum_after_echo(long echo, const struct seq_config* seq)
 
 static double ro_blip_angle(const long pos[DIMS], const struct seq_config* seq)
 {
-	if ((   (SEQ_PEMODE_MEMS_HYB == seq->enc.pe_mode)
-	     || (SEQ_PEMODE_RAGA_MEMS == seq->enc.pe_mode))
-	    && (0 < pos[TE_DIM])) {
+	if (0 < pos[TE_DIM]) {
 
 		double angle_curr = get_rot_angle(pos, seq);
 		double moment_curr = ro_momentum_to_echo(pos[TE_DIM], seq);
@@ -120,9 +118,7 @@ static double ro_blip_angle(const long pos[DIMS], const struct seq_config* seq)
 
 static double ro_blip_moment(const long pos[DIMS], const struct seq_config* seq)
 {
-	if ((   (SEQ_PEMODE_MEMS_HYB == seq->enc.pe_mode)
-	     || (SEQ_PEMODE_RAGA_MEMS == seq->enc.pe_mode))
-	    && (0 < pos[TE_DIM])) {
+	if (0 < pos[TE_DIM]) {
 
 		double angle_curr = get_rot_angle(pos, seq);
 		double moment_curr = ro_momentum_to_echo(pos[TE_DIM], seq);
@@ -161,9 +157,7 @@ static int prep_grad_ro_blip(struct grad_trapezoid* grad, long echo, const struc
 {
 	*grad = (struct grad_trapezoid){ 0 };
 
-	if ((   (SEQ_PEMODE_MEMS_HYB == seq->enc.pe_mode)
-	     || (SEQ_PEMODE_RAGA_MEMS == seq->enc.pe_mode))
-	    && (0 < echo)) {
+	if (0 < echo) {
 
 		long pos0[DIMS] = { [TE_DIM] = echo };
 		pos0[TE_DIM] = echo;
@@ -272,7 +266,7 @@ void min_te_flash(const struct seq_config* seq, double* min_te, double* fill_te)
 
 	double blip_time = 0.;
 
-	if ((1 < seq->loop_dims[TE_DIM]) && (SEQ_PEMODE_MEMS_HYB == seq->enc.pe_mode)) {
+	if (1 < seq->loop_dims[TE_DIM]) {
 
 		struct grad_trapezoid grad;
 		long pos0[DIMS] = { };

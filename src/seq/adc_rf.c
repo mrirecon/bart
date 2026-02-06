@@ -181,7 +181,7 @@ int prep_adc(struct seq_event* adc_ev, double start, double rf_spoil_phase,
 		traj_conf_from_seq(&conf, seq);
 
 		adc_ev->adc.pos[PHS1_DIM] = raga_increment_from_pos(seq->order, seq_state->pos,
-							SEQ_FLAGS & ~(COEFF_FLAG | COEFF2_FLAG),
+							(SEQ_FLAGS | TE_FLAG) & ~(COEFF_FLAG | COEFF2_FLAG),
 							seq->loop_dims, &conf);
 	}
 

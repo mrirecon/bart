@@ -71,9 +71,9 @@ double get_rot_angle(const long pos[DIMS], const struct seq_config* seq)
 	if (conf.rational) {
 
 		double atom = calc_angle_atom(&conf);
-		long inc = raga_increment_from_pos(seq->order, pos, (SEQ_FLAGS & ~(COEFF_FLAG|COEFF2_FLAG)), seq->loop_dims, &conf);
+		long inc = raga_increment_from_pos(seq->order, pos, ((SEQ_FLAGS | TE_FLAG) & ~(COEFF_FLAG|COEFF2_FLAG)), seq->loop_dims, &conf);
 
-		return atom * inc;
+		return atom * inc + M_PI * pos[TE_DIM];
 	}
 
 	double base_angle[DIMS] = { 0. };
