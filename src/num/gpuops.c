@@ -349,7 +349,8 @@ static void* cuda_malloc_wrapper(size_t size)
 			if (cudaSuccess != err) {
 
 				debug_print_memcache(DP_INFO);
-				debug_printf(DP_WARN, "Trying to allocate %zu GB\n", size / 1024 /1024 /1024);
+				debug_printf(DP_WARN, "Trying to allocate %zu GB failed.\n", size / 1024 /1024 /1024);
+				debug_printf(DP_WARN, "Try BART_GPU_GLOBAL_MEMORY=1 environment variable for memory oversubscription.\n");
 				cuda_error(__FILE__, __LINE__, err);
 			}
 		}
