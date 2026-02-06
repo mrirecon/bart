@@ -532,7 +532,7 @@ void overlapandsave2NEB(int N, unsigned long flags, const long blk[N], const lon
 			if (1 == mdims[i]) {
 
 				nmdims[2 * i + 1] = 1;
-				nmdims[2 * i + 1] = 1;
+				nmdims[2 * i + 0] = 1;
 
 			} else {
 
@@ -703,7 +703,7 @@ void overlapandsave2HB(int N, unsigned long flags, const long blk[N], const long
 			if (1 == mdims[i]) {
 
 				nmdims[2 * i + 1] = 1;
-				nmdims[2 * i + 1] = 1;
+				nmdims[2 * i + 0] = 1;
 
 			} else {
 
