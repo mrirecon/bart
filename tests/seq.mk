@@ -149,7 +149,7 @@ TESTS +=  tests/test-seq-raga-ind-multislice
 tests/test-seq-traj-meco: seq traj extract nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)				;\
 	$(TOOLDIR)/traj -r -D -G -s1 -E -x 220 -o 2. -y5 -e7 -t10 trj_ref.ra	;\
-	$(TOOLDIR)/seq --FOV 0.220  --BR 220  --dwell 5.4E-6 --rf_duration 400E-6 --BWTP 1.00 --slice_thickness 5E-3 --TR 13.8E-3 --TE 1.81E-3:3.61E-3:5.41E-3:7.21E-3:9.01E-3:10.9E-3:12.7E-3 --mems -r 5 -t 10 -e 7 samples.ra ;\
+	$(TOOLDIR)/seq --FOV 0.220  --BR 220  --dwell 5.4E-6 --rf_duration 400E-6 --BWTP 1.00 --slice_thickness 5E-3 --TR 13.8E-3 --TE 1.8E-3 --TE_delta 1.8E-3 --mems -r 5 -t 10 -e 7 samples.ra ;\
 	$(TOOLDIR)/extract 0 0 3 samples.ra trj_seq.ra				;\
 	$(TOOLDIR)/nrmse -t 0.000001 trj_ref.ra trj_seq.ra			;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)

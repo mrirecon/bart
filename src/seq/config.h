@@ -39,7 +39,8 @@ enum pe_mode {
 struct seq_phys {
 
 	double tr;
-	double te[SEQ_MAX_NO_ECHOES];
+	double te;
+	double te_delta;
 
 	double dwell;
 	double os;

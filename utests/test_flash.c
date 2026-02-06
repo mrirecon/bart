@@ -99,7 +99,7 @@ static bool test_flash_te(void)
 
 	double te[seq.loop_dims[TE_DIM]];
 	events_get_te(seq.loop_dims[TE_DIM], te, E, ev);
-	if (0 != (seq.phys.te[0] - te[0]))
+	if (0 != (seq.phys.te - te[0]))
 		return false;
 
 	return true;
@@ -119,13 +119,8 @@ static bool test_flash_te_meco(void)
 	seq.enc.tiny = 2;
 	seq.loop_dims[TE_DIM] = 7;
 	seq.phys.tr = 13.8E-3;
-	seq.phys.te[0] =  1.81E-3;
-	seq.phys.te[1] =  3.61E-3;
-	seq.phys.te[2] =  5.41E-3;
-	seq.phys.te[3] =  7.21E-3;
-	seq.phys.te[4] =  9.01E-3;
-	seq.phys.te[5] = 10.90E-3;
-	seq.phys.te[6] = 12.70E-3;
+	seq.phys.te =  1.8E-3;
+	seq.phys.te_delta =  1.8E-3;
 	seq.geom.fov = 220E-3;
 	seq.geom.baseres = 220;
 	seq.phys.dwell = 5.4E-6;
@@ -146,7 +141,7 @@ static bool test_flash_te_meco(void)
 	events_get_te(seq.loop_dims[TE_DIM], te, E, ev);
 
 	for (int i = 0; i < seq.loop_dims[TE_DIM]; i++)
- 		if (1E-5 * UT_TOL < fabs(seq.phys.te[i] - te[i]))
+ 		if (1E-5 * UT_TOL < fabs(seq.phys.te + i * seq.phys.te_delta  - te[i]))
 			return false;
 
 	return true;
@@ -194,7 +189,7 @@ static bool test_flash_mom1b(void)
 {
 	struct seq_state seq_state = { 0 };
 	struct seq_config seq = seq_config_defaults;
-	seq.phys.te[0] = 2E-3;
+	seq.phys.te = 2E-3;
 	seq.phys.dwell = 4.3E-6;
 
 	int E = 200;
@@ -231,7 +226,7 @@ static bool test_flash_mom1c(void)
 {
 	struct seq_state seq_state = { 0 };
 	struct seq_config seq = seq_config_defaults;
-	seq.phys.te[0] = 2E-3;
+	seq.phys.te = 2E-3;
 	seq.phys.dwell = 4.1E-6;
 
 	int E = 200;
@@ -275,13 +270,8 @@ static bool test_flash_mom_meco(void)
 	seq.enc.tiny = 2;
 	seq.loop_dims[TE_DIM] = 7;
 	seq.phys.tr = 13.8E-3;
-	seq.phys.te[0] =  1.81E-3;
-	seq.phys.te[1] =  3.61E-3;
-	seq.phys.te[2] =  5.41E-3;
-	seq.phys.te[3] =  7.21E-3;
-	seq.phys.te[4] =  9.01E-3;
-	seq.phys.te[5] = 10.90E-3;
-	seq.phys.te[6] = 12.70E-3;
+	seq.phys.te =  1.8E-3;
+	seq.phys.te_delta =  1.8E-3;
 	seq.geom.fov = 220E-3;
 	seq.geom.baseres = 220;
 	seq.phys.dwell = 5.4E-6;

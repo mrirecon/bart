@@ -37,7 +37,7 @@ static double start_rf(const struct seq_config* seq)
 
 static double start_adc(long echo, const struct seq_config* seq)
 {
-	return round_up_raster(start_rf(seq) + seq->phys.rf_duration / 2. + seq->phys.te[echo]
+	return round_up_raster(start_rf(seq) + seq->phys.rf_duration / 2. + seq->phys.te + echo * seq->phys.te_delta
 				- adc_time_to_echo(seq), seq->sys.raster_rf);
 }
 
@@ -58,7 +58,7 @@ static double available_time_RF_SLI(int ro, const struct seq_config* seq)
 {
 	double ampl = ro ? ro_amplitude(seq) : slice_amplitude(seq);
 
-	return seq->phys.te[0] - seq->phys.rf_duration / 2.
+	return seq->phys.te - seq->phys.rf_duration / 2.
 		- ampl * seq->sys.grad.inv_slew_rate
 		- round_up_raster(adc_time_to_echo(seq) - 0.99 * seq->sys.raster_rf, seq->sys.raster_rf) // round down
 		- ro_shift(0, seq);
@@ -249,7 +249,7 @@ double min_tr_flash(const struct seq_config* seq)
 	prep_grad_ro(&last_ro, seq->loop_dims[TE_DIM] - 1, seq);
 
 	double last_ro_start = start_rf(seq) + seq->phys.rf_duration + available_time_RF_SLI(1, seq) 
-				- seq->phys.te[0] + seq->phys.te[seq->loop_dims[TE_DIM] - 1]; // available_time_RF_SLI only adds first echo, but we need te[echo]
+				- seq->phys.te_delta; // available_time_RF_SLI only adds first echo, but we need te[echo]
 
 	return round_up_raster(last_ro_start + grad_duration(&last_ro) + time_after_RO, seq->sys.raster_grad);
 }
@@ -298,12 +298,12 @@ void min_te_flash(const struct seq_config* seq, double* min_te, double* fill_te)
 	}
 
 	time = 0;
-	fill_te[0] = seq->phys.te[0] - min_te[0];
+	fill_te[0] = seq->phys.te - min_te[0];
 
 	for (long echo = 1; echo < seq->loop_dims[TE_DIM]; echo++) {
 
 		time += fill_te[echo - 1];
-		fill_te[echo] = seq->phys.te[echo] - min_te[echo] - time;
+		fill_te[echo] = seq->phys.te + echo * seq->phys.te_delta - min_te[echo] - time;
 	}
 }
 
@@ -333,8 +333,8 @@ static struct flash_timing flash_compute_timing(const struct seq_config *seq)
 
 	for (int i = 0; i < seq->loop_dims[TE_DIM]; i++) {
 
-		timing.readout[i] = timing.readout_dephaser + available_time_RF_SLI(1, seq) - seq->phys.te[0]
-				+ seq->phys.te[i]; // available_time_RF_SLI only adds first echo, but we need te[echo]
+		timing.readout[i] = timing.readout_dephaser + available_time_RF_SLI(1, seq)
+				+ i * seq->phys.te_delta; // available_time_RF_SLI only adds first echo, but we need te[echo]
 
 		timing.adc[i] = start_adc(i, seq);
 	}

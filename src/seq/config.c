@@ -73,7 +73,8 @@ const struct seq_config seq_config_defaults = {
 
 	.phys = {
 		.tr = 3.11E-3,
-		.te[0] = 1.90E-3,
+		.te = 1.90E-3,
+		.te_delta = 2.0E-3,
 		.dwell = 4.E-6,
 		.os = 2.,
 		.contrast = SEQ_CONTRAST_RF_RANDOM,

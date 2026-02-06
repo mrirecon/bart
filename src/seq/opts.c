@@ -61,8 +61,8 @@ int read_config_from_str(struct seq_config* seq, int N, const char* buffer_in)
 		// basic sequence parameters
 		OPTL_DOUBLE(0, "FA", &seq->phys.flip_angle, "flip angle", "Flip angle [deg]"),
 		OPTL_DOUBLE(0, "TR", &seq->phys.tr, "TR", "TR [us]"),
-		OPTL_DOVECN(0, "TE", seq->phys.te, "TE [us]"),
-		// OPTL_DOUBLE(0, "TE", &seq->phys.te, "TE", "TE"),
+		OPTL_DOUBLE(0, "TE", &seq->phys.te, "TE", "TE"),
+		OPTL_DOUBLE(0, "TE_delta", &seq->phys.te_delta, "TE_delta", "TE_delta"),
 		OPTL_DOUBLE(0, "BWTP", &seq->phys.bwtp, "BWTP", "Bandwidth Time Product"),
 
 		// others sequence parameters

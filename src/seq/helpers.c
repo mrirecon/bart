@@ -149,7 +149,7 @@ static void seq_bart_to_standard_conf(struct seq_standard_conf* std, struct seq_
 	std->tr = seq->phys.tr;
 
 	for (int i = 0; i < SEQ_MAX_NO_ECHOES; i++)
-		std->te[i] = seq->phys.te[i];
+		std->te[i] = seq->phys.te + i * seq->phys.te_delta;
 
 	std->dwell = seq->phys.dwell;
 	std->flip_angle = seq->phys.flip_angle;
@@ -192,8 +192,8 @@ static void seq_standard_conf_to_bart(struct seq_config* seq, struct seq_standar
 {
 	seq->phys.tr = std->tr;
 
-	for (int i = 0; i < SEQ_MAX_NO_ECHOES; i++)
-		seq->phys.te[i] = std->te[i];
+	seq->phys.te = std->te[0];
+	seq->phys.te_delta = std->te[1] - std->te[0];
 
 	seq->phys.dwell = std->dwell;
 	seq->phys.os = 2.;
@@ -389,10 +389,8 @@ int seq_print_info_config(int N, char* info, const struct seq_config* seq)
 {
 	int ctr = 0;
 
-	ctr += snprintf(info + ctr, (size_t)(N - ctr), "\n\nseq_config\nTR\t\t\t\t\t%f", seq->phys.tr);
-
-	for (int i = 0; i < seq->loop_dims[TE_DIM]; i++)
-		ctr += snprintf(info + ctr, (size_t)(N - ctr), "\nTE[%d]\t\t\t\t\t%f", i, seq->phys.te[i]);
+	ctr += snprintf(info + ctr, (size_t)(N - ctr), "\n\nseq_config\nTR/TE0/deltaTE\t\t\t\t\t%f/%f/%f", 
+			seq->phys.tr, seq->phys.te, seq->phys.te_delta);
 
 	ctr += snprintf(info + ctr, (size_t)(N - ctr), 
 			"\ndwell/os\t\t\t\t%.8f/%.2f\ncontrast/rf duration/FA/BWTP\t\t%d/%.6f/%.2f/%.2f",

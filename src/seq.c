@@ -95,7 +95,8 @@ int main_seq(int argc, char* argv[argc])
 		// basic sequence parameters
 		OPTL_DOUBLE(0, "FA", &seq->conf->phys.flip_angle, "flip angle", "Flip angle [deg]"),
 		OPTL_DOUBLE(0, "TR", &seq->conf->phys.tr, "TR", "TR"),
-		OPTL_DOVECN(0, "TE", seq->conf->phys.te, "TE"),
+		OPTL_DOUBLE(0, "TE", &seq->conf->phys.te, "TE", "TE"),
+		OPTL_DOUBLE(0, "TE_delta", &seq->conf->phys.te_delta, "TE_delta", "TE_delta"),
 		OPTL_DOUBLE(0, "BWTP", &seq->conf->phys.bwtp, "BWTP", "Bandwidth Time Product"),
 
 		// others sequence parameters
