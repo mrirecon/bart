@@ -393,6 +393,7 @@ endif
 else ifeq ($(findstring emcc,$(CC)),emcc)
 CFLAGS += -fblocks
 else
+NVCCFLAGS += --std=c++17
 # only add if not clang, as it doesn't understand this:
 ifeq ($(GCCVERSION14), 1)
 CFLAGS += -Wuseless-cast
