@@ -8,6 +8,7 @@
 #include "config.h"
 
 const int seq_loop_order_avg_inner[DIMS] = {
+	TE_DIM,
 	AVG_DIM,
 	PHS2_DIM,
 	SLICE_DIM,
@@ -21,7 +22,6 @@ const int seq_loop_order_avg_inner[DIMS] = {
 	READ_DIM,
 	COIL_DIM,
 	MAPS_DIM,
-	TE_DIM,
 	ITER_DIM,
 	CSHIFT_DIM,
 	LEVEL_DIM
@@ -29,6 +29,7 @@ const int seq_loop_order_avg_inner[DIMS] = {
 
 
 const int seq_loop_order_avg_outer[DIMS] = {
+	TE_DIM,
 	PHS2_DIM,
 	SLICE_DIM,
 	COEFF2_DIM,
@@ -42,13 +43,13 @@ const int seq_loop_order_avg_outer[DIMS] = {
 	READ_DIM,
 	COIL_DIM,
 	MAPS_DIM,
-	TE_DIM,
 	ITER_DIM,
 	CSHIFT_DIM,
 	LEVEL_DIM
 };
 
 const int seq_loop_order_multislice[DIMS] = {
+	TE_DIM,
 	PHS2_DIM,
 	COEFF2_DIM,
 	COEFF_DIM,
@@ -62,7 +63,6 @@ const int seq_loop_order_multislice[DIMS] = {
 	READ_DIM,
 	COIL_DIM,
 	MAPS_DIM,
-	TE_DIM,
 	ITER_DIM,
 	CSHIFT_DIM,
 	LEVEL_DIM

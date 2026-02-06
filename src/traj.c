@@ -32,6 +32,7 @@
 
 static const int traj_loop_order[DIMS] = {
 
+	TE_DIM,
 	SLICE_DIM,
 	COEFF2_DIM,
 	COEFF_DIM,
@@ -45,7 +46,6 @@ static const int traj_loop_order[DIMS] = {
 	READ_DIM,
 	COIL_DIM,
 	MAPS_DIM,
-	TE_DIM,
 	ITER_DIM,
 	CSHIFT_DIM,
 	LEVEL_DIM
