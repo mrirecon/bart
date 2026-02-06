@@ -65,12 +65,12 @@ static const struct seq_ui_long custom_longarr_defaults[] = {
 
 static const struct seq_ui_double custom_double_defaults[] = {
 
+	{ "seq_wip9", cid_cmd, "BART cmd", { -1000., 1000., 0.1, 0. }, "BART UI interface. Get/set config from file.", "" },
 };
 
 static const struct seq_ui_double custom_doublearr_defaults[] = {
 
 	{ "", cid_BWTP, "BWTP", { 0., 200., 0.1, 1.6 }, "RF bandwidth-time-product.", "" },
-	{ "", cid_dummy, "Dummy", { -1000., 1000., 0.1, 0. }, "Dummy (SET CONFIG FROM FILE).", "" },
 
 };
 

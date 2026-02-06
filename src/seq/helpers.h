@@ -102,7 +102,9 @@ struct seq_interface_conf {
 	double sms_distance;
 
 	int is3D;
-	int isBSSFP;
+	int bssfp;
+	int asl;
+	int interactive;
 
 	double raster_grad;
 	double raster_rf;
