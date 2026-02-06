@@ -395,10 +395,15 @@ int seq_block(int N, struct seq_event ev[N], struct seq_state* seq_state, const 
 
 	if (1 == seq_state->pos[COEFF_DIM]) {
 
+		int i = 0;
+
 		seq_state->mode = SEQ_BLOCK_KERNEL_IMAGE;
 		md_max_dims(DIMS, (COEFF2_FLAG), seq_state->pos, seq_state->pos, last_idx);
 
-		return flash(N, ev, seq_state, seq);
+		if (seq->trigger.trigger_out && md_check_equal_dims(DIMS, (long [DIMS]){ 0 }, seq_state->pos, PHS1_FLAG))
+			ev[i++] = (struct seq_event){ .start = 0., .mid = 0., .end = 1e-3, .type = SEQ_EVENT_OUTPUT, NULL };
+
+		return flash(N - i, ev + i, seq_state, seq) + i;
 	}
 
 	if (2 == seq_state->pos[COEFF_DIM]) {
@@ -410,8 +415,7 @@ int seq_block(int N, struct seq_event ev[N], struct seq_state* seq_state, const 
 
 				seq_state->mode = SEQ_BLOCK_POST;
 
-				ev[0].type = SEQ_EVENT_WAIT;
-				ev[0].end = seq->magn.inv_delay_time;
+				ev[0] = (struct seq_event){ .start = 0., .mid = 0., .end = seq->magn.inv_delay_time, .type = SEQ_EVENT_WAIT, NULL };
 
 				return 1;
 		}

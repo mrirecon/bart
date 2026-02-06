@@ -20,6 +20,11 @@
 
 
 
+static int trigger_event_count(const struct seq_config* seq, const struct seq_state* seq_state)
+{
+	return (seq->trigger.trigger_out && (0 == seq_state->pos[PHS1_DIM])) ? 1 : 0;
+}
+
 static bool test_block_minv_init_delay(void)
 {
 	const enum seq_block blocks[16] = {
@@ -59,7 +64,7 @@ static bool test_block_minv_init_delay(void)
 		if (blocks[i] != seq->state->mode)
 			return false;
 
-		if ((SEQ_BLOCK_KERNEL_IMAGE == seq->state->mode) && (FLASH_EVENTS != E))
+		if ((SEQ_BLOCK_KERNEL_IMAGE == seq->state->mode) && (FLASH_EVENTS + trigger_event_count(seq->conf, seq->state) != E))
 			return false;
 
 		if (SEQ_BLOCK_PRE == seq->state->mode)
@@ -130,7 +135,7 @@ static bool test_block_minv_multislice(void)
 		if (blocks[i] != seq->state->mode)
 			return false;
 
-		if ((SEQ_BLOCK_KERNEL_IMAGE == seq->state->mode) && (FLASH_EVENTS != E))
+		if ((SEQ_BLOCK_KERNEL_IMAGE == seq->state->mode) && (FLASH_EVENTS + trigger_event_count(seq->conf, seq->state) != E))
 			return false;
 
 		if (SEQ_BLOCK_PRE == seq->state->mode)
