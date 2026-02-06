@@ -43,9 +43,6 @@ void traj_conf_from_seq(struct traj_conf *conf, const struct seq_config* seq)
 		conf->aligned_flags = 0;
 		break;
 
-	case SEQ_PEMODE_RAGA_MEMS:
-
-		assert(0);
 	}
 
 	if (conf->rational) {

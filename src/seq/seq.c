@@ -318,10 +318,6 @@ static int check_settings(const struct seq_state* seq_state, const struct seq_co
 	if (SEQ_MAX_SLICES < get_slices(seq))
 		return ERROR_SETTING_DIM;
 
-	if (SEQ_PEMODE_RAGA_MEMS == seq->enc.pe_mode)
-		return ERROR_ROT_ANGLE;
-
-
 	if (SEQ_CONTEXT_BINARY != seq_state->context) {
 
 		if ((SEQ_PEMODE_RAGA == seq->enc.pe_mode)
