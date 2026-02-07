@@ -390,22 +390,22 @@ int main_phantom(int argc, char* argv[argc])
 		struct phantom_opts popts = phantom_opts_defaults;
 		popts.kspace = kspace;
 
-		long stldims[DIMS];
+		long stldims[3];
 		double* model = NULL;
 
 		if (stl_fileextension(stl_file)) {
 
-			model = stl_read(DIMS, stldims, stl_file);
+			model = stl_read(stldims, stl_file);
 
 		} else {
 
-			complex float* cmodel = load_cfl(stl_file, DIMS, stldims);
-			model = stl_cfl2d(DIMS, stldims, cmodel);
-			unmap_cfl(DIMS, stldims, cmodel);
+			complex float* cmodel = load_cfl(stl_file, 3, stldims);
+			model = stl_cfl2d(stldims, cmodel);
+			unmap_cfl(3, stldims, cmodel);
 		}
 
-		stl_compute_normals(DIMS, stldims, model);
-		phantom_stl_init(&popts, DIMS, stldims, model);
+		stl_compute_normals(stldims, model);
+		phantom_stl_init(&popts, 3, stldims, model);
 
 		long odims_[DIMS];
 		complex double* cdout = sample_signal(DIMS, odims_, gdims, grid, stdims, straj, &popts, &coptss);

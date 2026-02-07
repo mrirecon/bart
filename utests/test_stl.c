@@ -11,10 +11,6 @@
 #include <complex.h>
 #include <math.h>
 
-#include "utest.h"
-
-#include "misc/mri.h"
-
 #include "num/multind.h"
 #include "num/flpmath.h"
 #include "num/linalg.h"
@@ -22,16 +18,18 @@
 #include "stl/misc.h"
 #include "stl/models.h"
 
+#include "utest.h"
+
 static bool test_stl_normal_vector(void)
 {
-        long dims[DIMS], strs[DIMS], pos[DIMS];
-        md_set_dims(DIMS, pos, 0);
+        long dims[3], strs[3], pos[3];
+        md_set_dims(3, pos, 0);
 
-        double* model = stl_internal_tetrahedron(DIMS, dims);
+        double* model = stl_internal_tetrahedron(dims);
 
-        md_calc_strides(DIMS, strs, dims, DL_SIZE);
+        md_calc_strides(3, strs, dims, DL_SIZE);
 
-        stl_compute_normals(DIMS, dims, model);
+        stl_compute_normals(dims, model);
 
         double d0 = 0.577350269189626;
         double d1 = -0.577350269189626;
@@ -46,22 +44,22 @@ static bool test_stl_normal_vector(void)
 
         pos[1] = 3;
         pos[2] = 0;
-        d = &MD_ACCESS(DIMS, strs, pos, model);
+        d = &MD_ACCESS(3, strs, pos, model);
         vec3d_saxpy(o, n0, -1, d);
         b = b && (TOL > vec3d_norm(o));
 
         pos[2] = 1;
-        d = &MD_ACCESS(DIMS, strs, pos, model);
+        d = &MD_ACCESS(3, strs, pos, model);
         vec3d_saxpy(o, n1, -1, d);
         b = b && (TOL > vec3d_norm(o));
 
         pos[2] = 2;
-        d = &MD_ACCESS(DIMS, strs, pos, model);
+        d = &MD_ACCESS(3, strs, pos, model);
         vec3d_saxpy(o, n2, -1, d);
         b = b && (TOL > vec3d_norm(o));
 
         pos[2] = 3;
-        d = &MD_ACCESS(DIMS, strs, pos, model);
+        d = &MD_ACCESS(3, strs, pos, model);
 	vec3d_saxpy(o, n3, -1, d);
         b = b && (TOL > vec3d_norm(o));
 
@@ -71,35 +69,36 @@ static bool test_stl_normal_vector(void)
 
 UT_REGISTER_TEST(test_stl_normal_vector);
 
+
 static bool test_stl_cfl_double_conversion(void)
 {
         bool b = true;
-        long dims[DIMS];
-        double* model = stl_internal_tetrahedron(DIMS, dims);
+        long dims[3];
+        double* model = stl_internal_tetrahedron(dims);
 
-        complex float* cmodel = md_alloc(DIMS, dims, CFL_SIZE);
-        stl_d2cfl(DIMS, dims, model, cmodel);
+        complex float* cmodel = md_alloc(3, dims, CFL_SIZE);
+        stl_d2cfl(dims, model, cmodel);
 
-        double* model0 = stl_cfl2d(DIMS, dims, cmodel);
+        double* model0 = stl_cfl2d(dims, cmodel);
 
-        complex float* cmodel0 = md_alloc(DIMS, dims, CFL_SIZE);
-        stl_d2cfl(DIMS, dims, model0, cmodel0);
+        complex float* cmodel0 = md_alloc(3, dims, CFL_SIZE);
+	stl_d2cfl(dims, model0, cmodel0);
 
-        complex float* s = md_alloc(DIMS, dims, CFL_SIZE);
-        md_zsub(DIMS, dims, s, cmodel, cmodel0);
+        complex float* s = md_alloc(3, dims, CFL_SIZE);
+        md_zsub(3, dims, s, cmodel, cmodel0);
 
         complex float r;
-        md_zsum(DIMS, dims, ~0UL, &r, s);
+        md_zsum(3, dims, ~0UL, &r, s);
         if (0 < sqrt(creal(r) * creal(r) + cimag(r) * cimag(r)))
                 b = false;
-        long pos[DIMS], strs[DIMS];
-        md_set_dims(DIMS, pos, 0);
-        md_calc_strides(DIMS, strs, dims, DL_SIZE);
+        long pos[3], strs[3];
+        md_set_dims(3, pos, 0);
+        md_calc_strides(3, strs, dims, DL_SIZE);
 
         double d = 0;
         do {
-                d += MD_ACCESS(DIMS, strs, pos, model) - MD_ACCESS(DIMS, strs, pos, model0);
-        } while(md_next(DIMS, dims, ~0UL, pos));
+                d += MD_ACCESS(3, strs, pos, model) - MD_ACCESS(3, strs, pos, model0);
+        } while(md_next(3, dims, ~0UL, pos));
 
         if (0 < d)
                 b = false;
@@ -145,9 +144,9 @@ static bool check_triangle(const struct triangle* t)
 static bool test_stlgeomprocessing(void)
 {
         bool b = true;
-        long dims[DIMS], strs[DIMS], pos[DIMS];
+        long dims[3], strs[3], pos[3];
 
-        double* model = stl_internal_tetrahedron(DIMS, dims);
+        double* model = stl_internal_tetrahedron(dims);
 
 	struct triangle_stack ts = triangle_stack_defaults;
 
@@ -160,14 +159,14 @@ static bool test_stlgeomprocessing(void)
 
 	struct triangle* t = ts.tri;
 
-	md_calc_strides(DIMS, strs, dims, DL_SIZE);
-	md_set_dims(DIMS, pos, 0);
+	md_calc_strides(3, strs, dims, DL_SIZE);
+	md_set_dims(3, pos, 0);
 
 	for (pos[2] = 0; pos[2] < ts.N; pos[2]++) {
 
 		t[pos[2]] = triangle_defaults;
 
-		memcpy(&t[pos[2]], &MD_ACCESS(DIMS, strs, pos, model), 12 * DL_SIZE);
+		memcpy(&t[pos[2]], &MD_ACCESS(3, strs, pos, model), 12 * DL_SIZE);
 
 		stl_relative_position(&t[pos[2]]);
 
@@ -285,14 +284,14 @@ static bool test_stl_measures(void)
 {
         bool b = true;
 
-	long dimshex[DIMS];
-	long dimstet[DIMS];
+	long dimshex[3];
+	long dimstet[3];
 
-	double* mhex = stl_internal_hexahedron(DIMS, dimshex);
-	double* mtet = stl_internal_tetrahedron(DIMS, dimstet);
+	double* mhex = stl_internal_hexahedron(dimshex);
+	double* mtet = stl_internal_tetrahedron(dimstet);
 
-	struct triangle_stack* tshex = stl_preprocess_model(DIMS, dimshex, mhex);
-	struct triangle_stack* tstet = stl_preprocess_model(DIMS, dimstet, mtet);
+	struct triangle_stack* tshex = stl_preprocess_model(dimshex, mhex);
+	struct triangle_stack* tstet = stl_preprocess_model(dimstet, mtet);
 
 	struct triangle* thex = tshex->tri;
 	struct triangle* ttet = tstet->tri;

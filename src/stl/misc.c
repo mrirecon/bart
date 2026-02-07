@@ -1,4 +1,5 @@
-/* Copyright 2025. University Medical Center Göttingen, Germany
+/* Copyright 2025. University Medical Center Göttingen.
+ * Copyright 2026. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -57,7 +58,7 @@ void print_vec(int N, const double* d)
 }
 
 // compute minimal and maximal vertex coordinates
-static void stl_coordinate_limits(int D, long dims[D], double* model, double* min_v, double* max_v)
+static void stl_coordinate_limits(long dims[3], double* model, double* min_v, double* max_v)
 {
         min_v[0] = INFINITY;
         min_v[1] = INFINITY;
@@ -66,15 +67,15 @@ static void stl_coordinate_limits(int D, long dims[D], double* model, double* mi
         max_v[1] = -INFINITY;
         max_v[2] = -INFINITY;
 
-        long strs[D];
-        md_calc_strides(D, strs, dims, DL_SIZE);
-        long pos[D];
-        md_set_dims(D, pos, 0);
+        long strs[3];
+        md_calc_strides(3, strs, dims, DL_SIZE);
+        long pos[3];
+        md_set_dims(3, pos, 0);
 
-        long pos0[D], pos1[D], pos2[D];
-        md_set_dims(D, pos0, 0);
-        md_set_dims(D, pos1, 0);
-        md_set_dims(D, pos2, 0);
+        long pos0[3], pos1[3], pos2[3];
+        md_set_dims(3, pos0, 0);
+        md_set_dims(3, pos1, 0);
+        md_set_dims(3, pos2, 0);
         pos1[1] = 1;
         pos2[1] = 2;
 
@@ -90,9 +91,9 @@ static void stl_coordinate_limits(int D, long dims[D], double* model, double* mi
                         pos1[0] = j;
                         pos2[0] = j;
 
-                        double v0 = MD_ACCESS(D, strs, pos0, model);
-                        double v1 = MD_ACCESS(D, strs, pos1, model);
-                        double v2 = MD_ACCESS(D, strs, pos2, model);
+                        double v0 = MD_ACCESS(3, strs, pos0, model);
+                        double v1 = MD_ACCESS(3, strs, pos1, model);
+                        double v2 = MD_ACCESS(3, strs, pos2, model);
 
                         if (min_v[j] > v0)
                                 min_v[j] = v0;
@@ -116,51 +117,53 @@ static void stl_coordinate_limits(int D, long dims[D], double* model, double* mi
 }
 
 // Scales all vertex coordinates by scale vector. It doesnt scale the normal vector.
-void stl_scale_model(int D, long dims[D], double* model, double scale[3])
+void stl_scale_model(long dims[3], double* model, double scale[3])
 {
-        long strs[D];
-        md_calc_strides(D, strs, dims, DL_SIZE);
+        long strs[3];
+        md_calc_strides(3, strs, dims, DL_SIZE);
 
 #pragma omp parallel for
         for (int i = 0; i < dims[2]; i++) {
 
-                long pos[D];
-                md_set_dims(D, pos, 0);
+                long pos[3];
+                md_set_dims(3, pos, 0);
                 pos[2] = i;
 
                 for (pos[0] = 0; pos[0] < dims[0]; pos[0]++)
                         for (pos[1] = 0; pos[1] < dims[1] - 1; pos[1]++)
-                                MD_ACCESS(D, strs, pos, model) *= scale[pos[0]];
+                                MD_ACCESS(3, strs, pos, model) *= scale[pos[0]];
         }
 }
 
 // Shifts all vertex coordinates by shift vector. It doesn't shift the normal vector (shift invariant)
-void stl_shift_model(int D, long dims[D], double* model, double shift[3])
+void stl_shift_model(long dims[3], double* model, double shift[3])
 {
-        long strs[D];
-        md_calc_strides(D, strs, dims, DL_SIZE);
+        long strs[3];
+        md_calc_strides(3, strs, dims, DL_SIZE);
 
 #pragma omp parallel for
         for (int i = 0; i < dims[2]; i++) {
 
-                long pos[D];
-                md_set_dims(D, pos, 0);
+                long pos[3];
+                md_set_dims(3, pos, 0);
                 pos[2] = i;
 
                 for (pos[0] = 0; pos[0] < dims[0]; pos[0]++)
                         for (pos[1] = 0; pos[1] < dims[1] - 1; pos[1]++)
-                                MD_ACCESS(D, strs, pos, model) += shift[pos[0]];
+                                MD_ACCESS(3, strs, pos, model) += shift[pos[0]];
         }
 }
 
 // shift and scale the model to FOV of size fov_size > 0.
-void stl_center_fov(int D, long dims[D], double* model, double fov_size)
+void stl_center_fov(long dims[3], double* model, double fov_size)
 {
         if (0 >= fov_size)
                 error("fov_size should be positive.");
 
-        double min_v[3], max_v[3];
-        stl_coordinate_limits(D, dims, model, min_v, max_v);
+        double min_v[3];
+	double max_v[3];
+        stl_coordinate_limits(dims, model, min_v, max_v);
+
         double crange[3] = { max_v[0] - min_v[0], max_v[1] - min_v[1], max_v[2] - min_v[2] };
         double shift[3] = { - min_v[0] - crange[0]/2, - min_v[1] - crange[1]/2, - min_v[2] - crange[2]/2 };
 
@@ -171,27 +174,27 @@ void stl_center_fov(int D, long dims[D], double* model, double fov_size)
         double m = (crange[2] > m0) ? crange[2] : m0;
         double scale[3] = { fov_size/m, fov_size/m, fov_size/m };
 
-        stl_shift_model(D, dims, model, shift);
-        stl_scale_model(D, dims, model, scale);
+        stl_shift_model(dims, model, shift);
+        stl_scale_model(dims, model, scale);
 }
 
-void stl_stats(int D, long dims[D], double* model)
+void stl_stats(long dims[3], double* model)
 {
         debug_printf(DP_INFO, "Number of triangles: %ld\n", dims[2]);
         double min_v[3], max_v[3];
-        stl_coordinate_limits(D, dims, model, min_v, max_v);
+        stl_coordinate_limits(dims, model, min_v, max_v);
         debug_printf(DP_INFO, "Vertex coordinate ranges:\n");
         debug_printf(DP_INFO, "1: (%lf,%lf)\n", min_v[0], max_v[0]);
         debug_printf(DP_INFO, "2: (%lf,%lf)\n", min_v[1], max_v[1]);
         debug_printf(DP_INFO, "3: (%lf,%lf)\n", min_v[2], max_v[2]);
 }
 
-void stl_print(int D, long dims[D], double* model)
+void stl_print(long dims[3], double* model)
 {
         debug_printf(DP_INFO, "Number of triangles: %ld\n", dims[2]);
-        long strs[D], pos[D];
-        md_calc_strides(D, strs, dims, DL_SIZE);
-        md_set_dims(D, pos, 0);
+        long strs[3], pos[3];
+        md_calc_strides(3, strs, dims, DL_SIZE);
+        md_set_dims(3, pos, 0);
 
         for (pos[2] = 0; pos[2] < dims[2]; pos[2]++) {
 
@@ -201,22 +204,22 @@ void stl_print(int D, long dims[D], double* model)
                 pos[1] = 0;
 
                 for (pos[0] = 0; pos[0] < dims[0]; pos[0]++)
-                        v0[pos[0]] = MD_ACCESS(D, strs, pos, model);
+                        v0[pos[0]] = MD_ACCESS(3, strs, pos, model);
 
                 pos[1] = 1;
 
                 for (pos[0] = 0; pos[0] < dims[0]; pos[0]++)
-                        v1[pos[0]] = MD_ACCESS(D, strs, pos, model);
+                        v1[pos[0]] = MD_ACCESS(3, strs, pos, model);
 
                 pos[1] = 2;
 
                 for (pos[0] = 0; pos[0] < dims[0]; pos[0]++)
-                        v2[pos[0]] = MD_ACCESS(D, strs, pos, model);
+                        v2[pos[0]] = MD_ACCESS(3, strs, pos, model);
 
                 pos[1] = 3;
 
                 for (pos[0] = 0; pos[0] < dims[0]; pos[0]++)
-                        n[pos[0]] = MD_ACCESS(D, strs, pos, model);
+                        n[pos[0]] = MD_ACCESS(3, strs, pos, model);
 
                 debug_printf(DP_INFO, "V0:");
                 print_vec(3, v0);
@@ -229,19 +232,19 @@ void stl_print(int D, long dims[D], double* model)
         }
 }
 
-void stl_compute_normals(int D, long dims[D], double* model)
+void stl_compute_normals(long dims[3], double* model)
 {
-        long strs[D];
-        md_calc_strides(D, strs, dims, DL_SIZE);
+        long strs[3];
+        md_calc_strides(3, strs, dims, DL_SIZE);
 
 #pragma omp parallel for
         for (int i = 0; i < dims[2]; i++) {
 
-                long pos0[D], pos1[D], pos2[D], posn[D];
-                md_set_dims(D, pos0, 0);
-                md_set_dims(D, pos1, 0);
-                md_set_dims(D, pos2, 0);
-                md_set_dims(D, posn, 0);
+                long pos0[3] = { };
+		long pos1[3] = { };
+		long pos2[3] = { };
+		long posn[3] = { };
+
                 pos0[2] = i;
                 pos1[2] = i;
                 pos2[2] = i;
@@ -252,12 +255,12 @@ void stl_compute_normals(int D, long dims[D], double* model)
 
                 double d1[3], d2[3];
 
-                vec3d_saxpy(d1, &MD_ACCESS(D, strs, pos0, model), -1, &MD_ACCESS(D, strs, pos1, model));
-                vec3d_saxpy(d2, &MD_ACCESS(D, strs, pos0, model), -1, &MD_ACCESS(D, strs, pos2, model));
+                vec3d_saxpy(d1, &MD_ACCESS(3, strs, pos0, model), -1, &MD_ACCESS(3, strs, pos1, model));
+                vec3d_saxpy(d2, &MD_ACCESS(3, strs, pos0, model), -1, &MD_ACCESS(3, strs, pos2, model));
 
 		double nt[3];
 		vec3d_cp(nt, d1, d2);
-		vec3d_saxpy(&MD_ACCESS(D, strs, posn, model), nt, 1 / vec3d_norm(nt), NULL);
+		vec3d_saxpy(&MD_ACCESS(3, strs, posn, model), nt, 1 / vec3d_norm(nt), NULL);
         }
 }
 
@@ -295,7 +298,7 @@ static bool stl_str_contained(const char* s0, const char* s1)
         return -1 != stl_str_cfi(s0, s1);
 }
 
-void stl_write_binary(int D, long dims[D], double* model, const char* name)
+void stl_write_binary(long dims[3], double* model, const char* name)
 {
         const size_t hs = 80 + sizeof(int32_t);
         const size_t bs = 12 * FL_SIZE + sizeof(uint16_t);
@@ -313,20 +316,19 @@ void stl_write_binary(int D, long dims[D], double* model, const char* name)
 
         *(uint32_t*) &buf[80] = (uint32_t) dims[2];
 
-        long strs[D];
-        md_calc_strides(D, strs, dims, DL_SIZE);
+        long strs[3];
+        md_calc_strides(3, strs, dims, DL_SIZE);
 
 #pragma omp parallel for
         for (int i = 0; i < dims[2]; i++) {
 
-                long pos[D];
-                md_set_dims(D, pos, 0);
+                long pos[3] = { };
                 pos[2] = i;
                 pos[1] = 3;
 
                 for (pos[0] = 0; pos[0] < 3; pos[0]++) {
 
-                        float f = MD_ACCESS(D, strs, pos, model);
+                        float f = MD_ACCESS(3, strs, pos, model);
                         memcpy(&buf[hs + (size_t) i * bs + (size_t) pos[0] * FL_SIZE], &f, FL_SIZE);
                 }
 
@@ -334,7 +336,7 @@ void stl_write_binary(int D, long dims[D], double* model, const char* name)
 
                         for (pos[0] = 0; pos[0] < 3; pos[0]++) {
 
-                                float f = MD_ACCESS(D, strs, pos, model);
+                                float f = MD_ACCESS(3, strs, pos, model);
                                 memcpy(&buf[hs + (size_t) i * bs + (size_t) (3 + pos[0] + 3 * pos[1]) * FL_SIZE], &f, FL_SIZE);
                         }
                 }
@@ -396,7 +398,7 @@ static bool stl_read_line(char** line, FILE* s)
         return true;
 }
 
-static double* stl_read_ascii(int D, long dims[D], const char* name)
+static double* stl_read_ascii(long dims[3], const char* name)
 {
         FILE* ptr = fopen(name, "r");
 
@@ -421,11 +423,11 @@ static double* stl_read_ascii(int D, long dims[D], const char* name)
         xfree(line);
         fclose(ptr);
 
-        md_set_dims(D, dims, 1);
+        md_set_dims(3, dims, 1);
         dims[0] = 3;
         dims[1] = 4;
         dims[2] = N;
-        double* model = md_alloc(D, dims, DL_SIZE);
+        double* model = md_alloc(3, dims, DL_SIZE);
 
         char* l0 = NULL;
         char* l1 = NULL;
@@ -448,9 +450,9 @@ static double* stl_read_ascii(int D, long dims[D], const char* name)
         xfree(l0);
         l0 = NULL;
 
-        long strs[D], pos[D];
-        md_calc_strides(D, strs, dims, DL_SIZE);
-        md_set_dims(D, pos, 0);
+        long strs[3], pos[3];
+        md_calc_strides(3, strs, dims, DL_SIZE);
+        md_set_dims(3, pos, 0);
 
         // ASCII encoded stl files have the following repeating pattern:
         // facet normal FLOAT FLOAT FLOAT
@@ -481,7 +483,7 @@ static double* stl_read_ascii(int D, long dims[D], const char* name)
                 for (int i = 0; i < 3; i++) {
 
                         pos[0] = i;
-                        MD_ACCESS(D, strs, pos, model) = (double) f[i];
+                        MD_ACCESS(3, strs, pos, model) = (double) f[i];
                 }
 
                 xfree(l0);
@@ -503,7 +505,7 @@ static double* stl_read_ascii(int D, long dims[D], const char* name)
                 for (int i = 0; i < 3; i++) {
 
                         pos[0] = i;
-                        MD_ACCESS(D, strs, pos, model) = (double) f[i];
+                        MD_ACCESS(3, strs, pos, model) = (double) f[i];
                 }
 
                 xfree(l2);
@@ -518,7 +520,7 @@ static double* stl_read_ascii(int D, long dims[D], const char* name)
                 pos[1] = 1;
 
                 for (pos[0]= 0; pos[0] < 3; pos[0]++)
-                        MD_ACCESS(D, strs, pos, model) = (double) f[pos[0]];
+                        MD_ACCESS(3, strs, pos, model) = (double) f[pos[0]];
 
                 xfree(l3);
                 l3 = NULL;
@@ -532,7 +534,7 @@ static double* stl_read_ascii(int D, long dims[D], const char* name)
                 pos[1] = 2;
 
                 for (pos[0] = 0; pos[0] < 3; pos[0]++)
-                        MD_ACCESS(D, strs, pos, model) = (double) f[pos[0]];
+                        MD_ACCESS(3, strs, pos, model) = (double) f[pos[0]];
 
                 xfree(l4);
                 l4 = NULL;
@@ -577,7 +579,7 @@ static double* stl_read_ascii(int D, long dims[D], const char* name)
  * block size: 50 Byte
  **/
 // read binary encoded stl files.
-static double* stl_read_binary(int D, long dims[D], const char* name)
+static double* stl_read_binary(long dims[3], const char* name)
 {
         int fd = open(name, O_RDONLY);
 
@@ -596,22 +598,22 @@ static double* stl_read_binary(int D, long dims[D], const char* name)
 
         int N = (int) Nu;
 
-        md_set_dims(D, dims, 1);
         dims[0] = 3;
         dims[1] = 4;
         dims[2] = N;
-        double* model = md_alloc(D, dims, DL_SIZE);
-        long strs[D];
-        md_calc_strides(D, strs, dims, DL_SIZE);
 
-        long pos0[D];
-        md_set_dims(D, pos0, 0);
+        double* model = md_alloc(3, dims, DL_SIZE);
+        long strs[3];
+        md_calc_strides(3, strs, dims, DL_SIZE);
+
+        long pos0[3];
+        md_set_dims(3, pos0, 0);
 
         do {
 
-                MD_ACCESS(D, strs, pos0, model) = 0;
+                MD_ACCESS(3, strs, pos0, model) = 0;
 
-        } while (md_next(D, dims, ~0UL, pos0));
+        } while (md_next(3, dims, ~0UL, pos0));
 
         const size_t bs = 12 * FL_SIZE + sizeof(uint16_t);
         const size_t L = (size_t) N * bs;
@@ -625,8 +627,8 @@ static double* stl_read_binary(int D, long dims[D], const char* name)
 #pragma omp parallel for
         for (int i = 0; i < N; i++) {
 
-                long pos[D];
-                md_set_dims(D, pos, 0);
+                long pos[3];
+                md_set_dims(3, pos, 0);
                 pos[2] = i;
                 pos[1] = 3;
 
@@ -634,7 +636,7 @@ static double* stl_read_binary(int D, long dims[D], const char* name)
 
                         float f;
                         memcpy(&f, &buf[(size_t) i * bs + (size_t) pos[0] * FL_SIZE], FL_SIZE);
-                        MD_ACCESS(D, strs, pos, model) = f;
+                        MD_ACCESS(3, strs, pos, model) = f;
                 }
 
                 for (pos[1] = 0; pos[1] < 3; pos[1]++) {
@@ -643,7 +645,7 @@ static double* stl_read_binary(int D, long dims[D], const char* name)
 
                                 float f;
                                 memcpy(&f, &buf[(size_t) i * bs + (size_t) (3 + pos[0] + 3 * pos[1]) * FL_SIZE], FL_SIZE);
-                                MD_ACCESS(D, strs, pos, model) = f;
+                                MD_ACCESS(3, strs, pos, model) = f;
                         }
                 }
         }
@@ -651,9 +653,9 @@ static double* stl_read_binary(int D, long dims[D], const char* name)
         return model;
 }
 
-double* stl_read(int D, long dims[D], const char* name)
+double* stl_read(long dims[3], const char* name)
 {
-        return stl_is_ascii(name) ? stl_read_ascii(D, dims, name) : stl_read_binary(D, dims, name);
+        return stl_is_ascii(name) ? stl_read_ascii(dims, name) : stl_read_binary(dims, name);
 }
 
 bool stl_fileextension(const char* name)
@@ -668,37 +670,37 @@ bool stl_fileextension(const char* name)
 }
 
 // convert model in cfl md array to model in double md array
-double* stl_cfl2d(int D, long dims[D], complex float* cmodel)
+double* stl_cfl2d(long dims[3], complex float* cmodel)
 {
-        double* model = md_alloc(D, dims, DL_SIZE);
-        long pos[D], dstrs[D], cstrs[D];
+        double* model = md_alloc(3, dims, DL_SIZE);
+        long pos[3], dstrs[3], cstrs[3];
 
-        md_set_dims(D, pos, 0);
-        md_calc_strides(D, dstrs, dims, DL_SIZE);
-        md_calc_strides(D, cstrs, dims, CFL_SIZE);
+        md_set_dims(3, pos, 0);
+        md_calc_strides(3, dstrs, dims, DL_SIZE);
+        md_calc_strides(3, cstrs, dims, CFL_SIZE);
 
         do {
-                MD_ACCESS(D, dstrs, pos, model) = (float) MD_ACCESS(D, cstrs, pos, cmodel);
+                MD_ACCESS(3, dstrs, pos, model) = (float) MD_ACCESS(3, cstrs, pos, cmodel);
 
-        } while (md_next(D, dims, ~0UL, pos));
+        } while (md_next(3, dims, ~0UL, pos));
 
         return model;
 }
 
 // convert model in double md array to model in cfl md array
-void stl_d2cfl(int D, long dims[D], double* model, complex float* cmodel)
+void stl_d2cfl(long dims[3], double* model, complex float* cmodel)
 {
-        long dstrs[D], cstrs[D], pos[D];
+        long dstrs[3], cstrs[3], pos[3];
 
-        md_set_dims(D, pos, 0);
-        md_calc_strides(D, dstrs, dims, DL_SIZE);
-        md_calc_strides(D, cstrs, dims, CFL_SIZE);
+        md_set_dims(3, pos, 0);
+        md_calc_strides(3, dstrs, dims, DL_SIZE);
+        md_calc_strides(3, cstrs, dims, CFL_SIZE);
 
         do {
 
-                MD_ACCESS(D, cstrs, pos, cmodel) = (float) MD_ACCESS(D, dstrs, pos, model) + 0.j;
+                MD_ACCESS(3, cstrs, pos, cmodel) = (float) MD_ACCESS(3, dstrs, pos, model) + 0.j;
 
-        } while (md_next(D, dims, ~0UL, pos));
+        } while (md_next(3, dims, ~0UL, pos));
 }
 
 // compute relative position (shift, rotation, ...) of the triangle wrt to the origin and z-axis
@@ -772,7 +774,7 @@ void stl_relative_position(struct triangle* t)
 	t->svol = copysign(vec3d_sdot(tmp, t->v2) / 6, vec3d_sdot(t->v0, t->n));
 }
 
-struct triangle_stack* stl_preprocess_model(int D, long dims[D], double* model)
+struct triangle_stack* stl_preprocess_model(long dims[3], double* model)
 {
 	struct triangle_stack* ts = xmalloc(sizeof(struct triangle_stack));
 
@@ -781,17 +783,17 @@ struct triangle_stack* stl_preprocess_model(int D, long dims[D], double* model)
 
 	struct triangle* t = ts->tri;
 
-	long tstrs[D], tdims[D];
-	md_copy_dims(D, tdims, dims);
-	md_calc_strides(D, tstrs, tdims, DL_SIZE);
+	long tstrs[3], tdims[3];
+	md_copy_dims(3, tdims, dims);
+	md_calc_strides(3, tstrs, tdims, DL_SIZE);
 
 #pragma omp parallel for
 	for (int i = 0; i < ts->N; i++) {
 
-		long pos[D];
-		md_set_dims(D, pos, 0);
+		long pos[3];
+		md_set_dims(3, pos, 0);
 		pos[2] = i;
-		memcpy(&t[i], &MD_ACCESS(D, tstrs, pos, model), 12 * DL_SIZE);
+		memcpy(&t[i], &MD_ACCESS(3, tstrs, pos, model), 12 * DL_SIZE);
 		stl_relative_position(&t[i]);
 	}
 	return ts;

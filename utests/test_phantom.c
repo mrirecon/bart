@@ -22,13 +22,13 @@
 static bool test_stl_kspace(void)
 {
         bool b = true;
-        long stldims[DIMS];
+        long stldims[3];
 
 	struct phantom_opts popts;
 	popts.kspace = true;
-        double* model = stl_internal_tetrahedron(DIMS, stldims);
-	stl_compute_normals(DIMS, stldims, model);
-	phantom_stl_init(&popts, DIMS, stldims, model);
+        double* model = stl_internal_tetrahedron(stldims);
+	stl_compute_normals(stldims, model);
+	phantom_stl_init(&popts, 3, stldims, model);
 
 	float pos[3] = {0, 0, 0};
 

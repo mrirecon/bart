@@ -78,13 +78,13 @@ int main_stl(int argc, char* argv[argc])
 
                 if (stl_fileextension(in_file)) {
 
-                        model = stl_read(DIMS, dims, in_file);
+                        model = stl_read(dims, in_file);
 
                 } else {
 
                         complex float* cmodel = load_cfl(in_file, DIMS, dims);
 
-                        model = stl_cfl2d(DIMS, dims, cmodel);
+                        model = stl_cfl2d(dims, cmodel);
 
                         unmap_cfl(DIMS, dims, cmodel);
                 }
@@ -93,33 +93,33 @@ int main_stl(int argc, char* argv[argc])
         }
 
         if (STL_TETRAHEDRON == stl_choice)
-                model = stl_internal_tetrahedron(DIMS, dims);
+                model = stl_internal_tetrahedron(dims);
 
         if (STL_HEXAHEDRON == stl_choice)
-                model = stl_internal_hexahedron(DIMS, dims);
+                model = stl_internal_hexahedron(dims);
 
 	if (!no_nc)
-		stl_compute_normals(DIMS, dims, model);
+		stl_compute_normals(dims, model);
 
         double dshift[3] = {shift[0], shift[1], shift[2]};
 
         if (0 != shift[0] || 0 != shift[1] || 0 != shift[2])
-                stl_shift_model(DIMS, dims, model, dshift);
+                stl_shift_model(dims, model, dshift);
 
         double sc[3] = {scale, scale, scale};
 
         if (0 != scale)
-                stl_scale_model(DIMS, dims, model, sc);
+                stl_scale_model(dims, model, sc);
 
         if (stat)
-                stl_stats(DIMS, dims, model);
+                stl_stats(dims, model);
 
         if (print)
-                stl_print(DIMS, dims, model);
+                stl_print(dims, model);
 
 	if (sm || vm) {
 
-		struct triangle_stack* ts = stl_preprocess_model(DIMS, dims, model);
+		struct triangle_stack* ts = stl_preprocess_model(dims, model);
 		struct triangle* t = ts->tri;
 
 		double smv = 0;
@@ -144,15 +144,15 @@ int main_stl(int argc, char* argv[argc])
 
 		if (stl_fileextension(out_file)) {
 
-			stl_write_binary(DIMS, dims, model, out_file);
+			stl_write_binary(dims, model, out_file);
 
 		} else {
 
-			complex float* cmodel = create_cfl(out_file, DIMS, dims);
+			complex float* cmodel = create_cfl(out_file, 3, dims);
 
-			stl_d2cfl(DIMS, dims, model, cmodel);
+			stl_d2cfl(dims, model, cmodel);
 
-			unmap_cfl(DIMS, dims, cmodel);
+			unmap_cfl(3, dims, cmodel);
 		}
 	}
 

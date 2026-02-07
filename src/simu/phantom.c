@@ -107,7 +107,7 @@ void phantom_stl_init(struct phantom_opts* popts, int D, long dims[D], double* m
 	popts->Nc = 1;
 	popts->fun = stl_fun_k;
 	popts->dstr = dstr_stl;
-	popts->data = stl_preprocess_model(D, dims, model);
+	popts->data = stl_preprocess_model(dims, model);
 }
 
 struct krn2d_data {
