@@ -43,19 +43,19 @@ struct triangle_stack {
 extern struct triangle triangle_defaults;
 extern struct triangle_stack triangle_stack_defaults;
 
-extern void stl_center_fov(long dims[3], double* model, double fov_size);
-extern void stl_stats(long dims[3], double* model);
-extern void stl_print(long dims[3], double* model);
-extern void stl_compute_normals(long dims[3], double* model);
-extern void stl_shift_model(long dims[3], double* model, double shift[3]);
-extern void stl_scale_model(long dims[3], double* model, double scale[3]);
+extern void stl_center_fov(const long dims[3], double* model, double fov_size);
+extern void stl_stats(const long dims[3], const double* model);
+extern void stl_print(const long dims[3], const double* model);
+extern void stl_compute_normals(const long dims[3], double* model);
+extern void stl_shift_model(const long dims[3], double* model, double shift[3]);
+extern void stl_scale_model(const long dims[3], double* model, double scale[3]);
 
 extern _Bool stl_fileextension(const char* name);
 extern double* stl_read(long dims[3], const char* name);
-extern void stl_write_binary(long dims[3], double* model, const char* name);
-extern double* stl_cfl2d(long dims[3], _Complex float* cmodel);
-extern void stl_d2cfl(long dims[3], double* model, _Complex float* cmodel);
+extern void stl_write_binary(const long dims[3], const double* model, const char* name);
+extern double* stl_cfl2d(const long dims[3], const _Complex float* cmodel);
+extern void stl_d2cfl(const long dims[3], const double* model, _Complex float* cmodel);
 extern void stl_relative_position(struct triangle* t);
-extern struct triangle_stack* stl_preprocess_model(long dims[3], double* model);
+extern struct triangle_stack* stl_preprocess_model(const long dims[3], const double* model);
 
 #endif

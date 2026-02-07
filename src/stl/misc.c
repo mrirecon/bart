@@ -51,7 +51,7 @@ struct triangle_stack triangle_stack_defaults = {
 
 
 // compute minimal and maximal vertex coordinates
-static void stl_coordinate_limits(long dims[3], double* model, double* min_v, double* max_v)
+static void stl_coordinate_limits(const long dims[3], const double* model, double* min_v, double* max_v)
 {
         min_v[0] = INFINITY;
         min_v[1] = INFINITY;
@@ -110,7 +110,7 @@ static void stl_coordinate_limits(long dims[3], double* model, double* min_v, do
 }
 
 // Scales all vertex coordinates by scale vector. It doesnt scale the normal vector.
-void stl_scale_model(long dims[3], double* model, double scale[3])
+void stl_scale_model(const long dims[3], double* model, double scale[3])
 {
         long strs[3];
         md_calc_strides(3, strs, dims, DL_SIZE);
@@ -129,7 +129,7 @@ void stl_scale_model(long dims[3], double* model, double scale[3])
 }
 
 // Shifts all vertex coordinates by shift vector. It doesn't shift the normal vector (shift invariant)
-void stl_shift_model(long dims[3], double* model, double shift[3])
+void stl_shift_model(const long dims[3], double* model, double shift[3])
 {
         long strs[3];
         md_calc_strides(3, strs, dims, DL_SIZE);
@@ -148,7 +148,7 @@ void stl_shift_model(long dims[3], double* model, double shift[3])
 }
 
 // shift and scale the model to FOV of size fov_size > 0.
-void stl_center_fov(long dims[3], double* model, double fov_size)
+void stl_center_fov(const long dims[3], double* model, double fov_size)
 {
         if (0 >= fov_size)
                 error("fov_size should be positive.");
@@ -171,7 +171,7 @@ void stl_center_fov(long dims[3], double* model, double fov_size)
         stl_scale_model(dims, model, scale);
 }
 
-void stl_stats(long dims[3], double* model)
+void stl_stats(const long dims[3], const double* model)
 {
         debug_printf(DP_INFO, "Number of triangles: %ld\n", dims[2]);
         double min_v[3], max_v[3];
@@ -182,7 +182,7 @@ void stl_stats(long dims[3], double* model)
         debug_printf(DP_INFO, "3: (%lf,%lf)\n", min_v[2], max_v[2]);
 }
 
-void stl_print(long dims[3], double* model)
+void stl_print(const long dims[3], const double* model)
 {
         debug_printf(DP_INFO, "Number of triangles: %ld\n", dims[2]);
         long strs[3], pos[3];
@@ -221,7 +221,7 @@ void stl_print(long dims[3], double* model)
         }
 }
 
-void stl_compute_normals(long dims[3], double* model)
+void stl_compute_normals(const long dims[3], double* model)
 {
         long strs[3];
         md_calc_strides(3, strs, dims, DL_SIZE);
@@ -287,7 +287,7 @@ static bool stl_str_contained(const char* s0, const char* s1)
         return -1 != stl_str_cfi(s0, s1);
 }
 
-void stl_write_binary(long dims[3], double* model, const char* name)
+void stl_write_binary(const long dims[3], const double* model, const char* name)
 {
         const size_t hs = 80 + sizeof(int32_t);
         const size_t bs = 12 * FL_SIZE + sizeof(uint16_t);
@@ -652,9 +652,10 @@ bool stl_fileextension(const char* name)
 }
 
 // convert model in cfl md array to model in double md array
-double* stl_cfl2d(long dims[3], complex float* cmodel)
+double* stl_cfl2d(const long dims[3], const complex float* cmodel)
 {
         double* model = md_alloc(3, dims, DL_SIZE);
+
         long pos[3], dstrs[3], cstrs[3];
 
         md_set_dims(3, pos, 0);
@@ -670,7 +671,7 @@ double* stl_cfl2d(long dims[3], complex float* cmodel)
 }
 
 // convert model in double md array to model in cfl md array
-void stl_d2cfl(long dims[3], double* model, complex float* cmodel)
+void stl_d2cfl(const long dims[3], const double* model, complex float* cmodel)
 {
         long dstrs[3], cstrs[3], pos[3];
 
@@ -756,7 +757,7 @@ void stl_relative_position(struct triangle* t)
 	t->svol = copysign(vec3d_sdot(tmp, t->v2) / 6, vec3d_sdot(t->v0, t->n));
 }
 
-struct triangle_stack* stl_preprocess_model(long dims[3], double* model)
+struct triangle_stack* stl_preprocess_model(const long dims[3], const double* model)
 {
 	struct triangle_stack* ts = xmalloc(sizeof(struct triangle_stack));
 
