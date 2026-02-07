@@ -602,18 +602,11 @@ static double* stl_read_binary(long dims[3], const char* name)
         dims[1] = 4;
         dims[2] = N;
 
-        double* model = md_alloc(3, dims, DL_SIZE);
+        double* model = md_calloc(3, dims, DL_SIZE);
+
         long strs[3];
         md_calc_strides(3, strs, dims, DL_SIZE);
 
-        long pos0[3];
-        md_set_dims(3, pos0, 0);
-
-        do {
-
-                MD_ACCESS(3, strs, pos0, model) = 0;
-
-        } while (md_next(3, dims, ~0UL, pos0));
 
         const size_t bs = 12 * FL_SIZE + sizeof(uint16_t);
         const size_t L = (size_t) N * bs;
