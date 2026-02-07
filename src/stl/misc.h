@@ -37,7 +37,7 @@ struct triangle {
 struct triangle_stack {
 
 	int N;
-	void* tri;
+	struct triangle* tri;
 };
 
 extern struct triangle triangle_defaults;
