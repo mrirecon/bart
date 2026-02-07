@@ -110,7 +110,7 @@ static void stl_coordinate_limits(const long dims[3], const double* model, doubl
 }
 
 // Scales all vertex coordinates by scale vector. It doesnt scale the normal vector.
-void stl_scale_model(const long dims[3], double* model, double scale[3])
+void stl_scale_model(const long dims[3], double* model, const double scale[3])
 {
         long strs[3];
         md_calc_strides(3, strs, dims, DL_SIZE);
@@ -129,7 +129,7 @@ void stl_scale_model(const long dims[3], double* model, double scale[3])
 }
 
 // Shifts all vertex coordinates by shift vector. It doesn't shift the normal vector (shift invariant)
-void stl_shift_model(const long dims[3], double* model, double shift[3])
+void stl_shift_model(const long dims[3], double* model, const double shift[3])
 {
         long strs[3];
         md_calc_strides(3, strs, dims, DL_SIZE);
@@ -287,7 +287,7 @@ static bool stl_str_contained(const char* s0, const char* s1)
         return -1 != stl_str_cfi(s0, s1);
 }
 
-void stl_write_binary(const long dims[3], const double* model, const char* name)
+void stl_write_binary(const char* name, const long dims[3], const double* model)
 {
         const size_t hs = 80 + sizeof(int32_t);
         const size_t bs = 12 * FL_SIZE + sizeof(uint16_t);
@@ -387,7 +387,7 @@ static bool stl_read_line(char** line, FILE* s)
         return true;
 }
 
-static double* stl_read_ascii(long dims[3], const char* name)
+static double* stl_read_ascii(const char* name, long dims[3])
 {
         FILE* ptr = fopen(name, "r");
 
@@ -568,7 +568,7 @@ static double* stl_read_ascii(long dims[3], const char* name)
  * block size: 50 Byte
  **/
 // read binary encoded stl files.
-static double* stl_read_binary(long dims[3], const char* name)
+static double* stl_read_binary(const char* name, long dims[3])
 {
         int fd = open(name, O_RDONLY);
 
@@ -635,9 +635,9 @@ static double* stl_read_binary(long dims[3], const char* name)
         return model;
 }
 
-double* stl_read(long dims[3], const char* name)
+double* stl_read(const char *name, long dims[3])
 {
-        return stl_is_ascii(name) ? stl_read_ascii(dims, name) : stl_read_binary(dims, name);
+        return (stl_is_ascii(name) ? stl_read_ascii : stl_read_binary)(name, dims);
 }
 
 bool stl_fileextension(const char* name)
@@ -671,7 +671,7 @@ double* stl_cfl2d(const long dims[3], const complex float* cmodel)
 }
 
 // convert model in double md array to model in cfl md array
-void stl_d2cfl(const long dims[3], const double* model, complex float* cmodel)
+void stl_d2cfl(const long dims[3], complex float* cmodel, const double* model)
 {
         long dstrs[3], cstrs[3], pos[3];
 

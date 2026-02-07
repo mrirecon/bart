@@ -77,12 +77,12 @@ static bool test_stl_cfl_double_conversion(void)
         double* model = stl_internal_tetrahedron(dims);
 
         complex float* cmodel = md_alloc(3, dims, CFL_SIZE);
-        stl_d2cfl(dims, model, cmodel);
+        stl_d2cfl(dims, cmodel, model);
 
         double* model0 = stl_cfl2d(dims, cmodel);
 
         complex float* cmodel0 = md_alloc(3, dims, CFL_SIZE);
-	stl_d2cfl(dims, model0, cmodel0);
+	stl_d2cfl(dims, cmodel0, model0);
 
         complex float* s = md_alloc(3, dims, CFL_SIZE);
         md_zsub(3, dims, s, cmodel, cmodel0);

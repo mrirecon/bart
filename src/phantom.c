@@ -395,7 +395,7 @@ int main_phantom(int argc, char* argv[argc])
 
 		if (stl_fileextension(stl_file)) {
 
-			model = stl_read(stldims, stl_file);
+			model = stl_read(stl_file, stldims);
 
 		} else {
 

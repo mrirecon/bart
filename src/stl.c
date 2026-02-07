@@ -78,7 +78,7 @@ int main_stl(int argc, char* argv[argc])
 
                 if (stl_fileextension(in_file)) {
 
-                        model = stl_read(dims, in_file);
+                        model = stl_read(in_file, dims);
 
                 } else {
 
@@ -144,13 +144,13 @@ int main_stl(int argc, char* argv[argc])
 
 		if (stl_fileextension(out_file)) {
 
-			stl_write_binary(dims, model, out_file);
+			stl_write_binary(out_file, dims, model);
 
 		} else {
 
 			complex float* cmodel = create_cfl(out_file, 3, dims);
 
-			stl_d2cfl(dims, model, cmodel);
+			stl_d2cfl(dims, cmodel, model);
 
 			unmap_cfl(3, dims, cmodel);
 		}
