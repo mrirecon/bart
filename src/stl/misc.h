@@ -43,9 +43,6 @@ struct triangle_stack {
 extern struct triangle triangle_defaults;
 extern struct triangle_stack triangle_stack_defaults;
 
-extern void stl_unormal_vec3(double* n, const double* v0, const double* v1);
-extern void stl_sub_vec3(double* o, const double* v0, const double* v1);
-extern double stl_norm_vec(int N, const double* d);
 extern void print_vec(int N, const double* d);
 
 extern void stl_center_fov(int D, long dims[D], double* model, double fov_size);
