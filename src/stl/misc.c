@@ -49,13 +49,6 @@ struct triangle_stack triangle_stack_defaults = {
 	.tri = NULL,
 };
 
-void print_vec(int N, const double* d)
-{
-        for (int i = 0; i < N; i++)
-                debug_printf(DP_INFO, "%lf ", d[i]);
-
-        debug_printf(DP_INFO, "\n");
-}
 
 // compute minimal and maximal vertex coordinates
 static void stl_coordinate_limits(long dims[3], double* model, double* min_v, double* max_v)
@@ -221,14 +214,10 @@ void stl_print(long dims[3], double* model)
                 for (pos[0] = 0; pos[0] < dims[0]; pos[0]++)
                         n[pos[0]] = MD_ACCESS(3, strs, pos, model);
 
-                debug_printf(DP_INFO, "V0:");
-                print_vec(3, v0);
-                debug_printf(DP_INFO, "V1:");
-                print_vec(3, v1);
-                debug_printf(DP_INFO, "V2:");
-                print_vec(3, v2);
-                debug_printf(DP_INFO, "N:");
-                print_vec(3, n);
+                debug_printf(DP_INFO, "V0: %f %f %f\n", v0[0], v0[1], v0[2]);
+                debug_printf(DP_INFO, "V0: %f %f %f\n", v1[0], v1[1], v1[2]);
+                debug_printf(DP_INFO, "V0: %f %f %f\n", v1[0], v2[1], v2[2]);
+                debug_printf(DP_INFO, "N:  %f %f %f\n", n[0], n[1], n[2]);
         }
 }
 
