@@ -20,6 +20,10 @@
 
 #include "utest.h"
 
+
+#define TOL 1E-14
+
+
 static bool test_stl_normal_vector(void)
 {
         long dims[3], strs[3], pos[3];

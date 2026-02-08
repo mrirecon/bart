@@ -3,8 +3,6 @@
 
 #include "num/flpmath.h"
 
-#define TOL 1E-14
-
 enum stl_itype { STL_NONE, STL_TETRAHEDRON, STL_HEXAHEDRON };
 
 // contains triangles of stl files and rotation/ shift rel. to origin

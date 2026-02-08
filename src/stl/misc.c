@@ -113,6 +113,9 @@ void stl_shift_model(const long dims[3], double* model, const double shift[3])
         }
 }
 
+#define TOL 1E-14
+
+
 // shift and scale the model to FOV of size fov_size > 0.
 void stl_center_fov(const long dims[3], double* model, double fov_size)
 {
