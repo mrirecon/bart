@@ -751,12 +751,15 @@ bool md_overlap(int D1, const long dims1[D1], const long strs1[D1], const void* 
 void md_clear2(int D, const long dim[D], const long str[D], void* ptr, size_t size)
 {
 	struct vptr_mapped_dims_s* mdims = vptr_map_dims(D, dim, 1, &str, &size, &ptr);
+
 	if (NULL != mdims) {
 
 		while (NULL != mdims) {
 
 			const long (*mstrs)[mdims->D][mdims->N] = (void*)mdims->strs;
+
 			md_clear2(mdims->N, mdims->dims, (*mstrs)[0], mdims->ptr[0], size);
+
 			mdims = vptr_mapped_dims_free_and_next(mdims);
 		}
 
@@ -863,6 +866,7 @@ void md_copy2(int D, const long dim[D], const long ostr[D], void* optr, const lo
 	if (is_vptr(optr) || is_vptr(iptr)) {
 
 		struct vptr_mapped_dims_s* mdims = vptr_map_dims(D, dim, 2, (const long*[2]) { ostr, istr }, (const size_t[2]){ size, size }, (void*[2]){ optr, (void*)iptr });
+
 		if (NULL != mdims) {
 
 			while (NULL != mdims) {
