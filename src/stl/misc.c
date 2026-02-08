@@ -51,62 +51,31 @@ struct triangle_stack triangle_stack_defaults = {
 
 
 // compute minimal and maximal vertex coordinates
-static void stl_coordinate_limits(const long dims[3], const double* model, double* min_v, double* max_v)
+static void stl_coordinate_limits(const long dims[3], const double* model, double min_v[3], double max_v[3])
 {
-        min_v[0] = INFINITY;
-        min_v[1] = INFINITY;
-        min_v[2] = INFINITY;
-        max_v[0] = -INFINITY;
-        max_v[1] = -INFINITY;
-        max_v[2] = -INFINITY;
+	assert(3 == dims[1]);
 
-        long strs[3];
-        md_calc_strides(3, strs, dims, DL_SIZE);
-        long pos[3];
-        md_set_dims(3, pos, 0);
+	for (int i = 0; i < 3; i++) {
 
-        long pos0[3], pos1[3], pos2[3];
-        md_set_dims(3, pos0, 0);
-        md_set_dims(3, pos1, 0);
-        md_set_dims(3, pos2, 0);
-        pos1[1] = 1;
-        pos2[1] = 2;
+		min_v[i] = +INFINITY;
+		max_v[i] = -INFINITY;
+	}
 
-        for (int i = 0; i < dims[2]; i++) {
+	long strs[3];
+	md_calc_strides(3, strs, dims, DL_SIZE);
 
-                pos0[2] = i;
-                pos1[2] = i;
-                pos2[2] = i;
+	for (int j = 0; j < dims[0]; j++) {
+		for (int k = 0; k < dims[1]; j++) {
+			for (int l = 0; l < dims[2]; l++) {
 
-                for (int j = 0; j < dims[0]; j++) {
+				long pos[3] = { j, k, l };
+				double val = MD_ACCESS(3, strs, pos, model);
 
-                        pos0[0] = j;
-                        pos1[0] = j;
-                        pos2[0] = j;
-
-                        double v0 = MD_ACCESS(3, strs, pos0, model);
-                        double v1 = MD_ACCESS(3, strs, pos1, model);
-                        double v2 = MD_ACCESS(3, strs, pos2, model);
-
-                        if (min_v[j] > v0)
-                                min_v[j] = v0;
-
-                        if (min_v[j] > v1)
-                                min_v[j] = v1;
-
-                        if (min_v[j] > v2)
-                                min_v[j] = v2;
-
-                        if (max_v[j] < v0)
-                                max_v[j] = v0;
-
-                        if (max_v[j] < v1)
-                                max_v[j] = v1;
-
-                        if (max_v[j] < v2)
-                                max_v[j] = v2;
-                }
-        }
+				min_v[j] = MIN(min_v[j], val);
+				max_v[j] = MAX(max_v[j], val);
+			}
+		}
+	}
 }
 
 // Scales all vertex coordinates by scale vector. It doesnt scale the normal vector.
@@ -118,9 +87,7 @@ void stl_scale_model(const long dims[3], double* model, const double scale[3])
 #pragma omp parallel for
         for (int i = 0; i < dims[2]; i++) {
 
-                long pos[3];
-                md_set_dims(3, pos, 0);
-                pos[2] = i;
+                long pos[3] = { [2] = i };
 
                 for (pos[0] = 0; pos[0] < dims[0]; pos[0]++)
                         for (pos[1] = 0; pos[1] < dims[1] - 1; pos[1]++)
@@ -137,9 +104,7 @@ void stl_shift_model(const long dims[3], double* model, const double shift[3])
 #pragma omp parallel for
         for (int i = 0; i < dims[2]; i++) {
 
-                long pos[3];
-                md_set_dims(3, pos, 0);
-                pos[2] = i;
+                long pos[3] = { [2] = i };
 
                 for (pos[0] = 0; pos[0] < dims[0]; pos[0]++)
                         for (pos[1] = 0; pos[1] < dims[1] - 1; pos[1]++)
@@ -150,7 +115,7 @@ void stl_shift_model(const long dims[3], double* model, const double shift[3])
 // shift and scale the model to FOV of size fov_size > 0.
 void stl_center_fov(const long dims[3], double* model, double fov_size)
 {
-        if (0 >= fov_size)
+        if (0. >= fov_size)
                 error("fov_size should be positive.");
 
         double min_v[3];
@@ -174,8 +139,12 @@ void stl_center_fov(const long dims[3], double* model, double fov_size)
 void stl_stats(const long dims[3], const double* model)
 {
         debug_printf(DP_INFO, "Number of triangles: %ld\n", dims[2]);
-        double min_v[3], max_v[3];
+
+        double min_v[3];
+	double max_v[3];
+
         stl_coordinate_limits(dims, model, min_v, max_v);
+
         debug_printf(DP_INFO, "Vertex coordinate ranges:\n");
         debug_printf(DP_INFO, "1: (%lf,%lf)\n", min_v[0], max_v[0]);
         debug_printf(DP_INFO, "2: (%lf,%lf)\n", min_v[1], max_v[1]);
@@ -184,40 +153,30 @@ void stl_stats(const long dims[3], const double* model)
 
 void stl_print(const long dims[3], const double* model)
 {
+	assert(3 == dims[0]);
+	assert(4 == dims[1]);
+
         debug_printf(DP_INFO, "Number of triangles: %ld\n", dims[2]);
-        long strs[3], pos[3];
+
+        long strs[3];
         md_calc_strides(3, strs, dims, DL_SIZE);
-        md_set_dims(3, pos, 0);
+
+	long pos[3] = { };
 
         for (pos[2] = 0; pos[2] < dims[2]; pos[2]++) {
 
                 debug_printf(DP_INFO, "Triangle: %ld\n", pos[2]);
 
-                double v0[3], v1[3], v2[3], n[3];
-                pos[1] = 0;
+		const char* str[] = { "v0", "v1", "v2", "n" };
 
-                for (pos[0] = 0; pos[0] < dims[0]; pos[0]++)
-                        v0[pos[0]] = MD_ACCESS(3, strs, pos, model);
+		for (pos[1] = 0; pos[1] < 4; pos[1]++) {
 
-                pos[1] = 1;
+			double v[3];
+			for (pos[0] = 0; pos[0] < 3; pos[0]++)
+				v[pos[0]] = MD_ACCESS(3, strs, pos, model);
 
-                for (pos[0] = 0; pos[0] < dims[0]; pos[0]++)
-                        v1[pos[0]] = MD_ACCESS(3, strs, pos, model);
-
-                pos[1] = 2;
-
-                for (pos[0] = 0; pos[0] < dims[0]; pos[0]++)
-                        v2[pos[0]] = MD_ACCESS(3, strs, pos, model);
-
-                pos[1] = 3;
-
-                for (pos[0] = 0; pos[0] < dims[0]; pos[0]++)
-                        n[pos[0]] = MD_ACCESS(3, strs, pos, model);
-
-                debug_printf(DP_INFO, "V0: %f %f %f\n", v0[0], v0[1], v0[2]);
-                debug_printf(DP_INFO, "V0: %f %f %f\n", v1[0], v1[1], v1[2]);
-                debug_printf(DP_INFO, "V0: %f %f %f\n", v1[0], v2[1], v2[2]);
-                debug_printf(DP_INFO, "N:  %f %f %f\n", n[0], n[1], n[2]);
+			debug_printf(DP_INFO, "%s: %f %f %f\n", str[pos[1]], v[0], v[1], v[2]);
+		}
         }
 }
 
@@ -229,27 +188,20 @@ void stl_compute_normals(const long dims[3], double* model)
 #pragma omp parallel for
         for (int i = 0; i < dims[2]; i++) {
 
-                long pos0[3] = { };
-		long pos1[3] = { };
-		long pos2[3] = { };
-		long posn[3] = { };
+                long pos0[3] = { [1] = 0, [2] = i };
+		long pos1[3] = { [1] = 1, [2] = i };
+		long pos2[3] = { [1] = 2, [2] = i };
+		long posn[3] = { [1] = 3, [2] = i };
 
-                pos0[2] = i;
-                pos1[2] = i;
-                pos2[2] = i;
-                posn[2] = i;
-                pos1[1] = 1;
-                pos2[1] = 2;
-                posn[1] = 3;
+                double d1[3];
+		double d2[3];
 
-                double d1[3], d2[3];
-
-                vec3d_saxpy(d1, &MD_ACCESS(3, strs, pos0, model), -1, &MD_ACCESS(3, strs, pos1, model));
-                vec3d_saxpy(d2, &MD_ACCESS(3, strs, pos0, model), -1, &MD_ACCESS(3, strs, pos2, model));
+                vec3d_saxpy(d1, &MD_ACCESS(3, strs, pos0, model), -1., &MD_ACCESS(3, strs, pos1, model));
+                vec3d_saxpy(d2, &MD_ACCESS(3, strs, pos0, model), -1., &MD_ACCESS(3, strs, pos2, model));
 
 		double nt[3];
 		vec3d_cp(nt, d1, d2);
-		vec3d_saxpy(&MD_ACCESS(3, strs, posn, model), nt, 1 / vec3d_norm(nt), NULL);
+		vec3d_saxpy(&MD_ACCESS(3, strs, posn, model), nt, 1. / vec3d_norm(nt), NULL);
         }
 }
 
@@ -612,7 +564,6 @@ static double* stl_read_binary(const char* name, long dims[3])
                 }
 
                 for (pos[1] = 0; pos[1] < 3; pos[1]++) {
-
                         for (pos[0] = 0; pos[0] < 3; pos[0]++) {
 
                                 float f;
@@ -621,6 +572,7 @@ static double* stl_read_binary(const char* name, long dims[3])
                         }
                 }
         }
+
         xfree(buf);
         return model;
 }
@@ -695,13 +647,13 @@ void stl_relative_position(struct triangle* t)
 
 	// compute b0, b1 as orthogonal basis vectors of the plane which contains the triangle
 	double b0[3], tmp[3], b1[3];
-	vec3d_saxpy(b0, t->e0, 1 / vec3d_norm(t->e0), NULL);
-	vec3d_saxpy(tmp, t->e1, 1 / vec3d_norm(t->e1), NULL);
+	vec3d_saxpy(b0, t->e0, 1. / vec3d_norm(t->e0), NULL);
+	vec3d_saxpy(tmp, t->e1, 1. / vec3d_norm(t->e1), NULL);
 
 	// b1 is orthogonal component of tmp wrt b0
-	double f = -1 * vec3d_sdot(b0, tmp) / vec3d_norm(b0);
+	double f = -1. * vec3d_sdot(b0, tmp) / vec3d_norm(b0);
 	vec3d_saxpy(b1, b0, f, tmp);
-	vec3d_saxpy(b1, b1, 1 / vec3d_norm(b1), NULL);
+	vec3d_saxpy(b1, b1, 1. / vec3d_norm(b1), NULL);
 
 	// compute angle between normal vector and z axis
 	double ez[3] = { 0., 0., 1. };
@@ -729,9 +681,9 @@ void stl_relative_position(struct triangle* t)
 
 	// compute centered triangle
 	double v0c[3], v1c[3], v2c[3];
-	vec3d_saxpy(v0c, t->ctr, -1, t->v0);
-	vec3d_saxpy(v1c, t->ctr, -1, t->v1);
-	vec3d_saxpy(v2c, t->ctr, -1, t->v2);
+	vec3d_saxpy(v0c, t->ctr, -1., t->v0);
+	vec3d_saxpy(v1c, t->ctr, -1., t->v1);
+	vec3d_saxpy(v2c, t->ctr, -1., t->v2);
 
 	// compute centered rotated triangle
 	double v0cr[3], v1cr[3], v2cr[3];
@@ -748,7 +700,7 @@ void stl_relative_position(struct triangle* t)
 
 	// signed volume of tetrahedron triangle + origin
 	vec3d_cp(tmp, t->v0, t->v1);
-	t->svol = copysign(vec3d_sdot(tmp, t->v2) / 6, vec3d_sdot(t->v0, t->n));
+	t->svol = copysign(vec3d_sdot(tmp, t->v2) / 6., vec3d_sdot(t->v0, t->n));
 }
 
 struct triangle_stack* stl_preprocess_model(const long dims[3], const double* model)
@@ -773,5 +725,6 @@ struct triangle_stack* stl_preprocess_model(const long dims[3], const double* mo
 
 		stl_relative_position(&ts->tri[i]);
 	}
+
 	return ts;
 }
