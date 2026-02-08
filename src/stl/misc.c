@@ -372,50 +372,32 @@ static bool stl_is_ascii(const char* name)
         return stl_str_contained("solid", tmp);
 }
 
-static bool stl_read_line(char** line, FILE* s)
-{
-	const int max_line_length = 128;
-	*line = xmalloc(max_line_length);
 
-	if (!fgets(*line, max_line_length, s)) {
-
-		xfree(*line);
-		*line = NULL;
-                return false;
-	}
-
-        return true;
-}
+#define MAX_LINE_LENGTH 128
 
 static double* stl_read_ascii(const char* name, long dims[3])
 {
-        FILE* ptr = fopen(name, "r");
+        FILE* fp = fopen(name, "r");
 
-        if (NULL == ptr)
+        if (NULL == fp)
                 error("read stl error %s\n", name);
 
         const char fn[] = "facet normal";
         const char ve[] = "vertex";
 
-        char* line = NULL;
+        char line[MAX_LINE_LENGTH];
         int N = 0;
 
-        while (stl_read_line(&line, ptr)) {
-
+        while (NULL != fgets(line, sizeof line, fp))
                 if (stl_str_contained(fn, line))
                         N++;
 
-                xfree(line);
-                line = NULL;
-        }
+        fclose(fp);
 
-        xfree(line);
-        fclose(ptr);
-
-        md_set_dims(3, dims, 1);
         dims[0] = 3;
         dims[1] = 4;
         dims[2] = N;
+
         double* model = md_alloc(3, dims, DL_SIZE);
 
         char* l0 = NULL;
@@ -429,19 +411,19 @@ static double* stl_read_ascii(const char* name, long dims[3])
         int r;
 
         // start again with the beginning of file
-        ptr = fopen(name, "r");
+        fp = fopen(name, "r");
 
-        if (NULL == ptr)
+        if (NULL == fp)
                 error("read stl error %s\n", name);
 
         // skip the first line
-        stl_read_line(&l0, ptr);
-        xfree(l0);
-        l0 = NULL;
+	if (NULL == fgets(line, sizeof line, fp))
+		error("error reading stl file\n");
 
-        long strs[3], pos[3];
+        long strs[3];
         md_calc_strides(3, strs, dims, DL_SIZE);
-        md_set_dims(3, pos, 0);
+
+	long pos[3] = { };
 
         // ASCII encoded stl files have the following repeating pattern:
         // facet normal FLOAT FLOAT FLOAT
@@ -460,7 +442,9 @@ static double* stl_read_ascii(const char* name, long dims[3])
 
                 pos[2] = n;
                 // facet normal
-                stl_read_line(&l0, ptr);
+		if (NULL == (l0 = fgets(line, sizeof line, fp)))
+			error("error reading stl file\n");
+
                 // index at which string starts
                 p = stl_str_cfie(fn, l0);
 
@@ -475,15 +459,17 @@ static double* stl_read_ascii(const char* name, long dims[3])
                         MD_ACCESS(3, strs, pos, model) = (double) f[i];
                 }
 
-                xfree(l0);
                 l0 = NULL;
 
-                stl_read_line(&l1, ptr);
+		if (NULL == (l1 = fgets(line, sizeof line, fp)))
+			error("error reading stl file\n");
+
                 stl_str_cfie("outer loop", l1);
-                xfree(l1);
                 l1 = NULL;
 
-                stl_read_line(&l2, ptr);
+		if (NULL == (l2 = fgets(line, sizeof line, fp)))
+			error("error reading stl file\n");
+
                 p = stl_str_cfie(ve, l2);
 
                 if (3 != (r = sscanf(&l2[p + (int)strlen(ve)], "%f %f %f", &f[0], &f[1], &f[2])))
@@ -497,10 +483,11 @@ static double* stl_read_ascii(const char* name, long dims[3])
                         MD_ACCESS(3, strs, pos, model) = (double) f[i];
                 }
 
-                xfree(l2);
                 l2 = NULL;
 
-                stl_read_line(&l3, ptr);
+		if (NULL == (l3 = fgets(line, sizeof line, fp)))
+			error("error reading stl file\n");
+
                 p = stl_str_cfie(ve, l3);
 
                 if (3 != (r = sscanf(&l3[p + (int)strlen(ve)], "%f %f %f", &f[0], &f[1], &f[2])))
@@ -511,10 +498,11 @@ static double* stl_read_ascii(const char* name, long dims[3])
                 for (pos[0]= 0; pos[0] < 3; pos[0]++)
                         MD_ACCESS(3, strs, pos, model) = (double) f[pos[0]];
 
-                xfree(l3);
                 l3 = NULL;
 
-                stl_read_line(&l4, ptr);
+		if (NULL == (l4 = fgets(line, sizeof line, fp)))
+			error("error reading stl file\n");
+
                 p = stl_str_cfie(ve, l4);
 
                 if (3 != (r = sscanf(&l4[p + (int)strlen(ve)], "%f %f %f", &f[0], &f[1], &f[2])))
@@ -525,25 +513,27 @@ static double* stl_read_ascii(const char* name, long dims[3])
                 for (pos[0] = 0; pos[0] < 3; pos[0]++)
                         MD_ACCESS(3, strs, pos, model) = (double) f[pos[0]];
 
-                xfree(l4);
                 l4 = NULL;
 
-                stl_read_line(&l5, ptr);
+		if (NULL == (l5 = fgets(line, sizeof line, fp)))
+			error("error reading stl file\n");
+
                 stl_str_cfie("endloop", l5);
-                xfree(l5);
                 l5 = NULL;
 
-                stl_read_line(&l6, ptr);
+		if (NULL == (l6 = fgets(line, sizeof line, fp)))
+			error("error reading stl file\n");
+
                 stl_str_cfie("endfacet", l6);
-                xfree(l6);
                 l6 = NULL;
-
         }
-        stl_read_line(&l0, ptr);
-        stl_str_cfie("endsolid", l0);
-        xfree(l0);
 
-        fclose(ptr);
+	if (NULL == (l0 = fgets(line, sizeof line, fp)))
+		error("error reading stl file\n");
+
+        stl_str_cfie("endsolid", l0);
+
+        fclose(fp);
 
         return model;
 }
@@ -656,10 +646,12 @@ double* stl_cfl2d(const long dims[3], const complex float* cmodel)
 {
         double* model = md_alloc(3, dims, DL_SIZE);
 
-        long pos[3], dstrs[3], cstrs[3];
+        long pos[3] = { };
 
-        md_set_dims(3, pos, 0);
+	long dstrs[3];
         md_calc_strides(3, dstrs, dims, DL_SIZE);
+
+	long cstrs[3];
         md_calc_strides(3, cstrs, dims, CFL_SIZE);
 
         do {
@@ -673,10 +665,12 @@ double* stl_cfl2d(const long dims[3], const complex float* cmodel)
 // convert model in double md array to model in cfl md array
 void stl_d2cfl(const long dims[3], complex float* cmodel, const double* model)
 {
-        long dstrs[3], cstrs[3], pos[3];
+	long pos[3] = { };
 
-        md_set_dims(3, pos, 0);
+        long dstrs[3];
         md_calc_strides(3, dstrs, dims, DL_SIZE);
+
+        long cstrs[3];
         md_calc_strides(3, cstrs, dims, CFL_SIZE);
 
         do {
@@ -689,11 +683,11 @@ void stl_d2cfl(const long dims[3], complex float* cmodel, const double* model)
 // compute relative position (shift, rotation, ...) of the triangle wrt to the origin and z-axis
 void stl_relative_position(struct triangle* t)
 {
-	vec3d_saxpy(t->e0, t->v0, -1, t->v1);
-	vec3d_saxpy(t->e1, t->v0, -1, t->v2);
+	vec3d_saxpy(t->e0, t->v0, -1., t->v1);
+	vec3d_saxpy(t->e1, t->v0, -1., t->v2);
 
-	assert(0 < vec3d_norm(t->e0));
-	assert(0 < vec3d_norm(t->e1));
+	assert(0. < vec3d_norm(t->e0));
+	assert(0. < vec3d_norm(t->e1));
 
 	double sn[3];
 	vec3d_cp(sn, t->e0, t->e1);
@@ -710,28 +704,28 @@ void stl_relative_position(struct triangle* t)
 	vec3d_saxpy(b1, b1, 1 / vec3d_norm(b1), NULL);
 
 	// compute angle between normal vector and z axis
-	double ez[3] = {0, 0, 1};
+	double ez[3] = { 0., 0., 1. };
 	t->angle = vec3d_angle(ez, t->n);
 
 	// if normal vector is -ez
 	if (1E-10 > fabs(M_PI - t->angle) || 1E-10 > fabs(t->angle)) {
 
-		t->rot[0] = 1;
-		t->rot[1] = 0;
-		t->rot[2] = 0;
+		t->rot[0] = 1.;
+		t->rot[1] = 0.;
+		t->rot[2] = 0.;
 
 	} else {
 
 		vec3d_cp(t->rot, t->n, ez);
 	}
 
-	vec3d_saxpy(t->rot, t->rot, 1 / vec3d_norm(t->rot), NULL);
+	vec3d_saxpy(t->rot, t->rot, 1. / vec3d_norm(t->rot), NULL);
 
 	// compute center of triangle
 	vec3d_set(t->ctr, 0);
-	vec3d_saxpy(t->ctr, t->v0, (double) 1/3, t->ctr);
-	vec3d_saxpy(t->ctr, t->v1, (double) 1/3, t->ctr);
-	vec3d_saxpy(t->ctr, t->v2, (double) 1/3, t->ctr);
+	vec3d_saxpy(t->ctr, t->v0, 1. / 3., t->ctr);
+	vec3d_saxpy(t->ctr, t->v1, 1. / 3., t->ctr);
+	vec3d_saxpy(t->ctr, t->v2, 1. / 3., t->ctr);
 
 	// compute centered triangle
 	double v0c[3], v1c[3], v2c[3];
@@ -764,20 +758,20 @@ struct triangle_stack* stl_preprocess_model(const long dims[3], const double* mo
 	ts->N = dims[2];
 	ts->tri = xmalloc((size_t) ts->N * sizeof(struct triangle));
 
-	struct triangle* t = ts->tri;
-
-	long tstrs[3], tdims[3];
+	long tdims[3];
 	md_copy_dims(3, tdims, dims);
+
+	long tstrs[3];
 	md_calc_strides(3, tstrs, tdims, DL_SIZE);
 
 #pragma omp parallel for
 	for (int i = 0; i < ts->N; i++) {
 
-		long pos[3];
-		md_set_dims(3, pos, 0);
-		pos[2] = i;
-		memcpy(&t[i], &MD_ACCESS(3, tstrs, pos, model), 12 * DL_SIZE);
-		stl_relative_position(&t[i]);
+		long pos[3] = { [2] = i };
+
+		memcpy(&ts->tri[i], &MD_ACCESS(3, tstrs, pos, model), 12 * DL_SIZE);
+
+		stl_relative_position(&ts->tri[i]);
 	}
 	return ts;
 }
