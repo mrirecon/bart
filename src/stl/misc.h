@@ -43,14 +43,13 @@ extern struct triangle_stack triangle_stack_defaults;
 
 extern void stl_center_fov(const long dims[3], double* model, double fov_size);
 extern void stl_stats(const long dims[3], const double* model);
-extern void stl_print(const long dims[3], const double* model);
 extern void stl_compute_normals(const long dims[3], double* model);
 extern void stl_shift_model(const long dims[3], double* model, const double shift[3]);
 extern void stl_scale_model(const long dims[3], double* model, const double scale[3]);
 
 extern _Bool stl_fileextension(const char* name);
 extern double* stl_read(FILE* name, long dims[3]);
-extern void stl_write_binary(FILE* name, const long dims[3], const double* model);
+extern void stl_write(FILE* name, const long dims[3], const double* model, bool ascii);
 extern double* stl_cfl2d(const long dims[3], const _Complex float* cmodel);
 extern void stl_d2cfl(const long dims[3], _Complex float* cmodel, const double* model);
 extern void stl_relative_position(struct triangle* t);

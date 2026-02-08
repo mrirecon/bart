@@ -31,7 +31,7 @@ int main_stl(int argc, char* argv[argc])
 	const char* in_file = NULL;
 
         bool stat = false;
-        bool print = false;
+        bool ascii = true;
         bool no_nc = false;
 	bool vm = false; // volume measure
 	bool sm = false; // surface measure
@@ -57,7 +57,7 @@ int main_stl(int argc, char* argv[argc])
 		OPT_FLOAT('s', &scale, "scale", "Multiplicate all coordinates of model with factor."),
                 OPT_FLVEC3('S', &shift, "shift", "Shift all coordinates of model by vector.\n"),
 		OPTL_SET(0, "stat", &stat, "Show statistics of model."),
-		OPTL_SET(0, "print", &print, "Print out model."),
+		OPTL_CLEAR(0, "binary", &ascii, "Output STL files in binary format."),
 		OPTL_SET(0, "vm", &vm, "Print out volume measure of model."),
 		OPTL_SET(0, "sm", &sm, "Print out surface measure of model."),
 		OPTL_SET(0, "no-nc", &no_nc, "(Don't recompute normal vectors with double precision.)"),
@@ -122,9 +122,6 @@ int main_stl(int argc, char* argv[argc])
         if (stat)
                 stl_stats(dims, model);
 
-        if (print)
-                stl_print(dims, model);
-
 	if (sm || vm) {
 
 		struct triangle_stack* ts = stl_preprocess_model(dims, model);
@@ -157,7 +154,7 @@ int main_stl(int argc, char* argv[argc])
 			if (!fp)
 				error("opening file %s\n", out_file);
 
-			stl_write_binary(fp, dims, model);
+			stl_write(fp, dims, model, ascii);
 
 			fclose(fp);
 

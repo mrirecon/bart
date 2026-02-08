@@ -155,7 +155,8 @@ void stl_stats(const long dims[3], const double* model)
         debug_printf(DP_INFO, "3: (%lf,%lf)\n", min_v[2], max_v[2]);
 }
 
-void stl_print(const long dims[3], const double* model)
+
+static void stl_write_ascii(FILE *fp, const long dims[3], const double* model)
 {
 	assert(3 == dims[0]);
 	assert(4 == dims[1]);
@@ -167,22 +168,34 @@ void stl_print(const long dims[3], const double* model)
 
 	long pos[3] = { };
 
+	fprintf(fp, "solid\n");
+
         for (pos[2] = 0; pos[2] < dims[2]; pos[2]++) {
 
-                debug_printf(DP_INFO, "Triangle: %ld\n", pos[2]);
-
-		const char* str[] = { "v0", "v1", "v2", "n" };
-
-		for (pos[1] = 0; pos[1] < 4; pos[1]++) {
+		NESTED(void, vecprint, (const char* str)) {
 
 			double v[3];
-			for (pos[0] = 0; pos[0] < 3; pos[0]++)
-				v[pos[0]] = MD_ACCESS(3, strs, pos, model);
+			for (int i = 0; i < 3; i++)
+				v[pos[0]] = MD_ACCESS(3, strs, (pos[0] = i, pos), model);
 
-			debug_printf(DP_INFO, "%s: %f %f %f\n", str[pos[1]], v[0], v[1], v[2]);
-		}
+			fprintf(fp, "%s %f %f %f\n", str, v[0], v[1], v[2]);
+		};
+
+		pos[1] = 3;
+		vecprint(" facet normal");
+
+		fprintf(fp, "  outer loop\n");
+
+		for (pos[1] = 0; pos[1] < 3; pos[1]++)
+			vecprint("   vertex");
+
+		fprintf(fp, "  endloop\n");
+		fprintf(fp, " endfacet\n");
         }
+
+	fprintf(fp, "endsolid\n");
 }
+
 
 void stl_compute_normals(const long dims[3], double* model)
 {
@@ -220,7 +233,7 @@ struct stl_triangle {
 	uint16_t abc;	// attribute byte count
 };
 
-void stl_write_binary(FILE* fp, const long dims[3], const double* model)
+static void stl_write_binary(FILE* fp, const long dims[3], const double* model)
 {
 	int fd = fileno(fp);
 
@@ -261,7 +274,10 @@ void stl_write_binary(FILE* fp, const long dims[3], const double* model)
         }
 }
 
-
+void stl_write(FILE* fp, const long dims[3], const double* model, bool ascii)
+{
+	return (ascii ? stl_write_ascii : stl_write_binary)(fp, dims, model);
+}
 
 #define MAX_LINE_LENGTH 128
 
@@ -324,7 +340,7 @@ static void stl_read_ascii(FILE *fp, long dims[3], double* model)
 		if (NULL != model && dims[2] == pos[2])
 			break;
 
-                pos[2] = n++;
+		pos[2] = n++;
 
 		if (NULL == fgets(line, sizeof line, fp))
 			error("error reading stl file\n");
