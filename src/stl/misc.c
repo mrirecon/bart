@@ -241,56 +241,58 @@ static bool stl_str_contained(const char* s0, const char* s1)
 
 void stl_write_binary(const char* name, const long dims[3], const double* model)
 {
-        // write header
+	int fd = open(name, O_WRONLY | O_CREAT, 0666);
+
+        if (-1 == fd)
+                error("opening stl file for writing\n", name);
+
+
+	// FIXME: little endian
         char header[80 + (int)sizeof(int32_t)];
 	memset(header, 0, sizeof(header));
         snprintf(header, 80, "Created by BART %s.\n", bart_version);
 	memcpy(&header[80], &(uint32_t){ (uint32_t)dims[2] }, sizeof(uint32_t));
 
-        long strs[3];
-        md_calc_strides(3, strs, dims, DL_SIZE);
-
-        const size_t bs = 12 * FL_SIZE + (int)sizeof(uint16_t);
-        const size_t s = (size_t)dims[2] * bs;
-
-        char* buf = xmalloc(s);
-
-#pragma omp parallel for
-        for (int i = 0; i < dims[2]; i++) {
-
-                long pos[3] = { };
-                pos[2] = i;
-                pos[1] = 3;
-
-                for (pos[0] = 0; pos[0] < 3; pos[0]++) {
-
-                        float f = MD_ACCESS(3, strs, pos, model);
-                        memcpy(&buf[(size_t) i * bs + (size_t) pos[0] * FL_SIZE], &f, FL_SIZE);
-                }
-
-                for (pos[1] = 0; pos[1] < 3; pos[1]++) {
-
-                        for (pos[0] = 0; pos[0] < 3; pos[0]++) {
-
-                                float f = MD_ACCESS(3, strs, pos, model);
-                                memcpy(&buf[(size_t) i * bs + (size_t) (3 + pos[0] + 3 * pos[1]) * FL_SIZE], &f, FL_SIZE);
-                        }
-                }
-        }
-
-        int fd = open(name, O_WRONLY | O_CREAT, 0666);
-
-        if (-1 == fd)
-                error("opening stl file for writing\n", name);
-
 	if (sizeof(header) != xwrite(fd, sizeof(header), header))
                 error("write stl error %s\n", name);
 
-        if (s != xwrite(fd, s, buf))
-                error("write stl error %s\n", name);
+	// write triangles
+
+        long strs[3];
+        md_calc_strides(3, strs, dims, DL_SIZE);
+
+        const int tri_size = 12 * FL_SIZE + (int)sizeof(uint16_t);
+
+	struct stl_triangle {
+
+		_Float32 nv[3];
+		_Float32 v[3][3];
+		uint16_t abc;	// attribute byte count
+	};
+
+        for (int i = 0; i < dims[2]; i++) {
+
+		struct stl_triangle tri = { };
+		static_assert(tri_size <= sizeof(tri));
+
+                long pos[3] = { [1] = 3, [2] = i };
+
+                for (int k = 0; k < 3; k++)
+                        tri.nv[k] = MD_ACCESS(3, strs, (pos[0] = k, pos), model);
+
+                for (int j = 0; j < 3; j++) {
+
+			pos[1] = j;
+
+			for (int k = 0; k < 3; k++)
+                                tri.v[j][k] = MD_ACCESS(3, strs, (pos[0] = k, pos), model);
+		}
+
+		if (tri_size != xwrite(fd, tri_size, (void*)&tri))
+			error("write stl error %s\n", name);
+        }
 
         close(fd);
-        xfree(buf);
 }
 
 // check encoding of file
