@@ -206,39 +206,7 @@ void stl_compute_normals(const long dims[3], double* model)
         }
 }
 
-// stl_str_ {C}ontained {F}irst {I}ndex
-// returns the first index at which s0 is contained in s1
-static int stl_str_cfi(const char* s0, const char* s1)
-{
-        int l0 = strlen(s0);
-        int l1 = strlen(s1);
 
-        if (l0 > l1)
-                return -1;
-
-        for (int i = 0; i < l1 - l0; i++)
-                if (0 == strncmp(s0, &s1[i], (size_t) l0))
-                        return i;
-
-        return -1;
-}
-
-// call stl_str_cfi but with error instead of -1 return
-static int stl_str_cfie(const char* s0, const char* s1)
-{
-        int r = stl_str_cfi(s0, s1);
-
-        if (-1 == r)
-                error("String '%s' not contained in %s\n", s0, s1);
-
-        return r;
-}
-
-// check if s0 is contained anywhere in s1
-static bool stl_str_contained(const char* s0, const char* s1)
-{
-        return -1 != stl_str_cfi(s0, s1);
-}
 
 enum { TRI_SIZE = 12 * FL_SIZE + (int)sizeof(uint16_t) };
 
@@ -296,88 +264,48 @@ void stl_write_binary(const char* name, const long dims[3], const double* model)
         close(fd);
 }
 
-// check encoding of file
-static bool stl_is_ascii(const char* name)
-{
-        int fd = open(name, O_RDONLY);
-
-        if (-1 == fd)
-                error("is ascii read stl error %s\n", name);
-
-        char tmp[80];
-
-        if (80 != xread(fd, 80, tmp))
-                error("stl file could not be read\n");
-
-        close(fd);
-
-        int c = 0;
-
-        for (int i = 0; i < 80; i++) {
-                if ('\n' == tmp[i]) {
-
-                        c = i;
-                        break;
-                }
-	}
-
-        tmp[c] = '\0';
-
-        return stl_str_contained("solid", tmp);
-}
 
 
 #define MAX_LINE_LENGTH 128
 
-static double* stl_read_ascii(const char* name, long dims[3])
+
+static void stl_read_ascii(const char* name, long dims[3], double* model)
 {
         FILE* fp = fopen(name, "r");
 
         if (NULL == fp)
                 error("read stl error %s\n", name);
 
-        const char fn[] = "facet normal";
-        const char ve[] = "vertex";
-
-        char line[MAX_LINE_LENGTH];
-        int N = 0;
-
-        while (NULL != fgets(line, sizeof line, fp))
-                if (stl_str_contained(fn, line))
-                        N++;
-
-        fclose(fp);
-
-        dims[0] = 3;
-        dims[1] = 4;
-        dims[2] = N;
-
-        double* model = md_alloc(3, dims, DL_SIZE);
-
-        char* l0 = NULL;
-        char* l1 = NULL;
-        char* l2 = NULL;
-        char* l3 = NULL;
-        char* l4 = NULL;
-        char* l5 = NULL;
-        char* l6 = NULL;
-        int p;
-        int r;
-
-        // start again with the beginning of file
-        fp = fopen(name, "r");
-
-        if (NULL == fp)
-                error("read stl error %s\n", name);
-
-        // skip the first line
-	if (NULL == fgets(line, sizeof line, fp))
-		error("error reading stl file\n");
-
         long strs[3];
-        md_calc_strides(3, strs, dims, DL_SIZE);
+
+	if (NULL != model)
+		md_calc_strides(3, strs, dims, DL_SIZE);
 
 	long pos[3] = { };
+        char line[MAX_LINE_LENGTH];
+
+	NESTED(bool, keyword, (const char* kw))
+	{
+		int end = 0;
+		return 0 == sscanf(line, kw, &end) && '\0' == line[end];
+	}
+
+	NESTED(bool, keyword_args, (const char* kw))
+	{
+		int end = 0;
+		float f[3];
+
+		if (3 != sscanf(line, kw, &f[0], &f[1], &f[2], &end) || '\0' != line[end])
+			return false;
+
+		if (NULL == model)
+			return true;
+
+		for (int k = 0; k < 3; k++)
+			MD_ACCESS(3, strs, (pos[0] = k, pos), model) = f[k];
+
+		return true;
+	};
 
         // ASCII encoded stl files have the following repeating pattern:
         // facet normal FLOAT FLOAT FLOAT
@@ -390,106 +318,73 @@ static double* stl_read_ascii(const char* name, long dims[3])
         //
         // the last line of the file will contain:
         // endsolid
-        float f[3];
 
-        for (int n = 0; n < N; n++) {
-
-                pos[2] = n;
-                // facet normal
-		if (NULL == (l0 = fgets(line, sizeof line, fp)))
-			error("error reading stl file\n");
-
-                // index at which string starts
-                p = stl_str_cfie(fn, l0);
-
-                if (3 != (r = sscanf(&l0[p + (int)strlen(fn)], "%f %f %f", &f[0], &f[1], &f[2])))
-                        error("reading %s values failed in %dth block.\n", fn, n);
-
-                pos[1] = 3;
-
-                for (int i = 0; i < 3; i++) {
-
-                        pos[0] = i;
-                        MD_ACCESS(3, strs, pos, model) = (double) f[i];
-                }
-
-                l0 = NULL;
-
-		if (NULL == (l1 = fgets(line, sizeof line, fp)))
-			error("error reading stl file\n");
-
-                stl_str_cfie("outer loop", l1);
-                l1 = NULL;
-
-		if (NULL == (l2 = fgets(line, sizeof line, fp)))
-			error("error reading stl file\n");
-
-                p = stl_str_cfie(ve, l2);
-
-                if (3 != (r = sscanf(&l2[p + (int)strlen(ve)], "%f %f %f", &f[0], &f[1], &f[2])))
-                        error("reading %s values failed in %dth block.\n", ve, n);
-
-                pos[1] = 0;
-
-                for (int i = 0; i < 3; i++) {
-
-                        pos[0] = i;
-                        MD_ACCESS(3, strs, pos, model) = (double) f[i];
-                }
-
-                l2 = NULL;
-
-		if (NULL == (l3 = fgets(line, sizeof line, fp)))
-			error("error reading stl file\n");
-
-                p = stl_str_cfie(ve, l3);
-
-                if (3 != (r = sscanf(&l3[p + (int)strlen(ve)], "%f %f %f", &f[0], &f[1], &f[2])))
-                        error("reading %s values failed in %dth block.\n", ve, n);
-
-                pos[1] = 1;
-
-                for (pos[0]= 0; pos[0] < 3; pos[0]++)
-                        MD_ACCESS(3, strs, pos, model) = (double) f[pos[0]];
-
-                l3 = NULL;
-
-		if (NULL == (l4 = fgets(line, sizeof line, fp)))
-			error("error reading stl file\n");
-
-                p = stl_str_cfie(ve, l4);
-
-                if (3 != (r = sscanf(&l4[p + (int)strlen(ve)], "%f %f %f", &f[0], &f[1], &f[2])))
-                        error("reading %s values failed in %dth block.\n", ve, n);
-
-                pos[1] = 2;
-
-                for (pos[0] = 0; pos[0] < 3; pos[0]++)
-                        MD_ACCESS(3, strs, pos, model) = (double) f[pos[0]];
-
-                l4 = NULL;
-
-		if (NULL == (l5 = fgets(line, sizeof line, fp)))
-			error("error reading stl file\n");
-
-                stl_str_cfie("endloop", l5);
-                l5 = NULL;
-
-		if (NULL == (l6 = fgets(line, sizeof line, fp)))
-			error("error reading stl file\n");
-
-                stl_str_cfie("endfacet", l6);
-                l6 = NULL;
-        }
-
-	if (NULL == (l0 = fgets(line, sizeof line, fp)))
+	if (NULL == fgets(line, sizeof line, fp))
 		error("error reading stl file\n");
 
-        stl_str_cfie("endsolid", l0);
+	if (!(keyword("solid %*s\n%n") || keyword("solid\n%n")))
+
+		fclose(fp);
+		return;
+	}
+
+	int n = 0;
+
+        while (true) {
+
+		if (NULL != model && dims[2] == pos[2])
+			break;
+
+                pos[2] = n++;
+
+		if (NULL == fgets(line, sizeof line, fp))
+			error("error reading stl file\n");
+
+                pos[1] = 3;
+		if (!keyword_args(" facet normal %f %f %f\n%n"))
+			break;
+
+		if (NULL == fgets(line, sizeof line, fp))
+			error("error reading stl file\n");
+
+		if (!keyword(" outer loop\n%n"))
+			error("error reading stl file\n");
+
+		for (int i = 0; i < 3; i++) {
+
+			pos[1] = i;
+
+			if (NULL == fgets(line, sizeof line, fp))
+				error("error reading stl file\n");
+
+			if (!keyword_args(" vertex %f %f %f\n%n"))
+				error("error reading stl file\n");
+		}
+
+		if (NULL == fgets(line, sizeof line, fp))
+			error("error reading stl file\n");
+
+		if (!keyword(" endloop\n%n"))
+			error("error reading stl file\n");
+
+		if (NULL == fgets(line, sizeof line, fp))
+			error("error reading stl file\n");
+
+		if (!keyword(" endfacet\n%n"))
+			error("error reading stl file\n");
+        }
+
+	if (!(keyword(" endsolid %*s\n%n") || keyword(" endsolid\n%n")))
+		error("error reading stl file\n");
+
+	if (NULL == model) {
+
+		dims[0] = 3;
+		dims[1] = 4;
+		dims[2] = pos[2];
+	}
 
         fclose(fp);
-
-        return model;
 }
 
 
@@ -573,7 +468,17 @@ static double* stl_read_binary(const char* name, long dims[3])
 
 double* stl_read(const char *name, long dims[3])
 {
-        return (stl_is_ascii(name) ? stl_read_ascii : stl_read_binary)(name, dims);
+	dims[2] = 0;
+	stl_read_ascii(name, dims, NULL);
+
+	if (0 < dims[2]) {
+
+		double* model = md_alloc(3, dims, DL_SIZE);
+		stl_read_ascii(name, dims, model);
+		return model;
+	}
+
+        return stl_read_binary(name, dims);
 }
 
 bool stl_fileextension(const char* name)
