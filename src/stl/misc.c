@@ -241,24 +241,19 @@ static bool stl_str_contained(const char* s0, const char* s1)
 
 void stl_write_binary(const char* name, const long dims[3], const double* model)
 {
-        const size_t hs = 80 + sizeof(int32_t);
-        const size_t bs = 12 * FL_SIZE + sizeof(uint16_t);
-        const size_t d2 = (size_t) dims[2];
-        const size_t s = hs + d2 * bs;
-
         // write header
-        char* buf = xmalloc(s);
-
-        for (int i = 0; i < (int) s; i++)
-                buf[(size_t) i] = ' ';
-
-        strcpy(buf, "Created by bart ");
-        strcat(buf, bart_version);
-
-        *(uint32_t*) &buf[80] = (uint32_t) dims[2];
+        char header[80 + (int)sizeof(int32_t)];
+	memset(header, 0, sizeof(header));
+        snprintf(header, 80, "Created by BART %s.\n", bart_version);
+	memcpy(&header[80], &(uint32_t){ (uint32_t)dims[2] }, sizeof(uint32_t));
 
         long strs[3];
         md_calc_strides(3, strs, dims, DL_SIZE);
+
+        const size_t bs = 12 * FL_SIZE + (int)sizeof(uint16_t);
+        const size_t s = (size_t)dims[2] * bs;
+
+        char* buf = xmalloc(s);
 
 #pragma omp parallel for
         for (int i = 0; i < dims[2]; i++) {
@@ -270,7 +265,7 @@ void stl_write_binary(const char* name, const long dims[3], const double* model)
                 for (pos[0] = 0; pos[0] < 3; pos[0]++) {
 
                         float f = MD_ACCESS(3, strs, pos, model);
-                        memcpy(&buf[hs + (size_t) i * bs + (size_t) pos[0] * FL_SIZE], &f, FL_SIZE);
+                        memcpy(&buf[(size_t) i * bs + (size_t) pos[0] * FL_SIZE], &f, FL_SIZE);
                 }
 
                 for (pos[1] = 0; pos[1] < 3; pos[1]++) {
@@ -278,7 +273,7 @@ void stl_write_binary(const char* name, const long dims[3], const double* model)
                         for (pos[0] = 0; pos[0] < 3; pos[0]++) {
 
                                 float f = MD_ACCESS(3, strs, pos, model);
-                                memcpy(&buf[hs + (size_t) i * bs + (size_t) (3 + pos[0] + 3 * pos[1]) * FL_SIZE], &f, FL_SIZE);
+                                memcpy(&buf[(size_t) i * bs + (size_t) (3 + pos[0] + 3 * pos[1]) * FL_SIZE], &f, FL_SIZE);
                         }
                 }
         }
@@ -286,9 +281,12 @@ void stl_write_binary(const char* name, const long dims[3], const double* model)
         int fd = open(name, O_WRONLY | O_CREAT, 0666);
 
         if (-1 == fd)
-                error("write stl error fd\n", name);
+                error("opening stl file for writing\n", name);
 
-        if ((int) s != xwrite(fd, s, buf))
+	if (sizeof(header) != xwrite(fd, sizeof(header), header))
+                error("write stl error %s\n", name);
+
+        if (s != xwrite(fd, s, buf))
                 error("write stl error %s\n", name);
 
         close(fd);
@@ -306,18 +304,19 @@ static bool stl_is_ascii(const char* name)
         char tmp[80];
 
         if (80 != xread(fd, 80, tmp))
-                error("stl file could not be opened\n");
+                error("stl file could not be read\n");
 
         close(fd);
 
         int c = 0;
 
-        for (int i = 0; i < 80; i++)
+        for (int i = 0; i < 80; i++) {
                 if ('\n' == tmp[i]) {
 
                         c = i;
                         break;
                 }
+	}
 
         tmp[c] = '\0';
 
