@@ -580,11 +580,10 @@ bool stl_fileextension(const char* name)
 {
 	char* ext = strrchr(name, '.');
 
-        if (NULL != ext)
-		if (0 == strcmp(ext, ".stl"))
-                        return true;
+        if (NULL == ext)
+		return false;
 
-        return false;
+	return (0 == strcmp(ext, ".stl"));
 }
 
 // convert model in cfl md array to model in double md array
