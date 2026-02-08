@@ -9,6 +9,7 @@
 #include <complex.h>
 
 #include "num/multind.h"
+#include "num/flpmath.h"
 #include "num/init.h"
 #include "num/rand.h"
 

@@ -1,8 +1,6 @@
 #ifndef _STLMISC_H
 #define _STLMISC_H
 
-#include "num/flpmath.h"
-
 enum stl_itype { STL_NONE, STL_TETRAHEDRON, STL_HEXAHEDRON };
 
 // contains triangles of stl files and rotation/ shift rel. to origin
