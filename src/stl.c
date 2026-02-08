@@ -54,12 +54,10 @@ int main_stl(int argc, char* argv[argc])
 
 		OPTL_INFILE(0, "input", &in_file, "", "Path to input file (.stl or cfl file format)."),
                 OPTL_SUBOPT2(0, "model", "<tag> ", "Generic geometric structures are available.", "Internal stl model (help: bart stl --model h).\n", ARRAY_SIZE(model_opts), model_opts),
-		OPT_FLOAT('s', &scale, "scale", "Multiplicate all coordinates of model with factor."),
-                OPT_FLVEC3('S', &shift, "shift", "Shift all coordinates of model by vector.\n"),
+		OPT_FLOAT('s', &scale, "scale", "Multiplicate all coordinates of model with a scale factor."),
+                OPT_FLVEC3('m', &shift, "move", "Move model by vector.\n"),
 		OPTL_SET(0, "stat", &stat, "Show statistics of model."),
 		OPTL_CLEAR(0, "binary", &ascii, "Output STL files in binary format."),
-		OPTL_SET(0, "vm", &vm, "Print out volume measure of model."),
-		OPTL_SET(0, "sm", &sm, "Print out surface measure of model."),
 		OPTL_SET(0, "no-nc", &no_nc, "(Don't recompute normal vectors with double precision.)"),
 	};
 
@@ -119,10 +117,10 @@ int main_stl(int argc, char* argv[argc])
         if (0. != scale)
                 stl_scale_model(dims, model, sc);
 
-        if (stat)
+        if (stat) {
+
                 stl_stats(dims, model);
 
-	if (sm || vm) {
 
 		struct triangle_stack* ts = stl_preprocess_model(dims, model);
 		struct triangle* t = ts->tri;
