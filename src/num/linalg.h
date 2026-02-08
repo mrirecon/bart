@@ -48,7 +48,7 @@ extern double vec3d_sdot(const double* x, const double* y);
 extern double vec3d_norm(const double* x);
 extern void vec3d_saxpy(double* o, const double* x, const double a, const double* y);
 extern void vec3d_set(double* x, const double v);
-extern void vec3d_cp(double* o, const double* v0, const double* v1);
+extern void vec3d_crossproduct(double* o, const double* v0, const double* v1);
 extern void vec3d_rotax(double* o, const double theta, const double* ax, const double* x);
 extern void vec3d_copy(double* o, const double* x);
 extern double vec3d_angle(const double* x, const double* y);

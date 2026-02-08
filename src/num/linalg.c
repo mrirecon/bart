@@ -138,7 +138,7 @@ double vec3d_angle(const double* x, const double* y)
 	return acos(a);
 }
 
-void vec3d_cp(double* o, const double* v0, const double* v1)
+void vec3d_crossproduct(double* o, const double* v0, const double* v1)
 {
         o[0] = v0[1] * v1[2] - v0[2] * v1[1];
         o[1] = v0[2] * v1[0] - v0[0] * v1[2];
@@ -155,9 +155,9 @@ void vec3d_rotax(double* o, const double theta, const double* ax, const double* 
 
 		double cp[3], cpp[3], cppp[3], tmp[3];
 
-		vec3d_cp(cp, ax, x);
+		vec3d_crossproduct(cp, ax, x);
 		vec3d_saxpy(cpp, cp, cos(theta), NULL);
-		vec3d_cp(cppp, cpp, ax);
+		vec3d_crossproduct(cppp, cpp, ax);
 		vec3d_saxpy(tmp, cp, sin(theta), cppp);
 		vec3d_saxpy(o, ax, vec3d_sdot(ax, x), tmp);
         }

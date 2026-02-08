@@ -201,7 +201,7 @@ void stl_compute_normals(const long dims[3], double* model)
                 vec3d_saxpy(d2, &MD_ACCESS(3, strs, pos0, model), -1., &MD_ACCESS(3, strs, pos2, model));
 
 		double nt[3];
-		vec3d_cp(nt, d1, d2);
+		vec3d_crossproduct(nt, d1, d2);
 		vec3d_saxpy(&MD_ACCESS(3, strs, posn, model), nt, 1. / vec3d_norm(nt), NULL);
         }
 }
@@ -540,7 +540,7 @@ void stl_relative_position(struct triangle* t)
 	assert(0. < vec3d_norm(t->e1));
 
 	double sn[3];
-	vec3d_cp(sn, t->e0, t->e1);
+	vec3d_crossproduct(sn, t->e0, t->e1);
 	t->sur = 0.5 * vec3d_norm(sn);
 
 	// compute b0, b1 as orthogonal basis vectors of the plane which contains the triangle
@@ -566,7 +566,7 @@ void stl_relative_position(struct triangle* t)
 
 	} else {
 
-		vec3d_cp(t->rot, t->n, ez);
+		vec3d_crossproduct(t->rot, t->n, ez);
 	}
 
 	vec3d_saxpy(t->rot, t->rot, 1. / vec3d_norm(t->rot), NULL);
@@ -597,7 +597,7 @@ void stl_relative_position(struct triangle* t)
 	t->poly[5] = v2cr[1];
 
 	// signed volume of tetrahedron triangle + origin
-	vec3d_cp(tmp, t->v0, t->v1);
+	vec3d_crossproduct(tmp, t->v0, t->v1);
 	t->svol = copysign(vec3d_sdot(tmp, t->v2) / 6., vec3d_sdot(t->v0, t->n));
 }
 
