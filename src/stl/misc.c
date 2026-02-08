@@ -9,6 +9,7 @@
 
 #include <stdbool.h>
 #include <complex.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <inttypes.h>
@@ -239,6 +240,15 @@ static bool stl_str_contained(const char* s0, const char* s1)
         return -1 != stl_str_cfi(s0, s1);
 }
 
+enum { TRI_SIZE = 12 * FL_SIZE + (int)sizeof(uint16_t) };
+
+struct stl_triangle {
+
+	_Float32 nv[3];
+	_Float32 v[3][3];
+	uint16_t abc;	// attribute byte count
+};
+
 void stl_write_binary(const char* name, const long dims[3], const double* model)
 {
 	int fd = open(name, O_WRONLY | O_CREAT, 0666);
@@ -261,19 +271,10 @@ void stl_write_binary(const char* name, const long dims[3], const double* model)
         long strs[3];
         md_calc_strides(3, strs, dims, DL_SIZE);
 
-        const int tri_size = 12 * FL_SIZE + (int)sizeof(uint16_t);
-
-	struct stl_triangle {
-
-		_Float32 nv[3];
-		_Float32 v[3][3];
-		uint16_t abc;	// attribute byte count
-	};
-
         for (int i = 0; i < dims[2]; i++) {
 
 		struct stl_triangle tri = { };
-		static_assert(tri_size <= sizeof(tri));
+		static_assert(TRI_SIZE <= sizeof(tri));
 
                 long pos[3] = { [1] = 3, [2] = i };
 
@@ -288,7 +289,7 @@ void stl_write_binary(const char* name, const long dims[3], const double* model)
                                 tri.v[j][k] = MD_ACCESS(3, strs, (pos[0] = k, pos), model);
 		}
 
-		if (tri_size != xwrite(fd, tri_size, (void*)&tri))
+		if (TRI_SIZE != xwrite(fd, TRI_SIZE, (void*)&tri))
 			error("write stl error %s\n", name);
         }
 
@@ -516,19 +517,22 @@ static double* stl_read_binary(const char* name, long dims[3])
         int fd = open(name, O_RDONLY);
 
         if (-1 == fd)
-                error("read stl error open %s\n", name);
+                error("read stl error open %s.", name);
 
         char tmp[80];
 
         if (80 != xread(fd, 80, tmp))
-                error("stl file could not be opened\n");
+                error("stl file could not be read.");
 
         uint32_t Nu;
 
-        if (sizeof(uint32_t) != xread(fd, sizeof(uint32_t), (char* ) &Nu))
-                error("stl file could not be opened\n");
+        if (sizeof(uint32_t) != xread(fd, sizeof(uint32_t), (char* )&Nu))
+                error("stl file could not be read.");
 
-        int N = (int) Nu;
+	if (INT_MAX < Nu)
+		error("too many triangles.");
+
+        int N = (int)Nu;
 
         dims[0] = 3;
         dims[1] = 4;
@@ -539,42 +543,31 @@ static double* stl_read_binary(const char* name, long dims[3])
         long strs[3];
         md_calc_strides(3, strs, dims, DL_SIZE);
 
+        for (int i = 0; i < N; i++) {
 
-        const size_t bs = 12 * FL_SIZE + sizeof(uint16_t);
-        const size_t L = (size_t) N * bs;
-        char* buf = xmalloc(L);
+		struct stl_triangle tri = { };
+		static_assert(TRI_SIZE <= sizeof(tri));
 
-        if ((int) L != xread(fd, L, buf))
-                error("stl file could not be opened\n");
+		if (TRI_SIZE != xread(fd, TRI_SIZE, (char*)&tri))
+			error("stl file could not be read\n");
+
+                long pos[3] = { [2] = i };
+                pos[1] = 3;
+
+                for (int k = 0; k < 3; k++)
+                        MD_ACCESS(3, strs, (pos[0] = k, pos), model) = tri.nv[k];
+
+                for (int j = 0; j < 3; j++) {
+
+			pos[1] = j;
+
+			for (int k = 0; k < 3; k++)
+                                MD_ACCESS(3, strs, (pos[0] = k, pos), model) = tri.v[j][k];
+		}
+        }
 
         close(fd);
 
-#pragma omp parallel for
-        for (int i = 0; i < N; i++) {
-
-                long pos[3];
-                md_set_dims(3, pos, 0);
-                pos[2] = i;
-                pos[1] = 3;
-
-                for (pos[0] = 0; pos[0] < 3; pos[0]++) {
-
-                        float f;
-                        memcpy(&f, &buf[(size_t) i * bs + (size_t) pos[0] * FL_SIZE], FL_SIZE);
-                        MD_ACCESS(3, strs, pos, model) = f;
-                }
-
-                for (pos[1] = 0; pos[1] < 3; pos[1]++) {
-                        for (pos[0] = 0; pos[0] < 3; pos[0]++) {
-
-                                float f;
-                                memcpy(&f, &buf[(size_t) i * bs + (size_t) (3 + pos[0] + 3 * pos[1]) * FL_SIZE], FL_SIZE);
-                                MD_ACCESS(3, strs, pos, model) = f;
-                        }
-                }
-        }
-
-        xfree(buf);
         return model;
 }
 
@@ -729,3 +722,4 @@ struct triangle_stack* stl_preprocess_model(const long dims[3], const double* mo
 
 	return ts;
 }
+
