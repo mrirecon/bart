@@ -168,6 +168,9 @@ static void stl_write_ascii(FILE *fp, const long dims[3], const double* model)
 
 	long pos[3] = { };
 
+	long* posp = pos;	// clang workaround
+	long* strsp = strs;
+
 	fprintf(fp, "solid\n");
 
         for (pos[2] = 0; pos[2] < dims[2]; pos[2]++) {
@@ -176,12 +179,12 @@ static void stl_write_ascii(FILE *fp, const long dims[3], const double* model)
 
 			double v[3];
 			for (int i = 0; i < 3; i++)
-				v[pos[0]] = MD_ACCESS(3, strs, (pos[0] = i, pos), model);
+				v[posp[0]] = MD_ACCESS(3, strsp, (posp[0] = i, posp), model);
 
 			fprintf(fp, "%s %f %f %f\n", str, v[0], v[1], v[2]);
 		};
 
-		pos[1] = 3;
+		posp[1] = 3;
 		vecprint(" facet normal");
 
 		fprintf(fp, "  outer loop\n");
@@ -228,8 +231,13 @@ enum { TRI_SIZE = 12 * FL_SIZE + (int)sizeof(uint16_t) };
 
 struct stl_triangle {
 
+#ifndef __EMSCRIPTEN__
 	_Float32 nv[3];
 	_Float32 v[3][3];
+#else
+	float nv[3];
+	float v[3][3];
+#endif
 	uint16_t abc;	// attribute byte count
 };
 
@@ -292,25 +300,29 @@ static void stl_read_ascii(FILE *fp, long dims[3], double* model)
 	long pos[3] = { };
         char line[MAX_LINE_LENGTH];
 
-	NESTED(bool, keyword, (const char* kw))
+	char* linep = line; // clang workaround
+	long* posp = pos;
+	long* strsp = strs;
+
+	NESTED(int, keyword, (const char* kw))
 	{
 		int end = 0;
-		return 0 == sscanf(line, kw, &end) && '\0' == line[end];
-	}
+		return 0 == sscanf(linep, kw, &end) && '\0' == linep[end];
+	};
 
-	NESTED(bool, keyword_args, (const char* kw))
+	NESTED(int, keyword_args, (const char* kw))
 	{
 		int end = 0;
 		float f[3];
 
-		if (3 != sscanf(line, kw, &f[0], &f[1], &f[2], &end) || '\0' != line[end])
+		if (3 != sscanf(linep, kw, &f[0], &f[1], &f[2], &end) || '\0' != linep[end])
 			return false;
 
 		if (NULL == model)
 			return true;
 
 		for (int k = 0; k < 3; k++)
-			MD_ACCESS(3, strs, (pos[0] = k, pos), model) = f[k];
+			MD_ACCESS(3, strsp, (posp[0] = k, posp), model) = f[k];
 
 		return true;
 	};
