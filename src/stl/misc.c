@@ -254,7 +254,7 @@ static void stl_write_binary(FILE* fp, const long dims[3], const double* model)
         for (int i = 0; i < dims[2]; i++) {
 
 		struct stl_triangle tri = { };
-		static_assert(TRI_SIZE <= sizeof(tri));
+		_Static_assert(TRI_SIZE <= sizeof(tri), "");
 
                 long pos[3] = { [1] = 3, [2] = i };
 
@@ -441,7 +441,7 @@ static double* stl_read_binary(FILE* fp, long dims[3])
         for (int i = 0; i < N; i++) {
 
 		struct stl_triangle tri = { };
-		static_assert(TRI_SIZE <= sizeof(tri));
+		_Static_assert(TRI_SIZE <= sizeof(tri), "");
 
 		if (TRI_SIZE != xread(fd, TRI_SIZE, (char*)&tri))
 			error("stl file could not be read\n");
