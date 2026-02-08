@@ -220,13 +220,9 @@ struct stl_triangle {
 	uint16_t abc;	// attribute byte count
 };
 
-void stl_write_binary(const char* name, const long dims[3], const double* model)
+void stl_write_binary(FILE* fp, const long dims[3], const double* model)
 {
-	int fd = open(name, O_WRONLY | O_CREAT, 0666);
-
-        if (-1 == fd)
-                error("opening stl file for writing\n", name);
-
+	int fd = fileno(fp);
 
 	// FIXME: little endian
         char header[80 + (int)sizeof(int32_t)];
@@ -235,7 +231,7 @@ void stl_write_binary(const char* name, const long dims[3], const double* model)
 	memcpy(&header[80], &(uint32_t){ (uint32_t)dims[2] }, sizeof(uint32_t));
 
 	if (sizeof(header) != xwrite(fd, sizeof(header), header))
-                error("write stl error %s\n", name);
+                error("write stl error");
 
 	// write triangles
 
@@ -261,10 +257,8 @@ void stl_write_binary(const char* name, const long dims[3], const double* model)
 		}
 
 		if (TRI_SIZE != xwrite(fd, TRI_SIZE, (void*)&tri))
-			error("write stl error %s\n", name);
+			error("write stl error");
         }
-
-        close(fd);
 }
 
 
@@ -321,10 +315,7 @@ static void stl_read_ascii(FILE *fp, long dims[3], double* model)
 		error("error reading stl file\n");
 
 	if (!(keyword("solid %*s\n%n") || keyword("solid\n%n")))
-
-		fclose(fp);
 		return;
-	}
 
 	int n = 0;
 
@@ -457,13 +448,8 @@ static double* stl_read_binary(FILE* fp, long dims[3])
         return model;
 }
 
-double* stl_read(const char *name, long dims[3])
+double* stl_read(FILE* fp, long dims[3])
 {
-        FILE* fp = fopen(name, "r");
-
-        if (NULL == fp)
-                error("read stl error %s\n", name);
-
 	dims[2] = 0;
 	stl_read_ascii(fp, dims, NULL);
 	rewind(fp);
@@ -479,8 +465,6 @@ double* stl_read(const char *name, long dims[3])
 
 		model = stl_read_binary(fp, dims);
 	}
-
-	fclose(fp);
 
 	return model;
 }

@@ -396,12 +396,21 @@ int main_phantom(int argc, char* argv[argc])
 
 		if (stl_fileextension(stl_file)) {
 
-			model = stl_read(stl_file, stldims);
+			FILE *fp = fopen(stl_file, "r");
+
+			if (!fp)
+				error("opening file: %s\n", stl_file);
+
+			model = stl_read(fp, stldims);
+
+			fclose(fp);
 
 		} else {
 
 			complex float* cmodel = load_cfl(stl_file, 3, stldims);
+
 			model = stl_cfl2d(stldims, cmodel);
+
 			unmap_cfl(3, stldims, cmodel);
 		}
 

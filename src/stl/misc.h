@@ -1,5 +1,7 @@
-#ifndef _STLMISC_H
-#define _STLMISC_H
+#ifndef _STL_MISC_H
+#define _STL_MISC_H
+
+#include <stdio.h>
 
 enum stl_itype { STL_NONE, STL_TETRAHEDRON, STL_HEXAHEDRON };
 
@@ -47,8 +49,8 @@ extern void stl_shift_model(const long dims[3], double* model, const double shif
 extern void stl_scale_model(const long dims[3], double* model, const double scale[3]);
 
 extern _Bool stl_fileextension(const char* name);
-extern double* stl_read(const char* name, long dims[3]);
-extern void stl_write_binary(const char* name, const long dims[3], const double* model);
+extern double* stl_read(FILE* name, long dims[3]);
+extern void stl_write_binary(FILE* name, const long dims[3], const double* model);
 extern double* stl_cfl2d(const long dims[3], const _Complex float* cmodel);
 extern void stl_d2cfl(const long dims[3], _Complex float* cmodel, const double* model);
 extern void stl_relative_position(struct triangle* t);

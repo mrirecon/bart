@@ -81,7 +81,14 @@ int main_stl(int argc, char* argv[argc])
 
                 if (stl_fileextension(in_file)) {
 
-                        model = stl_read(in_file, dims);
+			FILE *fp = fopen(in_file, "r");
+
+			if (!fp)
+				error("opening file %s\n", in_file);
+
+			model = stl_read(fp, dims);
+
+			fclose(fp);
 
                 } else {
 
@@ -145,7 +152,14 @@ int main_stl(int argc, char* argv[argc])
 
 		if (stl_fileextension(out_file)) {
 
-			stl_write_binary(out_file, dims, model);
+			FILE *fp = fopen(out_file, "w");
+
+			if (!fp)
+				error("opening file %s\n", out_file);
+
+			stl_write_binary(fp, dims, model);
+
+			fclose(fp);
 
 		} else {
 
