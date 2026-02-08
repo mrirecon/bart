@@ -269,13 +269,8 @@ void stl_write_binary(const char* name, const long dims[3], const double* model)
 #define MAX_LINE_LENGTH 128
 
 
-static void stl_read_ascii(const char* name, long dims[3], double* model)
+static void stl_read_ascii(FILE *fp, long dims[3], double* model)
 {
-        FILE* fp = fopen(name, "r");
-
-        if (NULL == fp)
-                error("read stl error %s\n", name);
-
         long strs[3];
 
 	if (NULL != model)
@@ -383,8 +378,6 @@ static void stl_read_ascii(const char* name, long dims[3], double* model)
 		dims[1] = 4;
 		dims[2] = pos[2];
 	}
-
-        fclose(fp);
 }
 
 
@@ -407,12 +400,9 @@ static void stl_read_ascii(const char* name, long dims[3], double* model)
  * block size: 50 Byte
  **/
 // read binary encoded stl files.
-static double* stl_read_binary(const char* name, long dims[3])
+static double* stl_read_binary(FILE* fp, long dims[3])
 {
-        int fd = open(name, O_RDONLY);
-
-        if (-1 == fd)
-                error("read stl error open %s.", name);
+        int fd = fileno(fp);
 
         char tmp[80];
 
@@ -461,24 +451,35 @@ static double* stl_read_binary(const char* name, long dims[3])
 		}
         }
 
-        close(fd);
-
         return model;
 }
 
 double* stl_read(const char *name, long dims[3])
 {
+        FILE* fp = fopen(name, "r");
+
+        if (NULL == fp)
+                error("read stl error %s\n", name);
+
 	dims[2] = 0;
-	stl_read_ascii(name, dims, NULL);
+	stl_read_ascii(fp, dims, NULL);
+	rewind(fp);
+
+	double* model;
 
 	if (0 < dims[2]) {
 
-		double* model = md_alloc(3, dims, DL_SIZE);
-		stl_read_ascii(name, dims, model);
-		return model;
+		model = md_alloc(3, dims, DL_SIZE);
+		stl_read_ascii(fp, dims, model);
+
+	} else {
+
+		model = stl_read_binary(fp, dims);
 	}
 
-        return stl_read_binary(name, dims);
+	fclose(fp);
+
+	return model;
 }
 
 bool stl_fileextension(const char* name)
