@@ -119,20 +119,20 @@ static void config_to_custom_params(int nl, long custom_long[__VLA(nl)], int nd,
 {
 	custom_long[cil_pe_mode] = seq->enc.pe_mode;;
 	custom_long[cil_contrast] = seq->phys.contrast;
+	custom_long[cil_reco] = CHECKBOX_OFF;
 
-	custom_long[cil_mb_factor] = 1;
-
-	if (CHECKBOX_ON == custom_long[cil_sms])
-		custom_long[cil_mb_factor] = seq->geom.mb_factor;
+	custom_long[cil_sms] = CHECKBOX_OFF;
+	if (1 < seq->geom.mb_factor)
+		custom_long[cil_sms] = CHECKBOX_ON;
+	custom_long[cil_mb_factor] = seq->geom.mb_factor;
 
 	custom_long[cil_tiny] = seq->enc.tiny;
 	custom_long[cil_rf_duration] = lround(1.E6 * seq->phys.rf_duration);
 	custom_long[cil_init_delay] = seq->magn.init_delay;
 	custom_long[cil_inversions] = seq->loop_dims[BATCH_DIM];
 	custom_long[cil_inv_delay] = seq->magn.inv_delay_time;
+	custom_long[cil_RAGA_aligned_flags] = (long)seq->enc.aligned_flags;
 	custom_double[cid_BWTP] = seq->phys.bwtp;
-
-	custom_long[cil_sms] = CHECKBOX_OFF;
 }
 
 
