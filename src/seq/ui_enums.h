@@ -10,6 +10,7 @@ enum custom_idx_long {
 	cil_contrast = _cil_contrast,
 
 	// bool
+	cil_reco = _cil_reco,
 	cil_sms,
 
 	// long

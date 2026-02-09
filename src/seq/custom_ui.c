@@ -43,6 +43,7 @@ static const struct seq_ui_selection custom_selection_defaults[] = {
 
 static const struct seq_ui_long custom_bool_defaults[] = {
 
+	{ "seq_wip8", cil_reco, "Online Recon", { 0, 0, 0, 1 }, "", "" },
 	{ "seq_wip12", cil_sms, "Simultaneous Multi-Slice", { 0, 0, 0, 1 }, "", "" },
 };
 
