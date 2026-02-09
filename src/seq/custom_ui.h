@@ -83,9 +83,7 @@ BARTLIB_API void BARTLIB_CALL seq_custom_ui_free(struct custom_ui* ui);
 
 // FIXME: workaround for sequence access 
 #define _cil_pe_mode 0
-#define _cil_contrast 1 // some UI bssfp behaviour
-#define _cil_sms_distance 3 // write sms distance here
-#define _cil_tiny 4
+#define _cil_contrast 1 // some UI behaviour
 
 #define _cid_cmd 0 // workaround for commandline interface
 

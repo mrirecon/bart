@@ -13,10 +13,9 @@ enum custom_idx_long {
 	cil_sms,
 
 	// long
-	cil_sms_distance = _cil_sms_distance,
 
 	// long array
-	cil_tiny = _cil_tiny,
+	cil_tiny,
 	cil_rf_duration,
 	cil_init_delay,
 	cil_inversions,

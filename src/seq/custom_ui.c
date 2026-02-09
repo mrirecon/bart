@@ -48,11 +48,11 @@ static const struct seq_ui_long custom_bool_defaults[] = {
 
 static const struct seq_ui_long custom_long_defaults[] = {
 
-	{ "seq_wip13", cil_sms_distance, "SMS Distance.", { 0, 100, 1, 0 }, "Slice distance within SMS group. [adjusted by slice thickness/gap; < 0: SMS off]", "mm" },
 };
 
 static const struct seq_ui_long custom_longarr_defaults[] = {
 
+	// tiny must be the first one
 	{ "", cil_tiny, "Turns / Tiny Golden", { 1, 20, 1, 1 }, "Number of turns (repititions) of radial spoke pattern.", ""},
 	{ "", cil_rf_duration, "RF pulse duration", { 20, 2560, 20, 400 }, "RF pulse duration.", "us"},
 	{ "", cil_init_delay, "Delay Measurements", { 0, 300, 1, 0 }, "Delay measurements.", "s"},
