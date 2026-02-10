@@ -1171,6 +1171,7 @@ clean:
 	rm -f $(root)/utests/*.o
 	rm -f $(patsubst %, %, $(UTARGETS))
 	rm -f $(patsubst %, %, $(UTARGETS_GPU))
+	rm -f $(patsubst %.win, %.exe, $(UTARGETS_WINE))
 	rm -f $(libdir)/.*.lock
 
 .PHONY: allclean
