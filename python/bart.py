@@ -10,17 +10,22 @@ import subprocess as sp
 import tempfile as tmp
 import os
 import sys
+from pathlib import Path
 import threading
 
 if __spec__.parent:
     from . import cfl
-    from .wslsupport import PathCorrection
-else:
-    # 'traditional' copy-paste bart.py
-    from wslsupport import PathCorrection
+else:  # 'traditional' copy-paste bart.py
     import cfl
 
-isWASM = True if sys.platform == 'emscripten' else False
+if os.name == 'nt':
+    if __spec__.parent:
+        from .wslsupport import PathCorrection
+    else:
+        from wslsupport import PathCorrection
+
+isWASM = sys.platform == 'emscripten'
+
 
 def bart(nargout, cmd, *args, **kwargs):
     if isWASM:
@@ -59,7 +64,7 @@ async def bart2(nargout, cmd, *args, **kwargs):
 
 
 def bart_prepare(nargout, cmd, *args, **kwargs):
-    if type(nargout) != int or nargout < 0:
+    if type(nargout) is not int or nargout < 0:
         print("Usage: bart(<nargout>, <command>, <arguments...>)")
         return
 
@@ -83,17 +88,17 @@ def bart_prepare(nargout, cmd, *args, **kwargs):
     name = tmp.NamedTemporaryFile().name
 
     nargin = len(args)
-    infiles = [name + 'in' + str(idx) for idx in range(nargin)]
+    infiles = [name + 'in' + str(idx) + '.ra' for idx in range(nargin)]
 
     for idx in range(nargin):
         cfl.writecfl(infiles[idx], args[idx])
 
     args_kw = [("--" if len(kw)>1 else "-") + kw for kw in kwargs]
-    infiles_kw = [name + 'in' + kw for kw in kwargs]
+    infiles_kw = [name + 'in' + kw + '.ra' for kw in kwargs]
     for idx, kw in enumerate(kwargs):
         cfl.writecfl(infiles_kw[idx], kwargs[kw])
 
-    outfiles = [name + 'out' + str(idx) for idx in range(nargout)]
+    outfiles = [name + 'out' + str(idx) + '.ra' for idx in range(nargout)]
 
     cmd = cmd.split(" ")
 
@@ -126,27 +131,25 @@ def bart_prepare(nargout, cmd, *args, **kwargs):
 
 
 def bart_postprocess(nargout, ERR, infiles, infiles_kw, outfiles):
-    for elm in infiles:
-        if os.path.isfile(elm + '.cfl'):
-            os.remove(elm + '.cfl')
-        if os.path.isfile(elm + '.hdr'):
-            os.remove(elm + '.hdr')
-
-    for elm in infiles_kw:
-        if os.path.isfile(elm + '.cfl'):
-            os.remove(elm + '.cfl')
-        if os.path.isfile(elm + '.hdr'):
-            os.remove(elm + '.hdr')
+    for elm in infiles + infiles_kw:
+        if elm.endswith('.ra'):
+            Path(elm).unlink(missing_ok=True)
+        else:
+            Path(elm + '.hdr').unlink(missing_ok=True)
+            Path(elm + '.cfl').unlink(missing_ok=True)
 
     output = []
     for idx in range(nargout):
         elm = outfiles[idx]
-        if not ERR:
-            output.append(cfl.readcfl(elm))
-        if os.path.isfile(elm + '.cfl'):
-            os.remove(elm + '.cfl')
-        if os.path.isfile(elm + '.hdr'):
-            os.remove(elm + '.hdr')
+        try:
+            if not ERR:
+                output.append(cfl.readcfl(elm))
+        finally:
+            if elm.endswith('.ra'):
+                Path(elm).unlink(missing_ok=True)
+            else:
+                Path(elm + '.hdr').unlink(missing_ok=True)
+                Path(elm + '.cfl').unlink(missing_ok=True)
 
     if ERR:
         print(f"Command exited with error code {ERR}.")
@@ -224,10 +227,10 @@ async def run_wasm_cmd(shell_cmd, infiles, infiles_kw, outfiles):
         result = await wasm_async_call("bart_cmd('" + ' '.join(non_empty_cmd) + "')")
         ERR, stdout, stderr = result['ret'], result['stdout'], result['stderr']
 
-        if not stdout is None and len(stdout.strip()) > 0:
+        if stdout is not None and len(stdout.strip()) > 0:
             print(stdout)
 
-        if not stderr is None and len(stderr.strip()) > 0:
+        if stderr is not None and len(stderr.strip()) > 0:
             print(stderr, file=sys.stderr)
 
         if not 0 == ERR:

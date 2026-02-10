@@ -8,67 +8,57 @@
 # 2013 Martin Uecker <uecker@eecs.berkeley.edu>
 # 2015 Jonathan Tamir <jtamir@eecs.berkeley.edu>
 
-from __future__ import print_function
-from __future__ import with_statement
 
 import numpy as np
-import mmap
-import os
 
 # see src/misc/io.c for rawarray header definition
-_RA_MAGIC = int(0x7961727261776172)
-_RA_TYPE_COMPLEX = int(4)
-_RA_CFL_SIZE = int(8)
+_RA_MAGIC = np.uint64(0x7961727261776172)
+_RA_TYPE_COMPLEX = np.uint64(4)
+_RA_CFL_SIZE = np.uint64(8)
+_RA_FLAG_BIG_ENDIAN = np.uint64(1)
 _RA_HEADER_ELEMS = 6
 
+
 def _readra(name):
-
     with open(name, "rb") as f:
-        header = np.fromfile(f, dtype=np.uint64, count=_RA_HEADER_ELEMS)
-        magic = header[0]
-        flags = header[1]
-        eltype = header[2]
-        elsize = header[3]
-        datasize = header[4]
-        ndims = header[5]
+        magic, flags, eltype, elsize, datasize, ndims = np.fromfile(
+            f, dtype=np.uint64, count=_RA_HEADER_ELEMS)
 
-        if ( magic != _RA_MAGIC
-                or (flags & np.uint64(1)) != 0
+        if (magic != _RA_MAGIC
+                or flags & _RA_FLAG_BIG_ENDIAN
                 or eltype != _RA_TYPE_COMPLEX
-                or elsize != _RA_CFL_SIZE ):
-            print("Invalid .ra header!")
-            raise RuntimeError
+                or elsize != _RA_CFL_SIZE):
+            raise RuntimeError(f"Invalid .ra header: {name}")
 
-        shape_arr = np.fromfile(f, dtype=np.uint64, count = ndims)
+        dims = np.fromfile(f, dtype=np.uint64, count=ndims)
 
-        arr = np.fromfile(f, dtype=np.complex64, count = datasize // elsize).reshape(shape_arr, order='F')
-    return arr
+        # remove trailing singleton dimensions
+        while dims.size > 1 and dims[-1] == 1:
+            dims = dims[:-1]
+
+        return np.fromfile(f, dtype=np.complex64, count=int(datasize // 8)
+                           ).reshape(dims, order='F')
+
 
 def _writera(name, array):
 
-    header = np.empty((6,), dtype=np.uint64)
-    header[0] = _RA_MAGIC
-    header[1] = np.uint64(0)
-    header[2] = _RA_TYPE_COMPLEX
-    header[3] = _RA_CFL_SIZE
-    header[4] = np.prod(array.shape) * np.dtype(np.complex64).itemsize
-    header[5] = array.ndim
+    if array.dtype != np.complex64:
+        array = array.astype(np.complex64)
 
-
+    header = np.array([
+        _RA_MAGIC,
+        0,
+        _RA_TYPE_COMPLEX,
+        _RA_CFL_SIZE,
+        array.nbytes,
+        array.ndim
+    ], dtype=np.uint64)
     shape_arr = np.array(array.shape, dtype=np.uint64)
-    fullsize = int(header[4] + header.nbytes + shape_arr.nbytes)
 
-    with open(name, "w+b") as d:
-        os.ftruncate(d.fileno(), fullsize)
-        mm = mmap.mmap(d.fileno(), fullsize, flags=mmap.MAP_SHARED, prot=mmap.PROT_WRITE)
-        if array.dtype != np.complex64:
-            array = array.astype(np.complex64)
-        mm.write(np.ascontiguousarray(header))
-        mm.write(np.ascontiguousarray(shape_arr))
-        mm.write(np.ascontiguousarray(array.T))
-        mm.close()
-
-    return
+    with open(name, "wb") as f:
+        f.write(header)
+        f.write(shape_arr)
+        f.write(np.ascontiguousarray(array.T))
 
 
 def readcfl(name):
@@ -77,20 +67,20 @@ def readcfl(name):
         return _readra(name)
 
     # get dims from .hdr
-    with open(name + ".hdr", "rt") as h:
-        h.readline() # skip
-        l = h.readline()
-    dims = [int(i) for i in l.split()]
+    with open(name + ".hdr", "rt") as f:
+        next(f)  # skip first line
+        line = next(f)
+    dims = [int(i) for i in line.split()]
 
     # remove singleton dimensions from the end
-    n = np.prod(dims)
-    dims_prod = np.cumprod(dims)
-    dims = dims[:np.searchsorted(dims_prod, n)+1]
+    while len(dims) > 1 and dims[-1] == 1:
+        dims.pop()
 
     # load data and reshape into dims
-    with open(name + ".cfl", "rb") as d:
-        a = np.fromfile(d, dtype=np.complex64, count=n);
-    return a.reshape(dims, order='F') # column-major
+    with open(name + ".cfl", "rb") as f:
+        return np.fromfile(f, dtype=np.complex64, count=np.prod(dims)
+                           ).reshape(dims, order='F')  # column-major
+
 
 def readmulticfl(name):
     # get dims from .hdr
@@ -125,54 +115,35 @@ def writecfl(name, array):
     if name.endswith(".ra"):
         return _writera(name, array)
 
-    with open(name + ".hdr", "wt") as h:
-        h.write('# Dimensions\n')
-        for i in (array.shape):
-                h.write("%d " % i)
-        h.write('\n')
+    with open(name + ".hdr", "wt") as f:
+        f.write('# Dimensions\n')
+        f.write(" ".join(str(i) for i in array.shape))
+        f.write('\n')
 
-    size = np.prod(array.shape) * np.dtype(np.complex64).itemsize
+    if array.dtype != np.complex64:
+        array = array.astype(np.complex64)
 
-    with open(name + ".cfl", "w+b") as d:
-        os.ftruncate(d.fileno(), size)
-        mm = mmap.mmap(d.fileno(), size, flags=mmap.MAP_SHARED, prot=mmap.PROT_WRITE)
-        if array.dtype != np.complex64:
-            array = array.astype(np.complex64)
-        mm.write(np.ascontiguousarray(array.T))
-        mm.close()
-        #with mmap.mmap(d.fileno(), size, flags=mmap.MAP_SHARED, prot=mmap.PROT_WRITE) as mm:
-        #    mm.write(array.astype(np.complex64).tobytes(order='F'))
+    with open(name + ".cfl", "wb") as f:
+        f.write(np.ascontiguousarray(array.T))
+
 
 def writemulticfl(name, arrays):
-    size = 0
-    dims = []
+    total_size = sum(arr.size for arr in arrays)
+    dims = [arr.shape for arr in arrays]
 
-    for array in arrays:
-        size += array.size
-        dims.append(array.shape)
-
-    with open(name + ".hdr", "wt") as h:
-        h.write('# Dimensions\n')
-        h.write("%d\n" % size)
-
-        h.write('# SizesDimensions\n')
+    with open(name + ".hdr", "wt") as f:
+        f.write('# Dimensions\n')
+        f.write("%d\n" % total_size)
+        f.write('# SizesDimensions\n')
+        f.write(' '.join(str(len(dim)) for dim in dims))
+        f.write('\n')
+        f.write('# MultiDimensions\n')
         for dim in dims:
-            h.write("%d " % len(dim))
-        h.write('\n')
+            f.write(' '.join(str(i) for i in dim))
+            f.write('\n')
 
-        h.write('# MultiDimensions\n')
-        for dim in dims:
-            for i in dim:
-                h.write("%d " % i)
-            h.write('\n')
-
-    size = size * np.dtype(np.complex64).itemsize
-
-    with open(name + ".cfl", "w+b") as d:
-        os.ftruncate(d.fileno(), size)
-        mm = mmap.mmap(d.fileno(), size, flags=mmap.MAP_SHARED, prot=mmap.PROT_WRITE)
+    with open(name + ".cfl", "wb") as f:
         for array in arrays:
             if array.dtype != np.complex64:
                 array = array.astype(np.complex64)
-            mm.write(np.ascontiguousarray(array.T))
-        mm.close()
+            f.write(np.ascontiguousarray(array.T))
