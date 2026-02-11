@@ -328,19 +328,19 @@ struct seq_interface_conf seq_get_interface_conf(struct seq_config* conf)
 {
 	struct seq_interface_conf ret = { };
 
+	// if (conf->enc.is3D)
+	// 	ret.mode |= SEQ_MODE_3D;
+
 	ret.tr = conf->phys.tr;
 	ret.radial_views = conf->loop_dims[PHS1_DIM];
 	ret.slices = get_slices(conf);
 	ret.echoes = conf->loop_dims[TE_DIM];
+	ret.slice_thickness = conf->geom.slice_thickness;
+
 	ret.trigger_type = conf->trigger.type;
 	ret.trigger_delay_time = conf->trigger.delay_time;
 	ret.trigger_pulses = conf->trigger.pulses;
-	ret.slice_thickness = conf->geom.slice_thickness;
-	ret.sms_distance = conf->geom.sms_distance;
-	ret.is3D = 0; // conf->dim.is3D;
-	ret.bssfp = 0; // (CONTRAST_BALANCED == conf->phys.contrast) ? 1 : 0;
-	ret.asl = 0;
-	ret.interactive = 0;
+
 	ret.raster_grad = conf->sys.raster_grad;
 	ret.raster_rf = conf->sys.raster_rf;
 	ret.grad_max_ampl = conf->sys.grad.max_amplitude;

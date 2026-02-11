@@ -87,24 +87,27 @@ struct seq_standard_conf {
 	enum seq_order enc_order;
 };
 
+enum mode_flags {
+
+	SEQ_MODE_3D		= (1u << 0),
+	SEQ_MODE_BSSFP		= (1u << 1),
+	SEQ_MODE_ASL		= (1u << 2),
+	SEQ_MODE_INTERACTIVE	= (1u << 3),
+};
+
 struct seq_interface_conf {
+
+	unsigned long mode;
 
 	double tr;
 	long radial_views;
 	long slices;
 	long echoes;
+	double slice_thickness;
 
 	enum trigger_type trigger_type;
 	double trigger_delay_time;
 	int trigger_pulses;
-
-	double slice_thickness;
-	double sms_distance;
-
-	int is3D;
-	int bssfp;
-	int asl;
-	int interactive;
 
 	double raster_grad;
 	double raster_rf;
