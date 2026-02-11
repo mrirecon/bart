@@ -16,6 +16,7 @@
 extern const int seq_loop_order_avg_inner[DIMS];
 extern const int seq_loop_order_avg_outer[DIMS];
 extern const int seq_loop_order_multislice[DIMS];
+extern const int seq_loop_order_asl[DIMS];
 
 
 enum flash_contrast {

@@ -27,6 +27,7 @@ enum seq_order {
 	SEQ_ORDER_AVG_OUTER,
 	SEQ_ORDER_AVG_INNER,
 	SEQ_ORDER_SEQ_MS,
+	SEQ_ORDER_SEQ_ASL,
 };
 
 enum mag_prep {

@@ -256,6 +256,10 @@ static void loop_dims_to_conf(struct seq_config* seq, const int D, const long in
 	case SEQ_ORDER_AVG_INNER:
 		md_copy_order(DIMS, seq->order, seq_loop_order_avg_inner);
 		break;
+
+	case SEQ_ORDER_SEQ_ASL:
+		md_copy_order(DIMS, seq->order, seq_loop_order_asl);
+		break;
 	}
 
 	long total_slices = in_dims[SLICE_DIM];
