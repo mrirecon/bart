@@ -446,7 +446,7 @@ int main_sample(int argc, char* argv[argc])
 		linop = linop_null_create(DIMS, img_dims, DIMS, img_dims);
 	}
 
-	get_init(DIMS, img_dims, samples, get_sigma(1),
+	get_init(DIMS, img_dims, samples, sigma_max,
 		 (0 < em_conf.precond_max_iter) ? linop : NULL, AHy, em_conf.precond_max_iter);
 
 	for (int i = N - 1; i >= 0; i--) {
@@ -525,7 +525,8 @@ int main_sample(int argc, char* argv[argc])
 			em_conf.precond_diag = 1. / var_i;
 		}
 
-		debug_printf(DP_DEBUG2, "gamma: %.2e\n", em_conf.step);
+		if (0 < em_conf.maxiter)
+			debug_printf(DP_DEBUG2, "gamma: %.2e\n", em_conf.step);
 
 		iter2_eulermaruyama(CAST_UP(&em_conf), linop_iter->normal, 1, score_op_p,
 				NULL, NULL, NULL, 2 * md_calc_size(DIMS, img_dims),
