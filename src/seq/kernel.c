@@ -25,6 +25,8 @@ void seq_linearize_events(int N, struct seq_event ev[__VLA(N)], double* start_bl
 	if ((0 >= N) || (0. > *start_block))
 		return;
 
+	double end = seq_block_end(N, ev, mode, tr, raster);
+
 	for (int i = 0; i < N; i++) {
 
 		ev[i].start += *start_block;
@@ -32,7 +34,7 @@ void seq_linearize_events(int N, struct seq_event ev[__VLA(N)], double* start_bl
 		ev[i].end   += *start_block;
 	}
 
-	*start_block += seq_block_end(N, ev, mode, tr, raster);
+	*start_block += end;
 }
 
 

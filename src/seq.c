@@ -485,6 +485,8 @@ debug_print_events:
 
 	} while (seq_continue(seq->state, seq->conf));
 
+	debug_printf(DP_INFO, "Sequence total duration: %.3f s\n", seq->state->start_block);
+
 	if (NULL != grad_file)
 		unmap_cfl(DIMS, mdims, out_grad);
 
