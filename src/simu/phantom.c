@@ -75,7 +75,7 @@ complex double stl_fun_k(const void* v, const long C, const float k1[])
 
 	complex double z = 0;
 
-	if (0 == n) {
+	if (0. == n) {
 
 		for (int i = 0; i < ts->N; i++)
 			z += t[i].svol;

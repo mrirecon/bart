@@ -11,10 +11,12 @@
 #include <math.h>
 
 #include "num/multind.h"
+#include "num/specfun.h"
 
 #include "stl/misc.h"
 #include "stl/models.h"
 
+#include "simu/shape.h"
 #include "simu/phantom.h"
 
 #include "utest.h"
@@ -55,3 +57,68 @@ static bool test_stl_kspace(void)
 }
 
 UT_REGISTER_TEST(test_stl_kspace);
+
+
+static bool test_kpolygon(void)
+{
+	const double pg[4][2] = {
+		{ -0.5, -0.5 },
+		{ +0.5, -0.5 },
+		{ +0.5, +0.5 },
+		{ -0.5, +0.5 },
+	};
+
+	double test[][3] = {
+		{  0.,  0.,  0. },
+		{ +0.1, 0.,  0. },
+		{ -0.2, 0.,  0. },
+		{ +0.1, 0.3, 0. },
+		{ -0.2, 0.2, 0. },
+	};
+
+	for (int i = 0; i < 5; i++) {
+
+		double diff1 = sinc(M_PI * test[i][0]) * sinc(M_PI * test[i][1]);
+		double diff2 = 4. * creal(kpolygon(4, pg, test[i]));
+
+		if (1.E-10 < fabs(diff1 - diff2))
+			return false;
+	}
+
+	return true;
+}
+
+UT_REGISTER_TEST(test_kpolygon);
+
+
+
+static bool test_kpolygon2(void)
+{
+	const double pg[4][2] = {
+
+		{ -0.5, -0.5 },
+		{ +0.5, -0.5 },
+		{ +0.5, +0.5 },
+		{ -0.5, +0.5 },
+	};
+
+	for (int i = 3; i < 9; i++) {
+
+		double x = pow(10., -i);	// close to 0.
+		double y = 0.;
+
+		double pos[3] = { x, y, 0. };
+
+		double value = 4. * kpolygon(4, pg, pos);
+
+		if (1.E-5 < fabs(value - 1.))
+			return false;
+	}
+
+	return true;
+}
+
+UT_REGISTER_TEST(test_kpolygon2);
+
+
+
