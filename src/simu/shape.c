@@ -1,5 +1,5 @@
 /* Copyright 2020-2025. Uecker Lab. University Medical Center Göttingen.
- * Copyright 2023. Institute of Biomedical Imaging. TU Graz.
+ * Copyright 2023-2026. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  */
@@ -7,11 +7,15 @@
 #include <complex.h>
 #include <assert.h>
 #include <math.h>
+
 #include "num/flpmath.h"
 #include "num/specfun.h"
 #include "num/multind.h"
+
 #include "geom/polygon.h"
-#include "simu/shape.h"
+
+#include "shape.h"
+
 
 complex double xpolygon(int N, const double pg[N][2], const double p[3])
 {
@@ -159,10 +163,12 @@ complex double ktripoly(const struct tri_poly* t, const long C, const double p[4
 		if (t) {
 
 			md_set_dims(D, cpos, 0);
+
 			for (int i = 0; i < 3; i++)
 				cpos[i] = pos[i+1];
 
 			cpos[COIL_DIM] = C;
+
 			return MD_ACCESS(D, cstrs, cpos, ccoeff);
 		}
 
@@ -170,3 +176,4 @@ complex double ktripoly(const struct tri_poly* t, const long C, const double p[4
 
 	return 0;
 }
+

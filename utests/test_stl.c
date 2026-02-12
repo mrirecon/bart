@@ -129,20 +129,19 @@ static bool vec_finite(int N, const double* v)
 
 static bool check_triangle(const struct triangle* t)
 {
-	if (!(vec_finite(3, t->v0) &&
-		vec_finite(3, t->v1) &&
-		vec_finite(3, t->v2) &&
-		vec_finite(3, t->n) &&
-		vec_finite(3, t->e0) &&
-		vec_finite(3, t->e1) &&
-		vec_finite(3, t->ctr) &&
-		vec_finite(3, t->rot) &&
-		vec_finite(6, t->poly) &&
-		INFINITY != t->svol &&
-		INFINITY != t->angle))
-		return false;
-
-	return true;
+	return(   vec_finite(3, t->v0)
+	       && vec_finite(3, t->v1)
+	       && vec_finite(3, t->v2)
+	       && vec_finite(3, t->n)
+	       && vec_finite(3, t->e0)
+	       && vec_finite(3, t->e1)
+	       && vec_finite(3, t->ctr)
+	       && vec_finite(3, t->rot)
+	       && vec_finite(2, t->poly[0])
+	       && vec_finite(2, t->poly[1])
+	       && vec_finite(2, t->poly[2])
+	       && INFINITY != t->svol
+	       && INFINITY != t->angle);
 }
 
 static bool test_stlgeomprocessing(void)
@@ -181,12 +180,12 @@ static bool test_stlgeomprocessing(void)
 			b = false;
 	}
 
-	if (1E-14 < fabs(-0.19019237886466838772 - t[0].poly[0]) ||
-		1E-14 < fabs(0.70980762113533146795 - t[0].poly[1]) ||
-		1E-14 < fabs(-0.51961524227066313575 - t[0].poly[2]) ||
-		1E-14 < fabs(-0.51961524227066313575 - t[0].poly[3]) ||
-		1E-14 < fabs(0.70980762113533146795 - t[0].poly[4]) ||
-		1E-14 < fabs(-0.19019237886466838772 - t[0].poly[5]))
+	if (   1E-14 < fabs(-0.19019237886466838772 - t[0].poly[0][0])
+	    || 1E-14 < fabs(+0.70980762113533146795 - t[0].poly[0][1])
+	    || 1E-14 < fabs(-0.51961524227066313575 - t[0].poly[1][0])
+	    || 1E-14 < fabs(-0.51961524227066313575 - t[0].poly[1][1])
+	    || 1E-14 < fabs(+0.70980762113533146795 - t[0].poly[2][0])
+	    || 1E-14 < fabs(-0.19019237886466838772 - t[0].poly[2][1]))
 		b = false;
 
 

@@ -29,7 +29,7 @@ struct triangle {
 	double sur;
 
 	// intersection coordinates of triangle with 2d plane
-	double poly[6];
+	double poly[3][2];
 };
 
 struct triangle_stack {

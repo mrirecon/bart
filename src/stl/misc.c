@@ -40,7 +40,11 @@ struct triangle triangle_defaults = {
 	.rot = { INFINITY, INFINITY, INFINITY },
 	.angle = INFINITY,
 	.svol = INFINITY,
-	.poly = { INFINITY, INFINITY, INFINITY, INFINITY, INFINITY, INFINITY },
+	.poly = {
+		{ INFINITY, INFINITY },
+		{ INFINITY, INFINITY },
+		{ INFINITY, INFINITY },
+	},
 	.sur = INFINITY,
 };
 
@@ -605,12 +609,14 @@ void stl_relative_position(struct triangle* t)
 	vec3d_rotax(v1cr, t->angle, t->rot, v1c);
 	vec3d_rotax(v2cr, t->angle, t->rot, v2c);
 
-	t->poly[0] = v0cr[0];
-	t->poly[1] = v0cr[1];
-	t->poly[2] = v1cr[0];
-	t->poly[3] = v1cr[1];
-	t->poly[4] = v2cr[0];
-	t->poly[5] = v2cr[1];
+	t->poly[0][0] = v0cr[0];
+	t->poly[0][1] = v0cr[1];
+
+	t->poly[1][0] = v1cr[0];
+	t->poly[1][1] = v1cr[1];
+
+	t->poly[2][0] = v2cr[0];
+	t->poly[2][1] = v2cr[1];
 
 	// signed volume of tetrahedron triangle + origin
 	vec3d_crossproduct(tmp, t->v0, t->v1);

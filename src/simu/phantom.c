@@ -63,41 +63,51 @@ static void dstr_stl(void* v)
 	}
 }
 
+
+
+
+static complex double ktetrahedron(const struct triangle *t, const double k[3])
+{
+	double n = vec3d_norm(k);
+
+	if (0. == n)
+		return t->svol;
+
+
+	double kc[3];
+	vec3d_saxpy(kc, t->ctr, -1., k);
+
+	double kcr[3];
+	vec3d_rotax(kcr, t->angle, t->rot, kc);
+
+	// z-dirac of triangle in x-space gives z-const in k-space.
+	// Therefore, the z-component can be set to zero.
+	kcr[2] = 0.;
+
+	complex double z = kpolygon(3, t->poly, kcr)
+			* cexp(-2.i * M_PI * vec3d_sdot(t->ctr, k))
+			* vec3d_sdot(t->n, k);
+
+	return z / (-2.i * M_PI * n * n);
+}
+
+
 complex double stl_fun_k(const void* v, const long C, const float k1[])
 {
 	double k[3] = { k1[0], k1[1], k1[2] };
-	(void) C;
+	(void)C;
 	const struct phantom_opts* popts = v;
 	struct triangle_stack* ts = popts->data;
 	struct triangle* t = ts->tri;
 
-	double n = vec3d_norm(k);
-
 	complex double z = 0;
 
-	if (0. == n) {
+	for (int i = 0; i < ts->N; i++)
+		z += ktetrahedron(&t[i], k);
 
-		for (int i = 0; i < ts->N; i++)
-			z += t[i].svol;
-
-		return z;
-
-	} else {
-
-		double kc[3], kcr[3];
-
-		for (int i = 0; i < ts->N; i++) {
-
-			vec3d_saxpy(kc, t[i].ctr, -1, k);
-			vec3d_rotax(kcr, t[i].angle, t[i].rot, kc);
-			// z-dirac of triangle in x-space gives z-const in k-space. Therefore, the z-component can be set to zero.
-			kcr[2] = 0;
-			z += kpolygon(3, (double (*)[2]) t[i].poly, kcr) * cexp(-2.j * M_PI * vec3d_sdot(t[i].ctr, k)) * vec3d_sdot(t[i].n, k);
-		}
-
-		return z / (-2.j * M_PI * n * n);
-	}
+	return z;
 }
+
 
 void phantom_stl_init(struct phantom_opts* popts, int D, long dims[D], double* model)
 {
