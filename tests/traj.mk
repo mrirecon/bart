@@ -292,10 +292,7 @@ tests/test-traj-raga-meco: traj raga bin vec transpose fmac nrmse
 	$(TOOLDIR)/raga -e 7 -s 31 411 ind.ra						;\
 	$(TOOLDIR)/traj -x 220 -y 411 -e 7 -r -D trj_lin.ra				;\
 	$(TOOLDIR)/bin -o ind.ra trj_lin.ra trj_reo.ra					;\
-	$(TOOLDIR)/vec -- 1 -1 1 -1 1 -1 1 vec.ra					;\
-	$(TOOLDIR)/transpose  0 5 vec.ra readout_dir.ra					;\
-	$(TOOLDIR)/fmac readout_dir.ra trj_reo.ra trj_reo_dir.ra			;\
-	$(TOOLDIR)/nrmse -t 5E-7 trj_reo_dir.ra trj_raga.ra				;\
+	$(TOOLDIR)/nrmse -t 0 trj_reo.ra trj_raga.ra				;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
