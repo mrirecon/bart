@@ -42,6 +42,7 @@
 
 #include "iter/iter2.h"
 #include "iter/iter.h"
+#include "iter/prox.h"
 #include "iter/prox2.h"
 #include "iter/misc.h"
 
@@ -102,38 +103,38 @@ static void print_stats(int dl, float t, long img_dims[DIMS], const complex floa
 
 
 
-static void get_init(int N, long img_dims[N], complex float* samples, float sigma, const struct linop_s* A, const complex float* AHy, int iter)
+static void get_init(int N, long img_dims[N], complex float* samples, float sigma, const struct linop_s* A, const complex float* AHy, struct iter_eulermaruyama_conf em_conf)
 {
-	md_zgaussian_rand(N, img_dims, samples);
-	md_zsmul(DIMS, img_dims, samples, samples, sigma);
+	if ((NULL == A) || linop_is_null(A)) {
 
-	if ((NULL == A) || linop_is_null(A))
-		return;
+		md_zgaussian_rand(N, img_dims, samples);
+		md_zsmul(DIMS, img_dims, samples, samples, sigma);
 
-	const struct iovec_s* cod = linop_codomain(A);
-	assert(N == cod->N);
-	long ksp_dims[N];
-	md_copy_dims(N, ksp_dims, cod->dims);
+	} else {
 
-	complex float* tmp_ksp = md_alloc_sameplace(N, ksp_dims, CFL_SIZE, samples);
+		// one pULA step, initialized with zero, without a prior score, and stepsize 2, yields:
+		// x = 2 (A^HA + I / (2 sigma^2))^-1 [ A^H y + n1 + 1 / sigma n2] with n1, n2 ~ CN(0, I)
+		// This is twixe a sample from the posterior distribution
+		// p(x|y) ~ exp(-||y - A x||^2) exp(-1/sigma^2||x||^2)
 
-	md_zgaussian_rand(DIMS, ksp_dims, tmp_ksp);
+		em_conf.maxiter = 1;
+		em_conf.step = 2;
+		em_conf.precond_linop = A;
+		em_conf.precond_diag = 1. / (sigma * sigma);
 
-	complex float* tmp_AHy = md_alloc_sameplace(DIMS, img_dims, CFL_SIZE, samples);
+		// we use prox zero here, as, applied to the initial zero it returns zero
+		const struct operator_p_s* t_prox = prox_zero_create(N, img_dims);
 
-	linop_adjoint(A, N, img_dims, tmp_AHy, N, ksp_dims, tmp_ksp);
+		md_clear(N, img_dims, samples, CFL_SIZE);
 
-	md_zadd(N, img_dims, tmp_AHy, tmp_AHy, AHy);
-	md_zaxpy(N, img_dims, tmp_AHy, 1. / (sigma * sigma), samples);
+		iter2_eulermaruyama(CAST_UP(&em_conf), A->normal, 1, &t_prox,
+				NULL, NULL, NULL, 2 * md_calc_size(DIMS, img_dims),
+				(float*)samples, (float*)AHy, NULL);
 
-	struct iter_conjgrad_conf conf = iter_conjgrad_defaults;
-	conf.maxiter = iter;
-	conf.l2lambda = 1. / (sigma * sigma);
+		md_zsmul(N, img_dims, samples, samples, 0.5);
 
-	iter2_conjgrad(CAST_UP(&conf), A->normal, 0, NULL, NULL, NULL, NULL, 2 * md_calc_size(DIMS, img_dims), (float*)(samples), (const float*)tmp_AHy, NULL);
-
-	md_free(tmp_AHy);
-	md_free(tmp_ksp);
+		operator_p_free(t_prox);
+	}
 }
 
 
@@ -447,7 +448,7 @@ int main_sample(int argc, char* argv[argc])
 	}
 
 	get_init(DIMS, img_dims, samples, sigma_max,
-		 (0 < em_conf.precond_max_iter) ? linop : NULL, AHy, em_conf.precond_max_iter);
+		 (0 < em_conf.precond_max_iter) ? linop : NULL, AHy, em_conf);
 
 	for (int i = N - 1; i >= 0; i--) {
 

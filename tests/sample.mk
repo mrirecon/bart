@@ -258,8 +258,8 @@ tests/test-sample-gmm-2D-weighting-posterior1: vec scale join ones sample nrmse 
 	$(TOOLDIR)/ones 1 2 coil.ra 							;\
 	$(TOOLDIR)/scale 100 coil.ra coil.ra 						;\
 	$(TOOLDIR)/vec 1 0 pat.ra 							;\
-	$(TOOLDIR)/sample --dims 2:1 --sigma max=10,min=0.01 -S100 --gamma=0.1 --gmm mean=mu.ra,var=var.ra,w=ws.ra --posterior k=ksp.ra,s=coil.ra,p=pat.ra,precond=4 -N10 -K30 samples.ra expect.ra							 ;\
-	$(TOOLDIR)/repmat 15 100 mu.ra mus.ra						;\
+	$(TOOLDIR)/sample --dims 2:1 --sigma max=10,min=0.01 -S100 --gamma=0.1 --gmm mean=mu.ra,var=var.ra,w=ws.ra --posterior k=ksp.ra,s=coil.ra,p=pat.ra,precond=4 -N20 -K30 samples.ra 	 ;\
+	$(TOOLDIR)/repmat 15 100 mu.ra mus.ra 						;\
 	$(ROOTDIR)/bart -l8 -r mu.ra measure --mse mus.ra samples.ra l2.ra		;\
 	$(TOOLDIR)/threshold -M 0.1 l2.ra w.ra 						;\
 	$(TOOLDIR)/fmac -s32768 w.ra w.ra						;\
