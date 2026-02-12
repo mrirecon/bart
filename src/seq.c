@@ -485,7 +485,10 @@ debug_print_events:
 
 	} while (seq_continue(seq->state, seq->conf));
 
-	debug_printf(DP_INFO, "Sequence total duration: %.3f s\n", seq->state->start_block);
+	debug_printf(DP_INFO, "Sequence total duration: %.3f s (expected: %.3f)\n", seq->state->start_block, seq_total_measure_time(seq->conf));
+
+	if (1.E-3 < fabs(seq->state->start_block - seq_total_measure_time(seq->conf)))
+		debug_printf(DP_WARN, "Calculation of sequence duration invalid!\n");
 
 	if (NULL != grad_file)
 		unmap_cfl(DIMS, mdims, out_grad);
