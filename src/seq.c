@@ -354,7 +354,7 @@ int main_seq(int argc, char* argv[argc])
 
 
 		if (0 > E)
-			error("Sequence preparation failed! - check seq_config, %s [ %d ] \n", error_string(prepped_rfs), prepped_rfs);
+			error("Sequence execution failed! - check seq_config, %s [ %d ] \n", error_string(E), E);
 
 		if ((SEQ_BLOCK_KERNEL_NOISE == seq->state->mode) || (0 == E)) // no noise_scan with pulseq
 			goto debug_print_events;
