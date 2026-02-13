@@ -70,9 +70,8 @@ static complex double ktetrahedron(const struct triangle *t, const double k[3])
 {
 	double n = vec3d_norm(k);
 
-	if (0. == n)
+	if (1.E-6 > fabs(n))
 		return t->svol;
-
 
 	double kc[3];
 	vec3d_saxpy(kc, t->ctr, -1., k);
@@ -84,7 +83,7 @@ static complex double ktetrahedron(const struct triangle *t, const double k[3])
 	// Therefore, the z-component can be set to zero.
 	kcr[2] = 0.;
 
-	complex double z = kpolygon(3, t->poly, kcr)
+	complex double z = 4. * kpolygon(3, t->poly, kcr)
 			* cexp(-2.i * M_PI * vec3d_sdot(t->ctr, k))
 			* vec3d_sdot(t->n, k);
 

@@ -32,7 +32,7 @@ static bool test_stl_kspace(void)
 	stl_compute_normals(stldims, model);
 	phantom_stl_init(&popts, 3, stldims, model);
 
-	float pos[3] = {0, 0, 0};
+	float pos[3] = { 0., 0., 0. };
 
 	complex double c = stl_fun_k(&popts, 0, pos);
 
@@ -41,10 +41,11 @@ static bool test_stl_kspace(void)
 
 	pos[0] = 0.1;
 	pos[1] = 0.1;
-	pos[1] = 0.1;
+	pos[2] = 0.;
+
 	c = stl_fun_k(&popts, 0, pos);
 
-	if (1E-10 < fabs(creal(c) - 0.0597860454167))
+	if (1E-10 < fabs(creal(c) - 4. * 0.0597860454167))
 		b = false;
 
 	if (1E-10 < fabs(cimag(c)))
@@ -57,6 +58,41 @@ static bool test_stl_kspace(void)
 }
 
 UT_REGISTER_TEST(test_stl_kspace);
+
+
+
+static bool test_stl_kspace2(void)
+{
+        bool b = true;
+        long stldims[3];
+
+	struct phantom_opts popts;
+	popts.kspace = true;
+        double* model = stl_internal_tetrahedron(stldims);
+	stl_compute_normals(stldims, model);
+	phantom_stl_init(&popts, 3, stldims, model);
+
+	float pos[3] = { 0., 0., 0. };
+
+	for (int i = 4; i < 8; i++) {
+
+		double x = pow(10., -i);	// close to 0.
+		pos[0] = x;
+
+		complex double c = stl_fun_k(&popts, 0, pos);
+
+		if (1E-7 < fabs(creal(c) - 0.243))
+			b = false;
+	}
+
+	popts.dstr(&popts);
+        md_free(model);
+
+        return b;
+}
+
+UT_REGISTER_TEST(test_stl_kspace2);
+
 
 
 static bool test_kpolygon(void)
