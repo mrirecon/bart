@@ -115,11 +115,6 @@ struct seq_interface_conf {
 	double grad_max_ampl;
 };
 
-
-// for interactive mode
-BARTLIB_API int BARTLIB_CALL
-seq_check_equal_dims(int D, const long dims1[__VLA(D)], const long dims2[__VLA(D)], unsigned long flags);
-
 struct seq_config;
 
 BARTLIB_API extern int BARTLIB_CALL seq_raga_spokes(const struct seq_config* seq);

@@ -32,11 +32,6 @@ int seq_raga_spokes(const struct seq_config* seq)
 	return seq->loop_dims[PHS1_DIM];
 }
 
-int seq_check_equal_dims(int D, const long dims1[D], const long dims2[D], unsigned long flags)
-{
-	return md_check_equal_dims(D, dims1, dims2, flags);
-}
-
 
 double seq_minimum_tr(const struct seq_config* seq)
 {
