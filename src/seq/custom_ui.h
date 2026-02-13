@@ -80,6 +80,7 @@ struct custom_ui {
 BARTLIB_API struct custom_ui* BARTLIB_CALL seq_custom_ui_init(void);
 BARTLIB_API void BARTLIB_CALL seq_custom_ui_free(struct custom_ui* ui);
 
+BARTLIB_API extern int BARTLIB_CALL seq_custom_ui_get_idx(const char* name);
 
 // FIXME: workaround for sequence access 
 #define _cil_pe_mode 0

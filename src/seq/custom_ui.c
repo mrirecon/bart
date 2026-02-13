@@ -115,3 +115,42 @@ void seq_custom_ui_free(struct custom_ui* ui)
 	xfree(ui->doublearr);
 	xfree(ui);
 }
+
+
+struct lookup {
+	const char* name;
+	int e;
+};
+
+static struct lookup lookup_table_long[] = {
+
+#define lut_entry(NAME) { .name = #NAME, .e = cil_##NAME },
+	SEQ_CUSTOM_UI_IDX_LONG(lut_entry)
+#undef lut_entry
+};
+
+static struct lookup lookup_table_double[] = {
+
+#define lut_entry(NAME) { .name = #NAME, .e = cid_##NAME },
+	SEQ_CUSTOM_UI_IDX_DOUBLE(lut_entry)
+#undef lut_entry
+};
+
+static int lookup(const char* name, int n, struct lookup table[n])
+{
+	for (int i = 0; i < n; i++)
+		if (0 == strcmp(name, table[i].name))
+			return table[i].e;
+	return -1;
+}
+
+
+int seq_custom_ui_get_idx(const char* name)
+{
+	int index = lookup(name, ARRAY_SIZE(lookup_table_double), lookup_table_double);
+
+	if (0 > index)
+		return lookup(name, ARRAY_SIZE(lookup_table_long), lookup_table_long);
+
+	return index;
+}
