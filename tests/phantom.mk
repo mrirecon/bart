@@ -391,33 +391,18 @@ tests/test-phantom-noncart-BRAIN: traj phantom nufft fft nrmse
 	touch $@
 
 
-# FIXME: broken, because it allows 100% error
-tests/test-phantom-stl: traj phantom nufft fft nrmse stl
+tests/test-phantom-stl: stl phantom fft fmac nrmse 
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
-	$(TOOLDIR)/traj -x 64 -y 64 -z 64 -3 traj.ra					;\
-	$(TOOLDIR)/stl --model TET tet.stl 						;\
-	$(TOOLDIR)/phantom -s 1 --coil HEAD_3D_64CH -t traj.ra --stl tet.stl kt.ra 	;\
-	$(TOOLDIR)/nufft -i traj.ra kt.ra xt.ra						;\
-	$(TOOLDIR)/phantom -s 1 --coil HEAD_3D_64CH -k -3 -x 64 --stl tet.stl k.ra 	;\
+	$(TOOLDIR)/stl --model HEX hex.ra						;\
+	$(TOOLDIR)/phantom -x33 -3 --coil HEAD_3D_64CH -s1 --stl hex.ra -k k.ra 	;\
+	$(TOOLDIR)/phantom -x33 -3 -k --stl hex.ra k0.ra				;\
+	$(TOOLDIR)/phantom -x33 -3 --coil HEAD_3D_64CH -S1 s.ra				;\
+	$(TOOLDIR)/fft -i 7 k0.ra x0.ra							;\
+	$(TOOLDIR)/fmac x0.ra s.ra x0s.ra						;\
 	$(TOOLDIR)/fft -i 7 k.ra x.ra							;\
-	$(TOOLDIR)/nrmse -t 1 x.ra xt.ra						;\
-	rm *.ra ; rm *.stl ; cd .. ; rmdir $(TESTS_TMP)
+	$(TOOLDIR)/nrmse -t 0.082 x0s.ra x.ra						;\
+	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
-
-
-# FIXME: broken, because it allows 100% error
-tests/test-phantom-stl3: traj phantom nufft fft nrmse stl
-	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
-	$(TOOLDIR)/traj -x 33 -y 33 -z 33 -3 traj3.ra					;\
-	$(TOOLDIR)/stl --model TET tet.stl 						;\
-	$(TOOLDIR)/phantom -s 1 --coil HEAD_2D_8CH -t traj3.ra --stl tet.stl kt3.ra 	;\
-	$(TOOLDIR)/nufft -i -x 33:33:33 traj3.ra kt3.ra xt3.ra				;\
-	$(TOOLDIR)/phantom -s 1 --coil HEAD_2D_8CH -k -3 -x 33 --stl tet.stl k3.ra 	;\
-	$(TOOLDIR)/fft -i 7 k3.ra x3.ra							;\
-	$(TOOLDIR)/nrmse -t 1 x3.ra xt3.ra						;\
-	rm *.ra ; rm *.stl ; cd .. ; rmdir $(TESTS_TMP)
-	touch $@
-
 
 
 TESTS += tests/test-phantom-ksp tests/test-phantom-noncart tests/test-phantom-coil tests/test-phantom-ksp-coil
@@ -434,7 +419,7 @@ TESTS += tests/test-phantom-FILE tests/test-phantom-FILE-basis
 TESTS += tests/test-phantom-ellipsoid tests/test-phantom-noncart-ellipsoid tests/test-phantom-noncart-ellipsoid-params
 
 ifneq ($(BUILDTYPE), WASM) # stl fails under wasm
-TESTS_SLOW += tests/test-phantom-stl tests/test-phantom-stl3
+TESTS_SLOW += tests/test-phantom-stl
 endif
 TESTS_SLOW += tests/test-phantom-coil-large tests/test-phantom-ksp-coil-large
 TESTS_SLOW += tests/test-phantom-noncart-BRAIN tests/test-phantom-FILE-coil-large
