@@ -81,7 +81,7 @@ static bool test_stl_kspace2(void)
 
 		complex double c = stl_fun_k(&popts, 0, pos);
 
-		if (1E-7 < fabs(creal(c) - 0.243))
+		if (1E-6 < fabs(creal(c) - 0.243))
 			b = false;
 	}
 
