@@ -2,7 +2,7 @@
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  **/
- 
+
 #include <math.h>
 
 #include "num/multind.h"
@@ -54,8 +54,6 @@ static const struct nlop_s* compute_score(const struct nlop_s *nlop, bool real_v
 
 	nlop = nlop_expectation_to_score(nlop);
 
-	nlop_unset_derivatives(nlop);
-
 	return nlop;
 }
 
@@ -67,7 +65,7 @@ const struct nlop_s* prior_cunet(const char* cunet_weights, struct nn_cunet_conf
 	const struct nlop_s* nlop = NULL;
 
 	nn_t cunet = cunet_bart_create(cunet_conf, DIMS, img_dims);
-	
+
 	cunet = nn_denoise_precond_edm(cunet, -1., -1., 0.5, false);
 
 	nn_weights_t weights = load_nn_weights(cunet_weights);

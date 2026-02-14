@@ -170,6 +170,7 @@ int main_sample(int argc, char* argv[argc])
 	bool ancestral = false;
 	bool predictor_corrector = false;
 	bool real_valued = false;
+	bool dps = false;
 
 	long save_mod = 0;
 
@@ -217,6 +218,7 @@ int main_sample(int argc, char* argv[argc])
 		OPTL_INFILE('t', "traj", &traj_file, "file", "k-space trajectory"),
 		OPTL_INFILE('p', "pattern", &pattern_file, "file", "Pattern file"),
 		OPTL_SET(0, "annealed", &annealed, "use annealed likelihood"),
+		OPTL_SET(0, "dps", &dps, "use DPS sampling (predictor only)"),
 		OPTL_INT(0, "precond", &em_conf.precond_max_iter, "iter", "(number of preconditioning cg iterations)"),
 		OPTL_INT(0, "precond_iter", &em_conf.precond_max_iter, "iter", "number of preconditioning cg iterations"),
 	};
@@ -279,11 +281,11 @@ int main_sample(int argc, char* argv[argc])
 
 	num_rand_init(seed);
 
-	if (annealed && !(-1 == em_conf.precond_max_iter))
-		error("Preconditioning not supported for annealing.\n");
-
-	if (annealed && (-1 == em_conf.precond_max_iter))
+	if ((annealed || dps) && (-1 == em_conf.precond_max_iter))
 		em_conf.precond_max_iter = 0;
+
+	if ((annealed || dps) && !(0 == em_conf.precond_max_iter))
+		error("Preconditioning not supported for annealing or DPS.\n");
 
 	if (ancestral)	// No Langevin steps if ancestral
 		em_conf.maxiter = 0;
@@ -302,9 +304,12 @@ int main_sample(int argc, char* argv[argc])
 	long map_dims[DIMS];
 	complex float* sens = NULL;
 
+	complex float yHy = 0.;
+
 	if (posterior) {
 
 		ksp = load_cfl(kspace_file, DIMS, ksp_dims);
+		yHy = crealf(md_zscalar(DIMS, ksp_dims, ksp, ksp));
 
 		sens = load_cfl(sens_file, DIMS, map_dims);
 		md_select_dims(DIMS, ~COIL_FLAG, img_dims, map_dims);
@@ -393,6 +398,9 @@ int main_sample(int argc, char* argv[argc])
 		error("No network or gmm specified!\n");
 	}
 
+	if (!dps)
+		nlop_unset_derivatives(nlop);
+
 	unmap_cfl(DIMS, msk_dims, msk);
 
 	nlop = nlop_reshape_in_F(nlop, 1, 1, (long[1]) { 1 }); // reshape noise scale from [1,1,1....1] to [1]
@@ -447,6 +455,12 @@ int main_sample(int argc, char* argv[argc])
 		linop = linop_null_create(DIMS, img_dims, DIMS, img_dims);
 	}
 
+	if (dps) {
+
+		if ((0 != em_conf.precond_max_iter) || (!predictor_corrector) || ancestral || !posterior)
+			error("DPS is only supported with predictor sampling (K = 0)!\n");
+	}
+
 	get_init(DIMS, img_dims, samples, sigma_max,
 		 (0 < em_conf.precond_max_iter) ? linop : NULL, AHy, em_conf);
 
@@ -485,19 +499,73 @@ int main_sample(int argc, char* argv[argc])
 
 			nlop_apply(nlop_fixed, DIMS, img_dims, tmp, DIMS, img_dims, samples);
 
-			nlop_free(nlop_fixed);
-
 			if (posterior) {
 
 				complex float* tmp1 = md_alloc_sameplace(DIMS, img_dims, CFL_SIZE, samples);
+				complex float* tmp2 = NULL;
 
-				linop_normal(linop_iter, DIMS, img_dims, tmp1, samples);
+				if (dps) {
+
+					tmp2 = md_alloc_sameplace(DIMS, img_dims, CFL_SIZE, samples);
+					md_zsmul(DIMS, img_dims, tmp2, tmp, var_ip);
+					md_zadd(DIMS, img_dims, tmp2, tmp2, samples);
+				}
+
+				linop_normal(linop_iter, DIMS, img_dims, tmp1, tmp2 ?: samples);
 
 				md_zsub(DIMS, img_dims, tmp1, AHy_iter, tmp1);
-				md_zadd(DIMS, img_dims, tmp, tmp, tmp1);
+
+				if (dps) {
+
+					long bdims[DIMS];
+					md_select_dims(DIMS, BATCH_FLAG, bdims, img_dims);
+
+					complex float* nrm = md_alloc_sameplace(DIMS, bdims, CFL_SIZE, tmp1);
+					md_ztenmulc(DIMS, bdims, nrm, img_dims, tmp2, img_dims, AHy_iter); 	//   (AHy)^H * x
+					md_zfmacc2(DIMS, img_dims, MD_STRIDES(DIMS, bdims, CFL_SIZE), nrm,
+						   MD_STRIDES(DIMS, img_dims, CFL_SIZE), tmp1,
+						   MD_STRIDES(DIMS, img_dims, CFL_SIZE), tmp2);	// -x^H(AHAx - AHy) + (AHy)^H * x
+					md_zsmul(DIMS, bdims, nrm, nrm, -1);			// (Ax)^H Ax - (Ax)^H y - (y)^H * Ax
+					md_zsadd(DIMS, bdims, nrm, nrm, yHy);			// (Ax)^H Ax - (Ax)^H y - (y)^H * Ax + y^H y = ||y - Ax||_2^2
+					md_zreal(DIMS, bdims, nrm, nrm);
+					md_zspow(DIMS, bdims, nrm, nrm, -0.5);			// 1. / ||y - Ax||_2
+
+					complex float* tmp = md_alloc(DIMS, bdims, CFL_SIZE);
+					md_copy(DIMS, bdims, tmp, nrm, CFL_SIZE);
+
+					float norm = 0.;
+					for (int j = 0; j < bdims[BATCH_DIM]; j++)
+						norm += bdims[BATCH_DIM] / crealf(tmp[j]);
+
+					md_free(tmp);
+
+					debug_printf(DP_DEBUG2, "        DPS: norm: %.2e, relative likelihood weighting: %.2e\n", norm, 0. >= gamma_base ? 1 : gamma_base / norm / dvar);
+
+					md_zsmul(DIMS, bdims, nrm, nrm, 1. / dvar);
+					md_zsmul(DIMS, bdims, nrm, nrm, gamma_base);
+
+					if (0. >= gamma_base)
+						md_zfill(DIMS, bdims, nrm, 1.);
+
+					nlop_adjoint(nlop_fixed, DIMS, img_dims, tmp2, DIMS, img_dims, tmp1);
+					md_zsmul(DIMS, img_dims, tmp2, tmp2, var_ip);
+					md_zadd(DIMS, img_dims, tmp2, tmp2, tmp1);
+
+					md_zmul2(DIMS, img_dims,
+						 MD_STRIDES(DIMS, img_dims, CFL_SIZE), tmp2,
+						 MD_STRIDES(DIMS, img_dims, CFL_SIZE), tmp2,
+						 MD_STRIDES(DIMS, bdims, CFL_SIZE), nrm);		// 1 / ||y - Ax||_2 * score(x)
+
+					md_free(nrm);
+				}
+
+				md_zadd(DIMS, img_dims, tmp, tmp, tmp2 ?: tmp1);
 
 				md_free(tmp1);
+				md_free(tmp2);
 			}
+
+			nlop_free(nlop_fixed);
 
 			md_zaxpy(DIMS, img_dims, samples, dvar, tmp);
 
