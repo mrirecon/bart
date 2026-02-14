@@ -162,7 +162,7 @@ double cuda_asum(long size, const float* src)
 		CUBLAS_CALL(cublasSasum(get_handle_host(), MIN(size, INT_MAX / 4), src, 1, &tmp));
 
 		result += tmp;
-		
+
 		src += INT_MAX / 4;
 		size -= INT_MAX / 4;
 	}
@@ -177,12 +177,12 @@ void cuda_saxpy(long size, float* y, float alpha, const float* src)
 	while (size > 0) {
 
 		CUBLAS_CALL(cublasSaxpy(get_handle_host(), MIN(size, INT_MAX / 4), &alpha, src, 1, y, 1));
-		
+
 		src += INT_MAX / 4;
 		y += INT_MAX / 4;
 		size -= INT_MAX / 4;
 	}
-    
+
 }
 
 void cuda_swap(long size, float* a, float* b)
@@ -190,7 +190,7 @@ void cuda_swap(long size, float* a, float* b)
 	while (size > 0) {
 
 		CUBLAS_CALL(cublasSswap(get_handle_host(), MIN(size, INT_MAX / 4), a, 1, b, 1));
-		
+
 		a += INT_MAX / 4;
 		b += INT_MAX / 4;
 		size -= INT_MAX / 4;
@@ -205,19 +205,33 @@ void cuda_swap(long size, float* a, float* b)
 static bool cpulock_init = false;
 static omp_nest_lock_t cpulock;
 
+#ifdef USE_OPENBLAS
+// <cblas.h> does not necessarily come from OpenBLAS
+int openblas_get_parallel(void);
+#endif
+
+static bool use_lock(void)
+{
+#ifdef BLAS_THREADSAFE
+	return false;
+#endif
+
+#ifdef USE_OPENBLAS
+	//OpenMP is used for parallelization
+	if (2 == openblas_get_parallel())
+		return false;
+#endif
+
+	return true;
+}
+
 static void blas_cpu_set_lock(void)
 {
 	if (!cpulock_init) {
-	
+
 #pragma 	omp critical(cpulock_init)
 		{
 			if (!cpulock_init) {
-
-#ifdef USE_OPENBLAS
-				//set num threads to ne if openblas is built with pthreads
-				if (1 == openblas_get_parallel())
-					openblas_set_num_threads(1);
-#endif
 
 				omp_init_nest_lock(&cpulock);
 				cpulock_init = true;
@@ -225,22 +239,14 @@ static void blas_cpu_set_lock(void)
 		}
 	}
 
-	if (!omp_in_parallel())
-		return;
-
-#ifndef BLAS_THREADSAFE
-	omp_set_nest_lock(&cpulock);
-#endif
+	if (use_lock())
+		omp_set_nest_lock(&cpulock);
 }
 
 static void blas_cpu_unset_lock(void)
 {
-	if (!omp_in_parallel())
-		return;
-
-#ifndef BLAS_THREADSAFE
-	omp_unset_nest_lock(&cpulock);
-#endif
+	if (use_lock())
+		omp_unset_nest_lock(&cpulock);
 }
 
 #define BLAS_CALL(x)	({ blas_cpu_set_lock(); (x); blas_cpu_unset_lock(); })
