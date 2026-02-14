@@ -249,7 +249,8 @@ static void stl_write_binary(FILE* fp, const long dims[3], const double* model)
 {
 	int fd = fileno(fp);
 
-	// FIXME: little endian
+	assert((((union { uint16_t s; uint8_t b; }){ 1 }).b));	// little endian
+
         char header[80 + (int)sizeof(int32_t)];
 	memset(header, 0, sizeof(header));
         snprintf(header, 80, "Created by BART %s.\n", bart_version);
@@ -433,12 +434,14 @@ static double* stl_read_binary(FILE* fp, long dims[3])
         char tmp[80];
 
         if (80 != xread(fd, 80, tmp))
-                error("stl file could not be read.");
+                error("stl file could not be read (1).");
 
         uint32_t Nu;
 
+	assert((((union { uint16_t s; uint8_t b; }){ 1 }).b));	// little endian
+
         if (sizeof(uint32_t) != xread(fd, sizeof(uint32_t), (char* )&Nu))
-                error("stl file could not be read.");
+                error("stl file could not be read (2).");
 
 	if (INT_MAX < Nu)
 		error("too many triangles.");
@@ -460,7 +463,7 @@ static double* stl_read_binary(FILE* fp, long dims[3])
 		_Static_assert(TRI_SIZE <= sizeof(tri), "");
 
 		if (TRI_SIZE != xread(fd, TRI_SIZE, (char*)&tri))
-			error("stl file could not be read\n");
+			error("stl file could not be read (3)\n");
 
                 long pos[3] = { [2] = i };
                 pos[1] = 3;
