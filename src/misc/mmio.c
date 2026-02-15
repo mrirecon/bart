@@ -1046,7 +1046,9 @@ static complex float* load_cfl_internal(const char* name, int D, long dimensions
 
 				assert(NULL == filename);
 				addr = anon_cfl(NULL, D, dimensions);
+
 				stream_attach(strm, addr, true, true);
+
 			} else {
 
 				struct stat st;
@@ -1060,6 +1062,7 @@ static complex float* load_cfl_internal(const char* name, int D, long dimensions
 				//	 This will cause segfaults in tools like pics which uses the copy on write feature of MAP_PRIVATE!
 				if (priv)
 					mprotect(addr, (size_t)(io_calc_size(D, dimensions, sizeof(complex float))), PROT_READ);
+
 				stream_attach(strm, addr, true, true);
 
 				if (0 != unlink(filename))
