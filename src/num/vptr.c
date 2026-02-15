@@ -99,6 +99,8 @@ struct vptr_hint_s* hint_delayed_create(unsigned long delayed_flags)
 
 struct vptr_hint_s* vptr_hint_create(unsigned long mpi_flags, int N, const long dims[N], unsigned long delayed_flags)
 {
+	assert(0 <= N);
+
 	PTR_ALLOC(struct vptr_hint_s, x);
 
 	x->loop_flags = delayed_flags;

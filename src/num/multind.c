@@ -342,6 +342,8 @@ extern bool md_next(int D, const long dims[D], unsigned long flags, long pos[D])
  */
 unsigned long md_permute_flags(int D, const int order[D], unsigned long flags)
 {
+	assert(0 <= D);
+
 	long zeros[D];
 	md_singleton_strides(D, zeros);
 
@@ -1936,6 +1938,7 @@ void md_reshape(int D, unsigned long flags, const long odims[D], void* optr, con
 	md_calc_strides(D, ostrs, odims, size);
 
 	long istrs[D];
+	memset(istrs, 0, sizeof istrs); // warning
 	md_calc_strides(D, istrs, idims, size);
 
 	if (md_check_equal_dims(D, ostrs, istrs, ~flags)) {	// strides consistent!

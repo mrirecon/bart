@@ -4298,6 +4298,7 @@ void md_fdiff_backwards2(int D, const long dims[D], int d, const long ostr[D], f
 void md_fdiff_backwards(int D, const long dims[D], int d, float* out, const float* in)
 {
 	long strs[D];
+	memset(strs, 0, sizeof strs); // warning
 	md_calc_strides(D, strs, dims, FL_SIZE);
 
 	md_fdiff_backwards2(D, dims, d, strs, out, strs, in);
@@ -4346,6 +4347,7 @@ void md_zfdiff_backwards2(int D, const long dims[D], int d, const long ostr[D], 
 void md_zfdiff(int D, const long dims[D], int d, complex float* out, const complex float* in)
 {
 	long strs[D];
+	memset(strs, 0, sizeof strs); // warning
 	md_calc_strides(D, strs, dims, CFL_SIZE);
 
 	md_zfdiff2(D, dims, d, strs, out, strs, in);
@@ -4373,6 +4375,7 @@ void md_zfdiff0(int D, const long dims[D], int d, complex float* out, const comp
 void md_zfdiff_backwards(int D, const long dims[D], int d, complex float* out, const complex float* in)
 {
 	long strs[D];
+	memset(strs, 0, sizeof strs); // warning
 	md_calc_strides(D, strs, dims, CFL_SIZE);
 
 	md_zfdiff_backwards2(D, dims, d, strs, out, strs, in);
