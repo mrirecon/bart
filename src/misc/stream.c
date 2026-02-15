@@ -159,7 +159,7 @@ static long pcfl_pos2index(struct pcfl* data, int N, const long pos[N])
 {
 	assert(N <= data->D);
 	// make sure all stream flags are given!
-	assert(0 == (data->stream_flags >> (N + 1)));	// FIXME
+	assert(0 == (data->stream_flags >> N));
 
 	long spos[data->D];
 	md_set_dims(data->D, spos, 0);
@@ -384,6 +384,9 @@ stream_t stream_create(int N, const long dims[N], int pipefd, bool input, bool b
 		ret->active = true;
 
 		flags = settings.flags;
+
+		if (N < bitcount(flags))
+			goto cleanup;
 	}
 
 	ret->pcfl = pcfl_create(N, dims, flags);

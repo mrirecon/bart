@@ -508,10 +508,17 @@ int read_cfl_header2(int N, char header[N + 1], int fd, const char* hdrname, cha
 	if (header_len > N)
 		error("Header too large");
 
-	if (header_len > 0)
+	if (header_len > 0) {
+
+		if (header_len < r)
+			error("Header too small");
+
 		M = header_len;
-	else
+
+	} else {
+
 		M = N;
+	}
 
 	if (r < M)
 		r += xread0(fd, M - r, header + r);
@@ -602,7 +609,9 @@ int parse_cfl_header(long N, const char header[N + 1], char** file, char** cmd, 
 		} else if (NULL != cmd && 0 == strcmp(keyword, "Command")) {
 
 			char* last_char = memchr(header + pos, '\n', (size_t)(N - pos));
-			assert(NULL != last_char);
+
+			if (NULL == last_char)
+				return -1;
 
 			delta = 1 + last_char - (header + pos);
 
@@ -617,7 +626,9 @@ int parse_cfl_header(long N, const char header[N + 1], char** file, char** cmd, 
 		} else if (node && 0 == strcmp(keyword, "Node-ID")) {
 
 			char* last_char = memchr(header + pos, '\n', (size_t)(N - pos));
-			assert(NULL != last_char);
+
+			if (NULL == last_char)
+				return -1;
 
 			delta = 1 + last_char - (header + pos);
 
