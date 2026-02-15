@@ -127,7 +127,7 @@ static void io_error(const char* fmt, ...)
 
 #endif /* !BART_WITH_PYTHON */
 
-	error("");	// FIXME: we may leak open files descriptors...
+	error("io error\n");	// FIXME: we may leak open files descriptors...
 }
 
 
