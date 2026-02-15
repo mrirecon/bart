@@ -194,11 +194,12 @@ void pulseq_free(struct pulseq *ps)
 void pulse_shapes_to_pulseq(struct pulseq *ps, int N, const struct rf_shape rf_shapes[N])
 {
 	assert(NULL == ps->shapes);
-	double tmp[2];
+	double tmp[2] = { 0., 0. };
 
 	for (int i = 0; i < N; i++) {
 
 		long samples = rf_shapes[i].samples;
+
 		double mag[samples];
 		double pha[samples];
 		double time[samples];
@@ -211,6 +212,7 @@ void pulse_shapes_to_pulseq(struct pulseq *ps, int N, const struct rf_shape rf_s
 		for (int j = 0; j < samples; j++) {
 
 			seq_cfl_to_sample(&rf_shapes[i], j, &m, &p);
+
 			mag[j] = (double)m;
 			pha[j] = round(1.e5 * (double)p / (2 * M_PI)) * 1.e-5;
 			time[j] = round(j * rf_shapes[i].sar_dur / rf_shapes[i].samples / ps->rf_raster_time);
