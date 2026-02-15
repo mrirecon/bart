@@ -9,6 +9,7 @@
 
 #include <stdbool.h>
 #include <complex.h>
+#include <errno.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -430,6 +431,12 @@ static void stl_read_ascii(FILE *fp, long dims[3], double* model)
 static double* stl_read_binary(FILE* fp, long dims[3])
 {
         int fd = fileno(fp);
+#ifdef __APPLE__
+	// Mac OS needs the file descriptor to be rewinded:
+	const int lseek_ret = lseek(fd, 0, SEEK_SET);
+	if (0 != lseek_ret)
+		error("lseek() returned %d (!= 0), errno: %d\n", lseek_ret, errno);
+#endif
 
         char tmp[80];
 
