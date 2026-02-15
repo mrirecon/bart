@@ -694,6 +694,7 @@ static complex float* stream_clone_if_exists(const char* name, stream_t* strm, b
 		return NULL;
 
 	stream_clone(*strm);
+
 	return stream_get_data(*strm);
 }
 

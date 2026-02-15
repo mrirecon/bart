@@ -110,7 +110,7 @@ struct stream_settings {
  **/
 static struct pcfl* pcfl_create(int D, const long dims[D], unsigned long flags)
 {
-	assert(bitcount(flags) <= D);
+	assert(0 == (flags >> D));
 
 	PTR_ALLOC(struct pcfl, ret);
 
@@ -385,7 +385,7 @@ stream_t stream_create(int N, const long dims[N], int pipefd, bool input, bool b
 
 		flags = settings.flags;
 
-		if (N < bitcount(flags))
+		if (0 != (flags >> N))
 			goto cleanup;
 	}
 
