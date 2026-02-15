@@ -335,17 +335,6 @@ static void stream_log_index(stream_t s, long index, double t);
 
 /* Creates a stream.
  *
- * @param N: Number of dimensions
- * @param dims: Dimensions of the memory area
- * @param data: Actual memory area
- * @param pipefd: File Descriptor used for synchronization
- * @param input: Whether this is an input stream (this process *reads* the data).
- * @param regist: Whether to register the stream
- * @param binary: Whether data is transferred serialized along with the metainformation.
- * @param name: Optional filename, for lookup.
- *
- * Returns: stream_t handle.
- *
  * Complex float memory shared between processes,
  * associated with a file descriptor used for synchronization and metainformation.
  **/
