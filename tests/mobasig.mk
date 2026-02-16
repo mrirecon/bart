@@ -1,4 +1,4 @@
-tests/test-mobasig-ir: mobafit mobasig nrmse transpose scale index signal
+tests/test-mobasig-ir: signal index scale transpose mobafit mobasig nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)				;\
 	$(TOOLDIR)/signal -F -I -1 1:1:1 -r0.1 -n100 signal.ra			;\
 	$(TOOLDIR)/index --end 1 100 indexTE.ra					;\
@@ -11,7 +11,7 @@ tests/test-mobasig-ir: mobafit mobasig nrmse transpose scale index signal
 	touch $@
 
 
-tests/test-mobasig-irll: phantom signal reshape fmac index ones zeros cabs saxpy scale mobafit mobasig zexp nrmse 
+tests/test-mobasig-irll: ones scale mobasig zexp nrmse zeros cabs nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
 	$(TOOLDIR)/ones 7 1 1 1 1 1 1 3 ones_param.ra			;\
 	$(TOOLDIR)/ones 6 1 1 1 1 1 1 ones_ti.ra			;\
@@ -64,7 +64,7 @@ tests/test-mobasig-mpl-fit: sim slice index vec transpose repmat saxpy scale fli
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-tests/test-mobasig-r2: phantom signal reshape fmac index mobafit mobasig slice nrmse index extract invert
+tests/test-mobasig-r2: phantom signal reshape fmac index mobafit mobasig nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)			;\
 	$(TOOLDIR)/phantom -x32 -T -b tubes.ra				;\
 	$(TOOLDIR)/signal -250:160:11 -S -e10 -n16 sig.ra		;\
@@ -77,7 +77,7 @@ tests/test-mobasig-r2: phantom signal reshape fmac index mobafit mobasig slice n
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
-tests/test-mobasig-wfr2s: phantom signal fmac index scale extract mobafit saxpy cabs spow ones slice nrmse
+tests/test-mobasig-wfr2s: phantom signal extract fmac index scale mobafit mobasig nrmse
 	set -e; mkdir $(TESTS_TMP) ; cd $(TESTS_TMP)					;\
 	$(TOOLDIR)/phantom -x16 -c circ.ra						;\
 	$(TOOLDIR)/signal -G --fat -n8 -1 3:3:1 -2 0.02:0.02:1 signal_p1.ra		;\
