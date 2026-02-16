@@ -223,9 +223,13 @@ int main_lrmatrix(int argc, char* argv[argc])
 
 		complex float* sdata = create_cfl(sum_str, DIMS, idims);
 
-		odims[LEVEL_DIM]--;
+		if (noise)
+			odims[LEVEL_DIM]--;
+
 		md_zsum(DIMS, odims, LEVEL_FLAG, sdata, odata);
-		odims[LEVEL_DIM]++;
+
+		if (noise)
+			odims[LEVEL_DIM]++;
 
 		unmap_cfl(DIMS, idims, sdata);
 	}
