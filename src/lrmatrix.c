@@ -217,21 +217,14 @@ int main_lrmatrix(int argc, char* argv[argc])
 		    NULL);
 
 
-	// Sum
+	md_zsmul(DIMS, odims, odata, odata, 1. / sqrt((double)levels));
+
 	if (sum_str) {
 
 		complex float* sdata = create_cfl(sum_str, DIMS, idims);
 
-		long istrs[DIMS];
-		long ostrs[DIMS];
-
-		md_calc_strides(DIMS, istrs, idims, sizeof(complex float));
-		md_calc_strides(DIMS, ostrs, odims, sizeof(complex float));
-
-		md_clear(DIMS, idims, sdata, sizeof(complex float));
-
 		odims[LEVEL_DIM]--;
-		md_zaxpy2(DIMS, odims, istrs, sdata, 1. / sqrt((double)levels), ostrs, odata);
+		md_zsum(DIMS, odims, LEVEL_FLAG, sdata, odata);
 		odims[LEVEL_DIM]++;
 
 		unmap_cfl(DIMS, idims, sdata);
