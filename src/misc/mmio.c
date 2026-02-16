@@ -728,10 +728,6 @@ static complex float* create_pipe(const char* name, int D, long dimensions[D], u
 {
 	long T;
 	complex float* ptr;
-	char filename[] = "bart-XXXXXX";
-	int fd;
-	char* dir;
-	char* abs_filename;
 	bool call_msync = false;
 
 	if (NULL != (ptr = stream_clone_if_exists(name, &(stream_t){ NULL }, false)))
@@ -742,42 +738,55 @@ static complex float* create_pipe(const char* name, int D, long dimensions[D], u
 
 	io_register_output(name);
 
-	fd = mkstemp(filename);
+	const char pattern[] = "bart-XXXXXX";
+	const char* tmpdir = getenv("TMPDIR") ?: "/tmp";
+	size_t len = strlen(tmpdir) + 1 + strlen(pattern) + 1;
+	char filename[len];
+	snprintf(filename, len, "%s/%s", tmpdir, pattern);
 
-	debug_printf(DP_DEBUG1, "Temp file for pipe: %s\n", filename);
+	if (len > BART_MAX_DIR_PATH_SIZE)
+		error("Temp directory path \"%s\" too long.\n", filename);
+
+	int fd = mkstemp(filename);
+
+	if (-1 == fd)
+		error("Could not create temp file for pipe: %s\n"
+		      "Use TMPDIR environment variable to specify a different temp directory.\n", filename);
+
+#ifdef _WIN32
+	char* abs_filename = _fullpath(NULL, filename, 0);
+#else
+	char* abs_filename = realpath(filename, NULL);
+#endif
+	if (NULL == abs_filename)
+		error("Could not resolve absolute path of temp file for pipe: %s\n", filename);
+
+	if (BART_MAX_DIR_PATH_SIZE < strlen(abs_filename) + 1 )
+		error("Temp filename for pipe too long: %s\n", abs_filename);
+
+	debug_printf(DP_DEBUG1, "Temp file for pipe: %s\n", abs_filename);
 
 	if (-1 == (T = io_calc_size(D, dimensions, sizeof(complex float))))
-		error("temp cfl %s\n", filename);
+		error("temp cfl %s\n", abs_filename);
 
 	err_assert(T > 0);
 
 	if (NULL == (ptr = create_data(fd, 0, (size_t)T)))
-		error("temp cfl %s\n", filename);
+		error("temp cfl %s\n", abs_filename);
 
 #ifdef __EMSCRIPTEN__
 	wasm_close_later(fd);
 #else
 	if (-1 == close(fd))
-		io_error("temp cfl %s\n", filename);
+		io_error("temp cfl %s\n", abs_filename);
 #endif
-
-	dir = xmalloc(BART_MAX_DIR_PATH_SIZE);
-
-	if (!dir)
-		error("Failed to allocate space for dir. name.\n");
-
-	if (!getcwd(dir, BART_MAX_DIR_PATH_SIZE))
-		error("Directory pathname too long.\n");
-
-	abs_filename = ptr_printf("%s/%s", dir, filename);
 
 #ifdef __EMSCRIPTEN__
 	call_msync = true;
 #endif
 	stream_t strm = stream_create_file(name, D, dimensions, stream_flags, abs_filename, call_msync);
 
-	xfree(dir);
-	xfree(abs_filename);
+	free(abs_filename);
 
 	if (NULL == strm)
 		error("Creating stream");
