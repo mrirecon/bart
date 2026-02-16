@@ -58,7 +58,7 @@ static void sum_xupdate(const operator_data_t* _data, float /*rho*/, complex flo
 
 static void sum_xupdate_free(const operator_data_t* data)
 {
-	xfree(CAST_DOWN(s_data, data));
+	(void)data;
 }
 
 
@@ -168,8 +168,7 @@ int main_lrmatrix(int argc, char* argv[argc])
 	// Initialize algorithm
 	iter_conf* iconf;
 
-	struct iter_admm_conf mmconf;
-	memcpy(&mmconf, &iter_admm_defaults, sizeof(struct iter_admm_conf));
+	struct iter_admm_conf mmconf = iter_admm_defaults;
 	mmconf.maxiter = maxiter;
 	mmconf.rho = rho;
 	mmconf.hogwild = hogwild;
@@ -199,11 +198,10 @@ int main_lrmatrix(int argc, char* argv[argc])
 	const struct operator_p_s* prox_ops[2] = { sum_prox, lr_prox };
 	long size = 2 * md_calc_size(DIMS, odims);
 
-	struct s_data* s_data = xmalloc(sizeof *s_data);
+	struct s_data s_data = { { &TYPEID(s_data) }, size / 2 };
 
-	*s_data = (struct s_data){ { &TYPEID(s_data) }, size / 2 };
-
-	const struct operator_p_s* sum_xupdate_op = operator_p_create(DIMS, odims, DIMS, odims, CAST_UP(s_data), sum_xupdate, sum_xupdate_free);
+	auto sum_xupdate_op = operator_p_create(DIMS, odims, DIMS, odims,
+						CAST_UP(&s_data), sum_xupdate, sum_xupdate_free);
 
 
 	// do recon

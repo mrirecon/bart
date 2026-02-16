@@ -1,7 +1,7 @@
 /* Copyright 2015-2018. The Regents of the University of California.
  * Copyright 2015. Tao Zhang and Joseph Cheng.
  * Copyright 2016-2019. Martin Uecker.
- * Copyright 2024-2025. Institute of Biomedical Imaging. TU Graz.
+ * Copyright 2024-2026. Institute of Biomedical Imaging. TU Graz.
  * All rights reserved. Use of this source code is governed by
  * a BSD-style license which can be found in the LICENSE file.
  *
@@ -120,11 +120,8 @@ static struct lrthresh_data_s* lrthresh_create_data(const long dims_decom[DIMS],
 	md_calc_strides(DIMS, data->strs, data->dims, CFL_SIZE);
 
 	// blkdims
-	for(long l = 0; l < data->levels; l++) {
-
-		for (long i = 0; i < DIMS; i++)
-			data->blkdims[l][i] = blkdims[l][i];
-	}
+	for(long l = 0; l < data->levels; l++)
+		md_copy_dims(DIMS, data->blkdims[l], blkdims[l]);
 
 	return PTR_PASS(data);
 }
@@ -192,10 +189,10 @@ static void lrthresh_apply(const operator_data_t* _data, float mu, complex float
 			if (MD_IS_SET(data->mflags, i))
 				M *= blkdims[i];
 
+			shifts[i] = 0.;
+
 			if (data->randshift)
 				shifts[i] = rand_lim((int)MIN(blkdims[i] - 1, zpad_dims[i] - blkdims[i]));
-			else
-				shifts[i] = 0;
 
 			unshifts[i] = -shifts[i];
 		}
@@ -258,10 +255,8 @@ static void lrthresh_apply(const operator_data_t* _data, float mu, complex float
 		//	for ( int b = 0; b < mat_dims[1]; b++ )
 		//	svthresh(M, N, lambda * GWIDTH(M, N, B), tmp_mat, tmp_mat);
 
-		if (data->overlapping_blocks) {
-
+		if (data->overlapping_blocks)
 			md_transpose(2, 0, 1, mat_dims, tmp_mat, mat2_dims, tmp_mat2, CFL_SIZE);
-		}
 
 		(data->overlapping_blocks ? casorati_matrixH : basorati_matrixH)(DIMS, blkdims, zpad_dims, zpad_strs, tmp, mat_dims, tmp_mat);
 
@@ -287,7 +282,7 @@ static void lrthresh_apply(const operator_data_t* _data, float mu, complex float
  */
 float lrnucnorm(const struct operator_p_s* op, const complex float* src)
 {
-	struct lrthresh_data_s* data = (struct lrthresh_data_s*)operator_p_get_data(op);
+	auto data = CAST_DOWN(lrthresh_data_s, operator_p_get_data(op));
 
 	long strs1[DIMS];
 	md_calc_strides(DIMS, strs1, data->dims_decom, 1);
@@ -333,6 +328,20 @@ float lrnucnorm(const struct operator_p_s* op, const complex float* src)
 }
 
 
+static void llr_blkdims0(long blkdims[DIMS], unsigned long flags, const long idims[DIMS], int llrblk)
+{
+	md_copy_dims(DIMS, blkdims, idims);
+
+	for (int i = 0; i < DIMS; i++) {
+
+		if (!MD_IS_SET(flags, i))
+			continue;
+
+		blkdims[i] = MIN(llrblk, idims[i]);
+	}
+}
+
+
 
 
 /*************
@@ -354,43 +363,32 @@ int multilr_blkdims(long blkdims[MAX_LEV][DIMS], unsigned long flags, const long
 {
 	// Multiscale low rank block sizes
 	long tmp_block[DIMS];
-
-	for (int i = 0; i < DIMS; i++) {
-
-		if (MD_IS_SET(flags, i))
-			tmp_block[i] = MIN(initblk, idims[i]);
-		else
-			tmp_block[i] = idims[i];
-	}
+	llr_blkdims0(tmp_block, flags, idims, initblk);
 
 	bool done;
 	// Loop block_sizes
 	int levels = 0;
 
 	do {
-		levels++;
-		debug_printf(DP_INFO, "[\t");
+		md_copy_dims(DIMS, blkdims[levels], tmp_block);
 
-		for (int i = 0; i < DIMS; i++) {
-
-			blkdims[levels - 1][i] = tmp_block[i];
-			debug_printf(DP_INFO, "%ld\t", blkdims[levels-1][i]);
-		}
-
-		debug_printf(DP_INFO, "]\n");
-
+		debug_print_dims(DP_INFO, DIMS, blkdims[levels]);
 
 		done = true;
 
 		for (int i = 0; i < DIMS; i++) {
 
-			if (MD_IS_SET(flags, i) && (idims[i] != 1)) {
+			if (!MD_IS_SET(flags, i) || (1 == idims[i]))
+				continue;
 
-				tmp_block[i] = MIN(tmp_block[i] * blkskip, idims[i]);
-				done = done && (blkdims[levels - 1][i] == idims[i]);
-			}
+			tmp_block[i] = MIN(tmp_block[i] * blkskip, idims[i]);
+
+			if (blkdims[levels][i] != idims[i])
+				done = false;
 		}
-		
+
+		levels++;
+
 	} while (!done);
 
 	return levels;
@@ -401,17 +399,9 @@ int multilr_blkdims(long blkdims[MAX_LEV][DIMS], unsigned long flags, const long
 void add_lrnoiseblk(int* levels, long blkdims[MAX_LEV][DIMS], const long idims[DIMS])
 {
 	levels[0]++;
-		
-	debug_printf(DP_DEBUG1, "[\t");
 
-	for (int i = 0; i < DIMS; i++) {
-
-		blkdims[levels[0] - 1][i] = idims[i];
-
-		debug_printf(DP_DEBUG1, "%ld\t", blkdims[levels[0] - 1][i]);
-	}
-
-	debug_printf(DP_DEBUG1, "]\n");
+	debug_print_dims(DP_DEBUG1, DIMS, idims);
+	md_copy_dims(DIMS, blkdims[levels[0] - 1], idims);
 }
 
 
@@ -428,14 +418,7 @@ void add_lrnoiseblk(int* levels, long blkdims[MAX_LEV][DIMS], const long idims[D
  */
 int llr_blkdims(long blkdims[MAX_LEV][DIMS], unsigned long flags, const long idims[DIMS], int llrblk)
 {
-	for (int i = 0; i < DIMS; i++) {
-
-		if (MD_IS_SET(flags, i))
-			blkdims[0][i] = MIN(llrblk, idims[i]);
-		else
-			blkdims[0][i] = idims[i];
-	}
-
+	llr_blkdims0(blkdims[0], flags, idims, llrblk);
 	return 1;
 }
 
