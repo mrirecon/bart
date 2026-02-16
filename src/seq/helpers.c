@@ -89,45 +89,45 @@ double seq_total_measure_time(const struct seq_config* seq)
 
 static void custom_params_to_config(struct seq_config* seq, int nl, const long custom_long[__VLA(nl)], int nd, const double custom_double[__VLA(nd)])
 {
-	seq->enc.pe_mode = (enum pe_mode)custom_long[cil_pe_mode];
-	seq->phys.contrast = (enum flash_contrast)custom_long[cil_contrast];
+	seq->enc.pe_mode = (enum pe_mode)custom_long[SEQ_UI_IDX_LONG_PE_MODE];
+	seq->phys.contrast = (enum flash_contrast)custom_long[SEQ_UI_IDX_LONG_CONTRAST];
 
 	seq->geom.mb_factor = 1;
 
-	if (CHECKBOX_ON == custom_long[cil_sms])
-		seq->geom.mb_factor = custom_long[cil_mb_factor];
+	if (CHECKBOX_ON == custom_long[SEQ_UI_IDX_LONG_SMS])
+		seq->geom.mb_factor = custom_long[SEQ_UI_IDX_LONG_MB_FACTOR];
 
 	seq->phys.os = 2.;
 
-	seq->enc.tiny = custom_long[cil_tiny];
-	seq->phys.rf_duration = 1E-6 * custom_long[cil_rf_duration];
-	seq->magn.init_delay = custom_long[cil_init_delay];
-	seq->loop_dims[BATCH_DIM] = custom_long[cil_inversions];
-	seq->magn.inv_delay_time = custom_long[cil_inv_delay];
-	seq->enc.aligned_flags = (unsigned long)custom_long[cil_RAGA_aligned_flags];
+	seq->enc.tiny = custom_long[SEQ_UI_IDX_LONG_TINY];
+	seq->phys.rf_duration = 1E-6 * custom_long[SEQ_UI_IDX_LONG_RF_DURATION_US];
+	seq->magn.init_delay = custom_long[SEQ_UI_IDX_LONG_INIT_DELAY];
+	seq->loop_dims[BATCH_DIM] = custom_long[SEQ_UI_IDX_LONG_INVERSIONS];
+	seq->magn.inv_delay_time = custom_long[SEQ_UI_IDX_LONG_INV_DELAY];
+	seq->enc.aligned_flags = (unsigned long)custom_long[SEQ_UI_IDX_LONG_RAGA_ALIGNED_FLAGS];
 
-	seq->phys.bwtp = custom_double[cid_BWTP];
+	seq->phys.bwtp = custom_double[SEQ_UI_IDX_DOUBLE_BWTP];
 }
 
 
 static void config_to_custom_params(int nl, long custom_long[__VLA(nl)], int nd, double custom_double[__VLA(nd)], const struct seq_config* seq)
 {
-	custom_long[cil_pe_mode] = seq->enc.pe_mode;;
-	custom_long[cil_contrast] = seq->phys.contrast;
-	custom_long[cil_reco] = CHECKBOX_OFF;
+	custom_long[SEQ_UI_IDX_LONG_PE_MODE] = seq->enc.pe_mode;;
+	custom_long[SEQ_UI_IDX_LONG_CONTRAST] = seq->phys.contrast;
+	custom_long[SEQ_UI_IDX_LONG_RECO] = CHECKBOX_OFF;
 
-	custom_long[cil_sms] = CHECKBOX_OFF;
+	custom_long[SEQ_UI_IDX_LONG_SMS] = CHECKBOX_OFF;
 	if (1 < seq->geom.mb_factor)
-		custom_long[cil_sms] = CHECKBOX_ON;
-	custom_long[cil_mb_factor] = seq->geom.mb_factor;
+		custom_long[SEQ_UI_IDX_LONG_SMS] = CHECKBOX_ON;
+	custom_long[SEQ_UI_IDX_LONG_MB_FACTOR] = seq->geom.mb_factor;
 
-	custom_long[cil_tiny] = seq->enc.tiny;
-	custom_long[cil_rf_duration] = lround(1.E6 * seq->phys.rf_duration);
-	custom_long[cil_init_delay] = seq->magn.init_delay;
-	custom_long[cil_inversions] = seq->loop_dims[BATCH_DIM];
-	custom_long[cil_inv_delay] = seq->magn.inv_delay_time;
-	custom_long[cil_RAGA_aligned_flags] = (long)seq->enc.aligned_flags;
-	custom_double[cid_BWTP] = seq->phys.bwtp;
+	custom_long[SEQ_UI_IDX_LONG_TINY] = seq->enc.tiny;
+	custom_long[SEQ_UI_IDX_LONG_RF_DURATION_US] = lround(1.E6 * seq->phys.rf_duration);
+	custom_long[SEQ_UI_IDX_LONG_INIT_DELAY] = seq->magn.init_delay;
+	custom_long[SEQ_UI_IDX_LONG_INVERSIONS] = seq->loop_dims[BATCH_DIM];
+	custom_long[SEQ_UI_IDX_LONG_INV_DELAY] = seq->magn.inv_delay_time;
+	custom_long[SEQ_UI_IDX_LONG_RAGA_ALIGNED_FLAGS] = (long)seq->enc.aligned_flags;
+	custom_double[SEQ_UI_IDX_DOUBLE_BWTP] = seq->phys.bwtp;
 }
 
 

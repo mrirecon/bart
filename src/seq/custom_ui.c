@@ -37,14 +37,14 @@ static const struct selection_opt contrast_opts[] = {
 
 static const struct seq_ui_selection custom_selection_defaults[] = {
 
-	{ "seq_wip5", cil_pe_mode, "PE Mode", ARRAY_SIZE(pemode_opts), &pemode_opts[0], SEQ_PEMODE_TURN, "" },
-	{ "seq_wip2", cil_contrast, "Contrast", ARRAY_SIZE(contrast_opts), &contrast_opts[0], SEQ_CONTRAST_RF_RANDOM, "" },
+	{ "seq_wip5", SEQ_UI_IDX_LONG_PE_MODE, "PE Mode", ARRAY_SIZE(pemode_opts), &pemode_opts[0], SEQ_PEMODE_TURN, "" },
+	{ "seq_wip2", SEQ_UI_IDX_LONG_CONTRAST, "Contrast", ARRAY_SIZE(contrast_opts), &contrast_opts[0], SEQ_CONTRAST_RF_RANDOM, "" },
 };
 
 static const struct seq_ui_long custom_bool_defaults[] = {
 
-	{ "seq_wip8", cil_reco, "Online Recon", { 0, 0, 0, 1 }, "", "" },
-	{ "seq_wip12", cil_sms, "Simultaneous Multi-Slice", { 0, 0, 0, 1 }, "", "" },
+	{ "seq_wip8", SEQ_UI_IDX_LONG_RECO, "Online Recon", { 0, 0, 0, 1 }, "", "" },
+	{ "seq_wip12", SEQ_UI_IDX_LONG_SMS, "Simultaneous Multi-Slice", { 0, 0, 0, 1 }, "", "" },
 };
 
 static const struct seq_ui_long custom_long_defaults[] = {
@@ -54,24 +54,24 @@ static const struct seq_ui_long custom_long_defaults[] = {
 static const struct seq_ui_long custom_longarr_defaults[] = {
 
 	// tiny must be the first one
-	{ "", cil_tiny, "Turns / Tiny Golden", { 1, 20, 1, 1 }, "Number of turns (repititions) of radial spoke pattern.", ""},
-	{ "", cil_rf_duration, "RF pulse duration", { 20, 2560, 20, 400 }, "RF pulse duration.", "us"},
-	{ "", cil_init_delay, "Delay Measurements", { 0, 300, 1, 0 }, "Delay measurements.", "s"},
-	{ "", cil_inversions, "Inversions", { 0, 1000, 1, 1 }, "Number of IR experiments.", ""},
-	{ "", cil_inv_delay, "Inversion Delay", { 0, 2000, 1, 0 }, "Delay between inversions.", "s"},
-	{ "", cil_mb_factor, "Multiband factor (SMS)", { 1, 5, 1, 1 }, "SMS Multiband factor", ""},
-	{ "", cil_RAGA_aligned_flags, "RAGA aligned flags", { 0, 65535, 1, 0 }, "Bitmask from dimension to align in RAGA sampling", ""}
+	{ "", SEQ_UI_IDX_LONG_TINY, "Turns / Tiny Golden", { 1, 20, 1, 1 }, "Number of turns (repititions) of radial spoke pattern.", ""},
+	{ "", SEQ_UI_IDX_LONG_RF_DURATION_US, "RF pulse duration", { 20, 2560, 20, 400 }, "RF pulse duration.", "us"},
+	{ "", SEQ_UI_IDX_LONG_INIT_DELAY, "Delay Measurements", { 0, 300, 1, 0 }, "Delay measurements.", "s"},
+	{ "", SEQ_UI_IDX_LONG_INVERSIONS, "Inversions", { 0, 1000, 1, 1 }, "Number of IR experiments.", ""},
+	{ "", SEQ_UI_IDX_LONG_INV_DELAY, "Inversion Delay", { 0, 2000, 1, 0 }, "Delay between inversions.", "s"},
+	{ "", SEQ_UI_IDX_LONG_MB_FACTOR, "Multiband factor (SMS)", { 1, 5, 1, 1 }, "SMS Multiband factor", ""},
+	{ "", SEQ_UI_IDX_LONG_RAGA_ALIGNED_FLAGS, "RAGA aligned flags", { 0, 65535, 1, 0 }, "Bitmask from dimension to align in RAGA sampling", ""}
 };
 
 
 static const struct seq_ui_double custom_double_defaults[] = {
 
-	{ "seq_wip9", cid_cmd, "BART cmd", { -1000., 1000., 0.1, 0. }, "BART UI interface. Get/set config from file.", "" },
+	{ "seq_wip9", SEQ_UI_IDX_DOUBLE_CMD, "BART cmd", { -1000., 1000., 0.1, 0. }, "BART UI interface. Get/set config from file.", "" },
 };
 
 static const struct seq_ui_double custom_doublearr_defaults[] = {
 
-	{ "", cid_BWTP, "BWTP", { 0., 200., 0.1, 1.6 }, "RF bandwidth-time-product.", "" },
+	{ "", SEQ_UI_IDX_DOUBLE_BWTP, "BWTP", { 0., 200., 0.1, 1.6 }, "RF bandwidth-time-product.", "" },
 
 };
 
@@ -124,14 +124,14 @@ struct lookup {
 
 static struct lookup lookup_table_long[] = {
 
-#define lut_entry(NAME) { .name = #NAME, .e = cil_##NAME },
+#define lut_entry(NAME) { .name = #NAME, .e = SEQ_UI_IDX_LONG_##NAME },
 	SEQ_CUSTOM_UI_IDX_LONG(lut_entry)
 #undef lut_entry
 };
 
 static struct lookup lookup_table_double[] = {
 
-#define lut_entry(NAME) { .name = #NAME, .e = cid_##NAME },
+#define lut_entry(NAME) { .name = #NAME, .e = SEQ_UI_IDX_DOUBLE_##NAME },
 	SEQ_CUSTOM_UI_IDX_DOUBLE(lut_entry)
 #undef lut_entry
 };
