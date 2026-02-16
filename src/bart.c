@@ -212,7 +212,7 @@ static void parse_bart_opts(int* argcp, char*** argvp, int order[DIMS], stream_t
 		OPTL_ULONG(0, "random-dims", &cfl_loop_rand_flags, "flags", "vary random numbers along selected dimensions (default: all)"),
 		OPTL_ULONG(0, "md-split-mpi-dims", &bart_mpi_split_flags, "flags", "split md-arrays along selected dimensions for MPI parallelization"),
 		OPTL_VECN(0, "md-loop-dims", bart_delayed_loop_dims, "loop md-functions along selected dimensions sequentially (low memory mode)"),
-		OPTL_SET(0, "delayed-md", &bart_delayed_computations, "activate delayed computation in md functions (implicite by md-loop-dims)"),
+		OPTL_SET(0, "delayed-md", &bart_delayed_computations, "activate delayed computation in md functions (implicit by md-loop-dims)"),
 		OPT_SET('d', &attach, "(Wait for debugger)"),
 		OPTL_SET(0, "stream-bin-out", &stream_create_binary_outputs, "Use binary streams (inline data) instead of shared memory for output streams"),
 	};
