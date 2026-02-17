@@ -1,0 +1,33 @@
+
+The following environment variables are used in BART.
+
+Generic Options
+
+BART_TOOLBOX_PATH: Path to look for itself and extensions.
+BART_DEBUG_LEVEL: Output debug information at this level.
+BART_COMPAT_VERSION: Set compatibility to version X.Y.Z.
+
+TMPDIR: Directory for temporary files (used for pipelines).
+
+
+Acceleration / Parallelization
+
+OMP_NUM_THREADS: Number of threads for OpenMP.
+OMPI_COMM_WORLD_SIZE: Number of processed for MPI.
+
+BART_GPU: Use GPUs.
+BART_GPU_STREAMS: Use cuda streams.
+BART_GPU_GLOBAL_MEMORY: Use global memory.
+
+BART_CUDNN_USE_TENSORCORE: Use tensorcores for cudnn.
+BART_USE_FFTW_WISDOM: Use FFTW wisdom.
+BART_DELAYED_DEBUG_LEVEL: Debug level for delayed computation.
+BART_PARALLEL_CHUNK_SIZE: Set chunk size for parallelization.
+
+
+Streams (experimental)
+
+BART_DEBUG_STREAM: Add command to debug output.
+BART_STREAM_LOG: Logging for streams.
+BART_TOOL_GRAPH: Directory to output graph information to.
+
