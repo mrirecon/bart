@@ -122,8 +122,6 @@ int read_config_from_str(struct seq_config* seq, int N, const char* buffer_in)
 		seq_ui_interface_custom_params(0, seq, SEQ_MAX_PARAMS_LONG, custom_params_long,
 					       SEQ_MAX_PARAMS_DOUBLE, custom_params_double);
 
-	seq_ui_interface_loop_dims(0, seq, DIMS, seq->loop_dims);
-
 	if (0 > a)
 		return 0;
 
