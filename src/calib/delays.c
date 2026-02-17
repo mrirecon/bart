@@ -290,17 +290,13 @@ static void calc_intersections(int Nint, int N, int no_intersec_sp, bool b0, flo
 
 
 	// Print projection angles and corresponding offsets, for RING paper reproduction
-	char* str = getenv("RING_PAPER");
 
-	if ((NULL != str) && (0 == strcmp(str, "1"))) {
+	for (int i = 0; i < N; i++) {
 
-		for (int i = 0; i < N; i++) {
+		for (int j = 0; j < no_intersec_sp; j++) {
 
-			for (int j = 0; j < no_intersec_sp; j++) {
-
-				bart_printf("projangle: %f \t %f\n", angles[idx[i * no_intersec_sp + j][0]], angles[idx[i * no_intersec_sp + j][1]]);
-				bart_printf("offset: %f \t %f\n", dist[i * no_intersec_sp + j][0], dist[i * no_intersec_sp + j][1]);
-			}
+			debug_printf(DP_DEBUG4, "RING: projangle: %f \t %f\n", angles[idx[i * no_intersec_sp + j][0]], angles[idx[i * no_intersec_sp + j][1]]);
+			debug_printf(DP_DEBUG4, "RING: offset: %f \t %f\n", dist[i * no_intersec_sp + j][0], dist[i * no_intersec_sp + j][1]);
 		}
 	}
 
