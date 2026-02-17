@@ -62,7 +62,7 @@ long seq_relevant_readouts_meas_time(const struct seq_config* seq)
 
 double seq_total_measure_time(const struct seq_config* seq)
 {
-	double pre_duration = seq->magn.init_delay;
+	double pre_duration = seq->magn.init_delay +  seq->phys.tr; // noise scan
 
 	struct seq_event ev[6];
 	int e = mag_prep(ev, seq);
