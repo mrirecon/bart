@@ -1,24 +1,14 @@
-INCLUDED HEADERS IN SEQUENCE
+INCLUDED HEADERS IN SEQUENCE & SEQUENCE UI
 
-	IBI_Radial.h
-		#include "seq.h"
-
-	IBI_Radial.cpp
-		#include "event.h"
-		#include "seq.h"
-		#include "helpers.h"
-		#include "custom_ui.h"
-
-	IBI_Radial_UI.h
-		#include "custom_ui.h"
-
-	IBI_Radial_UI.cpp
-		#include "helpers.h"
+	#include "src/seq/event.h" // only sequence
+	#include "src/seq/seq.h"
+	#include "src/seq/helpers.h"
+	#include "src/seq/custom_ui.h"
 
 
 EXPORTED FUNCTIONS
 
-	MEMORY HANDLING / COMPAT
+	MEMORY HANDLING / COMPATIBILITY CHECK
 		bart_seq_alloc
 		bart_seq_defaults
 		bart_seq_free
@@ -34,11 +24,11 @@ EXPORTED FUNCTIONS
 		seq_block_end_flat
 		seq_block_rdt
 
-	DISCRETIZATION GRADIENTS/PULSES
+	DISCRETIZATION GRADIENTS / PULSES
 		seq_compute_gradients
 		seq_sample_rf_shapes
 
-	EVENT/PULSE INTERPRETATION
+	EVENT / PULSE INTERPRETATION
 		seq_nco_freq
 		seq_nco_phase
 		seq_cfl_to_sample
@@ -49,10 +39,10 @@ EXPORTED FUNCTIONS
 		seq_minimum_te
 		seq_minimum_tr
 
-		seq_total_measure_time_us
+		seq_total_measure_time
 		seq_relevant_readouts_meas_time
 
-	BART INFO -> SEQUENCE
+	INFORMATION BART TO SEQUENCE
 		seq_get_interface_conf
 		seq_print_info_config
 		seq_print_info_radial_views
@@ -71,7 +61,6 @@ EXPORTED FUNCTIONS
 		seq_raga_spokes: set number of spokes in UI (eg. RAGA full frame size)
 
 
-	UTEST + INTERACTIVE?
+	UTEST
 		debug_printf
 		num_rand_init
-		seq_check_equal_dims
