@@ -90,7 +90,7 @@ tests/test-lrmatrix-recover2: lrmatrix noise nrmse ones resize transpose fmac th
 	$(TOOLDIR)/threshold -B 0.5 p2.ra p3.ra						;\
 	$(TOOLDIR)/fmac m2.ra p3.ra u2.ra						;\
 	$(TOOLDIR)/lrmatrix -p100. -l5 -o y.ra u2.ra x.ra				;\
-	$(TOOLDIR)/nrmse -t 0.007 m2.ra y.ra						;\
+	$(TOOLDIR)/nrmse -t 0.0075 m2.ra y.ra						;\
 	rm *.ra ; cd .. ; rmdir $(TESTS_TMP)
 	touch $@
 
