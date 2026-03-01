@@ -1,4 +1,5 @@
-
+NOTE: This project has moved to: https://codeberg.org/mrirecon/bart
+____
 
 BART: Toolbox for Computational Magnetic Resonance Imaging
 ==========================================================
